@@ -109,7 +109,12 @@ type EffectiveStatusInput struct {
 // the single canonical implementation of the precedence in
 // status-determination.md:
 //
-//  1. impact == 0 -> "notApplicable", regardless of results or overrides
+//  1. impact == 0 -> "notApplicable", regardless of results or overrides —
+//     UNLESS the result roll-up is "error": an execution error means the check
+//     never ran, so nothing was established about applicability. Error ranks
+//     above the impact-0 short-circuit (issue #257), matching InSpec
+//     EnhancedOutcomes and Heimdall inspecjs, and the normal precedence below
+//     then applies (so a governing override can still adjudicate the error)
 //  2. the governing (most recent non-expired) status override's status
 //  3. the stored effectiveStatus, honored only when NO overrides are present —
 //     effectiveStatus is state derived from overrides, so when every override
@@ -119,7 +124,7 @@ type EffectiveStatusInput struct {
 //
 // A zero ref time means "now".
 func ComputeEffectiveStatus(input EffectiveStatusInput, ref time.Time) string {
-	if input.Impact == 0 {
+	if input.Impact == 0 && WorstStatus(input.ResultStatuses) != "error" {
 		return "notApplicable"
 	}
 	if len(input.Overrides) > 0 {

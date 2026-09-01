@@ -237,7 +237,9 @@ import { worstStatus } from '@mitre/hdf-utilities';
  * When effectiveStatus is already set on the requirement, returns it directly.
  * Otherwise derives status using standard HDF/InSpec precedence:
  *   1. effectiveStatus already set → return it
- *   2. impact === 0 → notApplicable
+ *   2. impact === 0 → notApplicable — unless the roll-up is error: an
+ *      execution error means the check never ran, so nothing was established
+ *      about applicability (issue #257, aligned with @mitre/hdf-utilities)
  *   3. No results → notReviewed
  *   4. Worst-wins roll-up of results via the canonical shared ordering
  *      (error > failed > passed > notApplicable > notReviewed)
@@ -250,15 +252,17 @@ export function computeEffectiveStatus(requirement) {
     return requirement.effectiveStatus;
   }
 
-  if (requirement.impact === 0) {
-    return 'notApplicable';
-  }
-
   // Worst-wins roll-up via the canonical shared ordering (error > failed >
   // passed > notApplicable > notReviewed); empty results -> notReviewed.
   // NOTE: unlike the full effective-status computation in @mitre/hdf-utilities,
   // this helper deliberately honors an already-set effectiveStatus first (its
   // documented back-compat contract) and does not consult statusOverrides.
   const results = requirement.results ?? [];
-  return worstStatus(results.map((result) => result.status));
+  const rolledUp = worstStatus(results.map((result) => result.status));
+
+  if (requirement.impact === 0 && rolledUp !== 'error') {
+    return 'notApplicable';
+  }
+
+  return rolledUp;
 }

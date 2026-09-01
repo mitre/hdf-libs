@@ -259,6 +259,6 @@ describe('agent-override detective surface — parity with go/compliance_test.go
       computeEffectiveStatus(statusInput(req))
     );
     expect(counts.error.total).toBe(1);
-    expect(counts.no_impact.total).toBe(0);
+    expect(counts.noImpact.total).toBe(0);
   });
 });

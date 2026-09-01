@@ -28,7 +28,7 @@ When a control has multiple test results with different statuses, the overall st
 
 - **`failed` + `passed` → `failed`**: One failure means the control fails
 - **`passed` + `notReviewed` → `passed`**: A passing test proves the control works; a skipped test alongside it doesn't negate that
-- **`impact === 0` → `notApplicable`**: Overrides all result statuses. A control with impact 0.0 is always Not Applicable regardless of whether its tests passed, failed, or were skipped
+- **`impact === 0` → `notApplicable`, except `error`**: A control with impact 0.0 is Not Applicable regardless of whether its tests passed, failed, or were skipped — but **not** when the roll-up is `error`. An execution error means the check never ran, so nothing was established about applicability; an errored control reports `error` even at impact 0.0. This matches InSpec Enhanced Outcomes and Heimdall inspecjs, which both rank error above the Not Applicable determination
 - **No results → `notReviewed`**: Unless impact is 0.0 (then `notApplicable`)
 
 ### Examples
@@ -42,6 +42,8 @@ When a control has multiple test results with different statuses, the overall st
 | `[notReviewed]` | 0.5 | `notReviewed` |
 | `[notReviewed]` | 0.0 | `notApplicable` |
 | `[passed, error]` | 0.5 | `error` |
+| `[error]` | 0.0 | `error` |
+| `[passed, error]` | 0.0 | `error` |
 | `[]` (empty)*  | 0.0 | `notApplicable` |
 | `[]` (empty)*  | 0.5 | `notReviewed` |
 
@@ -55,8 +57,11 @@ The `effectiveStatus` field on `EvaluatedRequirement` is the authoritative statu
 
 ### In hdf-libs
 
-- **hdf-converters** (`convertControl`): Sets `effectiveStatus` from the source data. For v1 InSpec data, also sets `effectiveStatus = notApplicable` when `impact === 0`.
-- **hdf-cli** (`determineControlStatus` in `stats.go`): Checks `effectiveStatus` first (via `SchemaStatusToDisplay` mapping). Falls back to result-based derivation with correct precedence.
+The single canonical implementation is `computeEffectiveStatus` in `@mitre/hdf-utilities` (mirrored in Go as `hdfutil.ComputeEffectiveStatus`). Everything else delegates to it:
+
+- **hdf-converters**: converters that bake `effectiveStatus` at ingest (e.g. `legacyhdf-to-hdf` for v1 InSpec data) derive it through the canonical implementation.
+- **hdf-cli** (`determineControlStatus` in `stats.go`): calls the canonical implementation and maps the result to display form via `SchemaStatusToDisplay`. The `threshold` and `mcp` paths inject the same computation as their status resolver.
+- **@mitre/hdf-schema `helpers`** (`computeEffectiveStatus`): a documented back-compat variant that honors an already-set `effectiveStatus` first and does not consult `statusOverrides`; its impact-0/error ordering matches the canonical rule.
 
 ### Schema Note
 
@@ -79,7 +84,7 @@ The precedence rules above answer one question — **did the requirement pass or
 
 ### effectiveStatus is the post-adjudication status, not the verdict
 
-With **no override**, `effectiveStatus` equals the raw roll-up — they are the same value. An override is the *only* thing that makes them differ. When they differ, `effectiveStatus` is the post-adjudication status and the raw roll-up (`worstOf(results[].status)`) is still available losslessly in `results[]`. Which one a consumer should key on depends on the question it is answering (see [disposition branching](#disposition-branching) and the [SIEM export guide](../guides/siem-export.md)).
+With **no override**, `effectiveStatus` equals the raw roll-up — they are the same value — with one exception: the impact-0 rule above forces `notApplicable` for a non-errored impact-0 requirement whatever its raw roll-up is. Apart from that rule, an override is the *only* thing that makes them differ. When they differ, `effectiveStatus` is the post-adjudication status and the raw roll-up (`worstOf(results[].status)`) is still available losslessly in `results[]`. Which one a consumer should key on depends on the question it is answering (see [disposition branching](#disposition-branching) and the [SIEM export guide](../guides/siem-export.md)).
 
 ### Disposition branching
 
