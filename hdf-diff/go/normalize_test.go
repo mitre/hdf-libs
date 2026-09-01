@@ -60,7 +60,7 @@ func v1SingleControlDoc(controlFields map[string]any) []byte {
 	return data
 }
 
-// firstResult extracts the first requirement result from an HdfResults.
+// firstResult extracts the first requirement result from an HDFResults.
 func firstResult(t *testing.T, result hdf.HDFResults) hdf.RequirementResult {
 	t.Helper()
 	require.NotEmpty(t, result.Baselines)
@@ -69,7 +69,7 @@ func firstResult(t *testing.T, result hdf.HDFResults) hdf.RequirementResult {
 	return result.Baselines[0].Requirements[0].Results[0]
 }
 
-// firstReq extracts the first requirement from an HdfResults.
+// firstReq extracts the first requirement from an HDFResults.
 func firstReq(t *testing.T, result hdf.HDFResults) hdf.EvaluatedRequirement {
 	t.Helper()
 	require.NotEmpty(t, result.Baselines)
