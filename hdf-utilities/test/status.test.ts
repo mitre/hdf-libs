@@ -181,6 +181,26 @@ describe('computeEffectiveStatus', () => {
     ).toBe('passed');
   });
 
+  it('lets an error roll-up beat a stored effectiveStatus when no overrides govern (issue #257)', () => {
+    // A stored effectiveStatus is derived state; with no overrides the spec
+    // invariant says it must equal the raw roll-up. When the roll-up is error
+    // the check never ran, so a contradicting stored value is stale — this is
+    // exactly the shape of documents converted before the impact-0 fix, which
+    // baked notApplicable over a crashed check.
+    expect(
+      computeEffectiveStatus(
+        { impact: 0, effectiveStatus: 'notApplicable', resultStatuses: ['error'] },
+        REF
+      )
+    ).toBe('error');
+    expect(
+      computeEffectiveStatus(
+        { impact: 0.7, effectiveStatus: 'passed', resultStatuses: ['error'] },
+        REF
+      )
+    ).toBe('error');
+  });
+
   it('recomputes from results when every override has expired', () => {
     expect(
       computeEffectiveStatus(

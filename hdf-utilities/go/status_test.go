@@ -228,6 +228,30 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		}
 	})
 
+	t.Run("error roll-up beats stored effectiveStatus when no overrides govern (issue #257)", func(t *testing.T) {
+		// A stored effectiveStatus is derived state; with no overrides the
+		// spec invariant says it must equal the raw roll-up. When the roll-up
+		// is error the check never ran, so a contradicting stored value is
+		// stale — the shape of documents converted before the impact-0 fix.
+		cases := []struct {
+			impact float64
+			stored string
+		}{
+			{0, "notApplicable"},
+			{0.7, "passed"},
+		}
+		for _, c := range cases {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:          c.impact,
+				EffectiveStatus: c.stored,
+				ResultStatuses:  []string{"error"},
+			}, statusRef)
+			if got != "error" {
+				t.Errorf("impact %v stored %q: got %q, want error", c.impact, c.stored, got)
+			}
+		}
+	})
+
 	t.Run("expired overrides invalidate stale effectiveStatus", func(t *testing.T) {
 		// effectiveStatus is derived state; when its overrides have all
 		// expired it goes stale, so the result rollup wins.
