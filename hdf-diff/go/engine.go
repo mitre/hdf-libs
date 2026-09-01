@@ -64,7 +64,7 @@ func buildMatchOptions(opts Options) matching.Options {
 }
 
 // DiffHdf compares two HDF results documents and produces a structured comparison.
-// For fleet mode, newResults can contain multiple HdfResults (one per system).
+// For fleet mode, newResults can contain multiple HDFResults (one per system).
 // Returns an error if the match strategy is invalid.
 //
 //nolint:revive // matches TypeScript export name
