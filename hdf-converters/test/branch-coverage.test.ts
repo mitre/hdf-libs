@@ -6,8 +6,8 @@
  * specific converter's uncovered optional-field fallbacks, status-mapping
  * defaults, truncation warnings, and null-check paths.
  */
-import { describe, it, expect, vi } from 'vitest';
-import type { HDFResults, HDFBaseline, EvaluatedRequirement } from '@mitre/hdf-schema';
+import { describe, it, expect } from 'vitest';
+import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 
 import { convertDbprotectToHdf } from '../converters/dbprotect-to-hdf/typescript/converter.js';
 import { convertZapToHdf } from '../converters/zap-to-hdf/typescript/converter.js';

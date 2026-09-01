@@ -106,5 +106,11 @@ export default [
       'no-console': 'off', // Allow console in tests
     },
   },
-  deprecatedAliasGuardBlock(tsparser, ['src/**/*.ts', 'converters/**/*.ts', 'shared/**/*.ts']),
+  deprecatedAliasGuardBlock(tsparser, [
+    'src/**/*.ts',
+    'converters/**/*.ts',
+    'shared/**/*.ts',
+    'test/**/*.ts',
+    'fetchers/**/*.ts',
+  ]),
 ];
