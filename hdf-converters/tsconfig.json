@@ -4,6 +4,6 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["src/**/*", "converters/**/*.ts", "shared/**/*.ts"],
+  "include": ["src/**/*", "converters/**/*.ts", "fetchers/**/*.ts", "shared/**/*.ts"],
   "exclude": ["node_modules", "dist", "test", "**/*.test.ts", "**/*.spec.ts"]
 }

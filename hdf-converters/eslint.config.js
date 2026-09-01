@@ -38,7 +38,7 @@ export default [
     },
   },
   {
-    files: ['converters/**/*.ts', 'shared/**/*.ts'],
+    files: ['converters/**/*.ts', 'shared/**/*.ts', 'fetchers/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     languageOptions: {
       parser: tsparser,
@@ -81,14 +81,16 @@ export default [
     // ingest, an invariant they do not state and cannot rely on locally.
     // Covers shared/ too: converterutil/exportmap/bom/checklist parse timestamps
     // on behalf of the converters and are equally exposed to the footgun.
-    files: ['converters/**/*.ts', 'shared/**/*.ts'],
+    // Fetchers pull raw tool API responses, timestamps included, so they get
+    // the same guard.
+    files: ['converters/**/*.ts', 'shared/**/*.ts', 'fetchers/**/*.ts'],
     ignores: ['**/*.test.ts', '**/*.spec.ts'],
     rules: {
       'no-restricted-syntax': ['error', ...DATE_GUARD_RULES],
     },
   },
   {
-    files: ['test/**/*.ts', 'converters/**/*.test.ts', 'shared/**/*.test.ts'],
+    files: ['test/**/*.ts', 'converters/**/*.test.ts', 'shared/**/*.test.ts', 'fetchers/**/*.test.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
