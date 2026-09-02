@@ -124,7 +124,7 @@ auditable.
 
 ## Deployment
 
-The server is configured entirely through environment variables:
+The server is configured through environment variables (tool selection also has a matching `--tools` flag):
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
@@ -133,11 +133,26 @@ The server is configured entirely through environment variables:
 | `HDF_MCP_CACHE_BYTES` | Budget for the byte-bounded LRU parsed-document cache, so repeated reads of the same document skip re-parsing. | 256 MB |
 | `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes. A file larger than this is refused (`TOO_LARGE`) before it is read into memory, and the same ceiling applies to a parsed document. | 50 MB |
 | `HDF_MCP_LOG_LEVEL` | Structured-log level written to **stderr** (`error`, `warn`, `info`, `debug`). stdout carries only JSON-RPC frames. | `info` |
+| `HDF_MCP_TOOLS` | Which tools to advertise: a comma-separated list of tool names (`hdf_open,hdf_query`) or a profile — `read` (the read/analysis tools) or `all`. Advertising fewer tools shrinks the schema an agent re-sends every turn. The `--tools` flag overrides it. | all tools |
 
 Set `HDF_MCP_ROOT` to the directory that holds the documents the agent
 should work with, and leave `HDF_MCP_ENABLE_WRITES` unset for a read-only
 trial — the write tools still work, returning previews, so you can see
 exactly what they would produce before granting write access.
+
+### Advertising fewer tools
+
+Every request an agent makes re-sends the whole tool surface, so the set of tools you advertise is a fixed per-turn cost. A deployment that only reads HDF documents does not need the `hdf_convert`, `hdf_author`, or `hdf_apply_amendment` write tools on every turn — and an agent built for one job may need only a couple of tools.
+
+Select the surface with `--tools` (or `HDF_MCP_TOOLS`), taking either explicit tool names or a profile:
+
+```bash
+hdf mcp --tools read                 # the six read/analysis tools only
+hdf mcp --tools hdf_open,hdf_query   # a focused two-tool surface
+hdf mcp                              # every tool (the default)
+```
+
+The `read` profile is `hdf_open`, `hdf_inspect`, `hdf_query`, `hdf_compliance`, `hdf_diff`, and `hdf_validate`. Measured in the model-facing representation — the tool name, description, and parameters a provider actually sends the model each turn — the full nine-tool surface is ~2,768 tokens; the `read` profile is ~1,535 (a 44% cut), and a two-tool `hdf_open,hdf_query` surface is ~532 (81%). An unknown tool name is rejected at startup rather than silently dropped, so a bad launch config fails loudly.
 
 ## What the read surface deliberately does not return
 

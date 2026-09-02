@@ -35,6 +35,15 @@ const (
 	ToolsListPerToolBudget = 600
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
+	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
+	// (open/inspect/query/compliance/diff/validate — the surface an analysis agent
+	// carries) must stay materially below the full surface. This is the WIRE-format
+	// tools/list (what MeasureToolsList tokenizes): ~2775 tokens against the full
+	// ~4451. The model-facing figure a provider sends (name+description+parameters)
+	// is smaller — ~1535 vs ~2768 — and is the decision-relevant number quoted in
+	// the guide; this ceiling only needs to catch the surface creeping back toward
+	// full, for which the wire measurement is a faithful proxy.
+	ReadProfileBudget = 2900
 )
 
 var (
