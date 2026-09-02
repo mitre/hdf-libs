@@ -3,11 +3,8 @@
 # committed threshold templates — the threshold verdict, not the scanners'
 # exit codes, is what fails CI. This pipeline normalizes and gates its own
 # scan data through HDF, as an exemplar of how to use HDF in a pipeline.
-#
-# The CLI is the last *released* hdf binary, pinned by version + sha256 —
-# deliberately not built from the commit under test, so a CLI bug in a PR
-# cannot fail (or skew) its own gate. Bump the pin when a release lands.
 set -euo pipefail
+shopt -s nullglob
 
 ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel)}"
 SA="${SCAN_DIR:-$ROOT/scan-artifacts}"
@@ -15,15 +12,9 @@ HS="${HDF_SCANS_DIR:-$ROOT/hdf-scans}"
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/null}"
 THRESHOLDS="$ROOT/.github/hdf-thresholds"
 
-if [ -z "${HDF_BIN:-}" ]; then
-  : "${HDF_CLI_VERSION:?set HDF_CLI_VERSION+HDF_CLI_SHA256 or HDF_BIN}"
-  : "${HDF_CLI_SHA256:?set HDF_CLI_VERSION+HDF_CLI_SHA256 or HDF_BIN}"
-  curl -fsSL -o /tmp/hdf-cli.tar.gz \
-    "https://github.com/mitre/hdf-libs/releases/download/v${HDF_CLI_VERSION}/hdf_${HDF_CLI_VERSION}_linux_amd64.tar.gz"
-  echo "${HDF_CLI_SHA256}  /tmp/hdf-cli.tar.gz" | sha256sum -c -
-  tar xzf /tmp/hdf-cli.tar.gz -C /tmp hdf
-  HDF_BIN=/tmp/hdf
-fi
+# shellcheck source=lib-hdf-cli.sh
+. "$ROOT/.github/scripts/lib-hdf-cli.sh"
+resolve_hdf_bin
 
 mkdir -p "$HS"
 cd "$ROOT"
@@ -40,14 +31,15 @@ done
 
 # And every scan a producing job promised must actually be here — a
 # tolerated scanner exit can never silently skip the gate.
-cat "$SA"/manifest-*.txt | while read -r f; do
+while read -r f; do
   if ! test -s "$SA/$f"; then
     echo "::error::expected scan artifact missing or empty: $f"
     exit 1
   fi
-done
+done < <(cat "$SA"/manifest-*.txt)
 
 FAIL=0
+COUNT=0
 {
   echo "## Scan gate (HDF thresholds)"
   echo ""
@@ -56,6 +48,7 @@ FAIL=0
 } >> "$SUMMARY"
 for f in "$SA"/*.sarif; do
   base=$(basename "$f" .sarif)
+  COUNT=$((COUNT + 1))
   # govulncheck carries reachability in its severity levels and only gates
   # on called symbols — see hdf-thresholds/govulncheck.yaml.
   case "$base" in
@@ -63,11 +56,17 @@ for f in "$SA"/*.sarif; do
     *)             T="$THRESHOLDS/scans.yaml" ;;
   esac
   echo "::group::hdf $base"
-  "$HDF_BIN" convert "$f" -o "$HS/$base.hdf.json"
-  "$HDF_BIN" validate "$HS/$base.hdf.json"
-  verdict="pass"
-  "$HDF_BIN" validate threshold "$HS/$base.hdf.json" -T "$T" || { verdict="FAIL"; FAIL=1; }
+  verdict="ERROR"
+  if "$HDF_BIN" convert "$f" -o "$HS/$base.hdf.json" && "$HDF_BIN" validate "$HS/$base.hdf.json"; then
+    verdict="pass"
+    "$HDF_BIN" validate threshold "$HS/$base.hdf.json" -T "$T" || verdict="FAIL"
+  fi
+  [ "$verdict" != "pass" ] && FAIL=1
   echo "::endgroup::"
   echo "| $base | $verdict |" >> "$SUMMARY"
 done
+if [ "$COUNT" -eq 0 ]; then
+  echo "::error::no scan SARIFs found after manifest checks — gate refuses to pass vacuously"
+  exit 1
+fi
 exit $FAIL
