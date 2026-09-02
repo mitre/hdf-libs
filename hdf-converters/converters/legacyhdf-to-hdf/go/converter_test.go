@@ -806,7 +806,10 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 		assert.Equal(t, hdf.Passed, *reqs[1].EffectiveStatus) // derived from results
 	})
 
-	t.Run("does not override explicit effectiveStatus even if impact is 0", func(t *testing.T) {
+	t.Run("control-level status does not bypass the impact-0 rule", func(t *testing.T) {
+		// Write-path guarantee: the emitted effectiveStatus equals the ladder's
+		// answer — a non-errored impact-0 control is notApplicable regardless
+		// of the v1 control-level claim.
 		passed := "passed"
 		v1 := &LegacyHDFResults{
 			Version:  "1.0.0",
@@ -820,7 +823,7 @@ func TestConvertV1ToV2_ImpactZeroNotApplicable(t *testing.T) {
 		}
 		v2 := ConvertLegacyHDF(v1, "1.0.0")
 		require.NotNil(t, v2.Baselines[0].Requirements[0].EffectiveStatus)
-		assert.Equal(t, hdf.Passed, *v2.Baselines[0].Requirements[0].EffectiveStatus)
+		assert.Equal(t, hdf.NotApplicable, *v2.Baselines[0].Requirements[0].EffectiveStatus)
 	})
 
 	t.Run("classifies 27 impact-0 controls as notApplicable in Three_Layer fixture", func(t *testing.T) {
@@ -1336,4 +1339,72 @@ func TestConvertV1ToV2_RequirementCountAnchor(t *testing.T) {
 	v2 := ConvertLegacyHDF(&v1, "1.0.0")
 	shared.AssertRequirementCount(t, v2, countProfileControls(t, input),
 		"ubi9-scan.json: one requirement per profiles[0].controls[] (single profile, no overlay flatten)")
+}
+
+// v1Control builds a one-control v1 document for effective-status contract tests.
+func v1Control(impact float64, status string, resultStatuses ...string) *LegacyHDFResults {
+	results := make([]LegacyResult, len(resultStatuses))
+	st := "2026-01-01T00:00:00Z"
+	for i, rs := range resultStatuses {
+		results[i] = LegacyResult{Status: rs, StartTime: &st}
+	}
+	ctrl := LegacyControl{ID: "c-1", Impact: impact, Results: results}
+	if status != "" {
+		ctrl.Status = &status
+	}
+	return &LegacyHDFResults{
+		Version:    "1.0.0",
+		Platform:   LegacyPlatform{Name: "test-system"},
+		Profiles:   []LegacyProfile{{Name: "p", Controls: []LegacyControl{ctrl}}},
+		Statistics: LegacyStatistics{},
+	}
+}
+
+// The emitted effectiveStatus is a write-path guarantee: it must equal what the
+// canonical ladder computes from the emitted results — a v1 control-level
+// status never bakes through verbatim.
+func TestConvertV1ToV2_EffectiveStatusMatchesLadder(t *testing.T) {
+	cases := []struct {
+		name     string
+		v1       *LegacyHDFResults
+		expected hdf.ResultStatus
+	}{
+		{"control-level notApplicable over an errored result yields error",
+			v1Control(0, "not_applicable", "error"), hdf.Error},
+		{"stale optimistic control-level passed over a failed result yields failed",
+			v1Control(0.5, "passed", "failed"), hdf.Failed},
+		{"control-level passed at impact 0 yields notApplicable",
+			v1Control(0, "passed", "passed"), hdf.NotApplicable},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v2 := ConvertLegacyHDF(tc.v1, "1.0.0")
+			req := v2.Baselines[0].Requirements[0]
+			require.NotNil(t, req.EffectiveStatus)
+			assert.Equal(t, tc.expected, *req.EffectiveStatus)
+		})
+	}
+}
+
+// A control-level error not reflected in any recorded result carries knowledge
+// the results array lacks (a crashed tool that only logged its passing
+// sub-checks). The converter synthesizes an errored result so ground truth is
+// complete, rather than smuggling the knowledge through the stored field.
+func TestConvertV1ToV2_SynthesizesErroredResultFromControlStatus(t *testing.T) {
+	v2 := ConvertLegacyHDF(v1Control(0.5, "error", "passed", "passed"), "1.0.0")
+	req := v2.Baselines[0].Requirements[0]
+
+	require.Len(t, req.Results, 3, "expected a synthesized errored result appended")
+	synth := req.Results[2]
+	assert.Equal(t, hdf.Error, synth.Status)
+	assert.NotEmpty(t, synth.CodeDesc)
+	assert.Equal(t, req.Results[0].StartTime, synth.StartTime,
+		"synthesized result reuses the earliest recorded result time")
+
+	require.NotNil(t, req.EffectiveStatus)
+	assert.Equal(t, hdf.Error, *req.EffectiveStatus)
+
+	// No synthesis when the results already carry the error.
+	v2 = ConvertLegacyHDF(v1Control(0.5, "error", "error"), "1.0.0")
+	assert.Len(t, v2.Baselines[0].Requirements[0].Results, 1)
 }

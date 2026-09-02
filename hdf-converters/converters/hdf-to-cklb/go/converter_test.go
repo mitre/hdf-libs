@@ -112,7 +112,8 @@ func TestConvertHDFToCKLB_Synthesis(t *testing.T) {
 }
 
 // TestConvertHDFToCKLB_OverrideAndEffectiveStatus pins the export-fidelity fixes
-// end-to-end: effectiveStatus drives status, a risk-adjustment override surfaces
+// end-to-end: the canonical ladder drives status (a riskAdjustment override is
+// not governing, so the failing raw verdict stays open), and the override surfaces
 // into overrides.severity + comments, and finding_details composes all results.
 func TestConvertHDFToCKLB_OverrideAndEffectiveStatus(t *testing.T) {
 	input := `{
@@ -145,7 +146,7 @@ func TestConvertHDFToCKLB_OverrideAndEffectiveStatus(t *testing.T) {
 	require.NoError(t, err)
 	s := string(out)
 
-	assert.Contains(t, s, `"status": "not_applicable"`, "effectiveStatus drives status")
+	assert.Contains(t, s, `"status": "open"`, "riskAdjustment is not governing — ladder keeps the failing verdict; stale stored value ignored")
 	assert.Contains(t, s, `"severity": "medium"`, "impact 0.4 -> medium override")
 	assert.Contains(t, s, `"justification": "compensating control"`)
 	assert.Contains(t, s, "Override [riskAdjustment]: compensating control")

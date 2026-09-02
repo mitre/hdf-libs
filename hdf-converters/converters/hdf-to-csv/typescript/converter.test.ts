@@ -434,3 +434,24 @@ describe('hdfcsv Converter', () => {
     });
   });
 });
+
+// A stale stored effectiveStatus (no overrides) is never read: the Effective
+// Status column carries the ladder's answer (the raw roll-up).
+describe('stale stored effectiveStatus is ignored', () => {
+  it('emits the raw roll-up in the Effective Status column', () => {
+    const input = JSON.stringify({
+        baselines: [{ name: 'b', requirements: [{
+          id: 'SV-9', impact: 0.7, title: 't', tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          effectiveStatus: 'passed',
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }] }],
+      });
+    const out = convertHdfToCsv(input);
+    const rows = out.trim().split('\n');
+    const headers = rows[0]!.split(',');
+    const effIdx = headers.indexOf('Effective Status');
+    expect(effIdx).toBeGreaterThan(-1);
+    expect(rows[1]!.split(',')[effIdx]).toBe('failed');
+  });
+});

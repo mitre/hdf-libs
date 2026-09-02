@@ -209,6 +209,66 @@ func TestValidateThreshold_NoImpactSectionIsLive(t *testing.T) {
 	require.NoError(t, err, "no_impact.total.min:2 and skipped.total.max:1 hold under effective status")
 }
 
+// An impact-0 requirement whose scan CRASHED (raw result status error) — the
+// impact-0-errored shape. Effective distribution must be 1 error(high), 1
+// passed(high); the errored control must never land in no_impact.
+const testResultsImpactZeroError = `{
+	"baselines": [{
+		"name": "impact-zero-error-threshold-test",
+		"requirements": [
+			{
+				"id": "SV-ERR-NA",
+				"title": "Crashed check at impact 0",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.0,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "error", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SV-PASS",
+				"title": "Passed high",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.7,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			}
+		],
+		"supports": [],
+		"groups": []
+	}],
+	"platform": {"name": "test", "release": "1.0"},
+	"statistics": {"duration": 1.0},
+	"version": "2.0.0"
+}`
+
+// TestCountByStatusSeverity_ImpactZeroErrorIsError pins the impact-0 error escape at the
+// threshold counting layer: a crashed check at impact 0 counts under error —
+// never no_impact — so error.* threshold gates see it.
+func TestCountByStatusSeverity_ImpactZeroErrorIsError(t *testing.T) {
+	counts, err := countControlsByStatusSeverity([]byte(testResultsImpactZeroError))
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, counts.Error.Total, "impact-0 errored control counts as error")
+	assert.Equal(t, 1, counts.Error.High)
+	assert.Equal(t, 0, counts.NoImpact.Total, "the crashed check must not be Not Applicable")
+	assert.Equal(t, 1, counts.Passed.Total)
+}
+
+// TestValidateThreshold_ImpactZeroErrorTripsErrorGate proves the CLI-level
+// consequence of the impact-0 error escape: `hdf validate threshold -I "{error.total.max: 0}"`
+// must FAIL on a document whose only defect is a crashed impact-0 check. On the
+// pre-fix path the error landed in no_impact and the gate passed silently.
+func TestValidateThreshold_ImpactZeroErrorTripsErrorGate(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := filepath.Join(dir, "results.json")
+	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsImpactZeroError), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{error.total.max: 0}")
+	require.Error(t, err, "error.total.max:0 must fail on a crashed impact-0 check")
+}
+
 // --- Counting logic tests ---
 
 func TestCountByStatusSeverity(t *testing.T) {

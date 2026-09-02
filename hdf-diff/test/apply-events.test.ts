@@ -168,6 +168,13 @@ describe('applyChangeEvents', () => {
     const gap = warnings.filter((w) => w.kind === 'chainGap');
     expect(gap).toHaveLength(1);
     expect(gap[0].requirementId).toBe('SV-001');
+    // A mismatched priorChecksum has two possible causes and the operator
+    // cannot tell them apart from a bare "gap": events genuinely missing, or a
+    // chain derived under an older effective-status semantics (a checksum
+    // epoch). The warning must name both and the re-anchor action.
+    expect(gap[0].message).toContain('missing from this chain');
+    expect(gap[0].message).toContain('effective-status semantics');
+    expect(gap[0].message).toContain('re-derive');
   });
 
   it('warns absentUnknown for a tombstone on an unknown key', async () => {

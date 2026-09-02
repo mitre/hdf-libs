@@ -162,6 +162,13 @@ func TestFoldChangeEvents_Anomalies(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, result.Warnings, 1)
 		assert.Equal(t, "chainGap", result.Warnings[0].Kind)
+		// A mismatched priorChecksum has two possible causes and the operator
+		// cannot tell them apart from a bare "gap": events genuinely missing,
+		// or a chain derived under an older effective-status semantics (a
+		// checksum epoch). The warning must name both and the re-anchor action.
+		assert.Contains(t, result.Warnings[0].Message, "missing from this chain")
+		assert.Contains(t, result.Warnings[0].Message, "effective-status semantics")
+		assert.Contains(t, result.Warnings[0].Message, "re-derive")
 		require.Len(t, result.Comparison.RequirementDiffs, 1)
 		assert.Equal(t, StateRegressed, result.Comparison.RequirementDiffs[0].State)
 		_ = e1

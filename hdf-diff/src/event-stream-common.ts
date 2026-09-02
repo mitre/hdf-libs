@@ -86,7 +86,14 @@ export async function verifyEventChain(
         keyWarn('chainGap', 'new-state event carries a non-null priorChecksum');
       }
     } else if (prior !== expected) {
-      keyWarn('chainGap', `priorChecksum "${prior}" does not match expected chain state "${expected}"`);
+      // Two indistinguishable causes: events genuinely missing from the chain,
+      // or a chain derived under an older effective-status semantics (a
+      // checksum epoch — the resolved status the checksum hashes changed
+      // across binary versions).
+      keyWarn(
+        'chainGap',
+        `priorChecksum "${prior}" does not match expected chain state "${expected}" — either events are missing from this chain, or it was derived under an older effective-status semantics (see status-determination.md); re-derive from a fresh rescan to re-anchor`,
+      );
     }
     expected = await requirementChecksum(ev['after'] as Doc | null, ev['timestamp'] as string);
   }

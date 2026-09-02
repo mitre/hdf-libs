@@ -159,21 +159,54 @@ func TestGoverningOverrideIndex(t *testing.T) {
 func TestComputeEffectiveStatus(t *testing.T) {
 	waived := "notApplicable"
 
-	t.Run("impact zero always notApplicable", func(t *testing.T) {
-		got := ComputeEffectiveStatus(EffectiveStatusInput{
-			Impact:         0,
-			ResultStatuses: []string{"failed"},
-		}, statusRef)
-		if got != "notApplicable" {
-			t.Errorf("got %q, want notApplicable", got)
+	t.Run("impact zero notApplicable for non-error results", func(t *testing.T) {
+		for _, statuses := range [][]string{{"failed"}, {"passed"}, nil} {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:         0,
+				ResultStatuses: statuses,
+			}, statusRef)
+			if got != "notApplicable" {
+				t.Errorf("results %v: got %q, want notApplicable", statuses, got)
+			}
 		}
 	})
 
-	t.Run("governing override wins over results and effectiveStatus", func(t *testing.T) {
+	t.Run("errored scan escapes the impact-0 short-circuit", func(t *testing.T) {
+		// An execution error means the check never ran, so nothing was
+		// established about applicability — error ranks above the impact-0
+		// short-circuit, matching InSpec EnhancedOutcomes and Heimdall inspecjs.
+		for _, statuses := range [][]string{{"error"}, {"passed", "error"}} {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:         0,
+				ResultStatuses: statuses,
+			}, statusRef)
+			if got != "error" {
+				t.Errorf("results %v: got %q, want error", statuses, got)
+			}
+		}
+	})
+
+	t.Run("governing override still adjudicates an errored impact-0 requirement", func(t *testing.T) {
+		// Overrides rank above the raw roll-up everywhere else; an explicit
+		// non-expired override on a crashed impact-0 check governs the same
+		// way. "passed" (a falsePositive adjudication) distinguishes the
+		// override branch from the impact-0 short-circuit's own notApplicable.
 		got := ComputeEffectiveStatus(EffectiveStatusInput{
-			Impact:          0.7,
-			EffectiveStatus: "failed",
-			ResultStatuses:  []string{"failed"},
+			Impact:         0,
+			ResultStatuses: []string{"error"},
+			Overrides: []StatusOverrideInput{
+				{Status: "passed", AppliedAt: appliedOld, ExpiresAt: farFuture},
+			},
+		}, statusRef)
+		if got != "passed" {
+			t.Errorf("got %q, want passed", got)
+		}
+	})
+
+	t.Run("governing override wins over results", func(t *testing.T) {
+		got := ComputeEffectiveStatus(EffectiveStatusInput{
+			Impact:         0.7,
+			ResultStatuses: []string{"failed"},
 			Overrides: []StatusOverrideInput{
 				{Status: waived, AppliedAt: appliedOld, ExpiresAt: farFuture},
 			},
@@ -183,30 +216,48 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("effectiveStatus honored only when no overrides present", func(t *testing.T) {
-		got := ComputeEffectiveStatus(EffectiveStatusInput{
-			Impact:          0.7,
-			EffectiveStatus: "passed",
-			ResultStatuses:  []string{"failed"},
-		}, statusRef)
-		if got != "passed" {
-			t.Errorf("got %q, want passed", got)
+	t.Run("governing override adjudicates an impact-0 requirement regardless of termination", func(t *testing.T) {
+		// The override sits at the top of the ladder: whether the check
+		// failed, passed, or errored, a signed non-expired override governs
+		// uniformly — impact 0 does not silence it.
+		for _, statuses := range [][]string{{"failed"}, {"passed"}, {"error"}} {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:         0,
+				ResultStatuses: statuses,
+				Overrides: []StatusOverrideInput{
+					{Status: "passed", AppliedAt: appliedOld, ExpiresAt: farFuture},
+				},
+			}, statusRef)
+			if got != "passed" {
+				t.Errorf("results %v: got %q, want passed (override governs)", statuses, got)
+			}
 		}
 	})
 
-	t.Run("expired overrides invalidate stale effectiveStatus", func(t *testing.T) {
-		// effectiveStatus is derived state; when its overrides have all
-		// expired it goes stale, so the result rollup wins.
+	t.Run("error roll-up wins when no overrides govern", func(t *testing.T) {
+		// An execution error means the check never ran; absent a governing
+		// override the ladder reports it at any impact.
+		for _, impact := range []float64{0, 0.7} {
+			got := ComputeEffectiveStatus(EffectiveStatusInput{
+				Impact:         impact,
+				ResultStatuses: []string{"error"},
+			}, statusRef)
+			if got != "error" {
+				t.Errorf("impact %v: got %q, want error", impact, got)
+			}
+		}
+	})
+
+	t.Run("expired overrides yield the roll-up", func(t *testing.T) {
 		got := ComputeEffectiveStatus(EffectiveStatusInput{
-			Impact:          0.7,
-			EffectiveStatus: "passed",
-			ResultStatuses:  []string{"failed"},
+			Impact:         0.7,
+			ResultStatuses: []string{"failed"},
 			Overrides: []StatusOverrideInput{
 				{Status: waived, AppliedAt: appliedOld, ExpiresAt: longAgo},
 			},
 		}, statusRef)
 		if got != "failed" {
-			t.Errorf("got %q, want failed (stale effectiveStatus recomputed)", got)
+			t.Errorf("got %q, want failed (no governing override)", got)
 		}
 	})
 

@@ -193,8 +193,11 @@ describe('hdf-to-ecs converter', () => {
       error: 'unknown',
     };
     for (const [status, outcome] of Object.entries(cases)) {
+      // Non-zero impact: at impact 0 the canonical ladder resolves the
+      // non-error statuses to notApplicable, which is not what this mapping
+      // test exercises.
       const doc = JSON.stringify(testhdf.doc(testhdf.baseline('b',
-        testhdf.req('X', { status, codeDesc: 'c' }))));
+        testhdf.req('X', { status, codeDesc: 'c', impact: 0.5 }))));
       const o = lines(convertHdfToEcs(doc, VERSION))[0];
       expect(obj(o.event).outcome).toBe(outcome);
       expect(obj(o.hdf).status).toBe(status); // lossless five-value status

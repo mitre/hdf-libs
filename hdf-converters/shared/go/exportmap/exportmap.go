@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -77,14 +78,7 @@ func StringSlice(v interface{}) []string {
 // results[] (lossless — does not consult effectiveStatus), using the canonical
 // worst-wins ordering from hdf-utilities. Empty results yield "notReviewed".
 func WorstOfResults(req map[string]interface{}) string {
-	results, _ := AsSlice(req["results"])
-	statuses := make([]string, 0, len(results))
-	for _, rRaw := range results {
-		if r, ok := AsMap(rRaw); ok {
-			statuses = append(statuses, GetStr(r, "status"))
-		}
-	}
-	return hdfutil.WorstStatus(statuses)
+	return hdfutil.WorstStatus(resultStatuses(req))
 }
 
 // IsFailing reports whether an HDF Result_Status is a failing verdict. Only
@@ -96,9 +90,8 @@ func IsFailing(status string) bool { return status == "failed" }
 // Status carries the resolved status context for one requirement.
 type Status struct {
 	Raw        string // worstOf(results[].status) — the RAW verdict
-	Effective  string // effectiveStatus, "" when absent
-	Rollup     string // Effective when set, else Raw
-	Overridden bool   // statusOverrides present or effectiveStatus set
+	Rollup     string // canonical effective status (ladder: override → error → impact-0 → roll-up)
+	Overridden bool   // statusOverride records present
 	// Suppressed is the acceptance axis, orthogonal to the raw verdict: the raw
 	// result is failing but an override drove the effective status non-failing
 	// (waiver / falsePositive / attestation). A riskAdjustment / operational-
@@ -108,23 +101,71 @@ type Status struct {
 	Suppressed bool
 }
 
-// StatusOf resolves the status context for a requirement.
+// StatusOf resolves the status context for a requirement via the canonical
+// effective-status ladder — the stored effectiveStatus field is never read
+// (see status-determination.md; the field is an output cache).
 func StatusOf(req map[string]interface{}) Status {
 	raw := WorstOfResults(req)
-	eff := GetStr(req, "effectiveStatus")
-	_, hasEff := req["effectiveStatus"]
 	overrides, _ := AsSlice(req["statusOverrides"])
-	rollup := eff
-	if rollup == "" {
-		rollup = raw
+
+	// impact is schema-required; when a malformed map lacks it, do not read
+	// the absence as 0 (which would force notApplicable) — skip the impact-0
+	// rung instead, matching hdf-diff's wrapper.
+	impact := 1.0
+	if v, ok := req["impact"].(float64); ok {
+		impact = v
 	}
+
+	overrideIns := overrideInputs(overrides)
+	rollup := hdfutil.ComputeEffectiveStatus(hdfutil.EffectiveStatusInput{
+		Impact:         impact,
+		ResultStatuses: resultStatuses(req),
+		Overrides:      overrideIns,
+	}, time.Time{})
+
+	// Suppression is the ACCEPTANCE axis: a governing override drove a failing
+	// raw verdict non-failing. The ladder's own impact-0 rule also yields a
+	// non-failing status, but that is structural Not Applicable, not an
+	// acceptance decision — so suppression additionally requires a governing
+	// override.
+	governed := hdfutil.GoverningStatusOverride(overrideIns, time.Time{}) != nil
+
 	return Status{
 		Raw:        raw,
-		Effective:  eff,
 		Rollup:     rollup,
-		Overridden: len(overrides) > 0 || hasEff,
-		Suppressed: IsFailing(raw) && !IsFailing(rollup),
+		Overridden: len(overrides) > 0,
+		Suppressed: governed && IsFailing(raw) && !IsFailing(rollup),
 	}
+}
+
+// overrideInputs maps raw statusOverride objects onto the canonical helper's
+// neutral shape, parsing timestamps with the repo's canonical parser.
+func overrideInputs(overrides []interface{}) []hdfutil.StatusOverrideInput {
+	inputs := make([]hdfutil.StatusOverrideInput, 0, len(overrides))
+	for _, oRaw := range overrides {
+		o, ok := AsMap(oRaw)
+		if !ok {
+			continue
+		}
+		inputs = append(inputs, hdfutil.StatusOverrideInput{
+			Status:    GetStr(o, "status"),
+			AppliedAt: hdfutil.ParseTimestamp(GetStr(o, "appliedAt")),
+			ExpiresAt: hdfutil.ParseTimestamp(GetStr(o, "expiresAt")),
+		})
+	}
+	return inputs
+}
+
+// resultStatuses lists results[].status losslessly for the canonical roll-up.
+func resultStatuses(req map[string]interface{}) []string {
+	results, _ := AsSlice(req["results"])
+	statuses := make([]string, 0, len(results))
+	for _, rRaw := range results {
+		if r, ok := AsMap(rRaw); ok {
+			statuses = append(statuses, GetStr(r, "status"))
+		}
+	}
+	return statuses
 }
 
 // --- document / requirement field extraction ---

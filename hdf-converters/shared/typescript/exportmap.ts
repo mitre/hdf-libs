@@ -10,7 +10,13 @@
  * (ECS field names, CIM field names, envelopes) stays in each converter.
  */
 
-import { parseTimestamp, worstStatus } from '@mitre/hdf-utilities';
+import {
+  computeEffectiveStatus,
+  governingStatusOverride,
+  parseTimestamp,
+  worstStatus,
+  type StatusOverrideInput,
+} from '@mitre/hdf-utilities';
 import { validateInputSize, parseHdf } from './converterutil.js';
 
 export type Obj = Record<string, unknown>;
@@ -47,13 +53,7 @@ export function stringSlice(v: unknown): string[] {
  * the canonical worst-wins ordering from @mitre/hdf-utilities.
  */
 export function worstOfResults(req: Obj): string {
-  const results = asArr(req.results) ?? [];
-  const statuses: string[] = [];
-  for (const rRaw of results) {
-    const r = asMap(rRaw);
-    if (r) statuses.push(getStr(r, 'status'));
-  }
-  return worstStatus(statuses);
+  return worstStatus(resultStatuses(req));
 }
 
 /**
@@ -68,30 +68,66 @@ export function isFailing(status: string): boolean {
 
 export interface Status {
   raw: string; // worstOf(results[].status) — the RAW verdict
-  effective: string; // effectiveStatus, '' when absent
-  rollup: string; // effective when set, else raw
-  overridden: boolean; // statusOverrides present or effectiveStatus set
-  // Acceptance axis, orthogonal to the raw verdict: raw is failing but an
-  // override drove the effective status non-failing (waiver / falsePositive /
-  // attestation). A riskAdjustment / operationalRequirement / poam that leaves
-  // effectiveStatus failing is NOT suppressed — it stays actionable, only its
-  // impact is re-scored. Keyed on effective STATUS, not "any override present".
+  rollup: string; // canonical effective status (ladder: override → error → impact-0 → roll-up)
+  overridden: boolean; // statusOverride records present
+  // Acceptance axis, orthogonal to the raw verdict: a GOVERNING override drove
+  // a failing raw verdict non-failing (waiver / falsePositive / attestation).
+  // The ladder's own impact-0 rule also yields a non-failing status, but that
+  // is structural Not Applicable, not an acceptance decision. A riskAdjustment
+  // / operationalRequirement / poam that leaves the effective status failing is
+  // NOT suppressed — it stays actionable, only its impact is re-scored.
   suppressed: boolean;
 }
 
-/** Resolve the status context for a requirement. */
+/**
+ * Resolve the status context for a requirement via the canonical
+ * effective-status ladder — the stored effectiveStatus field is never read
+ * (see status-determination.md; the field is an output cache).
+ */
 export function statusOf(req: Obj): Status {
   const raw = worstOfResults(req);
-  const effective = getStr(req, 'effectiveStatus');
-  const overrides = asArr(req.statusOverrides);
-  const rollup = effective !== '' ? effective : raw;
+  const overrides = asArr(req.statusOverrides) ?? [];
+  const overrideInputs = overrides.flatMap((oRaw): StatusOverrideInput[] => {
+    const o = asMap(oRaw);
+    if (!o) return [];
+    return [
+      {
+        status: getStr(o, 'status') || undefined,
+        appliedAt: getStr(o, 'appliedAt') || undefined,
+        expiresAt: getStr(o, 'expiresAt') || undefined,
+      },
+    ];
+  });
+
+  // impact is schema-required; when a malformed map lacks it, do not read the
+  // absence as 0 (which would force notApplicable) — skip the impact-0 rung
+  // instead, matching hdf-diff's wrapper.
+  const impact = typeof req.impact === 'number' ? req.impact : 1;
+
+  const rollup = computeEffectiveStatus({
+    impact,
+    resultStatuses: resultStatuses(req),
+    overrides: overrideInputs,
+  });
+  const governed = governingStatusOverride(overrideInputs) !== undefined;
+
   return {
     raw,
-    effective,
     rollup,
-    overridden: (overrides !== undefined && overrides.length > 0) || 'effectiveStatus' in req,
-    suppressed: isFailing(raw) && !isFailing(rollup),
+    overridden: overrides.length > 0,
+    suppressed: governed && isFailing(raw) && !isFailing(rollup),
   };
+}
+
+/** Lists results[].status losslessly for the canonical roll-up. */
+function resultStatuses(req: Obj): string[] {
+  const results = asArr(req.results) ?? [];
+  const statuses: string[] = [];
+  for (const rRaw of results) {
+    const r = asMap(rRaw);
+    if (r) statuses.push(getStr(r, 'status'));
+  }
+  return statuses;
 }
 
 // --- document / requirement field extraction ---

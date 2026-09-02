@@ -28,8 +28,26 @@ When a control has multiple test results with different statuses, the overall st
 
 - **`failed` + `passed` → `failed`**: One failure means the control fails
 - **`passed` + `notReviewed` → `passed`**: A passing test proves the control works; a skipped test alongside it doesn't negate that
-- **`impact === 0` → `notApplicable`**: Overrides all result statuses. A control with impact 0.0 is always Not Applicable regardless of whether its tests passed, failed, or were skipped
+- **`impact === 0` → `notApplicable`, except `error`**: A control with impact 0.0 is Not Applicable regardless of whether its tests passed, failed, or were skipped — but **not** when the roll-up is `error`. An execution error means the check never ran, so nothing was established about applicability; an errored control reports `error` even at impact 0.0. This matches InSpec Enhanced Outcomes and Heimdall inspecjs, which both rank error above the Not Applicable determination
+- **A governing override outranks everything**: A non-expired `statusOverride` adjudicates uniformly — at any impact, over any roll-up, including `error` and including impact 0.0. See the effective-status ladder below
 - **No results → `notReviewed`**: Unless impact is 0.0 (then `notApplicable`)
+
+### The Effective-Status Ladder
+
+The full effective-status computation combines the roll-up above with overrides and impact in one fixed order:
+
+```
+1. governing override   — the most recent non-expired statusOverride's status
+2. error roll-up        — else if the result roll-up is error → error
+3. impact 0             — else if impact === 0 → notApplicable
+4. roll-up              — else the worst-wins roll-up (empty results → notReviewed)
+```
+
+The stored `effectiveStatus` field is **never an input** to this computation. The only sanctioned channel for a requirement's status to diverge from its results is a governing override; an unprovenanced stored value that contradicts the results — in either direction, optimistic (`passed` over failing results) or pessimistic (`error` over passing results) — is ignored and the ladder's answer wins. Source tools whose control-level verdict carries information the results array does not (for example a crashed tool that recorded only its passing sub-checks) must have that knowledge encoded into `results[]` by their converter — as a synthesized errored result — not smuggled through the stored field.
+
+#### Checksum epochs
+
+Requirement-change-event chains anchor their integrity in effective checksums, which hash the *resolved* effective status. When the ladder's semantics change (as in the change that introduced it), checksums computed by older binaries no longer match what a newer binary recomputes — a **checksum epoch**. A chain derived before an epoch boundary and verified after it reports `chainGap` warnings on the affected keys even though no events are missing. The warning text names both possible causes; the remedy for an epoch-crossing chain is to **re-derive it from a fresh rescan**, which re-anchors the chain under the current semantics. Event-chain verification deliberately does not accept old-epoch checksums — doing so would weaken the integrity claim for genuinely broken chains.
 
 ### Examples
 
@@ -42,6 +60,8 @@ When a control has multiple test results with different statuses, the overall st
 | `[notReviewed]` | 0.5 | `notReviewed` |
 | `[notReviewed]` | 0.0 | `notApplicable` |
 | `[passed, error]` | 0.5 | `error` |
+| `[error]` | 0.0 | `error` |
+| `[passed, error]` | 0.0 | `error` |
 | `[]` (empty)*  | 0.0 | `notApplicable` |
 | `[]` (empty)*  | 0.5 | `notReviewed` |
 
@@ -51,12 +71,15 @@ When a control has multiple test results with different statuses, the overall st
 
 ### effectiveStatus Field
 
-The `effectiveStatus` field on `EvaluatedRequirement` is the authoritative status. When present, consumers should use it directly. When absent, consumers derive status from results using the precedence above.
+The `effectiveStatus` field on `EvaluatedRequirement` carries the post-adjudication status a producer computed at write time. It is an **output cache, not an input**: the canonical `computeEffectiveStatus` never reads it — the ladder above computes from results, overrides, and impact alone, so a stale stored value (in either direction) cannot influence the answer. The field's correctness is a **write-path guarantee**: every producer (converters, the amendments-apply flow) must emit a value equal to what the ladder computes. External consumers that cannot run the computation — raw-JSON readers, dashboards, `jq` pipelines — may read the field directly and are relying on that write-path guarantee.
 
 ### In hdf-libs
 
-- **hdf-converters** (`convertControl`): Sets `effectiveStatus` from the source data. For v1 InSpec data, also sets `effectiveStatus = notApplicable` when `impact === 0`.
-- **hdf-cli** (`determineControlStatus` in `stats.go`): Checks `effectiveStatus` first (via `SchemaStatusToDisplay` mapping). Falls back to result-based derivation with correct precedence.
+The single canonical implementation is `computeEffectiveStatus` in `@mitre/hdf-utilities` (mirrored in Go as `hdfutil.ComputeEffectiveStatus`). Everything else delegates to it:
+
+- **hdf-converters**: converters that bake `effectiveStatus` at ingest (e.g. `legacyhdf-to-hdf` for v1 InSpec data) derive it through the canonical implementation.
+- **hdf-cli** (`determineControlStatus` in `stats.go`): calls the canonical implementation and maps the result to display form via `SchemaStatusToDisplay`. The `threshold` and `mcp` paths inject the same computation as their status resolver.
+- **@mitre/hdf-schema `helpers`** (`computeEffectiveStatus`): delegates to the canonical `@mitre/hdf-utilities` implementation — same ladder, same answers, overrides included.
 
 ### Schema Note
 
@@ -79,7 +102,7 @@ The precedence rules above answer one question — **did the requirement pass or
 
 ### effectiveStatus is the post-adjudication status, not the verdict
 
-With **no override**, `effectiveStatus` equals the raw roll-up — they are the same value. An override is the *only* thing that makes them differ. When they differ, `effectiveStatus` is the post-adjudication status and the raw roll-up (`worstOf(results[].status)`) is still available losslessly in `results[]`. Which one a consumer should key on depends on the question it is answering (see [disposition branching](#disposition-branching) and the [SIEM export guide](../guides/siem-export.md)).
+With **no override**, `effectiveStatus` equals the ladder's computation from the raw results — identical to the roll-up except where the ladder's fixed rules intervene (an `error` roll-up always reports `error`; a non-errored impact-0 requirement always reports `notApplicable`). An override is the *only* thing beyond those fixed rules that makes the effective status differ from the roll-up. When they differ, `effectiveStatus` is the post-adjudication status and the raw roll-up (`worstOf(results[].status)`) is still available losslessly in `results[]`. Which one a consumer should key on depends on the question it is answering (see [disposition branching](#disposition-branching) and the [SIEM export guide](../guides/siem-export.md)).
 
 ### Disposition branching
 

@@ -1,4 +1,5 @@
 import { parseHdf, hdfTime } from '../converterutil.js';
+import { requirementEffectiveStatus } from '../status.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -119,10 +120,11 @@ function requirementToVuln(req: EvaluatedRequirement): Vuln {
   };
 }
 
-// effectiveOrRawStatus drives the exported STATUS from the resolved
-// post-override status when present, falling back to the raw first result.
+// effectiveOrRawStatus drives the exported STATUS from the canonical
+// effective-status ladder (the stored effectiveStatus field is never read —
+// it is an output cache; see status-determination.md).
 function effectiveOrRawStatus(req: EvaluatedRequirement): ResultStatus | undefined {
-  return req.effectiveStatus ?? req.results?.[0]?.status;
+  return requirementEffectiveStatus(req) as ResultStatus;
 }
 
 // composeFindingDetails builds finding_details from every result's status,
