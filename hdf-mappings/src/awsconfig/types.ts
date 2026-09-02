@@ -16,3 +16,18 @@ export interface AwsConfigNistMapping {
 }
 
 export type AwsConfigNistMappings = AwsConfigNistMapping[];
+
+/**
+ * A maintainer-reviewed removal the generator applies after every source tier:
+ * the (rule, control) pair is dropped at each listed revision on every
+ * regeneration. Deliberately carries nothing else — no rationale or
+ * attribution fields; git history records who committed a suppression and
+ * when.
+ */
+export interface AwsConfigSuppression {
+  rule: string;
+  control: string;
+  revisions: number[];
+}
+
+export type AwsConfigSuppressions = AwsConfigSuppression[];

@@ -27,6 +27,11 @@
 // stay unmapped (the aws-config-to-hdf converter floors them to CM-6).
 // Config-pack/security-hub take precedence over derived; no cross-source unioning within
 // the authoritative tiers, so every authoritative row is one AWS publication verbatim.
+//
+// After all four tiers, awsconfig-suppressions.json applies maintainer-reviewed
+// (rule, control, revisions) removals as a final pass — the input that lets a review
+// decision survive regeneration. A suppression the sources no longer produce, or one
+// that would strip a rule of every control, fails the run rather than rotting silently.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -84,6 +89,39 @@ async function fetchText(url) {
 // --- tier 4 support: NIST r4<->r5 crosswalk translation ---
 
 const CROSSWALK_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'nist-revision-crosswalk.json');
+const SUPPRESSIONS_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'awsconfig-suppressions.json');
+
+// --- final pass: maintainer-reviewed suppressions ---
+
+// Removes each suppressed (rule, control) pair at its listed revisions, mutating
+// rows in place. Strict by design: an entry naming a pair the tiers did not
+// produce throws (a stale suppression must surface, not rot), and an entry that
+// would strip a rule of its last control throws (the reviewer confirmed no rule
+// loses all its tags — if regeneration produces that, the source data moved).
+// Pre-existing empty marker rows (tier 4) are never touched, so they cannot
+// trip the emptiness check. Exported for direct unit testing.
+export function applySuppressions(rows, suppressions) {
+  const byKey = new Map(rows.map((r) => [`${r.Rev}:${r.AwsConfigRuleName}`, r]));
+  for (const s of suppressions) {
+    for (const rev of s.revisions) {
+      const row = byKey.get(`${rev}:${s.rule}`);
+      const controls = row ? row['NIST-ID'].split('|').filter(Boolean) : [];
+      if (!controls.includes(s.control)) {
+        throw new Error(
+          `suppression ${s.rule} / ${s.control} @ Rev ${rev}: the sources never produced this pair — remove or fix the stale entry`
+        );
+      }
+      const remaining = controls.filter((c) => c !== s.control);
+      if (remaining.length === 0) {
+        throw new Error(
+          `suppression ${s.rule} / ${s.control} @ Rev ${rev} would remove every control on the rule — the source data moved and needs its own review`
+        );
+      }
+      row['NIST-ID'] = remaining.join('|');
+    }
+  }
+  return rows;
+}
 // A trailing single-letter statement part, e.g. "AC-2(j)".
 const STATEMENT_LETTER = /^(.*)\(([a-z])\)$/;
 
@@ -347,6 +385,13 @@ async function main() {
   }
   console.log(`  crosswalk: backfilled ${backfilled[4]} Rev4 + ${backfilled[5]} Rev5 rows, ${markers} explicit unmapped marker row(s).`);
 
+  // final pass: maintainer-reviewed suppressions, applied after every source
+  // tier so tier precedence is unchanged and a review decision survives
+  // regeneration.
+  const suppressions = JSON.parse(readFileSync(SUPPRESSIONS_FILE, 'utf-8'));
+  applySuppressions(rows, suppressions);
+  console.log(`  suppressions: ${suppressions.length} reviewed (rule, control) removals applied.`);
+
   rows.sort((a, b) => a.Rev - b.Rev || (a.AwsConfigRuleName < b.AwsConfigRuleName ? -1 : a.AwsConfigRuleName > b.AwsConfigRuleName ? 1 : 0));
   const json = JSON.stringify(rows, null, 2) + '\n';
 
@@ -374,7 +419,11 @@ async function main() {
   console.log(`wrote ${OUT_FILES.length} files.`);
 }
 
-main().catch((e) => {
-  console.error(e.message);
-  process.exit(1);
-});
+// Run only when executed directly — the suppression pass above is imported by
+// the unit tests, which must not trigger the live AWS fetches.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch((e) => {
+    console.error(e.message);
+    process.exit(1);
+  });
+}
