@@ -194,6 +194,23 @@ export function extractCWEIDs(text: string): string[] {
   return ids;
 }
 
+/**
+ * Return the first candidate whose content is not empty or whitespace-only,
+ * as-is (the emptiness test trims, the returned value does not). Returns '' when
+ * every candidate is empty or whitespace. The caller supplies its own documented
+ * fallback as the last candidate so the substituted value is meaningful per
+ * field — this helper never invents a placeholder like "N/A". Use it where a
+ * target schema requires a non-empty (often minLength:1) string and a source
+ * value may be absent; it is a selection helper, not a normalizer, and never
+ * decides to OMIT a field (that stays the caller's call). Go parity: FirstNonEmpty.
+ */
+export function firstNonEmpty(...candidates: string[]): string {
+  for (const c of candidates) {
+    if (c.trim() !== '') return c;
+  }
+  return '';
+}
+
 /** Default maximum input size for converters (50MB) */
 export const DEFAULT_MAX_INPUT_SIZE = 50 * 1024 * 1024;
 

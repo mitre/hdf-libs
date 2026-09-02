@@ -451,3 +451,37 @@ func TestNoCobraImport(t *testing.T) {
 		}
 	}
 }
+
+// TestServer_RecoversFromHandlerPanic proves the session survives a panicking
+// tool handler (hdf-libs-l3kf): the offending call returns an error, and a
+// subsequent request on the same session still succeeds.
+func TestServer_RecoversFromHandlerPanic(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	s := NewServer("test-version", NewStderrLogger("error"))
+	mcp.AddTool(s, &mcp.Tool{Name: "boom", Description: "always panics"},
+		func(context.Context, *mcp.CallToolRequest, struct{}) (*mcp.CallToolResult, struct{}, error) {
+			panic("kaboom")
+		})
+
+	clientT, serverT := mcp.NewInMemoryTransports()
+	if _, err := s.Connect(ctx, serverT, nil); err != nil {
+		t.Fatalf("server connect: %v", err)
+	}
+	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "1"}, nil)
+	cs, err := client.Connect(ctx, clientT, nil)
+	if err != nil {
+		t.Fatalf("client connect: %v", err)
+	}
+	defer func() { _ = cs.Close() }()
+
+	// The panicking call surfaces an error rather than tearing down the transport.
+	if _, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "boom"}); err == nil {
+		t.Fatal("expected an error from the panicking tool handler, got nil")
+	}
+	// The session survives: a later request on the same session still succeeds.
+	if _, err := cs.ListTools(ctx, nil); err != nil {
+		t.Fatalf("session must survive a handler panic; ListTools failed: %v", err)
+	}
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { flattenToRows } from './rows.js';
-import type { HdfResults, EvaluatedBaseline, EvaluatedRequirement, Cvss, Epss, Kev, AffectedPackage } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Cvss, Epss, Kev, AffectedPackage } from '@mitre/hdf-schema';
 
 function makeReq(
   id: string,
@@ -20,7 +20,7 @@ function makeBaseline(name: string, requirements: EvaluatedRequirement[]): Evalu
   return { name, requirements };
 }
 
-function makeResults(baselines: EvaluatedBaseline[]): HdfResults {
+function makeResults(baselines: EvaluatedBaseline[]): HDFResults {
   return { baselines };
 }
 

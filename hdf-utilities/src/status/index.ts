@@ -10,18 +10,24 @@
 import { parseTimestamp } from '../string/index.js';
 
 /** Canonical worst-wins ordering, worst first. */
-export const STATUS_SEVERITY_ORDER: readonly string[] = [
+export const STATUS_SEVERITY_ORDER = [
   'error',
   'failed',
   'passed',
   'notApplicable',
   'notReviewed',
-];
+] as const;
+
+/** A member of the canonical ordering, as a literal union. */
+export type StatusSeverity = (typeof STATUS_SEVERITY_ORDER)[number];
+
+/** Widened view for lookups over arbitrary input strings. */
+const SEVERITY_LOOKUP: readonly string[] = STATUS_SEVERITY_ORDER;
 
 /** Severity rank of a status: higher = worse. Unknown statuses rank -1. */
 export function statusRank(status: string): number {
-  const idx = STATUS_SEVERITY_ORDER.indexOf(status);
-  return idx === -1 ? -1 : STATUS_SEVERITY_ORDER.length - 1 - idx;
+  const idx = SEVERITY_LOOKUP.indexOf(status);
+  return idx === -1 ? -1 : SEVERITY_LOOKUP.length - 1 - idx;
 }
 
 /**

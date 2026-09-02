@@ -22,7 +22,7 @@
     "fmt:check": "gofmt -l . | grep -q . && exit 1 || exit 0",
     "vet": "go vet ./...",
     "security": "pnpm run security:sast && pnpm run security:vuln && pnpm run security:secrets",
-    "security:sast": "gosec -exclude=G304,G104,G115,G706 -exclude-generated ./...",
+    "security:sast": "gosec -exclude=G304,G104 -exclude-generated ./...",
     "security:vuln": "govulncheck ./...",
     "security:secrets": "gitleaks detect --source=. --config=.gitleaks.toml --verbose",
     "check": "pnpm run fmt:check && pnpm run lint && pnpm run test && pnpm run security",

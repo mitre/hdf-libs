@@ -1,6 +1,7 @@
 package hdftooscalsar
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -79,11 +81,89 @@ func TestConvertHDFToOSCALSAR_SchemaValid(t *testing.T) {
 		{"shared minimal fixture", fixtures.Results.Minimal},
 		{"minimal passed", minimalHDFResults(hdf.Passed)},
 		{"minimal failed", minimalHDFResults(hdf.Failed)},
+		{"real STIG multi-line code/check/fix", multilineFixture(t)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.label, func(t *testing.T) {
 			requireValidAR(t, schema, tc.label, tc.input)
 		})
+	}
+}
+
+// multilineFixture loads a real RHEL 9 STIG scan (cinc-auditor exec-json run
+// against a UBI9 container, converted to HDF, trimmed to two requirements) whose
+// code/check/fix text is multi-line with leading/trailing whitespace — the
+// content class OSCAL's StringDatatype prop pattern forbids. One requirement has
+// impact > 0 (risk emitted) and one has impact 0 (no risk), so fix-text carriage
+// is exercised on both paths.
+func multilineFixture(t *testing.T) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(shared.GetConvertersDir(), "hdf-to-oscal-sar",
+		"fixtures", "input", "multiline.hdf.json"))
+	require.NoError(t, err, "read multiline fixture")
+	return data
+}
+
+// TestConvertHDFToOSCALSAR_MultilineContentPreserved pins byte-exact carriage:
+// relocating prose out of prop values must never collapse, trim, or truncate it.
+// Schema validity alone cannot catch that (remarks are optional), so this test
+// walks every requirement in the real multi-line fixture and compares the moved
+// content back against the HDF source.
+func TestConvertHDFToOSCALSAR_MultilineContentPreserved(t *testing.T) {
+	input := multilineFixture(t)
+	var hdfDoc hdf.HDFResults
+	require.NoError(t, json.Unmarshal(input, &hdfDoc))
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc struct {
+		AssessmentResults oscal.AssessmentResults `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+
+	require.NotNil(t, doc.AssessmentResults.BackMatter)
+	resourceByHref := map[string]oscal.Resource{}
+	for _, r := range doc.AssessmentResults.BackMatter.Resources {
+		resourceByHref["#"+r.UUID] = r
+	}
+
+	reqs := hdfDoc.Baselines[0].Requirements
+	findings := doc.AssessmentResults.Results[0].Findings
+	require.Len(t, findings, len(reqs))
+	for i := range reqs {
+		req, f := &reqs[i], &findings[i]
+
+		propByName := map[string]oscal.Property{}
+		for _, p := range f.Props {
+			propByName[p.Name] = p
+		}
+
+		check := descriptionByLabel(req.Descriptions, "check")
+		require.NotEmpty(t, check, "%s: fixture must carry check text", req.ID)
+		assert.Equal(t, check, propByName["check"].Remarks,
+			"%s: multi-line check text must be byte-exact in prop remarks", req.ID)
+
+		if req.Impact <= 0 {
+			fix := descriptionByLabel(req.Descriptions, "fix")
+			require.NotEmpty(t, fix, "%s: impact-0 fixture must carry fix text", req.ID)
+			assert.Equal(t, fix, propByName["fix"].Remarks,
+				"%s: impact-0 fix text must be byte-exact in prop remarks", req.ID)
+		}
+
+		var codeHref string
+		for _, l := range f.Links {
+			if l.Rel == "code" {
+				codeHref = l.Href
+			}
+		}
+		require.NotEmpty(t, codeHref, "%s: finding must link its code resource", req.ID)
+		res, ok := resourceByHref[codeHref]
+		require.True(t, ok, "%s: code link must resolve to a back-matter resource", req.ID)
+		require.NotNil(t, res.Base64, req.ID)
+		decoded, err := base64.StdEncoding.DecodeString(res.Base64.Value)
+		require.NoError(t, err, req.ID)
+		assert.Equal(t, *req.Code, string(decoded),
+			"%s: code must decode byte-exact from the back-matter resource", req.ID)
 	}
 }
 

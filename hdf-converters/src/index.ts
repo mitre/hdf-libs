@@ -40,6 +40,9 @@ export { convertHdfToCkl } from '../converters/hdf-to-ckl/typescript/index.js';
 export { convertHdfToCklb } from '../converters/hdf-to-cklb/typescript/index.js';
 
 // Snyk to HDF converter
+// KICS to HDF converter
+export { convertKicsToHdf } from '../converters/kics-to-hdf/typescript/index.js';
+
 export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js';
 
 // Grype to HDF converter

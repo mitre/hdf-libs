@@ -103,8 +103,12 @@ CLI: `hdf enrich <results> <source>` (see the [hdf-cli README](../hdf-cli/README
 ## Installation
 
 ```bash
-npm install @mitre/hdf-converters
+npm install @mitre/hdf-converters@next   # newest v3 stable
+npm install @mitre/hdf-converters@v3     # pin the v3 major line
+npm install @mitre/hdf-converters@3.5.1  # pin an exact version
 ```
+
+This package's npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), which publishes the v2 line and owns the `latest` dist-tag — a plain `npm install @mitre/hdf-converters` installs v2, not this library. Always install the v3 line via `@next`, `@v3`, or an exact version.
 
 Requires Node.js >= 22.
 

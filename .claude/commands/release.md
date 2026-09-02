@@ -287,6 +287,7 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
 6. **Never tag.** Tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag` manually.
+7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` plus a per-major tag (`v3`, …) and rc's under `rc` — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other 8 packages keep the default `latest` behavior — do not "harmonize" them onto `next`.
 
 ### Phase 8 — Post-merge verification (after the user pushes and merges)
 
@@ -294,6 +295,7 @@ Once the release PR is merged to `main`, the user runs the release workflow. Con
 - All per-module Git tags appear at the same version
 - Generated `site/` schema reference is at the new version (it's regenerated from the schemas, so it should auto-track) — minor/major only
 - `pkg.go.dev` resolves the new versions for `github.com/mitre/hdf-libs/<module>/v3@vNEW`
+- `npm view @mitre/hdf-converters dist-tags` shows `latest` still on the 2.x line (heimdall2 owns it) and `next` + `v<major>` on vNEW (stable) or `rc` on the rc. If `latest` moved to 3.x, treat it as an incident: the user restores it (`npm dist-tag add @mitre/hdf-converters@<newest 2.x> latest`) and we find what published it.
 
 If anything lags, surface it; don't paper over.
 
@@ -326,4 +328,5 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged
 - [ ] No `git tag` run manually
+- [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next`/`v<major>` (or `rc`) at NEW; no manual publishes or dist-tag moves to `latest`
 - [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers

@@ -52,12 +52,24 @@ const minimal = (status: string): string =>
       status,
     }))));
 
+// Real RHEL 9 STIG scan (cinc-auditor exec-json run against a UBI9 container,
+// converted to HDF, trimmed to two requirements) whose code/check/fix text is
+// multi-line with leading/trailing whitespace — the content class OSCAL's
+// StringDatatype prop pattern forbids. One requirement has impact > 0 (risk
+// emitted) and one has impact 0 (no risk), so fix-text carriage is exercised on
+// both paths.
+const MULTILINE_FIXTURE = readFileSync(
+  join(__dirname, '..', 'fixtures', 'input', 'multiline.hdf.json'),
+  'utf-8',
+);
+
 describe('hdf-to-oscal-sar output validates against NIST OSCAL v1.1.2 AR schema', () => {
   const cases: Array<[string, string]> = [
     ['worst-case (all four defects)', WORST_CASE],
     ['shared minimal fixture', results.minimal.read()],
     ['minimal passed', minimal('passed')],
     ['minimal failed', minimal('failed')],
+    ['real STIG multi-line code/check/fix', MULTILINE_FIXTURE],
   ];
 
   it.each(cases)('%s', async (_label, input) => {
@@ -70,6 +82,60 @@ describe('hdf-to-oscal-sar output validates against NIST OSCAL v1.1.2 AR schema'
       throw new Error(`output is not valid OSCAL Assessment Results v1.1.2:\n${errors}`);
     }
     expect(valid).toBe(true);
+  });
+
+  // Pins byte-exact carriage: relocating prose out of prop values must never
+  // collapse, trim, or truncate it. Schema validity alone cannot catch that
+  // (remarks are optional), so this walks every requirement in the real
+  // multi-line fixture and compares the moved content back against the HDF source.
+  it('preserves multi-line content byte-exact in remarks and back-matter', async () => {
+    interface FixtureReq {
+      id: string;
+      impact: number;
+      code?: string;
+      descriptions?: Array<{ label: string; data: string }>;
+    }
+    interface OutFinding {
+      props?: Array<{ name: string; value: string; remarks?: string }>;
+      links?: Array<{ href: string; rel?: string }>;
+    }
+    interface OutDoc {
+      'assessment-results': {
+        results: Array<{ findings: OutFinding[] }>;
+        'back-matter': { resources: Array<{ uuid: string; base64: { value: string } }> };
+      };
+    }
+
+    const hdfDoc = JSON.parse(MULTILINE_FIXTURE) as { baselines: Array<{ requirements: FixtureReq[] }> };
+    const doc = (JSON.parse(await convertHdfToOscalSar(MULTILINE_FIXTURE)) as OutDoc)['assessment-results'];
+    const resourceByHref = new Map(doc['back-matter'].resources.map((r) => [`#${r.uuid}`, r]));
+
+    const reqs = hdfDoc.baselines[0].requirements;
+    const findings = doc.results[0].findings;
+    expect(findings).toHaveLength(reqs.length);
+
+    reqs.forEach((req, i) => {
+      const finding = findings[i];
+      if (!finding) throw new Error(`missing finding for ${req.id}`);
+      const prop = (name: string) => finding.props?.find((p) => p.name === name);
+
+      const check = req.descriptions?.find((d) => d.label === 'check')?.data;
+      expect(check, `${req.id}: fixture must carry check text`).toBeTruthy();
+      expect(prop('check')?.remarks, `${req.id}: check text byte-exact in remarks`).toBe(check);
+
+      if (req.impact <= 0) {
+        const fix = req.descriptions?.find((d) => d.label === 'fix')?.data;
+        expect(fix, `${req.id}: impact-0 fixture must carry fix text`).toBeTruthy();
+        expect(prop('fix')?.remarks, `${req.id}: impact-0 fix text byte-exact in remarks`).toBe(fix);
+      }
+
+      const codeLink = finding.links?.find((l) => l.rel === 'code');
+      expect(codeLink, `${req.id}: finding must link its code resource`).toBeDefined();
+      const resource = resourceByHref.get(codeLink?.href ?? '');
+      expect(resource, `${req.id}: code link must resolve to a back-matter resource`).toBeDefined();
+      const decoded = Buffer.from(resource?.base64.value ?? '', 'base64').toString('utf-8');
+      expect(decoded, `${req.id}: code byte-exact from back-matter`).toBe(req.code);
+    });
   });
 });
 

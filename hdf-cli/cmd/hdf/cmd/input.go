@@ -163,7 +163,7 @@ func readFromFile(path string, allowEmpty bool) ([]byte, error) {
 	return data, nil
 }
 
-// parseHDFResults validates and parses JSON data into HdfResults via
+// parseHDFResults validates and parses JSON data into HDFResults via
 // hdf-parsers (the canonical HDF parse path). Schema validation runs first
 // as a gatekeeper, then JSON decode, then trailing-garbage check — all
 // inside hdfparsers.ParseResults. hdf-parsers also normalizes bare InSpec

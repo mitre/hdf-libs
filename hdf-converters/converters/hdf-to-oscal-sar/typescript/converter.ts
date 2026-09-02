@@ -20,6 +20,7 @@ import type {
   IdentifiedRisk,
   Property,
   Link,
+  Resource,
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlId,
@@ -112,9 +113,14 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
   // identity (and subject-uuid) for a given component.
   const subjects = buildSubjects(hdfResults.components);
 
+  // Build results from baselines, collecting the back-matter resources
+  // (embedded check source code) their findings link to.
   const results: AssessmentResult[] = [];
+  const resources: Resource[] = [];
   for (const baseline of hdfResults.baselines) {
-    results.push(baselineToResult(baseline, timestamp, toolActorUuid, subjects));
+    const { result, resources: baselineResources } = baselineToResult(baseline, timestamp, toolActorUuid, subjects);
+    results.push(result);
+    resources.push(...baselineResources);
   }
 
   return {
@@ -123,6 +129,7 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
       metadata,
       'import-ap': importAP,
       results,
+      ...(resources.length > 0 ? { 'back-matter': { resources } } : {}),
     },
   };
 }
@@ -174,14 +181,15 @@ function assessmentStart(baseline: EvaluatedBaseline, fallback: string): string 
 }
 
 /**
- * Converts a single EvaluatedBaseline to an OSCAL Result.
+ * Converts a single EvaluatedBaseline to an OSCAL Result plus any back-matter
+ * resources (embedded check source code) its findings link to.
  */
 function baselineToResult(
   baseline: EvaluatedBaseline,
   timestamp: string,
   toolActorUuid: string,
   subjects: SubjectRef[],
-): AssessmentResult {
+): { result: AssessmentResult; resources: Resource[] } {
   let title = baseline.name;
   if (baseline.title && baseline.title !== '') {
     title = baseline.title;
@@ -201,6 +209,7 @@ function baselineToResult(
   const findings: Finding[] = [];
   const observations: Observation[] = [];
   const risks: IdentifiedRisk[] = [];
+  const resources: Resource[] = [];
 
   // OSCAL requires result.reviewed-controls: the set of controls assessed.
   // Populate it from the control each requirement targets (deduped).
@@ -208,13 +217,16 @@ function baselineToResult(
   const seenControl = new Set<string>();
 
   for (const req of baseline.requirements) {
-    const { finding, observation, risk } = requirementToFindingSet(req, timestamp, toolActorUuid, subjects);
+    const { finding, observation, risk, resource } = requirementToFindingSet(req, timestamp, toolActorUuid, subjects);
     findings.push(finding);
     if (observation) {
       observations.push(observation);
     }
     if (risk) {
       risks.push(risk);
+    }
+    if (resource) {
+      resources.push(resource);
     }
     const cid = nistTagToControlId(req.id);
     if (cid !== '' && !seenControl.has(cid)) {
@@ -239,7 +251,7 @@ function baselineToResult(
     risks,
   } as unknown as AssessmentResult;
 
-  return result;
+  return { result, resources };
 }
 
 /** OSCAL subject reference derived from a top-level HDF component. */
@@ -272,7 +284,7 @@ function requirementToFindingSet(
   timestamp: string,
   toolActorUuid: string,
   subjects: SubjectRef[],
-): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined } {
+): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined; resource: Resource | undefined } {
   const controlID = nistTagToControlId(req.id);
   // results/descriptions are optional and absent on real minimal HDF; normalize
   // to arrays so this converter matches the Go implementation, which ranges nil
@@ -285,13 +297,27 @@ function requirementToFindingSet(
   const { state, reason } = effectiveState(req, results);
   const findingDesc = extractDefaultDescription(descriptions);
 
-  // Build props from control mappings (nist/cci), source code, non-default
-  // descriptions (check/fix/rationale), and v3.2 classification fields.
+  // Build props from control mappings (nist/cci), non-default descriptions
+  // (check/fix/rationale), and v3.2 classification fields. OSCAL prop values
+  // are StringDatatype (no newlines, no edge whitespace), so prose-capable
+  // fields emit a single-line preview as the value and carry the full text in
+  // the prop's own remarks (markup-multiline).
   // OSCAL prop values must be non-empty strings, so skip any empty value
   // (e.g. an empty source `code`) rather than emitting a schema-invalid value: ''.
   const props: Property[] = [];
   const addProp = (name: string, value: string): void => {
     if (value !== '') props.push({ name, value });
+  };
+  const addProseProp = (name: string, text: string): void => {
+    const preview = previewLine(text);
+    if (preview === '') return;
+    const p: Property = { name, value: preview };
+    if (preview !== text) p.remarks = text;
+    props.push(p);
+  };
+  const descriptionByLabel = (label: string): string => {
+    const d = descriptions.find((x) => x.label === label);
+    return d ? d.data : '';
   };
   const pushTagValues = (key: string): void => {
     const raw = req.tags?.[key];
@@ -301,10 +327,13 @@ function requirementToFindingSet(
   };
   pushTagValues('nist');
   pushTagValues('cci');
-  if (req.code != null) addProp('code', req.code);
-  for (const label of ['check', 'fix', 'rationale']) {
-    const d = descriptions.find((x) => x.label === label);
-    addProp(label, d ? d.data : '');
+  addProseProp('check', descriptionByLabel('check'));
+  addProseProp('rationale', descriptionByLabel('rationale'));
+  // fix text's OSCAL home is risk.remediations (built below when impact > 0,
+  // the reverse importer's read path). Only an impact-0 requirement, which
+  // emits no risk, carries it as a finding prop instead.
+  if (req.impact <= 0) {
+    addProseProp('fix', descriptionByLabel('fix'));
   }
   if (req.controlType) addProp('control-type', req.controlType);
   if (req.verificationMethod) addProp('verification-method', req.verificationMethod);
@@ -336,7 +365,7 @@ function requirementToFindingSet(
       const o = r as { url?: unknown; uri?: unknown; ref?: unknown };
       if (typeof o.url === 'string') links.push({ href: o.url, rel: 'reference' });
       else if (typeof o.uri === 'string') links.push({ href: o.uri, rel: 'reference' });
-      else if (typeof o.ref === 'string') props.push({ name: 'reference', value: o.ref });
+      else if (typeof o.ref === 'string') addProseProp('reference', o.ref);
     }
   }
 
@@ -349,6 +378,22 @@ function requirementToFindingSet(
   let title = req.id;
   if (req.title && req.title !== '') {
     title = req.title;
+  }
+
+  // Source code is an artifact with a media type, not a StringDatatype prop:
+  // embed it as a back-matter resource and point at it with a rel="code" link.
+  let resource: Resource | undefined;
+  if (req.code != null && req.code.trim() !== '') {
+    const resourceUuid = crypto.randomUUID();
+    resource = {
+      uuid: resourceUuid,
+      title: `Check source code for ${req.id}`,
+      base64: {
+        value: Buffer.from(req.code, 'utf-8').toString('base64'),
+        'media-type': 'text/plain',
+      },
+    };
+    links.push({ href: `#${resourceUuid}`, rel: 'code' });
   }
 
   const targetStatus: StatusClass = { state } as unknown as StatusClass;
@@ -445,7 +490,25 @@ function requirementToFindingSet(
     finding['related-risks'] = [{ 'risk-uuid': riskUUID }];
   }
 
-  return { finding, observation, risk };
+  return { finding, observation, risk, resource };
+}
+
+/**
+ * Reduces prose to a single line legal as an OSCAL StringDatatype prop value:
+ * the first non-empty line, trimmed, truncated to 120 code points.
+ */
+function previewLine(text: string): string {
+  for (let line of text.split('\n')) {
+    line = line.trim();
+    if (line === '') continue;
+    const maxRunes = 120;
+    const runes = Array.from(line);
+    if (runes.length > maxRunes) {
+      line = `${runes.slice(0, maxRunes - 3).join('').trim()}...`;
+    }
+    return line;
+  }
+  return '';
 }
 
 /**

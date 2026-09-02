@@ -81,6 +81,12 @@ describe('integration: detectConverter with real fixtures', () => {
     expect(result!.fingerprint.id).toBe('jfrog-xray-to-hdf');
   });
 
+  it('detects kics', () => {
+    const result = detectConverter(fixture('kics-to-hdf', 'minimal.json'));
+    expect(result).toBeDefined();
+    expect(result!.fingerprint.id).toBe('kics-to-hdf');
+  });
+
   it('detects msft-defender-cloud', () => {
     const result = detectConverter(fixture('msft-defender-cloud-to-hdf', 'minimal.json'));
     expect(result).toBeDefined();

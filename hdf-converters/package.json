@@ -38,8 +38,8 @@
     "test:differential": "vitest run converters/**/differential.test.ts",
     "test:parity": "pnpm test:differential && pnpm test:go && node shared/typescript/compare-all.js",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src converters shared",
-    "lint:fix": "eslint src converters shared --fix",
+    "lint": "eslint src converters shared test fetchers",
+    "lint:fix": "eslint src converters shared test fetchers --fix",
     "lint:go": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run ./...",
     "lint:go:fix": "PATH=\"$PATH:$HOME/go/bin\" golangci-lint run --fix ./..."
   },

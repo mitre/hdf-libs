@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity } from './converterutil.js';
+import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty } from './converterutil.js';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -466,4 +466,25 @@ describe('markUnratedSeverity', () => {
       expect(tags, sev).not.toHaveProperty('severity_rating');
     }
   });
+});
+
+describe('firstNonEmpty — shared non-empty-text fallback', () => {
+  // Identical parity table to Go's firstNonEmptyCases (converterutil_test.go).
+  // Every case here MUST match the Go table one-for-one (AC4).
+  const cases: Array<{ name: string; in: string[]; want: string }> = [
+    { name: 'first candidate is non-empty', in: ['a', 'b'], want: 'a' },
+    { name: 'skips a leading empty string', in: ['', 'b'], want: 'b' },
+    { name: 'skips whitespace-only candidates', in: ['   ', '\t', '\n', 'b'], want: 'b' },
+    { name: 'returns the first non-empty candidate as-is (no trimming of content)', in: ['', '  real title  '], want: '  real title  ' },
+    { name: 'all empty or whitespace yields empty string', in: ['', '  ', '\t\n'], want: '' },
+    { name: 'no candidates yields empty string', in: [], want: '' },
+    { name: 'single non-empty candidate', in: ['x'], want: 'x' },
+    { name: 'returns the final fallback when earlier candidates are empty', in: ['', ' ', 'fallback'], want: 'fallback' },
+  ];
+
+  for (const tc of cases) {
+    it(tc.name, () => {
+      expect(firstNonEmpty(...tc.in)).toBe(tc.want);
+    });
+  }
 });

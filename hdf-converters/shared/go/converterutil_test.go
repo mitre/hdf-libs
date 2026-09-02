@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -483,4 +484,75 @@ func TestMarkUnratedSeverity(t *testing.T) {
 	t.Run("nil map is a no-op", func(t *testing.T) {
 		assert.NotPanics(t, func() { MarkUnratedSeverity(nil, "unknown") })
 	})
+}
+
+// firstNonEmptyCases is the shared Go/TS parity table for FirstNonEmpty — the TS
+// converterutil.test.ts mirror asserts the identical cases (AC4).
+var firstNonEmptyCases = []struct {
+	name string
+	in   []string
+	want string
+}{
+	{"first candidate is non-empty", []string{"a", "b"}, "a"},
+	{"skips a leading empty string", []string{"", "b"}, "b"},
+	{"skips whitespace-only candidates", []string{"   ", "\t", "\n", "b"}, "b"},
+	{"returns the first non-empty candidate as-is (no trimming of content)", []string{"", "  real title  "}, "  real title  "},
+	{"all empty or whitespace yields empty string", []string{"", "  ", "\t\n"}, ""},
+	{"no candidates yields empty string", nil, ""},
+	{"single non-empty candidate", []string{"x"}, "x"},
+	{"returns the final fallback when earlier candidates are empty", []string{"", " ", "fallback"}, "fallback"},
+}
+
+func TestFirstNonEmpty_SkipsEmptyAndWhitespace(t *testing.T) {
+	for _, tc := range firstNonEmptyCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, FirstNonEmpty(tc.in...))
+		})
+	}
+}
+
+func TestOrEmpty(t *testing.T) {
+	t.Run("nil slice becomes a non-nil empty slice", func(t *testing.T) {
+		var nilStrings []string
+		got := OrEmpty(nilStrings)
+		require.NotNil(t, got)
+		assert.Empty(t, got)
+	})
+
+	t.Run("empty slice stays empty and non-nil", func(t *testing.T) {
+		got := OrEmpty([]string{})
+		require.NotNil(t, got)
+		assert.Empty(t, got)
+	})
+
+	t.Run("populated slice is returned unchanged", func(t *testing.T) {
+		in := []string{"a", "b"}
+		assert.Equal(t, []string{"a", "b"}, OrEmpty(in))
+	})
+
+	t.Run("generic over element type — not string-only", func(t *testing.T) {
+		var nilInts []int
+		assert.Equal(t, []int{}, OrEmpty(nilInts))
+		assert.Equal(t, []int{1, 2}, OrEmpty([]int{1, 2}))
+
+		type rule struct{ ID string }
+		var nilRules []rule
+		assert.Equal(t, []rule{}, OrEmpty(nilRules))
+	})
+}
+
+func TestOrEmpty_NilSliceMarshalsAsEmptyArray(t *testing.T) {
+	type doc struct {
+		Items []string `json:"items"`
+	}
+
+	// Baseline: a nil slice on a non-omitempty field marshals to null (the bug).
+	raw, err := json.Marshal(doc{Items: nil})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"items":null}`, string(raw))
+
+	// OrEmpty-wrapped, the same nil marshals to [] — a schema-valid empty array.
+	raw, err = json.Marshal(doc{Items: OrEmpty[string](nil)})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"items":[]}`, string(raw))
 }

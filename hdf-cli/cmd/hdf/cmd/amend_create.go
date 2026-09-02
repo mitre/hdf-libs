@@ -65,7 +65,7 @@ Examples:
 			if fromPath != "" {
 				return runAmendCreateHeadless(fromPath, outputPath)
 			}
-			if !term.IsTerminal(int(os.Stdin.Fd())) { //nolint:gosec // G115: fd conversion is safe for stdin
+			if !term.IsTerminal(int(os.Stdin.Fd())) { // #nosec G115 -- fd conversion is safe for stdin
 				return runAmendCreateHeadless("-", outputPath)
 			}
 			return runAmendCreate(resultsPath, outputPath)
@@ -127,7 +127,7 @@ type amendOverride struct {
 
 func runAmendCreate(resultsPath, outputPath string) error {
 	// Check for interactive terminal
-	if !term.IsTerminal(int(os.Stdin.Fd())) { //nolint:gosec // G115: fd conversion is safe for stdin
+	if !term.IsTerminal(int(os.Stdin.Fd())) { // #nosec G115 -- fd conversion is safe for stdin
 		return fmt.Errorf("hdf amend create requires an interactive terminal\n" +
 			"Use 'hdf amend apply' for non-interactive amendment workflows")
 	}

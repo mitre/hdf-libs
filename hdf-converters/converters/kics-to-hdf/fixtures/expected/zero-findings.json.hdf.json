@@ -1,0 +1,69 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "KICS scanned 1 file(s) and reported no findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "KICS scanned 1 file(s) and reported no findings.",
+              "startTime": "2026-08-26T18:36:21.742575Z",
+              "status": "passed"
+            }
+          ],
+          "id": "kics-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "KICS executed 1100 queries against 1 file(s) (1 parsed); 0 produced findings. KICS reports violations only and does not enumerate the queries that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "KICS executed 1100 queries against 1 file(s) (1 parsed); 0 produced findings. KICS reports violations only and does not enumerate the queries that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "startTime": "2026-08-26T18:36:21.742575Z",
+              "status": "notApplicable"
+            }
+          ],
+          "id": "kics-scan-coverage",
+          "impact": 0,
+          "tags": {
+            "filesFailedToScan": 0,
+            "filesParsed": 1,
+            "filesScanned": 1,
+            "queriesExecuted": 1100,
+            "queriesFailedToExecute": 0,
+            "queriesWithFindings": 0
+          },
+          "title": "KICS scan coverage"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "f9fd65fdd04b761ef07a10e8cb5f4f9aa849bdac0ac789816671fecac1dd7d99"
+      },
+      "name": "KICS Scan",
+      "title": "KICS infrastructure-as-code scan"
+    }
+  ],
+  "generator": {
+    "name": "kics-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-08-26T18:36:21.742575Z",
+  "tool": {
+    "format": "json",
+    "name": "KICS",
+    "version": "v2.1.20"
+  }
+}

@@ -38,7 +38,11 @@ export function severityToImpact(severity: string | null | undefined): number | 
   // Absent field: match Go's zero-value semantics ("" → the 0.5 default)
   // rather than throwing on .toLowerCase() of undefined.
   const normalized = (severity ?? '').toLowerCase();
-  return severityMap[normalized] ?? 0.5;
+  // Own-property guard: a prototype-named token ("constructor") must take the
+  // default like any unknown word, not return an inherited Object member.
+  return Object.prototype.hasOwnProperty.call(severityMap, normalized)
+    ? severityMap[normalized]!
+    : 0.5;
 }
 
 /**
@@ -56,9 +60,11 @@ export function severityToImpactWithAliases(
   defaultVal: number,
 ): number {
   const lower = (severity ?? '').toLowerCase();
-  const aliased = aliases[lower];
-  if (aliased !== undefined) return aliased;
-  return severityMap[lower] ?? defaultVal;
+  // Own-property guards: prototype-named tokens ("constructor") must take the
+  // default like any unknown word, not resolve to an inherited Object member.
+  if (Object.prototype.hasOwnProperty.call(aliases, lower)) return aliases[lower]!;
+  if (Object.prototype.hasOwnProperty.call(severityMap, lower)) return severityMap[lower]!;
+  return defaultVal;
 }
 
 /**

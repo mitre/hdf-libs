@@ -348,3 +348,48 @@ func readToolsFixture(t *testing.T, name string) []byte {
 	}
 	return b
 }
+
+// TestInspect_ResultsWithoutStatistics guards hdf-libs-l3kf: converters such as
+// gosec-to-hdf omit the optional statistics block. hdf_inspect must summarize
+// such a document (omitting statistics), not nil-deref *Statistics and crash the
+// long-lived MCP session.
+func TestInspect_ResultsWithoutStatistics(t *testing.T) {
+	doc := []byte(`{"generator":{"name":"gosec-to-hdf","version":"1.0.0"},` +
+		`"baselines":[{"name":"gosec Scan","requirements":[{"id":"G101","title":"t",` +
+		`"descriptions":[{"label":"default","data":"d"}],"impact":0.5,"tags":{},` +
+		`"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}],` +
+		`"timestamp":"2026-01-01T00:00:00Z"}`)
+	path := writeRoot(t, "gosec.hdf.json", doc)
+	errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
+	if errRes != nil {
+		t.Fatalf("must not error on a statistics-less Results document: %s", payloadText(t, errRes))
+	}
+	if _, ok := out.Structure["statistics"]; ok {
+		t.Errorf("statistics key must be omitted when the document has none; got %v", out.Structure["statistics"])
+	}
+	if _, ok := out.Structure["baselines"]; !ok {
+		t.Errorf("expected baselines in the structure; got keys %v", keysOf(out.Structure))
+	}
+}
+
+// TestShapeFunctions_OmittedOptionals covers the generic doc types hdf_inspect
+// dispatches on: each must summarize a document that omits its optional blocks
+// (an empty map) without panicking. Results/baseline are covered by
+// TestInspect_ResultsWithoutStatistics and TestStructureBuilders_Defensive.
+func TestShapeFunctions_OmittedOptionals(t *testing.T) {
+	shapes := map[string]func(map[string]any) map[string]any{
+		"system":                   systemShape,
+		"plan":                     planShape,
+		"amendments":               amendmentsShape,
+		"evidence-package":         evidenceShape,
+		"comparison":               comparisonShape,
+		"requirement-change-event": changeEventShape,
+	}
+	for name, shape := range shapes {
+		t.Run(name, func(t *testing.T) {
+			if got := shape(map[string]any{}); got == nil {
+				t.Errorf("%s shape must return a non-nil structure for an optionals-omitted document", name)
+			}
+		})
+	}
+}

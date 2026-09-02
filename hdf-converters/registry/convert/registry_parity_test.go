@@ -13,7 +13,7 @@ import (
 // converter — never to make a failing test pass. (80 includes spdx-vex→hdf and
 // trivy→hdf, both added on main and integrated into this registry on a feat/mcp
 // merge — trivy's registration was relocated here from package cmd.)
-const wantRegisteredPairs = 80
+const wantRegisteredPairs = 81
 
 // TestRegistry_ListsAllConverters asserts count parity: importing this package
 // self-registers every converter, so ListConverters must report the full set.

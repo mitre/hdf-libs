@@ -59,6 +59,7 @@ var fixtureTests = []struct {
 	{"gosec-to-hdf", "real.json", "gosec-to-hdf"},
 	{"grype-to-hdf", "anchore_grype.json", "grype-to-hdf"},
 	{"jfrog-xray-to-hdf", "jfrog_xray_sample.json", "jfrog-xray-to-hdf"},
+	{"kics-to-hdf", "minimal.json", "kics-to-hdf"},
 	{"msft-defender-cloud-to-hdf", "minimal.json", "msft-defender-cloud-to-hdf"},
 	{"msft-defender-endpoint-to-hdf", "minimal.json", "msft-defender-endpoint-to-hdf"},
 	{"msft-secure-score-to-hdf", "minimal.json", "msft-secure-score-to-hdf"},
