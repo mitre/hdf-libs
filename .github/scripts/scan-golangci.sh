@@ -21,7 +21,7 @@ fi
 mkdir -p "$OUT"
 cd "$ROOT"
 FAIL=0
-for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+for dir in $(go work edit -json | jq -r '.Use[].DiskPath' | tr -d '\r'); do
   name=$(echo "${dir#./}" | tr '/' '-')
   echo "::group::golangci-lint $dir"
   rc=0
