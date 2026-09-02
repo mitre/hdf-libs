@@ -45,6 +45,10 @@ The full effective-status computation combines the roll-up above with overrides 
 
 The stored `effectiveStatus` field is **never an input** to this computation. The only sanctioned channel for a requirement's status to diverge from its results is a governing override; an unprovenanced stored value that contradicts the results — in either direction, optimistic (`passed` over failing results) or pessimistic (`error` over passing results) — is ignored and the ladder's answer wins. Source tools whose control-level verdict carries information the results array does not (for example a crashed tool that recorded only its passing sub-checks) must have that knowledge encoded into `results[]` by their converter — as a synthesized errored result — not smuggled through the stored field.
 
+#### Checksum epochs
+
+Requirement-change-event chains anchor their integrity in effective checksums, which hash the *resolved* effective status. When the ladder's semantics change (as in the change that introduced it), checksums computed by older binaries no longer match what a newer binary recomputes — a **checksum epoch**. A chain derived before an epoch boundary and verified after it reports `chainGap` warnings on the affected keys even though no events are missing. The warning text names both possible causes; the remedy for an epoch-crossing chain is to **re-derive it from a fresh rescan**, which re-anchors the chain under the current semantics. Event-chain verification deliberately does not accept old-epoch checksums — doing so would weaken the integrity claim for genuinely broken chains.
+
 ### Examples
 
 | Results | Impact | Overall Status |
