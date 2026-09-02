@@ -28,12 +28,15 @@ concurrency:
 # package's `engines.node: ">=22.0.0"`. Node 20 reaches EOL 2026-04-30;
 # we're not advertising support for a runtime that loses security patches
 # during the lifetime of this release.
+# The Go toolchain version comes from go.work (composite setup uses
+# go-version-file) — no separate pin to drift.
 env:
   NODE_VERSION: '22'
-  GO_VERSION: '1.26.6'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
   GOVULNCHECK_VERSION: 'v1.1.4'
+  GOTESTSUM_VERSION: 'v1.13.0'
   ZIZMOR_VERSION: '1.30.0'
+  ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
   # The gate runs the last *released* hdf CLI (version + sha256 pinned;
   # bump deliberately when a release lands) — not a binary built from the
   # commit under test, so a CLI bug in a PR cannot fail or skew its own gate.
@@ -43,28 +46,38 @@ env:
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
 #   scan-workflows ─┐
-#   check-ts ───────┤── gate-hdf ── build ──┬── test-ts
-#   check-go ───────┘                       ├── test-go
-#                                           ├── coverage
-#                                           └── verify-packages
+#   check-ts ───────┼── gate-hdf                    (required check)
+#   check-go ───────┘
+#   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┐
+#           ├── test-go (junit; ubuntu leg = coverage) ─┴─ gate-hdf-tests
+#           ├── verify-packages                            (required check)
+#           └── site-build
 #
-# This pipeline normalizes and gates its own scan data through HDF, as an
+# This pipeline normalizes and gates its own data through HDF, as an
 # exemplar of how to use HDF in a pipeline. Scan phase: compilers and audits
 # hard-fail as before, but the scanners (zizmor, eslint, golangci-lint,
 # govulncheck) run ONCE in SARIF mode via .github/scripts/scan-*.sh and
-# tolerate only their documented findings exit — findings are gated
-# downstream. gate-hdf (.github/scripts/gate-hdf.sh): the pinned last
-# *released* hdf CLI normalizes every scan into HDF via registry
-# auto-detect, schema-validates it, and applies the committed threshold
-# templates (.github/hdf-thresholds/). The threshold verdict — not the
-# scanners' exit codes — is what fails CI, and it runs before build/test so
-# a lint finding never costs a test-suite run. The normalized bundle is
-# uploaded as the hdf-normalized-scans artifact.
-# Build phase: build once, upload artifacts (ubuntu).
-# Test phase: test on ubuntu + windows matrix.
-# verify-packages: publint + attw against packed tarballs — catches
-# broken `exports` maps, types-resolution errors, and other package-
-# metadata defects before they reach main (and before a release tag).
+# tolerate only their documented findings exit — findings are gated by
+# gate-hdf (.github/scripts/gate-hdf.sh): the pinned last *released* hdf
+# CLI normalizes every scan via registry auto-detect, schema-validates it,
+# and applies the committed threshold templates (.github/hdf-thresholds/).
+# The threshold verdict — not the scanners' exit codes — is what fails CI.
+#
+# build/test deliberately do NOT wait for gate-hdf: the checks jobs still
+# hard-fail fast on compile/tool errors, while scan findings block the
+# MERGE (gate-hdf as a required branch-protection check), not the run —
+# trading a few red-run runner-minutes for ~5 minutes of wall clock on
+# every green run (this repo is public; minutes are free, latency isn't).
+#
+# Test phase: ubuntu+windows matrix; every leg emits JUnit which
+# gate-hdf-tests normalizes and thresholds the same way (if: always — red
+# runs are exactly the ones whose HDF evidence matters). The test jobs
+# remain the failure authority; the test gate is the uniform evidence
+# bundle (hdf-normalized-scans + hdf-normalized-tests per run) and the
+# policy point for what exit codes can't express (e.g. a future
+# skipped-test budget). verify-packages: publint + attw against packed
+# tarballs — catches broken `exports` maps, types-resolution errors, and
+# other package-metadata defects before they reach main.
 
 jobs:
   # ── Scan: the workflow files themselves ──────────────────────────────────
@@ -82,6 +95,7 @@ jobs:
         with:
           name: scan-workflows
           path: scan-artifacts/
+          retention-days: 7
 
   # ── Gate: TypeScript checks ──────────────────────────────────────────────
   check-ts:
@@ -103,10 +117,11 @@ jobs:
         with:
           name: scan-ts
           path: scan-artifacts/
+          retention-days: 7
       - name: tsc --noEmit
         run: pnpm -r --filter=!hdf-cli run type-check
-      - name: npm audit
-        run: pnpm audit --audit-level=high
+      - name: npm audit (prod moderate+, dev high+)
+        run: pnpm run security:ts
 
   # ── Gate: Go checks ─────────────────────────────────────────────────────
   check-go:
@@ -137,6 +152,7 @@ jobs:
         with:
           name: scan-go
           path: scan-artifacts/
+          retention-days: 7
 
   # ── Gate: scan findings, judged as HDF ───────────────────────────────────
   # This pipeline normalizes and gates its own scan data through HDF, as an
@@ -166,13 +182,13 @@ jobs:
         with:
           name: hdf-normalized-scans
           path: hdf-scans/
+          retention-days: 90
 
   # ── Build (once, share artifacts) ────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: gate-hdf
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -230,8 +246,34 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
+      # The ubuntu leg IS the coverage run (the dedicated coverage job used
+      # to re-run this entire suite). Both legs emit JUnit for the test gate;
+      # test failures still fail this job — it stays the failure authority.
+      - name: Test TypeScript (all packages, with coverage)
+        if: matrix.os == 'ubuntu-latest'
+        run: pnpm -r --filter=!hdf-cli run test:coverage --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
       - name: Test TypeScript (all packages)
-        run: pnpm test:ts
+        if: matrix.os != 'ubuntu-latest'
+        run: pnpm -r run test:ts --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
+      - name: Collect JUnit results
+        if: always()
+        shell: bash
+        env:
+          OS_TAG: ${{ matrix.os }}
+        run: .github/scripts/collect-junit-ts.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: test-results-ts-${{ matrix.os }}
+          path: test-artifacts/
+          retention-days: 7
+      - name: Upload coverage reports
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-reports-ts
+          path: '**/coverage'
+          retention-days: 30
 
   # ── Test Go ──────────────────────────────────────────────────────────────
   test-go:
@@ -254,79 +296,62 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
+      # One gotestsum pass per go.work module (replaces the pnpm test:go +
+      # separate hdf-cli steps — the module loop covers every module). The
+      # ubuntu leg doubles as the coverage run; JUnit feeds the test gate.
       - name: Test Go (all packages)
-        run: pnpm test:go
-      - name: Test hdf-cli
-        run: cd hdf-cli && go test ./...
+        shell: bash
+        env:
+          OS_TAG: ${{ matrix.os }}
+          GO_COVERAGE: ${{ matrix.os == 'ubuntu-latest' && '1' || '' }}
+        run: .github/scripts/test-go-junit.sh
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: test-results-go-${{ matrix.os }}
+          path: test-artifacts/
+          retention-days: 7
+      - name: Upload coverage reports
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-reports-go
+          path: '**/coverage.out'
+          retention-days: 30
 
-  # ── Coverage ─────────────────────────────────────────────────────────────
-  coverage:
-    name: Coverage
+  # ── Gate: test results, judged as HDF ────────────────────────────────────
+  # The counterpart of gate-hdf for the test phase: every leg's JUnit is
+  # normalized with the pinned released CLI and thresholded. Runs on red
+  # runs too (if: always) — the failing run is exactly the one whose HDF
+  # evidence matters — and fails closed if any leg produced nothing.
+  gate-hdf-tests:
+    name: Gate on HDF thresholds (tests)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: build
-    env:
-      # Job-level so the scan step's `if` can test it: secrets are not exposed
-      # to fork PRs, so an empty value means "cannot scan", not "misconfigured".
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    timeout-minutes: 10
+    needs: [test-ts, test-go]
+    if: always()
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # Sonar needs full history for accurate blame/new-code attribution.
-          fetch-depth: 0
-      - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          go: 'true'
+      # NOT merge-multiple: ubuntu and windows emit identically-named files;
+      # each artifact keeps its own subdirectory.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: build-artifacts
-      - name: TypeScript coverage
-        run: pnpm -r --filter=!hdf-cli run test:coverage
-      - name: Go coverage (workspace packages)
-        run: |
-          for dir in hdf-mappings/go hdf-validators/go hdf-parsers/go; do
-            echo "=== $dir ==="
-            (cd $dir && go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out | tail -1)
-          done
-      - name: Go coverage (hdf-converters)
-        run: |
-          cd hdf-converters
-          go test -coverprofile=coverage.out ./registry/... ./converters/*/go/ ./shared/go/
-          go tool cover -func=coverage.out | tail -1
-      - name: Go coverage (hdf-cli)
-        run: |
-          cd hdf-cli
-          go test -coverprofile=coverage.out ./...
-          go tool cover -func=coverage.out | tail -1
-      # vitest writes lcov SF: paths relative to each package, but the Sonar
-      # scanner resolves them against the repo root — prefix the package dir
-      # so every source file resolves instead of silently reporting 0%.
-      - name: Rebase lcov paths to repo root
-        run: |
-          for f in */coverage/lcov.info; do
-            pkg="${f%%/*}"
-            sed -i "s|^SF:|SF:${pkg}/|" "$f"
-          done
-      # CI-based SonarCloud analysis (Automatic Analysis is off), ingesting
-      # the lcov + coverprofile outputs above per sonar-project.properties.
-      # No token means a fork PR or a not-yet-onboarded project: skip rather
-      # than fail the coverage job.
-      - name: SonarCloud scan
-        if: env.SONAR_TOKEN != ''
-        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          pattern: test-results-*
+          path: test-artifacts-dl
+      - name: Normalize test results to HDF and apply thresholds
+        run: .github/scripts/gate-hdf-tests.sh
+      - name: Upload normalized HDF (tests)
         if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-reports
-          path: |
-            **/coverage
-            **/coverage.out
-          retention-days: 30
+          name: hdf-normalized-tests
+          path: hdf-tests/
+          retention-days: 90
 
   # ── Verify packed tarballs (publint + attw) ──────────────────────────────
   # Packs every publishable workspace package and runs publint +

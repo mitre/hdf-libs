@@ -10,6 +10,10 @@ set -euo pipefail
 ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel)}"
 OUT="${SCAN_DIR:-$ROOT/scan-artifacts}"
 if [ -z "${GOLANGCI_BIN:-}" ]; then
+  # go install is kept over the faster binary-install script deliberately:
+  # module downloads are verified against the Go checksum database, which is
+  # a stronger supply-chain guarantee, and the setup-go module cache makes
+  # the compile cost a one-time event per cache key.
   go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION:?set GOLANGCI_LINT_VERSION or GOLANGCI_BIN}"
   GOLANGCI_BIN=golangci-lint
 fi

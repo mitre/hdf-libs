@@ -1,0 +1,13 @@
+# Test-results gate, applied by gate-hdf-tests to every normalized JUnit
+# file. The test jobs remain the failure authority (a red test fails its
+# own job with the stack trace inline); this gate is the uniform evidence
+# record — scans AND tests as HDF per run — and the policy point for what
+# exit codes can't express. A skipped-test budget (JUnit skipped maps to
+# notReviewed) is the natural first such policy once one is agreed; until
+# then the verdict simply mirrors the tool: any failure or error fails.
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0
