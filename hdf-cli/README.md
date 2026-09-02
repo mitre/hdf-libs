@@ -973,6 +973,7 @@ These flags apply to all commands.
 | `prisma` | | Prisma Cloud/Twistlock container scan (JSON) |
 | `sarif` | | SARIF 2.1.0 (Static Analysis Results Interchange Format) |
 | `scoutsuite` | | NCC Group ScoutSuite cloud audit (JSON) |
+| `semgrep` | | Semgrep static analysis scan (JSON or SARIF) |
 | `snyk` | | Snyk vulnerability scan (JSON) |
 | `sonarqube` | | SonarQube issues export (JSON) |
 | `spdx-vex` | | SPDX 3.0 security-profile VEX (JSON-LD) → HDF Amendments |

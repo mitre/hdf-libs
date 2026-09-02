@@ -69,6 +69,12 @@ describe('integration: detectConverter with real fixtures', () => {
     expect(result!.fingerprint.id).toBe('gosec-to-hdf');
   });
 
+  it('detects semgrep', () => {
+    const result = detectConverter(fixture('semgrep-to-hdf', 'real.json'));
+    expect(result).toBeDefined();
+    expect(result!.fingerprint.id).toBe('semgrep-to-hdf');
+  });
+
   it('detects grype', () => {
     const result = detectConverter(fixture('grype-to-hdf', 'anchore_grype.json'));
     expect(result).toBeDefined();

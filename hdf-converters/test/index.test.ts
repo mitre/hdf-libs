@@ -9,6 +9,7 @@ import {
   convertHdfToCkl,
   convertHdfToCklb,
   convertHdfToAsff,
+  convertSemgrepToHdf,
   convertSnykToHdf,
   convertGrypeToHdf,
   convertDefectDojoToHdf,
@@ -124,6 +125,11 @@ describe('Main exports', () => {
   it('should export convertHdfToCklb from main index', () => {
     expect(convertHdfToCklb).toBeDefined();
     expect(typeof convertHdfToCklb).toBe('function');
+  });
+
+  it('should export convertSemgrepToHdf from main index', () => {
+    expect(convertSemgrepToHdf).toBeDefined();
+    expect(typeof convertSemgrepToHdf).toBe('function');
   });
 
   it('should export convertSnykToHdf from main index', () => {

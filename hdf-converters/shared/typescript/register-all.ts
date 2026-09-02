@@ -29,6 +29,7 @@ import { neuvectorFingerprint } from '../../converters/neuvector-to-hdf/typescri
 import { openvexFingerprint } from '../../converters/openvex-to-hdf/typescript/fingerprint.js';
 import { sarifFingerprint } from '../../converters/sarif-to-hdf/typescript/fingerprint.js';
 import { scoutsuiteFingerprint } from '../../converters/scoutsuite-to-hdf/typescript/fingerprint.js';
+import { semgrepFingerprint } from '../../converters/semgrep-to-hdf/typescript/fingerprint.js';
 import { snykFingerprint } from '../../converters/snyk-to-hdf/typescript/fingerprint.js';
 import { spdxVexFingerprint } from '../../converters/spdx-vex-to-hdf/typescript/fingerprint.js';
 import { sonarqubeFingerprint } from '../../converters/sonarqube-to-hdf/typescript/fingerprint.js';
@@ -93,6 +94,7 @@ const allFingerprints: ConverterFingerprint[] = [
   openvexFingerprint,
   sarifFingerprint,
   scoutsuiteFingerprint,
+  semgrepFingerprint,
   snykFingerprint,
   spdxVexFingerprint,
   sonarqubeFingerprint,

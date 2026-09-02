@@ -1,0 +1,65 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Semgrep scanned 1 file(s) and reported no findings.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Semgrep scanned 1 file(s) and reported no findings.",
+              "startTime": "2026-09-02T01:41:58.078446Z",
+              "status": "passed"
+            }
+          ],
+          "id": "semgrep-no-findings",
+          "impact": 0,
+          "tags": {},
+          "title": "No findings reported"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Semgrep scanned 1 file(s); 0 rule(s) produced findings and 0 scan error(s) were reported. Semgrep reports violations only and does not enumerate the rules that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Semgrep scanned 1 file(s); 0 rule(s) produced findings and 0 scan error(s) were reported. Semgrep reports violations only and does not enumerate the rules that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "startTime": "2026-09-02T01:41:58.078446Z",
+              "status": "notApplicable"
+            }
+          ],
+          "id": "semgrep-scan-coverage",
+          "impact": 0,
+          "tags": {
+            "filesScanned": 1,
+            "rulesWithFindings": 0,
+            "scanErrors": 0
+          },
+          "title": "Semgrep scan coverage"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "bdd88db20f9cda9a4e5db1087be2541166741b0033ef1fefb2424c1b28427b5a"
+      },
+      "name": "Semgrep Scan",
+      "title": "Semgrep static analysis scan"
+    }
+  ],
+  "generator": {
+    "name": "semgrep-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-02T01:41:58.078446Z",
+  "tool": {
+    "name": "Semgrep",
+    "version": "1.174.0"
+  }
+}
