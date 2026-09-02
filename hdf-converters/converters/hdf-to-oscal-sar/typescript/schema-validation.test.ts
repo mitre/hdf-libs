@@ -7,6 +7,7 @@ import addFormats from 'ajv-formats';
 import { results } from '@mitre/hdf-fixtures';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToOscalSar } from './converter.js';
+import { oscalToken, nistTagToControlId } from '../../oscal-to-hdf/typescript/shared.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -194,5 +195,66 @@ describe('hdf-to-oscal-sar origin actors resolve to a defined party', () => {
       }
     }
     expect(actorUuids.size).toBe(1);
+  });
+});
+
+// Pins the fix for a defect that shipped on main: a requirement id that is not
+// already an OSCAL token — a CIS number starting with a digit, a package id
+// carrying '/' or ':' — was copied verbatim into finding.target.target-id and
+// reviewed-controls' control-id, both TokenDatatype, producing OSCAL that fails
+// the AR schema while the converter resolves successfully. The id is now encoded
+// into token shape with the source kept in an hdf-requirement-id prop; a
+// whitespace-only id, which would encode to the empty token the pattern forbids,
+// drops its finding.
+describe('hdf-to-oscal-sar encodes non-token requirement ids', () => {
+  const NON_TOKEN = JSON.stringify({
+    baselines: [
+      {
+        name: 'non-token-ids',
+        requirements: [
+          {
+            id: '3.1.1/AC-2:enh',
+            impact: 0.5,
+            results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }],
+          },
+          {
+            id: '   ',
+            impact: 0,
+            results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }],
+          },
+        ],
+      },
+    ],
+  });
+
+  it('produces schema-valid OSCAL and preserves the source id', async () => {
+    const out = JSON.parse(await convertHdfToOscalSar(NON_TOKEN)) as unknown;
+    const valid = validateAR(out);
+    if (!valid) {
+      const errors = (validateAR.errors ?? [])
+        .map((e) => `${e.instancePath || '/'} ${e.message}`)
+        .join('\n');
+      throw new Error(`output is not valid OSCAL Assessment Results v1.1.2:\n${errors}`);
+    }
+    expect(valid).toBe(true);
+
+    const doc = JSON.parse(await convertHdfToOscalSar(NON_TOKEN)) as {
+      'assessment-results': {
+        results: Array<{
+          findings: Array<{
+            target: { 'target-id': string };
+            props?: Array<{ name: string; value: string }>;
+          }>;
+        }>;
+      };
+    };
+    const findings = doc['assessment-results'].results[0]!.findings;
+    // The whitespace-only id encodes to an empty token, so its finding is dropped.
+    expect(findings).toHaveLength(1);
+
+    const f = findings[0]!;
+    expect(oscalToken(nistTagToControlId('3.1.1/AC-2:enh'))).toBe(f.target['target-id']);
+    const sourceId = (f.props ?? []).find((p) => p.name === 'hdf-requirement-id')?.value;
+    expect(sourceId).toBe('3.1.1/AC-2:enh');
   });
 });

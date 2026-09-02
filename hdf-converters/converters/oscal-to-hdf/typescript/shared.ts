@@ -286,3 +286,60 @@ export function toKebabCase(title: string, fallback: string): string {
   }
   return name;
 }
+
+/**
+ * Encode an arbitrary identifier into OSCAL's TokenDatatype shape:
+ * `^(\p{L}|_)(\p{L}|\p{N}|[.\-_])*$`
+ *
+ * HDF requirement ids come from whatever the source tool numbers its rules with,
+ * and only some of those shapes are already tokens. Measured across this
+ * package's converter fixtures, 46% are not (57% of the distinct ids): package-style ids
+ * carrying '/', CIS control numbers starting with a digit, advisory ids carrying
+ * ':'. Copying one of those into a token-typed OSCAL field produces a document
+ * the target schema rejects while the converter resolves successfully.
+ *
+ * The kept set is deliberately ASCII — [A-Za-z0-9._-] — rather than the wider
+ * \p{L}/\p{N} the pattern permits. Delegating to each platform's Unicode tables
+ * looked equivalent and was not: V8's \p{L}/\p{N} and Go's unicode package are
+ * built from different Unicode versions, and comparing the two implementations
+ * across the whole code-point range turned up 4657 characters they disagree on.
+ * An explicit ASCII set has no such dependency and is identical in both languages
+ * by construction. It costs nothing on real data: no requirement id in this
+ * package's converter fixtures is non-ASCII, and a non-ASCII one
+ * is preserved in full by the caller's source-id prop regardless.
+ *
+ * Every character outside that set becomes '_', and a leading '_' is prepended
+ * when the result would not start with a letter or '_'. An id built only from
+ * the kept characters is returned unchanged; note that this is narrower than
+ * token shape, so a token-valid non-ASCII id such as "café" is still rewritten.
+ *
+ * Two different ids can encode to the same token ('a/b' and 'a:b' both yield
+ * 'a_b'), which is why callers must also record the source id in the emitted
+ * document — for SAR that is a prop on the finding, trimmed because OSCAL's
+ * StringDatatype forbids a padded value.
+ */
+export function oscalToken(s: string): string {
+  if (s === '') return '';
+
+  const out = [...s].map((ch) => (/[A-Za-z0-9.\-_]/.test(ch) ? ch : '_')).join('');
+  const [first = ''] = [...out];
+  return /[A-Za-z_]/.test(first) ? out : `_${out}`;
+}
+
+/**
+ * Render a value for a field OSCAL types as StringDatatype, whose pattern
+ * `^\S(.*\S)?$` forbids an empty value and any leading or trailing whitespace.
+ * HDF constrains none of the strings that feed those fields — no minLength
+ * anywhere in hdf-amendments — so a padded or empty value is valid HDF that
+ * would otherwise produce a document the target schema rejects at exit 0.
+ *
+ * Returns '' when nothing survives trimming, which callers treat as "omit this
+ * field" rather than substituting a placeholder: OSCAL marks most of these
+ * fields optional, so leaving one out says exactly as much as the source did.
+ * The companion for token-typed fields is oscalToken.
+ *
+ * Mirrors OSCALString in the Go peer.
+ */
+export function oscalString(s: string): string {
+  return s.trim();
+}
