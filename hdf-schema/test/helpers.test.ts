@@ -145,16 +145,26 @@ describe('impactToSeverity', () => {
 describe('computeEffectiveStatus', () => {
   // --- effectiveStatus already set ---
 
-  it('should return effectiveStatus when already set', () => {
+  it('ignores a stored effectiveStatus (output cache — canonical ladder governs)', () => {
     expect(
       computeEffectiveStatus(req(0.5, [{ status: 'failed' }], 'passed'))
-    ).toBe('passed');
+    ).toBe('failed');
   });
 
-  it('should return effectiveStatus even if impact is 0', () => {
+  it('ignores a stored effectiveStatus at impact 0 too', () => {
     expect(
       computeEffectiveStatus(req(0, [{ status: 'passed' }], 'failed'))
-    ).toBe('failed');
+    ).toBe('notApplicable');
+  });
+
+  it('honors a governing override (the sanctioned divergence channel)', () => {
+    const r = req(0.5, [{ status: 'failed' }]);
+    r.statusOverrides = [{
+      type: 'waiver', status: 'passed', reason: 'scoped out',
+      appliedBy: { type: 'simple', identifier: 'jdoe' },
+      appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+    }];
+    expect(computeEffectiveStatus(r)).toBe('passed');
   });
 
   // --- impact === 0 ---

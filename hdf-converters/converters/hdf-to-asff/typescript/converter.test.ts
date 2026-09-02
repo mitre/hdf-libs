@@ -67,9 +67,13 @@ describe('hdf-to-asff converter', () => {
         requirements: [{
           id: 'C-1',
           title: 't',
+          impact: 0.7,
           results: [{status: 'failed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z'}],
-          effectiveStatus: 'passed',
-          statusOverrides: [{type: 'waiver'}],
+          statusOverrides: [{
+            type: 'waiver', status: 'passed', reason: 'scoped',
+            appliedBy: {type: 'simple', identifier: 'jdoe'},
+            appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+          }],
         }],
       }],
     });

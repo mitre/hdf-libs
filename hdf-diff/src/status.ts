@@ -39,7 +39,6 @@ export function computeEffectiveStatus(
     {
       // A missing impact must not read as 0 (which would force notApplicable).
       impact: (requirement['impact'] as number | undefined) ?? Number.NaN,
-      effectiveStatus: requirement['effectiveStatus'] as string | undefined,
       resultStatuses: results.map((r) => r.status),
       overrides: overrides.map((o) => ({
         status: o.status,

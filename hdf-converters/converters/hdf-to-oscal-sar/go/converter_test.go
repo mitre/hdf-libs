@@ -287,12 +287,18 @@ func TestConvertHDFToOSCALSAR_EffectiveStatusAndOverrideProvenance(t *testing.T)
 // a1: effectiveStatus=notApplicable maps to not-satisfied with reason
 // "not-applicable".
 func TestConvertHDFToOSCALSAR_EffectiveStatusNotApplicable(t *testing.T) {
+	// A governing waiver drives the finding state; a bare stored value would be
+	// ignored (the ladder never reads the effectiveStatus field).
 	input := []byte(`{
 		"baselines": [{ "name": "b", "requirements": [{
 			"id": "AC-1", "impact": 0.5, "tags": { "nist": ["AC-1"] },
 			"descriptions": [{ "label": "default", "data": "d" }],
 			"results": [{ "status": "passed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }],
-			"effectiveStatus": "notApplicable"
+			"statusOverrides": [{
+				"type": "waiver", "status": "notApplicable", "reason": "scoped out",
+				"appliedBy": { "type": "simple", "identifier": "jdoe" },
+				"appliedAt": "2026-01-02T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"
+			}]
 		}]}]
 	}`)
 	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
@@ -802,4 +808,17 @@ func TestConvertHDFToOSCALSAR_StartIsAssessmentTimeNotConversionTime(t *testing.
 	collected := doc.AssessmentResults.Results[0].Observations[0].Collected
 	assert.Equal(t, earliestScan, collected,
 		"observation.collected must be the assessment time, not the conversion time")
+}
+
+// A stale stored effectiveStatus (no overrides) is never read: the finding
+// state reflects the ladder's answer (the failing raw roll-up).
+func TestConvertHDFToOSCALSAR_StaleStoredStatusIgnored(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"SV-9","impact":0.7,"title":"t","tags":{},"descriptions":[{"label":"default","data":"d"}],"effectiveStatus":"passed","results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}]}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	status := doc.AssessmentResults.Results[0].Findings[0].Target.Status
+	assert.Equal(t, "not-satisfied", status.State)
+	assert.Empty(t, status.Reason)
 }

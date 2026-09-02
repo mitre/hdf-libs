@@ -114,9 +114,6 @@ func effectiveStatusOf(excludeAgent bool) func(hdf.EvaluatedRequirement) string 
 // MCP tool injects into CountControlsByStatus.
 func statusInput(req hdf.EvaluatedRequirement) hdfutil.EffectiveStatusInput {
 	in := hdfutil.EffectiveStatusInput{Impact: req.Impact}
-	if req.EffectiveStatus != nil {
-		in.EffectiveStatus = string(*req.EffectiveStatus)
-	}
 	for _, o := range req.StatusOverrides {
 		soi := hdfutil.StatusOverrideInput{AppliedAt: o.AppliedAt, ExpiresAt: o.ExpiresAt}
 		if o.Status != nil {

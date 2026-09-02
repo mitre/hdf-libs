@@ -122,7 +122,8 @@ func TestConvertHDFToCKL_Synthesis(t *testing.T) {
 }
 
 // TestConvertHDFToCKL_OverrideAndEffectiveStatus pins the export-fidelity fixes
-// end-to-end: effectiveStatus drives STATUS, a risk-adjustment override surfaces
+// end-to-end: the canonical ladder drives STATUS (a riskAdjustment override is
+// not governing, so the failing raw verdict stays Open), and the override surfaces
 // into SEVERITY_OVERRIDE/JUSTIFICATION + COMMENTS, and legacy IDs emit LEGACY_ID.
 func TestConvertHDFToCKL_OverrideAndEffectiveStatus(t *testing.T) {
 	input := `{
@@ -153,7 +154,7 @@ func TestConvertHDFToCKL_OverrideAndEffectiveStatus(t *testing.T) {
 	require.NoError(t, err)
 	s := string(out)
 
-	assert.Contains(t, s, "<STATUS>Not_Applicable</STATUS>", "effectiveStatus drives STATUS")
+	assert.Contains(t, s, "<STATUS>Open</STATUS>", "riskAdjustment is not governing — ladder keeps the failing verdict; stale stored value ignored")
 	assert.Contains(t, s, "<SEVERITY_OVERRIDE>medium</SEVERITY_OVERRIDE>", "impact 0.4 -> medium")
 	assert.Contains(t, s, "<SEVERITY_JUSTIFICATION>compensating control</SEVERITY_JUSTIFICATION>")
 	assert.Contains(t, s, "Override [riskAdjustment]: compensating control")

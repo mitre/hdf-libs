@@ -130,15 +130,13 @@ func requirementToVuln(req *hdf.EvaluatedRequirement) Vuln {
 	return v
 }
 
-// effectiveOrRawStatus drives the exported checklist STATUS from the resolved
-// post-override status when the HDF carries one, falling back to the raw first
-// result. A waived/attested/false-positive finding thus exports its governing
-// posture (Not_Applicable / NotAFinding) rather than the pre-override Open.
+// effectiveOrRawStatus drives the exported checklist STATUS from the canonical
+// effective-status ladder (the stored effectiveStatus field is never read — it
+// is an output cache; see status-determination.md). A waived/attested/
+// false-positive finding thus exports its governing posture (Not_Applicable /
+// NotAFinding) rather than the pre-override Open.
 func effectiveOrRawStatus(req *hdf.EvaluatedRequirement) hdf.ResultStatus {
-	if req.EffectiveStatus != nil && *req.EffectiveStatus != "" {
-		return *req.EffectiveStatus
-	}
-	return firstResultStatus(req)
+	return hdf.ResultStatus(hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(*req), time.Time{}))
 }
 
 // composeFindingDetails builds FINDING_DETAILS from every result's status,
@@ -299,14 +297,6 @@ func extractCklMetadata(tags map[string]interface{}) map[string]string {
 }
 
 // --- tag / extension accessors (tolerate string, []string, []interface{}) ---
-
-func firstResultStatus(req *hdf.EvaluatedRequirement) hdf.ResultStatus {
-	if len(req.Results) > 0 {
-		return req.Results[0].Status
-	}
-	return hdf.NotReviewed
-}
-
 func descByLabel(descs []hdf.Description, label string) string {
 	for _, d := range descs {
 		if d.Label == label {

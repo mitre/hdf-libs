@@ -203,42 +203,16 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("governing override wins over results and effectiveStatus", func(t *testing.T) {
+	t.Run("governing override wins over results", func(t *testing.T) {
 		got := ComputeEffectiveStatus(EffectiveStatusInput{
-			Impact:          0.7,
-			EffectiveStatus: "failed",
-			ResultStatuses:  []string{"failed"},
+			Impact:         0.7,
+			ResultStatuses: []string{"failed"},
 			Overrides: []StatusOverrideInput{
 				{Status: waived, AppliedAt: appliedOld, ExpiresAt: farFuture},
 			},
 		}, statusRef)
 		if got != waived {
 			t.Errorf("got %q, want %q", got, waived)
-		}
-	})
-
-	t.Run("stored effectiveStatus is an output cache and is never read", func(t *testing.T) {
-		// The only sanctioned channel for status to diverge from the results
-		// is a governing override; an unprovenanced stored value is ignored in
-		// BOTH directions, optimistic and pessimistic.
-		cases := []struct {
-			label   string
-			stored  string
-			results []string
-			want    string
-		}{
-			{"stale optimistic: stored passed over failing results", "passed", []string{"failed", "passed"}, "failed"},
-			{"stale pessimistic: stored error over passing results", "error", []string{"passed", "passed"}, "passed"},
-		}
-		for _, c := range cases {
-			got := ComputeEffectiveStatus(EffectiveStatusInput{
-				Impact:          0.7,
-				EffectiveStatus: c.stored,
-				ResultStatuses:  c.results,
-			}, statusRef)
-			if got != c.want {
-				t.Errorf("%s: got %q, want %q", c.label, got, c.want)
-			}
 		}
 	})
 
@@ -260,43 +234,30 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("error roll-up beats stored effectiveStatus when no overrides govern (issue #257)", func(t *testing.T) {
-		// A stored effectiveStatus is derived state; with no overrides the
-		// spec invariant says it must equal the raw roll-up. When the roll-up
-		// is error the check never ran, so a contradicting stored value is
-		// stale — the shape of documents converted before the impact-0 fix.
-		cases := []struct {
-			impact float64
-			stored string
-		}{
-			{0, "notApplicable"},
-			{0.7, "passed"},
-		}
-		for _, c := range cases {
+	t.Run("error roll-up wins when no overrides govern", func(t *testing.T) {
+		// An execution error means the check never ran; absent a governing
+		// override the ladder reports it at any impact.
+		for _, impact := range []float64{0, 0.7} {
 			got := ComputeEffectiveStatus(EffectiveStatusInput{
-				Impact:          c.impact,
-				EffectiveStatus: c.stored,
-				ResultStatuses:  []string{"error"},
+				Impact:         impact,
+				ResultStatuses: []string{"error"},
 			}, statusRef)
 			if got != "error" {
-				t.Errorf("impact %v stored %q: got %q, want error", c.impact, c.stored, got)
+				t.Errorf("impact %v: got %q, want error", impact, got)
 			}
 		}
 	})
 
-	t.Run("expired overrides invalidate stale effectiveStatus", func(t *testing.T) {
-		// effectiveStatus is derived state; when its overrides have all
-		// expired it goes stale, so the result rollup wins.
+	t.Run("expired overrides yield the roll-up", func(t *testing.T) {
 		got := ComputeEffectiveStatus(EffectiveStatusInput{
-			Impact:          0.7,
-			EffectiveStatus: "passed",
-			ResultStatuses:  []string{"failed"},
+			Impact:         0.7,
+			ResultStatuses: []string{"failed"},
 			Overrides: []StatusOverrideInput{
 				{Status: waived, AppliedAt: appliedOld, ExpiresAt: longAgo},
 			},
 		}, statusRef)
 		if got != "failed" {
-			t.Errorf("got %q, want failed (stale effectiveStatus recomputed)", got)
+			t.Errorf("got %q, want failed (no governing override)", got)
 		}
 	})
 

@@ -39,9 +39,6 @@ func ComputeEffectiveStatus(req hdf.EvaluatedRequirement, referenceTimestamp str
 	ref := hdfutil.ParseTimestamp(referenceTimestamp)
 
 	input := hdfutil.EffectiveStatusInput{Impact: req.Impact}
-	if req.EffectiveStatus != nil {
-		input.EffectiveStatus = string(*req.EffectiveStatus)
-	}
 	for _, result := range req.Results {
 		input.ResultStatuses = append(input.ResultStatuses, string(result.Status))
 	}

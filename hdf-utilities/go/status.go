@@ -97,13 +97,9 @@ func GoverningStatusOverride(overrides []StatusOverrideInput, ref time.Time) *St
 // EffectiveStatusInput is the neutral shape of a requirement for
 // effective-status computation.
 type EffectiveStatusInput struct {
-	Impact float64
-	// EffectiveStatus is the requirement's stored effectiveStatus field.
-	// Ignored by ComputeEffectiveStatus (the field is an output cache);
-	// retained only until callers stop populating it.
-	EffectiveStatus string
-	ResultStatuses  []string
-	Overrides       []StatusOverrideInput
+	Impact         float64
+	ResultStatuses []string
+	Overrides      []StatusOverrideInput
 }
 
 // ComputeEffectiveStatus determines a requirement's effective status. This is

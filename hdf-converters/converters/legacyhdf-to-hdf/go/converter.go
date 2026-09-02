@@ -25,6 +25,37 @@ func computeEffectiveStatus(impact float64, results []hdf.RequirementResult) hdf
 	}, time.Time{}))
 }
 
+// hasErroredResult reports whether any result carries the error status.
+func hasErroredResult(results []hdf.RequirementResult) bool {
+	for i := range results {
+		if results[i].Status == hdf.Error {
+			return true
+		}
+	}
+	return false
+}
+
+// synthesizedErrorResult encodes a control-level execution error the source
+// tool reported but did not record as a result, reusing the earliest recorded
+// result time (results carry no time when the source had none).
+func synthesizedErrorResult(results []hdf.RequirementResult) hdf.RequirementResult {
+	var earliest time.Time
+	for i := range results {
+		st := results[i].StartTime
+		if st.IsZero() {
+			continue
+		}
+		if earliest.IsZero() || st.Before(earliest) {
+			earliest = st
+		}
+	}
+	return hdf.RequirementResult{
+		Status:    hdf.Error,
+		CodeDesc:  "Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result",
+		StartTime: earliest,
+	}
+}
+
 // normalizeStatus converts v1.0 status values to v2.0 ResultStatus.
 // Converts snake_case to camelCase and maps to enum values.
 func normalizeStatus(status string) hdf.ResultStatus {
@@ -245,11 +276,12 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 		v2.SourceLocation = &srcLoc
 	}
 
-	// Transform status to effectiveStatus with normalization
-	if v1.Status != nil {
-		status := normalizeStatus(*v1.Status)
-		v2.EffectiveStatus = &status
-	}
+	// The v1 control-level status is never baked through verbatim: the emitted
+	// effectiveStatus is a write-path guarantee (it must equal the canonical
+	// ladder's answer computed from the emitted results). The one thing a
+	// control-level status can carry that results[] may lack is an execution
+	// error — that is synthesized into ground truth after results convert.
+	controlLevelError := v1.Status != nil && normalizeStatus(*v1.Status) == hdf.Error
 
 	// Derive controlType from any nist tags present in v1 tags. JSON
 	// unmarshalling stores arrays as []interface{}, so normalize to []string
@@ -280,13 +312,18 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 		}
 	}
 
-	// Always compute effectiveStatus when not explicitly set.
-	// Uses InSpec enhanced outcomes precedence: impact=0 → notApplicable unless
-	// the roll-up is error, error > failed > passed > notApplicable > notReviewed
-	if v2.EffectiveStatus == nil {
-		es := computeEffectiveStatus(v1.Impact, v2.Results)
-		v2.EffectiveStatus = &es
+	// A control-level error not reflected in any recorded result carries
+	// knowledge the results lack (a crashed tool that only logged its passing
+	// sub-checks) — encode it into ground truth as a synthesized errored
+	// result rather than smuggling it through the stored field.
+	if controlLevelError && !hasErroredResult(v2.Results) {
+		v2.Results = append(v2.Results, synthesizedErrorResult(v2.Results))
 	}
+
+	// Always compute effectiveStatus from the emitted results via the
+	// canonical ladder (write-path guarantee).
+	es := computeEffectiveStatus(v1.Impact, v2.Results)
+	v2.EffectiveStatus = &es
 
 	// Populate severity: prefer tags.severity (preserves original STIG severity),
 	// fall back to impact-derived. InSpec sets impact=0 for NA controls, losing

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { results } from '@mitre/hdf-fixtures';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
-import { convertHdfToOscalSar, aggregateStatus } from './converter.js';
+import { convertHdfToOscalSar } from './converter.js';
 import { nistTagToControlId as nistTagToControlID, impactToSeverity } from '../../oscal-to-hdf/typescript/shared.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
 
@@ -155,14 +155,20 @@ describe('convertHdfToOscalSar', () => {
     expect(accepted.description).toBe('scanner mis-detection');
   });
 
-  it('maps effectiveStatus notApplicable to not-satisfied / not-applicable', async () => {
+  it('maps a governing notApplicable waiver to not-satisfied / not-applicable', async () => {
+    // A governing waiver drives the finding state; a bare stored
+    // effectiveStatus would be ignored (output cache).
     const input = JSON.stringify({
       baselines: [{
         name: 'b', requirements: [{
           id: 'AC-1', impact: 0.5, tags: { nist: ['AC-1'] },
           descriptions: [{ label: 'default', data: 'd' }],
           results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
-          effectiveStatus: 'notApplicable',
+          statusOverrides: [{
+            type: 'waiver', status: 'notApplicable', reason: 'scoped out',
+            appliedBy: { type: 'simple', identifier: 'jdoe' },
+            appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+          }],
         }],
       }],
     });
@@ -499,26 +505,6 @@ describe('impactToSeverity', () => {
   });
 });
 
-describe('aggregateStatus', () => {
-  it('should return not-satisfied/other for empty results', () => {
-    expect(aggregateStatus([])).toEqual({ state: 'not-satisfied', reason: 'other' });
-  });
-
-  it('should return satisfied for all passed', () => {
-    const results = [
-      { status: 'passed', codeDesc: 'test', startTime: new Date() },
-    ] as any[];
-    expect(aggregateStatus(results).state).toBe('satisfied');
-  });
-
-  it('should return not-satisfied for failed', () => {
-    const results = [
-      { status: 'failed', codeDesc: 'test', startTime: new Date() },
-    ] as any[];
-    expect(aggregateStatus(results).state).toBe('not-satisfied');
-  });
-});
-
 // Whole-output equality with the SAME golden the Go TestGoldenParity asserts.
 // Fresh UUIDs and the conversion timestamp are masked (see golden-mask.ts) —
 // the UUID reference graph survives masking, so wiring differences still fail.
@@ -623,5 +609,23 @@ describe('observation.collected is the assessment time', () => {
 
     expect(observation.collected).toBe('2026-03-01T08:15:00Z');
     expect(observation.collected, 'must not be the conversion time').not.toBe('2026-07-13T09:00:00Z');
+  });
+});
+
+// A stale stored effectiveStatus (no overrides) is never read: the finding
+// state reflects the ladder's answer (the failing raw roll-up).
+describe('stale stored effectiveStatus is ignored', () => {
+  it('emits not-satisfied from the raw roll-up', async () => {
+    const input = JSON.stringify({
+        baselines: [{ name: 'b', requirements: [{
+          id: 'SV-9', impact: 0.7, title: 't', tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          effectiveStatus: 'passed',
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }] }],
+      });
+    const status = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0].findings[0].target.status;
+    expect(status.state).toBe('not-satisfied');
+    expect(status.reason).toBeUndefined();
   });
 });

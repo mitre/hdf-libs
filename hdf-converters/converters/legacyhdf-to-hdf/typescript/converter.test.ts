@@ -479,7 +479,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(req.tags).toEqual({ nist: ['AC-1'] });
       expect(req.code).toBe('describe "test" do\nend');
       expect(req.sourceLocation).toEqual({ ref: 'test.rb', line: 10 });
-      expect(req.effectiveStatus).toBe('notApplicable');
+      // The stale v1 control-level not_applicable claim (impact 0.7, passing
+      // results) is recomputed away by the ladder — write-path guarantee.
+      expect(req.effectiveStatus).toBe('passed');
       // desc and waiver_data are not valid v2 Requirement fields (desc →
       // descriptions; waivers are amendments in v2) and are dropped, matching Go.
       expect(req.desc).toBeUndefined();
@@ -958,7 +960,10 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(reqs.find(r => r.id === 'V-2')!.effectiveStatus).toBe('passed');
     });
 
-    it('should not override explicit effectiveStatus even if impact is 0', () => {
+    it('control-level status does not bypass the impact-0 rule', () => {
+      // Write-path guarantee: the emitted effectiveStatus equals the ladder's
+      // answer — a non-errored impact-0 control is notApplicable regardless of
+      // the v1 control-level claim.
       const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -971,7 +976,71 @@ describe('HDF v1.0 to v2.0 Converter', () => {
         statistics: {},
       };
       const v2 = convertLegacyHdf(v1);
-      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('passed');
+      expect(v2.baselines[0].requirements![0].effectiveStatus).toBe('notApplicable');
+    });
+
+    it('recomputes effectiveStatus from results when the control-level status is stale', () => {
+      const cases: Array<{ impact: number; status: string; results: string[]; expected: string }> = [
+        { impact: 0, status: 'not_applicable', results: ['error'], expected: 'error' },
+        { impact: 0.5, status: 'passed', results: ['failed'], expected: 'failed' },
+      ];
+      for (const c of cases) {
+        const v1: LegacyHDFResults = {
+          version: '1.0.0',
+          platform: { name: 'test' },
+          profiles: [{
+            name: 'test',
+            controls: [{
+              id: 'V-1', impact: c.impact, status: c.status,
+              results: c.results.map((s) => ({ status: s, start_time: '2026-01-01T00:00:00Z' })),
+            }],
+          }],
+          statistics: {},
+        };
+        const v2 = convertLegacyHdf(v1);
+        expect(v2.baselines[0].requirements![0].effectiveStatus).toBe(c.expected);
+      }
+    });
+
+    it('synthesizes an errored result from a control-level error the results lack', () => {
+      const v1: LegacyHDFResults = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1', impact: 0.5, status: 'error',
+            results: [
+              { status: 'passed', start_time: '2026-01-01T00:00:00Z' },
+              { status: 'passed', start_time: '2026-01-02T00:00:00Z' },
+            ],
+          }],
+        }],
+        statistics: {},
+      };
+      const v2 = convertLegacyHdf(v1);
+      const req = v2.baselines[0].requirements![0];
+      expect(req.results).toHaveLength(3);
+      const synth = req.results![2];
+      expect(synth.status).toBe('error');
+      expect(synth.codeDesc).toBeTruthy();
+      expect(synth.startTime).toBe('2026-01-01T00:00:00Z');
+      expect(req.effectiveStatus).toBe('error');
+
+      // No synthesis when the results already carry the error.
+      const v1b: LegacyHDFResults = {
+        version: '1.0.0',
+        platform: { name: 'test' },
+        profiles: [{
+          name: 'test',
+          controls: [{
+            id: 'V-1', impact: 0.5, status: 'error',
+            results: [{ status: 'error', start_time: '2026-01-01T00:00:00Z' }],
+          }],
+        }],
+        statistics: {},
+      };
+      expect(convertLegacyHdf(v1b).baselines[0].requirements![0].results).toHaveLength(1);
     });
 
     it('should classify 27 impact=0 controls as notApplicable in Three_Layer fixture', () => {

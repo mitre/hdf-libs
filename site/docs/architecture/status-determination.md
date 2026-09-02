@@ -75,7 +75,7 @@ The single canonical implementation is `computeEffectiveStatus` in `@mitre/hdf-u
 
 - **hdf-converters**: converters that bake `effectiveStatus` at ingest (e.g. `legacyhdf-to-hdf` for v1 InSpec data) derive it through the canonical implementation.
 - **hdf-cli** (`determineControlStatus` in `stats.go`): calls the canonical implementation and maps the result to display form via `SchemaStatusToDisplay`. The `threshold` and `mcp` paths inject the same computation as their status resolver.
-- **@mitre/hdf-schema `helpers`** (`computeEffectiveStatus`): a documented back-compat variant that honors an already-set `effectiveStatus` first — unconditionally, including over an `error` roll-up, unlike the canonical implementation — and does not consult `statusOverrides`. Its impact-0/error ordering for the derivation path matches the canonical rule.
+- **@mitre/hdf-schema `helpers`** (`computeEffectiveStatus`): delegates to the canonical `@mitre/hdf-utilities` implementation — same ladder, same answers, overrides included.
 
 ### Schema Note
 

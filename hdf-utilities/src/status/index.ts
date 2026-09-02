@@ -126,11 +126,6 @@ function refTime(referenceTimestamp?: string): Date {
 /** Neutral shape of a requirement for effective-status computation. */
 export interface EffectiveStatusInput {
   impact: number;
-  /**
-   * The stored effectiveStatus field. Ignored by computeEffectiveStatus (the
-   * field is an output cache); retained only until callers stop populating it.
-   */
-  effectiveStatus?: string;
   resultStatuses?: readonly string[];
   overrides?: readonly StatusOverrideInput[];
 }

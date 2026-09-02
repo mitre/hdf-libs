@@ -303,6 +303,26 @@ function computeEffectiveStatus(impact: number, results: V2Result[]): string {
 }
 
 /**
+ * Encodes a control-level execution error the source tool reported but did not
+ * record as a result, reusing the earliest recorded result time (matching the
+ * Go converter).
+ */
+function synthesizedErrorResult(results: V2Result[]): V2Result {
+  const times = results
+    .map((r) => r.startTime)
+    .filter((t): t is string => typeof t === 'string' && t !== '' && t !== '0001-01-01T00:00:00Z')
+    .sort();
+  // startTime is schema-required; the Go converter's zero time serializes as
+  // 0001-01-01T00:00:00Z, so mirror that when no result carries a time.
+  return {
+    status: 'error',
+    codeDesc:
+      'Synthesized from the source control-level error status: the tool reported an execution error not reflected in any recorded result',
+    startTime: times[0] ?? '0001-01-01T00:00:00Z',
+  };
+}
+
+/**
  * Convert v1.0 result to v2.0 result.
  * Transforms snake_case field names to camelCase.
  */
@@ -434,22 +454,30 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
     v2Req.sourceLocation = v1Control.source_location;
   }
 
-  // Transform status to effectiveStatus with normalization
-  if (v1Control.status !== undefined) {
-    v2Req.effectiveStatus = normalizeStatus(v1Control.status);
-  }
+  // The v1 control-level status is never baked through verbatim: the emitted
+  // effectiveStatus is a write-path guarantee (it must equal the canonical
+  // ladder's answer computed from the emitted results). The one thing a
+  // control-level status can carry that results[] may lack is an execution
+  // error — that is synthesized into ground truth after results convert.
+  const controlLevelError =
+    v1Control.status !== undefined && normalizeStatus(v1Control.status) === 'error';
 
   // Transform results array
   if (v1Control.results && Array.isArray(v1Control.results)) {
     v2Req.results = v1Control.results.map(convertResult);
   }
 
-  // Always compute effectiveStatus when not explicitly set.
-  // Uses InSpec enhanced outcomes precedence: impact=0 → notApplicable unless
-  // the roll-up is error, error > failed > passed > notApplicable > notReviewed
-  if (!v2Req.effectiveStatus) {
-    v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
+  // A control-level error not reflected in any recorded result carries
+  // knowledge the results lack (a crashed tool that only logged its passing
+  // sub-checks) — encode it into ground truth as a synthesized errored result
+  // rather than smuggling it through the stored field.
+  if (controlLevelError && !(v2Req.results ?? []).some((r) => r.status === 'error')) {
+    v2Req.results = [...(v2Req.results ?? []), synthesizedErrorResult(v2Req.results ?? [])];
   }
+
+  // Always compute effectiveStatus from the emitted results via the canonical
+  // ladder (write-path guarantee).
+  v2Req.effectiveStatus = computeEffectiveStatus(v1Control.impact, v2Req.results ?? []);
 
   // Populate severity: prefer tags.severity (preserves original STIG severity),
   // fall back to impact-derived. InSpec sets impact=0 for NA controls, losing
@@ -705,14 +733,13 @@ function denormalizeStatus(status: string): string {
 
 /**
  * Effective (post-amendment) status as a legacy status string, computed by the
- * canonical shared helper (impact==0, governing override, stored
- * effectiveStatus, worst-wins rollup — see status-determination.md).
+ * canonical ladder (governing override, error roll-up, impact-0, worst-wins —
+ * see status-determination.md).
  */
 function effectiveOrRollupV1(req: V2Requirement): string {
   return denormalizeStatus(
     canonicalEffectiveStatus({
       impact: req.impact ?? Number.NaN,
-      effectiveStatus: req.effectiveStatus,
       resultStatuses: (req.results ?? []).map((r) => r.status),
       overrides: (req.statusOverrides ?? []).map((o) => ({
         status: o.status,

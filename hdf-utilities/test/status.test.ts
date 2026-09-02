@@ -158,36 +158,17 @@ describe('computeEffectiveStatus', () => {
     ).toBe('passed');
   });
 
-  it('lets the governing override win over results and effectiveStatus', () => {
+  it('lets the governing override win over results', () => {
     expect(
       computeEffectiveStatus(
         {
           impact: 0.7,
-          effectiveStatus: 'failed',
           resultStatuses: ['failed'],
           overrides: [{ status: 'notApplicable', appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE }],
         },
         REF
       )
     ).toBe('notApplicable');
-  });
-
-  it('treats stored effectiveStatus as an output cache and never reads it', () => {
-    // The only sanctioned channel for status to diverge from the results is a
-    // governing override; an unprovenanced stored value is ignored in BOTH
-    // directions, optimistic and pessimistic.
-    expect(
-      computeEffectiveStatus(
-        { impact: 0.7, effectiveStatus: 'passed', resultStatuses: ['failed', 'passed'] },
-        REF
-      )
-    ).toBe('failed');
-    expect(
-      computeEffectiveStatus(
-        { impact: 0.7, effectiveStatus: 'error', resultStatuses: ['passed', 'passed'] },
-        REF
-      )
-    ).toBe('passed');
   });
 
   it('lets a governing override adjudicate an impact-0 requirement regardless of termination', () => {
@@ -208,24 +189,11 @@ describe('computeEffectiveStatus', () => {
     }
   });
 
-  it('lets an error roll-up beat a stored effectiveStatus when no overrides govern (issue #257)', () => {
-    // A stored effectiveStatus is derived state; with no overrides the spec
-    // invariant says it must equal the raw roll-up. When the roll-up is error
-    // the check never ran, so a contradicting stored value is stale — this is
-    // exactly the shape of documents converted before the impact-0 fix, which
-    // baked notApplicable over a crashed check.
-    expect(
-      computeEffectiveStatus(
-        { impact: 0, effectiveStatus: 'notApplicable', resultStatuses: ['error'] },
-        REF
-      )
-    ).toBe('error');
-    expect(
-      computeEffectiveStatus(
-        { impact: 0.7, effectiveStatus: 'passed', resultStatuses: ['error'] },
-        REF
-      )
-    ).toBe('error');
+  it('lets an error roll-up win when no overrides govern', () => {
+    // An execution error means the check never ran; absent a governing
+    // override the ladder reports it at any impact.
+    expect(computeEffectiveStatus({ impact: 0, resultStatuses: ['error'] }, REF)).toBe('error');
+    expect(computeEffectiveStatus({ impact: 0.7, resultStatuses: ['error'] }, REF)).toBe('error');
   });
 
   it('recomputes from results when every override has expired', () => {
@@ -233,7 +201,6 @@ describe('computeEffectiveStatus', () => {
       computeEffectiveStatus(
         {
           impact: 0.7,
-          effectiveStatus: 'passed',
           resultStatuses: ['failed'],
           overrides: [{ status: 'notApplicable', appliedAt: APPLIED_OLD, expiresAt: LONG_AGO }],
         },
