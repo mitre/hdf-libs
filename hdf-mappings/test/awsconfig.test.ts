@@ -72,9 +72,10 @@ describe('AWS Config Mapping Functions', () => {
 
     it('should handle complex NIST IDs', () => {
       const nistId = getAwsConfigNistControlByIdentifier('IAM_PASSWORD_POLICY', 4);
-      // Rev-4 collapsed sub-parts IA-5(1)(a)(d)(e) are expanded to siblings, then the
-      // generator sorts controls lexically (IA-5(4) precedes IA-5(a)).
-      expect(nistId).toBe('AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)|IA-5(4)|IA-5(a)|IA-5(d)|IA-5(e)');
+      // Rev-4 collapsed IA-5(1)(a)(d)(e) expands per the stem rule to the
+      // enhancement-1 statement parts (the bare IA-5(1) is subsumed), then the
+      // generator sorts controls lexically.
+      expect(nistId).toBe('AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)(a)|IA-5(1)(d)|IA-5(1)(e)|IA-5(4)');
     });
   });
 
@@ -274,16 +275,16 @@ describe('getAwsConfigNistControlsBySubstring', () => {
 // Guards Rev-4 rows that once carried collapsed NIST sub-parts
 // (e.g. IA-5(1)(a)(d)(e)) that split('|') left as single unreachable tokens.
 describe('Rev-4 collapsed control expansion', () => {
-  it('expands collapsed sub-parts into sibling controls', () => {
+  it('expands collapsed sub-parts per the stem rule', () => {
     const raw = getAwsConfigNistControlByIdentifier('IAM_PASSWORD_POLICY', 4);
     expect(raw).toBeDefined();
     const controls = raw!.split('|');
-    for (const want of ['IA-5(1)', 'IA-5(a)', 'IA-5(d)', 'IA-5(e)']) {
+    // Enhancement statement parts stay attached to their enhancement; the
+    // bare enhancement is subsumed by its parts.
+    for (const want of ['IA-5(1)(a)', 'IA-5(1)(d)', 'IA-5(1)(e)']) {
       expect(controls).toContain(want);
     }
-    // No token may retain more than one parenthetical group (a collapsed form).
-    for (const c of controls) {
-      expect((c.match(/\(/g) ?? []).length).toBeLessThanOrEqual(1);
-    }
+    expect(controls).not.toContain('IA-5(1)');
+    expect(controls).not.toContain('IA-5(a)');
   });
 });

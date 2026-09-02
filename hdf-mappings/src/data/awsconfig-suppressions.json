@@ -1,0 +1,296 @@
+[
+  {
+    "rule": "apigateway-stage-access-logs-enabled",
+    "control": "SC-7(9)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "apigateway-stage-access-logs-enabled",
+    "control": "SI-7(8)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-gateway-logging-file-path-exists",
+    "control": "AU-10",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-gateway-logging-file-path-exists",
+    "control": "AU-2",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-gateway-logging-file-path-exists",
+    "control": "AU-3",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-gateway-logging-file-path-exists",
+    "control": "SC-7(9)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-node-logging-file-path-exists",
+    "control": "AU-10",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-node-logging-file-path-exists",
+    "control": "AU-2",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-node-logging-file-path-exists",
+    "control": "AU-3",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appmesh-virtual-node-logging-file-path-exists",
+    "control": "SC-7(9)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "apprunner-service-no-public-access",
+    "control": "SC-7(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "appsync-logging-enabled",
+    "control": "SC-7(9)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "athena-workgroup-logging-enabled",
+    "control": "AU-3",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "athena-workgroup-logging-enabled",
+    "control": "SC-7(9)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "athena-workgroup-logging-enabled",
+    "control": "SI-7(8)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "AC-4(26)",
+    "revisions": [
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "AU-12",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "AU-2",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "AU-3",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "AU-6(3)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "AU-6(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "CA-7",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "SC-7(9)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "cloudtrail-s3-bucket-public-access-prohibited",
+    "control": "SI-7(8)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "ebs-snapshot-block-public-access",
+    "control": "SC-7(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "kms-key-policy-no-public-access",
+    "control": "CA-9(1)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "kms-key-policy-no-public-access",
+    "control": "SC-7(11)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "lightsail-bucket-allow-public-overrides-disabled",
+    "control": "SC-7(11)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "lightsail-bucket-allow-public-overrides-disabled",
+    "control": "SC-7(16)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "lightsail-bucket-allow-public-overrides-disabled",
+    "control": "SC-7(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "lightsail-bucket-allow-public-overrides-disabled",
+    "control": "SC-7(9)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "mq-no-public-access",
+    "control": "AC-21",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "mq-no-public-access",
+    "control": "SC-7(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "msk-cluster-public-access-disabled",
+    "control": "SC-7(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "redshift-serverless-workgroup-no-public-access",
+    "control": "SC-7(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  },
+  {
+    "rule": "s3-account-level-public-access-blocks",
+    "control": "SC-7(4)",
+    "revisions": [
+      5
+    ]
+  },
+  {
+    "rule": "ssm-automation-block-public-sharing",
+    "control": "SC-7(4)",
+    "revisions": [
+      4,
+      5
+    ]
+  }
+]
