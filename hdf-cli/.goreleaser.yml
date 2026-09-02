@@ -2,6 +2,14 @@ version: 2
 
 project_name: hdf
 
+# Snapshot builds derive the version from the nearest tag; ignore the
+# per-module Go tags (hdf-cli/v3.5.1, hdf-mappings/go/v3.5.1, ...) so
+# local snapshots resolve the bare release tag (v3.5.1), whose name has
+# no slash to mangle artifact paths. Tag-triggered CI is unaffected.
+git:
+  ignore_tags:
+    - "hdf-*"
+
 builds:
   - id: hdf
     dir: .
@@ -37,8 +45,31 @@ archives:
     files:
       - README.md
 
+# One SPDX SBOM per archive. Explicit document name + args rather than
+# goreleaser defaults so the output format is pinned, not inherited.
+sboms:
+  - id: archive-sboms
+    artifacts: archive
+    documents:
+      - "{{ .ArtifactName }}.spdx.json"
+    cmd: syft
+    args: ["$artifact", "--output", "spdx-json=$document"]
+
 checksum:
   name_template: "checksums.txt"
+
+# Keyless (OIDC) signature over the checksum file, which itself covers every
+# archive and SBOM — one bundle transitively signs all artifacts. Requires
+# ambient OIDC (id-token: write in CI); local snapshot runs use --skip=sign.
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.bundle"
+    args:
+      - sign-blob
+      - --bundle=${signature}
+      - --yes
+      - ${artifact}
 
 changelog:
   disable: true

@@ -122,6 +122,8 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      id-token: write      # ambient OIDC for cosign keyless signing + attestation
+      attestations: write  # actions/attest-build-provenance
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -135,6 +137,10 @@ jobs:
           # from a PR job could tamper with the released binaries.
           cache: false
 
+      # syft + cosign back the goreleaser sboms:/signs: sections.
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           distribution: goreleaser
@@ -143,6 +149,13 @@ jobs:
           workdir: hdf-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # SLSA Build L2 provenance for every artifact listed in checksums.txt
+      # (archives + SBOMs). Consumers verify with:
+      #   gh attestation verify <asset> --repo mitre/hdf-libs
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: hdf-cli/dist/checksums.txt
 
       - name: Upload binary artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -220,8 +233,11 @@ jobs:
         run: |
           mkdir -p release-assets
 
-          # CLI binaries (archives + checksums from goreleaser)
-          cp cli-dist/*.tar.gz cli-dist/*.zip cli-dist/checksums.txt release-assets/ 2>/dev/null || true
+          # CLI binaries + supply-chain artifacts from goreleaser
+          # (archives, SPDX SBOMs, checksums, cosign signature bundle)
+          cp cli-dist/*.tar.gz cli-dist/*.zip cli-dist/*.spdx.json \
+             cli-dist/checksums.txt cli-dist/checksums.txt.bundle \
+             release-assets/ 2>/dev/null || true
 
           # Schema files
           cp schema-dist/*.schema.json release-assets/
