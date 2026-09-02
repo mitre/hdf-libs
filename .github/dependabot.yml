@@ -1,9 +1,10 @@
 version: 2
 
-# Cooldown: wait N days after a release before raising a PR.
-# Reduces exposure to supply chain attacks (compromised releases
-# typically get yanked within 24-48 hours). Security updates (CVEs)
-# bypass cooldown entirely.
+# Cooldown: wait 7 days after a release before raising a PR, matching
+# the 7-day pnpm minimumReleaseAge in pnpm-workspace.yaml so both
+# supply-chain delays agree. Reduces exposure to compromised releases,
+# which are typically discovered and yanked well within that window.
+# Security updates (CVEs) bypass cooldown entirely.
 
 updates:
   # npm (pnpm workspace — single manifest at root)
@@ -13,10 +14,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
-      semver-minor-days: 3
-      semver-patch-days: 3
+      default-days: 7
     groups:
       dev-dependencies:
         dependency-type: "development"
@@ -39,7 +37,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
+      default-days: 7
     open-pull-requests-limit: 5
 
   # Go modules — each go.mod is a separate ecosystem entry
@@ -50,8 +48,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -63,8 +60,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -76,8 +72,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -89,8 +84,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -102,8 +96,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -115,8 +108,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -130,8 +122,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -143,8 +134,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -156,8 +146,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -169,8 +158,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -182,8 +170,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
@@ -195,8 +182,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 3
-      semver-major-days: 7
+      default-days: 7
     groups:
       go-dependencies:
         patterns: ["*"]
