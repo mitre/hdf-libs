@@ -145,6 +145,10 @@ describe('impactToSeverity', () => {
 describe('computeEffectiveStatus', () => {
   // --- effectiveStatus already set ---
 
+  it('tolerates null result elements (out-of-contract input from untyped consumers)', () => {
+    expect(computeEffectiveStatus(req(0, [null]))).toBe('notApplicable');
+  });
+
   it('ignores a stored effectiveStatus (output cache — canonical ladder governs)', () => {
     expect(
       computeEffectiveStatus(req(0.5, [{ status: 'failed' }], 'passed'))
@@ -179,7 +183,7 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req(0, []))).toBe('notApplicable');
   });
 
-  it('should return error when impact is 0 but a result errored (issue #257)', () => {
+  it('should return error when impact is 0 but a result errored', () => {
     // An execution error means the check never ran, so nothing was established
     // about applicability — error ranks above the impact-0 short-circuit,
     // aligned with the canonical @mitre/hdf-utilities computeEffectiveStatus.

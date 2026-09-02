@@ -210,7 +210,7 @@ func TestValidateThreshold_NoImpactSectionIsLive(t *testing.T) {
 }
 
 // An impact-0 requirement whose scan CRASHED (raw result status error) — the
-// issue #257 shape. Effective distribution must be 1 error(high), 1
+// impact-0-errored shape. Effective distribution must be 1 error(high), 1
 // passed(high); the errored control must never land in no_impact.
 const testResultsImpactZeroError = `{
 	"baselines": [{
@@ -243,7 +243,7 @@ const testResultsImpactZeroError = `{
 	"version": "2.0.0"
 }`
 
-// TestCountByStatusSeverity_ImpactZeroErrorIsError pins issue #257 at the
+// TestCountByStatusSeverity_ImpactZeroErrorIsError pins the impact-0 error escape at the
 // threshold counting layer: a crashed check at impact 0 counts under error —
 // never no_impact — so error.* threshold gates see it.
 func TestCountByStatusSeverity_ImpactZeroErrorIsError(t *testing.T) {
@@ -257,7 +257,7 @@ func TestCountByStatusSeverity_ImpactZeroErrorIsError(t *testing.T) {
 }
 
 // TestValidateThreshold_ImpactZeroErrorTripsErrorGate proves the CLI-level
-// consequence of issue #257: `hdf validate threshold -I "{error.total.max: 0}"`
+// consequence of the impact-0 error escape: `hdf validate threshold -I "{error.total.max: 0}"`
 // must FAIL on a document whose only defect is a crashed impact-0 check. On the
 // pre-fix path the error landed in no_impact and the gate passed silently.
 func TestValidateThreshold_ImpactZeroErrorTripsErrorGate(t *testing.T) {

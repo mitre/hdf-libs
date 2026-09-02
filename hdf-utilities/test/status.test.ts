@@ -131,7 +131,7 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus({ impact: 0 }, REF)).toBe('notApplicable');
   });
 
-  it('lets an errored scan escape the impact-0 short-circuit (issue #257)', () => {
+  it('lets an errored scan escape the impact-0 short-circuit', () => {
     // An execution error means the check never ran, so nothing was established
     // about applicability — error ranks above the impact-0 short-circuit,
     // matching InSpec EnhancedOutcomes and Heimdall inspecjs.

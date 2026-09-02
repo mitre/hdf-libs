@@ -171,7 +171,7 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("errored scan escapes the impact-0 short-circuit (issue #257)", func(t *testing.T) {
+	t.Run("errored scan escapes the impact-0 short-circuit", func(t *testing.T) {
 		// An execution error means the check never ran, so nothing was
 		// established about applicability — error ranks above the impact-0
 		// short-circuit, matching InSpec EnhancedOutcomes and Heimdall inspecjs.

@@ -180,7 +180,7 @@ func TestMapControlIDsByStatus_UsesInjectedResolver(t *testing.T) {
 	assert.Equal(t, ThresholdSkipped, nilMapped[0].Status)
 }
 
-// TestMapControlIDsByStatus_ImpactZeroErrorIsError pins issue #257: a crashed
+// TestMapControlIDsByStatus_ImpactZeroErrorIsError pins the impact-0 error escape: a crashed
 // check at impact 0 must surface as error so hdf threshold's error.total gate
 // sees it — never no_impact. src/compliance.test.ts mirrors this.
 func TestMapControlIDsByStatus_ImpactZeroErrorIsError(t *testing.T) {

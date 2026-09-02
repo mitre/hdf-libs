@@ -240,7 +240,7 @@ describe('agent-override detective surface — parity with go/compliance_test.go
     expect(mapControlIDsByStatus(results)[0]!.status).toBe('skipped');
   });
 
-  it('impact-0 errored control resolves to the error bucket, not no_impact (issue #257)', () => {
+  it('impact-0 errored control resolves to the error bucket, not no_impact', () => {
     // A crashed check at impact 0 must surface as error so hdf threshold's
     // error.total gate sees it. Parity: go/compliance_test.go.
     const errored: EvaluatedRequirement = {

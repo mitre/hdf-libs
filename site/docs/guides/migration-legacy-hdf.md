@@ -135,7 +135,7 @@ v1 `"skipped"` maps to v2 `"notReviewed"`. The complete v2 `Result_Status` enum 
 - `notApplicable` -- requirement does not apply (impact = 0)
 - `notReviewed` -- requirement was not assessed
 
-v2 also adds `effectiveStatus` on each requirement, which reflects the status after applying overrides (waivers, attestations). If no overrides exist, `effectiveStatus` is computed from results using InSpec enhanced outcomes precedence: `error > failed > passed > notApplicable > notReviewed`. When `impact = 0`, `effectiveStatus` is always `notApplicable`.
+v2 also adds `effectiveStatus` on each requirement, which carries the status the canonical effective-status ladder computes at write time: governing (non-expired) override, else `error` roll-up, else impact-0 `notApplicable`, else the worst-wins roll-up (`error > failed > passed > notApplicable > notReviewed`). An errored check reports `error` even at impact 0 — a crashed check never established applicability. See the [status determination reference](../architecture/status-determination.md) for the full contract.
 
 ### Severity
 

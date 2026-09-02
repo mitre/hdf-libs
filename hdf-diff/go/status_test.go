@@ -254,9 +254,9 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		},
 		{
 			// Delegation pin: the canonical implementation lets error escape
-			// the impact-0 short-circuit (issue #257), and this wrapper
+			// the impact-0 short-circuit, and this wrapper
 			// inherits it.
-			name: "returns error when impact is 0 but a result errored (issue #257)",
+			name: "returns error when impact is 0 but a result errored",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Impact = 0
 				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Error)}

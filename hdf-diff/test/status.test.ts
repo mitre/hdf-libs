@@ -184,7 +184,7 @@ describe('computeEffectiveStatus', () => {
     expect(computeEffectiveStatus(req)).toBe('notApplicable');
   });
 
-  it('returns "error" when impact is 0 but a result errored (issue #257)', () => {
+  it('returns "error" when impact is 0 but a result errored', () => {
     // Delegation pin: the canonical implementation lets error escape the
     // impact-0 short-circuit, and this wrapper inherits it.
     const req = makeRequirement({
