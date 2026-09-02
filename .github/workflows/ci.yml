@@ -53,7 +53,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
@@ -72,7 +74,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
@@ -113,7 +117,9 @@ jobs:
     needs: [check-ts, check-go]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
@@ -157,7 +163,9 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -178,7 +186,9 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
@@ -202,7 +212,9 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
@@ -253,7 +265,9 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -319,7 +333,9 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1

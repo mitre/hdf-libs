@@ -23,11 +23,16 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
+          # No dependency caching in a publish workflow: a poisoned cache
+          # seeded from a PR job could tamper with what gets published.
+          package-manager-cache: false
 
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
@@ -54,7 +59,7 @@ jobs:
         # only allows one Trusted Publisher per package.
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
+        run: | # zizmor: ignore[use-trusted-publishing] hdf-converters' Trusted Publisher slot is held by mitre/heimdall2 (npm allows one per package) — see token comment above and card hdf-libs-wgvm.5
           # Publish order matters: dependencies first
           PACKAGES=(
             hdf-schema
@@ -121,11 +126,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: '**/go.sum'
+          # No module caching in a publish workflow: a poisoned cache seeded
+          # from a PR job could tamper with the released binaries.
+          cache: false
 
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
@@ -151,8 +159,10 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -176,6 +186,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download CLI binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -217,42 +228,67 @@ jobs:
 
           ls -la release-assets/
 
-      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
-        with:
-          body: |
-            ## Changes
+      - name: Create GitHub Release
+        # Uses the runner's built-in `gh` instead of a third-party release
+        # action — one less external dependency in the publish chain.
+        # NOTES goes through env (not inline ${{ }}) because it is built from
+        # commit subjects, which are attacker-influenceable text.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTES: ${{ steps.notes.outputs.notes }}
+        run: |
+          {
+            echo "## Changes"
+            echo
+            echo "$NOTES"
+            cat <<'EOF'
 
-            ${{ steps.notes.outputs.notes }}
+          ## Installation
 
-            ## Installation
+          ```bash
+          # TypeScript/Node.js — install the packages you need
+          npm install @mitre/hdf-converters@next   # converters + schema + parsers + utilities + mappings
+          # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @v3, or an exact version)
+          npm install @mitre/hdf-validators    # schema validation
+          npm install @mitre/hdf-diff          # structural diff engine
+          npm install @mitre/hdf-generators    # InSpec profile generation
 
-            ```bash
-            # TypeScript/Node.js — install the packages you need
-            npm install @mitre/hdf-converters@next   # converters + schema + parsers + utilities + mappings
-            # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @v3, or an exact version)
-            npm install @mitre/hdf-validators    # schema validation
-            npm install @mitre/hdf-diff          # structural diff engine
-            npm install @mitre/hdf-generators    # InSpec profile generation
+          # Go libraries
+          EOF
+            echo "go get github.com/mitre/hdf-libs/hdf-converters/v3@${GITHUB_REF_NAME}"
+            cat <<'EOF'
 
-            # Go libraries
-            go get github.com/mitre/hdf-libs/hdf-converters/v3@${{ github.ref_name }}
+          # Go CLI — download a binary for your platform from the assets below, then:
+          chmod +x hdf && sudo mv hdf /usr/local/bin/
+          ```
 
-            # Go CLI — download a binary for your platform from the assets below, then:
-            chmod +x hdf && sudo mv hdf /usr/local/bin/
-            ```
+          ## Schema Files
 
-            ## Schema Files
+          Bundled JSON schemas are attached as release assets and hosted at:
+          https://mitre.github.io/hdf-libs/schemas/
+          EOF
+          } > release-notes.md
 
-            Bundled JSON schemas are attached as release assets and hosted at:
-            https://mitre.github.io/hdf-libs/schemas/
-          files: release-assets/*
-          draft: false
           # Convention: any tag with `-rc` in it is a pre-release (see
           # publish-npm job for the matching check). A bare semver tag
           # (v3.1.0) creates a stable release.
-          prerelease: ${{ contains(github.ref_name, '-rc') }}
+          PRERELEASE_FLAG=""
+          if [[ "$GITHUB_REF_NAME" == *"-rc"* ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            $PRERELEASE_FLAG
 
       - name: Create Go module version tags
+        # Checkout runs with persist-credentials: false, so the push
+        # authenticates explicitly here — credentials scoped to this one
+        # step instead of sitting in .git/config for the whole job.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME}"
 
@@ -275,7 +311,7 @@ jobs:
             git tag "${TAG}"
           done
 
-          git push origin --tags
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" --tags
 
   deploy-site:
     name: Deploy schema site
@@ -286,4 +322,4 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    uses: ./.github/workflows/deploy-schemas.yml
+    uses: $/.github/workflows/deploy-schemas.yml
