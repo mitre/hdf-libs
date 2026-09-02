@@ -95,15 +95,16 @@ func Paginate(rows []map[string]any, budget int, sizeOf func(page []map[string]a
 	var pages [][]map[string]any
 	i := 0
 	for i < len(rows) {
+		// Each page grows its own freshly-allocated slice, so pages never share
+		// a backing array; an over-budget probe row is truncated back off and
+		// re-tried on the next page.
 		var cur []map[string]any
 		for i < len(rows) {
-			next := make([]map[string]any, len(cur), len(cur)+1)
-			copy(next, cur)
-			next = append(next, rows[i])
-			if sizeOf(next) > budget && len(cur) > 0 {
-				break // this row belongs on the next page
+			cur = append(cur, rows[i])
+			if sizeOf(cur) > budget && len(cur) > 1 {
+				cur = cur[: len(cur)-1 : len(cur)-1] // this row belongs on the next page
+				break
 			}
-			cur = next
 			i++
 		}
 		pages = append(pages, cur)

@@ -276,11 +276,14 @@ export function toKebabCase(title: string, fallback: string): string {
   if (!title) return fallback;
   let name = title.toLowerCase();
   name = name.replace(/[^a-z0-9]/g, '-');
-  // Collapse consecutive dashes
-  while (name.includes('--')) {
-    name = name.replace(/--/g, '-');
-  }
-  name = name.replace(/^-+|-+$/g, '');
+  // Collapse consecutive dashes (single pass; /-+/ is unambiguous, unlike the
+  // anchored /^-+|-+$/ trim, whose backtracking is quadratic on dash runs)
+  name = name.replace(/-+/g, '-');
+  let start = 0;
+  while (start < name.length && name[start] === '-') start++;
+  let end = name.length;
+  while (end > start && name[end - 1] === '-') end--;
+  name = name.slice(start, end);
   if (name.length > 80) {
     name = name.slice(0, 80);
   }

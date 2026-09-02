@@ -1,4 +1,4 @@
-import { parseXmlWithArrays, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
+import { parseXmlWithArrays, parseTimestamp, replaceHtmlTags, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
 import { buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
@@ -112,7 +112,7 @@ const NESSUS_ALIASES: Record<string, number> = {
  * Strip HTML tags from a string
  */
 function parseHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim();
+  return replaceHtmlTags(html, '').trim();
 }
 
 const NAMED_ENTITIES: Record<string, string> = {

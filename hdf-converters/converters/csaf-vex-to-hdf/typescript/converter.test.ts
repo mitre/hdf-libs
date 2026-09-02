@@ -426,6 +426,19 @@ describe('convertCsafVexToHdf — edge cases', () => {
   it('rejects invalid JSON', async () => {
     await expect(convertCsafVexToHdf('not json', TEST_VERSION)).rejects.toThrow();
   });
+
+  it('handles a pathological publisher namespace in linear time', { timeout: 120_000 }, async () => {
+    // A namespace of many slashes NOT at the end forces the trailing-slash
+    // trim to run against a long non-matching run — quadratic with a
+    // backtracking /\/+$/ regex, linear with a manual scan.
+    const doc = JSON.parse(loadInput('2022-evd-uc-01-na-001.json'));
+    doc.document.publisher.namespace = '/'.repeat(100_000) + 'x';
+    const t0 = performance.now();
+    const result = await convertCsafVexToHdf(JSON.stringify(doc), TEST_VERSION);
+    const elapsed = performance.now() - t0;
+    expect(result.overrides).toHaveLength(1);
+    expect(elapsed).toBeLessThan(1000);
+  });
 });
 
 // Ground-truth anchor (see shared/typescript/anchor.ts). csaf-vex emits one

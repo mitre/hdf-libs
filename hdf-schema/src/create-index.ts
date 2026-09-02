@@ -11,7 +11,8 @@
 import { writeFileSync, copyFileSync, existsSync, rmSync, readdirSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
+import { createRequire } from 'module';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -120,7 +121,11 @@ export function createIndex(options: CreateIndexOptions = {}): void {
       files: tsFiles,
     }));
     try {
-      execSync(`tsc --project ${tmpConfig}`, { cwd, stdio: 'inherit' });
+      // Run the compiler through node with an argument array — no shell, so
+      // paths with spaces/metacharacters can't be reinterpreted, and no .cmd
+      // shim is involved on Windows.
+      const tscJs = createRequire(import.meta.url).resolve('typescript/lib/tsc.js');
+      execFileSync(process.execPath, [tscJs, '--project', tmpConfig], { cwd, stdio: 'inherit' });
     } finally {
       rmSync(tmpConfig, { force: true });
     }

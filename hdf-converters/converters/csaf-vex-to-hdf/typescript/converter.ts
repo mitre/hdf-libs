@@ -451,7 +451,13 @@ function advisoryURI(publisher: CsafPublisher, tracking: CsafTracking): string {
   /* c8 ignore next */
   const id = tracking.id ?? '';
   const ns = publisher.namespace;
-  if (ns && id) return `${ns.replace(/\/+$/, '')}/${id}`;
+  if (ns && id) {
+    // Manual trailing-slash trim: /\/+$/ backtracks quadratically on long
+    // slash runs in untrusted input.
+    let end = ns.length;
+    while (end > 0 && ns[end - 1] === '/') end--;
+    return `${ns.slice(0, end)}/${id}`;
+  }
   return id;
 }
 

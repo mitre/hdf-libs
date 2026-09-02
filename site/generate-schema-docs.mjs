@@ -261,7 +261,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
     for (const [field, prop] of Object.entries(schema.properties)) {
       const type = resolveTypeName(prop);
       const req = required.has(field) ? '**yes**' : 'no';
-      const desc = (prop.description || '').replace(/\n/g, ' ').replace(/\|/g, '\\|');
+      const desc = mdCell(prop.description);
       lines.push(`| \`${field}\` | ${type} | ${req} | ${desc} |`);
     }
     lines.push('');
@@ -292,7 +292,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
     lines.push('## Types');
     lines.push('');
     for (const [typeName, defn] of Object.entries(localDefs)) {
-      lines.push(`### ${typeName.replace(/_/g, '\\_')}`);
+      lines.push(`### ${mdHeading(typeName)}`);
       lines.push('');
       if (defn.description) {
         lines.push(defn.description);
@@ -306,7 +306,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
         for (const [field, prop] of Object.entries(props)) {
           const type = resolveTypeName(prop);
           const isReq = req.has(field) ? '**yes**' : 'no';
-          const desc = (prop.description || '').replace(/\n/g, ' ').replace(/\|/g, '\\|');
+          const desc = mdCell(prop.description);
           lines.push(`| \`${field}\` | ${type} | ${isReq} | ${desc} |`);
         }
         lines.push('');
@@ -341,7 +341,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
       const innerDefs = embedded.$defs || {};
       if (Object.keys(innerDefs).length > 0) {
         for (const [typeName, defn] of Object.entries(innerDefs)) {
-          lines.push(`#### ${typeName.replace(/_/g, '\\_')}`);
+          lines.push(`#### ${mdHeading(typeName)}`);
           lines.push('');
           if (defn.description) {
             lines.push(defn.description);
@@ -355,7 +355,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
             for (const [field, prop] of Object.entries(props)) {
               const type = resolveTypeName(prop);
               const isReq = req.has(field) ? '**yes**' : 'no';
-              const desc = (prop.description || '').replace(/\n/g, ' ').replace(/\|/g, '\\|');
+              const desc = mdCell(prop.description);
               lines.push(`| \`${field}\` | ${type} | ${isReq} | ${desc} |`);
             }
             lines.push('');
@@ -377,6 +377,16 @@ function renderSchemaPage(schema, name, urlPrefix) {
 }
 
 // === Misc helpers ==========================================================
+
+// Markdown-escape helpers. Backslashes are escaped FIRST so the backslashes
+// introduced by the later escapes aren't themselves re-escaped.
+function mdCell(s) {
+  return (s || '').replace(/\\/g, '\\\\').replace(/\n/g, ' ').replace(/\|/g, '\\|');
+}
+
+function mdHeading(s) {
+  return s.replace(/\\/g, '\\\\').replace(/_/g, '\\_');
+}
 
 function idVersion(schemaId) {
   if (!schemaId) return 'unknown';
