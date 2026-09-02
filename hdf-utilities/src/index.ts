@@ -56,6 +56,7 @@ export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssSc
 // Canonical status ordering + effective-status computation
 export {
   STATUS_SEVERITY_ORDER,
+  type StatusSeverity,
   statusRank,
   worstStatus,
   governingOverrideIndex,

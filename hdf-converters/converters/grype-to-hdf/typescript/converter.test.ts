@@ -295,7 +295,7 @@ describe('Grype Converter', async () => {
       });
 
       const output = await convertGrypeToHdf(enriched);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2021-44228');
       expect(req).toBeDefined();
 
@@ -336,7 +336,7 @@ describe('Grype Converter', async () => {
         }],
       });
       const output = await convertGrypeToHdf(noDate);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-9999');
       expect(req?.epss).toBeUndefined();
     });
@@ -362,7 +362,7 @@ describe('Grype Converter', async () => {
         }],
       });
       const output = await convertGrypeToHdf(report);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-2222');
       expect(req?.cvss).toHaveLength(2);
       expect(req?.cvss?.[0].baseScore).toBe(7.5);
@@ -391,7 +391,7 @@ describe('Grype Converter', async () => {
         }],
       });
       const output = await convertGrypeToHdf(sparse);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-1111');
       expect(req).toBeDefined();
       // all-malformed cwe -> field omitted

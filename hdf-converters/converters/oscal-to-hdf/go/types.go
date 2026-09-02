@@ -91,11 +91,12 @@ type ResponsibleParty struct {
 
 // Property is a name-value pair with optional namespace and class.
 type Property struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-	Ns    string `json:"ns,omitempty"`
-	Class string `json:"class,omitempty"`
-	UUID  string `json:"uuid,omitempty"`
+	Name    string `json:"name"`
+	Value   string `json:"value"`
+	Ns      string `json:"ns,omitempty"`
+	Class   string `json:"class,omitempty"`
+	UUID    string `json:"uuid,omitempty"`
+	Remarks string `json:"remarks,omitempty"`
 }
 
 // Link is a reference to an external resource.
@@ -129,6 +130,14 @@ type Resource struct {
 	Description string     `json:"description,omitempty"`
 	Props       []Property `json:"props,omitempty"`
 	Rlinks      []Rlink    `json:"rlinks,omitempty"`
+	Base64      *Base64    `json:"base64,omitempty"`
+}
+
+// Base64 embeds a resource's content directly in the document (RFC 2045 alphabet).
+type Base64 struct {
+	Value     string `json:"value"`
+	Filename  string `json:"filename,omitempty"`
+	MediaType string `json:"media-type,omitempty"`
 }
 
 // Rlink is a resource link (URL reference).

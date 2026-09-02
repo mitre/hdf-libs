@@ -1,0 +1,53 @@
+{
+  "kics_version": "v2.1.20",
+  "files_scanned": 1,
+  "lines_scanned": 32,
+  "files_parsed": 1,
+  "lines_parsed": 32,
+  "lines_ignored": 0,
+  "files_failed_to_scan": 0,
+  "queries_total": 1100,
+  "queries_failed_to_execute": 0,
+  "queries_failed_to_compute_similarity_id": 0,
+  "severity_counters": {
+    "CRITICAL": 0,
+    "HIGH": 1,
+    "INFO": 0,
+    "LOW": 0,
+    "MEDIUM": 0,
+    "TRACE": 0
+  },
+  "total_counter": 1,
+  "total_bom_resources": 0,
+  "queries": [
+    {
+      "query_name": "DB Instance Storage Not Encrypted",
+      "query_id": "08bd0760-8752-44e1-9779-7bb369b2b4e4",
+      "query_url": "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_instance#storage_encrypted",
+      "severity": "HIGH",
+      "platform": "Terraform",
+      "cwe": "311",
+      "risk_score": "7.1",
+      "cloud_provider": "AWS",
+      "category": "Encryption",
+      "experimental": false,
+      "description": "AWS DB Instance should have its storage encrypted by setting the parameter to 'true'. The storage_encrypted default value is 'false'.",
+      "description_id": "88ca11bc",
+      "files": [
+        {
+          "file_name": "../../path/main.tf",
+          "similarity_id": "4efca9c9c9328e651ec53a8d38e4c3b25f5940cd2e3eb9ca1ef6a5625cf2dab0",
+          "line": 25,
+          "resource_type": "aws_db_instance",
+          "resource_name": "records",
+          "issue_type": "MissingAttribute",
+          "search_key": "aws_db_instance[records]",
+          "search_line": 25,
+          "search_value": "",
+          "expected_value": "'storage_encrypted' should be set to true",
+          "actual_value": "'storage_encrypted' is undefined or null"
+        }
+      ]
+    }
+  ]
+}

@@ -20,6 +20,7 @@ import { gitlabFingerprint } from '../../converters/gitlab-to-hdf/typescript/fin
 import { gosecFingerprint } from '../../converters/gosec-to-hdf/typescript/fingerprint.js';
 import { grypeFingerprint } from '../../converters/grype-to-hdf/typescript/fingerprint.js';
 import { jfrogXrayFingerprint } from '../../converters/jfrog-xray-to-hdf/typescript/fingerprint.js';
+import { kicsFingerprint } from '../../converters/kics-to-hdf/typescript/fingerprint.js';
 import { msftDefenderCloudFingerprint } from '../../converters/msft-defender-cloud-to-hdf/typescript/fingerprint.js';
 import { msftDefenderDevopsFingerprint } from '../../converters/msft-defender-devops-to-hdf/typescript/fingerprint.js';
 import { msftDefenderEndpointFingerprint } from '../../converters/msft-defender-endpoint-to-hdf/typescript/fingerprint.js';
@@ -83,6 +84,7 @@ const allFingerprints: ConverterFingerprint[] = [
   gosecFingerprint,
   grypeFingerprint,
   jfrogXrayFingerprint,
+  kicsFingerprint,
   msftDefenderCloudFingerprint,
   msftDefenderDevopsFingerprint,
   msftDefenderEndpointFingerprint,

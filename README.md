@@ -87,7 +87,7 @@ Install only the packages you need. Each package is published independently to n
 | Package | npm | Go |
 |---------|-----|----|
 | **Schema** — HDF document types and JSON schemas | `npm install @mitre/hdf-schema` | `go get github.com/mitre/hdf-libs/hdf-schema/dist/go/v3` |
-| **Converters** — 40+ security tool format converters | `npm install @mitre/hdf-converters` | `go get github.com/mitre/hdf-libs/hdf-converters/v3` |
+| **Converters** — 40+ security tool format converters | `npm install @mitre/hdf-converters@next` | `go get github.com/mitre/hdf-libs/hdf-converters/v3` |
 | **Validators** — schema validation with embedded schemas | `npm install @mitre/hdf-validators` | `go get github.com/mitre/hdf-libs/hdf-validators/go/v3` |
 | **Parsers** — parse and flatten HDF documents | `npm install @mitre/hdf-parsers` | `go get github.com/mitre/hdf-libs/hdf-parsers/go/v3` |
 | **Mappings** — CCI, NIST, CWE, OWASP control mappings | `npm install @mitre/hdf-mappings` | `go get github.com/mitre/hdf-libs/hdf-mappings/go/v3` |
@@ -97,7 +97,7 @@ Install only the packages you need. Each package is published independently to n
 | **Engine** — schema-typed read-side engines (detect, query, compliance) | `npm install @mitre/hdf-engine` | `go get github.com/mitre/hdf-libs/hdf-engine/go/v3` |
 | **Extension Graph** — InSpec overlay/extension chain resolution | `npm install @mitre/hdf-extension-graph` | — |
 
-The npm packages declare their dependencies, so `npm install @mitre/hdf-converters` automatically pulls in schema, parsers, utilities, and mappings.
+The npm packages declare their dependencies, so `npm install @mitre/hdf-converters@next` automatically pulls in schema, parsers, utilities, and mappings. Note the explicit `@next`: the `@mitre/hdf-converters` npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), whose v2 line owns the `latest` dist-tag — install this repo's v3 line via `@next`, `@v3`, or an exact version.
 
 The **CLI** is distributed as pre-built binaries — see [hdf-cli](./hdf-cli/README.md) for installation.
 

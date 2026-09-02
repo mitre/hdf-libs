@@ -121,3 +121,83 @@ updates:
       go-dependencies:
         patterns: ["*"]
     open-pull-requests-limit: 5
+
+  # hdf-schema/dist/go is deliberately absent: it has no external requires
+  # (generated types module), so there is nothing for Dependabot to track.
+  - package-ecosystem: "gomod"
+    directory: "/hdf-diff/go"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/hdf-engine/go"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/hdf-extension-graph/go"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/hdf-fixtures"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/hdf-schema/testhdf/go"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "gomod"
+    directory: "/hdf-utilities/go"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    groups:
+      go-dependencies:
+        patterns: ["*"]
+    open-pull-requests-limit: 5

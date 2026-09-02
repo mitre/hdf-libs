@@ -30,7 +30,7 @@ func IsV1Format(data map[string]any) bool {
 	return !hasBaselines
 }
 
-// ToV2 converts an InSpec exec-json (legacy HDF v1) document to an HdfResults struct.
+// ToV2 converts an InSpec exec-json (legacy HDF v1) document to an HDFResults struct.
 // If the input is already current HDF format, parses directly. If legacy,
 // converts profiles→baselines, controls→requirements, snake_case→camelCase.
 // The returned warnings slice contains messages for skipped profiles/controls

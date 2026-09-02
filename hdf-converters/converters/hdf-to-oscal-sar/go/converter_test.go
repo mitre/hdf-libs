@@ -1,6 +1,7 @@
 package hdftooscalsar
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -180,19 +181,42 @@ func TestConvertHDFToOSCALSAR_FieldCoverage(t *testing.T) {
 		return ""
 	}
 	assert.Equal(t, "CCI-000012", propVal("cci"))
-	assert.Contains(t, propVal("code"), "control 'SV-1'")
+	// Single-line prose keeps its full text as the prop value (no remarks needed).
 	assert.Equal(t, "check text", propVal("check"))
-	assert.Equal(t, "fix text", propVal("fix"))
 	assert.Equal(t, "rationale text", propVal("rationale"))
 	assert.Equal(t, "technical", propVal("control-type"))
 	assert.Equal(t, "automated", propVal("verification-method"))
 	assert.Equal(t, "required", propVal("applicability"))
 	assert.Equal(t, "Handbook 3", propVal("reference"))
+
+	// impact > 0: fix text's home is the risk remediation, not a finding prop.
+	assert.Empty(t, propVal("fix"))
+	require.Len(t, doc.AssessmentResults.Results[0].Risks, 1)
+	rems := doc.AssessmentResults.Results[0].Risks[0].Remediations
+	require.NotEmpty(t, rems)
+	assert.Equal(t, "fix text", rems[0].Description)
+
+	// code is an embedded back-matter resource linked from the finding, not a prop.
+	assert.Empty(t, propVal("code"))
+	var codeHref string
 	var hrefs []string
 	for _, l := range finding.Links {
+		if l.Rel == "code" {
+			codeHref = l.Href
+			continue
+		}
 		hrefs = append(hrefs, l.Href)
 	}
 	assert.Equal(t, []string{"https://example.gov/a", "https://example.gov/b"}, hrefs)
+	require.NotEmpty(t, codeHref)
+	require.NotNil(t, doc.AssessmentResults.BackMatter)
+	require.Len(t, doc.AssessmentResults.BackMatter.Resources, 1)
+	res := doc.AssessmentResults.BackMatter.Resources[0]
+	assert.Equal(t, "#"+res.UUID, codeHref)
+	require.NotNil(t, res.Base64)
+	decoded, err := base64.StdEncoding.DecodeString(res.Base64.Value)
+	require.NoError(t, err)
+	assert.Contains(t, string(decoded), "control 'SV-1'")
 
 	// url/uri refs are also emitted as observation relevant-evidence so they
 	// round-trip through the reverse importer (which ignores finding.links).

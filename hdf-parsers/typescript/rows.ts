@@ -1,4 +1,4 @@
-import type { HdfResults, Cvss, Epss, Kev, AffectedPackage, EvaluatedRequirement } from '@mitre/hdf-schema';
+import type { HDFResults, Cvss, Epss, Kev, AffectedPackage, EvaluatedRequirement } from '@mitre/hdf-schema';
 
 /**
  * A flat, row-per-requirement projection of an HDF Results document, keyed by
@@ -16,7 +16,7 @@ export type Row = Record<string, string>;
  * Evaluated_Requirement; cvss_base_score also falls back to the legacy scalar
  * tags.cvss_base_score for back-compat with files emitted by older converters.
  */
-export function flattenToRows(results: HdfResults): Row[] {
+export function flattenToRows(results: HDFResults): Row[] {
   const rows: Row[] = [];
   const baselines = results?.baselines ?? [];
   for (const b of baselines) {

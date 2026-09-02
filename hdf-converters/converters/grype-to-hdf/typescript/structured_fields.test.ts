@@ -3,7 +3,7 @@ import {join} from 'path';
 import {describe, expect, it} from 'vitest';
 import {convertGrypeToHdf} from './converter';
 import {parseJSON} from '@mitre/hdf-utilities';
-import {Ecosystem, CVSSSeverity, type HdfResults} from '@mitre/hdf-schema';
+import {Ecosystem, CVSSSeverity, type HDFResults} from '@mitre/hdf-schema';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -16,7 +16,7 @@ describe('Grype structured CVE fields', () => {
     it('populates one Cvss entry per vulnerability.cvss array element', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-7592');
       expect(req).toBeDefined();
@@ -33,7 +33,7 @@ describe('Grype structured CVE fields', () => {
     it('emits no entries when vulnerability.cvss is empty (related CVSS not pulled in)', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/ALAS-2024-2607');
       expect(req).toBeDefined();
@@ -43,7 +43,7 @@ describe('Grype structured CVE fields', () => {
     it('derives baseSeverity from baseScore using FIRST band thresholds', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       let checked = 0;
       for (const req of hdf.baselines[0].requirements) {
@@ -68,7 +68,7 @@ describe('Grype structured CVE fields', () => {
     it('populates from artifact (rpm with cpes, purl, fixed-in)', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/ALAS-2024-2607');
       expect(req).toBeDefined();
@@ -86,7 +86,7 @@ describe('Grype structured CVE fields', () => {
     it('omits fixedInVersion when fix.state != fixed', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-7592');
       expect(req).toBeDefined();
@@ -108,7 +108,7 @@ describe('Grype structured CVE fields', () => {
         }],
       });
       const output = await convertGrypeToHdf(minimalReport);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-3333');
       expect(req).toBeDefined();
@@ -147,7 +147,7 @@ describe('Grype structured CVE fields', () => {
           }],
         });
         const output = await convertGrypeToHdf(report);
-        const hdf = parseJSON<HdfResults>(output);
+        const hdf = parseJSON<HDFResults>(output);
         const pkg = hdf.baselines[0].requirements[0].affectedPackages?.[0];
         expect(pkg, `case ${grypeType}`).toBeDefined();
         expect(pkg!.ecosystem, `case ${grypeType}`).toBe(expected);
@@ -159,7 +159,7 @@ describe('Grype structured CVE fields', () => {
     it('is empty when Grype output has no vulnerability.cwe array', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
 
       for (const req of hdf.baselines[0].requirements) {
         expect(req.cwe ?? []).toHaveLength(0);
@@ -181,7 +181,7 @@ describe('Grype structured CVE fields', () => {
         }],
       });
       const output = await convertGrypeToHdf(report);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-9999');
       expect(req?.cwe).toEqual(['CWE-79', 'CWE-89']);
     });
@@ -206,7 +206,7 @@ describe('Grype structured CVE fields', () => {
         }],
       });
       const output = await convertGrypeToHdf(report);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-1111');
       expect(req?.epss).toBeDefined();
       expect(req!.epss!.score).toBe(0.92);
@@ -236,7 +236,7 @@ describe('Grype structured CVE fields', () => {
         }],
       });
       const output = await convertGrypeToHdf(report);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       const req = hdf.baselines[0].requirements.find(r => r.id === 'Grype/CVE-2024-2222');
       expect(req?.kev).toBeDefined();
       expect(req!.kev!.inKev).toBe(true);
@@ -247,7 +247,7 @@ describe('Grype structured CVE fields', () => {
     it('leaves kev undefined when Grype omits the block', async () => {
       const input = loadFixture('amazon.json');
       const output = await convertGrypeToHdf(input);
-      const hdf = parseJSON<HdfResults>(output);
+      const hdf = parseJSON<HDFResults>(output);
       for (const req of hdf.baselines[0].requirements) {
         expect(req.kev).toBeUndefined();
       }

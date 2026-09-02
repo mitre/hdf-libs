@@ -338,6 +338,16 @@ describe('Severity Utilities', () => {
       expect(severityToImpactWithAliases('medium', {}, 0.5)).toBe(0.5);
       expect(severityToImpactWithAliases('unknown', {}, 0.5)).toBe(0.5);
     });
+
+    it('treats prototype-named tokens as unrecognized, not inherited members', () => {
+      // "constructor" is lowercase, so a plain object index would return
+      // Object.prototype.constructor (a function) instead of falling through.
+      expect(severityToImpactWithAliases('constructor', aliases, 0.5)).toBe(0.5);
+      expect(severityToImpactWithAliases('constructor', {}, 0.1)).toBe(0.1);
+      expect(severityToImpactWithAliases('__proto__', aliases, 0.5)).toBe(0.5);
+      expect(severityToImpact('constructor')).toBe(0.5);
+      expect(severityToImpact('__proto__')).toBe(0.5);
+    });
   });
 
   describe('isUnratedSeverity', () => {

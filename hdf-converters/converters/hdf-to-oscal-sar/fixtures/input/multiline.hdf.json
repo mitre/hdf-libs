@@ -1,0 +1,265 @@
+{
+  "baselines": [
+    {
+      "copyright": "MITRE",
+      "groups": [
+        {
+          "id": "controls/SV-257778.rb",
+          "requirements": [
+            "SV-257778"
+          ]
+        },
+        {
+          "id": "controls/SV-257779.rb",
+          "requirements": [
+            "SV-257779"
+          ]
+        }
+      ],
+      "inputs": [
+        {
+          "name": "sudoers_config_files",
+          "type": "Array",
+          "value": [
+            "/etc/sudoers",
+            "/etc/sudoers.d/*"
+          ]
+        },
+        {
+          "name": "passwordless_admins",
+          "type": "Array",
+          "value": []
+        }
+      ],
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "56624f18ec7c61870830987af7d954e6bcc958eb1844365c7707bec69348b81f"
+      },
+      "license": "Apache-2.0",
+      "maintainer": "MITRE SAF Team",
+      "name": "redhat-enterprise-linux-9-stig-baseline",
+      "requirements": [
+        {
+          "code": "control 'SV-257778' do\n  title 'RHEL 9 vendor packaged system security patches and updates must be installed and up to date.'\n  desc 'Installing software updates is a fundamental mitigation against the exploitation of publicly known vulnerabilities. If the most recent security patches and updates are not installed, unauthorized users may take advantage of weaknesses in the unpatched software. The lack of prompt attention to patching could result in a system compromise.'\n  desc 'check', 'Verify RHEL 9 security patches and updates are installed and up to date. Updates are required to be applied with a frequency determined by organizational policy.\n\nObtain the list of available package security updates from Red Hat. The URL for updates is https://access.redhat.com/errata-search/. It is important to note that updates provided by Red Hat may not be present on the system if the underlying packages are not installed.\n\nCheck that the available package security updates have been installed on the system with the following command:\n\n$ sudo dnf history list | more\n\n    ID | Command line | Date and time | Action(s) | Altered\n-------------------------------------------------------------------------------\n   70 | install aide | 2023-03-05 10:58 | Install | 1\n   69 | update -y | 2023-03-04 14:34 | Update | 18 EE\n   68 | install vlc | 2023-02-21 17:12 | Install | 21\n   67 | update -y | 2023-02-21 17:04 | Update | 7 EE\n\nTypical update frequency may be overridden by Information Assurance Vulnerability Alert (IAVA) notifications from CYBERCOM.\n\nIf the system is in noncompliance with the organizational patching policy, this is a finding.'\n  desc 'fix', 'Install RHEL 9 security patches and updates at the organizationally defined frequency. If system updates are installed via a centralized repository that is configured on the system, all updates can be installed with the following command:\n\n$ sudo dnf update'\n  impact 0.5\n  tag severity: 'medium'\n  tag gtitle: 'SRG-OS-000480-GPOS-00227'\n  tag gid: 'V-257778'\n  tag rid: 'SV-257778r1134892_rule'\n  tag stig_id: 'RHEL-09-211015'\n  tag fix_id: 'F-61443r925320_fix'\n  tag cci: ['CCI-000366']\n  tag nist: ['CM-6 b']\n  tag 'host'\n  tag 'container'\n\n  only_if(\"This control takes a long time to execute so it has been disabled through 'slow_controls'\") {\n    !input('disable_slow_controls')\n  }\n\n  if input('disconnected_system')\n    describe 'The system is set to a `disconnected` state and you must validate the state of the system packages manually' do\n      skip 'The system is set to a `disconnected` state and you must validate the state of the system packages manually'\n    end\n  else\n    updates = linux_update.updates\n    package_names = updates.map { |h| h['name'] }\n\n    describe.one do\n      describe 'List of out-of-date packages' do\n        subject { package_names }\n        it { should be_empty }\n      end\n      updates.each do |update|\n        describe package(update['name']) do\n          its('version') { should eq update['version'] }\n        end\n      end\n    end\n  end\nend\n",
+          "controlType": "operational",
+          "descriptions": [
+            {
+              "data": "Installing software updates is a fundamental mitigation against the exploitation of publicly known vulnerabilities. If the most recent security patches and updates are not installed, unauthorized users may take advantage of weaknesses in the unpatched software. The lack of prompt attention to patching could result in a system compromise.",
+              "label": "default"
+            },
+            {
+              "data": "Verify RHEL 9 security patches and updates are installed and up to date. Updates are required to be applied with a frequency determined by organizational policy.\n\nObtain the list of available package security updates from Red Hat. The URL for updates is https://access.redhat.com/errata-search/. It is important to note that updates provided by Red Hat may not be present on the system if the underlying packages are not installed.\n\nCheck that the available package security updates have been installed on the system with the following command:\n\n$ sudo dnf history list | more\n\n    ID | Command line | Date and time | Action(s) | Altered\n-------------------------------------------------------------------------------\n   70 | install aide | 2023-03-05 10:58 | Install | 1\n   69 | update -y | 2023-03-04 14:34 | Update | 18 EE\n   68 | install vlc | 2023-02-21 17:12 | Install | 21\n   67 | update -y | 2023-02-21 17:04 | Update | 7 EE\n\nTypical update frequency may be overridden by Information Assurance Vulnerability Alert (IAVA) notifications from CYBERCOM.\n\nIf the system is in noncompliance with the organizational patching policy, this is a finding.",
+              "label": "check"
+            },
+            {
+              "data": "Install RHEL 9 security patches and updates at the organizationally defined frequency. If system updates are installed via a centralized repository that is configured on the system, all updates can be installed with the following command:\n\n$ sudo dnf update",
+              "label": "fix"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+          },
+          "effectiveStatus": "failed",
+          "id": "SV-257778",
+          "impact": 0.5,
+          "results": [
+            {
+              "codeDesc": "List of out-of-date packages is expected to be empty",
+              "exception": "RSpec::Core::MultipleExceptionError",
+              "message": "expected `[\"attr\", \"dbus-broker\", \"gzip\", \"libattr\", \"libxml2\", \"tar\"].empty?` to be truthy, got false",
+              "resource": "Object",
+              "resourceId": "List of out-of-date packages",
+              "runTime": 0.000193,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "System Package attr version is expected to eq \"2.6.0-1.el9_8\"",
+              "exception": "RSpec::Core::MultipleExceptionError",
+              "message": "\nexpected: \"2.6.0-1.el9_8\"\n     got: \"2.5.1-3.el9\"\n\n(compared using ==)\n",
+              "resource": "package",
+              "resourceId": "attr",
+              "runTime": 0.000714,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "System Package dbus-broker version is expected to eq \"28-9.el9_8\"",
+              "exception": "RSpec::Core::MultipleExceptionError",
+              "message": "\nexpected: #<Encoding:UTF-8> \"28-9.el9_8\"\n     got: #<Encoding:ASCII-8BIT> \"28-7.el9\"\n\n(compared using ==)\n",
+              "resource": "package",
+              "resourceId": "dbus-broker",
+              "runTime": 0.000201,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "System Package gzip version is expected to eq \"1.12-2.el9_8\"",
+              "exception": "RSpec::Core::MultipleExceptionError",
+              "message": "\nexpected: \"1.12-2.el9_8\"\n     got: \"1.12-1.el9\"\n\n(compared using ==)\n",
+              "resource": "package",
+              "resourceId": "gzip",
+              "runTime": 0.000179,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "System Package libattr version is expected to eq \"2.6.0-1.el9_8\"",
+              "exception": "RSpec::Core::MultipleExceptionError",
+              "message": "\nexpected: #<Encoding:UTF-8> \"2.6.0-1.el9_8\"\n     got: #<Encoding:ASCII-8BIT> \"2.5.1-3.el9\"\n\n(compared using ==)\n",
+              "resource": "package",
+              "resourceId": "libattr",
+              "runTime": 0.000168,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "System Package libxml2 version is expected to eq \"2.9.13-14.el9_8.4\"",
+              "exception": "RSpec::Core::MultipleExceptionError",
+              "message": "\nexpected: \"2.9.13-14.el9_8.4\"\n     got: \"2.9.13-14.el9_8.2\"\n\n(compared using ==)\n",
+              "resource": "package",
+              "resourceId": "libxml2",
+              "runTime": 0.000177,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "System Package tar version is expected to eq \"1.34-13.el9_8\"",
+              "exception": "RSpec::Core::MultipleExceptionError",
+              "message": "\nexpected: \"1.34-13.el9_8\"\n     got: \"1.34-11.el9\"\n\n(compared using ==)\n",
+              "resource": "package",
+              "resourceId": "tar",
+              "runTime": 0.000604,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 1,
+            "ref": "redhat-enterprise-linux-9-stig-baseline/controls/SV-257778.rb"
+          },
+          "tags": {
+            "cci": [
+              "CCI-000366"
+            ],
+            "container": null,
+            "fix_id": "F-61443r925320_fix",
+            "gid": "V-257778",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "host": null,
+            "nist": [
+              "CM-6 b"
+            ],
+            "rid": "SV-257778r1134892_rule",
+            "severity": "medium",
+            "stig_id": "RHEL-09-211015"
+          },
+          "title": "RHEL 9 vendor packaged system security patches and updates must be installed and up to date."
+        },
+        {
+          "code": "control 'SV-257779' do\n  title 'RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner before granting local or remote access to the system via a command line user logon.'\n  desc 'Display of a standardized and approved use notification before granting access to the operating system ensures privacy and security notification verbiage used is consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance.\n\nSystem use notifications are required only for access via login interfaces with human users and are not required when such human interfaces do not exist.'\n  desc 'check', 'Verify RHEL 9 displays the Standard Mandatory DOD Notice and Consent Banner before granting access to the operating system via a command line user logon.\n\nCheck that a banner is displayed at the command line login screen with the following command:\n\n$ sudo cat /etc/issue\n\nIf the banner is set correctly it will return the following text:\n\n\"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the following conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.\"\n\nIf the banner text does not match the Standard Mandatory DOD Notice and Consent Banner exactly, or the line is commented out, this is a finding.'\n  desc 'fix', 'Configure RHEL 9 to display the Standard Mandatory DOD Notice and Consent Banner before granting access to the system via command line logon.\n\nEdit the \"/etc/issue\" file to replace the default text with the Standard Mandatory DOD Notice and Consent Banner. The DOD-required text is:\n\n\"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the following conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect USG interests -- not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.\"'\n  impact 0.5\n  tag severity: 'medium'\n  tag gtitle: 'SRG-OS-000023-GPOS-00006'\n  tag satisfies: ['SRG-OS-000023-GPOS-00006', 'SRG-OS-000228-GPOS-00088']\n  tag gid: 'V-257779'\n  tag rid: 'SV-257779r958390_rule'\n  tag stig_id: 'RHEL-09-211020'\n  tag fix_id: 'F-61444r925323_fix'\n  tag cci: ['CCI-000048', 'CCI-001384', 'CCI-001385', 'CCI-001386', 'CCI-001387', 'CCI-001388']\n  tag nist: ['AC-8 a', 'AC-8 c 1', 'AC-8 c 2', 'AC-8 c 3']\n  tag 'host'\n\n  only_if('Control not applicable within a container', impact: 0.0) {\n    !%w[docker podman kubepods lxc].include?(virtualization.system)\n  }\n\n  banner_file = file('/etc/issue')\n\n  describe banner_file do\n    it { should exist }\n  end\n\n  if banner_file.exist?\n\n    banner = banner_file.content.gsub(/[\\r\\n\\s]/, '')\n    expected_banner = input('banner_message_text_cli').gsub(/[\\r\\n\\s]/, '')\n\n    describe 'The CLI Login Banner ' do\n      it 'is set to the standard banner and has the correct text' do\n        expect(banner).to eq(expected_banner), 'Banner does not match expected text'\n      end\n    end\n  end\nend\n",
+          "controlType": "technical",
+          "descriptions": [
+            {
+              "data": "Display of a standardized and approved use notification before granting access to the operating system ensures privacy and security notification verbiage used is consistent with applicable federal laws, Executive Orders, directives, policies, regulations, standards, and guidance.\n\nSystem use notifications are required only for access via login interfaces with human users and are not required when such human interfaces do not exist.",
+              "label": "default"
+            },
+            {
+              "data": "Verify RHEL 9 displays the Standard Mandatory DOD Notice and Consent Banner before granting access to the operating system via a command line user logon.\n\nCheck that a banner is displayed at the command line login screen with the following command:\n\n$ sudo cat /etc/issue\n\nIf the banner is set correctly it will return the following text:\n\n\"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the following conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.\"\n\nIf the banner text does not match the Standard Mandatory DOD Notice and Consent Banner exactly, or the line is commented out, this is a finding.",
+              "label": "check"
+            },
+            {
+              "data": "Configure RHEL 9 to display the Standard Mandatory DOD Notice and Consent Banner before granting access to the system via command line logon.\n\nEdit the \"/etc/issue\" file to replace the default text with the Standard Mandatory DOD Notice and Consent Banner. The DOD-required text is:\n\n\"You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the following conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect USG interests -- not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.\"",
+              "label": "fix"
+            }
+          ],
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "de78ada7d86293d722efc2c30b0bac553303183ec9e784839c3c9a7745472ffc"
+          },
+          "effectiveStatus": "notApplicable",
+          "id": "SV-257779",
+          "impact": 0,
+          "results": [
+            {
+              "codeDesc": "No-op",
+              "message": "Skipped control due to only_if condition: Control not applicable within a container",
+              "resource": "noop",
+              "resourceId": "No-op",
+              "runTime": 0.000043,
+              "startTime": "2026-08-31T17:32:01Z",
+              "status": "notReviewed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 1,
+            "ref": "redhat-enterprise-linux-9-stig-baseline/controls/SV-257779.rb"
+          },
+          "tags": {
+            "cci": [
+              "CCI-000048",
+              "CCI-001384",
+              "CCI-001385",
+              "CCI-001386",
+              "CCI-001387",
+              "CCI-001388"
+            ],
+            "fix_id": "F-61444r925323_fix",
+            "gid": "V-257779",
+            "gtitle": "SRG-OS-000023-GPOS-00006",
+            "host": null,
+            "nist": [
+              "AC-8 a",
+              "AC-8 c 1",
+              "AC-8 c 2",
+              "AC-8 c 3"
+            ],
+            "rid": "SV-257779r958390_rule",
+            "satisfies": [
+              "SRG-OS-000023-GPOS-00006",
+              "SRG-OS-000228-GPOS-00088"
+            ],
+            "severity": "medium",
+            "stig_id": "RHEL-09-211020"
+          },
+          "title": "RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner before granting local or remote access to the system via a command line user logon."
+        }
+      ],
+      "status": "loaded",
+      "statusMessage": "",
+      "summary": "InSpec profile aligned to DISA STIG for RHEL9",
+      "supports": [
+        {
+          "platformFamily": "redhat",
+          "release": "9.*"
+        }
+      ],
+      "title": "redhat-enterprise-linux-9-stig-baseline",
+      "version": "2.4.0"
+    }
+  ],
+  "components": [
+    {
+      "name": "redhat",
+      "osName": "redhat",
+      "osVersion": "9.8",
+      "type": "host"
+    }
+  ],
+  "generator": {
+    "name": "legacyhdf-to-hdf",
+    "version": "dev"
+  },
+  "statistics": {
+    "duration": 50.158169
+  },
+  "timestamp": "2026-08-31T17:32:51Z",
+  "tool": {
+    "format": "exec-json",
+    "name": "InSpec",
+    "version": "7.1.7"
+  }
+}

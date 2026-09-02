@@ -22,6 +22,7 @@ import (
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gosec-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/grype-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/jfrog-xray-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/kics-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/msft-defender-cloud-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/msft-defender-devops-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/msft-defender-endpoint-to-hdf/go"
