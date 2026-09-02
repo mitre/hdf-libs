@@ -199,6 +199,8 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 
+**Deliberately NOT swept:** `HDF_CLI_VERSION` / `HDF_CLI_SHA256` in `.github/workflows/ci.yml` (the CI scan gate's pinned released CLI). Bumping it to `NEW` here would point CI at a release whose assets don't exist yet — the download 404s and CI breaks on the release PR itself. It lags by design and is bumped post-publish in Phase 9.
+
 ### Phase 2.5 — Site archive: stage the new version's raw schema files *(minor/major only)*
 
 The docs site at mitre.github.io/hdf-libs/ archives every released schema version under `site/public/schemas/<name>/v<X.Y.Z>/index.json`. The archive backs both the canonical `$id` URL (consumers fetching `.../schemas/hdf-amendments/v3.2.0/` get the right file forever) and the per-version rendered docs at `/v3.2.0/schemas/`. New version files for THIS release must be added to the archive as part of this commit.
@@ -307,6 +309,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 2. **GitHub issues (public — do NOT close or comment as the user without explicit OK):** produce the list of issues fixed and now released, with a suggested resolution comment each (e.g. "Resolved in vNEW"). Present it for the user to action, or close only with explicit per-instance approval. We use `Refs #N` (never auto-closing `Closes #N`) precisely so closing happens here, at release time.
 3. **Beads backstop:** `bd dolt pull`; catch any straggler bead that was delivered but missed in Phase 1.5 and close it citing `vNEW`; `bd dolt push`. In the normal flow Phase 1.5 already handled these — this is only a safety net.
 4. Surface any mismatch (a bead with no issue, an issue with no shipped fix, a `Refs #N` whose issue is already closed) rather than papering over it.
+5. **Bump the CI scan gate's CLI pin** (couldn't happen in the release commit — the assets only exist now): in `.github/workflows/ci.yml` env, set `HDF_CLI_VERSION` to `NEW` and `HDF_CLI_SHA256` to the `linux_amd64` line of the release's published `checksums.txt` (`gh release download vNEW -p checksums.txt`). Propose it as its own follow-up commit; the next CI run proves the new pin end-to-end (the gate downloads, checksum-verifies, and gates with it). If a parked branch/card was waiting on gate-relevant CLI behavior shipping in this release (check `bd list --label breaking-change`), this bump is what unblocks it.
 
 ## Quick checklist (paste into the response after Phase 0)
 
@@ -330,3 +333,4 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] No `git tag` run manually
 - [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next`/`v<major>` (or `rc`) at NEW; no manual publishes or dist-tag moves to `latest`
 - [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers
+- [ ] Phase 9: CI scan-gate CLI pin bumped post-publish (`HDF_CLI_VERSION`/`HDF_CLI_SHA256` in ci.yml, sha from the release's checksums.txt) as its own commit; parked breaking-change cards waiting on the new CLI unblocked

@@ -32,16 +32,34 @@ env:
   NODE_VERSION: '22'
   GO_VERSION: '1.26.6'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
+  GOVULNCHECK_VERSION: 'v1.1.4'
+  ZIZMOR_VERSION: '1.30.0'
+  # The gate runs the last *released* hdf CLI (version + sha256 pinned;
+  # bump deliberately when a release lands) — not a binary built from the
+  # commit under test, so a CLI bug in a PR cannot fail or skew its own gate.
+  HDF_CLI_VERSION: '3.5.1'
+  HDF_CLI_SHA256: '482bc0e3a92a508d141e9285eba9985965c0d6bc67e922903359d70e06c3ae7a'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
-#   check-ts ─┐
-#   check-go ─┤── gate ── build ──┬── test-ts
-#                                 ├── test-go
-#                                 ├── coverage
-#                                 └── verify-packages
+#   scan-workflows ─┐
+#   check-ts ───────┤── gate-hdf ── build ──┬── test-ts
+#   check-go ───────┘                       ├── test-go
+#                                           ├── coverage
+#                                           └── verify-packages
 #
-# Gate phase: lint + typecheck + security (2 parallel jobs).
+# This pipeline normalizes and gates its own scan data through HDF, as an
+# exemplar of how to use HDF in a pipeline. Scan phase: compilers and audits
+# hard-fail as before, but the scanners (zizmor, eslint, golangci-lint,
+# govulncheck) run ONCE in SARIF mode via .github/scripts/scan-*.sh and
+# tolerate only their documented findings exit — findings are gated
+# downstream. gate-hdf (.github/scripts/gate-hdf.sh): the pinned last
+# *released* hdf CLI normalizes every scan into HDF via registry
+# auto-detect, schema-validates it, and applies the committed threshold
+# templates (.github/hdf-thresholds/). The threshold verdict — not the
+# scanners' exit codes — is what fails CI, and it runs before build/test so
+# a lint finding never costs a test-suite run. The normalized bundle is
+# uploaded as the hdf-normalized-scans artifact.
 # Build phase: build once, upload artifacts (ubuntu).
 # Test phase: test on ubuntu + windows matrix.
 # verify-packages: publint + attw against packed tarballs — catches
@@ -49,6 +67,22 @@ env:
 # metadata defects before they reach main (and before a release tag).
 
 jobs:
+  # ── Scan: the workflow files themselves ──────────────────────────────────
+  scan-workflows:
+    name: Scan workflows (zizmor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: zizmor (SARIF; findings gate via HDF)
+        run: .github/scripts/scan-zizmor.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-workflows
+          path: scan-artifacts/
+
   # ── Gate: TypeScript checks ──────────────────────────────────────────────
   check-ts:
     name: Check TypeScript (lint + typecheck + audit)
@@ -63,8 +97,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
-      - name: ESLint
-        run: pnpm -r --filter=!hdf-cli run lint
+      - name: ESLint (SARIF; findings gate via HDF)
+        run: .github/scripts/scan-eslint.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-ts
+          path: scan-artifacts/
       - name: tsc --noEmit
         run: pnpm -r --filter=!hdf-cli run type-check
       - name: npm audit
@@ -91,33 +129,50 @@ jobs:
       # golangci-lint using each package's own .golangci.yml — no standalone
       # gosec step (its former workflow-level excludes G304/G104 live in
       # hdf-cli/.golangci.yml; G115/G706 verified unnecessary and now enforced).
-      - name: golangci-lint (all workspace modules)
-        run: |
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${{ env.GOLANGCI_LINT_VERSION }}
-          FAIL=0
-          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
-            echo "::group::golangci-lint $dir"
-            (cd "$dir" && golangci-lint run ./...) || FAIL=1
-            echo "::endgroup::"
-          done
-          exit $FAIL
-      - name: govulncheck (all workspace modules)
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-          FAIL=0
-          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
-            echo "::group::govulncheck $dir"
-            (cd "$dir" && govulncheck ./...) || FAIL=1
-            echo "::endgroup::"
-          done
-          exit $FAIL
+      - name: golangci-lint (SARIF; findings gate via HDF)
+        run: .github/scripts/scan-golangci.sh
+      - name: govulncheck (SARIF; findings gate via HDF)
+        run: .github/scripts/scan-govulncheck.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-go
+          path: scan-artifacts/
+
+  # ── Gate: scan findings, judged as HDF ───────────────────────────────────
+  # This pipeline normalizes and gates its own scan data through HDF, as an
+  # exemplar of how to use HDF in a pipeline: the last released hdf CLI
+  # converts every scanner's SARIF (via registry auto-detect), validates it
+  # against the schema, and applies the committed threshold templates. This
+  # is the job that decides whether scan findings fail CI.
+  gate-hdf:
+    name: Gate on HDF thresholds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [scan-workflows, check-ts, check-go]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: scan-*
+          path: scan-artifacts
+          merge-multiple: true
+      - name: Normalize scans to HDF and apply thresholds
+        run: .github/scripts/gate-hdf.sh
+      - name: Upload normalized HDF
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hdf-normalized-scans
+          path: hdf-scans/
 
   # ── Build (once, share artifacts) ────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [check-ts, check-go]
+    needs: gate-hdf
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -196,7 +251,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
-          lfs: 'true'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
@@ -228,7 +282,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
-          lfs: 'true'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts

@@ -1,0 +1,17 @@
+# govulncheck-specific gate. govulncheck's SARIF encodes reachability as
+# level: error = vulnerable symbol actually called, warning = vulnerable
+# package imported but no vulnerable symbol called, note = vulnerable module
+# required but package not even imported. Its own text-mode gate fails only
+# on called symbols; warning/note are informational. This template mirrors
+# that policy in HDF terms (error->high, warning->medium, note->low): only
+# reachable vulnerabilities fail CI, while the informational findings stay
+# visible — recorded as low/medium findings in the normalized artifact —
+# until dependabot bumps the module.
+failed:
+    critical:
+        max: 0
+    high:
+        max: 0
+error:
+    total:
+        max: 0
