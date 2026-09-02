@@ -1,0 +1,12 @@
+# Pipeline scan gate, applied by the gate-hdf job to every normalized scan
+# (`hdf validate threshold -T`): any finding the underlying tool reports
+# fails CI. Counts come from the effective-status layer, so a suppression
+# carried in the scan output (e.g. an in-source eslint-disable with its
+# justification) arrives as a waiver-typed statusOverride and does not trip
+# the gate — it becomes auditable governance data in the artifact instead.
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0

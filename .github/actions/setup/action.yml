@@ -1,5 +1,7 @@
 name: 'Setup hdf-libs'
 description: 'Setup Node/pnpm, install dependencies, optionally setup Go. Repo must be checked out first.'
+# note -- setup will always need the TS installation; even the Go test
+# suites are orchestrated by pnpm.
 inputs:
   go:
     description: 'Setup Go toolchain'
