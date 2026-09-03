@@ -1,5 +1,7 @@
 # HDF Libraries
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/mitre/hdf-libs/badge)](https://scorecard.dev/viewer/?uri=github.com/mitre/hdf-libs)
+
 **Heimdall Data Format (HDF)** is a standardized JSON schema for representing security assessment baselines and results across diverse tools and platforms.
 
 ## Overview
