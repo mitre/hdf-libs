@@ -209,13 +209,42 @@ function canonicalizeControl(control) {
 
 // --- tier 1: AWS Config docs ---
 
+// Remove every <...> tag span in a single linear scan — byte-equivalent to the
+// former replace(/<[^>]+>/g, ''), whose backtracking is quadratic on long
+// angle-bracket runs. Matching that regex's `+`: a bare '<>' is not a tag and
+// stays literal, as does a trailing '<' with no closing '>'.
+export function stripTags(s) {
+  let out = '';
+  let i = 0;
+  while (i < s.length) {
+    const lt = s.indexOf('<', i);
+    if (lt === -1) {
+      out += s.slice(i);
+      break;
+    }
+    const gt = s.indexOf('>', lt + 1);
+    if (gt === -1) {
+      out += s.slice(i);
+      break;
+    }
+    if (gt === lt + 1) {
+      out += s.slice(i, lt + 1);
+      i = lt + 1;
+      continue;
+    }
+    out += s.slice(i, lt);
+    i = gt + 1;
+  }
+  return out;
+}
+
 // Parse the single control->rule table into ruleName -> Set(control), normalized.
 function parseConfigDocs(html) {
   const map = new Map();
   for (const [, row] of html.matchAll(/<tr>(.*?)<\/tr>/gs)) {
     const cells = [...row.matchAll(/<td[^>]*>(.*?)<\/td>/gs)].map((c) => c[1]);
     if (cells.length < 3) continue;
-    const control = cells[0].replace(/<[^>]+>/g, '').trim();
+    const control = stripTags(cells[0]).trim();
     const ruleMatch = cells[2].match(/developerguide\/([a-z0-9-]+)\.html/);
     if (!ruleMatch || !/^[A-Z]{2,}-\d/.test(control)) continue;
     const rule = ruleMatch[1];

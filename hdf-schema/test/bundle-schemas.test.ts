@@ -85,7 +85,7 @@ describe('bundle-schemas', () => {
       // Check that primitive schemas are embedded (not external)
       const defsKeys = Object.keys(bundled.$defs || {});
       const hasEmbeddedPrimitives = defsKeys.some(key =>
-        key.includes('https://mitre.github.io/hdf-libs/schemas/primitives')
+        key.startsWith('https://mitre.github.io/hdf-libs/schemas/primitives')
       );
       expect(hasEmbeddedPrimitives).toBe(true);
     });
@@ -148,7 +148,7 @@ describe('bundle-schemas', () => {
       // Check that primitive schemas are embedded (not external)
       const defsKeys = Object.keys(bundled.$defs || {});
       const hasEmbeddedPrimitives = defsKeys.some(key =>
-        key.includes('https://mitre.github.io/hdf-libs/schemas/primitives')
+        key.startsWith('https://mitre.github.io/hdf-libs/schemas/primitives')
       );
       expect(hasEmbeddedPrimitives).toBe(true);
     });

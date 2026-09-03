@@ -26,8 +26,44 @@
  * ```
  */
 export function stripHtml(html: string): string {
-  const stripped = html.replace(/<[^>]*>/g, ' ');
-  return stripped.replace(/\s+/g, ' ').trim();
+  return replaceHtmlTags(html, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Replace every `<...>` tag span with `replacement`, in a single linear scan.
+ *
+ * Matches the historical `replace(/<[^>]*>/g, replacement)` span semantics: a
+ * span runs from `<` to the first following `>`; a trailing `<` with no
+ * closing `>` stays literal. The manual scan avoids that regex's quadratic
+ * backtracking on pathological inputs (e.g. long runs of `<`).
+ *
+ * `replacement` is inserted literally (no `$`-pattern expansion, unlike
+ * `String.replace`) and is expected to be a plain separator such as `' '` or
+ * `''`. For such replacements — anything containing no `<` or `>` — the output
+ * can never contain a `<...>` pair, so tags cannot be reassembled from
+ * fragments.
+ *
+ * @param html - String potentially containing HTML tags
+ * @param replacement - What each tag span becomes (`' '` or `''`)
+ */
+export function replaceHtmlTags(html: string, replacement: string): string {
+  let out = '';
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf('<', i);
+    if (lt === -1) {
+      out += html.slice(i);
+      break;
+    }
+    const gt = html.indexOf('>', lt + 1);
+    if (gt === -1) {
+      out += html.slice(i);
+      break;
+    }
+    out += html.slice(i, lt) + replacement;
+    i = gt + 1;
+  }
+  return out;
 }
 
 // A bare ISO-8601 datetime with a time component but no timezone designator.
@@ -96,7 +132,16 @@ export function parseTimestamp(s: string): Date | null {
  *   trimUtcFraction('2024-01-01T00:00:00.120Z'); // '2024-01-01T00:00:00.12Z'
  */
 export function trimUtcFraction(s: string): string {
-  return s.replace(/\.(\d*?)0+Z$/, (_m, keep: string) => (keep ? `.${keep}Z` : 'Z'));
+  // The digits are located with an unambiguous (linear) pattern; the
+  // trailing-zero trim happens on the bounded capture with plain string ops.
+  const m = /\.(\d*)Z$/.exec(s);
+  if (!m) return s;
+  const digits = m[1] as string;
+  let end = digits.length;
+  while (end > 0 && digits[end - 1] === '0') end--;
+  if (end === digits.length) return s; // no trailing zeros (or no digits at all)
+  const kept = digits.slice(0, end);
+  return s.slice(0, m.index) + (kept ? `.${kept}Z` : 'Z');
 }
 
 /**

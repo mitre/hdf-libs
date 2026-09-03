@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 // Exported by the generator so token handling is testable without fetching
 // the AWS sources.
-import { expandCollapsed } from '../scripts/generate-awsconfig-mappings.mjs';
+import { expandCollapsed, stripTags } from '../scripts/generate-awsconfig-mappings.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA = join(__dirname, '..', 'src', 'data');
@@ -61,6 +61,28 @@ describe('expandCollapsed (stem-tracking)', () => {
     // must fail loudly rather than guess.
     expect(() => expandCollapsed('AC-2(a)(1)')).toThrow(/ambiguous/i);
     expect(() => expandCollapsed('IA-5(1)(a)(2)')).toThrow(/ambiguous/i);
+  });
+});
+
+describe('stripTags (linear tag removal)', () => {
+  it('removes tag spans, matching the former /<[^>]+>/g semantics', () => {
+    expect(stripTags('<p>AC-2</p>')).toBe('AC-2');
+    expect(stripTags('<a href="x">AC-2(1)</a> and <b>AC-3</b>')).toBe('AC-2(1) and AC-3');
+  });
+
+  it("keeps a bare '<>' and an unclosed trailing '<' literal", () => {
+    expect(stripTags('a<>b')).toBe('a<>b');
+    expect(stripTags('a<b>c<def')).toBe('ac<def');
+    expect(stripTags('<><x>')).toBe('<>');
+  });
+
+  it('runs in linear time on pathological angle-bracket input', { timeout: 120_000 }, () => {
+    const pathological = '<'.repeat(100_000);
+    const t0 = performance.now();
+    const out = stripTags(pathological);
+    const elapsed = performance.now() - t0;
+    expect(out).toBe(pathological);
+    expect(elapsed).toBeLessThan(1000);
   });
 });
 

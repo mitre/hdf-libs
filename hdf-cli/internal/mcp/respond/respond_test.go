@@ -265,6 +265,20 @@ func TestPaginate_OversizeRowGetsOwnPage(t *testing.T) {
 	}
 }
 
+func TestPaginate_PagesShareNoBackingArray(t *testing.T) {
+	rows := []map[string]any{{"i": 0}, {"i": 1}, {"i": 2}, {"i": 3}}
+	// Two rows per page (budget 250 at 100 tokens/row).
+	pages := Paginate(rows, 250, func(p []map[string]any) int { return len(p) * 100 })
+	if len(pages) != 2 {
+		t.Fatalf("expected 2 pages, got %d", len(pages))
+	}
+	// Appending to an earlier page must not clobber a later page's rows.
+	_ = append(pages[0], map[string]any{"i": 99})
+	if got := pages[1][0]["i"]; got != 2 {
+		t.Fatalf("page 1 corrupted by append to page 0: got %v, want 2", got)
+	}
+}
+
 func TestPaginate_EmptyInputYieldsOneEmptyPage(t *testing.T) {
 	pages := Paginate(nil, 100, func([]map[string]any) int { return 0 })
 	if len(pages) != 1 || len(pages[0]) != 0 {

@@ -1,4 +1,4 @@
-import { parseJSON, parseTimestamp, severityToImpactWithAliases } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, severityToImpactWithAliases, stripHtml } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   getOwaspNistControl,
@@ -520,7 +520,7 @@ function extractDescription(rule: SonarQubeRule | undefined): string {
 
   if (rule.htmlDesc) {
     // Strip HTML tags for plain text description
-    return rule.htmlDesc.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return stripHtml(rule.htmlDesc);
   }
 
   // Fall back to descriptionSections (SonarQube 26+ format)
@@ -528,11 +528,11 @@ function extractDescription(rule: SonarQubeRule | undefined): string {
     // Prefer root_cause section (closest to the old monolithic description)
     const rootCause = rule.descriptionSections.find(s => s.key === 'root_cause');
     if (rootCause) {
-      return rootCause.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      return stripHtml(rootCause.content);
     }
     // If no root_cause, concatenate all sections
     const parts = rule.descriptionSections
-      .map(s => s.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())
+      .map(s => stripHtml(s.content))
       .filter(s => s.length > 0);
     if (parts.length > 0) {
       return parts.join('\n\n');
