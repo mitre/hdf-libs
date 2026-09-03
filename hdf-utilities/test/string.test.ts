@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   stripHtml,
+  replaceHtmlTags,
   parseTimestamp,
   formatTimestamp,
   formatTimestampSeconds,
@@ -36,6 +37,41 @@ describe('stripHtml', () => {
     expect(stripHtml('<a href="http://example.com">link text</a>')).toBe(
       'link text',
     );
+  });
+
+  it('keeps an unclosed trailing tag literal', () => {
+    expect(stripHtml('text <unclosed tag at end')).toBe('text <unclosed tag at end');
+    expect(stripHtml('a<b>c<def')).toBe('a c<def');
+  });
+
+  it('treats a bare angle-bracket span as a tag (matches the historical regex)', () => {
+    expect(stripHtml('a < b and c > d')).toBe('a d');
+    expect(stripHtml('<scr<b>ipt>')).toBe('ipt>');
+  });
+
+  it('runs in linear time on pathological angle-bracket input', { timeout: 120_000 }, () => {
+    const pathological = '<'.repeat(100_000);
+    const t0 = performance.now();
+    const out = stripHtml(pathological);
+    const elapsed = performance.now() - t0;
+    expect(out).toBe(pathological);
+    expect(elapsed).toBeLessThan(1000);
+  });
+});
+
+describe('replaceHtmlTags', () => {
+  it('removes tag spans with an empty replacement', () => {
+    expect(replaceHtmlTags('<p>hello</p> <b>world</b>', '')).toBe('hello world');
+    expect(replaceHtmlTags('before<br/>after', '')).toBe('beforeafter');
+  });
+
+  it('never leaves a reassembled tag in the output', () => {
+    expect(replaceHtmlTags('<scr<b>ipt>alert(1)', '')).toBe('ipt>alert(1)');
+    expect(replaceHtmlTags('<<a>script>', '')).toBe('script>');
+  });
+
+  it('keeps an unclosed trailing tag literal', () => {
+    expect(replaceHtmlTags('a<b>c<def', '')).toBe('ac<def');
   });
 });
 
@@ -161,6 +197,24 @@ describe('trimUtcFraction', () => {
 
   it('leaves a fraction-free timestamp unchanged', () => {
     expect(trimUtcFraction('2024-11-15T10:30:00Z')).toBe('2024-11-15T10:30:00Z');
+  });
+
+  it('leaves an empty or non-digit fraction unchanged', () => {
+    expect(trimUtcFraction('2024-11-15T10:30:00.Z')).toBe('2024-11-15T10:30:00.Z');
+    expect(trimUtcFraction('2024-01-01T00:00:00.00xZ')).toBe('2024-01-01T00:00:00.00xZ');
+  });
+
+  it('drops a long all-zero fraction', () => {
+    expect(trimUtcFraction('2024-01-01T00:00:00.000000000Z')).toBe('2024-01-01T00:00:00Z');
+  });
+
+  it('runs in linear time on pathological zero-run input', { timeout: 120_000 }, () => {
+    const pathological = '.' + '0'.repeat(100_000) + 'x';
+    const t0 = performance.now();
+    const out = trimUtcFraction(pathological);
+    const elapsed = performance.now() - t0;
+    expect(out).toBe(pathological);
+    expect(elapsed).toBeLessThan(1000);
   });
 });
 

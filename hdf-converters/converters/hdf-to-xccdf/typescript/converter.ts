@@ -1,5 +1,8 @@
 import { buildXml, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
+import { requirementStatusInput } from '../../../shared/typescript/status.js';
+import { computeEffectiveStatus, worstStatus } from '@mitre/hdf-utilities';
 import type {
+  ResultStatus,
   HDFResults,
   EvaluatedRequirement,
   Description,
@@ -343,12 +346,17 @@ function buildTestResultObj(
     const ruleIdRef = sanitizeXccdfId('xccdf_hdf_rule_' + req.id + '_rule');
     const stigId = tagString(req.tags, 'stig_id');
 
-    // When an override set requirement.effectiveStatus, the emitted result
-    // reflects the governing (post-override) status; otherwise each result's
-    // own raw status carries through.
-    const effective = req.effectiveStatus
-      ? hdfStatusToXccdf(req.effectiveStatus)
-      : undefined;
+    // When the canonical ladder's answer differs from the raw roll-up,
+    // something governs the requirement (an override, an error escape, or the
+    // impact-0 rule) — the emitted results uniformly reflect that governed
+    // posture. Otherwise each result's own raw status carries through. The
+    // stored effectiveStatus field is never read.
+    const statusInput = requirementStatusInput(req);
+    const resolved = computeEffectiveStatus(statusInput);
+    const effective =
+      resolved !== worstStatus(statusInput.resultStatuses ?? [])
+        ? hdfStatusToXccdf(resolved as ResultStatus)
+        : undefined;
 
     for (const result of req.results) {
       const status = effective ?? hdfStatusToXccdf(result.status);

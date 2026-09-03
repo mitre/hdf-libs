@@ -65,6 +65,7 @@ var fixtureTests = []struct {
 	{"msft-secure-score-to-hdf", "minimal.json", "msft-secure-score-to-hdf"},
 	{"neuvector-to-hdf", "minimal.json", "neuvector-to-hdf"},
 	{"nikto-to-hdf", "minimal.json", "nikto-to-hdf"},
+	{"semgrep-to-hdf", "real.json", "semgrep-to-hdf"},
 	{"snyk-to-hdf", "minimal.json", "snyk-to-hdf"},
 	{"sonarqube-to-hdf", "minimal.json", "sonarqube-to-hdf"},
 	{"splunk-to-hdf", "splunk-minimal.json", "splunk-to-hdf"},

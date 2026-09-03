@@ -1,0 +1,61 @@
+name: Fuzz
+
+# Scheduled native Go fuzzing of the parser entry points (the codebase is
+# largely parsers of untrusted scanner output). Per-PR CI runs each target's
+# seed corpus as plain tests; this workflow does the actual coverage-guided
+# mutation on a weekly budget. A found crasher is written to the package's
+# testdata/fuzz/ directory and uploaded as an artifact.
+
+on:
+  schedule:
+    - cron: '0 7 * * 2'
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  GO_VERSION: '1.26.6'
+
+jobs:
+  fuzz:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dir: hdf-utilities/go
+            target: FuzzParseTimestamp
+          - dir: hdf-converters/shared/go
+            target: FuzzValidateXMLInput
+          - dir: hdf-converters/converters/nessus-to-hdf/go
+            target: FuzzConvertNessusToHDF
+          - dir: hdf-converters/converters/burpsuite-to-hdf/go
+            target: FuzzConvertBurpsuiteToHDF
+          - dir: hdf-converters/converters/xccdf-results-to-hdf/go
+            target: FuzzConvertXccdfToHDF
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
+
+      - name: Fuzz ${{ matrix.target }}
+        working-directory: ${{ matrix.dir }}
+        run: go test -fuzz="^${{ matrix.target }}$" -fuzztime=300s -run='^$' .
+
+      - name: Upload crash corpus
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: crashers-${{ matrix.target }}
+          path: ${{ matrix.dir }}/testdata/fuzz/
+          if-no-files-found: ignore
+          retention-days: 30

@@ -1,0 +1,81 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Fake message.",
+              "label": "default"
+            },
+            {
+              "data": "Fake message.",
+              "label": "rationale"
+            },
+            {
+              "data": "Fake message.",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : targets/basic/stupid.py LINE : 3 COLUMN : 12\n    return a + b == a + b",
+              "startTime": "2026-09-01T21:35:03.694512-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : targets/basic/stupid.py LINE : 3 COLUMN : 21\n    return a + b == a + b",
+              "startTime": "2026-09-01T21:35:03.694512-04:00",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 3,
+            "ref": "targets/basic/stupid.py"
+          },
+          "id": "rules.rule-with-cwe-tag",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [
+              "CWE-88888888",
+              "CWE-99999999"
+            ],
+            "fingerprints": {
+              "fingerprints": {
+                "matchBasedId/v1": "c14751d4f27243ab3fc24c8e9993358c58673b1f8cb907fc90f66a33826c9183a0386cc160cf4457cf7e175c9efb083d250a3b52fe3154a003fc9b9955802118_0"
+              }
+            },
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error"
+          },
+          "code": "    return a + b == a + b",
+          "title": "rules.rule-with-cwe-tag",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "540d6e9128e1c6ca91cc7d8f44f27c305785bb8229dfacf88901f0f3d3c0cf84"
+      },
+      "name": "Semgrep OSS",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-01T21:35:03.694512-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "Semgrep OSS"
+  }
+}

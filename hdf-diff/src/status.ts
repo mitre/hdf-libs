@@ -22,11 +22,12 @@ interface OverrideLike {
  * overrides, delegating to the canonical shared implementation in
  * `@mitre/hdf-utilities` (see status-determination.md):
  *
- * 1. impact === 0 → notApplicable (regardless of results)
- * 2. the governing (most recent non-expired) status override's status
- * 3. effectiveStatus field set (and no statusOverrides) → use it
- * 4. Aggregate results using worst-wins
- * 5. Empty results → notReviewed
+ * 1. the governing (most recent non-expired) status override's status
+ * 2. else result roll-up error → error
+ * 3. else impact === 0 → notApplicable
+ * 4. else worst-wins roll-up of the results (empty → notReviewed)
+ *
+ * The stored effectiveStatus field is an output cache and is never read.
  */
 export function computeEffectiveStatus(
   requirement: Record<string, unknown>,
@@ -38,7 +39,6 @@ export function computeEffectiveStatus(
     {
       // A missing impact must not read as 0 (which would force notApplicable).
       impact: (requirement['impact'] as number | undefined) ?? Number.NaN,
-      effectiveStatus: requirement['effectiveStatus'] as string | undefined,
       resultStatuses: results.map((r) => r.status),
       overrides: overrides.map((o) => ({
         status: o.status,

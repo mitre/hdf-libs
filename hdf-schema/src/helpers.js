@@ -229,36 +229,26 @@ export function createCvss(version, options = {}) {
 // @mitre/hdf-schema/helpers still get these functions.
 export { severityToImpact, impactToSeverity } from '@mitre/hdf-utilities';
 
-import { worstStatus } from '@mitre/hdf-utilities';
+import { computeEffectiveStatus as canonicalComputeEffectiveStatus } from '@mitre/hdf-utilities';
 
 /**
- * Compute the effective status of a requirement from its results and impact.
- *
- * When effectiveStatus is already set on the requirement, returns it directly.
- * Otherwise derives status using standard HDF/InSpec precedence:
- *   1. effectiveStatus already set → return it
- *   2. impact === 0 → notApplicable
- *   3. No results → notReviewed
- *   4. Worst-wins roll-up of results via the canonical shared ordering
- *      (error > failed > passed > notApplicable > notReviewed)
+ * Compute the effective status of a requirement — delegates to the canonical
+ * ladder in @mitre/hdf-utilities (see status-determination.md): governing
+ * non-expired override → error roll-up → impact-0 notApplicable → worst-wins
+ * roll-up. The stored effectiveStatus field is never read (output cache).
  *
  * @param {import('../dist/ts/hdf-results.js').EvaluatedRequirement} requirement
  * @returns {import('../dist/ts/hdf-results.js').ResultStatus}
  */
 export function computeEffectiveStatus(requirement) {
-  if (requirement.effectiveStatus) {
-    return requirement.effectiveStatus;
-  }
-
-  if (requirement.impact === 0) {
-    return 'notApplicable';
-  }
-
-  // Worst-wins roll-up via the canonical shared ordering (error > failed >
-  // passed > notApplicable > notReviewed); empty results -> notReviewed.
-  // NOTE: unlike the full effective-status computation in @mitre/hdf-utilities,
-  // this helper deliberately honors an already-set effectiveStatus first (its
-  // documented back-compat contract) and does not consult statusOverrides.
-  const results = requirement.results ?? [];
-  return worstStatus(results.map((result) => result.status));
+  const stamp = (v) => (v instanceof Date ? v.toISOString() : typeof v === 'string' && v !== '' ? v : undefined);
+  return canonicalComputeEffectiveStatus({
+    impact: requirement.impact,
+    resultStatuses: (requirement.results ?? []).map((result) => result?.status),
+    overrides: (requirement.statusOverrides ?? []).map((override) => ({
+      status: override.status || undefined,
+      appliedAt: stamp(override.appliedAt),
+      expiresAt: stamp(override.expiresAt),
+    })),
+  });
 }

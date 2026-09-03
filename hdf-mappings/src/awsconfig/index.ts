@@ -5,11 +5,19 @@
  * module-global current revision, so existing callers keep getting the default.
  */
 
-import type { AwsConfigNistMapping, AwsConfigNistMappings } from './types.js';
+import type { AwsConfigNistMapping, AwsConfigNistMappings, AwsConfigSuppressions } from './types.js';
 import { getCurrentNistRevision, SUPPORTED_NIST_REVISIONS } from '../nist/index.js';
 import rawMappings from '../data/awsconfig-mappings.json';
+import rawSuppressions from '../data/awsconfig-suppressions.json';
 
 const mappings = rawMappings as AwsConfigNistMappings;
+
+/**
+ * The maintainer-reviewed (rule, control) removals the generator applied to
+ * the mapping table — exposed so a consumer can distinguish "removed by
+ * review" from "never mapped by the sources".
+ */
+export const awsConfigSuppressions = rawSuppressions as AwsConfigSuppressions;
 
 // revision → (key → mapping), for both source-identifier and rule-name lookup
 const byIdentifier = new Map<number, Map<string, AwsConfigNistMapping>>();

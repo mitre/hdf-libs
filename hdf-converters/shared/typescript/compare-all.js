@@ -8,7 +8,7 @@
 
 import { readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -58,9 +58,11 @@ function compareConverter(converterName) {
     }
 
     try {
-      // Use compare.ts for deep comparison
-      execSync(
-        `npx tsx ${join(__dirname, 'compare.ts')} "${tsFile}" "${goFile}"`,
+      // Use compare.ts for deep comparison. Argument array, not a shell
+      // string — paths never pass through shell parsing.
+      execFileSync(
+        'npx',
+        ['tsx', join(__dirname, 'compare.ts'), tsFile, goFile],
         { stdio: 'inherit' }
       );
       console.log(`  ✅ ${file}`);

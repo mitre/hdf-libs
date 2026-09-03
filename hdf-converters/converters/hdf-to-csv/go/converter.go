@@ -9,6 +9,7 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // ConvertHDFToCSV converts HDF JSON to CSV format
@@ -192,12 +193,10 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 		applicability = string(*requirement.Applicability)
 	}
 
-	// Post-override posture: effective columns fall back to the raw value when no
-	// override governs, so the column is always populated and sortable.
-	effStatus := status
-	if requirement.EffectiveStatus != nil {
-		effStatus = string(*requirement.EffectiveStatus)
-	}
+	// Post-override posture via the canonical ladder — the stored
+	// effectiveStatus field is never read (output cache); the column is always
+	// populated and sortable.
+	effStatus := hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(*requirement), time.Time{})
 	effImpact := requirement.Impact
 	if requirement.EffectiveImpact != nil {
 		effImpact = *requirement.EffectiveImpact

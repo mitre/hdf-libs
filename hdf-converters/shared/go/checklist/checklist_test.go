@@ -518,17 +518,34 @@ func exportVuln(t *testing.T, req hdf.EvaluatedRequirement) Vuln {
 
 // a1: STATUS reflects effectiveStatus when present, not the raw result status.
 func TestExportStatusUsesEffectiveStatus(t *testing.T) {
-	eff := hdf.NotApplicable
+	// A governing override drives the exported STATUS via the canonical ladder.
+	naStatus := hdf.NotApplicable
 	v := exportVuln(t, hdf.EvaluatedRequirement{
-		ID:              "V-1",
-		EffectiveStatus: &eff,
+		ID:      "V-1",
+		Impact:  0.7,
+		Results: []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
+		StatusOverrides: []hdf.StatusOverride{{
+			Type: hdf.OverrideTypeWaiver, Status: &naStatus,
+			AppliedBy: hdf.Identity{Identifier: "jdoe"},
+			AppliedAt: time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
+			ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+		}},
+	})
+	assert.Equal(t, StatusNotApplicable, v.Status, "governing waiver overrides raw failed")
+
+	// A stale stored effectiveStatus (no overrides) is never read.
+	v = exportVuln(t, hdf.EvaluatedRequirement{
+		ID:              "V-2",
+		Impact:          0.7,
+		EffectiveStatus: &naStatus,
 		Results:         []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
 	})
-	assert.Equal(t, StatusNotApplicable, v.Status, "effectiveStatus notApplicable overrides raw failed")
+	assert.Equal(t, StatusOpen, v.Status, "stale stored value ignored — ladder yields the raw roll-up")
 
-	// Falls back to the raw result status when effectiveStatus is absent.
+	// Raw result status carries through absent any override.
 	v = exportVuln(t, hdf.EvaluatedRequirement{
-		ID:      "V-2",
+		ID:      "V-3",
+		Impact:  0.7,
 		Results: []hdf.RequirementResult{{Status: hdf.Failed, CodeDesc: "check"}},
 	})
 	assert.Equal(t, StatusOpen, v.Status)

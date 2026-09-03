@@ -359,12 +359,17 @@ func TestConvertHDFToXCCDF_TestSystemFromTool(t *testing.T) {
 }
 
 func TestConvertHDFToXCCDF_EffectiveStatusGovernsResult(t *testing.T) {
-	// A waiver flips a failed result to notApplicable via effectiveStatus; the
-	// emitted rule-result must reflect the effective (post-override) status.
+	// A governing waiver flips a failed result to notApplicable; the emitted
+	// rule-result must reflect the governed (ladder-resolved) status. A bare
+	// stored effectiveStatus would be ignored.
 	input := []byte(`{"baselines":[{"name":"b","requirements":[{
 		"id":"SV-1","impact":0.5,"title":"req","tags":{},
 		"descriptions":[{"label":"default","data":"d"}],
-		"effectiveStatus":"notApplicable",
+		"statusOverrides":[{
+			"type":"waiver","status":"notApplicable","reason":"scoped out",
+			"appliedBy":{"type":"simple","identifier":"jdoe"},
+			"appliedAt":"2026-01-02T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"
+		}],
 		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]
 	}]}]}`)
 	out, err := ConvertHDFToXCCDF(input, "test")
@@ -372,6 +377,16 @@ func TestConvertHDFToXCCDF_EffectiveStatusGovernsResult(t *testing.T) {
 	result := string(out)
 	assert.Contains(t, result, "<result>notapplicable</result>")
 	assert.NotContains(t, result, "<result>fail</result>")
+}
+
+// A stale stored effectiveStatus (no overrides) is never read: the failed raw
+// result carries through instead of the stored passed claim.
+func TestConvertHDFToXCCDF_StaleStoredStatusIgnored(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"SV-9","impact":0.7,"title":"t","tags":{},"descriptions":[{"label":"default","data":"d"}],"effectiveStatus":"passed","results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToXCCDF(input, "test")
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "<result>fail</result>")
+	assert.NotContains(t, string(out), "<result>pass</result>")
 }
 
 func TestConvertHDFToXCCDF_RawStatusWhenNoOverride(t *testing.T) {

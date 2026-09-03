@@ -460,14 +460,28 @@ describe('checklist shared model', () => {
   const exportVuln = (req: Record<string, unknown>) =>
     hdfToChecklist(JSON.stringify({ baselines: [{ name: 'b', requirements: [req] }] })).stigs[0].vulns[0];
 
-  it('drives STATUS from effectiveStatus, falling back to raw result status (a1)', () => {
+  it('drives STATUS from the canonical ladder (a1)', () => {
+    // A governing waiver drives the exported STATUS.
     expect(
       exportVuln({
         id: 'V-1', impact: 0.7, tags: {}, descriptions: [],
-        effectiveStatus: 'notApplicable',
+        statusOverrides: [{
+          type: 'waiver', status: 'notApplicable', reason: 'scoped out',
+          appliedBy: { type: 'simple', identifier: 'jdoe' },
+          appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        }],
         results: [{ status: 'failed', codeDesc: 'check' }],
       }).status,
     ).toBe(CheckStatus.NotApplicable);
+
+    // A stale stored effectiveStatus (no overrides) is never read.
+    expect(
+      exportVuln({
+        id: 'V-1b', impact: 0.7, tags: {}, descriptions: [],
+        effectiveStatus: 'notApplicable',
+        results: [{ status: 'failed', codeDesc: 'check' }],
+      }).status,
+    ).toBe(CheckStatus.Open);
 
     expect(
       exportVuln({

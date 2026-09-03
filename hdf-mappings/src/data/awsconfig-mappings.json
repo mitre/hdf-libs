@@ -114,7 +114,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APIGATEWAY_STAGE_ACCESS_LOGS_ENABLED",
     "AwsConfigRuleName": "apigateway-stage-access-logs-enabled",
-    "NIST-ID": "AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -135,7 +135,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_GATEWAY_LOGGING_FILE_PATH_EXISTS",
     "AwsConfigRuleName": "appmesh-virtual-gateway-logging-file-path-exists",
-    "NIST-ID": "AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AU-12|AU-6(3)|AU-6(4)|CA-7|SI-7(8)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -149,7 +149,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_NODE_LOGGING_FILE_PATH_EXISTS",
     "AwsConfigRuleName": "appmesh-virtual-node-logging-file-path-exists",
-    "NIST-ID": "AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AU-12|AU-6(3)|AU-6(4)|CA-7|SI-7(8)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -163,7 +163,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPRUNNER_SERVICE_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "apprunner-service-no-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -198,7 +198,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPSYNC_LOGGING_ENABLED",
     "AwsConfigRuleName": "appsync-logging-enabled",
-    "NIST-ID": "AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SI-7(8)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -212,7 +212,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "ATHENA_WORKGROUP_LOGGING_ENABLED",
     "AwsConfigRuleName": "athena-workgroup-logging-enabled",
-    "NIST-ID": "AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AU-10|AU-12|AU-2|AU-6(3)|AU-6(4)|CA-7",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -478,7 +478,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_S3_BUCKET_PUBLIC_ACCESS_PROHIBITED",
     "AwsConfigRuleName": "cloudtrail-s3-bucket-public-access-prohibited",
-    "NIST-ID": "AC-21|AC-3|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AC-21|AC-3|AU-10|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -807,7 +807,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "EBS_SNAPSHOT_BLOCK_PUBLIC_ACCESS",
     "AwsConfigRuleName": "ebs-snapshot-block-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -849,7 +849,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "EC2_INSTANCE_MANAGED_BY_SSM",
     "AwsConfigRuleName": "ec2-instance-managed-by-systems-manager",
-    "NIST-ID": "CM-2|CM-7(a)|CM-8(1)|CM-8(3)|CM-8(a)|SA-10|SA-3(a)|SI-2(2)|SI-7(1)",
+    "NIST-ID": "CM-2|CM-7(a)|CM-8(1)|CM-8(3)(a)|SA-10|SA-3(a)|SI-2(2)|SI-7(1)",
     "Rev": 4,
     "Source": "config-pack"
   },
@@ -905,14 +905,14 @@
   {
     "AwsConfigRuleSourceIdentifier": "EC2_MANAGEDINSTANCE_ASSOCIATION_COMPLIANCE_STATUS_CHECK",
     "AwsConfigRuleName": "ec2-managedinstance-association-compliance-status-check",
-    "NIST-ID": "CM-2|CM-7(a)|CM-8(3)|CM-8(a)|SI-2(2)",
+    "NIST-ID": "CM-2|CM-7(a)|CM-8(3)(a)|SI-2(2)",
     "Rev": 4,
     "Source": "config-pack"
   },
   {
     "AwsConfigRuleSourceIdentifier": "EC2_MANAGEDINSTANCE_PATCH_COMPLIANCE_STATUS_CHECK",
     "AwsConfigRuleName": "ec2-managedinstance-patch-compliance-status-check",
-    "NIST-ID": "CM-8(3)|CM-8(a)|SI-2(2)|SI-7(1)",
+    "NIST-ID": "CM-8(3)(a)|SI-2(2)|SI-7(1)",
     "Rev": 4,
     "Source": "config-pack"
   },
@@ -1423,7 +1423,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "GUARDDUTY_ENABLED_CENTRALIZED",
     "AwsConfigRuleName": "guardduty-enabled-centralized",
-    "NIST-ID": "AC-17(1)|AC-2(1)|AC-2(12)|AC-2(4)|AC-2(a)|AC-2(g)|AU-6(1)|AU-6(3)|CA-7(a)|CA-7(b)|RA-5|SA-10|SI-4(1)|SI-4(16)|SI-4(2)|SI-4(4)|SI-4(5)|SI-4(a)|SI-4(b)|SI-4(c)",
+    "NIST-ID": "AC-17(1)|AC-2(1)|AC-2(12)(a)|AC-2(4)|AC-2(g)|AU-6(1)|AU-6(3)|CA-7(a)|CA-7(b)|RA-5|SA-10|SI-4(1)|SI-4(16)|SI-4(2)|SI-4(4)|SI-4(5)|SI-4(a)|SI-4(b)|SI-4(c)",
     "Rev": 4,
     "Source": "config-pack"
   },
@@ -1465,7 +1465,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "IAM_PASSWORD_POLICY",
     "AwsConfigRuleName": "iam-password-policy",
-    "NIST-ID": "AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)|IA-5(4)|IA-5(a)|IA-5(d)|IA-5(e)",
+    "NIST-ID": "AC-2(1)|AC-2(f)|AC-2(j)|IA-2|IA-5(1)(a)|IA-5(1)(d)|IA-5(1)(e)|IA-5(4)",
     "Rev": 4,
     "Source": "config-pack"
   },
@@ -1556,7 +1556,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "KMS_KEY_POLICY_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "kms-key-policy-no-public-access",
-    "NIST-ID": "AC-21|AC-3|CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -1605,7 +1605,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "LIGHTSAIL_BUCKET_ALLOW_PUBLIC_OVERRIDES_DISABLED",
     "AwsConfigRuleName": "lightsail-bucket-allow-public-overrides-disabled",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(21)|SC-7(3)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -1668,7 +1668,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "MQ_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "mq-no-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -1682,7 +1682,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "MSK_CLUSTER_PUBLIC_ACCESS_DISABLED",
     "AwsConfigRuleName": "msk-cluster-public-access-disabled",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -2207,7 +2207,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "REDSHIFT_SERVERLESS_WORKGROUP_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "redshift-serverless-workgroup-no-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -2543,7 +2543,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "SECURITYHUB_ENABLED",
     "AwsConfigRuleName": "securityhub-enabled",
-    "NIST-ID": "AC-17(1)|AC-2(1)|AC-2(12)|AC-2(4)|AC-2(a)|AC-2(g)|AU-6(1)|AU-6(3)|CA-7(a)|CA-7(b)|SA-10|SI-4(16)|SI-4(2)|SI-4(4)|SI-4(5)|SI-4(a)|SI-4(b)|SI-4(c)",
+    "NIST-ID": "AC-17(1)|AC-2(1)|AC-2(12)(a)|AC-2(4)|AC-2(g)|AU-6(1)|AU-6(3)|CA-7(a)|CA-7(b)|SA-10|SI-4(16)|SI-4(2)|SI-4(4)|SI-4(5)|SI-4(a)|SI-4(b)|SI-4(c)",
     "Rev": 4,
     "Source": "config-pack"
   },
@@ -2592,7 +2592,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "SSM_AUTOMATION_BLOCK_PUBLIC_SHARING",
     "AwsConfigRuleName": "ssm-automation-block-public-sharing",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -2642,13 +2642,6 @@
     "AwsConfigRuleSourceIdentifier": "TRANSFER_FAMILY_SERVER_NO_FTP",
     "AwsConfigRuleName": "transfer-family-server-no-ftp",
     "NIST-ID": "CM-7|IA-5|SC-8",
-    "Rev": 4,
-    "Source": "crosswalk"
-  },
-  {
-    "AwsConfigRuleSourceIdentifier": "USING_SERVICE_LINKED_ROLES",
-    "AwsConfigRuleName": "using-service-linked-roles",
-    "NIST-ID": "CM-3|CM-6(1)|CM-8|CM-8(2)",
     "Rev": 4,
     "Source": "crosswalk"
   },
@@ -2879,7 +2872,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APIGATEWAY_STAGE_ACCESS_LOGS_ENABLED",
     "AwsConfigRuleName": "apigateway-stage-access-logs-enabled",
-    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -2900,7 +2893,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_GATEWAY_LOGGING_FILE_PATH_EXISTS",
     "AwsConfigRuleName": "appmesh-virtual-gateway-logging-file-path-exists",
-    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AC-4(26)|AU-12|AU-6(3)|AU-6(4)|CA-7|SI-7(8)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -2914,7 +2907,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPMESH_VIRTUAL_NODE_LOGGING_FILE_PATH_EXISTS",
     "AwsConfigRuleName": "appmesh-virtual-node-logging-file-path-exists",
-    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AC-4(26)|AU-12|AU-6(3)|AU-6(4)|CA-7|SI-7(8)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -2928,7 +2921,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPRUNNER_SERVICE_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "apprunner-service-no-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -2963,7 +2956,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "APPSYNC_LOGGING_ENABLED",
     "AwsConfigRuleName": "appsync-logging-enabled",
-    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SI-7(8)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -2977,7 +2970,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "ATHENA_WORKGROUP_LOGGING_ENABLED",
     "AwsConfigRuleName": "athena-workgroup-logging-enabled",
-    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AC-4(26)|AU-10|AU-12|AU-2|AU-6(3)|AU-6(4)|CA-7",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -3243,7 +3236,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "CLOUDTRAIL_S3_BUCKET_PUBLIC_ACCESS_PROHIBITED",
     "AwsConfigRuleName": "cloudtrail-s3-bucket-public-access-prohibited",
-    "NIST-ID": "AC-21|AC-3|AC-4(26)|AU-10|AU-12|AU-2|AU-3|AU-6(3)|AU-6(4)|CA-7|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)|SI-7(8)",
+    "NIST-ID": "AC-21|AC-3|AU-10|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -3572,7 +3565,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "EBS_SNAPSHOT_BLOCK_PUBLIC_ACCESS",
     "AwsConfigRuleName": "ebs-snapshot-block-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -3607,7 +3600,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "EC2_INSTANCE_DETAILED_MONITORING_ENABLED",
     "AwsConfigRuleName": "ec2-instance-detailed-monitoring-enabled",
-    "NIST-ID": "CA-7(a)|CA-7(b)|SI-4(2)|SI-4(a)|SI-4(b)|SI-4(c)",
+    "NIST-ID": "CA-7|SI-4|SI-4(2)",
     "Rev": 5,
     "Source": "crosswalk"
   },
@@ -4090,7 +4083,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "EMR_KERBEROS_ENABLED",
     "AwsConfigRuleName": "emr-kerberos-enabled",
-    "NIST-ID": "AC-2(j)|AC-3|AC-5(c)|AC-6",
+    "NIST-ID": "AC-2|AC-3|AC-5|AC-6",
     "Rev": 5,
     "Source": "crosswalk"
   },
@@ -4195,7 +4188,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "GUARDDUTY_NON_ARCHIVED_FINDINGS",
     "AwsConfigRuleName": "guardduty-non-archived-findings",
-    "NIST-ID": "IR-4(1)|IR-6(1)|IR-7(1)|RA-5|SA-10|SI-4(a)|SI-4(b)|SI-4(c)",
+    "NIST-ID": "IR-4(1)|IR-6(1)|IR-7(1)|RA-5|SA-10|SI-4",
     "Rev": 5,
     "Source": "crosswalk"
   },
@@ -4209,7 +4202,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "IAM_GROUP_HAS_USERS_CHECK",
     "AwsConfigRuleName": "iam-group-has-users-check",
-    "NIST-ID": "AC-2(j)|AC-3|AC-5(c)|AC-6|SC-2",
+    "NIST-ID": "AC-2|AC-3|AC-5|AC-6|SC-2",
     "Rev": 5,
     "Source": "crosswalk"
   },
@@ -4321,7 +4314,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "KMS_KEY_POLICY_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "kms-key-policy-no-public-access",
-    "NIST-ID": "AC-21|AC-3|CA-9(1)|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|CM-3(6)|SC-13|SC-28|SC-28(1)|SC-7|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -4370,7 +4363,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "LIGHTSAIL_BUCKET_ALLOW_PUBLIC_OVERRIDES_DISABLED",
     "AwsConfigRuleName": "lightsail-bucket-allow-public-overrides-disabled",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(21)|SC-7(3)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -4433,7 +4426,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "MQ_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "mq-no-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -4447,7 +4440,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "MSK_CLUSTER_PUBLIC_ACCESS_DISABLED",
     "AwsConfigRuleName": "msk-cluster-public-access-disabled",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -4762,7 +4755,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "RDS_IN_BACKUP_PLAN",
     "AwsConfigRuleName": "rds-in-backup-plan",
-    "NIST-ID": "CP-10|CP-9(b)|SI-12",
+    "NIST-ID": "CP-10|CP-9|SI-12",
     "Rev": 5,
     "Source": "crosswalk"
   },
@@ -4972,7 +4965,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "REDSHIFT_SERVERLESS_WORKGROUP_NO_PUBLIC_ACCESS",
     "AwsConfigRuleName": "redshift-serverless-workgroup-no-public-access",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -5028,7 +5021,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCKS",
     "AwsConfigRuleName": "s3-account-level-public-access-blocks",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -5168,7 +5161,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "SAGEMAKER_ENDPOINT_CONFIG_PROD_INSTANCE_COUNT",
     "AwsConfigRuleName": "sagemaker-endpoint-config-prod-instance-count",
-    "NIST-ID": "CP-10|SA-13|SC-36|SC-5",
+    "NIST-ID": "CP-10|SC-36|SC-5",
     "Rev": 5,
     "Source": "security-hub"
   },
@@ -5357,7 +5350,7 @@
   {
     "AwsConfigRuleSourceIdentifier": "SSM_AUTOMATION_BLOCK_PUBLIC_SHARING",
     "AwsConfigRuleName": "ssm-automation-block-public-sharing",
-    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(4)|SC-7(9)",
+    "NIST-ID": "AC-21|AC-3|SC-7|SC-7(11)|SC-7(16)|SC-7(21)|SC-7(3)|SC-7(9)",
     "Rev": 5,
     "Source": "derived-theme"
   },
@@ -5407,13 +5400,6 @@
     "AwsConfigRuleSourceIdentifier": "TRANSFER_FAMILY_SERVER_NO_FTP",
     "AwsConfigRuleName": "transfer-family-server-no-ftp",
     "NIST-ID": "CM-7|IA-5|SC-8",
-    "Rev": 5,
-    "Source": "security-hub"
-  },
-  {
-    "AwsConfigRuleSourceIdentifier": "USING_SERVICE_LINKED_ROLES",
-    "AwsConfigRuleName": "using-service-linked-roles",
-    "NIST-ID": "CM-3|CM-6(1)|CM-8|CM-8(2)",
     "Rev": 5,
     "Source": "security-hub"
   },

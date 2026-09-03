@@ -232,15 +232,17 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected:           statusNotReviewed,
 		},
 		{
-			name: "uses effectiveStatus field directly when present and no overrides exist",
+			// Delegation pin: the stored effectiveStatus is an output cache —
+			// absent a governing override the roll-up wins in both directions.
+			name: "ignores stored effectiveStatus when no overrides exist",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
 				r.EffectiveStatus = stPtrResultStatus(hdf.Passed)
 			}),
-			expected: stStatusPassed,
+			expected: stStatusFailed,
 		},
 		{
-			name: "returns notApplicable when impact is 0 regardless of results",
+			name: "returns notApplicable when impact is 0 and no result errored",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Impact = 0
 				r.Results = []hdf.RequirementResult{
@@ -249,6 +251,17 @@ func TestComputeEffectiveStatus(t *testing.T) {
 				}
 			}),
 			expected: statusNotAppl,
+		},
+		{
+			// Delegation pin: the canonical implementation lets error escape
+			// the impact-0 short-circuit, and this wrapper
+			// inherits it.
+			name: "returns error when impact is 0 but a result errored",
+			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
+				r.Impact = 0
+				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Error)}
+			}),
+			expected: statusError,
 		},
 		{
 			name: "uses now when overrides exist but no referenceTimestamp provided",
@@ -271,13 +284,13 @@ func TestComputeEffectiveStatus(t *testing.T) {
 			expected: stStatusPassed,
 		},
 		{
-			name: "uses effectiveStatus when overrides array is empty",
+			name: "ignores stored effectiveStatus when overrides array is empty",
 			req: stMakeRequirement(func(r *hdf.EvaluatedRequirement) {
 				r.Results = []hdf.RequirementResult{stMakeResult(hdf.Failed)}
 				r.EffectiveStatus = stPtrResultStatus(hdf.Passed)
 				r.StatusOverrides = []hdf.StatusOverride{}
 			}),
-			expected: stStatusPassed,
+			expected: stStatusFailed,
 		},
 		{
 			name: "returns notReviewed when results slice is nil",

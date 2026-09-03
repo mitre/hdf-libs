@@ -114,9 +114,6 @@ func effectiveStatusOf(excludeAgent bool) func(hdf.EvaluatedRequirement) string 
 // MCP tool injects into CountControlsByStatus.
 func statusInput(req hdf.EvaluatedRequirement) hdfutil.EffectiveStatusInput {
 	in := hdfutil.EffectiveStatusInput{Impact: req.Impact}
-	if req.EffectiveStatus != nil {
-		in.EffectiveStatus = string(*req.EffectiveStatus)
-	}
 	for _, o := range req.StatusOverrides {
 		soi := hdfutil.StatusOverrideInput{AppliedAt: o.AppliedAt, ExpiresAt: o.ExpiresAt}
 		if o.Status != nil {
@@ -181,6 +178,27 @@ func TestMapControlIDsByStatus_UsesInjectedResolver(t *testing.T) {
 	nilMapped := MapControlIDsByStatus(results, nil)
 	require.Len(t, nilMapped, 1)
 	assert.Equal(t, ThresholdSkipped, nilMapped[0].Status)
+}
+
+// TestMapControlIDsByStatus_ImpactZeroErrorIsError pins the impact-0 error escape: a crashed
+// check at impact 0 must surface as error so hdf threshold's error.total gate
+// sees it — never no_impact. src/compliance.test.ts mirrors this.
+func TestMapControlIDsByStatus_ImpactZeroErrorIsError(t *testing.T) {
+	errored := hdf.EvaluatedRequirement{ID: "SV-ERR", Impact: 0.0, Results: resultsWith(hdf.Error)}
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Requirements: []hdf.EvaluatedRequirement{errored}}}}
+
+	resolver := func(req hdf.EvaluatedRequirement) string {
+		return hdfutil.ComputeEffectiveStatus(statusInput(req), time.Time{})
+	}
+
+	eff := MapControlIDsByStatus(results, resolver)
+	require.Len(t, eff, 1)
+	assert.Equal(t, "SV-ERR", eff[0].ID)
+	assert.Equal(t, ThresholdError, eff[0].Status, "impact-0 errored control resolves to error, not no_impact")
+
+	counts := CountControlsByStatus(results, resolver)
+	assert.Equal(t, 1, counts.Error.Total)
+	assert.Equal(t, 0, counts.NoImpact.Total)
 }
 
 func ptrInt(i int) *int           { return &i }

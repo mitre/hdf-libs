@@ -235,12 +235,18 @@ describe('hdf-to-xccdf Converter', () => {
       expect(result).toContain('test-system="cpe:/a:xccdf:xccdf:1.2.17"');
     });
 
-    it('projects effectiveStatus onto rule-result/result', () => {
+    it('projects the governed (ladder-resolved) status onto rule-result/result', () => {
+      // A governing waiver drives the emitted result; a bare stored
+      // effectiveStatus would be ignored (output cache).
       const input = JSON.stringify({
         baselines: [{ name: 'b', requirements: [{
           id: 'SV-1', impact: 0.5, title: 'req', tags: {},
           descriptions: [{ label: 'default', data: 'd' }],
-          effectiveStatus: 'notApplicable',
+          statusOverrides: [{
+            type: 'waiver', status: 'notApplicable', reason: 'scoped out',
+            appliedBy: { type: 'simple', identifier: 'jdoe' },
+            appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+          }],
           results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
         }] }],
       });
@@ -267,5 +273,23 @@ describe('hdf-to-xccdf Converter', () => {
         expect(normalizeXmlForGolden(out)).toBe(normalizeXmlForGolden(golden));
       });
     }
+  });
+});
+
+// A stale stored effectiveStatus (no overrides) is never read: the failed raw
+// result carries through instead of the stored passed claim.
+describe('stale stored effectiveStatus is ignored', () => {
+  it('emits the raw failed result', () => {
+    const input = JSON.stringify({
+        baselines: [{ name: 'b', requirements: [{
+          id: 'SV-9', impact: 0.7, title: 't', tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          effectiveStatus: 'passed',
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }] }],
+      });
+    const result = convertHdfToXccdf(input);
+    expect(result).toContain('<result>fail</result>');
+    expect(result).not.toContain('<result>pass</result>');
   });
 });

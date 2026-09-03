@@ -1,6 +1,7 @@
 package hdftocsv
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"os"
@@ -341,4 +342,23 @@ func TestGoldenParity(t *testing.T) {
 	golden, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "read golden %s", goldenPath)
 	assert.Equal(t, string(golden), string(out), "golden mismatch")
+}
+
+// A stale stored effectiveStatus (no overrides) is never read: the Effective
+// Status column carries the ladder's answer (the raw roll-up).
+func TestConvertHDFToCSV_StaleStoredStatusIgnored(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"SV-9","impact":0.7,"title":"t","tags":{},"descriptions":[{"label":"default","data":"d"}],"effectiveStatus":"passed","results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}]}`)
+	out, err := ConvertHDFToCSV(input)
+	require.NoError(t, err)
+	rows, err := csv.NewReader(bytes.NewReader(out)).ReadAll()
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	effIdx := -1
+	for i, h := range rows[0] {
+		if h == "Effective Status" {
+			effIdx = i
+		}
+	}
+	require.NotEqual(t, -1, effIdx)
+	assert.Equal(t, "failed", rows[1][effIdx])
 }

@@ -26,9 +26,6 @@ func RequirementStatusInput(r hdf.EvaluatedRequirement) hdfutil.EffectiveStatusI
 		Impact:    r.Impact,
 		Overrides: StatusOverrideInputs(r.StatusOverrides),
 	}
-	if r.EffectiveStatus != nil {
-		input.EffectiveStatus = string(*r.EffectiveStatus)
-	}
 	for _, res := range r.Results {
 		input.ResultStatuses = append(input.ResultStatuses, string(res.Status))
 	}

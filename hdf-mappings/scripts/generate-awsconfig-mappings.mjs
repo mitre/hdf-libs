@@ -27,6 +27,11 @@
 // stay unmapped (the aws-config-to-hdf converter floors them to CM-6).
 // Config-pack/security-hub take precedence over derived; no cross-source unioning within
 // the authoritative tiers, so every authoritative row is one AWS publication verbatim.
+//
+// After all four tiers, awsconfig-suppressions.json applies maintainer-reviewed
+// (rule, control, revisions) removals as a final pass — the input that lets a review
+// decision survive regeneration. A suppression the sources no longer produce, or one
+// that would strip a rule of every control, fails the run rather than rotting silently.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -84,6 +89,39 @@ async function fetchText(url) {
 // --- tier 4 support: NIST r4<->r5 crosswalk translation ---
 
 const CROSSWALK_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'nist-revision-crosswalk.json');
+const SUPPRESSIONS_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'awsconfig-suppressions.json');
+
+// --- final pass: maintainer-reviewed suppressions ---
+
+// Removes each suppressed (rule, control) pair at its listed revisions, mutating
+// rows in place. Strict by design: an entry naming a pair the tiers did not
+// produce throws (a stale suppression must surface, not rot), and an entry that
+// would strip a rule of its last control throws (the reviewer confirmed no rule
+// loses all its tags — if regeneration produces that, the source data moved).
+// Pre-existing empty marker rows (tier 4) are never touched, so they cannot
+// trip the emptiness check. Exported for direct unit testing.
+export function applySuppressions(rows, suppressions) {
+  const byKey = new Map(rows.map((r) => [`${r.Rev}:${r.AwsConfigRuleName}`, r]));
+  for (const s of suppressions) {
+    for (const rev of s.revisions) {
+      const row = byKey.get(`${rev}:${s.rule}`);
+      const controls = row ? row['NIST-ID'].split('|').filter(Boolean) : [];
+      if (!controls.includes(s.control)) {
+        throw new Error(
+          `suppression ${s.rule} / ${s.control} @ Rev ${rev}: the sources never produced this pair — remove or fix the stale entry`
+        );
+      }
+      const remaining = controls.filter((c) => c !== s.control);
+      if (remaining.length === 0) {
+        throw new Error(
+          `suppression ${s.rule} / ${s.control} @ Rev ${rev} would remove every control on the rule — the source data moved and needs its own review`
+        );
+      }
+      row['NIST-ID'] = remaining.join('|');
+    }
+  }
+  return rows;
+}
 // A trailing single-letter statement part, e.g. "AC-2(j)".
 const STATEMENT_LETTER = /^(.*)\(([a-z])\)$/;
 
@@ -103,6 +141,17 @@ function crosswalkTranslator() {
     if (rosters.get(from).has(control) && rosters.get(to).has(control)) return [control];
     const base = STATEMENT_LETTER.exec(control)?.[1];
     if (base) {
+      // Rev 4 statement letters do not survive to Rev 5 (Rev 5 renumbered
+      // control statements — e.g. Rev 4 AC-5 c. is Rev 5 AC-5 b.), and no
+      // letter-level crosswalk data exists to re-letter them, so the part
+      // widens to its base control (maintainer decision on the invalid-token
+      // defect: coverage over precision for machine-translated rows).
+      if (from === 4 && to === 5) {
+        const baseEdge = edges.get(`${from}:${base}`);
+        if (baseEdge) return baseEdge.targets;
+        if (rosters.get(from).has(base) && rosters.get(to).has(base)) return [base];
+        return [];
+      }
       const baseEdge = edges.get(`${from}:${base}`);
       if (baseEdge) return baseEdge.targets;
       if (rosters.get(from).has(base) && rosters.get(to).has(base)) return [control];
@@ -114,12 +163,42 @@ function crosswalkTranslator() {
 
 // --- normalizations (both are things AWS's raw docs need but our table already does) ---
 
-// A collapsed sub-part token like "IA-5(1)(a)(d)(e)" is AWS shorthand for the sibling
-// controls IA-5(1), IA-5(a), IA-5(d), IA-5(e) — not a valid single reference. Expand it.
-function expandCollapsed(control) {
+// A collapsed multi-group token like "IA-5(1)(a)(d)(e)" is AWS shorthand read
+// left to right with a stem: a NUMERIC group is an enhancement — it emits
+// BASE(n) and becomes the stem; a LETTER group is a statement part OF the
+// current stem — it emits STEM(x). So IA-5(1)(a)(d)(e) is the enhancement-1
+// parts IA-5(1)(a), IA-5(1)(d), IA-5(1)(e) (the bare IA-5(1) is subsumed by
+// its parts), while IA-2(1)(11) is the sibling enhancements IA-2(1), IA-2(11)
+// and AU-2(a)(d) is the base parts AU-2(a), AU-2(d). AWS's own Control
+// Description column is the discriminator for the mixed case. A numeric group
+// AFTER a letter group is genuinely ambiguous (NIST defines numbered
+// sub-parts under statement parts); AWS publishes no such token — throw
+// rather than guess. Exported for direct unit testing.
+export function expandCollapsed(control) {
   const m = control.match(/^([A-Z]{2,}-\d+)((?:\([^)]*\)){2,})$/);
   if (!m) return [control];
-  return [...m[2].matchAll(/\([^)]*\)/g)].map((g) => m[1] + g[0]);
+  const base = m[1];
+  const groups = [...m[2].matchAll(/\(([^)]*)\)/g)].map((g) => g[1]);
+  const out = [];
+  let stem = base;
+  let sawLetter = false;
+  const subsumed = new Set(); // numeric stems that gained letter children
+  for (const g of groups) {
+    if (/^\d+$/.test(g)) {
+      if (sawLetter) {
+        throw new Error(`ambiguous collapsed token ${control}: a numeric group after a letter group cannot be parsed by rule`);
+      }
+      stem = `${base}(${g})`;
+      out.push(stem);
+    } else if (/^[a-z]$/.test(g)) {
+      sawLetter = true;
+      out.push(`${stem}(${g})`);
+      subsumed.add(stem);
+    } else {
+      throw new Error(`ambiguous collapsed token ${control}: unrecognized group "(${g})"`);
+    }
+  }
+  return out.filter((t) => !subsumed.has(t));
 }
 
 // AWS sometimes writes a statement part without parens ("AC-5c"); canonicalize to
@@ -130,13 +209,42 @@ function canonicalizeControl(control) {
 
 // --- tier 1: AWS Config docs ---
 
+// Remove every <...> tag span in a single linear scan — byte-equivalent to the
+// former replace(/<[^>]+>/g, ''), whose backtracking is quadratic on long
+// angle-bracket runs. Matching that regex's `+`: a bare '<>' is not a tag and
+// stays literal, as does a trailing '<' with no closing '>'.
+export function stripTags(s) {
+  let out = '';
+  let i = 0;
+  while (i < s.length) {
+    const lt = s.indexOf('<', i);
+    if (lt === -1) {
+      out += s.slice(i);
+      break;
+    }
+    const gt = s.indexOf('>', lt + 1);
+    if (gt === -1) {
+      out += s.slice(i);
+      break;
+    }
+    if (gt === lt + 1) {
+      out += s.slice(i, lt + 1);
+      i = lt + 1;
+      continue;
+    }
+    out += s.slice(i, lt);
+    i = gt + 1;
+  }
+  return out;
+}
+
 // Parse the single control->rule table into ruleName -> Set(control), normalized.
 function parseConfigDocs(html) {
   const map = new Map();
   for (const [, row] of html.matchAll(/<tr>(.*?)<\/tr>/gs)) {
     const cells = [...row.matchAll(/<td[^>]*>(.*?)<\/td>/gs)].map((c) => c[1]);
     if (cells.length < 3) continue;
-    const control = cells[0].replace(/<[^>]+>/g, '').trim();
+    const control = stripTags(cells[0]).trim();
     const ruleMatch = cells[2].match(/developerguide\/([a-z0-9-]+)\.html/);
     if (!ruleMatch || !/^[A-Z]{2,}-\d/.test(control)) continue;
     const rule = ruleMatch[1];
@@ -165,7 +273,13 @@ function parseSecurityHubDocs(html) {
     const id = sections[i];
     const body = sections[i + 1];
     if (id.endsWith('-remediation')) continue;
-    const ruleMatch = body.match(/AWS Config rule:<\/b>[\s\S]*?\/config\/latest\/developerguide\/([a-z0-9-]+)\.html/);
+    // The rule link must sit inside the "AWS Config rule:" paragraph itself —
+    // a control backed by no rule says "None (custom Security Hub CSPM rule)"
+    // there, and an unbounded scan would latch onto an unrelated
+    // developerguide link later in the page (this produced a phantom
+    // using-service-linked-roles rule).
+    const ruleParagraph = body.match(/AWS Config rule:<\/b>([\s\S]*?)<\/p>/);
+    const ruleMatch = ruleParagraph?.[1].match(/\/config\/latest\/developerguide\/([a-z0-9-]+)\.html/);
     const reqsMatch = body.match(/Related requirements:<\/b>([\s\S]*?)<\/p>/);
     if (!ruleMatch || !reqsMatch) continue;
     const rule = ruleMatch[1];
@@ -347,6 +461,30 @@ async function main() {
   }
   console.log(`  crosswalk: backfilled ${backfilled[4]} Rev4 + ${backfilled[5]} Rev5 rows, ${markers} explicit unmapped marker row(s).`);
 
+  // Roster validity: a token whose letterless stem the NIST roster does not
+  // define at the row's revision is a source defect (AWS occasionally cites an
+  // old-rev ID in a newer-rev publication — e.g. the withdrawn SA-13 on a
+  // Security Hub Rev 5 page). Drop it and record the drop; never widen or
+  // translate a claim the source made at the wrong revision.
+  const rosterFile = JSON.parse(readFileSync(CROSSWALK_FILE, 'utf-8'));
+  const validRosters = new Map(Object.entries(rosterFile.rosters).map(([rev, ids]) => [Number(rev), new Set(ids)]));
+  const letterless = (tok) => tok.replace(/\(([a-z])\)$/, '');
+  for (const r of rows) {
+    const kept = [];
+    for (const tok of r['NIST-ID'].split('|').filter(Boolean)) {
+      if (validRosters.get(r.Rev).has(letterless(tok))) kept.push(tok);
+      else console.log(`  validity: dropped ${tok} from ${r.AwsConfigRuleName} Rev ${r.Rev} (${r.Source}) — not in the NIST Rev ${r.Rev} roster.`);
+    }
+    r['NIST-ID'] = kept.join('|');
+  }
+
+  // final pass: maintainer-reviewed suppressions, applied after every source
+  // tier so tier precedence is unchanged and a review decision survives
+  // regeneration.
+  const suppressions = JSON.parse(readFileSync(SUPPRESSIONS_FILE, 'utf-8'));
+  applySuppressions(rows, suppressions);
+  console.log(`  suppressions: ${suppressions.length} reviewed (rule, control) removals applied.`);
+
   rows.sort((a, b) => a.Rev - b.Rev || (a.AwsConfigRuleName < b.AwsConfigRuleName ? -1 : a.AwsConfigRuleName > b.AwsConfigRuleName ? 1 : 0));
   const json = JSON.stringify(rows, null, 2) + '\n';
 
@@ -374,7 +512,11 @@ async function main() {
   console.log(`wrote ${OUT_FILES.length} files.`);
 }
 
-main().catch((e) => {
-  console.error(e.message);
-  process.exit(1);
-});
+// Run only when executed directly — the suppression pass above is imported by
+// the unit tests, which must not trigger the live AWS fetches.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch((e) => {
+    console.error(e.message);
+    process.exit(1);
+  });
+}
