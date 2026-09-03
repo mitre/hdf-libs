@@ -12,15 +12,15 @@ import (
 // to mcp.Run as the registration hook, which keeps the mcp package free of any
 // dependency on this one (mcp never imports tools; the wiring is injected).
 func RegisterAll(s *sdkmcp.Server) {
-	// HDF_MCP_MAX_SIZE parses as int64; clamp to MaxInt32 before narrowing so
-	// the value provably fits int on every platform (a math.MaxInt bound is
-	// platform-relative and doesn't cover 32-bit builds). 2 GiB comfortably
-	// exceeds any sane per-document ceiling (default is 50 MB).
-	maxSize := mcpMaxInputSize()
-	if maxSize > math.MaxInt32 {
-		maxSize = math.MaxInt32
+	// HDF_MCP_MAX_SIZE parses as int64; narrow to int only under a guard
+	// proving both bounds, so the value provably fits int on every platform
+	// (32-bit included). Out-of-range values fall back to the 2 GiB ceiling,
+	// which comfortably exceeds any sane per-document limit (default 50 MB).
+	maxSize := math.MaxInt32
+	if s := mcpMaxInputSize(); s > 0 && s <= math.MaxInt32 {
+		maxSize = int(s)
 	}
-	ldr := loader.New(int(maxSize), 0, 0)
+	ldr := loader.New(maxSize, 0, 0)
 	RegisterOpen(s, ldr)
 	RegisterInspect(s, ldr)
 	RegisterQuery(s, ldr)
