@@ -32,11 +32,16 @@ export function stripHtml(html: string): string {
 /**
  * Replace every `<...>` tag span with `replacement`, in a single linear scan.
  *
- * Byte-equivalent to the historical `replace(/<[^>]*>/g, replacement)`: a span
- * runs from `<` to the first following `>`; a trailing `<` with no closing `>`
- * stays literal. The manual scan avoids that regex's quadratic backtracking on
- * pathological inputs (e.g. long runs of `<`), and cannot reassemble a tag from
- * fragments — the output never contains a `<...>` pair.
+ * Matches the historical `replace(/<[^>]*>/g, replacement)` span semantics: a
+ * span runs from `<` to the first following `>`; a trailing `<` with no
+ * closing `>` stays literal. The manual scan avoids that regex's quadratic
+ * backtracking on pathological inputs (e.g. long runs of `<`).
+ *
+ * `replacement` is inserted literally (no `$`-pattern expansion, unlike
+ * `String.replace`) and is expected to be a plain separator such as `' '` or
+ * `''`. For such replacements — anything containing no `<` or `>` — the output
+ * can never contain a `<...>` pair, so tags cannot be reassembled from
+ * fragments.
  *
  * @param html - String potentially containing HTML tags
  * @param replacement - What each tag span becomes (`' '` or `''`)
