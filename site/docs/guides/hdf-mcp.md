@@ -33,7 +33,7 @@ body.
 |------|---------|
 | `hdf_open` | Entry point: open a document, return its detected type, schema version, validity, and a handle. Optional — every read tool also accepts a `{path}` directly. |
 | `hdf_inspect` | Document **structure and metadata** for all eight HDF document types (counts, component/baseline/assessment breakdowns, top-level fields). It never returns requirements. |
-| `hdf_query` | The **only** path to requirements (results and baseline documents only). Filters by status, severity, requirement ID, tag, and free text; concise by default, full on request; paginates when a response would exceed the token budget. |
+| `hdf_query` | The **only** path to requirements (results and baseline documents only). Filters by status, severity, requirement ID, tag, and free text; concise by default, full on request; paginates when a response would exceed the token budget. An opt-in `fields` array adds cross-source correlation keys per row (see [Correlation fields](#correlation-fields)). |
 | `hdf_compliance` | Status × severity rollups, the compliance percentage, optional threshold verdicts, and the agent-attributed override count. |
 | `hdf_diff` | Compare two documents — temporal (results across time) or system-drift (system documents) — and emit an `hdf-comparison`. |
 | `hdf_validate` | Validate a document in `schema`, `checksums`, or `completeness` mode. |
@@ -182,6 +182,21 @@ learns the limit before it spends a call discovering it.
 This may be revisited if tool-specific questions turn out to be common in
 practice; the shape it would take is an explicit, bounded, per-requirement fetch
 — never a widening of the default response.
+
+## Correlation fields
+
+Normalization's quiet payoff is a shared vocabulary: findings from unrelated tools become correlatable once they carry the same normalized keys. Control-level correlation already works on the default surface — `tags.nist` is present on ~99% of requirements across sources, `tags.cci` on ~94% — and `full` verbosity returns both.
+
+Below the control level, four normalized keys are the ones that meaningfully join findings across sources but that no read tool projects by default: `cwe` (weakness, bridges SAST and SCA), `cvss` (vulnerability scoring), `affectedPackages` (name/version/purl/fixedInVersion), and `sourceLocation` (file/line — the broadest cross-class key, spanning SAST, DAST, IaC, and secret findings). Each is class-scoped, not universal, so returning them by default would bloat every row for the findings that lack them.
+
+`hdf_query` exposes them opt-in through a `fields` array, additive to whatever `verbosity` selects:
+
+```json
+{ "source": { "path": "scan.json" },
+  "fields": ["cwe", "cvss", "affectedPackages", "sourceLocation"] }
+```
+
+A requirement that lacks a requested field simply omits that key (never `null`), so a consumer joins on presence. An unknown field name is refused. The default (no `fields`) response is unchanged, and each key is added to a row only when the caller asks for it — so the correlation surface costs nothing until it is used.
 
 ## Budget guidance for agent hosts
 
