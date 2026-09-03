@@ -39,10 +39,13 @@ export { convertCklbToHdf } from '../converters/cklb-to-hdf/typescript/index.js'
 export { convertHdfToCkl } from '../converters/hdf-to-ckl/typescript/index.js';
 export { convertHdfToCklb } from '../converters/hdf-to-cklb/typescript/index.js';
 
-// Snyk to HDF converter
 // KICS to HDF converter
 export { convertKicsToHdf } from '../converters/kics-to-hdf/typescript/index.js';
 
+// Semgrep to HDF converter
+export { convertSemgrepToHdf } from '../converters/semgrep-to-hdf/typescript/index.js';
+
+// Snyk to HDF converter
 export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js';
 
 // Grype to HDF converter

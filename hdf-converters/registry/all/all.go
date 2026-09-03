@@ -31,6 +31,7 @@ import (
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/openvex-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/scoutsuite-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/semgrep-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/snyk-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sonarqube-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/spdx-vex-to-hdf/go"

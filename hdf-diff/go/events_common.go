@@ -84,7 +84,13 @@ func verifyEventChain(
 				keyWarn("chainGap", "new-state event carries a non-null priorChecksum")
 			}
 		} else if prior != expected {
-			keyWarn("chainGap", fmt.Sprintf("priorChecksum %q does not match expected chain state %q", prior, expected))
+			// Two indistinguishable causes: events genuinely missing from the
+			// chain, or a chain derived under an older effective-status
+			// semantics (a checksum epoch — the resolved status the checksum
+			// hashes changed across binary versions).
+			keyWarn("chainGap", fmt.Sprintf(
+				"priorChecksum %q does not match expected chain state %q — either events are missing from this chain, or it was derived under an older effective-status semantics (see status-determination.md); re-derive from a fresh rescan to re-anchor",
+				prior, expected))
 		}
 		expected = eventAfterChecksum(ev)
 	}

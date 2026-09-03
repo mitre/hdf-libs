@@ -10,18 +10,24 @@
 import { parseTimestamp } from '../string/index.js';
 
 /** Canonical worst-wins ordering, worst first. */
-export const STATUS_SEVERITY_ORDER: readonly string[] = [
+export const STATUS_SEVERITY_ORDER = [
   'error',
   'failed',
   'passed',
   'notApplicable',
   'notReviewed',
-];
+] as const;
+
+/** A member of the canonical ordering, as a literal union. */
+export type StatusSeverity = (typeof STATUS_SEVERITY_ORDER)[number];
+
+/** Widened view for lookups over arbitrary input strings. */
+const SEVERITY_LOOKUP: readonly string[] = STATUS_SEVERITY_ORDER;
 
 /** Severity rank of a status: higher = worse. Unknown statuses rank -1. */
 export function statusRank(status: string): number {
-  const idx = STATUS_SEVERITY_ORDER.indexOf(status);
-  return idx === -1 ? -1 : STATUS_SEVERITY_ORDER.length - 1 - idx;
+  const idx = SEVERITY_LOOKUP.indexOf(status);
+  return idx === -1 ? -1 : SEVERITY_LOOKUP.length - 1 - idx;
 }
 
 /**
@@ -126,39 +132,35 @@ function refTime(referenceTimestamp?: string): Date {
 /** Neutral shape of a requirement for effective-status computation. */
 export interface EffectiveStatusInput {
   impact: number;
-  /** The stored effectiveStatus field; undefined means unset. */
-  effectiveStatus?: string;
   resultStatuses?: readonly string[];
   overrides?: readonly StatusOverrideInput[];
 }
 
 /**
  * Determines a requirement's effective status — the single canonical
- * implementation of the precedence in status-determination.md:
+ * implementation of the ladder in status-determination.md:
  *
- * 1. impact === 0 → "notApplicable", regardless of results or overrides
- * 2. the governing (most recent non-expired) status override's status
- * 3. the stored effectiveStatus, honored only when NO overrides are present —
- *    effectiveStatus is state derived from overrides, so when every override
- *    has expired it is stale and the result roll-up wins
- * 4. worst-wins roll-up of the result statuses
- * 5. no results → "notReviewed"
+ * 1. the governing (most recent non-expired) status override's status
+ * 2. else result roll-up "error" → "error"
+ * 3. else impact === 0 → "notApplicable"
+ * 4. else worst-wins roll-up of the result statuses (empty → "notReviewed")
+ *
+ * The stored effectiveStatus field is an output cache and is never read: the
+ * only sanctioned channel for status to diverge from the results is a
+ * governing override.
  */
 export function computeEffectiveStatus(
   input: EffectiveStatusInput,
   referenceTimestamp?: string
 ): string {
+  const governing = governingStatusOverride(input.overrides ?? [], referenceTimestamp);
+  if (governing?.status) return governing.status;
+  const rolledUp = worstStatus(input.resultStatuses ?? []);
+  if (rolledUp === 'error') {
+    return 'error';
+  }
   if (input.impact === 0) {
     return 'notApplicable';
   }
-  const overrides = input.overrides ?? [];
-  if (overrides.length > 0) {
-    const governing = governingStatusOverride(overrides, referenceTimestamp);
-    if (governing?.status) return governing.status;
-    return worstStatus(input.resultStatuses ?? []);
-  }
-  if (input.effectiveStatus) {
-    return input.effectiveStatus;
-  }
-  return worstStatus(input.resultStatuses ?? []);
+  return rolledUp;
 }

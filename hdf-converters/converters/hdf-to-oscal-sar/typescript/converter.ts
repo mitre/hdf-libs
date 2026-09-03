@@ -6,8 +6,9 @@
  */
 
 import { formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
 import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
-import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult } from '@mitre/hdf-schema';
+import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
   DocumentMetadata,
@@ -310,10 +311,9 @@ function requirementToFindingSet(
   // slices safely rather than throwing.
   const results = req.results ?? [];
   const descriptions = req.descriptions ?? [];
-  // Finding state reflects the effective (post-override) status when present,
-  // falling back to raw worst-wins aggregation. The raw result status stays
-  // verbatim in the observation description.
-  const { state, reason } = effectiveState(req, results);
+  // Finding state via the canonical effective-status ladder. The raw result
+  // status stays verbatim in the observation description.
+  const { state, reason } = effectiveState(req);
   const findingDesc = extractDefaultDescription(descriptions);
 
   // Build props from control mappings (nist/cci), non-default descriptions
@@ -537,14 +537,12 @@ function previewLine(text: string): string {
 }
 
 /**
- * Derives the OSCAL finding target state/reason from the requirement's
- * effectiveStatus when present, otherwise from aggregated raw results.
+ * Derives the OSCAL finding target state/reason from the canonical ladder —
+ * the stored effectiveStatus field is never read (it is an output cache; see
+ * status-determination.md).
  */
-function effectiveState(req: EvaluatedRequirement, results: RequirementResult[]): { state: string; reason: string } {
-  if (req.effectiveStatus) {
-    return oscalStateFromStatus(req.effectiveStatus);
-  }
-  return aggregateStatus(results);
+function effectiveState(req: EvaluatedRequirement): { state: string; reason: string } {
+  return oscalStateFromStatus(requirementEffectiveStatus(req) as ResultStatus);
 }
 
 /** Maps a single HDF result status to an OSCAL finding target state/reason. */
@@ -672,60 +670,6 @@ function formatFloat(n: number): string {
 }
 
 
-/**
- * Determines the overall finding status from requirement results.
- */
-export function aggregateStatus(results: RequirementResult[]): { state: string; reason: string } {
-  if (results.length === 0) {
-    return { state: 'not-satisfied', reason: 'other' };
-  }
-
-  let hasFailed = false;
-  let hasError = false;
-  let hasNotReviewed = false;
-  let hasNotApplicable = false;
-  let allPassed = true;
-
-  for (const r of results) {
-    switch (r.status) {
-      case 'passed':
-        break;
-      case 'failed':
-        hasFailed = true;
-        allPassed = false;
-        break;
-      case 'error':
-        hasError = true;
-        allPassed = false;
-        break;
-      case 'notReviewed':
-        hasNotReviewed = true;
-        allPassed = false;
-        break;
-      case 'notApplicable':
-        hasNotApplicable = true;
-        allPassed = false;
-        break;
-      default:
-        allPassed = false;
-        break;
-    }
-  }
-
-  if (allPassed) {
-    return { state: 'satisfied', reason: '' };
-  }
-  if (hasFailed || hasError) {
-    return { state: 'not-satisfied', reason: '' };
-  }
-  if (hasNotReviewed) {
-    return { state: 'not-satisfied', reason: 'other' };
-  }
-  if (hasNotApplicable) {
-    return { state: 'not-satisfied', reason: 'not-applicable' };
-  }
-  return { state: 'not-satisfied', reason: '' };
-}
 
 /**
  * Finds the "default" labeled description.

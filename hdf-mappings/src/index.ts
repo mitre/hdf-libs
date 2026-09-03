@@ -112,9 +112,10 @@ export {
   awsConfigRuleNameExists,
   awsConfigMappedRevisions,
   getAllAwsConfigMappings,
+  awsConfigSuppressions,
 } from './awsconfig/index.js';
 
-export type { AwsConfigNistMapping, AwsConfigNistMappings } from './awsconfig/types.js';
+export type { AwsConfigNistMapping, AwsConfigNistMappings, AwsConfigSuppression, AwsConfigSuppressions } from './awsconfig/types.js';
 
 // Hipcheck exports
 export {

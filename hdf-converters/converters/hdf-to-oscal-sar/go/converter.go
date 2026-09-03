@@ -15,6 +15,7 @@ import (
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // ConvertHDFToOSCALSAR converts HDF Results JSON bytes to OSCAL Assessment
@@ -562,18 +563,16 @@ func previewLine(text string) string {
 	return ""
 }
 
-// effectiveState derives the OSCAL finding target state/reason from the
-// requirement's effectiveStatus when present, otherwise from the aggregated raw
-// result status.
+// effectiveState derives the OSCAL finding target state/reason via the
+// canonical effective-status ladder — the stored effectiveStatus field is
+// never read (output cache; see status-determination.md).
 func effectiveState(req *hdf.EvaluatedRequirement) (state string, reason string) {
-	if req.EffectiveStatus != nil {
-		return oscalStateFromStatus(*req.EffectiveStatus)
-	}
-	return aggregateStatus(req.Results)
+	resolved := hdf.ResultStatus(hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(*req), time.Time{}))
+	return oscalStateFromStatus(resolved)
 }
 
 // oscalStateFromStatus maps a single HDF result status to an OSCAL finding
-// target state and reason, mirroring aggregateStatus for a single value.
+// target state and reason.
 func oscalStateFromStatus(status hdf.ResultStatus) (state string, reason string) {
 	switch status {
 	case hdf.Passed:
@@ -724,58 +723,7 @@ func riskDeadline(req *hdf.EvaluatedRequirement) string {
 	return ""
 }
 
-// aggregateStatus determines the overall finding status from requirement results.
-// If any result is failed or error, the finding is not-satisfied.
-// If all are passed, the finding is satisfied.
-// Otherwise, not-satisfied with a reason.
-func aggregateStatus(results []hdf.RequirementResult) (state string, reason string) {
-	if len(results) == 0 {
-		return "not-satisfied", "other"
-	}
-
-	hasFailed := false
-	hasError := false
-	hasNotReviewed := false
-	hasNotApplicable := false
-	allPassed := true
-
-	for _, r := range results {
-		switch r.Status {
-		case hdf.Passed:
-			// ok
-		case hdf.Failed:
-			hasFailed = true
-			allPassed = false
-		case hdf.Error:
-			hasError = true
-			allPassed = false
-		case hdf.NotReviewed:
-			hasNotReviewed = true
-			allPassed = false
-		case hdf.NotApplicable:
-			hasNotApplicable = true
-			allPassed = false
-		default:
-			allPassed = false
-		}
-	}
-
-	if allPassed {
-		return "satisfied", ""
-	}
-	if hasFailed || hasError {
-		return "not-satisfied", ""
-	}
-	if hasNotReviewed {
-		return "not-satisfied", "other"
-	}
-	if hasNotApplicable {
-		return "not-satisfied", "not-applicable"
-	}
-	return "not-satisfied", ""
-}
-
-// extractDefaultDescription finds the "default" labeled description.
+// extractDefaultDescription returns the "default"-labeled description, or "".
 func extractDefaultDescription(descriptions []hdf.Description) string {
 	for _, d := range descriptions {
 		if d.Label == "default" {

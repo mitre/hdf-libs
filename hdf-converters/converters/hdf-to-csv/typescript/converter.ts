@@ -1,4 +1,5 @@
 import { buildCsv, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
+import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description, StatusOverride, Cvss } from '@mitre/hdf-schema';
 import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
@@ -127,9 +128,10 @@ function createRow(
   const nistControls = extractArrayFromTags(requirement.tags, 'nist');
   const cciControls = extractArrayFromTags(requirement.tags, 'cci');
 
-  // Post-override posture: effective columns fall back to the raw value when no
-  // override governs, so the column is always populated and sortable.
-  const effectiveStatus = requirement.effectiveStatus ? String(requirement.effectiveStatus) : String(status);
+  // Post-override posture via the canonical ladder — the stored
+  // effectiveStatus field is never read (output cache); the column is always
+  // populated and sortable.
+  const effectiveStatus = requirementEffectiveStatus(requirement);
   const effectiveImpact = (requirement.effectiveImpact ?? requirement.impact).toFixed(1);
   const disposition = requirement.disposition ? String(requirement.disposition) : '';
 

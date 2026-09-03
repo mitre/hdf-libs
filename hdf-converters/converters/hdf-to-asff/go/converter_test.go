@@ -116,7 +116,9 @@ func TestCanonicalTime(t *testing.T) {
 }
 
 func TestConvert_Suppressed(t *testing.T) {
-	doc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"C-1","title":"t","results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}],"effectiveStatus":"passed","statusOverrides":[{"type":"waiver"}]}]}]}`)
+	// A governing waiver drives suppression; a bare stored effectiveStatus
+	// would be ignored (the canonical ladder never reads it).
+	doc := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"C-1","title":"t","impact":0.7,"results":[{"status":"failed","codeDesc":"c","startTime":"2024-01-01T00:00:00Z"}],"statusOverrides":[{"type":"waiver","status":"passed","reason":"scoped","appliedBy":{"type":"simple","identifier":"jdoe"},"appliedAt":"2026-01-02T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]}]}]}`)
 	out, err := ConvertHDFToASFF(doc, converterVersion)
 	require.NoError(t, err)
 	f := findings(t, out)[0]

@@ -35,39 +35,52 @@ describe('exportmap status roll-up', () => {
     expect(worstOfResults(mkResults())).toBe('notReviewed');
   });
 
-  it('statusOf resolves rollup + overridden + suppressed', () => {
-    let st = statusOf(mkResults('failed'));
-    expect(st).toEqual({ raw: 'failed', effective: '', rollup: 'failed', overridden: false, suppressed: false });
+  const governing = (status: string) => [
+    { type: 'waiver', status, appliedAt: '2026-01-02T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z' },
+  ];
 
+  it('statusOf resolves rollup + overridden + suppressed via the canonical ladder', () => {
+    let st = statusOf(mkResults('failed'));
+    expect(st).toEqual({ raw: 'failed', rollup: 'failed', overridden: false, suppressed: false });
+
+    // Stored effectiveStatus is an output cache and is never read: with no
+    // override records the rollup stays the results roll-up.
     st = statusOf({ ...mkResults('failed'), effectiveStatus: 'passed' });
     expect(st.raw).toBe('failed'); // lossless roll-up preserved
-    expect(st.effective).toBe('passed');
-    expect(st.rollup).toBe('passed');
+    expect(st.rollup).toBe('failed'); // stale stored value ignored
+    expect(st.overridden).toBe(false);
+    expect(st.suppressed).toBe(false);
+
+    // A governing (non-expired) override drives the rollup and suppresses.
+    st = statusOf({ ...mkResults('failed'), statusOverrides: governing('passed') });
     expect(st.overridden).toBe(true);
+    expect(st.rollup).toBe('passed');
     expect(st.suppressed).toBe(true); // raw-failing driven non-failing
 
-    // override present but no effective status: not suppressed (conservative)
+    // override present but not governing (statusless): not suppressed
     st = statusOf({ ...mkResults('failed'), statusOverrides: [{ type: 'waiver' }] });
     expect(st.overridden).toBe(true);
     expect(st.rollup).toBe('failed');
     expect(st.suppressed).toBe(false);
   });
 
-  it('suppressed axis: waiver/FP suppress, riskAdjustment stays actionable', () => {
+  it('suppressed axis: governing waiver/FP suppress, riskAdjustment stays actionable', () => {
     for (const eff of ['passed', 'notApplicable']) {
-      expect(statusOf({ ...mkResults('failed'), effectiveStatus: eff }).suppressed).toBe(true);
+      expect(statusOf({ ...mkResults('failed'), statusOverrides: governing(eff) }).suppressed).toBe(true);
     }
-    // riskAdjustment: effectiveStatus stays failed → still actionable
+    // riskAdjustment: no status override — the finding stays actionable
     const ra = statusOf({
       ...mkResults('failed'),
-      effectiveStatus: 'failed',
       statusOverrides: [{ type: 'riskAdjustment', impact: { value: 0.2 } }],
     });
     expect(ra.overridden).toBe(true);
     expect(ra.suppressed).toBe(false);
+    // structural impact-0 notApplicable is NOT acceptance-suppression
+    expect(statusOf({ ...mkResults('failed'), impact: 0 }).suppressed).toBe(false);
+    expect(statusOf({ ...mkResults('failed'), impact: 0 }).rollup).toBe('notApplicable');
     // passing / errored findings are never suppressed
-    expect(statusOf({ ...mkResults('passed'), effectiveStatus: 'passed' }).suppressed).toBe(false);
-    expect(statusOf({ ...mkResults('error'), effectiveStatus: 'passed' }).suppressed).toBe(false);
+    expect(statusOf({ ...mkResults('passed'), statusOverrides: governing('passed') }).suppressed).toBe(false);
+    expect(statusOf({ ...mkResults('error'), statusOverrides: governing('passed') }).suppressed).toBe(false);
     expect(isFailing('failed')).toBe(true);
     expect(isFailing('error')).toBe(false);
     expect(isFailing('passed')).toBe(false);

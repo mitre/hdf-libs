@@ -177,16 +177,16 @@ func wrongDocTypeForQuery(docType string) *mcperr.Error {
 		WithNextCall("call hdf_inspect to view this document's structure (hdf_query is results/baseline only)")
 }
 
-// effectiveStatus resolves a requirement's status through the canonical shared
-// computation (impact==0 → notApplicable, governing override, stored
-// effectiveStatus, worst-wins rollup). It returns the schema (effectiveStatus)
+// effectiveStatus resolves a requirement's status via the canonical ladder in
+// status-determination.md (governing override → error roll-up → impact-0
+// notApplicable → worst-wins roll-up). It returns the schema (effectiveStatus)
 // vocabulary — the same vocabulary hdf_open's summary reports.
 func effectiveStatus(control hdf.EvaluatedRequirement) string {
 	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(control), time.Time{})
 }
 
 // countByEffectiveStatus counts a result set's requirements by their canonical
-// effective status (impact==0 → notApplicable, overrides honored) — the single
+// effective status (the ladder in status-determination.md) — the single
 // status convention every status-reporting MCP tool uses, so hdf_open,
 // hdf_inspect, hdf_compliance and hdf_query all agree on one document. This is
 // the effective-status seam; the raw CountControlsByStatusSeverity is

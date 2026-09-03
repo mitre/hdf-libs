@@ -41,25 +41,37 @@ func TestStatusOf(t *testing.T) {
 	st := StatusOf(mkResults("failed"))
 	assert.Equal(t, "failed", st.Raw)
 	assert.Equal(t, "failed", st.Rollup)
-	assert.Equal(t, "", st.Effective)
 	assert.False(t, st.Overridden)
 	assert.False(t, st.Suppressed)
 
-	// effectiveStatus present: rollup follows it, overridden true, suppressed true
+	// Stored effectiveStatus is an output cache and is never read: with no
+	// override records the rollup stays the results roll-up, nothing is
+	// overridden or suppressed.
 	req := mkResults("failed")
 	req["effectiveStatus"] = "passed"
 	st = StatusOf(req)
 	assert.Equal(t, "failed", st.Raw, "raw stays the lossless results roll-up")
-	assert.Equal(t, "passed", st.Effective)
-	assert.Equal(t, "passed", st.Rollup)
+	assert.Equal(t, "failed", st.Rollup, "stale stored value ignored")
+	assert.False(t, st.Overridden)
+	assert.False(t, st.Suppressed)
+
+	// A governing (non-expired) override drives the rollup: overridden true and,
+	// since raw is failing while the effective status is not, suppressed true.
+	req2 := mkResults("failed")
+	req2["statusOverrides"] = []interface{}{map[string]interface{}{
+		"type": "waiver", "status": "passed",
+		"appliedAt": "2026-01-02T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+	}}
+	st = StatusOf(req2)
 	assert.True(t, st.Overridden)
+	assert.Equal(t, "passed", st.Rollup)
 	assert.True(t, st.Suppressed, "raw-failing driven non-failing → suppressed")
 
-	// statusOverrides present without effectiveStatus: overridden true, rollup ==
-	// raw, NOT suppressed (can't suppress without a non-failing effective status)
-	req2 := mkResults("failed")
-	req2["statusOverrides"] = []interface{}{map[string]interface{}{"type": "waiver"}}
-	st = StatusOf(req2)
+	// statusOverrides present but none governing (statusless): overridden true,
+	// rollup == raw, NOT suppressed.
+	req3 := mkResults("failed")
+	req3["statusOverrides"] = []interface{}{map[string]interface{}{"type": "waiver"}}
+	st = StatusOf(req3)
 	assert.True(t, st.Overridden)
 	assert.Equal(t, "failed", st.Rollup)
 	assert.False(t, st.Suppressed)
@@ -70,29 +82,42 @@ func TestStatusOf(t *testing.T) {
 // non-failing) → Suppressed; risk-response overrides that keep the finding
 // failing (riskAdjustment/operationalRequirement/poam) → NOT suppressed.
 func TestStatusOf_SuppressedMatrix(t *testing.T) {
-	suppressing := []string{"passed", "notApplicable"} // effective verdicts a waiver/FP yields
-	for _, eff := range suppressing {
+	// A governing override driving a failing raw verdict to a non-failing
+	// effective status suppresses (the verdicts a waiver/falsePositive yields).
+	governing := func(status string) []interface{} {
+		return []interface{}{map[string]interface{}{
+			"type": "waiver", "status": status,
+			"appliedAt": "2026-01-02T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+		}}
+	}
+	for _, eff := range []string{"passed", "notApplicable"} {
 		req := mkResults("failed")
-		req["effectiveStatus"] = eff
-		assert.True(t, StatusOf(req).Suppressed, "raw failed + effective %s → suppressed", eff)
+		req["statusOverrides"] = governing(eff)
+		assert.True(t, StatusOf(req).Suppressed, "raw failed + governing override %s → suppressed", eff)
 	}
 
-	// riskAdjustment / operationalRequirement / poam: effectiveStatus stays failed
+	// riskAdjustment / operationalRequirement / poam: no status override — the
+	// effective status stays failed and the finding stays actionable.
 	req := mkResults("failed")
-	req["effectiveStatus"] = "failed"
 	req["statusOverrides"] = []interface{}{map[string]interface{}{"type": "riskAdjustment", "impact": map[string]interface{}{"value": 0.2}}}
 	st := StatusOf(req)
 	assert.True(t, st.Overridden)
 	assert.False(t, st.Suppressed, "risk-adjusted failure stays actionable")
 
+	// structural impact-0 notApplicable is NOT acceptance-suppression
+	na := mkResults("failed")
+	na["impact"] = float64(0)
+	assert.False(t, StatusOf(na).Suppressed)
+	assert.Equal(t, "notApplicable", StatusOf(na).Rollup)
+
 	// a passing finding is never suppressed regardless of overrides
 	pass := mkResults("passed")
-	pass["effectiveStatus"] = "passed"
+	pass["statusOverrides"] = governing("passed")
 	assert.False(t, StatusOf(pass).Suppressed)
 
 	// an errored finding driven to passed is not suppressed (error isn't failing)
 	erf := mkResults("error")
-	erf["effectiveStatus"] = "passed"
+	erf["statusOverrides"] = governing("passed")
 	assert.False(t, StatusOf(erf).Suppressed)
 
 	assert.True(t, IsFailing("failed"))

@@ -16,24 +16,25 @@ func TestDetermineControlStatus(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "passed from effective_status",
+			// Stored effectiveStatus is an output cache and is never read:
+			// with no results and no overrides the roll-up (not_reviewed)
+			// wins over a stored optimistic value.
+			name: "stored effective_status ignored (optimistic)",
 			control: hdf.EvaluatedRequirement{
-				// impact must be non-zero: impact==0 canonically forces
-				// not_applicable ahead of effectiveStatus.
 				Impact:          0.7,
 				EffectiveStatus: ptrResultStatus(hdf.Passed),
 				Results:         []hdf.RequirementResult{},
 			},
-			expected: "passed",
+			expected: "not_reviewed",
 		},
 		{
-			name: "failed from effective_status",
+			name: "stored effective_status ignored (pessimistic)",
 			control: hdf.EvaluatedRequirement{
 				Impact:          0.7,
 				EffectiveStatus: ptrResultStatus(hdf.Failed),
 				Results:         []hdf.RequirementResult{},
 			},
-			expected: "failed",
+			expected: "not_reviewed",
 		},
 		{
 			name: "not_applicable with zero impact and no results",

@@ -1,0 +1,123 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "cwe": [
+            "CWE-78"
+          ],
+          "descriptions": [
+            {
+              "data": "Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Path: app/handlers.py, line 7",
+              "message": "Suggested fix -- replace the matched code with:\nFalse",
+              "startTime": "2026-09-02T01:41:58.081511Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 7,
+            "ref": "app/handlers.py"
+          },
+          "id": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+          "impact": 0.7,
+          "tags": {
+            "category": "security",
+            "cci": [
+              "CCI-001310"
+            ],
+            "checkId": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+            "confidence": "MEDIUM",
+            "cwe": [
+              "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+            ],
+            "likelihood": "HIGH",
+            "nist": [
+              "SI-10"
+            ],
+            "owasp": [
+              "A01:2017 - Injection",
+              "A03:2021 - Injection",
+              "A05:2025 - Injection"
+            ],
+            "semgrepImpact": "LOW",
+            "severity": "ERROR",
+            "subcategory": [
+              "secure default"
+            ],
+            "technology": [
+              "python"
+            ],
+            "vulnerabilityClass": [
+              "Command Injection"
+            ]
+          },
+          "code": "{\n  \"check_id\": \"python.lang.security.audit.subprocess-shell-true.subprocess-shell-true\",\n  \"path\": \"app/handlers.py\",\n  \"start\": {\n    \"line\": 7,\n    \"col\": 36\n  },\n  \"end\": {\n    \"line\": 7,\n    \"col\": 40\n  },\n  \"extra\": {\n    \"message\": \"Found 'subprocess' function 'run' with 'shell=True'. This is dangerous because this call will spawn the command using a shell process. Doing so propagates current shell settings and variables, which makes it much easier for a malicious actor to execute commands. Use 'shell=False' instead.\",\n    \"severity\": \"ERROR\",\n    \"fix\": \"False\"\n  }\n}",
+          "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess"
+            },
+            {
+              "url": "https://docs.python.org/3/library/subprocess.html"
+            },
+            {
+              "url": "https://semgrep.dev/r/python.lang.security.audit.subprocess-shell-true.subprocess-shell-true"
+            },
+            {
+              "url": "https://sg.run/J92w"
+            },
+            {
+              "url": "https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html"
+            }
+          ],
+          "title": "Subprocess Shell True",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Semgrep scanned 1 file(s); 1 rule(s) produced findings and 0 scan error(s) were reported. Semgrep reports violations only and does not enumerate the rules that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Semgrep scanned 1 file(s); 1 rule(s) produced findings and 0 scan error(s) were reported. Semgrep reports violations only and does not enumerate the rules that ran without finding anything, so no passing requirements can be derived from its output and the compliance ratio should not be read as a pass rate.",
+              "startTime": "2026-09-02T01:41:58.081511Z",
+              "status": "notApplicable"
+            }
+          ],
+          "id": "semgrep-scan-coverage",
+          "impact": 0,
+          "tags": {
+            "filesScanned": 1,
+            "rulesWithFindings": 1,
+            "scanErrors": 0
+          },
+          "title": "Semgrep scan coverage"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "61d640e987f8e46e8a8c4873b307bb80a834a2d022f570f9576a7e010a7ec41b"
+      },
+      "name": "Semgrep Scan",
+      "title": "Semgrep static analysis scan"
+    }
+  ],
+  "generator": {
+    "name": "semgrep-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-02T01:41:58.081511Z",
+  "tool": {
+    "name": "Semgrep",
+    "version": "1.174.0"
+  }
+}

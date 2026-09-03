@@ -97,39 +97,32 @@ func GoverningStatusOverride(overrides []StatusOverrideInput, ref time.Time) *St
 // EffectiveStatusInput is the neutral shape of a requirement for
 // effective-status computation.
 type EffectiveStatusInput struct {
-	Impact float64
-	// EffectiveStatus is the requirement's stored effectiveStatus field;
-	// empty means unset.
-	EffectiveStatus string
-	ResultStatuses  []string
-	Overrides       []StatusOverrideInput
+	Impact         float64
+	ResultStatuses []string
+	Overrides      []StatusOverrideInput
 }
 
 // ComputeEffectiveStatus determines a requirement's effective status. This is
-// the single canonical implementation of the precedence in
-// status-determination.md:
+// the single canonical implementation of the ladder in status-determination.md:
 //
-//  1. impact == 0 -> "notApplicable", regardless of results or overrides
-//  2. the governing (most recent non-expired) status override's status
-//  3. the stored effectiveStatus, honored only when NO overrides are present —
-//     effectiveStatus is state derived from overrides, so when every override
-//     has expired it is stale and the result roll-up wins
-//  4. worst-wins roll-up of the result statuses
-//  5. no results -> "notReviewed"
+//  1. the governing (most recent non-expired) status override's status
+//  2. else result roll-up "error" -> "error"
+//  3. else impact == 0 -> "notApplicable"
+//  4. else worst-wins roll-up of the result statuses (empty -> "notReviewed")
 //
-// A zero ref time means "now".
+// The stored effectiveStatus field is an output cache and is never read: the
+// only sanctioned channel for status to diverge from the results is a
+// governing override. A zero ref time means "now".
 func ComputeEffectiveStatus(input EffectiveStatusInput, ref time.Time) string {
+	if governing := GoverningStatusOverride(input.Overrides, ref); governing != nil {
+		return governing.Status
+	}
+	rolledUp := WorstStatus(input.ResultStatuses)
+	if rolledUp == "error" {
+		return "error"
+	}
 	if input.Impact == 0 {
 		return "notApplicable"
 	}
-	if len(input.Overrides) > 0 {
-		if governing := GoverningStatusOverride(input.Overrides, ref); governing != nil {
-			return governing.Status
-		}
-		return WorstStatus(input.ResultStatuses)
-	}
-	if input.EffectiveStatus != "" {
-		return input.EffectiveStatus
-	}
-	return WorstStatus(input.ResultStatuses)
+	return rolledUp
 }
