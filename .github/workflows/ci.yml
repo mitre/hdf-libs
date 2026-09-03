@@ -2,6 +2,9 @@ name: CI
 
 on:
   push:
+    # Scoped to main so a branch with an open PR doesn't run CI twice per
+    # update (once for the branch push, once for the PR synchronize).
+    branches: [main]
     paths-ignore:
       - '**.md'
       - 'docs/**'
