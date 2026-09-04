@@ -213,10 +213,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: build
+    env:
+      # Job-level so the scan step's `if` can test it: secrets are not exposed
+      # to fork PRs, so an empty value means "cannot scan", not "misconfigured".
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Sonar needs full history for accurate blame/new-code attribution.
+          fetch-depth: 0
       - uses: $/.github/actions/setup
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -243,6 +249,22 @@ jobs:
           cd hdf-cli
           go test -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out | tail -1
+      # vitest writes lcov SF: paths relative to each package, but the Sonar
+      # scanner resolves them against the repo root — prefix the package dir
+      # so every source file resolves instead of silently reporting 0%.
+      - name: Rebase lcov paths to repo root
+        run: |
+          for f in */coverage/lcov.info; do
+            pkg="${f%%/*}"
+            sed -i "s|^SF:|SF:${pkg}/|" "$f"
+          done
+      # CI-based SonarCloud analysis (Automatic Analysis is off), ingesting
+      # the lcov + coverprofile outputs above per sonar-project.properties.
+      # No token means a fork PR or a not-yet-onboarded project: skip rather
+      # than fail the coverage job.
+      - name: SonarCloud scan
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
