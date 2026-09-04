@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -56,8 +59,14 @@ Designed for CI/CD compliance gates.`,
 				if readErr != nil {
 					return fmt.Errorf("failed to read threshold template: %w", readErr)
 				}
-				if unmarshalErr := yaml.Unmarshal(templateData, &config); unmarshalErr != nil {
-					return fmt.Errorf("failed to parse threshold YAML: %w", unmarshalErr)
+				// Decode strictly: an unrecognized key must be an error, never a
+				// silently dropped one. A template whose keys are misspelled would
+				// otherwise parse to an empty threshold set and pass vacuously —
+				// a committed gate that asserts nothing while reporting success.
+				decoder := yaml.NewDecoder(bytes.NewReader(templateData))
+				decoder.KnownFields(true)
+				if decodeErr := decoder.Decode(&config); decodeErr != nil && !errors.Is(decodeErr, io.EOF) {
+					return fmt.Errorf("failed to parse threshold YAML: %s", templateKeyVocabulary.Replace(decodeErr.Error()))
 				}
 			} else {
 				parsed, parseErr := parseInlineThreshold(templateInline)
@@ -65,6 +74,13 @@ Designed for CI/CD compliance gates.`,
 					return parseErr
 				}
 				config = *parsed
+			}
+
+			// A template that asserts nothing passes every document, so reporting
+			// success would be a green gate that checked nothing — the same false
+			// green a misspelled key used to produce.
+			if thresholdAssertionCount(&config) == 0 {
+				return fmt.Errorf("threshold asserts nothing: add at least one bound (e.g. a 'failed.total.max' entry)")
 			}
 
 			// Count controls
@@ -187,6 +203,14 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 			}
 			bound = ts.Total
 		} else {
+			// getSeverityBound buckets anything it does not recognize into
+			// "none", which is right when generate is placing a scan's own
+			// severity but wrong here: this segment was typed by a user, so an
+			// unrecognized name is a typo that would otherwise assert a bound
+			// nobody asked for and pass silently.
+			if !isKnownSeverityField(segments[1]) {
+				return fmt.Errorf("unknown severity field %q (expected 'critical', 'high', 'medium', 'low', 'none', or 'total')", segments[1])
+			}
 			bound = getSeverityBound(ts, segments[1])
 		}
 		switch segments[2] {
@@ -236,4 +260,67 @@ func getOrCreateStatusSeverity(config *ThresholdConfig, status string) *Threshol
 	default:
 		return &ThresholdSeverity{}
 	}
+}
+
+// knownSeverityFields is the severity vocabulary a threshold path may name.
+// getSeverityBound (generate_threshold.go) maps anything else to "none" on
+// purpose, so the inline path checks membership here before calling it.
+var knownSeverityFields = []string{"critical", "high", "medium", "low", "none"}
+
+func isKnownSeverityField(name string) bool {
+	for _, known := range knownSeverityFields {
+		if name == known {
+			return true
+		}
+	}
+	return false
+}
+
+// The -T and -I paths validate different grammars and so do not share one
+// routine: -I walks dotted segments, while -T decodes YAML where the struct
+// tags on hdfengine.ThresholdConfig are themselves the key vocabulary. Sharing
+// would mean reimplementing YAML parsing as segment walking, or having -I
+// synthesize YAML. Both enforce the same guarantee by different means.
+//
+// yaml's KnownFields error names the Go type that rejected the key; restate it
+// in the template's own vocabulary so a failing gate reads in the same terms as
+// the -I path's "unknown threshold category" errors rather than leaking a type.
+var templateKeyVocabulary = strings.NewReplacer(
+	"not found in type hdfengine.ThresholdConfig", "is not a known threshold category",
+	"not found in type hdfengine.ThresholdSeverity", "is not a known severity field",
+	"not found in type hdfengine.ThresholdBound", "is not a known bound",
+	"not found in type hdfengine.ComplianceBound", "is not a known compliance field",
+)
+
+// thresholdAssertionCount reports how many bounds a template actually asserts,
+// counting every level: a nested section present but empty (`failed: {}`)
+// asserts as little as an empty file.
+func thresholdAssertionCount(config *ThresholdConfig) int {
+	count := 0
+	if config.Compliance != nil {
+		if config.Compliance.Min != nil {
+			count++
+		}
+		if config.Compliance.Max != nil {
+			count++
+		}
+	}
+	for _, severity := range []*ThresholdSeverity{config.Passed, config.Failed, config.Skipped, config.Error, config.NoImpact} {
+		if severity == nil {
+			continue
+		}
+		for _, bound := range []*ThresholdBound{severity.Critical, severity.High, severity.Medium, severity.Low, severity.None, severity.Total} {
+			if bound == nil {
+				continue
+			}
+			if bound.Min != nil {
+				count++
+			}
+			if bound.Max != nil {
+				count++
+			}
+			count += len(bound.Controls)
+		}
+	}
+	return count
 }
