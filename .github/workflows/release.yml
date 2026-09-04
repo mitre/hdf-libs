@@ -83,8 +83,11 @@ jobs:
           # A stable publish with no --tag steals `latest`, so a plain
           # `npm install @mitre/hdf-converters` would hand v2 consumers an
           # API-incompatible v3. Policy agreed with the heimdall2 team:
-          # hdf-converters stables publish under `next` (plus a per-major tag,
-          # below), rc's under `rc` — never `latest`, implicit or explicit.
+          # hdf-converters stables publish under `next`, rc's under `rc` —
+          # never `latest`, implicit or explicit. (A per-major `v3` alias was
+          # planned but is impossible: npm rejects any dist-tag name that
+          # parses as a semver range. Revisit a legal alias, e.g. `latest-3`,
+          # only if a v4 line ever forks.)
           # Do NOT "simplify" this back into one shared TAG_FLAG.
 
           # Use pnpm publish (not npm) so that workspace:* dependency specifiers
@@ -108,13 +111,6 @@ jobs:
             pnpm publish --access public --no-git-checks $TAG_FLAG
             cd ..
           done
-
-          # Per-major convenience tag (v3, v4, ...) for hdf-converters stables,
-          # so consumers can pin the major line even after `next` moves on.
-          # Additive only — `latest` is never touched.
-          if [[ "$VERSION" != *"-rc"* ]]; then
-            npm dist-tag add "@mitre/hdf-converters@${VERSION}" "v${VERSION%%.*}"
-          fi
 
   build-cli:
     name: Build CLI binaries
