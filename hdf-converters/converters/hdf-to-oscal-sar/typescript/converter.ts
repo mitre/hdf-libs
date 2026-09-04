@@ -224,8 +224,11 @@ function baselineToResult(
     // a token — an empty one fails the pattern outright. HDF requires an id on a
     // requirement, so reaching this is already invalid input, but emitting the
     // finding anyway would produce a document the target schema rejects. The
-    // finding is dropped rather than carrying a fabricated identifier.
-    if (nistTagToControlId(req.id) === '') {
+    // finding is dropped rather than carrying a fabricated identifier. Compute
+    // the control id once so the guard and the reviewed-controls encoding below
+    // cannot drift.
+    const nistId = nistTagToControlId(req.id);
+    if (nistId === '') {
       continue;
     }
 
@@ -243,7 +246,7 @@ function baselineToResult(
     // Encoded identically to the finding's target-id: a finding that referenced a
     // control absent from this list would validate while claiming to assess
     // something the result never declares reviewing.
-    const cid = oscalToken(nistTagToControlId(req.id));
+    const cid = oscalToken(nistId);
     if (cid !== '' && !seenControl.has(cid)) {
       seenControl.add(cid);
       includeControls.push({ 'control-id': cid });

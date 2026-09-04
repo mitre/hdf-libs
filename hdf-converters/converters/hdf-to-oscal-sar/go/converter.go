@@ -212,8 +212,10 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		// requires an id on a requirement, so reaching this is already invalid
 		// input, but emitting the finding anyway would produce a document the
 		// target schema rejects. The finding is dropped rather than carrying a
-		// fabricated identifier the source never had.
-		if oscal.NistTagToControlID(req.ID) == "" {
+		// fabricated identifier the source never had. Compute the control id once
+		// so the guard and the reviewed-controls encoding below cannot drift.
+		nistID := oscal.NistTagToControlID(req.ID)
+		if nistID == "" {
 			continue
 		}
 
@@ -231,7 +233,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		// Encoded identically to the finding's target-id below: a finding that
 		// referenced a control absent from this list would validate while
 		// claiming to assess something the result never declares reviewing.
-		if cid := oscal.OSCALToken(oscal.NistTagToControlID(req.ID)); cid != "" && !seenControl[cid] {
+		if cid := oscal.OSCALToken(nistID); cid != "" && !seenControl[cid] {
 			seenControl[cid] = true
 			includeControls = append(includeControls, oscal.SelectControl{ControlID: cid})
 		}

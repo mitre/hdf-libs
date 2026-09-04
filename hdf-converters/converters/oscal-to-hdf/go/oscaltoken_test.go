@@ -60,10 +60,12 @@ func TestOSCALToken_NoCollisionsAcrossRealFixtureIDs(t *testing.T) {
 	seen := map[string]string{}
 	ids := 0
 	for _, f := range entries {
+		// These are repo fixtures found by glob; a read or parse failure is a
+		// real problem that must fail the test, not silently shrink the scan.
+		// Fixtures that legitimately carry no baselines/requirements (e.g.
+		// amendments docs) are skipped by the loops below producing no ids.
 		raw, err := os.ReadFile(f)
-		if err != nil {
-			continue
-		}
+		require.NoError(t, err, "read fixture %s", f)
 		var doc struct {
 			Baselines []struct {
 				Requirements []struct {
@@ -71,9 +73,7 @@ func TestOSCALToken_NoCollisionsAcrossRealFixtureIDs(t *testing.T) {
 				} `json:"requirements"`
 			} `json:"baselines"`
 		}
-		if json.Unmarshal(raw, &doc) != nil {
-			continue
-		}
+		require.NoError(t, json.Unmarshal(raw, &doc), "parse fixture %s", f)
 		for _, b := range doc.Baselines {
 			for _, r := range b.Requirements {
 				if r.ID == "" {
