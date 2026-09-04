@@ -15,7 +15,7 @@
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
-    "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
+    "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run lint:generated-html && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
     "test:ts": "pnpm -r run test:ts",
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
@@ -26,6 +26,7 @@
     "lint": "pnpm -r run lint",
     "lint:go": "pnpm --filter hdf-cli run lint && pnpm --filter @mitre/hdf-converters run lint:go && pnpm --filter @mitre/hdf-utilities run lint:go",
     "lint:timestamps": "node scripts/check-timestamp-usage.mjs",
+    "lint:generated-html": "node scripts/check-generated-html.mjs",
     "lint:fix": "pnpm -r run lint:fix",
     "clean": "pnpm -r run clean",
     "prepare": "husky"
