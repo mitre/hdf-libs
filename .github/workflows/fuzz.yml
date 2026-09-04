@@ -28,7 +28,17 @@ jobs:
       matrix:
         include:
           - dir: hdf-utilities/go
+            target: FuzzExtractXMLRootElement
+          - dir: hdf-utilities/go
+            target: FuzzParseCpe
+          - dir: hdf-utilities/go
+            target: FuzzParseCvssVector
+          - dir: hdf-utilities/go
+            target: FuzzParsePurl
+          - dir: hdf-utilities/go
             target: FuzzParseTimestamp
+          - dir: hdf-utilities/go
+            target: FuzzSafePath
           - dir: hdf-converters/shared/go
             target: FuzzValidateXMLInput
           - dir: hdf-converters/converters/nessus-to-hdf/go
