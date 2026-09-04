@@ -31,7 +31,7 @@ func TestResolveToolSelection_ReadProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_diff", "hdf_validate"}
+	want := []string{"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_aggregate", "hdf_diff", "hdf_validate"}
 	if !slices.Equal(got, want) {
 		t.Errorf("'read' profile mismatch\n got: %v\nwant: %v", got, want)
 	}
@@ -62,7 +62,7 @@ func TestResolveToolSelection_MixesProfileAndName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_diff", "hdf_validate", "hdf_convert"}
+	want := []string{"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_aggregate", "hdf_diff", "hdf_validate", "hdf_convert"}
 	if !slices.Equal(got, want) {
 		t.Errorf("profile+name mix mismatch\n got: %v\nwant: %v", got, want)
 	}

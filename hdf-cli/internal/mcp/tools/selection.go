@@ -20,6 +20,7 @@ var canonicalToolOrder = []string{
 	"hdf_inspect",
 	"hdf_query",
 	"hdf_compliance",
+	"hdf_aggregate",
 	"hdf_diff",
 	"hdf_validate",
 	"hdf_convert",
@@ -34,6 +35,7 @@ var registrarByName = map[string]func(*sdkmcp.Server, *loader.Loader){
 	"hdf_inspect":         RegisterInspect,
 	"hdf_query":           RegisterQuery,
 	"hdf_compliance":      RegisterCompliance,
+	"hdf_aggregate":       RegisterAggregate,
 	"hdf_diff":            RegisterDiff,
 	"hdf_validate":        RegisterValidate,
 	"hdf_convert":         RegisterConvert,
@@ -48,7 +50,7 @@ var registrarByName = map[string]func(*sdkmcp.Server, *loader.Loader){
 // client needs is the largest lever on the per-turn schema cost: an unadvertised
 // tool sends none of its schema.
 var toolProfiles = map[string][]string{
-	"read": {"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_diff", "hdf_validate"},
+	"read": {"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_aggregate", "hdf_diff", "hdf_validate"},
 	"all":  canonicalToolOrder,
 }
 

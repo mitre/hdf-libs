@@ -21,7 +21,7 @@ surface for consumers.
 
 ## The tool surface
 
-The server exposes nine tools. Read tools never mutate anything; write
+The server exposes ten tools. Read tools never mutate anything; write
 tools are governed by a deployer-controlled gate (see
 [Reads vs. writes](#reads-vs-writes)). Every tool returns a compact
 **summary** plus a reusable **handle** — never a multi-megabyte document
@@ -34,7 +34,8 @@ body.
 | `hdf_open` | Entry point: open a document, return its detected type, schema version, validity, and a handle. Optional — every read tool also accepts a `{path}` directly. |
 | `hdf_inspect` | Document **structure and metadata** for all eight HDF document types (counts, component/baseline/assessment breakdowns, top-level fields). It never returns requirements. |
 | `hdf_query` | The **only** path to requirements (results and baseline documents only). Filters by status, severity, requirement ID, tag, and free text; concise by default, full on request; paginates when a response would exceed the token budget. An opt-in `fields` array adds cross-source correlation keys per row (see [Correlation fields](#correlation-fields)). |
-| `hdf_compliance` | Status × severity rollups, the compliance percentage, optional threshold verdicts, and the agent-attributed override count. |
+| `hdf_compliance` | Status × severity rollups, the compliance percentage, optional threshold verdicts, and the agent-attributed override count for **one** document. |
+| `hdf_aggregate` | Roll up status/severity counts across **multiple** documents in one call — per-source counts plus a server-computed total and compliance, with optional status/severity/nist filters. Counts only, never rows; a source that fails to load is reported and the rest still aggregate. |
 | `hdf_diff` | Compare two documents — temporal (results across time) or system-drift (system documents) — and emit an `hdf-comparison`. |
 | `hdf_validate` | Validate a document in `schema`, `checksums`, or `completeness` mode. |
 
@@ -147,12 +148,12 @@ Every request an agent makes re-sends the whole tool surface, so the set of tool
 Select the surface with `--tools` (or `HDF_MCP_TOOLS`), taking either explicit tool names or a profile:
 
 ```bash
-hdf mcp --tools read                 # the six read/analysis tools only
+hdf mcp --tools read                 # the read/analysis tools only
 hdf mcp --tools hdf_open,hdf_query   # a focused two-tool surface
 hdf mcp                              # every tool (the default)
 ```
 
-The `read` profile is `hdf_open`, `hdf_inspect`, `hdf_query`, `hdf_compliance`, `hdf_diff`, and `hdf_validate`. Measured in the model-facing representation — the tool name, description, and parameters a provider actually sends the model each turn — the full nine-tool surface is ~2,768 tokens; the `read` profile is ~1,535 (a 44% cut), and a two-tool `hdf_open,hdf_query` surface is ~532 (81%). An unknown tool name is rejected at startup rather than silently dropped, so a bad launch config fails loudly.
+The `read` profile is `hdf_open`, `hdf_inspect`, `hdf_query`, `hdf_compliance`, `hdf_aggregate`, `hdf_diff`, and `hdf_validate`. Measured in the model-facing representation — the tool name, description, and parameters a provider actually sends the model each turn — the full ten-tool surface is ~3,116 tokens; the `read` profile is ~1,877 (a 40% cut), and a two-tool `hdf_open,hdf_query` surface is ~573 (82%). An unknown tool name is rejected at startup rather than silently dropped, so a bad launch config fails loudly.
 
 ## What the read surface deliberately does not return
 

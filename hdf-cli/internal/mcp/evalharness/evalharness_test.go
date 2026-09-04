@@ -330,7 +330,7 @@ func TestToolsList_ReadSubsetAdvertisesOnlyReadTools(t *testing.T) {
 	for _, tl := range r.Tools {
 		got[tl.Name] = true
 	}
-	want := []string{"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_diff", "hdf_validate"}
+	want := []string{"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_aggregate", "hdf_diff", "hdf_validate"}
 	if len(got) != len(want) {
 		t.Errorf("read profile advertised %d tools, want %d: %v", len(got), len(want), got)
 	}

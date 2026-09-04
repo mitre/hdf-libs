@@ -29,21 +29,26 @@ const PinnedEncoding = "o200k_base (github.com/tiktoken-go/tokenizer v0.8.1)"
 // tools/list token ceilings from the ADR Verification Strategy, measured on the
 // marshalled ListToolsResult with the pinned tokenizer.
 const (
-	// ToolsListTotalBudget is the target total for the whole tools/list.
-	ToolsListTotalBudget = 4500
-	// ToolsListPerToolBudget is the ceiling for any single tool's schema.
+	// ToolsListTotalBudget is the target total for the whole tools/list. Raised
+	// from 4500 to 5200 when hdf_aggregate (the 10th tool) landed: a full surface
+	// of ~5079 wire tokens is the deliberate cost of the cross-document rollup
+	// capability. The per-tool ceiling below is the real anti-bloat invariant; a
+	// deployment that does not need every tool advertises a subset (--tools).
+	ToolsListTotalBudget = 5200
+	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
+	// may exceed it regardless of how many tools exist — the invariant that keeps
+	// any one schema from bloating (hdf_aggregate measured 589).
 	ToolsListPerToolBudget = 600
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
-	// (open/inspect/query/compliance/diff/validate — the surface an analysis agent
-	// carries) must stay materially below the full surface. This is the WIRE-format
-	// tools/list (what MeasureToolsList tokenizes): ~2775 tokens against the full
-	// ~4451. The model-facing figure a provider sends (name+description+parameters)
-	// is smaller — ~1535 vs ~2768 — and is the decision-relevant number quoted in
-	// the guide; this ceiling only needs to catch the surface creeping back toward
-	// full, for which the wire measurement is a faithful proxy.
-	ReadProfileBudget = 2900
+	// (open/inspect/query/compliance/aggregate/diff/validate — the surface an
+	// analysis agent carries) must stay materially below the full surface. WIRE
+	// format (what MeasureToolsList tokenizes): ~3403 tokens with the cross-document
+	// aggregate tool included, against the full ~5079. Raised from 2900 to 3500 when
+	// hdf_aggregate joined the read profile. This ceiling only needs to catch the
+	// read surface creeping back toward full; the wire measurement is a faithful proxy.
+	ReadProfileBudget = 3500
 )
 
 var (
