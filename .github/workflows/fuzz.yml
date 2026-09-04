@@ -73,7 +73,24 @@ jobs:
 
       - name: Fuzz ${{ matrix.target }}
         working-directory: ${{ matrix.dir }}
-        run: go test -fuzz="^${{ matrix.target }}$" -fuzztime=300s -run='^$' .
+        run: |
+          # Captured to a file rather than piped: a pipeline's status is tee's,
+          # which would mask a real failure.
+          status=0
+          go test -fuzz="^${{ matrix.target }}$" -fuzztime=300s -run='^$' . > fuzz.log 2>&1 || status=$?
+          cat fuzz.log
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          # Go can report the -fuzztime deadline itself as a failure when workers
+          # are mid-operation (golang/go#70431, #72088) — most likely on the
+          # highest-throughput targets. Benign ONLY when no failing input was
+          # recorded: a genuine finding always writes one, and still fails here.
+          if grep -q "context deadline exceeded" fuzz.log && ! grep -q "Failing input written to" fuzz.log; then
+            echo "::notice::${{ matrix.target }} reached the fuzztime deadline with no failing input"
+            exit 0
+          fi
+          exit 1
 
       - name: Upload crash corpus
         if: failure()
