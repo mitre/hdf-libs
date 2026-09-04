@@ -3,10 +3,12 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "generate": "node generate-schema-docs.mjs",
+    "generate": "node generate-schema-docs.mjs && node generate-converters.mjs",
     "dev": "pnpm generate && vitepress dev",
     "build": "pnpm generate && vitepress build",
-    "preview": "vitepress preview"
+    "preview": "vitepress preview",
+    "lint": "eslint .",
+    "test:ts": "node --test"
   },
   "dependencies": {
     "@mitre/hdf-schema": "workspace:^"

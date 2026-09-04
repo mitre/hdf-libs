@@ -12,6 +12,7 @@ hdf-cli/internal/mcp/**/testdata/**/*.jsonl eol=lf
 hdf-schema/test/**/*.json eol=lf
 hdf-generators/test/**/*.json eol=lf
 hdf-validators/test/**/*.json eol=lf
+site/data/converters.json eol=lf
 
 # Test fixtures are stored as regular git objects (text XML/JSON compresses
 # well in packfiles). Large full-scan fixtures that exceed ~1 MB should not

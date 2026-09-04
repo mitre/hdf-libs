@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.5.0",
   "title": "HDF BOM Primitives",
-  "description": "Generalized Bill-of-Materials / manifest representation. One extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape). Subject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it. See ADR-0001.",
+  "description": "Generalized Bill-of-Materials / manifest representation.\n\nOne extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape).\n\nSubject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it.\n\nSee ADR-0001.",
   "$defs": {
     "Bom_Type": {
       "type": "string",
@@ -21,9 +21,11 @@
             "kbom"
           ]
         },
-        { "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$" }
+        {
+          "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
+        }
       ],
-      "description": "Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest. Custom or experimental kinds MUST use an 'x-' prefix (e.g. 'x-threat-model') so they cannot collide with a value later promoted into the reserved set; a non-'x-' value outside the reserved set is invalid. Adding a reserved value is a schema version bump. VEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
+      "description": "Discriminator for the manifest kind.\n\nReserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes).\n\nNormalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest.\n\nCustom or experimental kinds MUST use an 'x-' prefix (e.g. 'x-threat-model') so they cannot collide with a value later promoted into the reserved set; a non-'x-' value outside the reserved set is invalid.\n\nAdding a reserved value is a schema version bump.\n\nVEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
     },
     "Bom": {
       "type": "object",
@@ -63,7 +65,10 @@
           "description": "Optional stable identifier for this BOM document (e.g. CycloneDX serialNumber, SPDX documentNamespace). Correlates the same BOM across evidence packages."
         },
         "license": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Optional license of the BOM document as a whole (SPDX license expression). Nullable and often meaningless (CBOM algorithms, many HBOM parts have no license); per-node licenses live in the type-extension, not here."
         },
         "model": {
@@ -86,41 +91,85 @@
         {
           "$comment": "Three-tier discipline: the ai-model extension may appear only on an ai-model BOM.",
           "if": {
-            "properties": { "bomType": { "const": "ai-model" } },
-            "required": ["bomType"]
+            "properties": {
+              "bomType": {
+                "const": "ai-model"
+              }
+            },
+            "required": [
+              "bomType"
+            ]
           },
           "else": {
-            "properties": { "model": false }
+            "properties": {
+              "model": false
+            }
           }
         },
         {
           "$comment": "The dataset extension may appear only on a dataset BOM.",
           "if": {
-            "properties": { "bomType": { "const": "dataset" } },
-            "required": ["bomType"]
+            "properties": {
+              "bomType": {
+                "const": "dataset"
+              }
+            },
+            "required": [
+              "bomType"
+            ]
           },
           "else": {
-            "properties": { "dataset": false }
+            "properties": {
+              "dataset": false
+            }
           }
         },
         {
           "$comment": "The normalized packages extension may appear only on an sbom BOM.",
           "if": {
-            "properties": { "bomType": { "const": "sbom" } },
-            "required": ["bomType"]
+            "properties": {
+              "bomType": {
+                "const": "sbom"
+              }
+            },
+            "required": [
+              "bomType"
+            ]
           },
           "else": {
-            "properties": { "packages": false }
+            "properties": {
+              "packages": false
+            }
           }
         },
         {
           "$comment": "A BOM must carry at least one of ref/document/packages/model/dataset. This intentionally checks PRESENCE, not non-emptiness: under the partial-fidelity design a converter MAY emit an empty normalized extension (e.g. model:{}) alongside a raw `document` passthrough when a source has no cleanly-mappable fields, so this constraint deliberately does not require minProperties/minItems on the extension. A bare {bomType, format} carrying none of these keys is unusable and invalid.",
           "anyOf": [
-            { "required": ["ref"] },
-            { "required": ["document"] },
-            { "required": ["packages"] },
-            { "required": ["model"] },
-            { "required": ["dataset"] }
+            {
+              "required": [
+                "ref"
+              ]
+            },
+            {
+              "required": [
+                "document"
+              ]
+            },
+            {
+              "required": [
+                "packages"
+              ]
+            },
+            {
+              "required": [
+                "model"
+              ]
+            },
+            {
+              "required": [
+                "dataset"
+              ]
+            }
           ]
         }
       ],
@@ -131,14 +180,20 @@
           "format": "cyclonedx",
           "ref": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
           "hashes": [
-            { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+            {
+              "algorithm": "sha256",
+              "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
           ]
         },
         {
           "$comment": "Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships.",
           "bomType": "cbom",
           "format": "cyclonedx",
-          "document": { "bomFormat": "CycloneDX", "specVersion": "1.6" }
+          "document": {
+            "bomFormat": "CycloneDX",
+            "specVersion": "1.6"
+          }
         },
         {
           "$comment": "Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base.",
@@ -153,15 +208,28 @@
             "learningApproach": "supervised",
             "task": "text-generation",
             "performanceMetrics": [
-              { "name": "MMLU", "value": "0.457" }
+              {
+                "name": "MMLU",
+                "value": "0.457"
+              }
             ],
             "hyperparameters": [
-              { "name": "epochs", "value": "3" },
-              { "name": "learning-rate", "value": "2e-5" }
+              {
+                "name": "epochs",
+                "value": "3"
+              },
+              {
+                "name": "learning-rate",
+                "value": "2e-5"
+              }
             ],
             "inputOutput": {
-              "dataTypes": ["string"],
-              "modality": ["text"],
+              "dataTypes": [
+                "string"
+              ],
+              "modality": [
+                "text"
+              ],
               "contextLength": 4096,
               "tokenizer": "llama-bpe"
             }
@@ -179,7 +247,9 @@
             "modality": "text",
             "provenance": "Filtered from the public UltraChat corpus; low-quality and duplicate turns removed.",
             "statisticalProperties": "Mean 512 tokens/record; 61% single-turn, 39% multi-turn; English-dominant (~92%).",
-            "baseDatasetRefs": ["HuggingFaceH4/ultrachat_200k"],
+            "baseDatasetRefs": [
+              "HuggingFaceH4/ultrachat_200k"
+            ],
             "derivation": "filtered"
           }
         }
@@ -207,7 +277,12 @@
         "adaptationType": {
           "type": "string",
           "title": "Model Adaptation Type",
-          "enum": ["finetune", "adapter", "quantized", "merge"],
+          "enum": [
+            "finetune",
+            "adapter",
+            "quantized",
+            "merge"
+          ],
           "description": "Lineage relationship to baseModelRef, adopting Hugging Face's base_model_relation vocabulary (the only typed lineage enum in the ecosystem)."
         },
         "baseModelRef": {
@@ -216,7 +291,9 @@
         },
         "datasetRefs": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "References to the training/evaluation datasets this model was produced from — preferably a dataset component's componentId (correlating to a first-class dataset subject rather than duplicating dataset detail, per ADR §10), or a dataset BOM uniqueId/URI when no component exists."
         },
         "intendedUse": {
@@ -273,12 +350,19 @@
           "properties": {
             "dataTypes": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Input/output data types. Examples: string, byte[], float32, image."
             },
             "modality": {
-              "type": ["string", "array"],
-              "items": { "type": "string" },
+              "type": [
+                "string",
+                "array"
+              ],
+              "items": {
+                "type": "string"
+              },
               "description": "Input/output modalities. String or array of strings. Examples: text, image, audio. Symmetric with Dataset_Extension.modality."
             },
             "contextLength": {
@@ -318,8 +402,13 @@
           "description": "Free-text statement of the dataset's intended use (CISA/G7 minimum element)."
         },
         "modality": {
-          "type": ["string", "array"],
-          "items": { "type": "string" },
+          "type": [
+            "string",
+            "array"
+          ],
+          "items": {
+            "type": "string"
+          },
           "description": "Content modality/kind of the data (CISA/G7 'Dataset content: modality'). Examples: text, image, tabular, timeseries, audio. DISTINCT from datasetFormat, which is the physical encoding (parquet/csv). Resolves SPDX 3.0 dataset_datasetType, which is content-kind, not physical format. String or array of strings."
         },
         "provenance": {
@@ -332,13 +421,20 @@
         },
         "baseDatasetRefs": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "References to the source dataset(s) this one was derived from — a dataset componentId, or a dataset BOM uniqueId/URI when no component exists. The lineage edge parallel to ai-model's baseModelRef; the base dataset may carry its own dataset BOM."
         },
         "derivation": {
           "type": "string",
           "title": "Dataset Derivation Type",
-          "enum": ["filtered", "augmented", "merged", "sampled"],
+          "enum": [
+            "filtered",
+            "augmented",
+            "merged",
+            "sampled"
+          ],
           "description": "Relationship of this dataset to baseDatasetRefs, parallel to the model extension's adaptationType. Minimal + extensible: filtered (subset by rule), augmented (added/synthesized records), merged (union of sources), sampled (statistical draw)."
         }
       }
@@ -348,7 +444,9 @@
       "additionalProperties": true,
       "description": "A single normalized software package entry within an sbom BOM. Minimal identity + version for querying/diffing; the full native record remains available via passthrough (document/ref).",
       "title": "SBOM Package",
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -364,7 +462,9 @@
         },
         "licenses": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "SPDX license identifiers/expressions for this package."
         }
       }

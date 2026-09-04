@@ -1,0 +1,502 @@
+{
+  "converters": [
+    {
+      "source": "arf",
+      "dest": "hdf",
+      "name": "ARF to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "asff",
+      "dest": "hdf",
+      "name": "AWS Security Finding Format to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "aws-config",
+      "dest": "hdf",
+      "name": "AWS Config to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "burpsuite",
+      "dest": "hdf",
+      "name": "BurpSuite to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "checkov",
+      "dest": "hdf",
+      "name": "Checkov to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "ckl",
+      "dest": "hdf",
+      "name": "CKL to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "cklb",
+      "dest": "hdf",
+      "name": "CKLB to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "conveyor",
+      "dest": "hdf",
+      "name": "Conveyor to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "csaf-vex",
+      "dest": "hdf",
+      "name": "CSAF VEX to HDF Amendments",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "cyclonedx",
+      "dest": "hdf",
+      "name": "CycloneDX to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "cyclonedx-vex",
+      "dest": "hdf",
+      "name": "CycloneDX VEX to HDF Amendments",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "dbprotect",
+      "dest": "hdf",
+      "name": "DBProtect to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "defectdojo",
+      "dest": "hdf",
+      "name": "DefectDojo to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "defender-cloud",
+      "dest": "hdf",
+      "name": "Microsoft Defender for Cloud to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "defender-endpoint",
+      "dest": "hdf",
+      "name": "Microsoft Defender for Endpoint to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "dependency-track",
+      "dest": "hdf",
+      "name": "Dependency-Track to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "deptrack",
+      "dest": "hdf",
+      "name": "Dependency-Track to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "fortify",
+      "dest": "hdf",
+      "name": "Fortify to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "gitlab",
+      "dest": "hdf",
+      "name": "GitLab Security Report to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "gitlab-dast",
+      "dest": "hdf",
+      "name": "GitLab Security Report to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "gitlab-sast",
+      "dest": "hdf",
+      "name": "GitLab Security Report to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "gosec",
+      "dest": "hdf",
+      "name": "gosec to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "grype",
+      "dest": "hdf",
+      "name": "Grype to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "asff",
+      "name": "HDF Results to ASFF Findings",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "ckl",
+      "name": "HDF to CKL",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "cklb",
+      "name": "HDF to CKLB",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "csv",
+      "name": "HDF to CSV",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "ecs",
+      "name": "HDF Results to ECS",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "hdf",
+      "name": "HDF vauto to HDF v3",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "ocsf",
+      "name": "HDF Results to OCSF Findings",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "oscal-sar",
+      "name": "HDF Results to OSCAL SAR",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "splunk",
+      "name": "HDF Results to Splunk (CIM/HEC)",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "xccdf",
+      "name": "HDF to XCCDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "xml",
+      "name": "HDF to XML",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf-amendments",
+      "dest": "csaf-vex",
+      "name": "HDF Amendments to CSAF VEX",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf-amendments",
+      "dest": "cyclonedx-vex",
+      "name": "HDF Amendments to CycloneDX VEX",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf-amendments",
+      "dest": "openvex",
+      "name": "HDF Amendments to OpenVEX",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf-amendments",
+      "dest": "oscal-poam",
+      "name": "HDF Amendments to OSCAL POA\u0026M",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hipcheck",
+      "dest": "hdf",
+      "name": "Hipcheck to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "inspec",
+      "dest": "hdf",
+      "name": "InSpec exec-json to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "invicti",
+      "dest": "hdf",
+      "name": "Netsparker/Invicti to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "ionchannel",
+      "dest": "hdf",
+      "name": "Ion Channel to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "jfrog-xray",
+      "dest": "hdf",
+      "name": "JFrog Xray to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "junit",
+      "dest": "hdf",
+      "name": "JUnit to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "kics",
+      "dest": "hdf",
+      "name": "KICS to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "legacyhdf",
+      "dest": "hdf",
+      "name": "InSpec exec-json to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "msdo",
+      "dest": "hdf",
+      "name": "Microsoft Defender for DevOps to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "msft-defender-cloud",
+      "dest": "hdf",
+      "name": "Microsoft Defender for Cloud to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "msft-defender-devops",
+      "dest": "hdf",
+      "name": "Microsoft Defender for DevOps to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "msft-defender-endpoint",
+      "dest": "hdf",
+      "name": "Microsoft Defender for Endpoint to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "msft-secure-score",
+      "dest": "hdf",
+      "name": "Microsoft Secure Score to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "nessus",
+      "dest": "hdf",
+      "name": "Nessus to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "netsparker",
+      "dest": "hdf",
+      "name": "Netsparker/Invicti to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "neuvector",
+      "dest": "hdf",
+      "name": "NeuVector to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "nikto",
+      "dest": "hdf",
+      "name": "Nikto to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "openvex",
+      "dest": "hdf",
+      "name": "OpenVEX to HDF Amendments",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal",
+      "dest": "hdf",
+      "name": "OSCAL (auto-detect) to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-assessment-plan",
+      "dest": "hdf",
+      "name": "OSCAL Assessment Plan to HDF Plan",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-assessment-results",
+      "dest": "hdf",
+      "name": "OSCAL Assessment Results to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-catalog",
+      "dest": "hdf",
+      "name": "OSCAL Catalog to HDF Baseline",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-component-definition",
+      "dest": "hdf",
+      "name": "OSCAL Component Definition to HDF Baseline",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-poam",
+      "dest": "hdf",
+      "name": "OSCAL POA\u0026M to HDF Amendments",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-profile",
+      "dest": "hdf",
+      "name": "OSCAL Profile to HDF Baseline",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-sar",
+      "dest": "hdf",
+      "name": "OSCAL Assessment Results to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-ssp",
+      "dest": "hdf",
+      "name": "OSCAL System Security Plan to HDF System",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "prisma",
+      "dest": "hdf",
+      "name": "Prisma Cloud to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "sarif",
+      "dest": "hdf",
+      "name": "SARIF to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "scoutsuite",
+      "dest": "hdf",
+      "name": "ScoutSuite to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "semgrep",
+      "dest": "hdf",
+      "name": "Semgrep to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "snyk",
+      "dest": "hdf",
+      "name": "Snyk to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "sonarqube",
+      "dest": "hdf",
+      "name": "SonarQube to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "spdx-vex",
+      "dest": "hdf",
+      "name": "SPDX VEX to HDF Amendments",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "splunk",
+      "dest": "hdf",
+      "name": "Splunk to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "trivy",
+      "dest": "hdf",
+      "name": "Trivy to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "trufflehog",
+      "dest": "hdf",
+      "name": "TruffleHog to HDF",
+      "acceptsEmpty": true
+    },
+    {
+      "source": "twistlock",
+      "dest": "hdf",
+      "name": "Twistlock to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "veracode",
+      "dest": "hdf",
+      "name": "Veracode to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "xccdf",
+      "dest": "hdf",
+      "name": "XCCDF to HDF (auto-detect)",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "xccdf-benchmark",
+      "dest": "hdf",
+      "name": "XCCDF Benchmark to HDF Baseline",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "xccdf-results",
+      "dest": "hdf",
+      "name": "XCCDF Results to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "xray",
+      "dest": "hdf",
+      "name": "JFrog Xray to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "zap",
+      "dest": "hdf",
+      "name": "OWASP ZAP to HDF",
+      "acceptsEmpty": false
+    }
+  ],
+  "systemBomFormats": [
+    "cyclonedx",
+    "cyclonedx-mlbom",
+    "spdx",
+    "spdx-ai"
+  ]
+}

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0",
   "title": "HDF Requirement Change Event",
-  "description": "A single continuous-monitoring wire event: one requirement's effective posture changed on one system component. The streaming increment of a systemDrift hdf-comparison — events fold into comparisons and reassemble into hdf-results, they never mutate documents in place. One event per wire document (NDJSON-friendly). The envelope (identity, ordering, hash chain) is the shared Change_Event_Envelope primitive; the payload carries the producer-computable change state, a thin before projection, and the full after requirement (the evidence a responder opens the event for). Design: ADR-0005.",
+  "description": "A single continuous-monitoring wire event: one requirement's effective posture changed on one system component.\n\nThe streaming increment of a systemDrift hdf-comparison — events fold into comparisons and reassemble into hdf-results, they never mutate documents in place.\n\nOne event per wire document (NDJSON-friendly).\n\nThe envelope (identity, ordering, hash chain) is the shared Change_Event_Envelope primitive; the payload carries the producer-computable change state, a thin before projection, and the full after requirement (the evidence a responder opens the event for).\n\nDesign: ADR-0005.",
   "type": "object",
   "unevaluatedProperties": false,
   "allOf": [

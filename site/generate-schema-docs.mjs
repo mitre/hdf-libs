@@ -21,6 +21,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resolveTypeName, renderEnumValues, anchorId, mdCell } from './schema-render.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMAS_DIR = path.resolve(__dirname, '../hdf-schema/dist/schemas');
@@ -231,6 +232,18 @@ function renderSchemaPage(schema, name, urlPrefix) {
   const isHistorical = urlPrefix !== '';
   const meta = SCHEMA_META[name] || { title: name, description: '' };
   const version = idVersion(schema.$id);
+
+  // Type names that have a heading on this page (local defs + embedded-primitive
+  // inner defs). resolveTypeName links a $ref only when its target is in here,
+  // so a cross-page/unknown ref degrades to plain code instead of a dead anchor.
+  const knownTypes = new Set();
+  for (const [key, defn] of Object.entries(schema.$defs || {})) {
+    if (key.startsWith('https://')) {
+      for (const inner of Object.keys(defn.$defs || {})) knownTypes.add(inner);
+    } else {
+      knownTypes.add(key);
+    }
+  }
   const downloadUrl = isHistorical
     ? `/schemas/${name}/${version}/index.json`
     : `/schemas/${name}.schema.json`;
@@ -259,7 +272,7 @@ function renderSchemaPage(schema, name, urlPrefix) {
     lines.push('|-------|------|----------|-------------|');
     const required = new Set(schema.required || []);
     for (const [field, prop] of Object.entries(schema.properties)) {
-      const type = resolveTypeName(prop);
+      const type = resolveTypeName(prop, knownTypes);
       const req = required.has(field) ? '**yes**' : 'no';
       const desc = mdCell(prop.description);
       lines.push(`| \`${field}\` | ${type} | ${req} | ${desc} |`);
@@ -292,19 +305,20 @@ function renderSchemaPage(schema, name, urlPrefix) {
     lines.push('## Types');
     lines.push('');
     for (const [typeName, defn] of Object.entries(localDefs)) {
-      lines.push(`### ${mdHeading(typeName)}`);
+      lines.push(`### ${mdHeading(typeName)} {#${anchorId(typeName)}}`);
       lines.push('');
       if (defn.description) {
         lines.push(defn.description);
         lines.push('');
       }
+      renderEnumValues(defn, lines);
       const props = collectProperties(defn);
       if (Object.keys(props).length > 0) {
         const req = collectRequired(defn);
         lines.push('| Field | Type | Required | Description |');
         lines.push('|-------|------|----------|-------------|');
         for (const [field, prop] of Object.entries(props)) {
-          const type = resolveTypeName(prop);
+          const type = resolveTypeName(prop, knownTypes);
           const isReq = req.has(field) ? '**yes**' : 'no';
           const desc = mdCell(prop.description);
           lines.push(`| \`${field}\` | ${type} | ${isReq} | ${desc} |`);
@@ -336,24 +350,31 @@ function renderSchemaPage(schema, name, urlPrefix) {
       const shortId = embeddedId
         .replace('https://mitre.github.io/hdf-libs/schemas/primitives/', '')
         .replace(/\/v\d+\.\d+\.\d+$/, '');
-      lines.push(`### ${shortId}`);
+      // Explicit, namespaced anchor for the group heading. A single-type
+      // primitive whose file slug equals the type's kebab name (e.g.
+      // affected-package / Affected_Package) would otherwise auto-slug this
+      // heading to the same id as the child type's `{#anchorId}` below and
+      // fail the VitePress build on a duplicate id. Cross-links target the
+      // type anchors, not this one.
+      lines.push(`### ${shortId} {#primitive-${shortId}}`);
       lines.push('');
       const innerDefs = embedded.$defs || {};
       if (Object.keys(innerDefs).length > 0) {
         for (const [typeName, defn] of Object.entries(innerDefs)) {
-          lines.push(`#### ${mdHeading(typeName)}`);
+          lines.push(`#### ${mdHeading(typeName)} {#${anchorId(typeName)}}`);
           lines.push('');
           if (defn.description) {
             lines.push(defn.description);
             lines.push('');
           }
+          renderEnumValues(defn, lines);
           const props = collectProperties(defn);
           if (Object.keys(props).length > 0) {
             const req = collectRequired(defn);
             lines.push('| Field | Type | Required | Description |');
             lines.push('|-------|------|----------|-------------|');
             for (const [field, prop] of Object.entries(props)) {
-              const type = resolveTypeName(prop);
+              const type = resolveTypeName(prop, knownTypes);
               const isReq = req.has(field) ? '**yes**' : 'no';
               const desc = mdCell(prop.description);
               lines.push(`| \`${field}\` | ${type} | ${isReq} | ${desc} |`);
@@ -378,11 +399,6 @@ function renderSchemaPage(schema, name, urlPrefix) {
 
 // === Misc helpers ==========================================================
 
-// Markdown-escape helpers. Backslashes are escaped FIRST so the backslashes
-// introduced by the later escapes aren't themselves re-escaped.
-function mdCell(s) {
-  return (s || '').replace(/\\/g, '\\\\').replace(/\n/g, ' ').replace(/\|/g, '\\|');
-}
 
 function mdHeading(s) {
   return s.replace(/\\/g, '\\\\').replace(/_/g, '\\_');
@@ -400,31 +416,6 @@ function semverCompareDesc(a, b) {
   if (maja !== majb) return majb - maja;
   if (mina !== minb) return minb - mina;
   return patb - pata;
-}
-
-function resolveTypeName(prop) {
-  if (!prop) return 'any';
-  if (prop.$ref) {
-    const ref = prop.$ref;
-    if (ref.startsWith('#/$defs/')) return `\`${ref.replace('#/$defs/', '')}\``;
-    const parts = ref.split('/');
-    const typePart = parts[parts.length - 1];
-    return `\`${typePart}\``;
-  }
-  if (prop.const) return `\`"${prop.const}"\``;
-  if (prop.enum) return prop.enum.map(v => `\`"${v}"\``).join(' \\| ');
-  if (prop.type === 'array') {
-    const itemType = prop.items ? resolveTypeName(prop.items) : 'any';
-    return `${itemType}[]`;
-  }
-  if (prop.type === 'object' && prop.additionalProperties) {
-    const valType = resolveTypeName(prop.additionalProperties);
-    return `Map<string, ${valType}>`;
-  }
-  if (prop.oneOf) return prop.oneOf.map(resolveTypeName).join(' \\| ');
-  if (prop.anyOf) return prop.anyOf.map(resolveTypeName).join(' \\| ');
-  if (prop.type) return `\`${prop.type}\`${prop.format ? ` (${prop.format})` : ''}`;
-  return 'any';
 }
 
 function collectProperties(defn) {

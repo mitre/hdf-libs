@@ -7,14 +7,26 @@
     "External_Reference": {
       "type": "object",
       "title": "External Reference",
-      "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category. `sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible. A reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+      "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property.\n\nPurpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category.\n\n`sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible.\n\nA reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
       "required": [
         "sourceName"
       ],
       "anyOf": [
-        { "required": ["externalId"] },
-        { "required": ["href"] },
-        { "required": ["description"] }
+        {
+          "required": [
+            "externalId"
+          ]
+        },
+        {
+          "required": [
+            "href"
+          ]
+        },
+        {
+          "required": [
+            "description"
+          ]
+        }
       ],
       "properties": {
         "sourceName": {
@@ -59,12 +71,12 @@
         "kind": {
           "type": "string",
           "minLength": 1,
-          "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum. Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory). Use the `x-` prefix for custom kinds."
+          "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope.\n\nDeliberately open (like `sourceName`/`rel`), not a closed enum.\n\nDocumented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory).\n\nUse the `x-` prefix for custom kinds."
         },
         "document": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim. Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed. HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+          "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim.\n\nComposes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed.\n\nHDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
         }
       },
       "unevaluatedProperties": false,
@@ -88,8 +100,14 @@
           "href": "https://cti.example.org/bundles/log4shell.json",
           "rel": "investigate",
           "mediaType": "application/json",
-          "checksum": { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
-          "addedBy": { "type": "email", "identifier": "analyst@agency.gov" },
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "addedBy": {
+            "type": "email",
+            "identifier": "analyst@agency.gov"
+          },
           "addedAt": "2026-07-26T00:00:00Z"
         },
         {
@@ -104,7 +122,12 @@
             "spec_version": "2.1",
             "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
             "name": "CVE-2021-44228",
-            "external_references": [{ "source_name": "cve", "external_id": "CVE-2021-44228" }]
+            "external_references": [
+              {
+                "source_name": "cve",
+                "external_id": "CVE-2021-44228"
+              }
+            ]
           }
         }
       ]
@@ -382,7 +405,7 @@
             "simple",
             "other"
           ],
-          "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
+          "description": "The type of identifier.\n\nUse 'email' for email addresses, 'username' for user accounts, 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
         },
         "description": {
           "type": "string",
@@ -890,11 +913,11 @@
             "management",
             "operational"
           ],
-          "description": "Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A categories. 'policy' = an authored governance statement; 'procedure' = a documented process; 'technical' = an enforced technical configuration; 'management' = a programmatic/management activity; 'operational' = a recurring operational activity (e.g. AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from family/id but should not assume a default."
+          "description": "Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A categories.\n\n'policy' = an authored governance statement; 'procedure' = a documented process; 'technical' = an enforced technical configuration; 'management' = a programmatic/management activity; 'operational' = a recurring operational activity (e.g. AT, IR, MA families).\n\nOptional: when omitted, consumers may infer heuristically from family/id but should not assume a default."
         },
         "verificationMethod": {
           "$ref": "#/$defs/Verification_Method_Enum",
-          "description": "How this requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Optional: when omitted, consumers should not infer a default."
+          "description": "How this requirement is intended to be verified.\n\nDisambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix).\n\n'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual.\n\nOptional: when omitted, consumers should not infer a default."
         },
         "applicability": {
           "type": "string",
@@ -904,7 +927,7 @@
             "optional",
             "advisory"
           ],
-          "description": "Whether the requirement is mandatory within its baseline. Distinct from severity (risk weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}). Optional: when omitted, consumers should treat the requirement as 'required' by convention."
+          "description": "Whether the requirement is mandatory within its baseline.\n\nDistinct from severity (risk weight) and status (lifecycle state).\n\nMaps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).\n\nOptional: when omitted, consumers should treat the requirement as 'required' by convention."
         }
       },
       "examples": [
@@ -914,9 +937,13 @@
           "title": "The Ubuntu operating system must enforce password complexity",
           "impact": 0.5,
           "tags": {
-            "nist": ["IA-5"],
+            "nist": [
+              "IA-5"
+            ],
             "severity": "medium",
-            "cci": ["CCI-000192"]
+            "cci": [
+              "CCI-000192"
+            ]
           },
           "refs": [
             {
@@ -940,7 +967,9 @@
           "title": "Access Enforcement",
           "impact": 0.7,
           "tags": {
-            "nist": ["AC-3"],
+            "nist": [
+              "AC-3"
+            ],
             "severity": "high"
           },
           "descriptions": [
@@ -960,7 +989,9 @@
           "title": "Cyber Security Plan documents the system",
           "impact": 0.5,
           "tags": {
-            "ksi": ["KSI-CNA"]
+            "ksi": [
+              "KSI-CNA"
+            ]
           },
           "descriptions": [
             {
@@ -1005,7 +1036,7 @@
         "manual-pending-automation",
         "hybrid"
       ],
-      "description": "How a requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Named '_Enum' to disambiguate from the unrelated Verification_Method DID-context struct.",
+      "description": "How a requirement is intended to be verified.\n\nDisambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix).\n\n'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual.\n\nNamed '_Enum' to disambiguate from the unrelated Verification_Method DID-context struct.",
       "title": "Verification Method Enum"
     },
     "Severity": {

@@ -137,6 +137,21 @@ export default defineConfig({
   description: 'Heimdall Data Format (HDF) JSON Schema Reference',
   base: '/hdf-libs/',
 
+  // Disable emoji shortcodes site-wide: colon-delimited tokens in real data
+  // (CPE part types, PURL qualifiers) would otherwise render as emoji, and
+  // the site's no-emoji policy wants none anyway. The rule must be removed,
+  // not fed empty defs — markdown-it-emoji compiles empty defs into a ^$
+  // scan regex that matches empty inline text tokens and injects the literal
+  // text "undefined" into rendered paragraphs. The config callback runs
+  // after VitePress registers its plugins, so the core rule exists here;
+  // disable() throws if a future VitePress renames it, which is the loud
+  // failure we want during an upgrade.
+  markdown: {
+    config(md) {
+      md.core.ruler.disable('emoji');
+    },
+  },
+
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/hdf-libs/saf-logo.svg' }],
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-MN92QDWHGV' }],

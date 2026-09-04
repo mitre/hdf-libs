@@ -60,7 +60,7 @@
               "type": "null"
             }
           ],
-          "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture. Null at chain start (no prior state, e.g. a new entity or the first event after a seed). The chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
+          "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture.\n\nNull at chain start (no prior state, e.g. a new entity or the first event after a seed).\n\nThe chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
         }
       },
       "examples": [

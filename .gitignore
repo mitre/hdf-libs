@@ -52,10 +52,15 @@ test-output/
 *.log
 hdf-cli/hdf
 
-# VitePress schema site — generated at build time
-site/schemas/*.md
+# VitePress schema site — generated at build time. Both output trees are
+# ignored at directory level: git collapses an all-untracked directory to a
+# single status line, so an extension-scoped rule here hid stray build output.
+site/schemas/
 site/v*/
 site/.vitepress/versions.json
+# Converter catalog page — rendered from site/data/converters.json (which IS
+# committed and golden-tested against the registry) by generate-converters.mjs.
+site/docs/guides/converters.md
 # Per-version raw schema archive IS committed (backs the canonical $id
 # URL e.g. /schemas/hdf-amendments/v3.2.0/ and the per-version rendered
 # docs). ~70 KB per release; storage cost trivial. See site/seed-archive.mjs.
