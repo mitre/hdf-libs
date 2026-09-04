@@ -402,7 +402,13 @@ function renderSchemaPage(schema, name, urlPrefix) {
 // Markdown-escape helpers. Backslashes are escaped FIRST so the backslashes
 // introduced by the later escapes aren't themselves re-escaped.
 function mdCell(s) {
-  return (s || '').replace(/\\/g, '\\\\').replace(/\n/g, ' ').replace(/\|/g, '\\|');
+  // Table cells cannot hold block paragraphs; render source-authored
+  // paragraph breaks as explicit line breaks and flatten the rest.
+  return (s || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\n\n+/g, '<br><br>')
+    .replace(/\n/g, ' ')
+    .replace(/\|/g, '\\|');
 }
 
 function mdHeading(s) {

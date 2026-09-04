@@ -75,7 +75,7 @@
           "items": {
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum"
           },
-          "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
+          "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes.\n\nAn array supports multi-file/sharded artifacts.\n\nThis is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields).\n\nDistinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
         },
         "baselineRefs": {
           "type": "array",
@@ -101,12 +101,24 @@
           "type": "aiModel",
           "name": "Llama-2-7b-chat (finetuned)",
           "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
-          "owner": { "type": "email", "identifier": "ml-platform@agency.gov" },
+          "owner": {
+            "type": "email",
+            "identifier": "ml-platform@agency.gov"
+          },
           "integrity": [
-            { "algorithm": "sha256", "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d" }
+            {
+              "algorithm": "sha256",
+              "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+            }
           ],
           "boms": [
-            { "bomType": "ai-model", "format": "cyclonedx-ml", "model": { "adaptationType": "finetune" } }
+            {
+              "bomType": "ai-model",
+              "format": "cyclonedx-ml",
+              "model": {
+                "adaptationType": "finetune"
+              }
+            }
           ]
         }
       ],
@@ -117,28 +129,58 @@
       "description": "A system component. Uses discriminated union pattern with 'type' field as discriminator. Superset of Target with identity, external IDs, and SBOM support.",
       "title": "Component",
       "oneOf": [
-        { "$ref": "#/$defs/Host_Component" },
-        { "$ref": "#/$defs/Container_Image_Component" },
-        { "$ref": "#/$defs/Container_Instance_Component" },
-        { "$ref": "#/$defs/Container_Platform_Component" },
-        { "$ref": "#/$defs/Cloud_Account_Component" },
-        { "$ref": "#/$defs/Cloud_Resource_Component" },
-        { "$ref": "#/$defs/Repository_Component" },
-        { "$ref": "#/$defs/Application_Component" },
-        { "$ref": "#/$defs/Artifact_Component" },
-        { "$ref": "#/$defs/Network_Component" },
-        { "$ref": "#/$defs/Database_Component" },
-        { "$ref": "#/$defs/AI_Model_Component" },
-        { "$ref": "#/$defs/Dataset_Component" }
+        {
+          "$ref": "#/$defs/Host_Component"
+        },
+        {
+          "$ref": "#/$defs/Container_Image_Component"
+        },
+        {
+          "$ref": "#/$defs/Container_Instance_Component"
+        },
+        {
+          "$ref": "#/$defs/Container_Platform_Component"
+        },
+        {
+          "$ref": "#/$defs/Cloud_Account_Component"
+        },
+        {
+          "$ref": "#/$defs/Cloud_Resource_Component"
+        },
+        {
+          "$ref": "#/$defs/Repository_Component"
+        },
+        {
+          "$ref": "#/$defs/Application_Component"
+        },
+        {
+          "$ref": "#/$defs/Artifact_Component"
+        },
+        {
+          "$ref": "#/$defs/Network_Component"
+        },
+        {
+          "$ref": "#/$defs/Database_Component"
+        },
+        {
+          "$ref": "#/$defs/AI_Model_Component"
+        },
+        {
+          "$ref": "#/$defs/Dataset_Component"
+        }
       ]
     },
     "Host_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "host" },
+            "type": {
+              "const": "host"
+            },
             "hostname": {
               "type": "string",
               "description": "Short, OS-reported host name (the unqualified machine name, e.g. 'web01'). Kept distinct from 'fqdn' because an FQDN is not reliably decomposable into hostname + domain (standalone/workgroup hosts have no domain; a directory domain is not the FQDN's DNS suffix). Aligns with ECS host.hostname and DISA STIG CKL HOST_NAME. Store the short name the source reports; do not derive it from the FQDN."
@@ -154,8 +196,14 @@
             },
             "ipAddress": {
               "anyOf": [
-                { "type": "string", "format": "ipv4" },
-                { "type": "string", "format": "ipv6" }
+                {
+                  "type": "string",
+                  "format": "ipv4"
+                },
+                {
+                  "type": "string",
+                  "format": "ipv6"
+                }
               ],
               "description": "IP address of the host."
             },
@@ -208,11 +256,15 @@
     },
     "Container_Image_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "containerImage" },
+            "type": {
+              "const": "containerImage"
+            },
             "imageId": {
               "type": "string",
               "description": "Container image ID."
@@ -240,7 +292,10 @@
           "repository": "library/nginx",
           "tag": "1.25-alpine",
           "integrity": [
-            { "algorithm": "sha256", "value": "a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d" }
+            {
+              "algorithm": "sha256",
+              "value": "a9286defaba7b3a519d585ba0e37d0b2cbee74ebfe590960b0b1d6a5e97d1e1d"
+            }
           ]
         }
       ],
@@ -249,11 +304,15 @@
     },
     "Container_Instance_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "containerInstance" },
+            "type": {
+              "const": "containerInstance"
+            },
             "containerId": {
               "type": "string",
               "description": "Running container ID."
@@ -274,11 +333,15 @@
     },
     "Container_Platform_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "containerPlatform" },
+            "type": {
+              "const": "containerPlatform"
+            },
             "platformType": {
               "type": "string",
               "description": "Platform type. Example: 'kubernetes', 'openshift', 'ecs', 'docker-swarm'."
@@ -303,11 +366,15 @@
     },
     "Cloud_Account_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "cloudAccount" },
+            "type": {
+              "const": "cloudAccount"
+            },
             "provider": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
@@ -338,11 +405,15 @@
     },
     "Cloud_Resource_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "cloudResource" },
+            "type": {
+              "const": "cloudResource"
+            },
             "provider": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Cloud_Provider",
               "description": "Cloud provider."
@@ -371,11 +442,15 @@
     },
     "Repository_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "repository" },
+            "type": {
+              "const": "repository"
+            },
             "url": {
               "type": "string",
               "format": "uri",
@@ -397,11 +472,15 @@
     },
     "Application_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "application" },
+            "type": {
+              "const": "application"
+            },
             "url": {
               "type": "string",
               "format": "uri",
@@ -423,11 +502,15 @@
     },
     "Artifact_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "artifact" },
+            "type": {
+              "const": "artifact"
+            },
             "packageManager": {
               "type": "string",
               "description": "Package manager. Example: 'npm', 'maven', 'pip', 'nuget'."
@@ -451,7 +534,10 @@
           "packageName": "express",
           "version": "4.18.2",
           "integrity": [
-            { "algorithm": "sha512", "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e" }
+            {
+              "algorithm": "sha512",
+              "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+            }
           ]
         }
       ],
@@ -460,11 +546,15 @@
     },
     "Network_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "network" },
+            "type": {
+              "const": "network"
+            },
             "cidr": {
               "type": "string",
               "description": "Network CIDR block."
@@ -481,11 +571,15 @@
     },
     "Database_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "database" },
+            "type": {
+              "const": "database"
+            },
             "engine": {
               "type": "string",
               "description": "Database engine. Example: 'postgresql', 'mysql', 'oracle', 'mssql'."
@@ -512,11 +606,15 @@
     },
     "AI_Model_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "aiModel" },
+            "type": {
+              "const": "aiModel"
+            },
             "modelId": {
               "type": "string",
               "description": "Provider/registry identifier for the model. Examples: a Hugging Face repo id ('meta-llama/Llama-2-7b-hf') or a model purl. Correlates the component to its ai-model BOM(s) and to lineage references from other models."
@@ -536,7 +634,10 @@
           "modelId": "acme/llama-2-7b-chat-support",
           "version": "1.2.0",
           "integrity": [
-            { "algorithm": "sha256", "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d" }
+            {
+              "algorithm": "sha256",
+              "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d"
+            }
           ],
           "boms": [
             {
@@ -558,11 +659,15 @@
     },
     "Dataset_Component": {
       "allOf": [
-        { "$ref": "#/$defs/Base_Component" },
+        {
+          "$ref": "#/$defs/Base_Component"
+        },
         {
           "type": "object",
           "properties": {
-            "type": { "const": "dataset" },
+            "type": {
+              "const": "dataset"
+            },
             "datasetId": {
               "type": "string",
               "description": "Provider/registry identifier for the dataset. Examples: a Hugging Face dataset repo id ('HuggingFaceH4/ultrachat_200k'), a DOI, or a dataset purl. Correlates the component to its dataset BOM(s) and to datasetRefs from ai-model components."
@@ -582,7 +687,10 @@
           "datasetId": "acme/ultrachat-200k-filtered",
           "version": "2026-06-01",
           "integrity": [
-            { "algorithm": "sha256", "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08" }
+            {
+              "algorithm": "sha256",
+              "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            }
           ],
           "boms": [
             {
@@ -592,7 +700,9 @@
                 "recordCount": 180000,
                 "datasetFormat": "parquet",
                 "dataClassification": "public",
-                "baseDatasetRefs": ["HuggingFaceH4/ultrachat_200k"],
+                "baseDatasetRefs": [
+                  "HuggingFaceH4/ultrachat_200k"
+                ],
                 "derivation": "filtered"
               }
             }

@@ -15,7 +15,7 @@
         "riskAdjustment",
         "operationalRequirement"
       ],
-      "description": "The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system. 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field. 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk. Migration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
+      "description": "The type of amendment, aligned with FedRAMP deviation request categories.\n\n- 'waiver': risk accepted by Authorizing Official.\n- 'attestation': manually verified by assessor.\n- 'poam': remediation tracked (no status change).\n- 'inherited': control provided by another component or system.\n- 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings.\n- 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field.\n- 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.\n\nMigration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
       "title": "Override Type"
     },
     "Justification": {
@@ -33,12 +33,14 @@
         "protected_at_runtime",
         "protected_at_perimeter"
       ],
-      "description": "Structured controlled-vocabulary reason for an override, complementing the free-text 'reason' field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries the machine-readable category enabling filtering, aggregation, and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it. Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is not self-explanatory to an auditor. The vocabulary is drawn from the VEX ecosystem: the first five values are common across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration / requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code path is unreachable in the deployed configuration. The enum is extended additively across schema versions as other ecosystems' controlled vocabularies are integrated; documents using values added in a newer schema version will fail validation against an older schema. Consumers SHOULD validate against the schema version declared by the document ($schema) rather than assume a fixed vocabulary.",
+      "description": "Structured controlled-vocabulary reason for an override, complementing the free-text 'reason' field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries the machine-readable category enabling filtering, aggregation, and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it. Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is not self-explanatory to an auditor.\n\nThe vocabulary is drawn from the VEX ecosystem: the first five values are common across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration / requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code path is unreachable in the deployed configuration.\n\nThe enum is extended additively across schema versions as other ecosystems' controlled vocabularies are integrated; documents using values added in a newer schema version will fail validation against an older schema. Consumers SHOULD validate against the schema version declared by the document ($schema) rather than assume a fixed vocabulary.",
       "title": "Justification"
     },
     "Impact_Override": {
       "type": "object",
-      "required": ["value"],
+      "required": [
+        "value"
+      ],
       "unevaluatedProperties": false,
       "properties": {
         "value": {
@@ -53,7 +55,7 @@
     },
     "Standalone_Override": {
       "type": "object",
-      "description": "A standalone override to a requirement's compliance status or risk impact. Validation has two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the override records accepted risk without changing the finding (documentation-only). For all other types, at least one of 'status' or 'impact' must be set. This rule aligns with: (1) OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2) FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3) NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
+      "description": "A standalone override to a requirement's compliance status or risk impact.\n\nValidation has two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the override records accepted risk without changing the finding (documentation-only). For all other types, at least one of 'status' or 'impact' must be set.\n\nThis rule aligns with:\n- OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/)\n- FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/)\n- NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
       "unevaluatedProperties": false,
       "required": [
         "type",
@@ -63,9 +65,48 @@
         "appliedAt",
         "expiresAt"
       ],
-      "if": { "properties": { "type": { "enum": ["operationalRequirement"] } }, "required": ["type"] },
-      "then": { "not": { "anyOf": [{ "required": ["status"] }, { "required": ["impact"] }] } },
-      "else": { "anyOf": [{ "required": ["status"] }, { "required": ["impact"] }] },
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "operationalRequirement"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "status"
+              ]
+            },
+            {
+              "required": [
+                "impact"
+              ]
+            }
+          ]
+        }
+      },
+      "else": {
+        "anyOf": [
+          {
+            "required": [
+              "status"
+            ]
+          },
+          {
+            "required": [
+              "impact"
+            ]
+          }
+        ]
+      },
       "properties": {
         "externalReferences": {
           "type": "array",
@@ -158,7 +199,7 @@
           "items": {
             "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0#/$defs/Affected_Package"
           },
-          "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID). Use when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments. Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when that is set)."
+          "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID).\n\nUse when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments.\n\nSymmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary.\n\nWhen omitted, the amendment applies system-wide (or only to componentRef when that is set)."
         }
       },
       "examples": [
@@ -168,7 +209,10 @@
           "baselineRef": "RHEL9-STIG",
           "status": "passed",
           "reason": "Compensating control: session timeout set to 15 min",
-          "appliedBy": { "type": "email", "identifier": "ao@agency.gov" },
+          "appliedBy": {
+            "type": "email",
+            "identifier": "ao@agency.gov"
+          },
           "appliedAt": "2026-01-15T10:00:00Z",
           "expiresAt": "2026-06-30T00:00:00Z",
           "evidence": [
@@ -185,7 +229,10 @@
           "baselineRef": "RHEL9-STIG",
           "status": "passed",
           "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
-          "appliedBy": { "type": "email", "identifier": "assessor@agency.gov" },
+          "appliedBy": {
+            "type": "email",
+            "identifier": "assessor@agency.gov"
+          },
           "appliedAt": "2026-04-14T10:00:00Z",
           "expiresAt": "2026-10-14T00:00:00Z"
         },
@@ -194,7 +241,10 @@
           "requirementId": "CVE-2026-12345",
           "status": "notApplicable",
           "reason": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
-          "appliedBy": { "type": "email", "identifier": "dev@org.gov" },
+          "appliedBy": {
+            "type": "email",
+            "identifier": "dev@org.gov"
+          },
           "appliedAt": "2026-04-14T10:00:00Z",
           "expiresAt": "2026-10-14T00:00:00Z"
         },
@@ -202,9 +252,14 @@
           "type": "riskAdjustment",
           "requirementId": "SV-258020",
           "baselineRef": "RHEL9-STIG",
-          "impact": { "value": 0.3 },
+          "impact": {
+            "value": 0.3
+          },
           "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
-          "appliedBy": { "type": "email", "identifier": "dev@org.gov" },
+          "appliedBy": {
+            "type": "email",
+            "identifier": "dev@org.gov"
+          },
           "appliedAt": "2026-04-14T10:00:00Z",
           "expiresAt": "2026-10-14T00:00:00Z"
         },
@@ -214,7 +269,10 @@
           "baselineRef": "RHEL9-STIG",
           "status": "failed",
           "reason": "Patch requires vendor release, expected Q2 2026",
-          "appliedBy": { "type": "email", "identifier": "sysadmin@agency.gov" },
+          "appliedBy": {
+            "type": "email",
+            "identifier": "sysadmin@agency.gov"
+          },
           "appliedAt": "2026-01-20T09:00:00Z",
           "expiresAt": "2026-07-01T00:00:00Z",
           "milestones": [
@@ -237,7 +295,10 @@
           "status": "notApplicable",
           "reason": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
           "inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-          "appliedBy": { "type": "email", "identifier": "issm@agency.gov" },
+          "appliedBy": {
+            "type": "email",
+            "identifier": "issm@agency.gov"
+          },
           "appliedAt": "2026-03-26T10:00:00Z",
           "expiresAt": "2026-09-26T00:00:00Z"
         },
@@ -248,12 +309,20 @@
           "status": "notApplicable",
           "reason": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
           "justification": "vulnerable_code_not_present",
-          "appliedBy": { "type": "email", "identifier": "secops@org.gov" },
+          "appliedBy": {
+            "type": "email",
+            "identifier": "secops@org.gov"
+          },
           "appliedAt": "2026-05-01T10:00:00Z",
           "expiresAt": "2027-05-01T00:00:00Z",
           "affectedPackages": [
-            { "purl": "pkg:npm/lodash@4.17.20" },
-            { "purl": "pkg:rpm/openssl@1.1.1k-2.el8", "fixedInVersion": "1.1.1k-3.el8" }
+            {
+              "purl": "pkg:npm/lodash@4.17.20"
+            },
+            {
+              "purl": "pkg:rpm/openssl@1.1.1k-2.el8",
+              "fixedInVersion": "1.1.1k-3.el8"
+            }
           ]
         }
       ],

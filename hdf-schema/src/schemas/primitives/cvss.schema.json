@@ -6,7 +6,13 @@
   "$defs": {
     "Cvss_Severity": {
       "type": "string",
-      "enum": ["none", "low", "medium", "high", "critical"],
+      "enum": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
       "description": "Qualitative CVSS severity band. Aligns with FIRST/NVD bands: none=0.0, low=0.1-3.9, medium=4.0-6.9, high=7.0-8.9, critical=9.0-10.0. Distinct from the broader Severity enum used on Requirement_Core (which includes 'informational').",
       "title": "CVSS Severity"
     },
@@ -17,20 +23,57 @@
         "version"
       ],
       "anyOf": [
-        { "required": ["baseScore"] },
-        { "required": ["baseVector"] },
-        { "required": ["threatVector"] },
-        { "required": ["threatScore"] },
-        { "required": ["environmentalVector"] },
-        { "required": ["environmentalScore"] },
-        { "required": ["supplementalVector"] },
-        { "required": ["computedScore"] }
+        {
+          "required": [
+            "baseScore"
+          ]
+        },
+        {
+          "required": [
+            "baseVector"
+          ]
+        },
+        {
+          "required": [
+            "threatVector"
+          ]
+        },
+        {
+          "required": [
+            "threatScore"
+          ]
+        },
+        {
+          "required": [
+            "environmentalVector"
+          ]
+        },
+        {
+          "required": [
+            "environmentalScore"
+          ]
+        },
+        {
+          "required": [
+            "supplementalVector"
+          ]
+        },
+        {
+          "required": [
+            "computedScore"
+          ]
+        }
       ],
       "$comment": "Only `version` is required; every metric/score field is optional because a single Cvss instance may represent vendor-supplied Base data (on a finding's cvss[]), consumer-supplied enrichment (on a riskAdjustment override — Environmental/Threat/Supplemental deltas with NO base, since base is the finding's scan-specific vendor data), or a fully-resolved effectiveCvss. The Base/Threat/Environmental/Supplemental groups do not partition cleanly into vendor-vs-consumer (Threat straddles: vendor temporal data and consumer exploit-maturity both live here), so a single permissive type is more honest than separate vendor/consumer types. The anyOf guardrail rejects a content-free object (e.g. {version} alone) by requiring at least one substantive metric or score. baseVector remains optional even when baseScore is present: some vendor tools (Twistlock/Prisma Cloud) emit a final score without the vector that derived it — that score is captured structurally rather than lost.",
       "properties": {
         "version": {
           "type": "string",
-          "enum": ["2.0", "3.0", "3.1", "4.0"],
+          "enum": [
+            "2.0",
+            "3.0",
+            "3.1",
+            "4.0"
+          ],
           "description": "The CVSS specification version this entry conforms to. Vendor scanners typically emit 3.1 or 4.0; legacy data may use 2.0 or 3.0."
         },
         "source": {
@@ -46,7 +89,7 @@
           "type": "string",
           "$comment": "Optional. Permissive umbrella pattern accepting any FIRST CVSS vector shape — version prefix is optional (CVSS 2.0 has no prefix), metric tokens are alphanumeric uppercase pairs separated by '/'. Strict per-version semantic validation belongs in a separate utility (hdf-utilities `validateCvssVector`), not in the schema. See https://www.first.org/cvss/v4.0/specification-document for the v4 grammar and earlier-version documents for v2/v3.",
           "pattern": "^(CVSS:[234]\\.[01]/)?[A-Za-z]+:[A-Za-z]+(/[A-Za-z]+:[A-Za-z]+)*$",
-          "description": "Optional Base metric group vector string as emitted by the source (e.g., 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is omitted. Some vendor tools emit a final baseScore without the vector — in that case this field is absent and the score cannot be recomputed or decomposed. The pattern accepts any version-prefixed or prefix-less metric token sequence; semantic validity of individual metrics is checked by hdf-utilities, not by the schema."
+          "description": "Optional Base metric group vector string as emitted by the source (e.g., 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H').\n\nFor CVSS 2.0 the version prefix is omitted.\n\nSome vendor tools emit a final baseScore without the vector — in that case this field is absent and the score cannot be recomputed or decomposed.\n\nThe pattern accepts any version-prefixed or prefix-less metric token sequence; semantic validity of individual metrics is checked by hdf-utilities, not by the schema."
         },
         "baseScore": {
           "type": "number",
@@ -154,7 +197,7 @@
           "baseSeverity": "medium"
         }
       ],
-      "description": "A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding. Captures the vendor-supplied Base metric group and optional consumer-supplied Threat, Environmental, and Supplemental metric groups. Supports all four CVSS major versions (2.0, 3.0, 3.1, 4.0). Vector strings are validated against a permissive umbrella grammar; semantic validation (correct metrics per version, correct values per metric) is performed by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.",
+      "description": "A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding.\n\nCaptures the vendor-supplied Base metric group and optional consumer-supplied Threat, Environmental, and Supplemental metric groups.\n\nSupports all four CVSS major versions (2.0, 3.0, 3.1, 4.0).\n\nVector strings are validated against a permissive umbrella grammar; semantic validation (correct metrics per version, correct values per metric) is performed by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.",
       "title": "CVSS"
     }
   }

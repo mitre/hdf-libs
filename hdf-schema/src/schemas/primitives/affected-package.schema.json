@@ -8,9 +8,23 @@
       "type": "object",
       "unevaluatedProperties": false,
       "anyOf": [
-        { "required": ["name", "version", "ecosystem"] },
-        { "required": ["purl"] },
-        { "required": ["cpe"] }
+        {
+          "required": [
+            "name",
+            "version",
+            "ecosystem"
+          ]
+        },
+        {
+          "required": [
+            "purl"
+          ]
+        },
+        {
+          "required": [
+            "cpe"
+          ]
+        }
       ],
       "properties": {
         "name": {
@@ -45,7 +59,7 @@
         "purl": {
           "type": "string",
           "pattern": "^pkg:[A-Za-z0-9.+-]+/.+",
-          "description": "Optional Package URL (PURL) identifying the affected package. Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
+          "description": "Optional Package URL (PURL) identifying the affected package.\n\nValidated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior.\n\nUse `parsePurl` for full PURL parsing.\n\nExample: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
         },
         "fixedInVersion": {
           "type": "string",
@@ -94,7 +108,7 @@
           "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
         }
       ],
-      "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope. On Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a system-level component identifier — see `components[]` on hdf-system for those. Validity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone. purl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
+      "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope.\n\nOn Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments).\n\nNOT a system-level component identifier — see `components[]` on hdf-system for those.\n\nValidity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone.\n\npurl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
       "title": "Affected Package"
     }
   }

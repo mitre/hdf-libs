@@ -96,7 +96,10 @@
               "title": "Web server must use TLS 1.2 or higher",
               "impact": 0.7,
               "tags": {
-                "nist": ["SC-8", "SC-23"]
+                "nist": [
+                  "SC-8",
+                  "SC-23"
+                ]
               },
               "descriptions": [
                 {
@@ -118,7 +121,10 @@
               "title": "Web server must have X-Frame-Options header set",
               "impact": 0.5,
               "tags": {
-                "nist": ["SA-11", "RA-5"]
+                "nist": [
+                  "SA-11",
+                  "RA-5"
+                ]
               },
               "descriptions": [
                 {
@@ -312,7 +318,7 @@
         },
         "effectiveChecksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring. sha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp. Flips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags). Optional; stamped by tooling (hdf convert, hdf amend apply)."
+          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring.\n\nsha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp.\n\nFlips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags).\n\nOptional; stamped by tooling (hdf convert, hdf amend apply)."
         },
         "evidence": {
           "type": "array",
@@ -358,10 +364,23 @@
           "id": "SV-230222",
           "title": "RHEL 9 must use SSH protocol version 2",
           "impact": 0.7,
-          "tags": { "nist": ["SC-8"] },
-          "descriptions": [{ "label": "default", "data": "SSH must use protocol version 2." }],
+          "tags": {
+            "nist": [
+              "SC-8"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "SSH must use protocol version 2."
+            }
+          ],
           "results": [
-            { "status": "passed", "codeDesc": "sshd_config Protocol is expected to eq 2", "startTime": "2026-01-15T10:00:00Z" }
+            {
+              "status": "passed",
+              "codeDesc": "sshd_config Protocol is expected to eq 2",
+              "startTime": "2026-01-15T10:00:00Z"
+            }
           ],
           "effectiveStatus": "passed"
         },
@@ -370,17 +389,34 @@
           "id": "SV-230300",
           "title": "RHEL 9 must enforce password complexity",
           "impact": 0.5,
-          "tags": { "nist": ["IA-5 (1)"] },
-          "descriptions": [{ "label": "default", "data": "Passwords must meet complexity requirements." }],
+          "tags": {
+            "nist": [
+              "IA-5 (1)"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Passwords must meet complexity requirements."
+            }
+          ],
           "results": [
-            { "status": "failed", "codeDesc": "pwquality.conf minlen is expected to be >= 15", "startTime": "2026-01-15T10:00:00Z", "message": "expected 8 to be >= 15" }
+            {
+              "status": "failed",
+              "codeDesc": "pwquality.conf minlen is expected to be >= 15",
+              "startTime": "2026-01-15T10:00:00Z",
+              "message": "expected 8 to be >= 15"
+            }
           ],
           "statusOverrides": [
             {
               "type": "waiver",
               "status": "passed",
               "reason": "Compensating control: PIV/CAC smart card authentication enforced for all users, password login disabled",
-              "appliedBy": { "type": "email", "identifier": "ao@agency.gov" },
+              "appliedBy": {
+                "type": "email",
+                "identifier": "ao@agency.gov"
+              },
               "appliedAt": "2026-01-20T10:00:00Z",
               "expiresAt": "2099-12-31T00:00:00Z"
             }
@@ -397,17 +433,34 @@
           "id": "SV-230410",
           "title": "RHEL 9 must have sshd PermitRootLogin disabled",
           "impact": 0.7,
-          "tags": { "nist": ["AC-6"] },
-          "descriptions": [{ "label": "default", "data": "Direct root login via SSH must be disabled." }],
+          "tags": {
+            "nist": [
+              "AC-6"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Direct root login via SSH must be disabled."
+            }
+          ],
           "results": [
-            { "status": "failed", "codeDesc": "sshd_config PermitRootLogin is expected to eq 'no'", "startTime": "2026-01-15T10:00:00Z", "message": "expected 'prohibit-password' to eq 'no'" }
+            {
+              "status": "failed",
+              "codeDesc": "sshd_config PermitRootLogin is expected to eq 'no'",
+              "startTime": "2026-01-15T10:00:00Z",
+              "message": "expected 'prohibit-password' to eq 'no'"
+            }
           ],
           "statusOverrides": [
             {
               "type": "falsePositive",
               "status": "passed",
               "reason": "Scanner requires literal 'no' but 'prohibit-password' is equally restrictive (disables password-based root login). Manual review confirms root cannot authenticate via SSH.",
-              "appliedBy": { "type": "email", "identifier": "assessor@agency.gov" },
+              "appliedBy": {
+                "type": "email",
+                "identifier": "assessor@agency.gov"
+              },
               "appliedAt": "2026-01-16T14:00:00Z",
               "expiresAt": "2026-07-16T00:00:00Z"
             }
@@ -420,17 +473,34 @@
           "id": "CVE-2026-12345",
           "title": "libxml2 buffer overflow in xmlParseEntityDecl",
           "impact": 0.9,
-          "tags": { "nist": ["SI-2", "RA-5"] },
-          "descriptions": [{ "label": "default", "data": "Buffer overflow in libxml2 entity parsing allows remote code execution." }],
+          "tags": {
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Buffer overflow in libxml2 entity parsing allows remote code execution."
+            }
+          ],
           "results": [
-            { "status": "failed", "codeDesc": "libxml2 >= 2.9.0 is expected to be patched for CVE-2026-12345", "startTime": "2026-01-15T10:00:00Z" }
+            {
+              "status": "failed",
+              "codeDesc": "libxml2 >= 2.9.0 is expected to be patched for CVE-2026-12345",
+              "startTime": "2026-01-15T10:00:00Z"
+            }
           ],
           "statusOverrides": [
             {
               "type": "falsePositive",
               "status": "notApplicable",
               "reason": "CVE scanner matched libxml2 version signature, but the vulnerable entity parsing module is compiled out of our build (--without-legacy flag). The affected code path does not exist in the binary.",
-              "appliedBy": { "type": "email", "identifier": "dev@org.gov" },
+              "appliedBy": {
+                "type": "email",
+                "identifier": "dev@org.gov"
+              },
               "appliedAt": "2026-01-16T09:00:00Z",
               "expiresAt": "2026-07-16T00:00:00Z"
             }
@@ -443,17 +513,36 @@
           "id": "CVE-2026-67890",
           "title": "OpenSSL timing side-channel in RSA decryption",
           "impact": 0.7,
-          "tags": { "nist": ["SI-2", "RA-5"] },
-          "descriptions": [{ "label": "default", "data": "Timing side-channel may allow RSA private key recovery." }],
+          "tags": {
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Timing side-channel may allow RSA private key recovery."
+            }
+          ],
           "results": [
-            { "status": "failed", "codeDesc": "openssl >= 3.1.0 is expected to be patched for CVE-2026-67890", "startTime": "2026-01-15T10:00:00Z" }
+            {
+              "status": "failed",
+              "codeDesc": "openssl >= 3.1.0 is expected to be patched for CVE-2026-67890",
+              "startTime": "2026-01-15T10:00:00Z"
+            }
           ],
           "statusOverrides": [
             {
               "type": "riskAdjustment",
-              "impact": { "value": 0.3 },
+              "impact": {
+                "value": 0.3
+              },
               "reason": "The RSA key exchange path is unreachable in our deployment — all TLS connections use ECDHE. Attack requires local network access to the TLS terminator, which is in an isolated VLAN.",
-              "appliedBy": { "type": "email", "identifier": "security-architect@org.gov" },
+              "appliedBy": {
+                "type": "email",
+                "identifier": "security-architect@org.gov"
+              },
               "appliedAt": "2026-01-17T10:00:00Z",
               "expiresAt": "2026-07-17T00:00:00Z"
             }
@@ -467,17 +556,34 @@
           "id": "SV-230500",
           "title": "RHEL 9 must disable USB mass storage",
           "impact": 0.5,
-          "tags": { "nist": ["MP-7"] },
-          "descriptions": [{ "label": "default", "data": "USB mass storage kernel module must be disabled." }],
+          "tags": {
+            "nist": [
+              "MP-7"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "USB mass storage kernel module must be disabled."
+            }
+          ],
           "results": [
-            { "status": "failed", "codeDesc": "Kernel module 'usb-storage' is expected to be disabled", "startTime": "2026-01-15T10:00:00Z", "message": "usb-storage module is loaded" }
+            {
+              "status": "failed",
+              "codeDesc": "Kernel module 'usb-storage' is expected to be disabled",
+              "startTime": "2026-01-15T10:00:00Z",
+              "message": "usb-storage module is loaded"
+            }
           ],
           "statusOverrides": [
             {
               "type": "operationalRequirement",
               "status": "failed",
               "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
-              "appliedBy": { "type": "email", "identifier": "system-owner@agency.gov" },
+              "appliedBy": {
+                "type": "email",
+                "identifier": "system-owner@agency.gov"
+              },
               "appliedAt": "2026-01-20T10:00:00Z",
               "expiresAt": "2026-07-20T00:00:00Z"
             }
@@ -490,21 +596,46 @@
           "id": "SV-230350",
           "title": "RHEL 9 must be patched within 30 days of release",
           "impact": 0.7,
-          "tags": { "nist": ["SI-2"] },
-          "descriptions": [{ "label": "default", "data": "Security patches must be applied within 30 days." }],
+          "tags": {
+            "nist": [
+              "SI-2"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Security patches must be applied within 30 days."
+            }
+          ],
           "results": [
-            { "status": "failed", "codeDesc": "Package updates are expected to be current within 30 days", "startTime": "2026-01-15T10:00:00Z", "message": "15 packages have patches older than 30 days" }
+            {
+              "status": "failed",
+              "codeDesc": "Package updates are expected to be current within 30 days",
+              "startTime": "2026-01-15T10:00:00Z",
+              "message": "15 packages have patches older than 30 days"
+            }
           ],
           "poams": [
             {
               "type": "remediation",
               "explanation": "Patch deployment blocked by vendor compatibility testing. Vendor confirmed fix for Q2 2026.",
-              "appliedBy": { "type": "email", "identifier": "ops@agency.gov" },
+              "appliedBy": {
+                "type": "email",
+                "identifier": "ops@agency.gov"
+              },
               "appliedAt": "2026-01-20T10:00:00Z",
               "expiresAt": "2099-12-31T00:00:00Z",
               "milestones": [
-                { "description": "Vendor releases compatible patch", "estimatedCompletion": "2026-04-01T00:00:00Z", "status": "pending" },
-                { "description": "Deploy to production", "estimatedCompletion": "2026-04-15T00:00:00Z", "status": "pending" }
+                {
+                  "description": "Vendor releases compatible patch",
+                  "estimatedCompletion": "2026-04-01T00:00:00Z",
+                  "status": "pending"
+                },
+                {
+                  "description": "Deploy to production",
+                  "estimatedCompletion": "2026-04-15T00:00:00Z",
+                  "status": "pending"
+                }
               ]
             }
           ],

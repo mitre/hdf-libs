@@ -263,11 +263,13 @@ type ExternalReference struct {
 	// own when neither id nor href is available.                                                                      
 	Description                                                                                 *string                `json:"description,omitempty"`
 	// Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS                          
-	// record, advisory, or annotation payload — preserved verbatim. Composes with                                     
-	// `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to                        
-	// the source): a single entry can both point and embed. HDF stays payload-agnostic — the                          
-	// content is carried untouched, never normalized into HDF fields — so this does not                               
-	// duplicate the source ontology (e.g. STIX rides here unchanged).                                                 
+	// record, advisory, or annotation payload — preserved verbatim.                                                   
+	//                                                                                                                 
+	// Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which                           
+	// ties the copy to the source): a single entry can both point and embed.                                          
+	//                                                                                                                 
+	// HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF                        
+	// fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged).                       
 	Document                                                                                    map[string]interface{} `json:"document,omitempty"`
 	// Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve',                        
 	// 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName`                       
@@ -278,10 +280,15 @@ type ExternalReference struct {
 	// `checksum`/`mediaType` apply only to a retrievable `href`.                                                      
 	Href                                                                                        *string                `json:"href,omitempty"`
 	// Open token classifying the referenced/embedded payload, turning a bare reference into an                        
-	// enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum.                            
+	// enrichment envelope.                                                                                            
+	//                                                                                                                 
+	// Deliberately open (like `sourceName`/`rel`), not a closed enum.                                                 
+	//                                                                                                                 
 	// Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human                            
 	// triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory'                                   
-	// (vendor/security advisory). Use the `x-` prefix for custom kinds.                                               
+	// (vendor/security advisory).                                                                                     
+	//                                                                                                                 
+	// Use the `x-` prefix for custom kinds.                                                                           
 	Kind                                                                                        *string                `json:"kind,omitempty"`
 	// IANA media type of the referenced artifact when retrievable (RFC 6838), e.g.,                                   
 	// 'application/json'. Meaningful only with `href`.                                                                
@@ -306,13 +313,14 @@ type Identity struct {
 	Description                                                                                 *string      `json:"description,omitempty"`
 	// The identifier value. Example: 'user@example.com', 'jdoe', 'automated-scanner-01'.                    
 	Identifier                                                                                  string       `json:"identifier"`
-	// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,                
-	// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'              
-	// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can                
-	// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and                   
-	// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,                     
-	// 'simple' for basic string identifiers without additional classification, or 'other' for               
-	// custom identity systems.                                                                              
+	// The type of identifier.                                                                               
+	//                                                                                                       
+	// Use 'email' for email addresses, 'username' for user accounts, 'system' for deterministic             
+	// non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting              
+	// with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny                
+	// (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure                 
+	// under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string                        
+	// identifiers without additional classification, or 'other' for custom identity systems.                
 	Type                                                                                        IdentityType `json:"type"`
 }
 
@@ -409,12 +417,17 @@ type EvaluatedRequirement struct {
 	// POAMs apply.                                                                                                     
 	Disposition                                                                                 *OverrideType           `json:"disposition,omitempty"`
 	// Checksum of this requirement's resolved effective posture, for per-control change                                
-	// detection in continuous monitoring. sha256 over the canonical JSON object with keys                              
-	// status, impact, disposition (in that order), holding the resolved effective status,                              
-	// resolved effective impact, and governing override type (null when nothing governs), with                         
-	// override expiry anchored to the document timestamp. Flips exactly when the operative                             
-	// status, impact, or disposition changes; stable under all other churn (result details,                            
-	// timestamps, tags). Optional; stamped by tooling (hdf convert, hdf amend apply).                                  
+	// detection in continuous monitoring.                                                                              
+	//                                                                                                                  
+	// sha256 over the canonical JSON object with keys status, impact, disposition (in that                             
+	// order), holding the resolved effective status, resolved effective impact, and governing                          
+	// override type (null when nothing governs), with override expiry anchored to the document                         
+	// timestamp.                                                                                                       
+	//                                                                                                                  
+	// Flips exactly when the operative status, impact, or disposition changes; stable under all                        
+	// other churn (result details, timestamps, tags).                                                                  
+	//                                                                                                                  
+	// Optional; stamped by tooling (hdf convert, hdf amend apply).                                                     
 	EffectiveChecksum                                                                           *Checksum               `json:"effectiveChecksum,omitempty"`
 	// The current effective impact score (0.0–1.0) after applying the most recent non-expired                          
 	// override with an impact field. Absent when no impact overrides apply; consumers should                           
@@ -456,10 +469,14 @@ type EvaluatedRequirement struct {
 	Impact                                                                                      float64                 `json:"impact"`
 	// A set of tags - usually metadata like CCI, STIG ID, severity.                                                    
 	Tags                                                                                        map[string]interface{}  `json:"tags"`
-	// Whether the requirement is mandatory within its baseline. Distinct from severity (risk                           
-	// weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop,                         
-	// FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group                         
-	// memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).                           
+	// Whether the requirement is mandatory within its baseline.                                                        
+	//                                                                                                                  
+	// Distinct from severity (risk weight) and status (lifecycle state).                                               
+	//                                                                                                                  
+	// Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:'                                
+	// markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may                           
+	// carry richer semantics; layer those onto props[]/tags{}).                                                        
+	//                                                                                                                  
 	// Optional: when omitted, consumers should treat the requirement as 'required' by                                  
 	// convention.                                                                                                      
 	Applicability                                                                               *Applicability          `json:"applicability,omitempty"`
@@ -469,11 +486,15 @@ type EvaluatedRequirement struct {
 	// underlying source code.                                                                                          
 	Code                                                                                        *string                 `json:"code,omitempty"`
 	// Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A                                
-	// categories. 'policy' = an authored governance statement; 'procedure' = a documented                              
-	// process; 'technical' = an enforced technical configuration; 'management' = a                                     
+	// categories.                                                                                                      
+	//                                                                                                                  
+	// 'policy' = an authored governance statement; 'procedure' = a documented process;                                 
+	// 'technical' = an enforced technical configuration; 'management' = a                                              
 	// programmatic/management activity; 'operational' = a recurring operational activity (e.g.                         
-	// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from                             
-	// family/id but should not assume a default.                                                                       
+	// AT, IR, MA families).                                                                                            
+	//                                                                                                                  
+	// Optional: when omitted, consumers may infer heuristically from family/id but should not                          
+	// assume a default.                                                                                                
 	ControlType                                                                                 *ControlType            `json:"controlType,omitempty"`
 	// Optional references to external artifacts relevant to this requirement (CTI/STIX                                 
 	// correlation, advisories, control/definition sources, or any URI-addressable artifact).                           
@@ -484,12 +505,17 @@ type EvaluatedRequirement struct {
 	Refs                                                                                        []Reference             `json:"refs,omitempty"`
 	// The title - is nullable.                                                                                         
 	Title                                                                                       *string                 `json:"title,omitempty"`
-	// How this requirement is intended to be verified. Disambiguates the two cases that null                           
-	// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable                         
-	// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could                             
-	// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and                        
-	// runs without operator action; 'hybrid' = part automated, part manual. Optional: when                             
-	// omitted, consumers should not infer a default.                                                                   
+	// How this requirement is intended to be verified.                                                                 
+	//                                                                                                                  
+	// Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the                                  
+	// requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs);                            
+	// 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule                           
+	// lacking a fix).                                                                                                  
+	//                                                                                                                  
+	// 'automated' = a check exists and runs without operator action; 'hybrid' = part automated,                        
+	// part manual.                                                                                                     
+	//                                                                                                                  
+	// Optional: when omitted, consumers should not infer a default.                                                    
 	VerificationMethod                                                                          *VerificationMethodEnum `json:"verificationMethod,omitempty"`
 }
 
@@ -517,11 +543,16 @@ type AffectedPackage struct {
 	// The package name as published in its ecosystem. Examples: 'openssl' (rpm), 'lodash'                 
 	// (npm), 'org.apache.logging.log4j:log4j-core' (maven, group:artifact).                               
 	Name                                                                                        *string    `json:"name,omitempty"`
-	// Optional Package URL (PURL) identifying the affected package. Validated leniently: only             
-	// the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a              
-	// letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively             
-	// to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full            
-	// PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'.                         
+	// Optional Package URL (PURL) identifying the affected package.                                       
+	//                                                                                                     
+	// Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE                
+	// follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is            
+	// matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn                    
+	// behavior.                                                                                           
+	//                                                                                                     
+	// Use `parsePurl` for full PURL parsing.                                                              
+	//                                                                                                     
+	// Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'.                                       
 	Purl                                                                                        *string    `json:"purl,omitempty"`
 	// The exact version of the package that the vulnerability scanner observed. Use the                   
 	// ecosystem's native version string verbatim (e.g., '1.1.1k-7.el8_4' for rpm, '4.17.20' for           
@@ -543,11 +574,15 @@ type Cvss struct {
 	// 'none' or 'critical' bands; map accordingly when populating.                                           
 	BaseSeverity                                                                                *CVSSSeverity `json:"baseSeverity,omitempty"`
 	// Optional Base metric group vector string as emitted by the source (e.g.,                               
-	// 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is                    
-	// omitted. Some vendor tools emit a final baseScore without the vector — in that case this               
-	// field is absent and the score cannot be recomputed or decomposed. The pattern accepts any              
-	// version-prefixed or prefix-less metric token sequence; semantic validity of individual                 
-	// metrics is checked by hdf-utilities, not by the schema.                                                
+	// 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H').                                                       
+	//                                                                                                        
+	// For CVSS 2.0 the version prefix is omitted.                                                            
+	//                                                                                                        
+	// Some vendor tools emit a final baseScore without the vector — in that case this field is               
+	// absent and the score cannot be recomputed or decomposed.                                               
+	//                                                                                                        
+	// The pattern accepts any version-prefixed or prefix-less metric token sequence; semantic                
+	// validity of individual metrics is checked by hdf-utilities, not by the schema.                         
 	BaseVector                                                                                  *string       `json:"baseVector,omitempty"`
 	// Optional final score after combining Base + Threat + Environmental metrics. This is the                
 	// score consumers should treat as authoritative for risk decisions when present.                         
@@ -862,11 +897,16 @@ type Component struct {
 	// System-specific overrides for baseline input values.                                                       
 	InputOverrides                                                                              []InputOverride   `json:"inputOverrides,omitempty"`
 	// Cryptographic integrity of this component's underlying artifact — model weights or                         
-	// shards, dataset archive, container image, or package bytes. An array supports                              
-	// multi-file/sharded artifacts. This is the single, generic home for artifact/subject                        
-	// integrity across all component types (it replaced the former per-type Container_Image                      
-	// digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[])                  
-	// and from the document tamper-evidence Integrity type.                                                      
+	// shards, dataset archive, container image, or package bytes.                                                
+	//                                                                                                            
+	// An array supports multi-file/sharded artifacts.                                                            
+	//                                                                                                            
+	// This is the single, generic home for artifact/subject integrity across all component                       
+	// types (it replaced the former per-type Container_Image digest and Artifact checksum                        
+	// fields).                                                                                                   
+	//                                                                                                            
+	// Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence                  
+	// Integrity type.                                                                                            
 	Integrity                                                                                   []Checksum        `json:"integrity,omitempty"`
 	// Optional key-value labels for flexible grouping. Well-known keys: system, component,                       
 	// environment, region, team. Values must be strings.                                                         
@@ -1290,19 +1330,22 @@ type StatisticBlock struct {
 // The security tool that produced the assessment data represented in this HDF file. Aligns with
 // SARIF, OSCAL, and CycloneDX terminology.
 type Tool struct {
-	// The named format of the source data, when it follows a recognized format specification        
-	// with its own identity: an interchange format emitted by many tools ('SARIF', 'XCCDF',         
-	// 'OSCAL') or one of several named output formats a single tool produces ('FVDL',               
-	// 'exec-json', 'FPF'). Never a serialization structure — 'JSON', 'XML', and 'CSV' are           
-	// encodings, not formats. Omit for a tool's native output: an absent format means the           
-	// tool's own shape, and data arriving as a named format is converted by that format's           
-	// converter, which sets this field alongside the producing tool's name.                         
-	Format                                                                                   *string `json:"format,omitempty"`
-	// The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',           
-	// 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.                    
-	Name                                                                                     *string `json:"name,omitempty"`
-	// Version of the source tool, if available in the tool's output. Example: '5.22.3'.             
-	Version                                                                                  *string `json:"version,omitempty"`
+	// The named format of the source data, when it follows a recognized format specification           
+	// with its own identity: an interchange format emitted by many tools ('SARIF', 'XCCDF',            
+	// 'OSCAL') or one of several named output formats a single tool produces ('FVDL',                  
+	// 'exec-json', 'FPF').                                                                             
+	//                                                                                                  
+	// Never a serialization structure — 'JSON', 'XML', and 'CSV' are encodings, not formats.           
+	//                                                                                                  
+	// Omit for a tool's native output: an absent format means the tool's own shape, and data           
+	// arriving as a named format is converted by that format's converter, which sets this field        
+	// alongside the producing tool's name.                                                             
+	Format                                                                                      *string `json:"format,omitempty"`
+	// The name of the security tool that produced the data. Examples: 'gosec', 'Semgrep',              
+	// 'OpenSCAP', 'AWS Config', 'Nessus'. Omit if the tool cannot be identified.                       
+	Name                                                                                        *string `json:"name,omitempty"`
+	// Version of the source tool, if available in the tool's output. Example: '5.22.3'.                
+	Version                                                                                     *string `json:"version,omitempty"`
 }
 
 // Information on the set of requirements that can be assessed, including baseline metadata and
@@ -1368,10 +1411,14 @@ type BaselineRequirement struct {
 	Impact                                                                                      float64                 `json:"impact"`
 	// A set of tags - usually metadata like CCI, STIG ID, severity.                                                    
 	Tags                                                                                        map[string]interface{}  `json:"tags"`
-	// Whether the requirement is mandatory within its baseline. Distinct from severity (risk                           
-	// weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop,                         
-	// FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group                         
-	// memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).                           
+	// Whether the requirement is mandatory within its baseline.                                                        
+	//                                                                                                                  
+	// Distinct from severity (risk weight) and status (lifecycle state).                                               
+	//                                                                                                                  
+	// Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:'                                
+	// markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may                           
+	// carry richer semantics; layer those onto props[]/tags{}).                                                        
+	//                                                                                                                  
 	// Optional: when omitted, consumers should treat the requirement as 'required' by                                  
 	// convention.                                                                                                      
 	Applicability                                                                               *Applicability          `json:"applicability,omitempty"`
@@ -1381,11 +1428,15 @@ type BaselineRequirement struct {
 	// underlying source code.                                                                                          
 	Code                                                                                        *string                 `json:"code,omitempty"`
 	// Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A                                
-	// categories. 'policy' = an authored governance statement; 'procedure' = a documented                              
-	// process; 'technical' = an enforced technical configuration; 'management' = a                                     
+	// categories.                                                                                                      
+	//                                                                                                                  
+	// 'policy' = an authored governance statement; 'procedure' = a documented process;                                 
+	// 'technical' = an enforced technical configuration; 'management' = a                                              
 	// programmatic/management activity; 'operational' = a recurring operational activity (e.g.                         
-	// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from                             
-	// family/id but should not assume a default.                                                                       
+	// AT, IR, MA families).                                                                                            
+	//                                                                                                                  
+	// Optional: when omitted, consumers may infer heuristically from family/id but should not                          
+	// assume a default.                                                                                                
 	ControlType                                                                                 *ControlType            `json:"controlType,omitempty"`
 	// Optional references to external artifacts relevant to this requirement (CTI/STIX                                 
 	// correlation, advisories, control/definition sources, or any URI-addressable artifact).                           
@@ -1398,12 +1449,17 @@ type BaselineRequirement struct {
 	SourceLocation                                                                              *SourceLocation         `json:"sourceLocation,omitempty"`
 	// The title - is nullable.                                                                                         
 	Title                                                                                       *string                 `json:"title,omitempty"`
-	// How this requirement is intended to be verified. Disambiguates the two cases that null                           
-	// 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable                         
-	// to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could                             
-	// exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and                        
-	// runs without operator action; 'hybrid' = part automated, part manual. Optional: when                             
-	// omitted, consumers should not infer a default.                                                                   
+	// How this requirement is intended to be verified.                                                                 
+	//                                                                                                                  
+	// Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the                                  
+	// requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs);                            
+	// 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule                           
+	// lacking a fix).                                                                                                  
+	//                                                                                                                  
+	// 'automated' = a check exists and runs without operator action; 'hybrid' = part automated,                        
+	// part manual.                                                                                                     
+	//                                                                                                                  
+	// Optional: when omitted, consumers should not infer a default.                                                    
 	VerificationMethod                                                                          *VerificationMethodEnum `json:"verificationMethod,omitempty"`
 }
 
@@ -1957,22 +2013,27 @@ type HDFAmendments struct {
 // branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact'
 // may be set — the override records accepted risk without changing the finding
 // (documentation-only). For all other types, at least one of 'status' or 'impact' must be set. This
-// rule aligns with: (1) OSCAL Assessment Results — finding.target.status and
+// rule aligns with: - OSCAL Assessment Results — finding.target.status and
 // finding.associated-risk[].facet[] are separate axes
-// (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2) FedRAMP
+// (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/) - FedRAMP
 // deviation request types — Risk Adjustment changes impact only, Operational Requirement documents
 // acceptance only, False Positive changes status
-// (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3) NIST SP
-// 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment
-// status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).
+// (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/) - NIST SP 800-37
+// RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status
+// (https://csrc.nist.gov/pubs/sp/800/37/r2/final).
 type StandaloneOverride struct {
 	// Software packages this amendment is scoped to, distinct from componentRef (which scopes                      
-	// to an HDF-internal Component by UUID). Use when the source amendment format references                       
-	// packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M                        
-	// `subjects[]`, FedRAMP component-aware amendments. Symmetric with                                             
-	// Evaluated_Requirement.affectedPackages, which scopes findings to the same package                            
-	// vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when                    
-	// that is set).                                                                                                
+	// to an HDF-internal Component by UUID).                                                                       
+	//                                                                                                              
+	// Use when the source amendment format references packages by purl/cpe/name+version — e.g.,                    
+	// VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware                            
+	// amendments.                                                                                                  
+	//                                                                                                              
+	// Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same                     
+	// package vocabulary.                                                                                          
+	//                                                                                                              
+	// When omitted, the amendment applies system-wide (or only to componentRef when that is                        
+	// set).                                                                                                        
 	AffectedPackages                                                                            []AffectedPackage   `json:"affectedPackages,omitempty"`
 	// When this amendment was applied. ISO 8601 format.                                                            
 	AppliedAt                                                                                   time.Time           `json:"appliedAt"`
@@ -2199,10 +2260,12 @@ type HDFRequirementChangeEvent struct {
 	EventID                                                                                     string                `json:"eventId"`
 	// The effectiveChecksum of the entity state this event supersedes, forming a per-key hash                        
 	// chain: a mismatch or gap against stored state is detectable, letting a consumer mark the                       
-	// key unverified instead of serving stale posture. Null at chain start (no prior state,                          
-	// e.g. a new entity or the first event after a seed). The chain provides tamper/gap                              
-	// evidence given a trusted head; completeness is anchored out-of-band by periodic                                
-	// re-centering rescans.                                                                                          
+	// key unverified instead of serving stale posture.                                                               
+	//                                                                                                                
+	// Null at chain start (no prior state, e.g. a new entity or the first event after a seed).                       
+	//                                                                                                                
+	// The chain provides tamper/gap evidence given a trusted head; completeness is anchored                          
+	// out-of-band by periodic re-centering rescans.                                                                  
 	PriorChecksum                                                                               interface{}           `json:"priorChecksum"`
 	// The versioned schema $id this event validates against, so events self-describe on                              
 	// heterogeneous streams. Recommended on every wire event.                                                        
@@ -2223,13 +2286,14 @@ type HDFRequirementChangeEvent struct {
 	Timestamp                                                                                   time.Time             `json:"timestamp"`
 }
 
-// The type of identifier. Use 'email' for email addresses, 'username' for user accounts,
-// 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent'
-// for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can
-// apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and
-// satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF,
-// 'simple' for basic string identifiers without additional classification, or 'other' for
-// custom identity systems.
+// The type of identifier.
+//
+// Use 'email' for email addresses, 'username' for user accounts, 'system' for deterministic
+// non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting
+// with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny
+// (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure
+// under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string
+// identifiers without additional classification, or 'other' for custom identity systems.
 type IdentityType string
 
 const (
@@ -2298,10 +2362,14 @@ const (
 	RPM     Ecosystem = "rpm"
 )
 
-// Whether the requirement is mandatory within its baseline. Distinct from severity (risk
-// weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop,
-// FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group
-// memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).
+// Whether the requirement is mandatory within its baseline.
+//
+// Distinct from severity (risk weight) and status (lifecycle state).
+//
+// Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:'
+// markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may
+// carry richer semantics; layer those onto props[]/tags{}).
+//
 // Optional: when omitted, consumers should treat the requirement as 'required' by
 // convention.
 type Applicability string
@@ -2313,11 +2381,15 @@ const (
 )
 
 // Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A
-// categories. 'policy' = an authored governance statement; 'procedure' = a documented
-// process; 'technical' = an enforced technical configuration; 'management' = a
+// categories.
+//
+// 'policy' = an authored governance statement; 'procedure' = a documented process;
+// 'technical' = an enforced technical configuration; 'management' = a
 // programmatic/management activity; 'operational' = a recurring operational activity (e.g.
-// AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from
-// family/id but should not assume a default.
+// AT, IR, MA families).
+//
+// Optional: when omitted, consumers may infer heuristically from family/id but should not
+// assume a default.
 type ControlType string
 
 const (
@@ -2352,19 +2424,19 @@ const (
 	The40 Version = "4.0"
 )
 
-// The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted
-// by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation
-// tracked (no status change). 'inherited': control provided by another component or system.
-// 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the
-// check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE,
-// SCA), the flagged vulnerability does not apply to this system, so status is typically set to
-// 'notApplicable'. The disposition field on the requirement distinguishes false positives from
-// genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental
-// context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact
-// field. 'operationalRequirement': deviation required by operational constraints (FedRAMP
-// Operational Requirement); the finding cannot be remediated because the system requires the
-// affected functionality. Remains an open risk. Migration note: 'exception' was removed in v3.1.0 —
-// use 'waiver' with status 'notApplicable' instead.
+// The type of amendment, aligned with FedRAMP deviation request categories. - 'waiver': risk
+// accepted by Authorizing Official. - 'attestation': manually verified by assessor. - 'poam':
+// remediation tracked (no status change). - 'inherited': control provided by another component or
+// system. - 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG,
+// CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans
+// (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set
+// to 'notApplicable'. The disposition field on the requirement distinguishes false positives from
+// genuinely not-applicable findings. - 'riskAdjustment': impact score adjusted based on
+// environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact
+// via the impact field. - 'operationalRequirement': deviation required by operational constraints
+// (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires
+// the affected functionality. Remains an open risk. Migration note: 'exception' was removed in
+// v3.1.0 — use 'waiver' with status 'notApplicable' instead.
 type OverrideType string
 
 const (
