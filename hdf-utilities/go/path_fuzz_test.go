@@ -37,6 +37,13 @@ func FuzzSafePath(f *testing.F) {
 		{"/tmp", "escape"},
 		{"/tmp", "escape/inner.txt"},
 		{"/tmp", strings.Repeat("a/", 200) + "leaf"},
+		{"..", ".."},
+		{"..", "../secret"},
+		{"../pkg", "x"},
+		{"../..", "safe.txt"},
+		{"..", "inside/../../../etc"},
+		{"/tmp", `C:\evil`},
+		{"/tmp", `\\server\share\x`},
 	}
 	for _, s := range seeds {
 		f.Add(s[0], s[1])

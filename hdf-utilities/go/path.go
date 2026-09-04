@@ -31,12 +31,16 @@ func SafePath(baseDir, relPath string) (string, error) {
 }
 
 // within reports whether child is base itself or lives beneath it, comparing
-// already-cleaned paths.
+// already-cleaned paths. Containment is decided by filepath.Rel, not a string
+// prefix: a prefix test wrongly accepts "../.." under base ".." (an
+// upward-relative base's escape shares its textual prefix). Rel failure means
+// containment cannot be proven, so it fails closed.
 func within(base, child string) bool {
-	if child == base {
-		return true
+	rel, err := filepath.Rel(base, child)
+	if err != nil {
+		return false
 	}
-	return strings.HasPrefix(child, base+string(os.PathSeparator))
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
 }
 
 // verifyNoSymlinkEscape resolves symlinks on both the base and the target's
