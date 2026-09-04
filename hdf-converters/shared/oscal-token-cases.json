@@ -1,0 +1,85 @@
+{
+  "$comment": "Shared table for OSCALToken / oscalToken. Read by both converters/oscal-to-hdf/go/oscaltoken_test.go and converters/oscal-to-hdf/typescript/oscaltoken.test.ts so the two implementations are asserted against one definition and cannot drift. The non-ASCII cases exist because the first cut delegated to each platform's Unicode tables (Go's unicode package, V8's \\p{L}/\\p{N}), which are built from different Unicode versions and disagree on 4657 code points. The encoder now keeps an explicit ASCII set, so every non-ASCII character collapses to '_' identically in both languages.",
+  "cases": [
+    {
+      "name": "already a token is unchanged",
+      "in": "AC-1",
+      "want": "AC-1"
+    },
+    {
+      "name": "STIG rule id unchanged",
+      "in": "V-38497",
+      "want": "V-38497"
+    },
+    {
+      "name": "underscores and dots unchanged",
+      "in": "xccdf_org.ssgproject_rule_x",
+      "want": "xccdf_org.ssgproject_rule_x"
+    },
+    {
+      "name": "leading digit gets a prefix",
+      "in": "10180",
+      "want": "_10180"
+    },
+    {
+      "name": "CIS dotted number gets a prefix",
+      "in": "1.1.1",
+      "want": "_1.1.1"
+    },
+    {
+      "name": "package-style separators collapse",
+      "in": "CVE-1/pkg:x/1.0",
+      "want": "CVE-1_pkg_x_1.0"
+    },
+    {
+      "name": "spaces and parentheses collapse",
+      "in": "CM-2 (1)",
+      "want": "CM-2__1_"
+    },
+    {
+      "name": "plus signs collapse",
+      "in": "a+b",
+      "want": "a_b"
+    },
+    {
+      "name": "empty stays empty for the caller to guard",
+      "in": "",
+      "want": ""
+    },
+    {
+      "name": "leading underscore is already legal",
+      "in": "_x",
+      "want": "_x"
+    },
+    {
+      "name": "non-ASCII letter collapses",
+      "in": "café",
+      "want": "caf_"
+    },
+    {
+      "name": "superscript collapses",
+      "in": "a²",
+      "want": "a_"
+    },
+    {
+      "name": "fraction collapses",
+      "in": "a½",
+      "want": "a_"
+    },
+    {
+      "name": "collapsed leading char is itself a legal lead",
+      "in": "Ⅰabc",
+      "want": "_abc"
+    },
+    {
+      "name": "collapsed leading digit needs no extra prefix",
+      "in": "٣x",
+      "want": "_x"
+    },
+    {
+      "name": "astral character collapses to one underscore per code point",
+      "in": "a😀b",
+      "want": "a_b"
+    }
+  ]
+}

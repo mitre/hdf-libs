@@ -206,6 +206,19 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
+
+		// A finding is a claim about a specific control, and OSCAL types
+		// target-id as a token — an empty one fails the pattern outright. HDF
+		// requires an id on a requirement, so reaching this is already invalid
+		// input, but emitting the finding anyway would produce a document the
+		// target schema rejects. The finding is dropped rather than carrying a
+		// fabricated identifier the source never had. Compute the control id once
+		// so the guard and the reviewed-controls encoding below cannot drift.
+		nistID := oscal.NistTagToControlID(req.ID)
+		if nistID == "" {
+			continue
+		}
+
 		f, obs, rsk, res := requirementToFindingSet(req, timestamp, toolActorUUID, subjects)
 		findings = append(findings, f)
 		if obs != nil {
@@ -217,7 +230,10 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		if res != nil {
 			resources = append(resources, *res)
 		}
-		if cid := oscal.NistTagToControlID(req.ID); cid != "" && !seenControl[cid] {
+		// Encoded identically to the finding's target-id below: a finding that
+		// referenced a control absent from this list would validate while
+		// claiming to assess something the result never declares reviewing.
+		if cid := oscal.OSCALToken(nistID); cid != "" && !seenControl[cid] {
 			seenControl[cid] = true
 			includeControls = append(includeControls, oscal.SelectControl{ControlID: cid})
 		}
@@ -285,7 +301,12 @@ func descriptionByLabel(descriptions []hdf.Description, label string) string {
 }
 
 func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Finding, *oscal.Observation, *oscal.Risk, *oscal.Resource) {
-	controlID := oscal.NistTagToControlID(req.ID)
+	// OSCAL types target-id as a token, and a requirement id is only token-shaped
+	// when the source tool happens to number its rules that way. The source id is
+	// recorded in the hdf-requirement-id prop below (trimmed, because OSCAL
+	// forbids a padded string value), so the encoding does not lose which
+	// requirement this came from even though it is not injective.
+	controlID := oscal.OSCALToken(oscal.NistTagToControlID(req.ID))
 
 	// Determine the finding state from the effective (post-override) status when
 	// present, falling back to the raw worst-wins result aggregation. This makes
@@ -297,12 +318,18 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	// Build finding description from requirement descriptions
 	findingDesc := extractDefaultDescription(req.Descriptions)
 
-	// Build props from control mappings (nist/cci), non-default descriptions
+	// The source requirement id. target-id carries an encoded form, because OSCAL
+	// constrains it to a token, so without this the identifier the source tool
+	// reported would be unrecoverable — the encoding is not injective. Trimmed
+	// because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded value would
+	// itself be schema-invalid.
+	//
+	// Then control mappings (nist/cci), non-default descriptions
 	// (check/fix/rationale), and v3.2 classification fields. OSCAL prop values
 	// are StringDatatype (no newlines, no edge whitespace), so prose-capable
 	// fields emit a single-line preview as the value and carry the full text in
 	// the prop's own remarks (markup-multiline).
-	var props []oscal.Property
+	props := []oscal.Property{{Name: "hdf-requirement-id", Value: oscal.OSCALString(req.ID)}}
 	// OSCAL prop values must be non-empty strings, so skip any empty value
 	// (e.g. an empty source `code`) rather than emitting a schema-invalid value: "".
 	addProp := func(name, value string) {

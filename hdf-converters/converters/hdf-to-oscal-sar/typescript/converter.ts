@@ -26,6 +26,8 @@ import type {
 import {
   nistTagToControlId,
   impactToSeverity,
+  oscalToken,
+  oscalString,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
 
@@ -218,6 +220,18 @@ function baselineToResult(
   const seenControl = new Set<string>();
 
   for (const req of baseline.requirements) {
+    // A finding is a claim about a specific control, and OSCAL types target-id as
+    // a token — an empty one fails the pattern outright. HDF requires an id on a
+    // requirement, so reaching this is already invalid input, but emitting the
+    // finding anyway would produce a document the target schema rejects. The
+    // finding is dropped rather than carrying a fabricated identifier. Compute
+    // the control id once so the guard and the reviewed-controls encoding below
+    // cannot drift.
+    const nistId = nistTagToControlId(req.id);
+    if (nistId === '') {
+      continue;
+    }
+
     const { finding, observation, risk, resource } = requirementToFindingSet(req, timestamp, toolActorUuid, subjects);
     findings.push(finding);
     if (observation) {
@@ -229,7 +243,10 @@ function baselineToResult(
     if (resource) {
       resources.push(resource);
     }
-    const cid = nistTagToControlId(req.id);
+    // Encoded identically to the finding's target-id: a finding that referenced a
+    // control absent from this list would validate while claiming to assess
+    // something the result never declares reviewing.
+    const cid = oscalToken(nistId);
     if (cid !== '' && !seenControl.has(cid)) {
       seenControl.add(cid);
       includeControls.push({ 'control-id': cid });
@@ -286,7 +303,12 @@ function requirementToFindingSet(
   toolActorUuid: string,
   subjects: SubjectRef[],
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined; resource: Resource | undefined } {
-  const controlID = nistTagToControlId(req.id);
+  // OSCAL types target-id as a token, and a requirement id is only token-shaped
+  // when the source tool happens to number its rules that way. The source id is
+  // recorded in the hdf-requirement-id prop below (trimmed, because OSCAL forbids
+  // a padded string value), so the encoding does not lose which requirement this
+  // came from even though it is not injective.
+  const controlID = oscalToken(nistTagToControlId(req.id));
   // results/descriptions are optional and absent on real minimal HDF; normalize
   // to arrays so this converter matches the Go implementation, which ranges nil
   // slices safely rather than throwing.
@@ -302,9 +324,15 @@ function requirementToFindingSet(
   // are StringDatatype (no newlines, no edge whitespace), so prose-capable
   // fields emit a single-line preview as the value and carry the full text in
   // the prop's own remarks (markup-multiline).
+  // The source requirement id. target-id carries an encoded form, because OSCAL
+  // constrains it to a token and the encoding is not injective, so without this
+  // the identifier the source tool reported would be unrecoverable. Trimmed
+  // because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded value would itself
+  // be schema-invalid.
+  //
   // OSCAL prop values must be non-empty strings, so skip any empty value
   // (e.g. an empty source `code`) rather than emitting a schema-invalid value: ''.
-  const props: Property[] = [];
+  const props: Property[] = [{ name: 'hdf-requirement-id', value: oscalString(req.id) }];
   const addProp = (name: string, value: string): void => {
     if (value !== '') props.push({ name, value });
   };

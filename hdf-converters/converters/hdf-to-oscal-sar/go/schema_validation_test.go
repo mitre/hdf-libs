@@ -90,6 +90,60 @@ func TestConvertHDFToOSCALSAR_SchemaValid(t *testing.T) {
 	}
 }
 
+// TestConvertHDFToOSCALSAR_NonTokenRequirementID pins the fix for a defect that
+// shipped on main: a requirement id that is not already an OSCAL token — a CIS
+// number starting with a digit, a package id carrying '/' or ':' — was copied
+// verbatim into finding.target.target-id and reviewed-controls' control-id, both
+// TokenDatatype, producing OSCAL that fails the AR schema while the converter
+// exits 0. The id is now encoded into token shape, with the source preserved in
+// an hdf-requirement-id prop; a whitespace-only id, which would encode to the
+// empty token the pattern forbids, drops its finding rather than emitting an
+// invalid identifier.
+func TestConvertHDFToOSCALSAR_NonTokenRequirementID(t *testing.T) {
+	schema := arSchema(t)
+
+	nonToken := []byte(`{
+		"baselines": [{
+			"name": "non-token-ids",
+			"requirements": [
+				{ "id": "3.1.1/AC-2:enh", "impact": 0.5,
+				  "results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-06-01T00:00:00Z" }] },
+				{ "id": "   ", "impact": 0,
+				  "results": [{ "status": "passed", "codeDesc": "c", "startTime": "2026-06-01T00:00:00Z" }] }
+			]
+		}]
+	}`)
+
+	// The output must satisfy the schema — on main it did not: target-id and
+	// control-id both violated ^(\p{L}|_)(\p{L}|\p{N}|[.\-_])*$.
+	requireValidAR(t, schema, "non-token requirement id", nonToken)
+
+	out, err := ConvertHDFToOSCALSAR(nonToken, "1.0.0")
+	require.NoError(t, err)
+	var doc struct {
+		AssessmentResults oscal.AssessmentResults `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+
+	findings := doc.AssessmentResults.Results[0].Findings
+	// The whitespace-only id encodes to an empty token, so its finding is dropped;
+	// only the one real requirement survives.
+	require.Len(t, findings, 1, "whitespace-only-id finding must be dropped")
+
+	f := findings[0]
+	assert.Equal(t, oscal.OSCALToken(oscal.NistTagToControlID("3.1.1/AC-2:enh")), f.Target.TargetID,
+		"target-id must carry the encoded token, not the raw non-token id")
+
+	var sourceID string
+	for _, p := range f.Props {
+		if p.Name == "hdf-requirement-id" {
+			sourceID = p.Value
+		}
+	}
+	assert.Equal(t, "3.1.1/AC-2:enh", sourceID,
+		"the source requirement id must be recoverable from the hdf-requirement-id prop")
+}
+
 // multilineFixture loads a real RHEL 9 STIG scan (cinc-auditor exec-json run
 // against a UBI9 container, converted to HDF, trimmed to two requirements) whose
 // code/check/fix text is multi-line with leading/trailing whitespace — the
