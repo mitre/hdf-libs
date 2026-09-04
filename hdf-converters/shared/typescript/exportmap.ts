@@ -17,7 +17,7 @@ import {
   worstStatus,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf } from './converterutil.js';
+import { requireHdfResults } from './converterutil.js';
 
 export type Obj = Record<string, unknown>;
 
@@ -330,13 +330,7 @@ export type EventBuilder = (
  * the missing-baselines error and drives validateInputSize.
  */
 export function runExport(input: string, converterName: string, build: EventBuilder): string {
-  validateInputSize(input, converterName);
-  const doc = parseHdf<Obj>(input);
-
-  const baselines = asArr(doc.baselines);
-  if (!baselines) {
-    throw new Error(`${converterName}: invalid HDF structure: missing baselines field`);
-  }
+  const { doc, items: baselines } = requireHdfResults(input, converterName);
 
   const docTimestamp = getStr(doc, 'timestamp');
   const tool = asMap(doc.tool);

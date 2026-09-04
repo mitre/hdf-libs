@@ -256,6 +256,60 @@ export function parseHdf<T>(input: string): T {
 }
 
 /**
+ * The shared structural-input guard for HDF Results exporters: the prologue
+ * every exporter needs — empty guard, input-size validation, parse, and a
+ * top-level `baselines` array check — returning the parsed document and its
+ * baselines. Extracted from exportmap.runExport so non-exportmap exporters stop
+ * reinventing (and skipping) it. The "missing baselines field" wording matches
+ * exportmap and hdf-to-oscal-sar, so there is no consumer-visible message churn.
+ */
+export function requireHdfResults(
+  input: string,
+  converterName: string,
+): { doc: Record<string, unknown>; items: unknown[] } {
+  return requireHdfStructure(input, converterName, 'baselines');
+}
+
+/**
+ * The HDF Amendments counterpart of requireHdfResults, keyed on the top-level
+ * `overrides` array instead of `baselines`.
+ */
+export function requireHdfAmendments(
+  input: string,
+  converterName: string,
+): { doc: Record<string, unknown>; items: unknown[] } {
+  return requireHdfStructure(input, converterName, 'overrides');
+}
+
+/**
+ * Reject malformed HDF input (empty, oversized, non-JSON, top-level array/null,
+ * or a missing/wrong-typed structural key) before a converter zero-fills it into
+ * a typed document. A parsed JSON `null` (or array, or primitive) is NOT an HDF
+ * document object, so it produces the canonical missing-field error rather than
+ * a TypeError — matching Go's nil-map no-op on `null`.
+ */
+function requireHdfStructure(
+  input: string,
+  converterName: string,
+  field: 'baselines' | 'overrides',
+): { doc: Record<string, unknown>; items: unknown[] } {
+  if (input.length === 0) {
+    throw new Error(`${converterName}: empty input`);
+  }
+  validateInputSize(input, converterName);
+  const parsed = parseHdf<unknown>(input);
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`${converterName}: invalid HDF structure: missing ${field} field`);
+  }
+  const doc = parsed as Record<string, unknown>;
+  const items = doc[field];
+  if (!Array.isArray(items)) {
+    throw new Error(`${converterName}: invalid HDF structure: missing ${field} field`);
+  }
+  return { doc, items };
+}
+
+/**
  * Read a timestamp field off a parsed HDF document.
  *
  * The generated schema types these as `Date` (startTime, appliedAt, ...), but

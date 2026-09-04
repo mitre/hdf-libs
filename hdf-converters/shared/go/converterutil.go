@@ -579,6 +579,46 @@ func DecodeHDF(input []byte, v interface{}) error {
 	return json.Unmarshal(hdfutil.NormalizeHDFTimestamps(input), v)
 }
 
+// RequireHDFResults is the shared structural-input guard for HDF Results
+// exporters: it runs the prologue every exporter needs — empty guard, JSON-size
+// validation, decode, and a top-level `baselines` array check — returning the
+// decoded document and its baselines slice, or an error. Extracted from
+// exportmap.Export so non-exportmap exporters stop reinventing (and skipping) it.
+// The "missing baselines field" wording matches exportmap and hdf-to-oscal-sar,
+// so no consumer-visible message churn.
+func RequireHDFResults(input []byte, converterName string) (map[string]interface{}, []interface{}, error) {
+	return requireHDFStructure(input, converterName, "baselines")
+}
+
+// RequireHDFAmendments is the HDF Amendments counterpart of RequireHDFResults,
+// keyed on the top-level `overrides` array instead of `baselines`.
+func RequireHDFAmendments(input []byte, converterName string) (map[string]interface{}, []interface{}, error) {
+	return requireHDFStructure(input, converterName, "overrides")
+}
+
+// requireHDFStructure rejects malformed HDF input (empty, oversized, non-JSON,
+// top-level array/null, or a missing/wrong-typed structural key) before a
+// converter zero-fills it into a typed document. A parsed JSON null decodes to a
+// nil map (json.Unmarshal is a no-op on null), so it falls through to the
+// missing-field error rather than a panic — the behavior the TS peer mirrors.
+func requireHDFStructure(input []byte, converterName, field string) (map[string]interface{}, []interface{}, error) {
+	if len(input) == 0 {
+		return nil, nil, fmt.Errorf("%s: empty input", converterName)
+	}
+	if err := ValidateJSONSize(input, converterName, 0); err != nil {
+		return nil, nil, fmt.Errorf("%s: %w", converterName, err)
+	}
+	var doc map[string]interface{}
+	if err := DecodeHDF(input, &doc); err != nil {
+		return nil, nil, fmt.Errorf("%s: invalid HDF JSON: %w", converterName, err)
+	}
+	items, ok := doc[field].([]interface{})
+	if !ok {
+		return nil, nil, fmt.Errorf("%s: invalid HDF structure: missing %s field", converterName, field)
+	}
+	return doc, items, nil
+}
+
 // DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).
 // This provides defense against entity expansion DoS when converters are used
 // as libraries outside the CLI (which has its own 50 MB input limit).
