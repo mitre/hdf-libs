@@ -265,6 +265,12 @@
       "acceptsEmpty": false
     },
     {
+      "source": "kics",
+      "dest": "hdf",
+      "name": "KICS to HDF",
+      "acceptsEmpty": false
+    },
+    {
       "source": "legacyhdf",
       "dest": "hdf",
       "name": "InSpec exec-json to HDF",
@@ -400,6 +406,12 @@
       "source": "scoutsuite",
       "dest": "hdf",
       "name": "ScoutSuite to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "semgrep",
+      "dest": "hdf",
+      "name": "Semgrep to HDF",
       "acceptsEmpty": false
     },
     {
