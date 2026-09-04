@@ -63,7 +63,7 @@ func TestHdfValidate_ChecksumsMode(t *testing.T) {
 	writeInRoot(t, "r.json", results)
 
 	errRes, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "checksums"})
-	if errRes != nil {
+	if errRes != nil && errRes.IsError {
 		t.Fatalf("checksums mode should not be an isError result: %+v", errRes)
 	}
 	if out.Mode != "checksums" {

@@ -222,15 +222,28 @@ The ceilings are fixed constants, not configuration:
 | `hdf_query` | 2,000 (concise) / 10,000 (full) |
 | `hdf_diff` | 2,000 (concise) / 10,000 (full) |
 | `hdf_compliance` | 2,000 tokens |
+| `hdf_aggregate` | 2,000 tokens |
 | `hdf_validate` | 2,000 tokens |
 
 `concise` is the default verbosity; request `full` only when you need raw
 content, and expect a larger response.
 
 Separately, the one-time `tools/list` handshake at session start costs
-about 4,200 tokens for all nine tool schemas (a per-tool ceiling of 600
+about 5,100 tokens for all ten tool schemas (a per-tool ceiling of 600
 keeps any single schema in check). That is a fixed startup cost, paid once
-per server session, not per call.
+per server session, not per call — and you can trim it by advertising only
+the tools a deployment needs (see [Advertising fewer tools](#advertising-fewer-tools)).
+
+**A response is not paid once — it compounds.** A tool result stays in the
+conversation and is re-sent on every subsequent turn, so a single `full`
+response (up to 10,000 tokens) in a five-turn exchange is charged roughly
+five times. For a long automated loop — the motivating case — that
+compounding dwarfs the tool surface. Prefer `concise` plus pagination over
+`full` when a run has many turns; reach for `full` only when a turn genuinely
+needs raw content. The server helps here in one specific way: each response
+carries its full payload **once**, in `structuredContent`, with only a short
+one-line gist in the `content` text block — so a host that feeds `content`
+to the model is not charged the payload twice.
 
 ### Pagination and truncation
 

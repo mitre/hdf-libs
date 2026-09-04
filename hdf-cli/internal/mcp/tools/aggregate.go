@@ -156,7 +156,8 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 			Failures: failures,
 		}
 		boundAggregate(&out, perSource, in.Page)
-		return nil, out, nil
+		return textResult(fmt.Sprintf("hdf_aggregate: %d sources, %d matching requirements, %.2f%% aggregate compliance, %d failed to load. Per-source + aggregate in structuredContent.",
+			out.SourceCount, out.Aggregate.Total, out.Aggregate.Compliance, len(out.Failures))), out, nil
 	}
 }
 

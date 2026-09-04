@@ -71,13 +71,15 @@ func hdfInspect(ldr *loader.Loader) sdkmcp.ToolHandlerFor[inspectInput, inspectO
 		}
 		if !resolved.Load.Valid {
 			out.ValidationErrors = toValidationErrors(resolved.Load.Errors)
-			return nil, out, nil
+			return textResult(fmt.Sprintf("hdf_inspect: %s (schema-invalid, %d error(s)). Errors in structuredContent.",
+				out.DocType, len(out.ValidationErrors))), out, nil
 		}
 
 		structure := buildStructure(resolved.Load.Engine, resolved.Content)
 		out.Structure, out.Section, out.Notice = selectSection(structure, in.Section, out.DocType)
 		boundInspectResponse(&out, in.Verbosity, in.Page)
-		return nil, out, nil
+		return textResult(fmt.Sprintf("hdf_inspect: %s document structure. Detail in structuredContent.",
+			out.DocType)), out, nil
 	}
 }
 

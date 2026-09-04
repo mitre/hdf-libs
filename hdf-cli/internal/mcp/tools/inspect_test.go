@@ -39,7 +39,7 @@ func structureJSON(t *testing.T, out inspectOutput) string {
 func TestHdfInspect_NeverReturnsRequirements(t *testing.T) {
 	path := writeRoot(t, "scan.json", fixtures.Results.Minimal)
 	errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
-	if errRes != nil || !out.Valid || out.DocType != "results" {
+	if (errRes != nil && errRes.IsError) || !out.Valid || out.DocType != "results" {
 		t.Fatalf("results inspect must succeed: err=%v out=%+v", errRes, out)
 	}
 	// Structure carries baseline structure with a requirement COUNT + status breakdown.
@@ -80,7 +80,7 @@ func TestHdfInspect_AllEightTypes(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			path := writeRoot(t, c.name+".json", c.content)
 			errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
-			if errRes != nil {
+			if errRes != nil && errRes.IsError {
 				t.Fatalf("%s must not error: %s", c.name, payloadText(t, errRes))
 			}
 			if out.DocType != c.docType {
@@ -149,7 +149,7 @@ func TestHdfInspect_DegradedOnInvalid(t *testing.T) {
 	bad := []byte("{\n  \"components\": \"not an array\"\n}") // detects system, invalid
 	path := writeRoot(t, "bad.json", bad)
 	errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
-	if errRes != nil {
+	if errRes != nil && errRes.IsError {
 		t.Fatalf("invalid doc must degrade, not hard-fail: %s", payloadText(t, errRes))
 	}
 	if out.Valid || out.DocType != "system" || len(out.ValidationErrors) == 0 {
@@ -361,7 +361,7 @@ func TestInspect_ResultsWithoutStatistics(t *testing.T) {
 		`"timestamp":"2026-01-01T00:00:00Z"}`)
 	path := writeRoot(t, "gosec.hdf.json", doc)
 	errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
-	if errRes != nil {
+	if errRes != nil && errRes.IsError {
 		t.Fatalf("must not error on a statistics-less Results document: %s", payloadText(t, errRes))
 	}
 	if _, ok := out.Structure["statistics"]; ok {

@@ -86,7 +86,8 @@ func hdfOpen(ldr *loader.Loader) sdkmcp.ToolHandlerFor[openInput, openOutput] {
 		}
 
 		boundOpenResponse(&out)
-		return nil, out, nil
+		return textResult(fmt.Sprintf("hdf_open: %s (schema %s), valid=%t. Handle + summary in structuredContent.",
+			out.DocType, out.EngineSchemaVersion, out.Valid)), out, nil
 	}
 }
 

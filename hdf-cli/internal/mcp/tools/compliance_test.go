@@ -123,7 +123,7 @@ func findGroup(groups []groupRollup, name string) *groupRollup {
 func TestHdfCompliance_AgentOverrideCount(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	res, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
-	if res != nil {
+	if res != nil && res.IsError {
 		t.Fatalf("valid results must not error: %s", payloadText(t, res))
 	}
 	if out.AgentOverrides.Count != 1 {

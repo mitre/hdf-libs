@@ -229,7 +229,8 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 
 		out := queryOutput{Handle: encoded, DocType: resolved.Load.DocType, EngineSchemaVersion: resolved.Handle.EngineSchemaVersion}
 		buildQueryResponse(&out, results, matches, in.Verbosity, in.Limit, in.Page, in.Fields)
-		return nil, out, nil
+		return textResult(fmt.Sprintf("hdf_query: %d of %d requirements returned (%s). Full rows in structuredContent.",
+			out.Returned, out.Total, out.DocType)), out, nil
 	}
 }
 
