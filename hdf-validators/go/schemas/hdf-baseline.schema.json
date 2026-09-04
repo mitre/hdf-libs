@@ -2563,7 +2563,7 @@
             "cpe": {
               "type": "string",
               "pattern": "^cpe:2\\.3:[aho]:.*",
-              "description": "Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing. Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'."
+              "description": "Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing. Example: `cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*`."
             },
             "purl": {
               "type": "string",

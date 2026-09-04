@@ -531,7 +531,7 @@ type AffectedPackage struct {
 	// Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the                
 	// 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating            
 	// system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing.                   
-	// Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'.                                          
+	// Example: `cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*`.                                          
 	Cpe                                                                                         *string    `json:"cpe,omitempty"`
 	// The packaging ecosystem the package belongs to. Use 'generic' for hardware, firmware, or            
 	// anything outside the listed language/OS package managers.                                           
