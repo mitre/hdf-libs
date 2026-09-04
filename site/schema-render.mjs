@@ -66,3 +66,24 @@ export function resolveTypeName(prop, knownTypes = new Set()) {
   if (prop.type) return `\`${prop.type}\`${prop.format ? ` (${prop.format})` : ''}`;
   return 'any';
 }
+
+// mdCell renders a description into a markdown table cell. Backslashes are
+// escaped first so the backslashes introduced by the later escapes aren't
+// themselves re-escaped.
+export function mdCell(s) {
+  // Table cells cannot hold block paragraphs; render source-authored
+  // paragraph breaks as explicit line breaks and flatten the rest.
+  const flattened = (s || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\n\n+/g, '<br><br>')
+    .replace(/\n/g, ' ')
+    .replace(/\|/g, '\\|');
+
+  // Descriptions carry data (CPE wildcards, cron expressions, glob patterns),
+  // so anything outside a code span renders literally rather than as markdown.
+  // Code spans are passed through whole: a backslash escape inside one renders
+  // as a literal backslash, which would corrupt the span's contents.
+  return flattened.replace(/(`+)[\s\S]*?\1|[*_[\]]/g, (match) =>
+    match.startsWith('`') ? match : `\\${match}`,
+  );
+}

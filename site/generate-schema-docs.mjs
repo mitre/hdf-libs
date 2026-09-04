@@ -21,7 +21,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { resolveTypeName, renderEnumValues, anchorId } from './schema-render.mjs';
+import { resolveTypeName, renderEnumValues, anchorId, mdCell } from './schema-render.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMAS_DIR = path.resolve(__dirname, '../hdf-schema/dist/schemas');
@@ -399,17 +399,6 @@ function renderSchemaPage(schema, name, urlPrefix) {
 
 // === Misc helpers ==========================================================
 
-// Markdown-escape helpers. Backslashes are escaped FIRST so the backslashes
-// introduced by the later escapes aren't themselves re-escaped.
-function mdCell(s) {
-  // Table cells cannot hold block paragraphs; render source-authored
-  // paragraph breaks as explicit line breaks and flatten the rest.
-  return (s || '')
-    .replace(/\\/g, '\\\\')
-    .replace(/\n\n+/g, '<br><br>')
-    .replace(/\n/g, ' ')
-    .replace(/\|/g, '\\|');
-}
 
 function mdHeading(s) {
   return s.replace(/\\/g, '\\\\').replace(/_/g, '\\_');
