@@ -137,6 +137,15 @@ export default defineConfig({
   description: 'Heimdall Data Format (HDF) JSON Schema Reference',
   base: '/hdf-libs/',
 
+  // Disable emoji shortcodes site-wide: colon-delimited tokens in real data
+  // (CPE part types, PURL qualifiers) would otherwise render as emoji, and
+  // the site's no-emoji policy wants none anyway. Empty defs replace the
+  // plugin's built-in dictionary wholesale (shortcuts die with the defs they
+  // reference), which markdown-it-emoji turns into an inert matcher.
+  markdown: {
+    emoji: { defs: {}, shortcuts: {} },
+  },
+
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/hdf-libs/saf-logo.svg' }],
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-MN92QDWHGV' }],
