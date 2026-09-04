@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+# Deny-by-default; every job declares exactly what it needs.
+permissions: {}
+
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
