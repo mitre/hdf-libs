@@ -99,7 +99,7 @@ Install only the packages you need. Each package is published independently to n
 | **Engine** — schema-typed read-side engines (detect, query, compliance) | `npm install @mitre/hdf-engine` | `go get github.com/mitre/hdf-libs/hdf-engine/go/v3` |
 | **Extension Graph** — InSpec overlay/extension chain resolution | `npm install @mitre/hdf-extension-graph` | — |
 
-The npm packages declare their dependencies, so `npm install @mitre/hdf-converters@next` automatically pulls in schema, parsers, utilities, and mappings. Note the explicit `@next`: the `@mitre/hdf-converters` npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), whose v2 line owns the `latest` dist-tag — install this repo's v3 line via `@next`, `@v3`, or an exact version.
+The npm packages declare their dependencies, so `npm install @mitre/hdf-converters@next` automatically pulls in schema, parsers, utilities, and mappings. Note the explicit `@next`: the `@mitre/hdf-converters` npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), whose v2 line owns the `latest` dist-tag — install this repo's v3 line via `@next` or an exact version.
 
 The **CLI** is distributed as pre-built binaries — see [hdf-cli](./hdf-cli/README.md) for installation.
 
