@@ -47,6 +47,20 @@ jobs:
             target: FuzzConvertBurpsuiteToHDF
           - dir: hdf-converters/converters/xccdf-results-to-hdf/go
             target: FuzzConvertXccdfToHDF
+          - dir: hdf-converters/converters/ckl-to-hdf/go
+            target: FuzzConvertCKLToHDF
+          - dir: hdf-converters/converters/cklb-to-hdf/go
+            target: FuzzConvertCKLBToHDF
+          - dir: hdf-converters/converters/dbprotect-to-hdf/go
+            target: FuzzConvertDbprotectToHDF
+          - dir: hdf-converters/converters/junit-to-hdf/go
+            target: FuzzConvertJUnitToHDF
+          - dir: hdf-converters/converters/netsparker-to-hdf/go
+            target: FuzzConvertNetsparkerToHDF
+          - dir: hdf-converters/converters/veracode-to-hdf/go
+            target: FuzzConvertVeracodeToHDF
+          - dir: hdf-converters/converters/sarif-to-hdf/go
+            target: FuzzConvertSarifToHDF
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
