@@ -76,16 +76,25 @@ jobs:
         run: |
           # Captured to a file rather than piped: a pipeline's status is tee's,
           # which would mask a real failure.
+          before=$(find testdata/fuzz -type f 2>/dev/null | sort)
           status=0
           go test -fuzz="^${{ matrix.target }}$" -fuzztime=300s -run='^$' . > fuzz.log 2>&1 || status=$?
           cat fuzz.log
           if [ "$status" -eq 0 ]; then
             exit 0
           fi
+          # A crasher can reach the corpus WITHOUT the "Failing input written to"
+          # line: internal/fuzz's rescue defer writes the entry but only upgrades
+          # the error to crashError when the run's error is nil (go1.26
+          # internal/fuzz/fuzz.go), so an escaped deadline error hides the
+          # finding. Assert on the corpus itself, not on log wording.
+          if [ "$(find testdata/fuzz -type f 2>/dev/null | sort)" != "$before" ]; then
+            echo "::error::${{ matrix.target }} wrote a new failing input to testdata/fuzz"
+            exit 1
+          fi
           # Go can report the -fuzztime deadline itself as a failure when workers
           # are mid-operation (golang/go#70431, #72088) — most likely on the
-          # highest-throughput targets. Benign ONLY when no failing input was
-          # recorded: a genuine finding always writes one, and still fails here.
+          # highest-throughput targets. Benign now that the corpus is unchanged.
           if grep -q "context deadline exceeded" fuzz.log && ! grep -q "Failing input written to" fuzz.log; then
             echo "::notice::${{ matrix.target }} reached the fuzztime deadline with no failing input"
             exit 0
