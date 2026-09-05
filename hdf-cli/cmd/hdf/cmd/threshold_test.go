@@ -531,3 +531,153 @@ func TestGenerateThreshold_MissingInput(t *testing.T) {
 	_, _, err := executeCommand("generate", "threshold")
 	assert.Error(t, err)
 }
+
+// A misspelled key in a template file must be rejected. Permissive parsing
+// silently drops unknown keys, so a typo yields an empty threshold set that
+// passes vacuously — a committed gate that asserts nothing while reporting
+// success. Each nesting level fails independently, so each is covered.
+func TestValidateThreshold_RejectsUnknownCategory(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	// "faild" instead of "failed": the real template would fail this document.
+	threshold := `
+faild:
+  total:
+    max: 0
+`
+	require.NoError(t, os.WriteFile(thresholdFile, []byte(threshold), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "faild")
+}
+
+func TestValidateThreshold_RejectsUnknownSeverityField(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	threshold := `
+failed:
+  totl:
+    max: 0
+`
+	require.NoError(t, os.WriteFile(thresholdFile, []byte(threshold), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "totl")
+}
+
+func TestValidateThreshold_RejectsUnknownBound(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	threshold := `
+failed:
+  total:
+    mx: 0
+`
+	require.NoError(t, os.WriteFile(thresholdFile, []byte(threshold), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mx")
+}
+
+// The committed pipeline templates must survive the stricter parse — a
+// strictness change that breaks a real gate template is a regression.
+func TestValidateThreshold_AcceptsEveryKnownKey(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+
+	threshold := `
+compliance:
+  min: 0
+  max: 100
+passed:
+  critical: { min: 0 }
+  high: { min: 0 }
+  medium: { min: 0 }
+  low: { min: 0 }
+  none: { min: 0 }
+  total: { min: 0 }
+failed:
+  total: { max: 1000 }
+skipped:
+  total: { max: 1000 }
+error:
+  total: { max: 1000 }
+no_impact:
+  total: { max: 1000 }
+`
+	require.NoError(t, os.WriteFile(thresholdFile, []byte(threshold), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	assert.NoError(t, err)
+}
+
+// A template asserting nothing passes every document, which is the same false
+// green a misspelled key used to produce — strict parsing closes the typo route
+// in, so this closes the deliberate one.
+func TestValidateThreshold_RejectsTemplateAssertingNothing(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	for name, body := range map[string]string{
+		"empty file":    "",
+		"empty mapping": "{}\n",
+		"comment only":  "# no thresholds here\n",
+		"empty section": "failed: {}\n",
+		"empty bound":   "failed:\n  total: {}\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+			require.NoError(t, os.WriteFile(thresholdFile, []byte(body), 0o644))
+
+			_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "asserts nothing")
+		})
+	}
+}
+
+// The rejection must read in the template's own vocabulary rather than leaking
+// the Go type that happened to reject the key.
+func TestValidateThreshold_UnknownKeyErrorAvoidsGoTypeNames(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+	require.NoError(t, os.WriteFile(thresholdFile, []byte("faild:\n  total:\n    max: 0\n"), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", thresholdFile)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is not a known threshold category")
+	assert.NotContains(t, err.Error(), "hdfengine.")
+}
+
+// The inline path buckets an unrecognized severity into "none" via
+// getSeverityBound, which is correct when generate places a scan's own severity
+// but wrong for a user-typed path: the typo asserted a bound nobody asked for
+// and passed silently, the same failure the template path had.
+func TestValidateThreshold_InlineRejectsUnknownSeverityField(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	for _, path := range []string{"failed.totl.max", "failed.hgh.max", "passed.criticl.min"} {
+		t.Run(path, func(t *testing.T) {
+			_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{"+path+": 0}")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "unknown severity field")
+		})
+	}
+}
+
+func TestValidateThreshold_InlineAcceptsEverySeverityField(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	for _, path := range []string{"failed.critical.max", "failed.high.max", "failed.medium.max", "failed.low.max", "failed.none.max", "failed.total.max"} {
+		t.Run(path, func(t *testing.T) {
+			// A generous bound: the point is that the path parses, not the verdict.
+			_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{"+path+": 1000}")
+			assert.NoError(t, err)
+		})
+	}
+}
