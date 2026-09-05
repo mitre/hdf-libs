@@ -125,7 +125,7 @@ Pros: no new package. Cons: three implementations of tenancy, identity, audit, a
 Pros: embeddings always fresh. Cons: silently sends document text to an external endpoint on every import; couples import latency to a model server. Why rejected: explicit `embed`/`rebuild`, scheduled by ADR-0013's runner where needed — challenge (d).
 
 ### G. A TypeScript file backend and a generated interface description (revision 1)
-Pros: symmetric backends; one machine-checked interface. Cons: no TypeScript consumer reads a directory; the description was a third artefact for ~15 methods that the fixture parity suite already polices. Why rejected in revision 2: cut on review.
+Pros: symmetric backends; one machine-checked interface. Cons: no TypeScript consumer reads a directory; the description was a third artifact for ~15 methods that the fixture parity suite already polices. Why rejected in revision 2: cut on review.
 
 ### H. No deletion in v1
 Pros: nothing to cascade. Cons: an assessment store that cannot remove a mis-imported or expired document is unusable in practice. Why rejected: ADR-0009 §5 now defines the semantics — challenge (h).

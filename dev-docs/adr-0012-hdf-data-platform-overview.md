@@ -57,7 +57,7 @@ Five ADRs answer those needs. They were drafted together and reviewed as a set: 
            plus pg-boss's own schema on the same handle.
 ```
 
-Data flows one way: schema → generated artefacts and tables → data layer → surfaces. Identity flows the other way: token → `Principal` → data layer → transaction-local tenant context → RLS. Nothing above the data layer touches a table; nothing below it knows what a token is. Every mutation, on every surface, leaves an audit row in its own transaction.
+Data flows one way: schema → generated artifacts and tables → data layer → surfaces. Identity flows the other way: token → `Principal` → data layer → transaction-local tenant context → RLS. Nothing above the data layer touches a table; nothing below it knows what a token is. Every mutation, on every surface, leaves an audit row in its own transaction.
 
 ### 2. Invariants every ADR obeys
 
@@ -172,7 +172,7 @@ Easier: a reviewer can see that no layer re-implements another's decision; a con
 
 Harder: the set is large (≈ 40k words of design), ships as one design PR, and lands over months; a decision reversed in one ADR must be traced through the ownership table; this document must be revised whenever one of the five changes an owned decision.
 
-Risks and mitigations: the map drifts from the five → each ADR's "How to review" line names this document, and the ownership table is the first thing to update when an ADR revision changes an owner; the totals are read as commitments → they are agent-pace sizes with the calibration source named, re-measured at card cut; the diagram is read as a dependency graph → it is a data/identity flow only, and §5's table is the dependency source; the spike results are read as proof for the real document and stack → they are proof of the mechanisms on representative samples, and each Phase 1 repeats them on the real artefacts.
+Risks and mitigations: the map drifts from the five → each ADR's "How to review" line names this document, and the ownership table is the first thing to update when an ADR revision changes an owner; the totals are read as commitments → they are agent-pace sizes with the calibration source named, re-measured at card cut; the diagram is read as a dependency graph → it is a data/identity flow only, and §5's table is the dependency source; the spike results are read as proof for the real document and stack → they are proof of the mechanisms on representative samples, and each Phase 1 repeats them on the real artifacts.
 
 ## References
 - ADR-0007 (MCP server), ADR-0008 (OpenAPI components and API), ADR-0009 (relational + vector schema), ADR-0010 (data access layer), ADR-0011 (`hdf-serve`), ADR-0013 (operational services), ADR-0005 (change events), ADR-0002 (ECS export), ADR-0001 (BOMs) — `dev-docs/` (all accessed 2026-09-02)

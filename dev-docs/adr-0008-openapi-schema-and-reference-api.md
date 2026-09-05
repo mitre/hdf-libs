@@ -95,7 +95,7 @@ Why rejected: network-dependent specs break air-gapped use, codegens, and CI det
 Why rejected: no public issue asks for OpenAPI today (demand is anticipated by the `hdf-serve` direction), but generated artifacts cost near nothing to maintain.
 
 ### I. Zod-first — the Hono routes are the source and generate the API document
-Pros: one artefact fewer; idiomatic `@hono/zod-openapi`. Cons: the typed operation source is the Go MCP contract, and Zod cannot express the document schemas, so the routes would hand-author every non-document shape and reference the bundles by hand; MCP↔HTTP parity would then be asserted against a hand-written thing. Why rejected: keeps generation-only and makes the service a checked implementer — challenge (g), (h).
+Pros: one artifact fewer; idiomatic `@hono/zod-openapi`. Cons: the typed operation source is the Go MCP contract, and Zod cannot express the document schemas, so the routes would hand-author every non-document shape and reference the bundles by hand; MCP↔HTTP parity would then be asserted against a hand-written thing. Why rejected: keeps generation-only and makes the service a checked implementer — challenge (g), (h).
 
 ### J. Derive Zod from the JSON Schema bundles
 Pros: no OpenAPI in the loop. Cons: `z.fromJSONSchema` throws on 77 `unevaluatedProperties` and 7 `if` sites, returns untyped schemas, and the one maintained converter is archived; stripping those keywords first would make Zod accept what the schema rejects. Why rejected: measured, not assumed — challenge (g).
