@@ -85,6 +85,7 @@ jobs:
             hdf-generators
             hdf-diff
             hdf-extension-graph
+            hdf-engine
           )
 
           # Pre-release tags publish with npm dist-tag `next` instead of `latest`.

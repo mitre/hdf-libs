@@ -61,7 +61,7 @@ jobs:
           PACKAGES=(
             hdf-schema hdf-utilities hdf-mappings hdf-validators
             hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph
+            hdf-extension-graph hdf-engine
           )
           for pkg in "${PACKAGES[@]}"; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
@@ -104,7 +104,8 @@ jobs:
           FAIL=0
           for pkg in @mitre/hdf-schema @mitre/hdf-utilities @mitre/hdf-mappings \
                      @mitre/hdf-validators @mitre/hdf-parsers @mitre/hdf-converters \
-                     @mitre/hdf-generators @mitre/hdf-diff @mitre/hdf-extension-graph; do
+                     @mitre/hdf-generators @mitre/hdf-diff @mitre/hdf-extension-graph \
+                     @mitre/hdf-engine; do
             printf "%-30s " "$pkg"
             if ! node -e "import('$pkg').then(m => console.log('OK,', Object.keys(m).length, 'exports')).catch(e => { console.error('FAIL:', e.message); process.exit(1); })"; then
               FAIL=1
