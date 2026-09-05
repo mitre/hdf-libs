@@ -37,11 +37,11 @@ env:
   GOTESTSUM_VERSION: 'v1.13.0'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
-  # The gate runs the last *released* hdf CLI (version + sha256 pinned;
-  # bump deliberately when a release lands) — not a binary built from the
-  # commit under test, so a CLI bug in a PR cannot fail or skew its own gate.
-  HDF_CLI_VERSION: '3.5.1'
-  HDF_CLI_SHA256: '482bc0e3a92a508d141e9285eba9985965c0d6bc67e922903359d70e06c3ae7a'
+  # The gate's CLI is built from main by the gate-cli job — see the comment
+  # there for why, and for how to switch back to a pinned release. The pin
+  # this replaces was:
+  #   HDF_CLI_VERSION: '3.5.1'
+  #   HDF_CLI_SHA256: '482bc0e3a92a508d141e9285eba9985965c0d6bc67e922903359d70e06c3ae7a'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
@@ -160,11 +160,42 @@ jobs:
   # converts every scanner's SARIF (via registry auto-detect), validates it
   # against the schema, and applies the committed threshold templates. This
   # is the job that decides whether scan findings fail CI.
+  # ── The CLI the gates run ────────────────────────────────────────────────
+  # BOOTSTRAP: built from main's tip, not from a published release, because no
+  # release yet carries the effective-status threshold engine the gates depend
+  # on — under the last release the gate wrongly fails scans whose findings are
+  # sanctioned in-source suppressions. Building from `main` rather than from
+  # the commit under test keeps the property the pin existed for: a PR cannot
+  # alter the CLI that judges it. TIGHTEN once a release ships that engine —
+  # delete this job, restore HDF_CLI_VERSION/HDF_CLI_SHA256 in env, and the
+  # gates fall back to the checksummed release download in lib-hdf-cli.sh.
+  gate-cli:
+    name: Build the gate CLI (from main)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Deliberately main, NOT the PR head.
+          ref: main
+      - uses: $/.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          go: 'true'
+      - name: Build hdf
+        run: cd hdf-cli && go build -o "$RUNNER_TEMP/hdf" ./cmd/hdf
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/hdf
+          retention-days: 7
+
   gate-hdf:
     name: Gate on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [scan-workflows, check-ts, check-go]
+    needs: [gate-cli, scan-workflows, check-ts, check-go]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -174,7 +205,15 @@ jobs:
           pattern: scan-*
           path: scan-artifacts
           merge-multiple: true
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/gate-cli
+      - name: Make the gate CLI executable
+        run: chmod +x "${{ runner.temp }}/gate-cli/hdf"
       - name: Normalize scans to HDF and apply thresholds
+        env:
+          HDF_BIN: ${{ runner.temp }}/gate-cli/hdf
         run: .github/scripts/gate-hdf.sh
       - name: Upload normalized HDF
         if: always()
@@ -331,7 +370,7 @@ jobs:
     name: Gate on HDF thresholds (tests)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [test-ts, test-go]
+    needs: [gate-cli, test-ts, test-go]
     if: always()
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -343,7 +382,15 @@ jobs:
         with:
           pattern: test-results-*
           path: test-artifacts-dl
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/gate-cli
+      - name: Make the gate CLI executable
+        run: chmod +x "${{ runner.temp }}/gate-cli/hdf"
       - name: Normalize test results to HDF and apply thresholds
+        env:
+          HDF_BIN: ${{ runner.temp }}/gate-cli/hdf
         run: .github/scripts/gate-hdf-tests.sh
       - name: Upload normalized HDF (tests)
         if: always()
