@@ -155,6 +155,10 @@ hdf mcp                              # every tool (the default)
 
 The `read` profile is `hdf_open`, `hdf_inspect`, `hdf_query`, `hdf_compliance`, `hdf_aggregate`, `hdf_diff`, and `hdf_validate`. Measured in the model-facing representation — the tool name, description, and parameters a provider actually sends the model each turn — the full ten-tool surface is ~3,116 tokens; the `read` profile is ~1,877 (a 40% cut), and a two-tool `hdf_open,hdf_query` surface is ~573 (82%). An unknown tool name is rejected at startup rather than silently dropped, so a bad launch config fails loudly.
 
+**Recommended for an unattended analysis pipeline: `--tools read`.** A CI/CD harness that reads and rolls up already-converted HDF documents — the token-sensitive case, running many turns with a human only at the end — needs none of the `convert`/`author`/`apply_amendment` write tools, and paying for them on every turn is pure overhead. Set `--tools read` (add `hdf_convert` if the pipeline also converts raw scanner output) and the surface drops ~40%.
+
+The default is deliberately **every tool**, not `read`. The server cannot know whether a given deployment only analyzes or also converts and authors, so the safe default is capability-complete; narrowing is the operator's explicit, non-breaking choice. (Defaulting to `read` would silently drop the write tools from an existing deployment that relied on them — a regression traded for a config line each analysis deployment can set itself.)
+
 ## What the read surface deliberately does not return
 
 Conversion is close to lossless: `hdf convert` preserves each scanner's original
