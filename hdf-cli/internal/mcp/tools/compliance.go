@@ -16,12 +16,12 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/threshold"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
-	"gopkg.in/yaml.v3"
 )
 
 // complianceInput is the hdf_compliance argument surface: a source, an optional
@@ -373,12 +373,20 @@ func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Er
 		return nil, nil
 	}
 
-	var cfg hdfengine.ThresholdConfig
-	if err := yaml.Unmarshal(raw, &cfg); err != nil {
+	// Shared with `hdf validate threshold` so the two surfaces cannot drift:
+	// a spec this tool accepts must be one the CLI gate would accept too.
+	cfg, err := threshold.Decode(raw)
+	if err != nil {
 		return nil, mcperr.New(mcperr.SchemaInvalid, "threshold spec did not parse", map[string]any{"error": err.Error()}).
 			WithNextCall("provide a valid threshold spec (compliance/passed/failed bounds), inline or by path")
 	}
-	return &cfg, nil
+	// A spec asserting no bounds passes every document, so answering with a
+	// verdict from it would report a check that never happened.
+	if threshold.AssertionCount(cfg) == 0 {
+		return nil, mcperr.New(mcperr.SchemaInvalid, threshold.ErrNoAssertions.Error(), nil).
+			WithNextCall("provide a threshold spec that asserts at least one bound (e.g. failed.total.max)")
+	}
+	return cfg, nil
 }
 
 // boundComplianceResponse enforces the 2k cap: the grouped rollup and the

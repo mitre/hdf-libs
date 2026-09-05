@@ -1,18 +1,15 @@
 package cmd
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/threshold"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 func newValidateThresholdCmd() *cobra.Command {
@@ -59,15 +56,11 @@ Designed for CI/CD compliance gates.`,
 				if readErr != nil {
 					return fmt.Errorf("failed to read threshold template: %w", readErr)
 				}
-				// Decode strictly: an unrecognized key must be an error, never a
-				// silently dropped one. A template whose keys are misspelled would
-				// otherwise parse to an empty threshold set and pass vacuously —
-				// a committed gate that asserts nothing while reporting success.
-				decoder := yaml.NewDecoder(bytes.NewReader(templateData))
-				decoder.KnownFields(true)
-				if decodeErr := decoder.Decode(&config); decodeErr != nil && !errors.Is(decodeErr, io.EOF) {
-					return fmt.Errorf("failed to parse threshold YAML: %s", templateKeyVocabulary.Replace(decodeErr.Error()))
+				parsed, decodeErr := threshold.Decode(templateData)
+				if decodeErr != nil {
+					return fmt.Errorf("failed to parse threshold YAML: %w", decodeErr)
 				}
+				config = *parsed
 			} else {
 				parsed, parseErr := parseInlineThreshold(templateInline)
 				if parseErr != nil {
@@ -79,8 +72,8 @@ Designed for CI/CD compliance gates.`,
 			// A template that asserts nothing passes every document, so reporting
 			// success would be a green gate that checked nothing — the same false
 			// green a misspelled key used to produce.
-			if thresholdAssertionCount(&config) == 0 {
-				return fmt.Errorf("threshold asserts nothing: add at least one bound (e.g. a 'failed.total.max' entry)")
+			if threshold.AssertionCount(&config) == 0 {
+				return threshold.ErrNoAssertions
 			}
 
 			// Count controls
@@ -129,6 +122,14 @@ Designed for CI/CD compliance gates.`,
 
 // parseInlineThreshold parses SAF CLI-compatible inline threshold format:
 // "{compliance.min: 80}, {passed.total.min: 50}, {failed.critical.max: 0}"
+//
+// This walks dotted segments rather than deferring to internal/threshold's
+// decoder, and the two deliberately do not share one routine: they validate
+// different grammars. -T decodes YAML, where the struct tags on
+// hdfengine.ThresholdConfig are themselves the key vocabulary; -I has no
+// document to decode. Sharing would mean reimplementing YAML parsing as segment
+// walking, or having -I synthesize YAML. Both enforce the same guarantee — no
+// key that isn't in the vocabulary — by different means.
 //
 // Each item is a dotted path and a numeric value. The path is split into
 // segments and used to populate the ThresholdConfig struct.
@@ -274,53 +275,4 @@ func isKnownSeverityField(name string) bool {
 		}
 	}
 	return false
-}
-
-// The -T and -I paths validate different grammars and so do not share one
-// routine: -I walks dotted segments, while -T decodes YAML where the struct
-// tags on hdfengine.ThresholdConfig are themselves the key vocabulary. Sharing
-// would mean reimplementing YAML parsing as segment walking, or having -I
-// synthesize YAML. Both enforce the same guarantee by different means.
-//
-// yaml's KnownFields error names the Go type that rejected the key; restate it
-// in the template's own vocabulary so a failing gate reads in the same terms as
-// the -I path's "unknown threshold category" errors rather than leaking a type.
-var templateKeyVocabulary = strings.NewReplacer(
-	"not found in type hdfengine.ThresholdConfig", "is not a known threshold category",
-	"not found in type hdfengine.ThresholdSeverity", "is not a known severity field",
-	"not found in type hdfengine.ThresholdBound", "is not a known bound",
-	"not found in type hdfengine.ComplianceBound", "is not a known compliance field",
-)
-
-// thresholdAssertionCount reports how many bounds a template actually asserts,
-// counting every level: a nested section present but empty (`failed: {}`)
-// asserts as little as an empty file.
-func thresholdAssertionCount(config *ThresholdConfig) int {
-	count := 0
-	if config.Compliance != nil {
-		if config.Compliance.Min != nil {
-			count++
-		}
-		if config.Compliance.Max != nil {
-			count++
-		}
-	}
-	for _, severity := range []*ThresholdSeverity{config.Passed, config.Failed, config.Skipped, config.Error, config.NoImpact} {
-		if severity == nil {
-			continue
-		}
-		for _, bound := range []*ThresholdBound{severity.Critical, severity.High, severity.Medium, severity.Low, severity.None, severity.Total} {
-			if bound == nil {
-				continue
-			}
-			if bound.Min != nil {
-				count++
-			}
-			if bound.Max != nil {
-				count++
-			}
-			count += len(bound.Controls)
-		}
-	}
-	return count
 }

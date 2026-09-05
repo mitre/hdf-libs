@@ -401,7 +401,7 @@ func TestHdfCompliance_ThresholdFromPath(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "scan.json"), readToolsFixture(t, "compliance-results.json"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	// YAML threshold file (yaml.Unmarshal also accepts JSON).
+	// YAML threshold file (the shared decoder accepts JSON too).
 	if err := os.WriteFile(filepath.Join(root, "threshold.yaml"), []byte("compliance:\n  min: 90\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -699,5 +699,134 @@ func TestBoundComplianceResponse_CompoundTruncationFitsBudget(t *testing.T) {
 	// The combined notice carries both remedies.
 	if !strings.Contains(out.Notice, "groupBy") || !strings.Contains(out.Notice, "threshold failures") {
 		t.Errorf("compound notice must carry both remedies, got %q", out.Notice)
+	}
+}
+
+// A misspelled key in a threshold spec used to be dropped silently, so the tool
+// answered "gate passed" from a spec that asserted nothing. Both input shapes
+// (a YAML file by path, and an inline object) must reject it.
+func TestResolveThreshold_RejectsUnknownKeys(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	for name, body := range map[string]string{
+		"unknown category": "faild:\n  total:\n    max: 0\n",
+		"unknown severity": "failed:\n  totl:\n    max: 0\n",
+		"unknown bound":    "failed:\n  total:\n    mx: 0\n",
+	} {
+		t.Run("path/"+name, func(t *testing.T) {
+			file := strings.ReplaceAll(name, " ", "-") + ".yaml"
+			if err := os.WriteFile(filepath.Join(root, file), []byte(body), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			cfg, e := resolveThreshold(&thresholdInput{Path: file})
+			if e == nil {
+				t.Fatalf("unknown key must be rejected; got cfg=%+v", cfg)
+			}
+			if e.Code != mcperr.SchemaInvalid {
+				t.Errorf("code = %v, want SCHEMA_INVALID", e.Code)
+			}
+		})
+	}
+
+	t.Run("inline", func(t *testing.T) {
+		cfg, e := resolveThreshold(&thresholdInput{Inline: map[string]any{"faild": map[string]any{"total": map[string]any{"max": 0}}}})
+		if e == nil {
+			t.Fatalf("unknown key must be rejected inline; got cfg=%+v", cfg)
+		}
+		if e.Code != mcperr.SchemaInvalid {
+			t.Errorf("code = %v, want SCHEMA_INVALID", e.Code)
+		}
+	})
+}
+
+// A spec that parses but asserts no bounds passes every document, so answering
+// "gate passed" from it reports a check that never happened.
+func TestResolveThreshold_RejectsSpecAssertingNothing(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	for name, body := range map[string]string{
+		"empty mapping": "{}\n",
+		"comment only":  "# nothing here\n",
+		"empty section": "failed: {}\n",
+		"empty bound":   "failed:\n  total: {}\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			file := strings.ReplaceAll(name, " ", "-") + ".yaml"
+			if err := os.WriteFile(filepath.Join(root, file), []byte(body), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			cfg, e := resolveThreshold(&thresholdInput{Path: file})
+			if e == nil {
+				t.Fatalf("a spec asserting nothing must be rejected; got cfg=%+v", cfg)
+			}
+			if e.Code != mcperr.SchemaInvalid {
+				t.Errorf("code = %v, want SCHEMA_INVALID", e.Code)
+			}
+		})
+	}
+}
+
+// A spec that does assert something must still resolve, so the strictness does
+// not cost the tool its actual job.
+func TestResolveThreshold_AcceptsValidSpec(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	if err := os.WriteFile(filepath.Join(root, "ok.yaml"), []byte("failed:\n  total:\n    max: 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, e := resolveThreshold(&thresholdInput{Path: "ok.yaml"})
+	if e != nil {
+		t.Fatalf("valid spec must resolve, got %v", e)
+	}
+	if cfg == nil || cfg.Failed == nil || cfg.Failed.Total == nil || cfg.Failed.Total.Max == nil {
+		t.Fatalf("valid spec lost its bound: %+v", cfg)
+	}
+
+	inline, e2 := resolveThreshold(&thresholdInput{Inline: map[string]any{"compliance": map[string]any{"min": 80}}})
+	if e2 != nil {
+		t.Fatalf("valid inline spec must resolve, got %v", e2)
+	}
+	if inline == nil || inline.Compliance == nil || inline.Compliance.Min == nil {
+		t.Fatalf("valid inline spec lost its bound: %+v", inline)
+	}
+}
+
+// Wire-level proof through a real SDK session: a typo'd threshold spec must come
+// back as an error result, not as a passing gate verdict. The unit tests above
+// exercise resolveThreshold directly; this one proves the rejection survives the
+// tools/call round-trip an agent actually makes.
+func TestHdfCompliance_TypoedThresholdIsRejectedThroughSDK(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	if err := os.WriteFile(filepath.Join(root, "c.json"), readToolsFixture(t, "compliance-results.json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "typo.yaml"), []byte("faild:\n  total:\n    max: 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "t", Version: "1"}, nil)
+	RegisterAll(s)
+
+	m := driveToolCall(t, s, "hdf_compliance", map[string]any{
+		"source":    map[string]any{"path": "c.json"},
+		"threshold": map[string]any{"path": "typo.yaml"},
+	})
+
+	res, ok := m["result"].(map[string]any)
+	if !ok {
+		t.Fatalf("no result in tools/call response: %v", m)
+	}
+	if isErr, _ := res["isError"].(bool); !isErr {
+		t.Fatalf("a typo'd threshold must surface as an error result, got %v", res)
+	}
+	// And specifically not a verdict: a passing gate from a spec that asserts
+	// nothing is the failure this card exists to prevent.
+	if sc, ok := res["structuredContent"].(map[string]any); ok {
+		if _, hasVerdict := sc["thresholdVerdict"]; hasVerdict {
+			t.Errorf("rejected spec still produced a threshold verdict: %v", sc["thresholdVerdict"])
+		}
 	}
 }
