@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
@@ -22,8 +23,9 @@ import (
 // returns fewer rows, never more, so it is not a way to "see the rest".
 const queryNarrowParam = "a status/severity/nist/id/search filter"
 
-// queryInput is the hdf_query argument surface: a source, the nine requirement
-// filters, and the response controls (verbosity/limit/page). Every filter is
+// queryInput is the hdf_query argument surface: a source, the requirement
+// filters, the response controls (verbosity/limit/page), and an opt-in Fields
+// projection that adds the bounded correlation set per row. Every filter is
 // forwarded verbatim to the shared engine — the tool re-implements no matching.
 type queryInput struct {
 	Source    handle.Source `json:"source" jsonschema:"document as {path} or {handle}"`
@@ -39,6 +41,56 @@ type queryInput struct {
 	Verbosity string        `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
 	Limit     int           `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
 	Page      int           `json:"page,omitempty" jsonschema:"0-based page when truncated"`
+	Fields    []string      `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
+}
+
+// correlationProjectors is the bounded correlation set (bead-established): the
+// normalized cross-source join keys that live on a requirement but that no read
+// tool projects by default. Each extractor returns the value or nil, so an
+// absent field is omitted from the row rather than serialized as null — a
+// correlation consumer joins on presence. The set is exposed opt-in via
+// queryInput.Fields and never widens the concise/full defaults.
+var correlationProjectors = map[string]func(*hdf.EvaluatedRequirement) any{
+	"cwe": func(r *hdf.EvaluatedRequirement) any {
+		if len(r.Cwe) > 0 {
+			return r.Cwe
+		}
+		return nil
+	},
+	"cvss": func(r *hdf.EvaluatedRequirement) any {
+		if len(r.Cvss) > 0 {
+			return r.Cvss
+		}
+		return nil
+	},
+	"affectedPackages": func(r *hdf.EvaluatedRequirement) any {
+		if len(r.AffectedPackages) > 0 {
+			return r.AffectedPackages
+		}
+		return nil
+	},
+	"sourceLocation": func(r *hdf.EvaluatedRequirement) any {
+		if r.SourceLocation != nil {
+			return r.SourceLocation
+		}
+		return nil
+	},
+}
+
+// correlationFieldNames lists the allowed Fields values in a stable order, for
+// the fail-loud validation error (the jsonschema tag is description-only — the
+// reflector rejects enum tags — so the allowed set is enforced in the handler).
+var correlationFieldNames = []string{"cwe", "cvss", "affectedPackages", "sourceLocation"}
+
+// unknownCorrelationField returns the first Fields value that is not a known
+// correlation field, so the handler can refuse it rather than silently ignore it.
+func unknownCorrelationField(fields []string) (string, bool) {
+	for _, f := range fields {
+		if _, ok := correlationProjectors[f]; !ok {
+			return f, true
+		}
+	}
+	return "", false
 }
 
 // errorQueryOutput is the structured output returned alongside a toolError.
@@ -113,11 +165,21 @@ var queryDispatch = map[string]func(*loader.Result) hdf.HDFResults{
 
 // RegisterQuery registers the hdf_query tool on the server. ldr is the shared
 // document loader.
+// queryToolDescription is what a model reads before choosing this tool, so it
+// states the read surface's one deliberate blind spot (hdf-libs-uqhe.13):
+// conversion keeps each scanner finding verbatim in the requirement's `code`,
+// but no read tool projects it. Saying so costs a sentence; discovering it costs
+// the agent a wrong or incomplete answer.
+const queryToolDescription = "Filter requirements in an HDF results or baseline document. The only path to a " +
+	"requirement collection; for other document types call hdf_inspect. " +
+	"Returns normalized fields only: the scanner's original finding is preserved verbatim in each " +
+	"requirement's `code`, but no read tool projects it, so a question about a tool-specific field " +
+	"(a matcher, match provenance, a vendor extension) cannot be answered from this surface — read the source file instead."
+
 func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
-		Name: "hdf_query",
-		Description: "Filter requirements in an HDF results or baseline document. The only path to a " +
-			"requirement collection; for other document types call hdf_inspect.",
+		Name:        "hdf_query",
+		Description: queryToolDescription,
 		Annotations: appmcp.ReadOnly(),
 	}, hdfQuery(ldr))
 }
@@ -131,6 +193,10 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 		if in.Impact != "" && !hdfengine.ValidImpactFilter(in.Impact) {
 			return argError(fmt.Sprintf("invalid impact filter %q", in.Impact),
 				"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
+		}
+		if f, ok := unknownCorrelationField(in.Fields); ok {
+			return argError(fmt.Sprintf("unknown correlation field %q", f),
+				fmt.Sprintf("fields accepts only: %s", strings.Join(correlationFieldNames, ", "))), errorQueryOutput(), nil
 		}
 		resolved, terr := resolveSource(in.Source, ldr, "source")
 		if terr != nil {
@@ -162,8 +228,9 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 		})
 
 		out := queryOutput{Handle: encoded, DocType: resolved.Load.DocType, EngineSchemaVersion: resolved.Handle.EngineSchemaVersion}
-		buildQueryResponse(&out, results, matches, in.Verbosity, in.Limit, in.Page)
-		return nil, out, nil
+		buildQueryResponse(&out, results, matches, in.Verbosity, in.Limit, in.Page, in.Fields)
+		return textResult(fmt.Sprintf("hdf_query: %d of %d requirements returned (%s). Full rows in structuredContent.",
+			out.Returned, out.Total, out.DocType)), out, nil
 	}
 }
 
@@ -219,8 +286,8 @@ func baselineAsResults(b *hdf.HDFBaseline) hdf.HDFResults {
 // buildQueryResponse projects matches to rows at the requested verbosity, applies
 // the caller's limit, token-paginates the candidate rows, and fills the envelope
 // (total is the true universe; a hidden remainder or extra pages set truncated).
-func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfengine.Match, verbosity string, limit, page int) {
-	rows := projectRows(results, matches, verbosity)
+func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfengine.Match, verbosity string, limit, page int, fields []string) {
+	rows := projectRows(results, matches, verbosity, fields)
 	out.Total = len(rows)
 
 	candidates := rows
@@ -297,23 +364,37 @@ func queryTruncationNotice(returned, total, page, numPages int, limited bool) st
 // clients reject under items. Rows are built from the typed conciseRow/fullRow
 // structs and marshalled via structToMap so their json tags (exact concise keys,
 // omitempty full extras) remain authoritative.
-func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity string) []map[string]any {
-	if verbosity != "full" {
-		rows := make([]map[string]any, 0, len(matches))
-		for _, m := range matches {
-			rows = append(rows, structToMap(conciseRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact}))
-		}
-		return rows
+func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity string, fields []string) []map[string]any {
+	full := verbosity == "full"
+	// The source-requirement index is needed for full's tags/descriptions and for
+	// any opt-in correlation fields; build it once when either is requested.
+	var index map[string]*hdf.EvaluatedRequirement
+	if full || len(fields) > 0 {
+		index = indexRequirements(results)
 	}
-	index := indexRequirements(results)
 	rows := make([]map[string]any, 0, len(matches))
 	for _, m := range matches {
-		row := fullRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact, Baseline: m.Baseline}
-		if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
-			row.Tags = src.Tags
-			row.Descriptions = src.Descriptions
+		var row map[string]any
+		if full {
+			fr := fullRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact, Baseline: m.Baseline}
+			if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
+				fr.Tags = src.Tags
+				fr.Descriptions = src.Descriptions
+			}
+			row = structToMap(fr)
+		} else {
+			row = structToMap(conciseRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact})
 		}
-		rows = append(rows, structToMap(row))
+		if len(fields) > 0 {
+			if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
+				for _, f := range fields {
+					if v := correlationProjectors[f](src); v != nil {
+						row[f] = v
+					}
+				}
+			}
+		}
+		rows = append(rows, row)
 	}
 	return rows
 }

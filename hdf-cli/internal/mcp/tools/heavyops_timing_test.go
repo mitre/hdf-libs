@@ -71,7 +71,7 @@ func TestBenchHeavyOps(t *testing.T) {
 
 		st := time.Now()
 		matches := hdfengine.Filter(ctx, doc, hdfengine.Options{Count: true, StatusOf: effectiveStatus})
-		rows := projectRows(doc, matches, "full")
+		rows := projectRows(doc, matches, "full", nil)
 		record("query full-verbosity ("+fx.label+", "+strconv.Itoa(len(rows))+" rows)", st)
 
 		st = time.Now()

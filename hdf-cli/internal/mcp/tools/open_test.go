@@ -43,7 +43,7 @@ func TestHdfOpen_MintsHandle_AndTypeSpecificSummary(t *testing.T) {
 	path := writeRoot(t, "scan.json", content)
 
 	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: path}})
-	if errRes != nil {
+	if errRes != nil && errRes.IsError {
 		t.Fatalf("valid results should not be an error result: %+v", errRes)
 	}
 	if !out.Valid {
@@ -97,7 +97,7 @@ func TestHdfOpen_SystemSummary(t *testing.T) {
 	content := readCLIFixture(t, "system.json")
 	path := writeRoot(t, "system.json", content)
 	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: path}})
-	if errRes != nil || !out.Valid {
+	if (errRes != nil && errRes.IsError) || !out.Valid {
 		t.Fatalf("valid system doc must open valid: err=%v out=%+v", errRes, out)
 	}
 	if out.DocType != "system" {
@@ -112,7 +112,7 @@ func TestHdfOpen_PlanSummary(t *testing.T) {
 	content := readCLIFixture(t, "plan.json")
 	path := writeRoot(t, "plan.json", content)
 	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: path}})
-	if errRes != nil || !out.Valid {
+	if (errRes != nil && errRes.IsError) || !out.Valid {
 		t.Fatalf("valid plan doc must open valid: err=%v out=%+v", errRes, out)
 	}
 	if out.DocType != "plan" {
@@ -126,7 +126,7 @@ func TestHdfOpen_PlanSummary(t *testing.T) {
 func TestHdfOpen_BaselineSummary(t *testing.T) {
 	path := writeRoot(t, "baseline.json", fixtures.Baseline.Win2022Stig)
 	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: path}})
-	if errRes != nil || !out.Valid || out.DocType != "baseline" {
+	if (errRes != nil && errRes.IsError) || !out.Valid || out.DocType != "baseline" {
 		t.Fatalf("valid baseline must open valid: err=%v out=%+v", errRes, out)
 	}
 	if out.Summary == nil || out.Summary["requirementCount"] == nil {
@@ -148,7 +148,7 @@ func TestHdfOpen_OneShotPath_NoPriorHandle(t *testing.T) {
 	path := writeRoot(t, "scan.json", fixtures.Results.Minimal)
 	// A never-opened path succeeds in a single call with the full response.
 	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: path}})
-	if errRes != nil || !out.Valid || out.Handle == "" || out.Summary == nil {
+	if (errRes != nil && errRes.IsError) || !out.Valid || out.Handle == "" || out.Summary == nil {
 		t.Fatalf("one-shot path call must return a full valid response: err=%v out=%+v", errRes, out)
 	}
 }
@@ -174,7 +174,7 @@ func TestHdfOpen_DegradedOnInvalid(t *testing.T) {
 	path := writeRoot(t, "bad.json", bad)
 
 	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: path}})
-	if errRes != nil {
+	if errRes != nil && errRes.IsError {
 		t.Fatalf("invalid HDF must degrade, not hard-fail: %+v", errRes)
 	}
 	if out.Valid {

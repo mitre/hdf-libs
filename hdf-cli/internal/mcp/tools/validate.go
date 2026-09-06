@@ -96,7 +96,8 @@ func hdfValidate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[validateInput, valida
 			validateCompleteness(&out, content, baseDir, load)
 		}
 		boundValidateResponse(&out)
-		return nil, out, nil
+		return textResult(fmt.Sprintf("hdf_validate (%s): valid=%t, %d error(s). Detail in structuredContent.",
+			out.Mode, out.Valid, len(out.Errors))), out, nil
 	}
 }
 

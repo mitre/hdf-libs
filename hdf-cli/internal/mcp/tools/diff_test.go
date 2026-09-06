@@ -82,7 +82,7 @@ func TestHdfDiff_EmitsValidComparison(t *testing.T) {
 	res, out := callDiff(t, diffInput{
 		From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"}, Output: "comp.json",
 	})
-	if res != nil {
+	if res != nil && res.IsError {
 		t.Fatalf("valid temporal diff must not error: %s", payloadText(t, res))
 	}
 	if out.OutputPath != "comp.json" || out.Sha256 == "" || !out.Valid {
@@ -152,7 +152,7 @@ func TestHdfDiff_WritesDisabledPreview(t *testing.T) {
 	res, out := callDiff(t, diffInput{
 		From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"}, Output: "comp.json",
 	})
-	if res != nil {
+	if res != nil && res.IsError {
 		t.Fatalf("writes-disabled must be a successful preview, not an error: %s", payloadText(t, res))
 	}
 	if out.OutputPath != "" {
@@ -222,7 +222,7 @@ func TestHdfDiff_SystemDrift(t *testing.T) {
 		From: handle.Source{Path: "from.json"}, To: handle.Source{Path: "to.json"},
 		Mode: "system-drift", Output: "comp.json",
 	})
-	if res != nil {
+	if res != nil && res.IsError {
 		t.Fatalf("system-drift diff must not error: %s", payloadText(t, res))
 	}
 	// WebTier updated, DatabaseTier absent, CacheTier new — three component changes.

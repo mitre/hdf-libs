@@ -99,7 +99,7 @@ func TestHdfQuery_ResultsDelegatesFilters(t *testing.T) {
 
 	// status=failed → exactly the two failed requirements (engine-delegated).
 	res, out := callQuery(t, queryInput{Source: handle.Source{Path: path}, Status: []string{"failed"}})
-	if res != nil {
+	if res != nil && res.IsError {
 		t.Fatalf("valid results query must not error: %s", payloadText(t, res))
 	}
 	got := ids(out.Requirements)
@@ -210,7 +210,7 @@ func TestHdfQuery_FullShape_Richer(t *testing.T) {
 func TestHdfQuery_BaselineDocument(t *testing.T) {
 	path := writeRoot(t, "baseline.json", fixtures.Baseline.Win2022Stig)
 	res, out := callQuery(t, queryInput{Source: handle.Source{Path: path}})
-	if res != nil {
+	if res != nil && res.IsError {
 		t.Fatalf("a baseline document must be queryable, got error: %s", payloadText(t, res))
 	}
 	if out.DocType != "baseline" {

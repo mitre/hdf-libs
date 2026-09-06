@@ -137,7 +137,8 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 				return toolError(terr), errorDiffOutput(), nil
 			}
 		}
-		return nil, out, nil
+		return textResult(fmt.Sprintf("hdf_diff (%s): %d changes (%d returned). Summary + change list in structuredContent.",
+			out.Mode, out.Total, out.Returned)), out, nil
 	}
 }
 

@@ -157,7 +157,8 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 		}
 
 		boundComplianceResponse(&out)
-		return nil, out, nil
+		return textResult(fmt.Sprintf("hdf_compliance: %.2f%% compliant (%s). Status/severity rollup in structuredContent.",
+			out.Compliance, out.DocType)), out, nil
 	}
 }
 

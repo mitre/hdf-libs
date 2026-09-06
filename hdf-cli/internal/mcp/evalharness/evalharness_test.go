@@ -253,9 +253,17 @@ func TestToolsList_MatchesGolden(t *testing.T) {
 	}
 }
 
-// driveToolsList runs the real server in-process over a pipe transport and
-// returns the tools/list result JSON (no shell-out to the hdf binary).
+// driveToolsList runs the real server in-process over a pipe transport with the
+// full production tool set and returns the tools/list result JSON (no shell-out
+// to the hdf binary).
 func driveToolsList(t *testing.T) string {
+	return driveToolsListWith(t, tools.RegisterAll)
+}
+
+// driveToolsListWith is driveToolsList parameterized by the registration hook, so
+// a test can measure the surface of a tool subset (RegisterSelected) as well as
+// the full set.
+func driveToolsListWith(t *testing.T, register func(*sdkmcp.Server)) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -263,10 +271,8 @@ func driveToolsList(t *testing.T) string {
 	reqR, reqW := io.Pipe()
 	respR, respW := io.Pipe()
 	go func() {
-		// Register the real tool set so the golden reflects the production surface
-		// — the whole point of golden-filing it is that tool growth surfaces here.
 		s := appmcp.NewServer("test-version", appmcp.NewStderrLogger("error"))
-		tools.RegisterAll(s)
+		register(s)
 		_ = s.Run(ctx, &sdkmcp.IOTransport{Reader: reqR, Writer: respW})
 		_ = respW.Close()
 	}()
@@ -299,6 +305,65 @@ func driveToolsList(t *testing.T) string {
 			cancel()
 			return string(b)
 		}
+	}
+}
+
+// TestToolsList_ReadSubsetAdvertisesOnlyReadTools proves tool-subsetting works
+// end to end on a live server: a server built with the read profile advertises
+// exactly the six read tools and none of the convert/author/apply write tools.
+func TestToolsList_ReadSubsetAdvertisesOnlyReadTools(t *testing.T) {
+	names, err := tools.ResolveToolSelection("read")
+	if err != nil {
+		t.Fatal(err)
+	}
+	live := driveToolsListWith(t, func(s *sdkmcp.Server) { tools.RegisterSelected(s, names) })
+
+	var r struct {
+		Tools []struct {
+			Name string `json:"name"`
+		} `json:"tools"`
+	}
+	if err := json.Unmarshal([]byte(live), &r); err != nil {
+		t.Fatalf("parse tools/list: %v", err)
+	}
+	got := map[string]bool{}
+	for _, tl := range r.Tools {
+		got[tl.Name] = true
+	}
+	want := []string{"hdf_open", "hdf_inspect", "hdf_query", "hdf_compliance", "hdf_aggregate", "hdf_diff", "hdf_validate"}
+	if len(got) != len(want) {
+		t.Errorf("read profile advertised %d tools, want %d: %v", len(got), len(want), got)
+	}
+	for _, w := range want {
+		if !got[w] {
+			t.Errorf("read profile must advertise %q", w)
+		}
+	}
+	for _, w := range []string{"hdf_convert", "hdf_author", "hdf_apply_amendment"} {
+		if got[w] {
+			t.Errorf("read profile must NOT advertise the write tool %q", w)
+		}
+	}
+}
+
+// TestToolsList_ReadSubsetUnderBudget locks in the subsetting reduction: the read
+// profile's whole tools/list stays under ReadProfileBudget and materially below
+// the full-surface total budget, so the read surface cannot silently grow back.
+func TestToolsList_ReadSubsetUnderBudget(t *testing.T) {
+	names, err := tools.ResolveToolSelection("read")
+	if err != nil {
+		t.Fatal(err)
+	}
+	live := driveToolsListWith(t, func(s *sdkmcp.Server) { tools.RegisterSelected(s, names) })
+	m, err := MeasureToolsList(live, perToolJSON(t, live))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.TotalTokens > ReadProfileBudget {
+		t.Errorf("read profile is %d tokens, over the ReadProfileBudget of %d", m.TotalTokens, ReadProfileBudget)
+	}
+	if m.TotalTokens >= ToolsListTotalBudget {
+		t.Errorf("read profile (%d) must be materially below the full-surface budget (%d)", m.TotalTokens, ToolsListTotalBudget)
 	}
 }
 

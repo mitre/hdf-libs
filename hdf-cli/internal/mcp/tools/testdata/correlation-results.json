@@ -1,0 +1,56 @@
+{
+  "baselines": [
+    {
+      "name": "SCA-SCAN",
+      "version": "1.0.0",
+      "integrity": {
+        "algorithm": "sha256",
+        "checksum": "0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "requirements": [
+        {
+          "id": "VULN-01",
+          "title": "adm-zip path traversal",
+          "descriptions": [
+            {"label": "default", "data": "Directory traversal in adm-zip."}
+          ],
+          "impact": 0.7,
+          "tags": {
+            "nist": ["SA-11", "RA-5"],
+            "cci": ["CCI-000366"],
+            "cve": "CVE-2020-0000"
+          },
+          "cwe": ["CWE-22"],
+          "cvss": [
+            {"baseScore": 7.4, "baseSeverity": "high", "baseVector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N", "version": "3.1"}
+          ],
+          "affectedPackages": [
+            {"ecosystem": "npm", "fixedInVersion": "0.5.2", "name": "adm-zip", "purl": "pkg:npm/adm-zip@0.4.7", "version": "0.4.7"}
+          ],
+          "sourceLocation": {"ref": "internal/file/tar.go", "line": 83},
+          "results": [
+            {"status": "failed", "codeDesc": "vulnerable dependency", "startTime": "2025-01-15T10:00:00Z"}
+          ]
+        },
+        {
+          "id": "PLAIN-02",
+          "title": "A finding with no correlation fields",
+          "descriptions": [
+            {"label": "default", "data": "A compliance-style finding carrying none of the correlation keys."}
+          ],
+          "impact": 0.5,
+          "tags": {
+            "nist": ["CM-6"],
+            "cci": ["CCI-000172"]
+          },
+          "results": [
+            {"status": "failed", "codeDesc": "misconfigured", "startTime": "2025-01-15T10:00:00Z"}
+          ]
+        }
+      ]
+    }
+  ],
+  "components": [
+    {"name": "app-repo", "type": "host"}
+  ]
+}

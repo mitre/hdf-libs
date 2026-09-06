@@ -21,7 +21,7 @@ surface for consumers.
 
 ## The tool surface
 
-The server exposes nine tools. Read tools never mutate anything; write
+The server exposes ten tools. Read tools never mutate anything; write
 tools are governed by a deployer-controlled gate (see
 [Reads vs. writes](#reads-vs-writes)). Every tool returns a compact
 **summary** plus a reusable **handle** — never a multi-megabyte document
@@ -33,8 +33,9 @@ body.
 |------|---------|
 | `hdf_open` | Entry point: open a document, return its detected type, schema version, validity, and a handle. Optional — every read tool also accepts a `{path}` directly. |
 | `hdf_inspect` | Document **structure and metadata** for all eight HDF document types (counts, component/baseline/assessment breakdowns, top-level fields). It never returns requirements. |
-| `hdf_query` | The **only** path to requirements (results and baseline documents only). Filters by status, severity, requirement ID, tag, and free text; concise by default, full on request; paginates when a response would exceed the token budget. |
-| `hdf_compliance` | Status × severity rollups, the compliance percentage, optional threshold verdicts, and the agent-attributed override count. |
+| `hdf_query` | The **only** path to requirements (results and baseline documents only). Filters by status, severity, requirement ID, tag, and free text; concise by default, full on request; paginates when a response would exceed the token budget. An opt-in `fields` array adds cross-source correlation keys per row (see [Correlation fields](#correlation-fields)). |
+| `hdf_compliance` | Status × severity rollups, the compliance percentage, optional threshold verdicts, and the agent-attributed override count for **one** document. |
+| `hdf_aggregate` | Roll up status/severity counts across **multiple** documents in one call — per-source counts plus a server-computed total and compliance, with optional status/severity/nist filters. Counts only, never rows; a source that fails to load is reported and the rest still aggregate. |
 | `hdf_diff` | Compare two documents — temporal (results across time) or system-drift (system documents) — and emit an `hdf-comparison`. |
 | `hdf_validate` | Validate a document in `schema`, `checksums`, or `completeness` mode. |
 
@@ -124,7 +125,7 @@ auditable.
 
 ## Deployment
 
-The server is configured entirely through environment variables:
+The server is configured through environment variables (tool selection also has a matching `--tools` flag):
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
@@ -133,11 +134,74 @@ The server is configured entirely through environment variables:
 | `HDF_MCP_CACHE_BYTES` | Budget for the byte-bounded LRU parsed-document cache, so repeated reads of the same document skip re-parsing. | 256 MB |
 | `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes. A file larger than this is refused (`TOO_LARGE`) before it is read into memory, and the same ceiling applies to a parsed document. | 50 MB |
 | `HDF_MCP_LOG_LEVEL` | Structured-log level written to **stderr** (`error`, `warn`, `info`, `debug`). stdout carries only JSON-RPC frames. | `info` |
+| `HDF_MCP_TOOLS` | Which tools to advertise: a comma-separated list of tool names (`hdf_open,hdf_query`) or a profile — `read` (the read/analysis tools) or `all`. Advertising fewer tools shrinks the schema an agent re-sends every turn. The `--tools` flag overrides it. | all tools |
 
 Set `HDF_MCP_ROOT` to the directory that holds the documents the agent
 should work with, and leave `HDF_MCP_ENABLE_WRITES` unset for a read-only
 trial — the write tools still work, returning previews, so you can see
 exactly what they would produce before granting write access.
+
+### Advertising fewer tools
+
+Every request an agent makes re-sends the whole tool surface, so the set of tools you advertise is a fixed per-turn cost. A deployment that only reads HDF documents does not need the `hdf_convert`, `hdf_author`, or `hdf_apply_amendment` write tools on every turn — and an agent built for one job may need only a couple of tools.
+
+Select the surface with `--tools` (or `HDF_MCP_TOOLS`), taking either explicit tool names or a profile:
+
+```bash
+hdf mcp --tools read                 # the read/analysis tools only
+hdf mcp --tools hdf_open,hdf_query   # a focused two-tool surface
+hdf mcp                              # every tool (the default)
+```
+
+The `read` profile is `hdf_open`, `hdf_inspect`, `hdf_query`, `hdf_compliance`, `hdf_aggregate`, `hdf_diff`, and `hdf_validate`. Measured in the model-facing representation — the tool name, description, and parameters a provider actually sends the model each turn — the full ten-tool surface is ~3,116 tokens; the `read` profile is ~1,877 (a 40% cut), and a two-tool `hdf_open,hdf_query` surface is ~573 (82%). An unknown tool name is rejected at startup rather than silently dropped, so a bad launch config fails loudly.
+
+**Recommended for an unattended analysis pipeline: `--tools read`.** A CI/CD harness that reads and rolls up already-converted HDF documents — the token-sensitive case, running many turns with a human only at the end — needs none of the `convert`/`author`/`apply_amendment` write tools, and paying for them on every turn is pure overhead. Set `--tools read` (add `hdf_convert` if the pipeline also converts raw scanner output) and the surface drops ~40%.
+
+The default is deliberately **every tool**, not `read`. The server cannot know whether a given deployment only analyzes or also converts and authors, so the safe default is capability-complete; narrowing is the operator's explicit, non-breaking choice. (Defaulting to `read` would silently drop the write tools from an existing deployment that relied on them — a regression traded for a config line each analysis deployment can set itself.)
+
+## What the read surface deliberately does not return
+
+Conversion is close to lossless: `hdf convert` preserves each scanner's original
+finding **verbatim** in the requirement's `code` field. The read tools do not
+project that field, and this is a deliberate boundary rather than an oversight.
+
+The reason is the token budget this surface exists to protect. Measured against a
+real Grype scan of 89 findings:
+
+| | tokens |
+|---|---:|
+| a bounded `hdf_query` response | ~295 |
+| one requirement's `code` payload | ~1,607 (median; 929–2,566) |
+| all 89 `code` payloads | ~149,735 |
+| the entire raw scan file | ~155,964 |
+
+Returning every payload costs within 4% of simply handing the agent the raw file,
+while still charging for the tool surface on top. A single payload costs about
+five times a normal response. So the tools return normalized fields, and a
+question about a **tool-specific** field — a matcher, match provenance, a vendor
+extension — is answered by reading the source file, not through this server.
+
+Both `hdf_query` and `hdf_inspect` say so in their own descriptions, so an agent
+learns the limit before it spends a call discovering it.
+
+This may be revisited if tool-specific questions turn out to be common in
+practice; the shape it would take is an explicit, bounded, per-requirement fetch
+— never a widening of the default response.
+
+## Correlation fields
+
+Normalization's quiet payoff is a shared vocabulary: findings from unrelated tools become correlatable once they carry the same normalized keys. Control-level correlation already works on the default surface — `tags.nist` is present on ~99% of requirements across sources, `tags.cci` on ~94% — and `full` verbosity returns both.
+
+Below the control level, four normalized keys are the ones that meaningfully join findings across sources but that no read tool projects by default: `cwe` (weakness, bridges SAST and SCA), `cvss` (vulnerability scoring), `affectedPackages` (name/version/purl/fixedInVersion), and `sourceLocation` (file/line — the broadest cross-class key, spanning SAST, DAST, IaC, and secret findings). Each is class-scoped, not universal, so returning them by default would bloat every row for the findings that lack them.
+
+`hdf_query` exposes them opt-in through a `fields` array, additive to whatever `verbosity` selects:
+
+```json
+{ "source": { "path": "scan.json" },
+  "fields": ["cwe", "cvss", "affectedPackages", "sourceLocation"] }
+```
+
+A requirement that lacks a requested field simply omits that key (never `null`), so a consumer joins on presence. An unknown field name is refused. The default (no `fields`) response is unchanged, and each key is added to a row only when the caller asks for it — so the correlation surface costs nothing until it is used.
 
 ## Budget guidance for agent hosts
 
@@ -162,15 +226,28 @@ The ceilings are fixed constants, not configuration:
 | `hdf_query` | 2,000 (concise) / 10,000 (full) |
 | `hdf_diff` | 2,000 (concise) / 10,000 (full) |
 | `hdf_compliance` | 2,000 tokens |
+| `hdf_aggregate` | 2,000 tokens |
 | `hdf_validate` | 2,000 tokens |
 
 `concise` is the default verbosity; request `full` only when you need raw
 content, and expect a larger response.
 
 Separately, the one-time `tools/list` handshake at session start costs
-about 4,200 tokens for all nine tool schemas (a per-tool ceiling of 600
+about 5,100 tokens for all ten tool schemas (a per-tool ceiling of 600
 keeps any single schema in check). That is a fixed startup cost, paid once
-per server session, not per call.
+per server session, not per call — and you can trim it by advertising only
+the tools a deployment needs (see [Advertising fewer tools](#advertising-fewer-tools)).
+
+**A response is not paid once — it compounds.** A tool result stays in the
+conversation and is re-sent on every subsequent turn, so a single `full`
+response (up to 10,000 tokens) in a five-turn exchange is charged roughly
+five times. For a long automated loop — the motivating case — that
+compounding dwarfs the tool surface. Prefer `concise` plus pagination over
+`full` when a run has many turns; reach for `full` only when a turn genuinely
+needs raw content. The server helps here in one specific way: each response
+carries its full payload **once**, in `structuredContent`, with only a short
+one-line gist in the `content` text block — so a host that feeds `content`
+to the model is not charged the payload twice.
 
 ### Pagination and truncation
 
