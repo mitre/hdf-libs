@@ -278,6 +278,7 @@ jobs:
           # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @v3, or an exact version)
           npm install @mitre/hdf-validators    # schema validation
           npm install @mitre/hdf-diff          # structural diff engine
+          npm install @mitre/hdf-engine        # detection, query, compliance rollups
           npm install @mitre/hdf-generators    # InSpec profile generation
 
           # Go libraries
@@ -329,6 +330,7 @@ jobs:
             "hdf-utilities/go"
             "hdf-diff/go"
             "hdf-extension-graph/go"
+            "hdf-engine/go"
             "hdf-cli"
           )
 
