@@ -50,9 +50,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src test",
-    "lint:go": "cd go && golangci-lint run",
-    "lint:fix": "eslint src test --fix"
+    "lint:go": "cd go && golangci-lint run"
   },
   "repository": {
     "type": "git",

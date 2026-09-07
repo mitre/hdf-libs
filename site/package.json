@@ -7,7 +7,6 @@
     "dev": "pnpm generate && vitepress dev",
     "build": "pnpm generate && vitepress build",
     "preview": "vitepress preview",
-    "lint": "eslint .",
     "test:ts": "node --test"
   },
   "dependencies": {

@@ -56,12 +56,12 @@ env:
 # This pipeline normalizes and gates its own data through HDF, as an
 # exemplar of how to use HDF in a pipeline. Scan phase: compilers and audits
 # hard-fail as before, but the scanners (zizmor, eslint, golangci-lint,
-# govulncheck) run ONCE in SARIF mode via .github/scripts/scan-*.sh and
-# tolerate only their documented findings exit. Findings are gated by
-# gate-hdf, inline in this file: the gate CLI converts every scan to HDF
-# (--from is explicit, never auto-detected) and applies one committed
-# threshold template per tool (.github/hdf-thresholds/<tool>.yaml). The
-# threshold verdict — not the scanners' exit codes — is what fails CI.
+# govulncheck) run ONCE in SARIF mode and tolerate only their documented
+# findings exit. Findings are gated by gate-hdf, inline in this file: the
+# gate CLI converts every scan to HDF (--from is explicit, never
+# auto-detected) and applies one committed threshold template per tool
+# (.github/hdf-thresholds/<tool>.yaml). The threshold verdict — not the
+# scanners' exit codes — is what fails CI.
 #
 # build/test deliberately do NOT wait for gate-hdf: the checks jobs still
 # hard-fail fast on compile/tool errors, while scan findings block the
@@ -113,8 +113,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
+      # One eslint.config.mjs at the root governs every package, so one
+      # invocation covers the workspace. eslint exits 1 on findings — gate-hdf's
+      # threshold is what judges those — so only a fatal tool error fails here.
       - name: ESLint (SARIF; findings gate via HDF)
-        run: .github/scripts/scan-eslint.sh
+        run: |
+          mkdir -p scan-artifacts
+          pnpm exec eslint . \
+            --format node_modules/@microsoft/eslint-formatter-sarif/sarif.js \
+            --output-file scan-artifacts/eslint.sarif || [ "$?" -eq 1 ]
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-ts

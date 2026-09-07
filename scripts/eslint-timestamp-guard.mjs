@@ -7,7 +7,7 @@
 // (`new Date(raw as string)`, `new Date(raw!)`, `new Date(String(raw))`, ...);
 // the no-arg form and numeric/string literals are intentionally not matched.
 //
-// Imported by the eslint.config.js of every package that parses timestamps
+// Applied by the root eslint.config.mjs to every tree that parses timestamps
 // (hdf-converters, hdf-diff, hdf-utilities). The Go peer is
 // scripts/check-timestamp-usage.mjs. See
 // site/docs/contributing/developer-guide.md (Timestamp Handling).

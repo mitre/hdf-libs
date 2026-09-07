@@ -226,7 +226,7 @@ re-implement timestamp parsing.
 
 These rules are enforced mechanically so the drift cannot recur:
 
-- **TS:** a `no-restricted-syntax` ESLint rule in `hdf-converters/eslint.config.js`
+- **TS:** a `no-restricted-syntax` ESLint rule in the root `eslint.config.mjs`
   bans `new Date(<identifier|member>)` in `converters/*-to-hdf/**`.
 - **Go:** `scripts/check-timestamp-usage.mjs` (run as `pnpm lint:timestamps`,
   part of `pnpm check`) bans `time.Parse(time.RFC3339...)` in converter Go.

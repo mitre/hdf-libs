@@ -25,9 +25,7 @@
     "test:go": "echo 'No Go tests yet in hdf-diff'",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit",
-    "lint": "eslint src test",
-    "lint:fix": "eslint src test --fix"
+    "type-check": "tsc --noEmit"
   },
   "repository": {
     "type": "git",

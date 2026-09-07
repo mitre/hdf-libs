@@ -23,8 +23,7 @@
     "clean": "rimraf dist",
     "test": "echo 'No tests in hdf-fixtures (data-only package)' && exit 0",
     "test:ts": "echo 'No tests in hdf-fixtures (data-only package)' && exit 0",
-    "type-check": "tsc --noEmit",
-    "lint": "eslint src"
+    "type-check": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
