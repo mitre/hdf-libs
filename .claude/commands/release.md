@@ -286,10 +286,34 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
    - **Subject:** `chore(release): bump workspace from OLD to NEW`
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
-6. **Never tag.** Tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag` manually.
+6. **Never tag a stable release manually.** Stable tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag vNEW` for the stable. The one sanctioned manual tag is the **`vNEW-rc.N` prerelease tag** that triggers Phase 7.5's dry-run — pushing that tag drives the workflow's prerelease path; it is not a manual publish.
 7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` plus a per-major tag (`v3`, …) and rc's under `rc` — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other 8 packages keep the default `latest` behavior — do not "harmonize" them onto `next`.
 
-### Phase 8 — Post-merge verification (after the user pushes and merges)
+### Phase 7.5 — Prerelease (RC) publish dry-run *(only when the publishing pipeline changed)*
+
+**Gate condition — run this phase ONLY if the publishing pipeline itself changed since the last release.** Check:
+
+```bash
+git diff --name-only "$BASE..HEAD" -- .github/workflows/release.yml .github/workflows/*publish* .goreleaser.yaml .goreleaser.yml
+```
+
+Non-empty (or any change to how packages are published — OIDC, dist-tag logic, goreleaser config, SBOM/signing/provenance steps) → run the dry-run. Empty → **skip** to Phase 8; the pipeline is unchanged, so a stable publish carries no new pipeline risk. (This is deliberately conditional: an RC round-trip is cheap insurance against a *broken pipeline*, not something every release needs. When in doubt, run it.)
+
+**Why:** the publishing workflow is the one part of a release you cannot dry-run by reading the diff — it only proves itself by running. When it changed, validate it on a throwaway RC **before** the stable, so a broken publish surfaces on `rc` and never on `latest`.
+
+**Steps (after the release PR is merged to `main`):**
+
+1. Push the prerelease tag: `git push origin vNEW-rc.1` (the sanctioned manual tag from Phase 7 note 6). This triggers `release.yml` in prerelease mode — it is NOT a manual `npm publish`/`pnpm publish`.
+2. Watch the workflow run to green (`gh run watch`, or the Actions UI). A failed prerelease run is the whole point — diagnose and fix the pipeline, then cut `-rc.2`, etc.
+3. Verify the publish landed correctly — the same checks as Phase 8, but against the RC:
+   - all per-module tags appear at `vNEW-rc.1` in lockstep;
+   - **npm dist-tags:** `@mitre/hdf-converters` got `rc` and **`latest` is UNTOUCHED** (still the 2.x heimdall2 line) — `npm view @mitre/hdf-converters dist-tags`. An RC that moves `latest` is an incident (restore per Phase 8).
+   - the other 8 packages published under a prerelease tag (`rc`/`next`), **not** `latest`;
+   - the supply-chain artifacts are actually attached to the GitHub prerelease: syft SBOM, cosign signature, SLSA build provenance (whichever the pipeline change added);
+   - (optional) `pkg.go.dev` resolves `github.com/mitre/hdf-libs/<module>/v3@vNEW-rc.1`.
+4. **Gate:** cut the stable `vNEW` (Phase 8) ONLY after a clean RC run. If the RC needed fixes, they land as their own commits/PR and the RC is re-cut before stable.
+
+### Phase 8 — Post-stable verification (after the user pushes and merges the stable)
 
 Once the release PR is merged to `main`, the user runs the release workflow. Confirm with the user that:
 - All per-module Git tags appear at the same version
@@ -327,6 +351,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] `CHANGELOG.md` has a new `## [NEW] - YYYY-MM-DD` entry; historical entries untouched
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged
-- [ ] No `git tag` run manually
+- [ ] No stable `git tag` run manually (the `vNEW-rc.N` prerelease tag for Phase 7.5 is the one sanctioned manual tag)
+- [ ] *(only if `.github/workflows/release.yml` / publishing config changed since BASE)* Phase 7.5 RC dry-run: `vNEW-rc.1` pushed, workflow ran green, dist-tags correct (`rc`; `latest` untouched on 2.x), SBOM/cosign/provenance artifacts present — stable cut only after a clean RC
 - [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next`/`v<major>` (or `rc`) at NEW; no manual publishes or dist-tag moves to `latest`
 - [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers
