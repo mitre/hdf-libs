@@ -46,28 +46,37 @@ env:
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
 #   scan-workflows ─┐
-#   check-ts ───────┼── gate-hdf                    (required check)
+#   check-ts ───────┼── gate-hdf-scans              (intended required check)
 #   check-go ───────┘
 #   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┬─ gate-hdf-tests
 #           ├── test-go (junit; ubuntu leg = coverage) ─┴─ sonar
-#           ├── verify-packages                            (required check)
+#           ├── verify-packages                            (intended required check)
 #           └── site-build
 #
 # This pipeline normalizes and gates its own data through HDF, as an
-# exemplar of how to use HDF in a pipeline. Scan phase: compilers and audits
-# hard-fail as before, but the scanners (zizmor, eslint, golangci-lint,
-# govulncheck) run ONCE in SARIF mode and tolerate only their documented
-# findings exit. Findings are gated by gate-hdf, inline in this file: the
-# gate CLI converts every scan to HDF (--from is explicit, never
-# auto-detected) and applies one committed threshold template per tool
-# (.github/hdf-thresholds/<tool>.yaml). The threshold verdict — not the
-# scanners' exit codes — is what fails CI.
+# exemplar of how to use HDF in a pipeline. There are TWO HDF gates, split by
+# the kind of evidence they judge: gate-hdf-scans takes what the tools report
+# by READING the code, gate-hdf-tests what the suites report by RUNNING it.
+# Both have the same shape — convert to HDF, apply a committed threshold.
 #
-# build/test deliberately do NOT wait for gate-hdf: the checks jobs still
-# hard-fail fast on compile/tool errors, while scan findings block the
-# MERGE (gate-hdf as a required branch-protection check), not the run —
+# Scan phase: compilers and audits hard-fail as before, but the scanners
+# (zizmor, eslint, golangci-lint, govulncheck) run ONCE in SARIF mode and
+# tolerate only their documented findings exit. Findings are gated by
+# gate-hdf-scans, inline in this file: the gate CLI converts every scan to
+# HDF (--from is explicit, never auto-detected) and applies one committed
+# threshold template per tool (.github/hdf-thresholds/<tool>.yaml). The
+# threshold verdict — not the scanners' exit codes — is what fails CI.
+#
+# build/test deliberately do NOT wait for gate-hdf-scans: the checks jobs
+# still hard-fail fast on compile/tool errors, while scan findings block the
+# MERGE (gate-hdf-scans as a required branch-protection check), not the run —
 # trading a few red-run runner-minutes for ~5 minutes of wall clock on
 # every green run (this repo is public; minutes are free, latency isn't).
+#
+# NOT YET IN EFFECT: `main` carries no branch protection and no ruleset, so
+# nothing is actually a required check and a red gate does not block a merge.
+# The gates run and report; making them binding is a repository-settings
+# change, and the "(required check)" notes above describe the intent.
 #
 # Test phase: ubuntu+windows matrix; every leg emits JUnit which
 # gate-hdf-tests normalizes and thresholds the same way (if: always — red
@@ -91,8 +100,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The binary comes from zizmor's GitHub release, pinned by version and
+      # sha256 — the same discipline as the hdf CLI pin. The checksum check is
+      # load-bearing: the step must not reach an unverified binary.
+      # --no-exit-codes makes a nonzero exit mean tool failure, not findings;
+      # findings flow to the SARIF and are the gate's call.
       - name: zizmor (SARIF; findings gate via HDF)
-        run: .github/scripts/scan-zizmor.sh
+        run: |
+          mkdir -p scan-artifacts
+          tmp=$(mktemp -d)
+          curl -fsSL -o "$tmp/zizmor.tar.gz" \
+            "https://github.com/zizmorcore/zizmor/releases/download/v$ZIZMOR_VERSION/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          echo "$ZIZMOR_SHA256  $tmp/zizmor.tar.gz" | sha256sum -c -
+          tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
+          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ \
+            > scan-artifacts/zizmor.sarif
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-workflows
@@ -114,7 +136,7 @@ jobs:
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
       # One eslint.config.mjs at the root governs every package, so one
-      # invocation covers the workspace. eslint exits 1 on findings — gate-hdf's
+      # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.
       - name: ESLint (SARIF; findings gate via HDF)
         run: |
@@ -147,16 +169,49 @@ jobs:
           go: 'true'
       - name: Build TypeScript (Go modules need hdf-schema/dist/go/)
         run: pnpm build:ts
-      # Both scanners loop per-module, driven by go.work so new modules are
-      # picked up automatically: golangci-lint refuses multi-module invocations
-      # and govulncheck has no workspace mode (golang/go#66863). gosec runs via
-      # golangci-lint using each package's own .golangci.yml — no standalone
-      # gosec step (its former workflow-level excludes G304/G104 live in
-      # hdf-cli/.golangci.yml; G115/G706 verified unnecessary and now enforced).
+      # Both scanners below loop per-module because neither works across a
+      # workspace: golangci-lint refuses a multi-module invocation, and
+      # govulncheck has no workspace mode (golang/go#66863). go.work is the
+      # source of the list, so a new module is picked up automatically.
+      # An empty list would let both scanners pass having scanned nothing.
+      - name: Enumerate the go.work modules
+        run: |
+          MODULES=$(go work edit -json | jq -r '.Use[].DiskPath' | tr '\n' ' ')
+          [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
+          echo "GO_MODULES=$MODULES" >> "$GITHUB_ENV"
+      # gosec runs via golangci-lint using each package's own .golangci.yml —
+      # there is no standalone gosec step (its former workflow-level excludes
+      # G304/G104 live in hdf-cli/.golangci.yml; G115/G706 were verified
+      # unnecessary and are now enforced).
+      #
+      # Exit 1 is golangci-lint's documented findings exit, and findings are
+      # the gate's call — so 1 is tolerated here and anything else is a tool
+      # failure. go install over the faster binary-install script is
+      # deliberate: module downloads are verified against the Go checksum
+      # database.
       - name: golangci-lint (SARIF; findings gate via HDF)
-        run: .github/scripts/scan-golangci.sh
+        run: |
+          go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$GOLANGCI_LINT_VERSION"
+          mkdir -p scan-artifacts
+          for dir in $GO_MODULES; do
+            name=$(echo "${dir#./}" | tr '/' '-')
+            rc=0
+            (cd "$dir" && golangci-lint run --output.text.path stdout \
+              --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
+            [ "$rc" -le 1 ] || exit "$rc"
+          done
+      # In SARIF mode govulncheck exits 0 even with findings — by design, so
+      # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
+      # That makes any nonzero exit a tool failure, which the step's own
+      # `bash -e` already fails on.
       - name: govulncheck (SARIF; findings gate via HDF)
-        run: .github/scripts/scan-govulncheck.sh
+        run: |
+          go install "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION"
+          for dir in $GO_MODULES; do
+            name=$(echo "${dir#./}" | tr '/' '-')
+            (cd "$dir" && govulncheck -format sarif ./... \
+              > "$GITHUB_WORKSPACE/scan-artifacts/govulncheck-$name.sarif")
+          done
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-go
@@ -195,13 +250,18 @@ jobs:
           retention-days: 7
 
   # ── Gate: scan findings, judged as HDF ───────────────────────────────────
-  # This pipeline normalizes and gates its own scan data through HDF, as an
-  # exemplar of how to use HDF in a pipeline. The steps below ARE the
-  # demonstration: convert each scanner's SARIF to one document shape, then
-  # apply a committed, reviewable policy per tool. The threshold verdict —
-  # not the scanners' exit codes — is what fails CI.
-  gate-hdf:
-    name: Gate on HDF thresholds
+  # One of two HDF gates. This one judges what the tools report by READING the
+  # code (zizmor, eslint, golangci-lint, govulncheck); gate-hdf-tests judges
+  # what the suites report by RUNNING it. They are separate jobs because the
+  # two kinds of evidence arrive at different points in the run, and because
+  # their failure authorities differ: the scanners here run in tolerate-
+  # findings mode, so this threshold verdict is what fails CI, whereas a red
+  # test has already failed its own job.
+  #
+  # The steps below ARE the demonstration: convert each scanner's SARIF to one
+  # document shape, then apply a committed, reviewable policy per tool.
+  gate-hdf-scans:
+    name: Gate scans on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [gate-cli, scan-workflows, check-ts, check-go]
@@ -382,12 +442,17 @@ jobs:
           retention-days: 30
 
   # ── Gate: test results, judged as HDF ────────────────────────────────────
-  # The counterpart of gate-hdf for the test phase: every leg's JUnit is
-  # normalized and thresholded. Runs on red runs too (if: always) — the
-  # failing run is exactly the one whose HDF evidence matters — and fails
-  # closed if any leg produced nothing.
+  # The other half of the pair (see gate-hdf-scans): the same convert-then-
+  # threshold shape, applied to what the suites report by RUNNING the code.
+  #
+  # The test jobs stay the failure authority — a red test fails its own job
+  # with the stack trace inline — so this gate exists for the uniform evidence
+  # record and for the policy an exit code cannot express: the skip budget in
+  # .github/hdf-thresholds/tests.yaml. Runs `if: always()` because the failing
+  # run is exactly the one whose HDF evidence matters, and fails closed if any
+  # leg produced nothing.
   gate-hdf-tests:
-    name: Gate on HDF thresholds (tests)
+    name: Gate test results on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [gate-cli, test-ts, test-go]
