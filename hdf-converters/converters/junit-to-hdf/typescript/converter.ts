@@ -183,7 +183,6 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
   // elements. Node's runner emits BOTH a failure= attribute and a <failure>
   // child on <testcase>; with the shared default of no prefix the attribute
   // overwrote the element, and the failure message, type and stack were lost.
-  // <testsuite skipped="N"> vs <testcase><skipped/> collides the same way.
   const parsed = parseXmlWithArrays(input, ARRAY_TAGS, {
     attributeNamePrefix: '@_',
   }) as JUnitTestSuites;
