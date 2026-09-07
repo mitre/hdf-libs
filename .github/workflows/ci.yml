@@ -481,9 +481,13 @@ jobs:
       # invisible here — the gate must not pass on a partial bundle.
       - name: Every test leg must have reported
         run: |
-          for leg in ts-ubuntu-latest ts-windows-latest go-ubuntu-latest go-windows-latest; do
-            compgen -G "test-artifacts-dl/*-$leg.xml" >/dev/null \
-              || { echo "::error::$leg produced nothing"; exit 1; }
+          # Filenames are <lang>-<package>-<os>.xml, so the leg is the first and
+          # last segments with the package between them.
+          for lang in ts go; do
+            for os in ubuntu-latest windows-latest; do
+              compgen -G "test-artifacts-dl/$lang-*-$os.xml" >/dev/null \
+                || { echo "::error::$lang on $os produced nothing"; exit 1; }
+            done
           done
       - name: Normalize test results to HDF
         run: hdf convert --from junit test-artifacts-dl/*.xml -o hdf-tests/
