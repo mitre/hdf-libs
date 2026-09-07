@@ -10,8 +10,11 @@
 #
 # MEASURE FROM CI ARTIFACTS, NOT LOCALLY. The gate sees both matrix legs, and
 # the OS legs differ: a single-platform measurement understates the mark and
-# sets a budget CI will fail. Measured from run 34078069529 (39 documents,
-# pipeline total 22):
+# sets a budget CI will fail. Measured from run 34137721588 (46 documents,
+# pipeline total 22) — the first run with every leg reporting. An earlier
+# measurement used a run whose windows TS leg died after 3 documents; it
+# happened to give the same answer, but re-measure from a FULLY GREEN run or
+# the mark can be low by however many documents were missing:
 #
 #   go-hdf-cli        windows 7, ubuntu 4  — a large-file case, a stdin case,
 #                     an HDF_BENCH=1 opt-in, one self-sizing fixture guard, and
