@@ -8,17 +8,29 @@
 # JUnit file and there is no merge command, so a pipeline-wide total cannot be
 # stated here.
 #
-# 5 is the measured high-water mark (hdf-schema 5, hdf-cli 4, every other
-# document 0; pipeline total 9). Both are deliberate: hdf-schema skips one
-# assertion removed in v2 and four that need the converter layer it cannot
-# depend on, and hdf-cli skips a large-file case, a stdin case, an
-# HDF_BENCH=1 opt-in benchmark, and one self-sizing fixture guard.
+# MEASURE FROM CI ARTIFACTS, NOT LOCALLY. The gate sees both matrix legs, and
+# the OS legs differ: a single-platform measurement understates the mark and
+# sets a budget CI will fail. Measured from run 34078069529 (39 documents,
+# pipeline total 22):
 #
-# Known limit: a document now at 0 can grow to 5 unnoticed, and the pipeline
+#   go-hdf-cli        windows 7, ubuntu 4  — a large-file case, a stdin case,
+#                     an HDF_BENCH=1 opt-in, one self-sizing fixture guard, and
+#                     on windows three more for the POSIX permission model
+#                     (permission-denied read, redacted-path read failure,
+#                     permission-denied write)
+#   ts-hdf-schema     5 on both  — one assertion removed in v2, four needing
+#                     the converter layer hdf-schema cannot depend on
+#   go-hdf-converters windows 1  — XCCDF schema validation
+#   every other document 0
+#
+# 7 is therefore the per-document high-water mark, and the windows hdf-cli
+# document sits exactly at it: one new skip there fails the gate.
+#
+# Known limit: a document now at 0 can grow to 7 unnoticed, and the pipeline
 # total can drift while no single document crosses the line.
 skipped:
     total:
-        max: 5
+        max: 7
 failed:
     total:
         max: 0
