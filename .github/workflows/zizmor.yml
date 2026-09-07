@@ -7,7 +7,7 @@ name: Workflow Lint
 #
 # Weekly re-scan only: push/PR runs live in ci.yml's scan-workflows job,
 # which emits SARIF and gates the pipeline through the HDF threshold check
-# (gate-hdf). This schedule exists so newly added zizmor audits surface
+# (gate-hdf-scans). This schedule exists so newly added zizmor audits surface
 # without waiting for a PR.
 
 on:
