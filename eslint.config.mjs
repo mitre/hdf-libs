@@ -149,6 +149,11 @@ export default [
       'hdf-schema/generated/**',
     ],
   },
+  // `eslint .` also reaches ~15 .js/.mjs/.cjs files outside site/ — this file,
+  // scripts/*.mjs, the stryker configs. They match no block below and are
+  // therefore parsed with no rules. That is deliberate: they are tooling, not
+  // shipped code, and nothing here should imply they are being checked.
+
   {
     files: SOURCE,
     ignores: TESTS,
