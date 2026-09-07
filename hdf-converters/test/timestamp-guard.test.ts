@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Linter } from 'eslint';
 import tsparser from '@typescript-eslint/parser';
-import config, { DATE_GUARD_RULES } from '../eslint.config.js';
+import config from '../../eslint.config.mjs';
+import { DATE_GUARD_RULES } from '../../scripts/eslint-timestamp-guard.mjs';
 
 // 7vsq: the timestamp guard once existed but silently never fired (a broken
 // selector / narrowed file scope gives false security — worse than no guard).
@@ -36,12 +37,22 @@ describe('timestamp guard — new Date(value) footgun', () => {
 });
 
 describe('timestamp guard — file scope', () => {
-  it('applies to both converters/ and shared/ source (not just converters/)', () => {
+  it('covers every tree that parses timestamps, in every package', () => {
     const guardBlock = (config as Array<{ files?: string[]; rules?: Record<string, unknown> }>).find(
       (b) => b.rules && 'no-restricted-syntax' in b.rules
     );
     expect(guardBlock).toBeDefined();
-    expect(guardBlock!.files).toContain('converters/**/*.ts');
-    expect(guardBlock!.files).toContain('shared/**/*.ts');
+    // Converters parse tool timestamps on the way in; hdf-diff and
+    // hdf-utilities parse HDF's own on the way out. Narrowing any of these
+    // back to converters/ alone is the regression this locks.
+    expect(guardBlock!.files).toEqual(
+      expect.arrayContaining([
+        'hdf-converters/converters/**/*.ts',
+        'hdf-converters/shared/**/*.ts',
+        'hdf-converters/fetchers/**/*.ts',
+        'hdf-diff/src/**/*.ts',
+        'hdf-utilities/src/**/*.ts',
+      ])
+    );
   });
 });

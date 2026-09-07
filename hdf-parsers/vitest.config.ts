@@ -30,8 +30,7 @@ export default defineConfig({
         'dist/**',
         'go/**',
         '**/*.test.ts',
-        'vitest.config.ts',
-        'eslint.config.js'
+        'vitest.config.ts'
       ]
     }
   }
