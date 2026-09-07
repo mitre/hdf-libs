@@ -20,6 +20,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 34,
             "ref": "internal/db/users.go"
@@ -70,6 +71,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 56,
             "ref": "internal/handlers/files.go"
@@ -128,6 +130,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 12,
             "ref": "internal/auth/checksum.go"
@@ -170,6 +173,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 7,
             "ref": "internal/config/constants.go"

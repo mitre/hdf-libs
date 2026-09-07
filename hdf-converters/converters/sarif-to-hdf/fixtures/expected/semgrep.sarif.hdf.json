@@ -29,6 +29,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 3,
             "ref": "targets/basic/stupid.py"

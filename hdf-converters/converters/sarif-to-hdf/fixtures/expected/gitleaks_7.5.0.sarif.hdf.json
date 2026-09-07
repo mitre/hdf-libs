@@ -41,6 +41,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 13,
             "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_1_vuln.json"
@@ -82,6 +83,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 13,
             "ref": "dojo/unittests/scans/gitlab_secret_detection_report/gitlab_secret_detection_report_3_vuln.json"

@@ -43,6 +43,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 45,
             "ref": "src/db/queries.go"
@@ -101,6 +102,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 18,
             "ref": "src/auth/hash.go"
@@ -159,6 +161,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 8,
             "ref": "src/config/settings.go"
@@ -247,6 +250,7 @@
               "status": "notReviewed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 30,
             "ref": "src/handlers/error.go"
@@ -285,6 +289,7 @@
               "status": "notApplicable"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 1,
             "ref": "src/static/index.html"

@@ -1,0 +1,153 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "This path depends on a [user-provided value](1).",
+              "label": "default"
+            },
+            {
+              "data": "Accessing paths influenced by users can allow an attacker to access unexpected resources.",
+              "label": "rationale"
+            },
+            {
+              "data": "# Uncontrolled data used in path expression\nAccessing files using paths constructed from user-controlled data can allow an attacker to access unexpected resources. This can result in sensitive information being revealed or deleted, or an attacker being able to influence behavior by modifying unexpected files.\n\n\n## Recommendation\nValidate user input before using it to construct a file path, either using an off-the-shelf library function like `werkzeug.utils.secure_filename`, or by performing custom validation.\n\nIdeally, follow these rules:\n\n* Do not allow more than a single \".\" character.\n* Do not allow directory separators such as \"/\" or \"\\\\\" (depending on the file system).\n* Do not rely on simply replacing problematic sequences such as \"../\". For example, after applying this filter to \".../...//\", the resulting string would still be \"../\".\n* Use an allowlist of known good patterns.\n\n## Example\nIn the first example, a file name is read from an HTTP request and then used to access a file. However, a malicious user could enter a file name that is an absolute path, such as `\"/etc/passwd\"`.\n\nIn the second example, it appears that the user is restricted to opening a file within the `\"user\"` home directory. However, a malicious user could enter a file name containing special characters. For example, the string `\"../../../etc/passwd\"` will result in the code reading the file located at `\"/server/static/images/../../../etc/passwd\"`, which is the system's password file. This file would then be sent back to the user, giving them access to all the system's passwords. Note that a user could also use an absolute path here, since the result of `os.path.join(\"/server/static/images/\", \"/etc/passwd\")` is `\"/etc/passwd\"`.\n\nIn the third example, the path used to access the file system is normalized *before* being checked against a known prefix. This ensures that regardless of the user input, the resulting path is safe.\n\n\n```python\nimport os.path\nfrom flask import Flask, request, abort\n\napp = Flask(__name__)\n\n@app.route(\"/user_picture1\")\ndef user_picture1():\n    filename = request.args.get('p')\n    # BAD: This could read any file on the file system\n    data = open(filename, 'rb').read()\n    return data\n\n@app.route(\"/user_picture2\")\ndef user_picture2():\n    base_path = '/server/static/images'\n    filename = request.args.get('p')\n    # BAD: This could still read any file on the file system\n    data = open(os.path.join(base_path, filename), 'rb').read()\n    return data\n\n@app.route(\"/user_picture3\")\ndef user_picture3():\n    base_path = '/server/static/images'\n    filename = request.args.get('p')\n    #GOOD -- Verify with normalised version of path\n    fullpath = os.path.normpath(os.path.join(base_path, filename))\n    if not fullpath.startswith(base_path):\n        raise Exception(\"not allowed\")\n    data = open(fullpath, 'rb').read()\n    return data\n\n```\n\n## References\n* OWASP: [Path Traversal](https://owasp.org/www-community/attacks/Path_Traversal).\n* npm: [werkzeug.utils.secure_filename](http://werkzeug.pocoo.org/docs/utils/#werkzeug.utils.secure_filename).\n* Common Weakness Enumeration: [CWE-22](https://cwe.mitre.org/data/definitions/22.html).\n* Common Weakness Enumeration: [CWE-23](https://cwe.mitre.org/data/definitions/23.html).\n* Common Weakness Enumeration: [CWE-36](https://cwe.mitre.org/data/definitions/36.html).\n* Common Weakness Enumeration: [CWE-73](https://cwe.mitre.org/data/definitions/73.html).\n* Common Weakness Enumeration: [CWE-99](https://cwe.mitre.org/data/definitions/99.html).\n",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "backtrace": [
+                "dsvpwa/handlers.py:196 - ControlFlowNode for self",
+                "dsvpwa/handlers.py:197 - ControlFlowNode for self",
+                "dsvpwa/handlers.py:198 - ControlFlowNode for self",
+                "dsvpwa/handlers.py:211 - ControlFlowNode for Attribute",
+                "dsvpwa/handlers.py:111 - ControlFlowNode for path",
+                "dsvpwa/handlers.py:112 - ControlFlowNode for path",
+                "dsvpwa/handlers.py:116 - ControlFlowNode for Attribute()",
+                "dsvpwa/handlers.py:196 - ControlFlowNode for self",
+                "dsvpwa/handlers.py:197 - ControlFlowNode for self",
+                "dsvpwa/handlers.py:198 - ControlFlowNode for Subscript",
+                "dsvpwa/handlers.py:198 - [post] ControlFlowNode for self [Attribute path]",
+                "dsvpwa/handlers.py:211 - ControlFlowNode for self [Attribute path]",
+                "dsvpwa/handlers.py:211 - ControlFlowNode for Attribute",
+                "dsvpwa/handlers.py:111 - ControlFlowNode for path",
+                "dsvpwa/handlers.py:112 - ControlFlowNode for path",
+                "dsvpwa/handlers.py:116 - ControlFlowNode for Attribute()"
+              ],
+              "codeDesc": "URL : dsvpwa/handlers.py LINE : 116 COLUMN : 37",
+              "startTime": "2026-09-07T15:11:01.841592-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "sourceLocation": {
+            "line": 116,
+            "ref": "dsvpwa/handlers.py"
+          },
+          "id": "py/path-injection",
+          "impact": 0.75,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-022",
+              "CWE-023",
+              "CWE-036",
+              "CWE-073",
+              "CWE-099"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "a886445d8048d84b:1",
+                "primaryLocationStartColumnFingerprint": "20"
+              }
+            },
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "py/path-injection",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "This command line depends on a [user-provided value](1).",
+              "label": "default"
+            },
+            {
+              "data": "Using externally controlled strings in a command line may allow a malicious user to change the meaning of the command.",
+              "label": "rationale"
+            },
+            {
+              "data": "# Uncontrolled command line\nCode that passes user input directly to `exec`, `eval`, or some other library routine that executes a command, allows the user to execute malicious code.\n\n\n## Recommendation\nIf possible, use hard-coded string literals to specify the command to run or the library to load. Instead of passing the user input directly to the process or library function, examine the user input and then choose among hard-coded string literals.\n\nIf the applicable libraries or commands cannot be determined at compile time, then add code to verify that the user input string is safe before using it.\n\n\n## Example\nThe following example shows two functions. The first is unsafe as it takes a shell script that can be changed by a user, and passes it straight to `subprocess.call()` without examining it first. The second is safe as it selects the command from a predefined allowlist.\n\n\n```python\n\nurlpatterns = [\n    # Route to command_execution\n    url(r'^command-ex1$', command_execution_unsafe, name='command-execution-unsafe'),\n    url(r'^command-ex2$', command_execution_safe, name='command-execution-safe')\n]\n\nCOMMANDS = {\n    \"list\" :\"ls\",\n    \"stat\" : \"stat\"\n}\n\ndef command_execution_unsafe(request):\n    if request.method == 'POST':\n        action = request.POST.get('action', '')\n        #BAD -- No sanitizing of input\n        subprocess.call([\"application\", action])\n\ndef command_execution_safe(request):\n    if request.method == 'POST':\n        action = request.POST.get('action', '')\n        #GOOD -- Use an allowlist\n        subprocess.call([\"application\", COMMANDS[action]])\n\n```\n\n## References\n* OWASP: [Command Injection](https://www.owasp.org/index.php/Command_Injection).\n* Common Weakness Enumeration: [CWE-78](https://cwe.mitre.org/data/definitions/78.html).\n* Common Weakness Enumeration: [CWE-88](https://cwe.mitre.org/data/definitions/88.html).\n",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "backtrace": [
+                "dsvpwa/handlers.py:177 - ControlFlowNode for self",
+                "dsvpwa/handlers.py:184 - ControlFlowNode for Subscript"
+              ],
+              "codeDesc": "URL : dsvpwa/handlers.py LINE : 184 COLUMN : 17",
+              "startTime": "2026-09-07T15:11:01.841592-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "critical",
+          "sourceLocation": {
+            "line": 184,
+            "ref": "dsvpwa/handlers.py"
+          },
+          "id": "py/command-line-injection",
+          "impact": 0.98,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "cwe": [
+              "CWE-078",
+              "CWE-088"
+            ],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "a392bb9657eb08d2:1",
+                "primaryLocationStartColumnFingerprint": "0"
+              }
+            },
+            "nist": [
+              "SI-10"
+            ],
+            "severity": "error"
+          },
+          "controlType": "technical",
+          "title": "py/command-line-injection",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "64ed6e8fa395453964f1eccc15591c3a3e67868e338ed6eebfd32a77d066c3ae"
+      },
+      "name": "CodeQL",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-07T15:11:01.841592-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "CodeQL"
+  }
+}

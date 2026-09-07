@@ -1,0 +1,225 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
+              "label": "default"
+            },
+            {
+              "data": "When passing data to the b64decode(), standard_b64decode(), and urlsafe_b64decode() functions in the \"base64\" module the characters \"+/\" will always be accepted, regardless of the value of \"altchars\" parameter, typically used to establish an \"alternative base64 alphabet\" such as the URL safe alphabet. This behavior matches what is recommended in earlier base64 RFCs, but newer RFCs now recommend either dropping characters outside the specified base64 alphabet or raising an error. The old behavior has the possibility of causing data integrity issues.\n\n\n\n\nThis behavior can only be insecure if your application uses an alternate base64 alphabet (without \"+/\"). If your application does not use the \"altchars\" parameter or the urlsafe_b64decode() function, then your application does not use an alternative base64 alphabet.\n\n\n\n\nThe attached patches DOES NOT make the base64-decode behavior raise an error, as this would be a change in behavior and break existing programs. Instead, the patch deprecates the behavior which will be replaced with the newly recommended behavior in a future version of Python. Users are recommended to mitigate by verifying user-controlled inputs match the base64 \nalphabet they are expecting or verify that their application would not be \naffected if the b64decode() functions accepted \"+\" or \"/\" outside of altchars.",
+              "label": "rationale"
+            },
+            {
+              "data": "Vulnerability CVE-2025-12781\nSeverity: medium\nPackage: python-3.12\nVersion: 3.12.12-r7\nFix Version: \nType: apk\nLocation: /usr/lib/apk/db/installed\nData Namespace: nvd:cpe\nLink: [CVE-2025-12781](https://nvd.nist.gov/vuln/detail/CVE-2025-12781)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : python//usr/lib/apk/db/installed LINE : 1 COLUMN : 1",
+              "startTime": "2026-09-07T11:18:26.891728-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 1,
+            "ref": "python//usr/lib/apk/db/installed"
+          },
+          "id": "CVE-2025-12781-python-3.12",
+          "impact": 0.63,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
+              }
+            },
+            "helpUri": "https://github.com/anchore/grype",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning"
+          },
+          "title": "ApkMatcherCpeMatch",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
+              "label": "default"
+            },
+            {
+              "data": "The imaplib module, when passed a user-controlled command, can have additional commands injected using newlines. Mitigation rejects commands containing control characters.",
+              "label": "rationale"
+            },
+            {
+              "data": "Vulnerability CVE-2025-15366\nSeverity: medium\nPackage: python-3.12\nVersion: 3.12.12-r7\nFix Version: \nType: apk\nLocation: /usr/lib/apk/db/installed\nData Namespace: nvd:cpe\nLink: [CVE-2025-15366](https://nvd.nist.gov/vuln/detail/CVE-2025-15366)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : python//usr/lib/apk/db/installed LINE : 1 COLUMN : 1",
+              "startTime": "2026-09-07T11:18:26.891728-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 1,
+            "ref": "python//usr/lib/apk/db/installed"
+          },
+          "id": "CVE-2025-15366-python-3.12",
+          "impact": 0.59,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
+              }
+            },
+            "helpUri": "https://github.com/anchore/grype",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning"
+          },
+          "title": "ApkMatcherCpeMatch",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
+              "label": "default"
+            },
+            {
+              "data": "The poplib module, when passed a user-controlled command, can have\nadditional commands injected using newlines. Mitigation rejects commands\ncontaining control characters.",
+              "label": "rationale"
+            },
+            {
+              "data": "Vulnerability CVE-2025-15367\nSeverity: medium\nPackage: python-3.12\nVersion: 3.12.12-r7\nFix Version: \nType: apk\nLocation: /usr/lib/apk/db/installed\nData Namespace: nvd:cpe\nLink: [CVE-2025-15367](https://nvd.nist.gov/vuln/detail/CVE-2025-15367)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : python//usr/lib/apk/db/installed LINE : 1 COLUMN : 1",
+              "startTime": "2026-09-07T11:18:26.891728-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 1,
+            "ref": "python//usr/lib/apk/db/installed"
+          },
+          "id": "CVE-2025-15367-python-3.12",
+          "impact": 0.59,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
+              }
+            },
+            "helpUri": "https://github.com/anchore/grype",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning"
+          },
+          "title": "ApkMatcherCpeMatch",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "A medium vulnerability in apk package: python-3.12, version 3.12.12-r7 was found in image cgr.dev/cgr-demo.com/python:3.12.12 at: /usr/lib/apk/db/installed",
+              "label": "default"
+            },
+            {
+              "data": "The import hook in CPython that handles legacy *.pyc files (SourcelessFileLoader) is incorrectly handled in FileLoader (a base class) and so does not use io.open_code() to read the .pyc files. sys.audit handlers for this audit event therefore do not fire.",
+              "label": "rationale"
+            },
+            {
+              "data": "Vulnerability CVE-2026-2297\nSeverity: medium\nPackage: python-3.12\nVersion: 3.12.12-r7\nFix Version: \nType: apk\nLocation: /usr/lib/apk/db/installed\nData Namespace: nvd:cpe\nLink: [CVE-2026-2297](https://nvd.nist.gov/vuln/detail/CVE-2026-2297)",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URL : python//usr/lib/apk/db/installed LINE : 1 COLUMN : 1",
+              "startTime": "2026-09-07T11:18:26.891728-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 1,
+            "ref": "python//usr/lib/apk/db/installed"
+          },
+          "id": "CVE-2026-2297-python-3.12",
+          "impact": 0.57,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "fingerprints": {
+              "partialFingerprints": {
+                "primaryLocationLineHash": "08362036d5ee4a1534ca946257e1a5f7d8327ad245c9fbf77f40ee6ef31bcbbf:1"
+              }
+            },
+            "helpUri": "https://github.com/anchore/grype",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning"
+          },
+          "title": "ApkMatcherCpeMatch",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "e4aff7c4e1fa4f00b9bc3904e32cdf5691fff0b3a16123f6519242b4f498efc4"
+      },
+      "name": "grype",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-07T11:18:26.891728-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "grype",
+    "version": "0.91.2"
+  }
+}
