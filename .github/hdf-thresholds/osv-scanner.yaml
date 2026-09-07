@@ -33,6 +33,13 @@
 # excused by a rule. All five findings adjudicated today are of exactly that
 # kind — real advisories with no fix this repo can apply on its own schedule.
 #
+# WHO RESPONDS WHEN THE FEED MOVES: @wdower. Because the verdict depends on the
+# advisory feed as well as the commit, this gate can go red across every branch
+# with no code change — including on 2026-12-31, when the current amendments
+# expire together by design. That is the review landing, not a fault. The named
+# responder either fixes the dependency or issues a fresh amendment; nobody
+# should silence it by widening this bound.
+#
 # Zero is reachable because adjudicated findings are waived, not ignored:
 # .github/hdf-amendments/osv-scanner.json carries a riskAdjustment per triaged
 # advisory, with the dependency-path evidence and a review date. An expired

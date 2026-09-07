@@ -152,24 +152,29 @@ jobs:
         run: |
           go install "github.com/google/osv-scanner/v2/cmd/osv-scanner@$OSV_SCANNER_VERSION"
           mkdir -p scan-artifacts
+          # Name the manifests instead of walking the tree. A walk also parses
+          # this repo's converter fixtures — they are SBOMs and lockfiles by
+          # design — so a future fixture naming a vulnerable component would
+          # redden the DEPENDENCY gate on test data. Naming them also makes
+          # coverage structural rather than incidental.
+          LOCKS=(-L pnpm-lock.yaml)
+          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+            LOCKS+=(-L "$dir/go.mod")
+          done
           rc=0
-          osv-scanner scan source -r . \
+          osv-scanner scan source "${LOCKS[@]}" \
             --format sarif --output-file scan-artifacts/osv-scanner.sarif > osv.log 2>&1 || rc=$?
           cat osv.log
           [ "$rc" -le 1 ] || exit "$rc"
-          # The exit code is not enough. OSV degrades a manifest it cannot parse
-          # to a warning line and still exits 1 as long as SOME other manifest
-          # yielded a finding — so a lockfile format bump it cannot read would
-          # drop an entire ecosystem from a scan that still looks healthy.
-          # Assert coverage positively instead. (Error-matching cannot be used:
-          # the tree walk legitimately fails to extract this repo's own
-          # converter fixtures, so extraction errors are normal here.)
-          grep -q 'pnpm-lock.yaml file and found' osv.log \
-            || { echo "::error::OSV did not extract pnpm-lock.yaml — the npm tree went unscanned"; exit 1; }
-          want=$(go work edit -json | jq '.Use | length')
-          got=$(grep -c 'go.mod file and found' osv.log)
+          # The exit code is still not enough: OSV degrades a manifest it cannot
+          # parse to a warning line and exits 1 anyway as long as SOME other
+          # manifest yielded a finding, so a lockfile format bump it could not
+          # read would drop a whole ecosystem from a scan that looks healthy.
+          # Assert that every manifest we named was actually extracted.
+          want=$(( ${#LOCKS[@]} / 2 ))
+          got=$(grep -c 'file and found' osv.log)
           [ "$got" -eq "$want" ] \
-            || { echo "::error::OSV extracted $got go.mod files, expected $want"; exit 1; }
+            || { echo "::error::OSV extracted $got of $want named manifests — something went unscanned"; exit 1; }
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-deps
