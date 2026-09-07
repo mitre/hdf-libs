@@ -170,11 +170,11 @@ var queryDispatch = map[string]func(*loader.Result) hdf.HDFResults{
 // conversion keeps each scanner finding verbatim in the requirement's `code`,
 // but no read tool projects it. Saying so costs a sentence; discovering it costs
 // the agent a wrong or incomplete answer.
-const queryToolDescription = "Filter requirements in an HDF results or baseline document. The only path to a " +
+const queryToolDescription = "Filter requirements in an HDF results or baseline document — the only path to a " +
 	"requirement collection; for other document types call hdf_inspect. " +
-	"Returns normalized fields only: the scanner's original finding is preserved verbatim in each " +
-	"requirement's `code`, but no read tool projects it, so a question about a tool-specific field " +
-	"(a matcher, match provenance, a vendor extension) cannot be answered from this surface — read the source file instead."
+	"verbosity=concise (default) returns normalized fields; verbosity=full also returns descriptions[] " +
+	"verbatim, where a converter may have placed scanner detail. Each requirement's raw scanner finding " +
+	"in `code` is projected by no verbosity — read the source file for the `code` payload itself."
 
 func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
