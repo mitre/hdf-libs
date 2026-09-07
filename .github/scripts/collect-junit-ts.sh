@@ -1,24 +1,23 @@
 #!/bin/bash
 # Gathers each TS package's vitest JUnit output (written per-package as
-# test-results/junit.xml) into one directory with a manifest for the test
-# gate. Runs `if: always()` so the failing run — exactly the one whose HDF
-# evidence matters — still ships its results.
+# test-results/junit.xml) into the one directory the test gate converts.
+# Filenames carry the OS so both matrix legs can share that directory.
+# Runs `if: always()` so the failing run — exactly the one whose HDF evidence
+# matters — still ships its results.
 set -euo pipefail
-
-ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel)}"
-OUT="${TEST_DIR:-$ROOT/test-artifacts}"
+cd "$(git rev-parse --show-toplevel)"
 OS_TAG="${OS_TAG:?set OS_TAG (e.g. ubuntu-latest)}"
+mkdir -p test-artifacts
 
-mkdir -p "$OUT"
-cd "$ROOT"
 FOUND=0
 for f in hdf-*/test-results/junit.xml site/test-results/junit.xml; do
   [ -s "$f" ] || continue
-  pkg=$(echo "$f" | cut -d/ -f1)
-  cp "$f" "$OUT/ts-$pkg.xml"
-  echo "ts-$pkg.xml" >> "$OUT/manifest-tests-ts-$OS_TAG.txt"
+  cp "$f" "test-artifacts/ts-$(echo "$f" | cut -d/ -f1)-$OS_TAG.xml"
   FOUND=$((FOUND + 1))
 done
+
+# Zero files means the reporter flags did not take effect — fail here rather
+# than let the gate see a leg that silently produced nothing.
 if [ "$FOUND" -eq 0 ]; then
   echo "::error::no vitest JUnit outputs found — the reporter flags did not take effect"
   exit 1
