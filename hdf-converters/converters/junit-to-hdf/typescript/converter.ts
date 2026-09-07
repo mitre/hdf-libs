@@ -22,6 +22,10 @@ interface JUnitTestSuites {
   testsuites?: {
     '@_name'?: string;
     testsuite?: JUnitTestSuite[];
+    // Node's built-in runner (node --test --test-reporter=junit) emits testcases as
+    // DIRECT children of <testsuites> with no <testsuite> wrapper. Without this they
+    // parse as nothing, and a red run converts to an empty green document.
+    testcase?: JUnitTestCase[];
   };
   testsuite?: JUnitTestSuite;
 }
@@ -186,8 +190,16 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
 
   // <testsuites> root
   if (parsed.testsuites) {
-    const suites = parsed.testsuites.testsuite ?? [];
+    const suites = [...(parsed.testsuites.testsuite ?? [])];
     const name = parsed.testsuites['@_name'] ? decodeXmlEntities(parsed.testsuites['@_name']) : 'JUnit Test Results';
+    // Testcases sitting directly under <testsuites> become an implicit suite so they
+    // convert exactly like wrapped ones. Appended after any explicit suites, so a
+    // document carrying both keeps all of its cases in a deterministic order rather
+    // than silently dropping the loose ones. Mirrors Go's parseJUnitXML.
+    const looseCases = parsed.testsuites.testcase ?? [];
+    if (looseCases.length > 0) {
+      suites.push({ '@_name': name, testcase: looseCases });
+    }
     return { suites, name };
   }
 

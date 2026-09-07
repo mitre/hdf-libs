@@ -1,0 +1,107 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: passes in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: passes",
+              "runTime": 0.000397,
+              "startTime": "2026-09-07T20:33:57.814992Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.passes",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "passes",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: fails in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: fails",
+              "message": "testCodeFailure: Expected values to be strictly equal:\n\n2 !== 3\n[Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:\n\n2 !== 3\n] {\n  code: 'ERR_TEST_FAILURE',\n  failureType: 'testCodeFailure',\n  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  2 !== 3\n  \n      at TestContext.\u003canonymous\u003e (file:///mixed.test.mjs:9:10)\n      at Test.runInAsyncScope (node:async_hooks:226:14)\n      at Test.run (node:internal/test_runner/test:1382:25)\n      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)\n      at Test.postRun (node:internal/test_runner/test:1522:19)\n      at Test.run (node:internal/test_runner/test:1447:12)\n      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 2,\n    expected: 3,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n}",
+              "runTime": 0.000454,
+              "startTime": "2026-09-07T20:33:57.814992Z",
+              "status": "failed"
+            }
+          ],
+          "id": "test.fails",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "fails",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: is skipped in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: is skipped",
+              "message": "Skipped: not applicable on this platform",
+              "runTime": 0.000054,
+              "startTime": "2026-09-07T20:33:57.814992Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "test.is skipped",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "is skipped",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "d2a5dbd22ad3a38d16990c39875111baf01d41fc39ba68cea25e76e2f91c56c0"
+      },
+      "name": "JUnit Test Results"
+    }
+  ],
+  "components": [
+    {
+      "name": "JUnit Test Results",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "junit-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-07T20:33:57.814992Z",
+  "tool": {
+    "name": "JUnit XML"
+  }
+}

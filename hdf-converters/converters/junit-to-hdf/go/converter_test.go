@@ -622,3 +622,82 @@ func TestConvertJUnitToHDF_TestcaseAnchor(t *testing.T) {
 	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "testcase"),
 		"testsuites-mixed.xml: one requirement per <testcase>")
 }
+
+// --- testsuite-less JUnit (node --test) ---
+
+// fixtures/input/node-test-{passing,mixed}.xml are real output from
+// `node --test --test-reporter=junit`, which emits testcases as DIRECT children of
+// <testsuites> with no <testsuite> wrapper. Only the capture directory was
+// normalized out of the file= attributes and the stack trace; structure,
+// attributes, messages and node's own footer comments are exactly as emitted.
+func requirementByID(t *testing.T, reqs []hdf.EvaluatedRequirement, id string) hdf.EvaluatedRequirement {
+	t.Helper()
+	for _, r := range reqs {
+		if r.ID == id {
+			return r
+		}
+	}
+	t.Fatalf("no requirement with id %q; got %v", id, requirementIDs(reqs))
+	return hdf.EvaluatedRequirement{}
+}
+
+func requirementIDs(reqs []hdf.EvaluatedRequirement) []string {
+	ids := make([]string, 0, len(reqs))
+	for _, r := range reqs {
+		ids = append(ids, r.ID)
+	}
+	return ids
+}
+
+func TestConvertJUnitToHDF_TestsuiteLessProducesOneRequirementPerTestcase(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-passing.xml"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	reqs := result.Baselines[0].Requirements
+	assert.Len(t, reqs, 2, "each direct <testcase> is a requirement; got %v", requirementIDs(reqs))
+	assert.NotContains(t, requirementIDs(reqs), "junit-no-findings",
+		"a populated document must never collapse to the no-findings placeholder")
+	for _, r := range reqs {
+		require.Len(t, r.Results, 1)
+		assert.Equal(t, hdf.Passed, r.Results[0].Status)
+	}
+}
+
+// The failure is the whole point: a red run must not convert to a green document.
+func TestConvertJUnitToHDF_TestsuiteLessCarriesFailureAndSkip(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-mixed.xml"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 3, "got %v", requirementIDs(reqs))
+
+	statuses := map[hdf.ResultStatus]int{}
+	for _, r := range reqs {
+		require.Len(t, r.Results, 1)
+		statuses[r.Results[0].Status]++
+	}
+	assert.Equal(t, 1, statuses[hdf.Passed])
+	assert.Equal(t, 1, statuses[hdf.Failed], "the <failure> testcase must convert to failed")
+	assert.Equal(t, 1, statuses[hdf.NotReviewed], "the <skipped> testcase must convert to notReviewed")
+
+	failed := requirementByID(t, reqs, buildID(junitTestCase{ClassName: "test", Name: "fails"}))
+	require.NotNil(t, failed.Results[0].Message)
+	assert.Contains(t, *failed.Results[0].Message, "2 !== 3",
+		"the failure message must survive, not be discarded")
+}
+
+// A genuinely empty document and a populated testsuite-less one must stay
+// distinguishable — today they both yield the same green no-findings document,
+// which is what let a red run pass.
+func TestConvertJUnitToHDF_EmptyDocumentStillReportsNoFindings(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "empty.xml"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 1)
+	assert.Equal(t, "junit-no-findings", reqs[0].ID)
+	assert.Equal(t, hdf.Passed, reqs[0].Results[0].Status)
+}
