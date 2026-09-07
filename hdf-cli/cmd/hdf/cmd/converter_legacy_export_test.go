@@ -69,7 +69,7 @@ func TestConvertLegacyHDFToOtherExports(t *testing.T) {
 
 // Modern HDF (already carrying baselines) must be passed through untouched.
 func TestConvertModernHDFToOSCALSAR_Unaffected(t *testing.T) {
-	modern := converterFixturePath(t, "legacyhdf-to-hdf", "expected/minimal.json")
+	modern := converterFixturePath(t, "legacyhdf-to-hdf", "expected/minimal.json.hdf.json")
 	out := convertOK(t, modern, "--from", "hdf", "--to", "oscal-sar")
 	assert.Contains(t, string(out), "assessment-results")
 }
@@ -79,7 +79,7 @@ func TestConvertModernHDFToOSCALSAR_Unaffected(t *testing.T) {
 func TestNormalizeLegacyHDFInput(t *testing.T) {
 	legacy, err := os.ReadFile(legacyFixture(t))
 	require.NoError(t, err)
-	modern, err := os.ReadFile(converterFixturePath(t, "legacyhdf-to-hdf", "expected/minimal.json"))
+	modern, err := os.ReadFile(converterFixturePath(t, "legacyhdf-to-hdf", "expected/minimal.json.hdf.json"))
 	require.NoError(t, err)
 
 	t.Run("legacy input is upgraded and source rewritten to hdf", func(t *testing.T) {

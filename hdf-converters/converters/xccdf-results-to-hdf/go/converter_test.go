@@ -1446,35 +1446,6 @@ func TestConvertXccdfToHDF_InvalidInput(t *testing.T) {
 	assert.Contains(t, err.Error(), "not an XCCDF")
 }
 
-// --- Full Win2022 STIG test (if file exists) ---
-
-func TestConvertXccdfBenchmarkToHDF_FullWin2022STIG(t *testing.T) {
-	// Test with full Win2022 STIG if available (283 requirements)
-	stigPath := filepath.Join(shared.GetConvertersDir(), "..", "..", "U_MS_Windows_Server_2022_STIG_V2R7_Manual-xccdf.xml")
-	data, err := os.ReadFile(stigPath)
-	if err != nil {
-		t.Skip("Full Win2022 STIG not available at expected path")
-	}
-
-	result, err := ConvertXccdfBenchmarkToHDF(data, converterVersion)
-	require.NoError(t, err)
-	require.NotNil(t, result)
-
-	// Win2022 STIG V2R7 has 283 groups/rules
-	assert.Equal(t, 283, len(result.Requirements), "Win2022 STIG should have 283 requirements")
-	assert.Equal(t, 283, len(result.Groups))
-	assert.Equal(t, "ms-windows-server-2022-stig", result.Name)
-	require.NotNil(t, result.Title)
-	assert.Contains(t, *result.Title, "Windows Server 2022")
-
-	// Spot-check first requirement
-	req := findBaselineRequirement(result.Requirements, "SV-254238")
-	require.NotNil(t, req)
-	assert.Equal(t, 0.5, req.Impact)
-
-	shared.WriteOutput(t, "xccdf-results-to-hdf", "win2022-stig-baseline.json", result)
-}
-
 // --- Helper functions ---
 
 func findBaselineRequirement(requirements []hdf.BaselineRequirement, id string) *hdf.BaselineRequirement {

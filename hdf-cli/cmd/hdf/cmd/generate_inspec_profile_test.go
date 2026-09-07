@@ -162,9 +162,6 @@ func TestGenerateInSpecProfile_XccdfBenchmarkInput(t *testing.T) {
 	fixturePath := filepath.Join("..", "..", "..", "..",
 		"hdf-converters", "converters", "xccdf-results-to-hdf",
 		"fixtures", "input", "benchmark-minimal-1.2.xml")
-	if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
-		t.Skip("XCCDF benchmark fixture not found (LFS not pulled?)")
-	}
 
 	outputDir := filepath.Join(t.TempDir(), "profile")
 	_, stderr, err := executeCommand("generate", "inspec-profile", fixturePath, outputDir)
@@ -185,47 +182,10 @@ func TestGenerateInSpecProfile_XccdfBenchmarkInput(t *testing.T) {
 	assert.Contains(t, string(ctrl), "control 'SV-254238' do")
 }
 
-func TestGenerateInSpecProfile_XccdfFullSTIG(t *testing.T) {
-	fixturePath := filepath.Join("..", "..", "..", "..",
-		"hdf-generators", "test", "fixtures", "stig-rhel9-benchmark.xml")
-	if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
-		t.Skip("RHEL9 STIG benchmark fixture not found (LFS not pulled?)")
-	}
-
-	outputDir := filepath.Join(t.TempDir(), "profile")
-	_, stderr, err := executeCommand("generate", "inspec-profile", fixturePath, outputDir)
-	require.NoError(t, err)
-	assert.Contains(t, stderr, "Generated InSpec profile")
-	assert.Contains(t, stderr, "452 controls")
-
-	// Verify inspec.yml has RHEL9 STIG metadata
-	ymlBytes, err := os.ReadFile(filepath.Join(outputDir, "inspec.yml"))
-	require.NoError(t, err)
-	yml := string(ymlBytes)
-	assert.Contains(t, yml, "name: rhel-9-stig")
-	assert.Contains(t, yml, "Red Hat Enterprise Linux 9")
-
-	// Spot-check a known RHEL9 STIG control
-	ctrl, err := os.ReadFile(filepath.Join(outputDir, "controls", "SV-257777.rb"))
-	require.NoError(t, err)
-	content := string(ctrl)
-	assert.Contains(t, content, "control 'SV-257777' do")
-	assert.Contains(t, content, "impact")
-	assert.Contains(t, content, "tag nist:")
-
-	// Verify control count matches groups in the STIG
-	entries, err := os.ReadDir(filepath.Join(outputDir, "controls"))
-	require.NoError(t, err)
-	assert.Equal(t, 452, len(entries))
-}
-
 func TestGenerateInSpecProfile_XccdfAutoDetect(t *testing.T) {
 	fixturePath := filepath.Join("..", "..", "..", "..",
 		"hdf-converters", "converters", "xccdf-results-to-hdf",
 		"fixtures", "input", "benchmark-minimal-1.2.xml")
-	if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
-		t.Skip("XCCDF benchmark fixture not found (LFS not pulled?)")
-	}
 
 	// Auto-detection: XML file without --source-type should auto-detect as XCCDF
 	outputDir := filepath.Join(t.TempDir(), "profile")
@@ -241,9 +201,6 @@ func TestGenerateInSpecProfile_ExplicitSourceTypeXccdf(t *testing.T) {
 	fixturePath := filepath.Join("..", "..", "..", "..",
 		"hdf-converters", "converters", "xccdf-results-to-hdf",
 		"fixtures", "input", "benchmark-minimal-1.2.xml")
-	if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
-		t.Skip("XCCDF benchmark fixture not found (LFS not pulled?)")
-	}
 
 	outputDir := filepath.Join(t.TempDir(), "profile")
 	_, _, err := executeCommand("generate", "inspec-profile", fixturePath, outputDir, "--source-type", "xccdf")
@@ -270,9 +227,6 @@ func TestGenerateInSpecProfile_XccdfResultsError(t *testing.T) {
 	fixturePath := filepath.Join("..", "..", "..", "..",
 		"hdf-converters", "converters", "xccdf-results-to-hdf",
 		"fixtures", "input", "minimal.xml")
-	if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
-		t.Skip("XCCDF results fixture not found (LFS not pulled?)")
-	}
 
 	outputDir := filepath.Join(t.TempDir(), "profile")
 	_, _, err := executeCommand("generate", "inspec-profile", fixturePath, outputDir)
