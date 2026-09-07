@@ -1,10 +1,23 @@
-# Test-results gate, applied by gate-hdf-tests to every normalized JUnit
-# file. The test jobs remain the failure authority (a red test fails its
-# own job with the stack trace inline); this gate is the uniform evidence
-# record — scans AND tests as HDF per run — and the policy point for what
-# exit codes can't express. A skipped-test budget (JUnit skipped maps to
-# notReviewed) is the natural first such policy once one is agreed; until
-# then the verdict simply mirrors the tool: any failure or error fails.
+# Test-results policy. The test jobs remain the failure authority — a red test
+# fails its own job with the stack trace inline — so the failure bounds here
+# only mirror them. The skip budget is what this gate decides on its own.
+#
+# JUnit `skipped` maps to HDF `notReviewed`, which no test runner's exit code
+# can express: a suite that quietly stops running tests is green everywhere
+# else. The budget is per-document, because `hdf convert` emits one HDF per
+# JUnit file and there is no merge command, so a pipeline-wide total cannot be
+# stated here. 7 is the current high-water mark (hdf-cli 7, hdf-schema 5,
+# hdf-converters 1, every other module 0) — the tightest value the tree passes
+# today, chosen over the pipeline total of 13 because no single module is near
+# 13 and a budget nothing can reach decides nothing.
+#
+# Known limit: a module now at 0 can grow to 7 unnoticed, and the total can
+# drift while no single module crosses the line. Four of hdf-cli's 7 are tests
+# that never run at all (absent fixtures — hdf-libs-w2vm); when those are
+# resolved this budget must be re-measured and tightened.
+skipped:
+    total:
+        max: 7
 failed:
     total:
         max: 0

@@ -1,0 +1,14 @@
+# ESLint policy: any finding fails CI.
+#
+# Counts come from HDF's effective-status layer, which is what makes this
+# different from `eslint --max-warnings=0`. An in-source `eslint-disable`
+# carrying its justification arrives in the SARIF as a suppression, becomes a
+# waiver-typed statusOverride, and so does NOT trip the gate — the exemption
+# stops being a comment nobody can query and becomes attributed governance
+# data in the run's retained HDF artifact.
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0

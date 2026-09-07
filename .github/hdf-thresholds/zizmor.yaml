@@ -1,0 +1,10 @@
+# zizmor policy: any workflow finding fails CI.
+#
+# The workflows are the pipeline's own attack surface, so this stays at zero
+# rather than carrying the severity tiers a code scanner might want.
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0
