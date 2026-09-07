@@ -16,10 +16,14 @@ for f in hdf-*/test-results/junit.xml site/test-results/junit.xml; do
   FOUND=$((FOUND + 1))
 done
 
-# Zero files means the reporter flags did not take effect — fail here rather
-# than let the gate see a leg that silently produced nothing.
-if [ "$FOUND" -eq 0 ]; then
-  echo "::error::no vitest JUnit outputs found — the reporter flags did not take effect"
+# Assert the COUNT, not just non-zero. Each package configures the junit
+# reporter in its own vitest.config.ts, so a new package that omits the block —
+# or one that stops emitting — would otherwise disappear from the gate's
+# evidence silently, and a zero-check cannot see a 9-of-10 regression.
+WANT=$(grep -l 'junit' -- */vitest.config.ts 2>/dev/null | wc -l | tr -d ' ')
+if [ "$FOUND" -ne "$WANT" ]; then
+  echo "::error::collected $FOUND JUnit files but $WANT packages configure the junit reporter"
+  echo "::error::a package configured to emit produced nothing, or emits without being configured"
   exit 1
 fi
-echo "collected $FOUND JUnit files"
+echo "collected $FOUND JUnit files (all $WANT configured packages reported)"
