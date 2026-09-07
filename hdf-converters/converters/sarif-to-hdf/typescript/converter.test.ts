@@ -1573,3 +1573,83 @@ describe('security-severity (CVSS) impact and severity', () => {
     expect(req.severity).toBe('critical');
   });
 });
+
+describe('rules defined on tool.extensions', () => {
+  // fixtures/input/codeql-extensions.sarif is real CodeQL 2.17.4 output taken
+  // verbatim from SecureCodeWarrior/github-action-add-sarif-contextual-training
+  // (MIT) at commit 5b832744d3228f5fdea93c403514c2457e3485c4, path
+  // fixtures/codeql-extension-rules.sarif. Its tool.driver.rules is EMPTY and both
+  // rules live on tool.extensions[0].rules — the shape modern CodeQL emits, in
+  // which a driver-only rule map resolves nothing.
+  it('resolves extension-defined rules, with everything they carry', async () => {
+    const result = JSON.parse(await convertSarifToHdf(loadFixture('input', 'codeql-extensions.sarif')));
+    const byId = new Map<string, {
+      impact: number; severity?: string;
+      descriptions?: Array<{ label: string; data: string }>;
+      tags: Record<string, unknown>;
+    }>(result.baselines[0].requirements.map((r: { id: string }) => [r.id, r]));
+
+    const pathInj = byId.get('py/path-injection');
+    expect(pathInj).toBeDefined();
+    // The rationale is the rule's fullDescription — only a resolved rule supplies it.
+    expect(pathInj!.descriptions?.find((d) => d.label === 'rationale')?.data)
+      .toBe('Accessing paths influenced by users can allow an attacker to access unexpected resources.');
+    expect(pathInj!.impact).toBe(0.75);
+    expect(pathInj!.severity).toBe('high');
+    expect(pathInj!.tags.cwe).toContain('CWE-022');
+    expect(pathInj!.tags.nist).toEqual(['SI-10']);
+
+    const cmdInj = byId.get('py/command-line-injection');
+    expect(cmdInj).toBeDefined();
+    expect(cmdInj!.impact).toBe(0.98);
+    expect(cmdInj!.severity).toBe('critical');
+    expect(cmdInj!.tags.cwe).toContain('CWE-078');
+  });
+
+  // The real CodeQL fixture's rules carry no helpUri, so the tag that only a
+  // resolved rule can populate is pinned synthetically instead of left unproven.
+  it('populates helpUri from a rule defined only on an extension', async () => {
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {
+          driver: { name: 'Test', version: '1.0' },
+          extensions: [{
+            name: 'ext',
+            rules: [{
+              id: 'EXT-1',
+              shortDescription: { text: 'defined only by the extension' },
+              helpUri: 'https://example.invalid/rules/EXT-1'
+            }]
+          }]
+        },
+        results: [{ ruleId: 'EXT-1', level: 'warning', message: { text: 'ext: description' }, locations: [] }]
+      }]
+    });
+    const req = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(req.tags.helpUri).toBe('https://example.invalid/rules/EXT-1');
+    expect(req.title).toBe('defined only by the extension');
+  });
+
+  // SARIF permits the same rule id on the driver and on an extension. The driver is
+  // the primary tool component, so it wins; an extension must never silently shadow
+  // the tool's own definition.
+  it('prefers the driver rule when an extension defines the same id', async () => {
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {
+          driver: {
+            name: 'Test',
+            version: '1.0',
+            rules: [{ id: 'DUP', shortDescription: { text: 'from the driver' } }]
+          },
+          extensions: [{ name: 'ext', rules: [{ id: 'DUP', shortDescription: { text: 'from the extension' } }] }]
+        },
+        results: [{ ruleId: 'DUP', level: 'warning', message: { text: 'dup: description' }, locations: [] }]
+      }]
+    });
+    const result = JSON.parse(await convertSarifToHdf(input));
+    expect(result.baselines[0].requirements[0].title).toBe('from the driver');
+  });
+});

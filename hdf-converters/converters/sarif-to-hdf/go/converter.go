@@ -31,9 +31,12 @@ type SarifRun struct {
 	Taxonomies []SarifTaxonomy `json:"taxonomies,omitempty"`
 }
 
-// SarifTool wraps the driver (and optional extensions).
+// SarifTool wraps the driver and any extensions. Rules may be defined on either:
+// modern CodeQL leaves tool.driver.rules empty and puts every rule on an
+// extension, so a driver-only reader resolves none of them.
 type SarifTool struct {
-	Driver *SarifDriver `json:"driver"`
+	Driver     *SarifDriver  `json:"driver"`
+	Extensions []SarifDriver `json:"extensions,omitempty"`
 }
 
 // SarifDriver describes the analysis tool.
@@ -434,9 +437,22 @@ func synthesizeNoFindingsRequirement(run SarifRun, timestamp time.Time) hdf.Eval
 	)
 }
 
+// buildRuleMap indexes every rule a run defines, from the driver and from any
+// extensions. Extensions are seeded first so the driver overwrites them: SARIF
+// permits the same rule id on both, the driver is the primary tool component, and
+// an extension must never silently shadow the tool's own definition. Seeding in a
+// fixed order also keeps the outcome independent of map iteration order.
 func buildRuleMap(run SarifRun) map[string]ReportingDescriptor {
 	ruleMap := make(map[string]ReportingDescriptor)
-	if run.Tool != nil && run.Tool.Driver != nil {
+	if run.Tool == nil {
+		return ruleMap
+	}
+	for _, ext := range run.Tool.Extensions {
+		for _, rule := range ext.Rules {
+			ruleMap[rule.ID] = rule
+		}
+	}
+	if run.Tool.Driver != nil {
 		for _, rule := range run.Tool.Driver.Rules {
 			ruleMap[rule.ID] = rule
 		}

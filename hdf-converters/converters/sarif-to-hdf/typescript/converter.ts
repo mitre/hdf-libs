@@ -17,8 +17,11 @@ interface SarifFile {
 }
 
 interface SarifRun {
+  // Rules may be defined on the driver or on any extension: modern CodeQL leaves
+  // tool.driver.rules empty and puts every rule on an extension.
   tool?: {
     driver?: SarifDriver;
+    extensions?: SarifDriver[];
   };
   results: SarifResult[];
   taxonomies?: SarifTaxonomy[];
@@ -255,12 +258,20 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, t
   });
 }
 
+// Indexes every rule a run defines, from the driver and from any extensions.
+// Extensions are seeded first so the driver overwrites them: SARIF permits the
+// same rule id on both, the driver is the primary tool component, and an
+// extension must never silently shadow the tool's own definition. Mirrors Go's
+// buildRuleMap.
 function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
   const map = new Map<string, ReportingDescriptor>();
-  if (run.tool?.driver?.rules) {
-    for (const rule of run.tool.driver.rules) {
+  for (const ext of run.tool?.extensions ?? []) {
+    for (const rule of ext.rules ?? []) {
       map.set(rule.id, rule);
     }
+  }
+  for (const rule of run.tool?.driver?.rules ?? []) {
+    map.set(rule.id, rule);
   }
   return map;
 }
