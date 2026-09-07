@@ -1,0 +1,21 @@
+# Cross-ecosystem dependency policy. OSV-Scanner reads pnpm-lock.yaml and every
+# go.work module's go.mod in one pass, so this is the only gate source that sees
+# both dependency trees at once.
+#
+# A TOTAL bound, not a severity-tiered one, and that is deliberate: OSV emits
+# `level: warning` on every result and carries CVSS only in the SARIF rule's
+# properties.security-severity, which sarif-to-hdf does not read. A tiered
+# policy here would be VACUOUS — measured: the govulncheck-shaped template
+# passes a CVSS 8.2 finding. Tighten this to severity buckets once
+# hdf-libs-fxke lands; until then max: 0 is the only bound that bites.
+#
+# Zero is reachable because adjudicated findings are waived, not ignored:
+# .github/hdf-amendments/osv-scanner.json carries a riskAdjustment per triaged
+# advisory, with the dependency-path evidence and a review date. An expired
+# amendment stops suppressing and this gate goes red on its own.
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0

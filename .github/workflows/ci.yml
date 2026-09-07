@@ -35,6 +35,9 @@ env:
   GOLANGCI_LINT_VERSION: 'v2.11.3'
   GOVULNCHECK_VERSION: 'v1.1.4'
   GOTESTSUM_VERSION: 'v1.13.0'
+  # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves
+  # to the v1 line (1.9.2) and silently gives you an older scanner.
+  OSV_SCANNER_VERSION: 'v2.5.1'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
   # The gate's CLI is built from main by the gate-cli job — see the comment
@@ -118,6 +121,42 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-workflows
+          path: scan-artifacts/
+          retention-days: 7
+
+  # ── Scan: dependencies, both ecosystems at once ──────────────────────────
+  # OSV-Scanner is the only source here that reads npm and Go together. It works
+  # off lockfiles, so this job needs neither `pnpm install` nor a build — just a
+  # checkout and the scanner.
+  #
+  # go install over a release binary for the same reason as golangci-lint and
+  # govulncheck: the module download is verified against the Go checksum
+  # database.
+  scan-deps:
+    name: Scan dependencies (OSV)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          go: 'true'
+      # Exit codes: 0 clean, 1 findings (the gate judges those), 127 a scanner
+      # or network error, 128 no package sources found. Tolerating only 0 and 1
+      # means an unreachable OSV API or a scan that matched nothing fails here
+      # rather than reporting a clean tree.
+      - name: osv-scanner (SARIF; findings gate via HDF)
+        run: |
+          go install "github.com/google/osv-scanner/v2/cmd/osv-scanner@$OSV_SCANNER_VERSION"
+          mkdir -p scan-artifacts
+          osv-scanner scan source -r . \
+            --format sarif --output scan-artifacts/osv-scanner.sarif || [ "$?" -le 1 ]
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-deps
           path: scan-artifacts/
           retention-days: 7
 
@@ -264,7 +303,7 @@ jobs:
     name: Gate scans on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [gate-cli, scan-workflows, check-ts, check-go]
+    needs: [gate-cli, scan-workflows, check-ts, check-go, scan-deps]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -287,12 +326,34 @@ jobs:
       # mis-fingerprint and yield a valid document with zero findings.
       - name: Normalize every scan to HDF
         run: hdf convert --from sarif scan-artifacts/*.sarif -o hdf-scans/
+      # Adjudication, before judgement. A committed amendment records a triaged
+      # finding as waived — with its evidence, its author and a review date —
+      # so the threshold counts effectiveStatus rather than the raw scanner
+      # verdict. The finding itself stays in the artifact.
+      #
+      # A tool with no amendments file is skipped, and an amendments file that
+      # matches nothing in a document is a clean pass-through (verified: output
+      # byte-identical). So this is a no-op for most tools, most of the time.
+      #
+      # Convention is provisional pending hdf-libs-wgvm.19, which designs
+      # amendment inclusion across every gate.
+      - name: Apply committed amendments
+        run: |
+          shopt -s failglob
+          for tool in zizmor eslint golangci govulncheck osv-scanner; do
+            amendments=".github/hdf-amendments/$tool.json"
+            [ -f "$amendments" ] || continue
+            for doc in hdf-scans/$tool*.hdf.json; do
+              hdf amend apply --results "$doc" --amendments "$amendments" -o "$doc.tmp"
+              mv "$doc.tmp" "$doc"
+            done
+          done
       # One policy per tool. failglob is the vacuity guard: a family that
       # produced nothing fails here instead of passing unnoticed.
       - name: Apply each tool's threshold policy
         run: |
           shopt -s failglob
-          for tool in zizmor eslint golangci govulncheck; do
+          for tool in zizmor eslint golangci govulncheck osv-scanner; do
             hdf validate threshold hdf-scans/$tool*.hdf.json -T .github/hdf-thresholds/$tool.yaml
           done
       - name: Upload normalized HDF
