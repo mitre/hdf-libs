@@ -370,10 +370,10 @@ jobs:
       # test failures still fail this job — it stays the failure authority.
       - name: Test TypeScript (all packages, with coverage)
         if: matrix.os == 'ubuntu-latest'
-        run: pnpm -r --filter=!hdf-cli run test:coverage --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
+        run: pnpm -r --filter=!hdf-cli run test:coverage
       - name: Test TypeScript (all packages)
         if: matrix.os != 'ubuntu-latest'
-        run: pnpm -r run test:ts --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
+        run: pnpm -r run test:ts
       - name: Collect JUnit results
         if: always()
         shell: bash
