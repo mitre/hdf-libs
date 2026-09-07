@@ -20,6 +20,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 1,
             "ref": ".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem"
@@ -88,6 +89,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 1,
             "ref": "samples/Dockerfile"
@@ -132,6 +134,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 1,
             "ref": "samples/Dockerfile"

@@ -50,6 +50,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 39,
             "ref": "good/db_init.py"
@@ -97,6 +98,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 33,
             "ref": "good/mod_user.py"
@@ -144,6 +146,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 32,
             "ref": "bad/mod_user.py"
@@ -201,6 +204,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 8,
             "ref": "bad/api_list.py"
@@ -246,6 +250,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 2,
             "ref": "bad/libuser.py"
@@ -486,6 +491,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 3,
             "ref": "utils/aes-decrypt.py"
@@ -541,6 +547,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 81,
             "ref": "bad/libmfa.py"
@@ -598,6 +605,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 22,
             "ref": "bad/libapi.py"
@@ -755,6 +763,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 33,
             "ref": "bad/mod_user.py"
@@ -1052,6 +1061,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 12,
             "ref": "bad/libuser.py"
@@ -1113,6 +1123,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 29,
             "ref": "good/vulpy-ssl.py"
@@ -1175,6 +1186,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 51,
             "ref": "good/libuser.py"
@@ -1232,6 +1244,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 28,
             "ref": "good/libposts.py"

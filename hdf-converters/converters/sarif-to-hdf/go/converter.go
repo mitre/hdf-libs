@@ -3,6 +3,9 @@ package sarif
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -183,7 +186,8 @@ type ArtifactContent struct {
 // --- Impact mapping ---
 // SARIF uses "error"/"warning"/"note" levels, not standard severity labels.
 // These are used as aliases; unknown levels fall through to 0.0 (then bumped
-// to 0.1 at the call site).
+// to 0.1 at the call site). This table is the FALLBACK — a rule carrying a
+// usable security-severity outranks it; see securitySeverityImpact.
 
 var sarifAliases = map[string]float64{
 	"error":   0.7,
@@ -467,10 +471,23 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	// Use the rule's defaultConfiguration.level, falling back to the first result's level,
 	// then to the SARIF default "warning".
 	ruleLevel := resolveRuleLevel(rule, sarifResults)
-	impact := hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
+	// The rule's security-severity is its CVSS base score and OUTRANKS level:
+	// level is the tool's own triage and several scanners emit one level for
+	// every finding, so preferring it would collapse the CVSS spread that is the
+	// only real severity signal such a document carries. Both are rule-level, so
+	// nothing per-result is discarded. Level remains the fallback.
+	impact, fromCvss := securitySeverityImpact(rule)
+	if !fromCvss {
+		impact = hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
+	}
 	if impact == 0 {
 		impact = 0.1
 	}
+	// severity is a schema field consumers read directly, so the converter records
+	// the band it already knows rather than leaving every consumer to re-derive it.
+	// (The threshold engine is not one of them — it falls back to impact when
+	// severity is absent — so this changes what is published, not what gates.)
+	severity := hdf.Severity(hdfutil.ImpactToSeverity(impact))
 
 	// Source location from first result's first location
 	var sourceLocationPtr *hdf.SourceLocation
@@ -518,6 +535,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		Title:              &title,
 		Descriptions:       descriptions,
 		Impact:             impact,
+		Severity:           &severity,
 		Tags:               tags,
 		Results:            results,
 		Code:               codePtr,
@@ -638,6 +656,50 @@ func packageFromSarifProperties(props map[string]interface{}) *hdf.AffectedPacka
 		CPE:            cpe,
 		FixedInVersion: fixed,
 	})
+}
+
+// decimalScore matches the plain decimal forms a CVSS score is written in. It
+// exists to keep Go and TypeScript agreeing on what parses: strconv.ParseFloat
+// accepts Go's hex-float literals ("0x1p3") while JavaScript's Number() accepts
+// "0x8" and "0b101", so each language would otherwise take a value the other
+// rejects. Neither form is a CVSS score, so both languages reject both.
+var decimalScore = regexp.MustCompile(`^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$`)
+
+// securitySeverityImpact reads the rule's security-severity property — the SARIF
+// convention for carrying a CVSS base score, and what GitHub's own ingestion keys
+// on — and scales it to an HDF impact. Reports false when the property is absent
+// or is not a finite score within 0.0-10.0, so the caller falls back to the level
+// mapping rather than deriving an impact from an unusable value. Producers emit
+// the score as a string; a JSON number is accepted too.
+func securitySeverityImpact(rule *ReportingDescriptor) (float64, bool) {
+	if rule == nil {
+		return 0, false
+	}
+	raw, ok := rule.Properties["security-severity"]
+	if !ok {
+		return 0, false
+	}
+	var score float64
+	switch v := raw.(type) {
+	case string:
+		trimmed := strings.TrimSpace(v)
+		if !decimalScore.MatchString(trimmed) {
+			return 0, false
+		}
+		parsed, err := strconv.ParseFloat(trimmed, 64)
+		if err != nil {
+			return 0, false
+		}
+		score = parsed
+	case float64:
+		score = v
+	default:
+		return 0, false
+	}
+	if math.IsNaN(score) || math.IsInf(score, 0) || score < 0 || score > 10 {
+		return 0, false
+	}
+	return hdfutil.RoundImpact(score / 10), true
 }
 
 // resolveRuleLevel determines the inherent severity level for a rule, independent of

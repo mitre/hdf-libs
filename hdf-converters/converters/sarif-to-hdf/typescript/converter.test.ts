@@ -1487,3 +1487,89 @@ async function convertWithLevel(level: string) {
 
   return JSON.parse(await convertSarifToHdf(input));
 }
+
+describe('security-severity (CVSS) impact and severity', () => {
+  // Builds a one-rule, one-result SARIF so precedence between the rule's
+  // security-severity and the result's level can be asserted directly.
+  function sarifWith(level: string, securitySeverity?: unknown): string {
+    const properties: Record<string, unknown> = {};
+    if (securitySeverity !== undefined) properties['security-severity'] = securitySeverity;
+    return JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: { driver: { name: 'Test', version: '1.0', rules: [{ id: 'TEST', properties }] } },
+        results: [{ ruleId: 'TEST', level, message: { text: 'test: description' }, locations: [] }]
+      }]
+    });
+  }
+
+  const firstRequirement = async (input: string) =>
+    JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+
+  // Real grype output: every result is level "warning" while the rules carry
+  // distinct CVSS scores — the shape that collapses when only level is read.
+  it('derives impact from the rule CVSS, not its level', async () => {
+    const result = JSON.parse(await convertSarifToHdf(loadFixture('input', 'grype.sarif')));
+    const byId = new Map<string, { impact: number; severity?: string }>(
+      result.baselines[0].requirements.map((r: { id: string; impact: number; severity?: string }) => [r.id, r])
+    );
+    for (const [id, impact] of [
+      ['CVE-2025-12781-python-3.12', 0.63],
+      ['CVE-2025-15366-python-3.12', 0.59],
+      ['CVE-2025-15367-python-3.12', 0.59],
+      ['CVE-2026-2297-python-3.12', 0.57]
+    ] as Array<[string, number]>) {
+      expect(byId.get(id)?.impact, id).toBe(impact);
+      expect(byId.get(id)?.severity, id).toBe('medium');
+    }
+  });
+
+  it.each([
+    ['error', 0.7, 'high'],
+    ['warning', 0.5, 'medium'],
+    ['note', 0.3, 'low']
+  ])('populates severity for level-only SARIF (%s)', async (level, impact, severity) => {
+    const req = await firstRequirement(sarifWith(level as string));
+    expect(req.impact).toBe(impact);
+    expect(req.severity).toBe(severity);
+  });
+
+  // An unusable score must not produce a nonsense impact — it falls back to the
+  // level mapping it would have used had the property been absent.
+  it.each([
+    ['non-numeric', 'abc'],
+    ['empty', ''],
+    ['blank', '   '],
+    ['negative', '-1'],
+    ['above the CVSS ceiling', '10.1'],
+    ['not a number', 'NaN'],
+    ['infinity', 'Infinity'],
+    // Neither language may accept a literal the other rejects: Number() takes hex
+    // and binary integers, Go's strconv.ParseFloat takes hex floats. None is a
+    // CVSS score, so both reject all three.
+    ['hex integer literal', '0x8'],
+    ['binary integer literal', '0b101'],
+    ['hex float literal', '0x1p3'],
+    // Passes the decimal shape but overflows to infinity when parsed.
+    ['exponent overflow', '1e999'],
+    ['wrong type', { score: 7 }]
+  ])('falls back to level when security-severity is %s', async (_name, value) => {
+    const req = await firstRequirement(sarifWith('error', value));
+    expect(req.impact).toBe(0.7);
+    expect(req.severity).toBe('high');
+  });
+
+  // CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
+  // converter's existing zero-impact floor still applies.
+  it('keeps the existing zero-impact floor for CVSS 0.0', async () => {
+    const req = await firstRequirement(sarifWith('error', '0.0'));
+    expect(req.impact).toBe(0.1);
+    expect(req.severity).toBe('low');
+  });
+
+  it('accepts a JSON number as well as the conventional string', async () => {
+    const req = await firstRequirement(sarifWith('warning', 9.1));
+    expect(req.impact).toBe(0.91);
+    expect(req.severity).toBe('critical');
+  });
+});

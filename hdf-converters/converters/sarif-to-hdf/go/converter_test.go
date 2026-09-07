@@ -1995,3 +1995,180 @@ func TestConvertSarifToHDF_RequirementCodeNilWhenNoSnippet(t *testing.T) {
 		}
 	}
 }
+
+// --- security-severity (CVSS) impact + severity ---
+
+// sarifWithSecuritySeverity builds a one-rule, one-result SARIF where the rule
+// carries the given security-severity property and the result carries the given
+// level, so precedence between the two can be asserted directly.
+// A nil securitySeverity omits the property entirely; any other value is set as
+// given, so "present but blank" and "absent" are distinguishable.
+func sarifWithSecuritySeverity(t *testing.T, level string, securitySeverity interface{}) []byte {
+	t.Helper()
+	props := map[string]interface{}{}
+	if securitySeverity != nil {
+		props["security-severity"] = securitySeverity
+	}
+	input := map[string]interface{}{
+		"version": "2.1.0",
+		"runs": []map[string]interface{}{{
+			"tool": map[string]interface{}{
+				"driver": map[string]interface{}{
+					"name":    "Test",
+					"version": "1.0",
+					"rules": []map[string]interface{}{{
+						"id":         "TEST",
+						"properties": props,
+					}},
+				},
+			},
+			"results": []map[string]interface{}{{
+				"ruleId":    "TEST",
+				"level":     level,
+				"message":   map[string]string{"text": "test: description"},
+				"locations": []interface{}{},
+			}},
+		}},
+	}
+	b, err := json.Marshal(input)
+	require.NoError(t, err)
+	return b
+}
+
+// fixtures/input/grype.sarif is real grype 0.91.2 output over a public container
+// image, taken verbatim from chainguard-demo/auto-deploy-demo (MIT) at commit
+// cb4f28125158db261775b139b184f283539d7c42, path grype-results.sarif. Every result
+// is level "warning" while the rules carry distinct CVSS scores — the exact shape
+// that collapses to one impact when only level is read.
+func TestConvertSarifToHDF_SecuritySeverityDrivesImpact(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("grype.sarif"))
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	want := map[string]float64{
+		"CVE-2025-12781-python-3.12": 0.63,
+		"CVE-2025-15366-python-3.12": 0.59,
+		"CVE-2025-15367-python-3.12": 0.59,
+		"CVE-2026-2297-python-3.12":  0.57,
+	}
+	seen := map[string]bool{}
+	for _, req := range result.Baselines[0].Requirements {
+		expected, ok := want[req.ID]
+		if !ok {
+			continue
+		}
+		seen[req.ID] = true
+		assert.Equal(t, expected, req.Impact, "%s: impact must come from the rule's CVSS, not its level", req.ID)
+		require.NotNil(t, req.Severity, "%s: severity must be published, not left for consumers to re-derive", req.ID)
+		assert.Equal(t, hdf.SeverityMedium, *req.Severity, "%s", req.ID)
+	}
+	assert.Len(t, seen, len(want), "every CVE rule in the fixture should be asserted")
+}
+
+// severity is a schema field consumers read directly, so level-only SARIF gets one
+// too — the converter records the band rather than leaving consumers to re-derive it.
+func TestConvertSarifToHDF_SeverityPopulatedForLevelOnlySarif(t *testing.T) {
+	for _, tt := range []struct {
+		level  string
+		impact float64
+		want   hdf.Severity
+	}{
+		{"error", 0.7, hdf.SeverityHigh},
+		{"warning", 0.5, hdf.SeverityMedium},
+		{"note", 0.3, hdf.SeverityLow},
+	} {
+		t.Run(tt.level, func(t *testing.T) {
+			result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, tt.level, nil), testConverterVersion)
+			require.NoError(t, err)
+			req := result.Baselines[0].Requirements[0]
+			assert.Equal(t, tt.impact, req.Impact)
+			require.NotNil(t, req.Severity)
+			assert.Equal(t, tt.want, *req.Severity)
+		})
+	}
+}
+
+// An unusable security-severity must not produce a nonsense impact — it falls
+// back to the level mapping it would have used had the property been absent.
+func TestConvertSarifToHDF_MalformedSecuritySeverityFallsBackToLevel(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		value interface{}
+	}{
+		{"non-numeric", "abc"},
+		{"present but empty", ""},
+		{"present but whitespace", "   "},
+		{"negative", "-1"},
+		{"above the CVSS ceiling", "10.1"},
+		{"not a number", "NaN"},
+		{"infinity", "Inf"},
+		// Neither language may accept a literal the other rejects: Go's
+		// strconv.ParseFloat takes hex floats, JavaScript's Number() takes hex and
+		// binary integers. None is a CVSS score, so both reject all three.
+		{"hex integer literal", "0x8"},
+		{"binary integer literal", "0b101"},
+		{"hex float literal", "0x1p3"},
+		// Passes the decimal shape but overflows to infinity when parsed.
+		{"exponent overflow", "1e999"},
+		{"wrong JSON type", map[string]interface{}{"score": 7}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, "error", tt.value), testConverterVersion)
+			require.NoError(t, err)
+			req := result.Baselines[0].Requirements[0]
+			assert.Equal(t, 0.7, req.Impact, "should fall back to level 'error'")
+			require.NotNil(t, req.Severity)
+			assert.Equal(t, hdf.SeverityHigh, *req.Severity)
+		})
+	}
+}
+
+// CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
+// converter's existing zero-impact floor still applies, because a reported
+// finding must never be silently notApplicable.
+func TestConvertSarifToHDF_ZeroSecuritySeverityKeepsTheExistingFloor(t *testing.T) {
+	result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, "error", "0.0"), testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, 0.1, req.Impact, "CVSS 0.0 wins over level, then hits the existing 0.1 floor")
+	require.NotNil(t, req.Severity)
+	assert.Equal(t, hdf.SeverityLow, *req.Severity)
+}
+
+// Producers conventionally emit the score as a string, but a JSON number is
+// valid too — the TS counterpart accepts both, so this side must as well.
+func TestConvertSarifToHDF_SecuritySeverityAcceptsJSONNumber(t *testing.T) {
+	input := map[string]interface{}{
+		"version": "2.1.0",
+		"runs": []map[string]interface{}{{
+			"tool": map[string]interface{}{
+				"driver": map[string]interface{}{
+					"name":    "Test",
+					"version": "1.0",
+					"rules": []map[string]interface{}{{
+						"id":         "TEST",
+						"properties": map[string]interface{}{"security-severity": 9.1},
+					}},
+				},
+			},
+			"results": []map[string]interface{}{{
+				"ruleId":    "TEST",
+				"level":     "warning",
+				"message":   map[string]string{"text": "test: description"},
+				"locations": []interface{}{},
+			}},
+		}},
+	}
+	inputBytes, err := json.Marshal(input)
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputBytes, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, 0.91, req.Impact)
+	require.NotNil(t, req.Severity)
+	assert.Equal(t, hdf.SeverityCritical, *req.Severity)
+}
