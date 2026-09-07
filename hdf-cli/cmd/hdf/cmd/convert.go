@@ -37,7 +37,11 @@ func NewConvertCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if len(files) > 1 {
+			// A gate writes every scan into one directory with a single
+			// command, and whether that matched one file or twelve is an
+			// accident of how many scanners ran — so -o <dir> routes through
+			// the same directory logic at either arity.
+			if len(files) > 1 || isDirectoryOutput(outputPath) {
 				return runConvertBulk(cmd, files, fromFormat, toFormat, outputPath)
 			}
 			return runConvert(cmd, args, fromFormat, toFormat, outputPath)

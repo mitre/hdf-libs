@@ -216,6 +216,20 @@ func bulkHasFailure(results []BulkResult) bool {
 	return false
 }
 
+// isDirectoryOutput reports whether -o names a directory rather than a file:
+// it ends in a path separator, or it already exists as one. A trailing
+// separator is the only way to say "a directory that does not exist yet".
+func isDirectoryOutput(path string) bool {
+	if path == "" {
+		return false
+	}
+	if last := path[len(path)-1]; last == '/' || last == filepath.Separator {
+		return true
+	}
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
 // bulkOutputPath computes the output filename for a bulk conversion.
 // Input "scan.nessus" with toFormat "hdf" → "scan.hdf.json"
 // Input "report.sarif" with toFormat "csv" produces "report.hdf.csv".
