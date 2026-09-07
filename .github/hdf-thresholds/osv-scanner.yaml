@@ -22,6 +22,17 @@
 # 127 and a scan that matched no manifests exits 128; the job tolerates only 0
 # and 1, so neither can be mistaken for a clean tree.
 #
+# FIX-AVAILABILITY WAS WEIGHED AND IS DELIBERATELY NOT A BOUND. OSV does report
+# fixed versions, but only as prose inside the SARIF rule's help.markdown; there
+# is no structured field, and sarif-to-hdf does not lift one, so a threshold
+# cannot currently express "fail only when a fix exists". Even if it could, it
+# would be the wrong instrument: a policy that auto-tolerates findings with no
+# available fix suppresses them permanently and silently, which is precisely the
+# behaviour the amendments file replaces. An unfixable transitive should stay
+# visible and be adjudicated by a person, with a reason and a review date, not
+# excused by a rule. All five findings adjudicated today are of exactly that
+# kind — real advisories with no fix this repo can apply on its own schedule.
+#
 # Zero is reachable because adjudicated findings are waived, not ignored:
 # .github/hdf-amendments/osv-scanner.json carries a riskAdjustment per triaged
 # advisory, with the dependency-path evidence and a review date. An expired
