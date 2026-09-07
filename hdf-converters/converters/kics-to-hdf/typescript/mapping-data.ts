@@ -17,7 +17,8 @@
  *
  * Until a query appears here the converter falls back to its CWE, then to the
  * static-analysis defaults, recording which tier answered in the `nistMapping`
- * tag. See #239 for the adjudication process and the candidate set.
+ * tag. Candidates are drawn from the ranked review queue described above and
+ * added only once a qualified reviewer adjudicates them.
  */
 
 export interface KicsMappingEntry {

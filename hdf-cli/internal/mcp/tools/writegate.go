@@ -2,6 +2,7 @@ package tools
 
 import (
 	"errors"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -77,10 +78,22 @@ func writeArtifact(output string, dryRun, overwrite bool, data []byte) (writtenP
 	}
 	if _, werr := f.Write(data); werr != nil {
 		_ = f.Close()
+		removePartialWrite(confined)
 		return "", "", redactFileErr(mcperr.WriteFailed, "could not write output", output, werr)
 	}
 	if werr := f.Close(); werr != nil {
+		removePartialWrite(confined)
 		return "", "", redactFileErr(mcperr.WriteFailed, "could not write output", output, werr)
 	}
 	return output, "", nil
+}
+
+// removePartialWrite deletes a file left behind by a failed Write/Close so a
+// retry sees a clean slate instead of hitting O_EXCL and misreporting the failed
+// write as OUTPUT_EXISTS. A failed removal is logged but never surfaced — the
+// original write error is what the caller needs to see.
+func removePartialWrite(confined string) {
+	if err := os.Remove(confined); err != nil && !errors.Is(err, os.ErrNotExist) {
+		slog.Error("could not remove partial write", "error", err)
+	}
 }

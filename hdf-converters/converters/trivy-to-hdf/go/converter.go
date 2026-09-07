@@ -264,7 +264,7 @@ func convertVuln(raw json.RawMessage, res trivyResult, startTime time.Time) (hdf
 		return hdf.EvaluatedRequirement{}, false
 	}
 
-	descriptions := []hdf.Description{{Label: "default", Data: firstNonEmpty(v.Description, v.Title, v.VulnerabilityID)}}
+	descriptions := []hdf.Description{{Label: "default", Data: shared.FirstNonEmpty(v.Description, v.Title, v.VulnerabilityID)}}
 	if v.FixedVersion != "" {
 		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: fmt.Sprintf("Fixed in version %s.", v.FixedVersion)})
 	}
@@ -298,7 +298,7 @@ func convertVuln(raw json.RawMessage, res trivyResult, startTime time.Time) (hdf
 			Status:    hdf.Failed,
 			CodeDesc:  buildVulnCodeDesc(v, res),
 			StartTime: startTime,
-			Message:   hdfutil.Ptr(fmt.Sprintf("Severity: %s", firstNonEmpty(v.Severity, "UNKNOWN"))),
+			Message:   hdfutil.Ptr(fmt.Sprintf("Severity: %s", shared.FirstNonEmpty(v.Severity, "UNKNOWN"))),
 		}},
 	}
 	// Emit affectedPackages only when it satisfies the schema anyOf. Trivy's
@@ -320,7 +320,7 @@ func convertMisconf(raw json.RawMessage, res trivyResult, startTime time.Time) (
 		return hdf.EvaluatedRequirement{}, false
 	}
 
-	descriptions := []hdf.Description{{Label: "default", Data: firstNonEmpty(m.Description, m.Message, m.Title)}}
+	descriptions := []hdf.Description{{Label: "default", Data: shared.FirstNonEmpty(m.Description, m.Message, m.Title)}}
 	if m.Resolution != "" {
 		descriptions = append(descriptions, hdf.Description{Label: "fix", Data: m.Resolution})
 	}
@@ -330,7 +330,7 @@ func convertMisconf(raw json.RawMessage, res trivyResult, startTime time.Time) (
 	tags := buildTags(withClass(res.Class, extras))
 	shared.MarkUnratedSeverity(tags, m.Severity)
 	req := hdf.EvaluatedRequirement{
-		ID:                 "Trivy/" + firstNonEmpty(m.ID, m.AVDID),
+		ID:                 "Trivy/" + shared.FirstNonEmpty(m.ID, m.AVDID),
 		Title:              hdfutil.Ptr(m.Title),
 		Descriptions:       descriptions,
 		Impact:             hdfutil.SeverityToImpactWithAliases(strings.ToLower(m.Severity), severityAliases, 0.5),
@@ -341,7 +341,7 @@ func convertMisconf(raw json.RawMessage, res trivyResult, startTime time.Time) (
 		VerificationMethod: automated(),
 		Results: []hdf.RequirementResult{{
 			Status:    misconfStatus(m.Status),
-			CodeDesc:  firstNonEmpty(m.Message, m.Title),
+			CodeDesc:  shared.FirstNonEmpty(m.Message, m.Title),
 			StartTime: startTime,
 		}},
 	}
@@ -366,7 +366,7 @@ func convertSecret(raw json.RawMessage, res trivyResult, startTime time.Time) (h
 	req := hdf.EvaluatedRequirement{
 		ID:                 fmt.Sprintf("Trivy/secret/%s@%s:%d", s.RuleID, res.Target, s.StartLine),
 		Title:              hdfutil.Ptr(s.Title),
-		Descriptions:       []hdf.Description{{Label: "default", Data: fmt.Sprintf("%s detected in %s (value redacted by Trivy).", firstNonEmpty(s.Title, s.RuleID), res.Target)}},
+		Descriptions:       []hdf.Description{{Label: "default", Data: fmt.Sprintf("%s detected in %s (value redacted by Trivy).", shared.FirstNonEmpty(s.Title, s.RuleID), res.Target)}},
 		Impact:             hdfutil.SeverityToImpactWithAliases(strings.ToLower(s.Severity), severityAliases, 0.5),
 		Tags:               tags,
 		Code:               hdfutil.Ptr(indentRaw(raw)),
@@ -547,19 +547,16 @@ func buildAffectedPackage(v trivyVuln) hdf.AffectedPackage {
 	return ap
 }
 
-var purlEcosystems = map[string]hdf.Ecosystem{
-	"deb": hdf.Deb, "rpm": hdf.RPM, "maven": hdf.Maven, "npm": hdf.Npm,
-	"pypi": hdf.Pypi, "gem": hdf.Gem, "cargo": hdf.Cargo, "golang": hdf.Go,
-	"nuget": hdf.Nuget,
-}
-
+// ecosystemFromPURL resolves the AffectedPackage ecosystem from a PURL. The
+// shared helper returns hdf.Generic for a type it doesn't know; this converter
+// omits the ecosystem in that case (returns "") rather than emit a synthetic
+// "generic" the schema triple didn't previously carry.
 func ecosystemFromPURL(purl string) hdf.Ecosystem {
-	rest := strings.TrimPrefix(purl, "pkg:")
-	typ := rest
-	if i := strings.IndexAny(rest, "/@?"); i >= 0 {
-		typ = rest[:i]
+	parsed := hdfutil.ParsePurl(purl)
+	if parsed == nil {
+		return ""
 	}
-	if eco, ok := purlEcosystems[strings.ToLower(typ)]; ok {
+	if eco := shared.EcosystemFromPurlType(parsed.Type); eco != hdf.Generic {
 		return eco
 	}
 	return ""
@@ -627,15 +624,6 @@ func architecture(imageConfig json.RawMessage) string {
 		return ""
 	}
 	return cfg.Architecture
-}
-
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
 }
 
 func putIf(m map[string]interface{}, key, val string) {
