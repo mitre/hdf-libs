@@ -20,7 +20,7 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
   - [amend](#amend) -- Apply, list, and verify amendments (waivers/attestations)
   - [enrich](#enrich) -- Attach external context (STIX CTI) to results
   - [evidence](#evidence) -- Build and inspect evidence packages
-  - [label](#label) -- Add, remove, or show labels on components
+  - [label](#label) -- Add, remove, or show labels on targets
   - [generate](#generate) -- Generate InSpec profiles, thresholds, and baseline upgrades
   - [fetch](#fetch) -- Fetch from live APIs
     - [fetch aws-config](#fetch-aws-config) -- AWS Config compliance data
@@ -103,7 +103,7 @@ USAGE
   hdf validate <file> [flags]
 
 FLAGS
-  -t, --type string    Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package
+  -t, --type string    Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event
   -q, --quiet          Suppress output on success (exit code only)
 
 EXAMPLES
@@ -122,7 +122,7 @@ $ hdf validate results.json
 
 $ echo '{"not":"hdf"}' | hdf validate -
 ✗ <stdin> — input not recognized as any HDF document type
-  Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package
+  Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event
 ```
 
 #### validate threshold
@@ -243,7 +243,7 @@ Found 5 matching requirement(s):
 
 ID         Status  Severity  Title
 ---------  ------  --------  -------------------------------------------------------
-SV-257777  failed  INFO      RHEL 9 must be a vendor-supported release.
+SV-257777  failed  NONE      RHEL 9 must be a vendor-supported release.
 V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
 V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
 V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
@@ -580,16 +580,16 @@ Contents (4):
 
 ### label
 
-Add, remove, or show key=value labels on the components of an HDF document.
+Add, remove, or show key=value labels on the targets of an HDF document.
 
 ```
 USAGE
   hdf label <subcommand> <file> [flags]
 
 SUBCOMMANDS
-  show     Display labels on all components
-  set      Set labels on all components
-  remove   Remove labels from all components
+  show     Display labels on all targets
+  set      Set labels on all targets
+  remove   Remove labels from all targets
 
 EXAMPLES
   hdf label show results.json
@@ -952,6 +952,7 @@ These flags apply to all commands.
 | `ionchannel` | | Ion Channel supply chain analysis (JSON) |
 | `jfrog-xray` | `xray` | JFrog Xray SCA scan (JSON) |
 | `junit` | | JUnit XML test results |
+| `kics` | | KICS IaC misconfiguration scan (JSON) |
 | `legacyhdf` | `inspec` | Legacy HDF (InSpec exec-json format) to current HDF |
 | `msft-defender-cloud` | `defender-cloud` | Microsoft Defender for Cloud (JSON) |
 | `msft-defender-devops` | `msdo` | Microsoft Defender for DevOps (SARIF) |

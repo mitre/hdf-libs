@@ -162,11 +162,17 @@ The default is deliberately **every tool**, not `read`. The server cannot know w
 ## What the read surface deliberately does not return
 
 Conversion is close to lossless: `hdf convert` preserves each scanner's original
-finding **verbatim** in the requirement's `code` field. The read tools do not
-project that field, and this is a deliberate boundary rather than an oversight.
+finding **verbatim** in the requirement's `code` field. No read tool projects
+`code`, at any verbosity — a deliberate boundary rather than an oversight.
 
-The reason is the token budget this surface exists to protect. Measured against a
-real Grype scan of 89 findings:
+**This is not about breaching a token bound.** The per-response budgets
+(`concise` 2,000, `full` 10,000) are structural: `hdf_query` packs rows until the
+budget is reached and paginates the rest, so a fatter row simply yields fewer
+rows per page — no field can push a response over its bound. Measured on a real
+Grype scan of 89 findings, `concise` returns ~48 rows (~2,017 tokens) and `full`
+~24 rows (~9,480). What projecting the ~1,607-token `code` payload would cost is
+**page yield** — roughly 6 requirements per page instead of 24 — and therefore
+cost-per-answer:
 
 | | tokens |
 |---|---:|
@@ -175,18 +181,27 @@ real Grype scan of 89 findings:
 | all 89 `code` payloads | ~149,735 |
 | the entire raw scan file | ~155,964 |
 
-Returning every payload costs within 4% of simply handing the agent the raw file,
-while still charging for the tool surface on top. A single payload costs about
-five times a normal response. So the tools return normalized fields, and a
-question about a **tool-specific** field — a matcher, match provenance, a vendor
-extension — is answered by reading the source file, not through this server.
+Returning every payload costs within 4% of handing the agent the raw file while
+still charging for the tool surface on top — so the read tools leave `code`
+unprojected and return normalized fields.
 
-Both `hdf_query` and `hdf_inspect` say so in their own descriptions, so an agent
-learns the limit before it spends a call discovering it.
+**The boundary is specific to `code`, not to scanner data as a class.** At
+`verbosity: "full"`, `hdf_query` projects `descriptions[]` verbatim, and a
+converter may have placed equivalent scanner detail there — the Grype converter,
+for instance, puts related-vulnerability JSON in the `check` description. So a
+tool-specific question is sometimes answerable from this surface after all: the
+45 grype requirements carrying related vulnerabilities can be counted from
+`descriptions[label="check"]` at full verbosity. Reach for `full` when you need
+that detail; fall back to the source file only for data no verbosity projects —
+the `code` payload itself, or a field the converter dropped.
 
-This may be revisited if tool-specific questions turn out to be common in
-practice; the shape it would take is an explicit, bounded, per-requirement fetch
-— never a widening of the default response.
+**The full-verbosity contract (decision x0bq):** `concise` is the bounded default
+and excludes the payload; asking for `full` is opting into a larger,
+converter-determined payload of unknown size. The per-response token bound holds
+either way — `full` just fits fewer requirements per page. This documents
+existing behavior; it is not a change to it. A future revisit could add an
+explicit, bounded, per-requirement `code` fetch — never a widening of the default
+response.
 
 ## Correlation fields
 
