@@ -37,15 +37,17 @@ describe('timestamp guard — new Date(value) footgun', () => {
 });
 
 describe('timestamp guard — file scope', () => {
+  const guardBlocks = (
+    config as Array<{ files?: string[]; ignores?: string[]; rules?: Record<string, unknown> }>
+  ).filter((b) => b.rules && 'no-restricted-syntax' in b.rules);
+
   it('covers every tree that parses timestamps, in every package', () => {
-    const guardBlock = (config as Array<{ files?: string[]; rules?: Record<string, unknown> }>).find(
-      (b) => b.rules && 'no-restricted-syntax' in b.rules
-    );
-    expect(guardBlock).toBeDefined();
+    expect(guardBlocks.length).toBeGreaterThan(0);
+    const covered = guardBlocks.flatMap((b) => b.files ?? []);
     // Converters parse tool timestamps on the way in; hdf-diff and
     // hdf-utilities parse HDF's own on the way out. Narrowing any of these
     // back to converters/ alone is the regression this locks.
-    expect(guardBlock!.files).toEqual(
+    expect(covered).toEqual(
       expect.arrayContaining([
         'hdf-converters/converters/**/*.ts',
         'hdf-converters/shared/**/*.ts',
@@ -54,5 +56,16 @@ describe('timestamp guard — file scope', () => {
         'hdf-utilities/src/**/*.ts',
       ])
     );
+  });
+
+  // A block's `files` can look complete while `ignores` quietly removes a file
+  // from it — that is how hdf-utilities/src/size/size.test.ts, the only test
+  // co-located under a src/ tree, once lost the guard without any glob changing.
+  it('does not let ignores strip a co-located test under src/', () => {
+    const srcGuard = guardBlocks.find((b) =>
+      (b.files ?? []).includes('hdf-utilities/src/**/*.ts')
+    );
+    expect(srcGuard).toBeDefined();
+    expect(srcGuard!.ignores).toBeUndefined();
   });
 });

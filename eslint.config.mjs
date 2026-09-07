@@ -15,7 +15,7 @@ import { deprecatedAliasGuardBlock } from './scripts/eslint-deprecated-alias-gua
 // Package source trees. Most packages publish from src/; hdf-parsers and
 // hdf-validators from typescript/; hdf-converters also lints the three trees
 // that hold converter code.
-export const SOURCE = [
+const SOURCE = [
   '*/src/**/*.ts',
   'hdf-parsers/typescript/**/*.ts',
   'hdf-validators/typescript/**/*.ts',
@@ -24,14 +24,23 @@ export const SOURCE = [
   'hdf-converters/fetchers/**/*.ts',
 ];
 
-export const TESTS = ['*/test/**/*.ts', '**/*.test.ts', '**/*.spec.ts'];
+const TESTS = ['*/test/**/*.ts', '**/*.test.ts', '**/*.spec.ts'];
 
 // Trees whose code parses timestamps — tool-supplied on the way in, HDF's own
 // on the way out. Both directions are exposed to the `new Date(value)` footgun.
-export const TIMESTAMP_GUARDED = [
+//
+// Split because the per-package configs this replaces disagreed about tests and
+// the difference is load-bearing: hdf-converters excluded them (its converter
+// tests build fixture dates with `new Date(literal)` in forms the guard would
+// reject), while hdf-diff and hdf-utilities guarded everything under src/,
+// tests included. Collapsing the two would either drop coverage on
+// hdf-utilities/src/size/size.test.ts or fail 26 pre-existing converter tests.
+const TIMESTAMP_GUARDED_EXCLUDING_TESTS = [
   'hdf-converters/converters/**/*.ts',
   'hdf-converters/shared/**/*.ts',
   'hdf-converters/fetchers/**/*.ts',
+];
+const TIMESTAMP_GUARDED_INCLUDING_TESTS = [
   'hdf-diff/src/**/*.ts',
   'hdf-utilities/src/**/*.ts',
 ];
@@ -161,8 +170,14 @@ export default [
   {
     // See scripts/eslint-timestamp-guard.mjs for the matched argument forms and
     // site/docs/contributing/developer-guide.md for the convention.
-    files: TIMESTAMP_GUARDED,
+    files: TIMESTAMP_GUARDED_EXCLUDING_TESTS,
     ignores: TESTS,
+    rules: { 'no-restricted-syntax': ['error', ...DATE_GUARD_RULES] },
+  },
+  {
+    // No `ignores`: a co-located test under src/ carries the guard, as it did
+    // before. hdf-utilities/src/size/size.test.ts is the only such file today.
+    files: TIMESTAMP_GUARDED_INCLUDING_TESTS,
     rules: { 'no-restricted-syntax': ['error', ...DATE_GUARD_RULES] },
   },
   {
