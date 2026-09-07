@@ -2,12 +2,21 @@
 # go.work module's go.mod in one pass, so this is the only gate source that sees
 # both dependency trees at once.
 #
-# A TOTAL bound, not a severity-tiered one, and that is deliberate: OSV emits
-# `level: warning` on every result and carries CVSS only in the SARIF rule's
-# properties.security-severity, which sarif-to-hdf does not read. A tiered
-# policy here would be VACUOUS — measured: the govulncheck-shaped template
-# passes a CVSS 8.2 finding. Tighten this to severity buckets once
-# hdf-libs-fxke lands; until then max: 0 is the only bound that bites.
+# A TOTAL bound, not a severity-tiered one, and it STAYS that way.
+#
+# The original reason was that a tiered policy could not work: OSV emits
+# `level: warning` on everything and carries CVSS only in the SARIF rule's
+# properties.security-severity, which sarif-to-hdf ignored. hdf-libs-fxke fixed
+# that and severity now survives — measured on this repo's own findings, CVSS
+# 8.2 arrives as high/impact 0.82 where it used to be null/0.5.
+#
+# That did NOT make a tiered policy the right answer, and an earlier version of
+# this comment was wrong to promise one. Tiering is LOOSER, not tighter:
+# measured against the same 5 unadjudicated findings, `failed.critical.max: 0`
+# plus `failed.high.max: 0` catches 1 and lets 4 mediums through, while
+# `failed.total.max: 0` catches all 5. A severity floor auto-tolerates findings
+# nobody looked at, which is the same objection as the fix-availability floor
+# below. Every finding gets adjudicated by a person or it fails.
 #
 # NO PINNED DATABASE, deliberately. OSV-Scanner keeps no local vulnerability
 # DB; it queries api.osv.dev per run, so the verdict is a function of the
