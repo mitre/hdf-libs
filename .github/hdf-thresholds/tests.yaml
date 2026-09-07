@@ -6,18 +6,19 @@
 # can express: a suite that quietly stops running tests is green everywhere
 # else. The budget is per-document, because `hdf convert` emits one HDF per
 # JUnit file and there is no merge command, so a pipeline-wide total cannot be
-# stated here. 7 is the current high-water mark (hdf-cli 7, hdf-schema 5,
-# hdf-converters 1, every other module 0) — the tightest value the tree passes
-# today, chosen over the pipeline total of 13 because no single module is near
-# 13 and a budget nothing can reach decides nothing.
+# stated here.
 #
-# Known limit: a module now at 0 can grow to 7 unnoticed, and the total can
-# drift while no single module crosses the line. Four of hdf-cli's 7 are tests
-# that never run at all (absent fixtures — hdf-libs-w2vm); when those are
-# resolved this budget must be re-measured and tightened.
+# 5 is the measured high-water mark (hdf-schema 5, hdf-cli 4, every other
+# document 0; pipeline total 9). Both are deliberate: hdf-schema skips one
+# assertion removed in v2 and four that need the converter layer it cannot
+# depend on, and hdf-cli skips a large-file case, a stdin case, an
+# HDF_BENCH=1 opt-in benchmark, and one self-sizing fixture guard.
+#
+# Known limit: a document now at 0 can grow to 5 unnoticed, and the pipeline
+# total can drift while no single document crosses the line.
 skipped:
     total:
-        max: 7
+        max: 5
 failed:
     total:
         max: 0
