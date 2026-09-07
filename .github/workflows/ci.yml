@@ -157,8 +157,15 @@ jobs:
           # design — so a future fixture naming a vulnerable component would
           # redden the DEPENDENCY gate on test data. Naming them also makes
           # coverage structural rather than incidental.
+          # pipefail, and enumerate into a variable first: `bash -e` does NOT
+          # abort on a failing substitution inside a `for` word list, so a
+          # missing go.work, an empty `use` list, or a missing jq would all
+          # silently leave LOCKS holding only the lockfile.
+          set -o pipefail
+          MODULES=$(go work edit -json | jq -r '.Use[].DiskPath')
+          [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
           LOCKS=(-L pnpm-lock.yaml)
-          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
+          for dir in $MODULES; do
             LOCKS+=(-L "$dir/go.mod")
           done
           rc=0
@@ -172,6 +179,12 @@ jobs:
           # read would drop a whole ecosystem from a scan that looks healthy.
           # Assert that every manifest we named was actually extracted.
           want=$(( ${#LOCKS[@]} / 2 ))
+          # A guard must not be able to shrink its own expectation. Floor `want`
+          # against a source it does not share with the enumeration above: every
+          # tracked go.mod, plus the lockfile.
+          floor=$(( $(git ls-files '*go.mod' | wc -l) + 1 ))
+          [ "$want" -ge "$floor" ] \
+            || { echo "::error::named $want manifests but the repo tracks $floor — the module enumeration lost some"; exit 1; }
           got=$(grep -c 'file and found' osv.log)
           [ "$got" -eq "$want" ] \
             || { echo "::error::OSV extracted $got of $want named manifests — something went unscanned"; exit 1; }

@@ -20,10 +20,13 @@ done
 # reporter in its own vitest.config.ts, so a new package that omits the block —
 # or one that stops emitting — would otherwise disappear from the gate's
 # evidence silently, and a zero-check cannot see a 9-of-10 regression.
-WANT=$(grep -l 'junit' -- */vitest.config.ts 2>/dev/null | wc -l | tr -d ' ')
+# Count vitest configs, NOT configs that mention the reporter. Deriving the
+# expectation from the reporter block would move both sides together when a
+# package stops configuring it, and the drop-out would pass unnoticed.
+WANT=$(git ls-files '*/vitest.config.ts' | wc -l | tr -d ' ')
 if [ "$FOUND" -ne "$WANT" ]; then
-  echo "::error::collected $FOUND JUnit files but $WANT packages configure the junit reporter"
-  echo "::error::a package configured to emit produced nothing, or emits without being configured"
+  echo "::error::collected $FOUND JUnit files but $WANT packages have a vitest config"
+  echo "::error::a package stopped emitting, or stopped configuring the junit reporter"
   exit 1
 fi
-echo "collected $FOUND JUnit files (all $WANT configured packages reported)"
+echo "collected $FOUND JUnit files (all $WANT vitest packages reported)"
