@@ -107,3 +107,10 @@ hdf-cli/SAF_CLI_COMPARISON.md
 # VitePress build cache (regenerated locally; not part of release artifact)
 site/.vitepress/cache/
 .tools/
+
+# CI scan/test gate intermediates (also written when running the steps locally)
+scan-artifacts/
+test-artifacts/
+test-results/
+hdf-scans/
+hdf-tests/

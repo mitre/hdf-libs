@@ -28,27 +28,99 @@ concurrency:
 # package's `engines.node: ">=22.0.0"`. Node 20 reaches EOL 2026-04-30;
 # we're not advertising support for a runtime that loses security patches
 # during the lifetime of this release.
+# The Go toolchain version comes from go.work (composite setup uses
+# go-version-file) — no separate pin to drift.
 env:
   NODE_VERSION: '22'
-  GO_VERSION: '1.26.6'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
+  GOVULNCHECK_VERSION: 'v1.1.4'
+  GOTESTSUM_VERSION: 'v1.13.0'
+  ZIZMOR_VERSION: '1.30.0'
+  ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
+  # The gate's CLI is built from main by the gate-cli job — see the comment
+  # there for why, and for how to switch back to a pinned release. The pin
+  # this replaces was:
+  #   HDF_CLI_VERSION: '3.5.1'
+  #   HDF_CLI_SHA256: '482bc0e3a92a508d141e9285eba9985965c0d6bc67e922903359d70e06c3ae7a'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
-#   check-ts ─┐
-#   check-go ─┤── gate ── build ──┬── test-ts
-#                                 ├── test-go
-#                                 ├── coverage
-#                                 └── verify-packages
+#   scan-workflows ─┐
+#   check-ts ───────┼── gate-hdf-scans              (intended required check)
+#   check-go ───────┘
+#   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┬─ gate-hdf-tests
+#           ├── test-go (junit; ubuntu leg = coverage) ─┴─ sonar
+#           ├── verify-packages                            (intended required check)
+#           └── site-build
 #
-# Gate phase: lint + typecheck + security (2 parallel jobs).
-# Build phase: build once, upload artifacts (ubuntu).
-# Test phase: test on ubuntu + windows matrix.
-# verify-packages: publint + attw against packed tarballs — catches
-# broken `exports` maps, types-resolution errors, and other package-
-# metadata defects before they reach main (and before a release tag).
+# This pipeline normalizes and gates its own data through HDF, as an
+# exemplar of how to use HDF in a pipeline. There are TWO HDF gates, split by
+# the kind of evidence they judge: gate-hdf-scans takes what the tools report
+# by READING the code, gate-hdf-tests what the suites report by RUNNING it.
+# Both have the same shape — convert to HDF, apply a committed threshold.
+#
+# Scan phase: compilers and audits hard-fail as before, but the scanners
+# (zizmor, eslint, golangci-lint, govulncheck) run ONCE in SARIF mode and
+# tolerate only their documented findings exit. Findings are gated by
+# gate-hdf-scans, inline in this file: the gate CLI converts every scan to
+# HDF (--from is explicit, never auto-detected) and applies one committed
+# threshold template per tool (.github/hdf-thresholds/<tool>.yaml). The
+# threshold verdict — not the scanners' exit codes — is what fails CI.
+#
+# build/test deliberately do NOT wait for gate-hdf-scans: the checks jobs
+# still hard-fail fast on compile/tool errors, while scan findings block the
+# MERGE (gate-hdf-scans as a required branch-protection check), not the run —
+# trading a few red-run runner-minutes for ~5 minutes of wall clock on
+# every green run (this repo is public; minutes are free, latency isn't).
+#
+# NOT YET IN EFFECT: `main` carries no branch protection and no ruleset, so
+# nothing is actually a required check and a red gate does not block a merge.
+# The gates run and report; making them binding is a repository-settings
+# change, and the "(required check)" notes above describe the intent.
+#
+# Test phase: ubuntu+windows matrix; every leg emits JUnit which
+# gate-hdf-tests normalizes and thresholds the same way (if: always — red
+# runs are exactly the ones whose HDF evidence matters). The test jobs
+# remain the failure authority; the test gate is the uniform evidence
+# bundle (hdf-normalized-scans + hdf-normalized-tests per run) and the
+# policy point for what exit codes can't express (today: the skipped-test
+# budget in .github/hdf-thresholds/tests.yaml — JUnit `skipped` maps to
+# notReviewed, which no runner's exit code reports).
+# verify-packages: publint + attw against packed
+# tarballs — catches broken `exports` maps, types-resolution errors, and
+# other package-metadata defects before they reach main.
 
 jobs:
+  # ── Scan: the workflow files themselves ──────────────────────────────────
+  scan-workflows:
+    name: Scan workflows (zizmor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The binary comes from zizmor's GitHub release, pinned by version and
+      # sha256 — the same discipline as the hdf CLI pin. The checksum check is
+      # load-bearing: the step must not reach an unverified binary.
+      # --no-exit-codes makes a nonzero exit mean tool failure, not findings;
+      # findings flow to the SARIF and are the gate's call.
+      - name: zizmor (SARIF; findings gate via HDF)
+        run: |
+          mkdir -p scan-artifacts
+          tmp=$(mktemp -d)
+          curl -fsSL -o "$tmp/zizmor.tar.gz" \
+            "https://github.com/zizmorcore/zizmor/releases/download/v$ZIZMOR_VERSION/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          echo "$ZIZMOR_SHA256  $tmp/zizmor.tar.gz" | sha256sum -c -
+          tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
+          "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ \
+            > scan-artifacts/zizmor.sarif
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-workflows
+          path: scan-artifacts/
+          retention-days: 7
+
   # ── Gate: TypeScript checks ──────────────────────────────────────────────
   check-ts:
     name: Check TypeScript (lint + typecheck + audit)
@@ -63,12 +135,24 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
-      - name: ESLint
-        run: pnpm -r --filter=!hdf-cli run lint
+      # One eslint.config.mjs at the root governs every package, so one
+      # invocation covers the workspace. eslint exits 1 on findings — the gate's
+      # threshold is what judges those — so only a fatal tool error fails here.
+      - name: ESLint (SARIF; findings gate via HDF)
+        run: |
+          mkdir -p scan-artifacts
+          pnpm exec eslint . \
+            --format node_modules/@microsoft/eslint-formatter-sarif/sarif.js \
+            --output-file scan-artifacts/eslint.sarif || [ "$?" -eq 1 ]
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-ts
+          path: scan-artifacts/
+          retention-days: 7
       - name: tsc --noEmit
         run: pnpm -r --filter=!hdf-cli run type-check
-      - name: npm audit
-        run: pnpm audit --audit-level=high
+      - name: npm audit (prod moderate+, dev high+)
+        run: pnpm run security:ts
 
   # ── Gate: Go checks ─────────────────────────────────────────────────────
   check-go:
@@ -85,39 +169,145 @@ jobs:
           go: 'true'
       - name: Build TypeScript (Go modules need hdf-schema/dist/go/)
         run: pnpm build:ts
-      # Both scanners loop per-module, driven by go.work so new modules are
-      # picked up automatically: golangci-lint refuses multi-module invocations
-      # and govulncheck has no workspace mode (golang/go#66863). gosec runs via
-      # golangci-lint using each package's own .golangci.yml — no standalone
-      # gosec step (its former workflow-level excludes G304/G104 live in
-      # hdf-cli/.golangci.yml; G115/G706 verified unnecessary and now enforced).
-      - name: golangci-lint (all workspace modules)
+      # Both scanners below loop per-module because neither works across a
+      # workspace: golangci-lint refuses a multi-module invocation, and
+      # govulncheck has no workspace mode (golang/go#66863). go.work is the
+      # source of the list, so a new module is picked up automatically.
+      # An empty list would let both scanners pass having scanned nothing.
+      - name: Enumerate the go.work modules
         run: |
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${{ env.GOLANGCI_LINT_VERSION }}
-          FAIL=0
-          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
-            echo "::group::golangci-lint $dir"
-            (cd "$dir" && golangci-lint run ./...) || FAIL=1
-            echo "::endgroup::"
-          done
-          exit $FAIL
-      - name: govulncheck (all workspace modules)
+          MODULES=$(go work edit -json | jq -r '.Use[].DiskPath' | tr '\n' ' ')
+          [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
+          echo "GO_MODULES=$MODULES" >> "$GITHUB_ENV"
+      # gosec runs via golangci-lint using each package's own .golangci.yml —
+      # there is no standalone gosec step (its former workflow-level excludes
+      # G304/G104 live in hdf-cli/.golangci.yml; G115/G706 were verified
+      # unnecessary and are now enforced).
+      #
+      # Exit 1 is golangci-lint's documented findings exit, and findings are
+      # the gate's call — so 1 is tolerated here and anything else is a tool
+      # failure. go install over the faster binary-install script is
+      # deliberate: module downloads are verified against the Go checksum
+      # database.
+      - name: golangci-lint (SARIF; findings gate via HDF)
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-          FAIL=0
-          for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
-            echo "::group::govulncheck $dir"
-            (cd "$dir" && govulncheck ./...) || FAIL=1
-            echo "::endgroup::"
+          go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$GOLANGCI_LINT_VERSION"
+          mkdir -p scan-artifacts
+          for dir in $GO_MODULES; do
+            name=$(echo "${dir#./}" | tr '/' '-')
+            rc=0
+            (cd "$dir" && golangci-lint run --output.text.path stdout \
+              --output.sarif.path "$GITHUB_WORKSPACE/scan-artifacts/golangci-$name.sarif" ./...) || rc=$?
+            [ "$rc" -le 1 ] || exit "$rc"
           done
-          exit $FAIL
+      # In SARIF mode govulncheck exits 0 even with findings — by design, so
+      # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
+      # That makes any nonzero exit a tool failure, which the step's own
+      # `bash -e` already fails on.
+      - name: govulncheck (SARIF; findings gate via HDF)
+        run: |
+          go install "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION"
+          for dir in $GO_MODULES; do
+            name=$(echo "${dir#./}" | tr '/' '-')
+            (cd "$dir" && govulncheck -format sarif ./... \
+              > "$GITHUB_WORKSPACE/scan-artifacts/govulncheck-$name.sarif")
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-go
+          path: scan-artifacts/
+          retention-days: 7
+
+  # ── The CLI the gates run ────────────────────────────────────────────────
+  # BOOTSTRAP: built from main's tip, not from a published release, because no
+  # release yet carries the effective-status threshold engine the gates depend
+  # on — under the last release the gate wrongly fails scans whose findings are
+  # sanctioned in-source suppressions. Building from `main` rather than from
+  # the commit under test keeps the property the pin existed for: a PR cannot
+  # alter the CLI that judges it. TIGHTEN once a release ships that engine —
+  # delete this job and replace it with a checksummed download of that
+  # release (the pin values are kept in the env block above).
+  gate-cli:
+    name: Build the gate CLI (from main)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Deliberately main, NOT the PR head.
+          ref: main
+      - uses: $/.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          go: 'true'
+      - name: Build hdf
+        run: cd hdf-cli && go build -o "$RUNNER_TEMP/hdf" ./cmd/hdf
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/hdf
+          retention-days: 7
+
+  # ── Gate: scan findings, judged as HDF ───────────────────────────────────
+  # One of two HDF gates. This one judges what the tools report by READING the
+  # code (zizmor, eslint, golangci-lint, govulncheck); gate-hdf-tests judges
+  # what the suites report by RUNNING it. They are separate jobs because the
+  # two kinds of evidence arrive at different points in the run, and because
+  # their failure authorities differ: the scanners here run in tolerate-
+  # findings mode, so this threshold verdict is what fails CI, whereas a red
+  # test has already failed its own job.
+  #
+  # The steps below ARE the demonstration: convert each scanner's SARIF to one
+  # document shape, then apply a committed, reviewable policy per tool.
+  gate-hdf-scans:
+    name: Gate scans on HDF thresholds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [gate-cli, scan-workflows, check-ts, check-go]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: scan-*
+          path: scan-artifacts
+          merge-multiple: true
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/gate-cli
+      # upload-artifact does not preserve the executable bit.
+      - name: Put the gate CLI on PATH
+        run: |
+          chmod +x "${{ runner.temp }}/gate-cli/hdf"
+          echo "${{ runner.temp }}/gate-cli" >> "$GITHUB_PATH"
+      # --from is explicit: auto-detect against a 60-converter registry could
+      # mis-fingerprint and yield a valid document with zero findings.
+      - name: Normalize every scan to HDF
+        run: hdf convert --from sarif scan-artifacts/*.sarif -o hdf-scans/
+      # One policy per tool. failglob is the vacuity guard: a family that
+      # produced nothing fails here instead of passing unnoticed.
+      - name: Apply each tool's threshold policy
+        run: |
+          shopt -s failglob
+          for tool in zizmor eslint golangci govulncheck; do
+            hdf validate threshold hdf-scans/$tool*.hdf.json -T .github/hdf-thresholds/$tool.yaml
+          done
+      - name: Upload normalized HDF
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hdf-normalized-scans
+          path: hdf-scans/
+          retention-days: 90
 
   # ── Build (once, share artifacts) ────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [check-ts, check-go]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -175,8 +365,34 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
+      # The ubuntu leg IS the coverage run (the dedicated coverage job used
+      # to re-run this entire suite). Both legs emit JUnit for the test gate;
+      # test failures still fail this job — it stays the failure authority.
+      - name: Test TypeScript (all packages, with coverage)
+        if: matrix.os == 'ubuntu-latest'
+        run: pnpm -r --filter=!hdf-cli run test:coverage
       - name: Test TypeScript (all packages)
-        run: pnpm test:ts
+        if: matrix.os != 'ubuntu-latest'
+        run: pnpm -r run test:ts
+      - name: Collect JUnit results
+        if: always()
+        shell: bash
+        env:
+          OS_TAG: ${{ matrix.os }}
+        run: .github/scripts/collect-junit-ts.sh
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: test-results-ts-${{ matrix.os }}
+          path: test-artifacts/
+          retention-days: 7
+      - name: Upload coverage reports
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-reports-ts
+          path: '**/coverage'
+          retention-days: 30
 
   # ── Test Go ──────────────────────────────────────────────────────────────
   test-go:
@@ -196,24 +412,108 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           go: 'true'
-          lfs: 'true'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: build-artifacts
+      # One gotestsum pass per go.work module (replaces the pnpm test:go +
+      # separate hdf-cli steps — the module loop covers every module). The
+      # ubuntu leg doubles as the coverage run; JUnit feeds the test gate.
       - name: Test Go (all packages)
-        run: pnpm test:go
-      - name: Test hdf-cli
-        run: cd hdf-cli && go test ./...
+        shell: bash
+        env:
+          OS_TAG: ${{ matrix.os }}
+          GO_COVERAGE: ${{ matrix.os == 'ubuntu-latest' && '1' || '' }}
+        run: .github/scripts/test-go-junit.sh
       - name: Race detector
         if: matrix.os == 'ubuntu-latest'
         run: cd hdf-cli && go test -race ./...
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: test-results-go-${{ matrix.os }}
+          path: test-artifacts/
+          retention-days: 7
+      - name: Upload coverage reports
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-reports-go
+          path: '**/coverage.out'
+          retention-days: 30
 
-  # ── Coverage ─────────────────────────────────────────────────────────────
-  coverage:
-    name: Coverage
+  # ── Gate: test results, judged as HDF ────────────────────────────────────
+  # The other half of the pair (see gate-hdf-scans): the same convert-then-
+  # threshold shape, applied to what the suites report by RUNNING the code.
+  #
+  # The test jobs stay the failure authority — a red test fails its own job
+  # with the stack trace inline — so this gate exists for the uniform evidence
+  # record and for the policy an exit code cannot express: the skip budget in
+  # .github/hdf-thresholds/tests.yaml. Runs `if: always()` because the failing
+  # run is exactly the one whose HDF evidence matters, and fails closed if any
+  # leg produced nothing.
+  gate-hdf-tests:
+    name: Gate test results on HDF thresholds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [gate-cli, test-ts, test-go]
+    if: always()
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # merge-multiple is safe: the collectors qualify every JUnit filename
+      # with its OS, so the legs cannot collide in one directory.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: test-results-*
+          path: test-artifacts-dl
+          merge-multiple: true
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: gate-cli
+          path: ${{ runner.temp }}/gate-cli
+      # upload-artifact does not preserve the executable bit.
+      - name: Put the gate CLI on PATH
+        run: |
+          chmod +x "${{ runner.temp }}/gate-cli/hdf"
+          echo "${{ runner.temp }}/gate-cli" >> "$GITHUB_PATH"
+      # A leg whose job went green while emitting nothing would otherwise be
+      # invisible here. This catches an EMPTY leg, not a short one: a leg that
+      # emitted some documents but not all of them still passes.
+      - name: Every test leg must have reported
+        run: |
+          # Filenames are <lang>-<package>-<os>.xml, so the leg is the first and
+          # last segments with the package between them.
+          for lang in ts go; do
+            for os in ubuntu-latest windows-latest; do
+              compgen -G "test-artifacts-dl/$lang-*-$os.xml" >/dev/null \
+                || { echo "::error::$lang on $os produced nothing"; exit 1; }
+            done
+          done
+      - name: Normalize test results to HDF
+        run: hdf convert --from junit test-artifacts-dl/*.xml -o hdf-tests/
+      # Failures mirror the test jobs; the skip budget is what this decides.
+      - name: Apply the test policy
+        run: hdf validate threshold hdf-tests/*.hdf.json -T .github/hdf-thresholds/tests.yaml
+      - name: Upload normalized HDF (tests)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: hdf-normalized-tests
+          path: hdf-tests/
+          retention-days: 90
+
+  # ── Coverage ingestion: SonarQube Cloud ──────────────────────────────────
+  # The ubuntu test legs ARE the coverage run, so this job consumes the
+  # profiles they upload instead of re-running the whole suite the way the
+  # dedicated coverage job it replaces did. It still needs its own checkout:
+  # Sonar wants full history for blame and new-code attribution, which the
+  # test legs' shallow clone cannot provide.
+  sonar:
+    name: SonarQube Cloud
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: build
+    needs: [test-ts, test-go]
     env:
       # Job-level so the scan step's `if` can test it: secrets are not exposed
       # to fork PRs, so an empty value means "cannot scan", not "misconfigured".
@@ -224,32 +524,14 @@ jobs:
           persist-credentials: false
           # Sonar needs full history for accurate blame/new-code attribution.
           fetch-depth: 0
-      - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          go: 'true'
-          lfs: 'true'
+      # The uploads preserve their repo-relative paths, so the profiles land
+      # exactly where sonar-project.properties expects them.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: build-artifacts
-      - name: TypeScript coverage
-        run: pnpm -r --filter=!hdf-cli run test:coverage
-      - name: Go coverage (workspace packages)
-        run: |
-          for dir in hdf-mappings/go hdf-validators/go hdf-parsers/go; do
-            echo "=== $dir ==="
-            (cd $dir && go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out | tail -1)
-          done
-      - name: Go coverage (hdf-converters)
-        run: |
-          cd hdf-converters
-          go test -coverprofile=coverage.out ./registry/... ./converters/*/go/ ./shared/go/
-          go tool cover -func=coverage.out | tail -1
-      - name: Go coverage (hdf-cli)
-        run: |
-          cd hdf-cli
-          go test -coverprofile=coverage.out ./...
-          go tool cover -func=coverage.out | tail -1
+          name: coverage-reports-ts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: coverage-reports-go
       # vitest writes lcov SF: paths relative to each package, but the Sonar
       # scanner resolves them against the repo root — prefix the package dir
       # so every source file resolves instead of silently reporting 0%.
@@ -262,18 +544,10 @@ jobs:
       # CI-based SonarCloud analysis (Automatic Analysis is off), ingesting
       # the lcov + coverprofile outputs above per sonar-project.properties.
       # No token means a fork PR or a not-yet-onboarded project: skip rather
-      # than fail the coverage job.
+      # than fail the job.
       - name: SonarCloud scan
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: coverage-reports
-          path: |
-            **/coverage
-            **/coverage.out
-          retention-days: 30
 
   # ── Verify packed tarballs (publint + attw) ──────────────────────────────
   # Packs every publishable workspace package and runs publint +

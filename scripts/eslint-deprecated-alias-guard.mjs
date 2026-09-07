@@ -13,10 +13,9 @@
 // "HdfResults" XML element name in hdf-to-xml (a wire-format string, not an
 // import).
 //
-// Imported by the eslint.config.js of every package that imports types from
+// Applied by the root eslint.config.mjs to every tree that imports types from
 // @mitre/hdf-schema, in a standalone config block that also covers test files
-// (some packages exclude tests from their main lint blocks — the original
-// drift was in test files).
+// (the main lint blocks exclude tests — the original drift was in test files).
 
 export const DEPRECATED_ALIAS_MSG =
   'Import the canonical HDF* type names, not the deprecated Hdf* aliases — the aliases exist only for external consumers (see hdf-schema create-index.ts).';

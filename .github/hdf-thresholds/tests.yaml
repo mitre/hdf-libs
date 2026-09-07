@@ -1,0 +1,39 @@
+# Test-results policy. The test jobs remain the failure authority — a red test
+# fails its own job with the stack trace inline — so the failure bounds here
+# only mirror them. The skip budget is what this gate decides on its own.
+#
+# JUnit `skipped` maps to HDF `notReviewed`, which no test runner's exit code
+# can express: a suite that quietly stops running tests is green everywhere
+# else. The budget is per-document, because `hdf convert` emits one HDF per
+# JUnit file and there is no merge command, so a pipeline-wide total cannot be
+# stated here.
+#
+# MEASURE FROM CI ARTIFACTS, NOT LOCALLY. The gate sees both matrix legs, and
+# the OS legs differ: a single-platform measurement understates the mark and
+# sets a budget CI will fail. Measured from run 34078069529 (39 documents,
+# pipeline total 22):
+#
+#   go-hdf-cli        windows 7, ubuntu 4  — a large-file case, a stdin case,
+#                     an HDF_BENCH=1 opt-in, one self-sizing fixture guard, and
+#                     on windows three more for the POSIX permission model
+#                     (permission-denied read, redacted-path read failure,
+#                     permission-denied write)
+#   ts-hdf-schema     5 on both  — one assertion removed in v2, four needing
+#                     the converter layer hdf-schema cannot depend on
+#   go-hdf-converters windows 1  — XCCDF schema validation
+#   every other document 0
+#
+# 7 is therefore the per-document high-water mark, and the windows hdf-cli
+# document sits exactly at it: one new skip there fails the gate.
+#
+# Known limit: a document now at 0 can grow to 7 unnoticed, and the pipeline
+# total can drift while no single document crosses the line.
+skipped:
+    total:
+        max: 7
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0
