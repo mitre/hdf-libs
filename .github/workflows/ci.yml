@@ -478,7 +478,8 @@ jobs:
           chmod +x "${{ runner.temp }}/gate-cli/hdf"
           echo "${{ runner.temp }}/gate-cli" >> "$GITHUB_PATH"
       # A leg whose job went green while emitting nothing would otherwise be
-      # invisible here — the gate must not pass on a partial bundle.
+      # invisible here. This catches an EMPTY leg, not a short one: a leg that
+      # emitted some documents but not all of them still passes.
       - name: Every test leg must have reported
         run: |
           # Filenames are <lang>-<package>-<os>.xml, so the leg is the first and
