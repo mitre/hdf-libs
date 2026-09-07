@@ -1,44 +1,40 @@
 #!/bin/bash
-# Per-module Go tests through gotestsum so every run leaves a JUnit record
-# for the test gate. Test failures fail THIS script — the test job stays the
-# failure authority; gate-hdf-tests is the uniform evidence bundle and the
-# policy point for what exit codes can't express. Runs under bash on both
-# ubuntu and windows runners (git-bash ships jq).
-# GO_COVERAGE=1 (the ubuntu matrix leg) adds per-module coverage profiles,
-# absorbing the former dedicated coverage job's Go half.
+# Per-module Go tests through gotestsum, so every run leaves a JUnit record for
+# the test gate to convert. Filenames carry the OS so both matrix legs can
+# share one artifact directory.
+#
+# Test failures fail THIS script: the test job stays the failure authority,
+# and the gate is the uniform evidence bundle plus the policy point for what
+# an exit code cannot express (see .github/hdf-thresholds/tests.yaml).
+#
+# GO_COVERAGE=1 (the ubuntu leg) also writes per-module coverage profiles,
+# absorbing what used to be a separate coverage job.
 set -euo pipefail
-
-ROOT="${GITHUB_WORKSPACE:-$(git rev-parse --show-toplevel)}"
-OUT="${TEST_DIR:-$ROOT/test-artifacts}"
+cd "$(git rev-parse --show-toplevel)"
 OS_TAG="${OS_TAG:?set OS_TAG (e.g. ubuntu-latest)}"
-GOTESTSUM_VERSION="${GOTESTSUM_VERSION:?set GOTESTSUM_VERSION}"
-
-go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
-# Invoke by full path: GOPATH/bin is not reliably on PATH under git-bash
-# on the windows runners.
-GOTESTSUM_BIN="${GOTESTSUM_BIN:-$(go env GOPATH)/bin/gotestsum}"
-
+OUT="$PWD/test-artifacts"
 mkdir -p "$OUT"
-cd "$ROOT"
+
+go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION:?set GOTESTSUM_VERSION}"
+# By full path: GOPATH/bin is not reliably on PATH under git-bash on windows.
+GOTESTSUM="$(go env GOPATH)/bin/gotestsum"
+
 FAIL=0
 for dir in $(go work edit -json | jq -r '.Use[].DiskPath' | tr -d '\r'); do
-  name=$(echo "${dir#./}" | tr '/' '-')
-  junit="$OUT/go-$name.xml"
-  echo "::group::go test $dir"
+  junit="$OUT/go-$(echo "${dir#./}" | tr '/' '-')-$OS_TAG.xml"
   rc=0
   if [ "${GO_COVERAGE:-}" = "1" ]; then
-    (cd "$dir" && "$GOTESTSUM_BIN" --junitfile "$junit" -- -coverprofile=coverage.out ./...) || rc=$?
-    (cd "$dir" && test -f coverage.out && go tool cover -func=coverage.out | tail -1) || true
+    (cd "$dir" && "$GOTESTSUM" --junitfile "$junit" -- -coverprofile=coverage.out ./...) || rc=$?
+    (cd "$dir" && go tool cover -func=coverage.out | tail -1) || true
   else
-    (cd "$dir" && "$GOTESTSUM_BIN" --junitfile "$junit" -- ./...) || rc=$?
+    (cd "$dir" && "$GOTESTSUM" --junitfile "$junit" -- ./...) || rc=$?
   fi
-  echo "::endgroup::"
-  [ "$rc" -ne 0 ] && FAIL=1
+  [ "$rc" -eq 0 ] || FAIL=1
+  # gotestsum can exit nonzero without writing the file at all; the gate would
+  # then never see this module.
   if ! test -s "$junit"; then
     echo "::error::missing JUnit output for $dir"
     FAIL=1
-  else
-    echo "go-$name.xml" >> "$OUT/manifest-tests-go-$OS_TAG.txt"
   fi
 done
 exit $FAIL
