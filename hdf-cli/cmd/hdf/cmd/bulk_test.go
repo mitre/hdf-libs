@@ -325,3 +325,35 @@ func TestBulkOutputPath(t *testing.T) {
 		})
 	}
 }
+
+// A gate writes every scan into one output directory with a single command.
+// Whether that command happened to match one file or twelve is an accident of
+// how many scanners ran, so -o <dir> has to mean the same thing either way —
+// otherwise a pipeline breaks the day a scanner family drops to one file.
+func TestConvertSingleFile_OutputDirectory(t *testing.T) {
+	data, err := os.ReadFile(legacyhdfFixturePath(t, "input/minimal.json"))
+	require.NoError(t, err)
+	inputPath := filepath.Join(t.TempDir(), "scan.json")
+	require.NoError(t, os.WriteFile(inputPath, data, 0o600))
+
+	t.Run("existing directory", func(t *testing.T) {
+		outDir := t.TempDir()
+		_, _, err := executeCommand("convert", "--from", "legacyhdf", inputPath, "-o", outDir+string(filepath.Separator))
+		require.NoError(t, err)
+		assert.FileExists(t, filepath.Join(outDir, "scan.hdf.json"))
+	})
+
+	t.Run("directory that does not exist yet", func(t *testing.T) {
+		outDir := filepath.Join(t.TempDir(), "hdf-scans")
+		_, _, err := executeCommand("convert", "--from", "legacyhdf", inputPath, "-o", outDir+string(filepath.Separator))
+		require.NoError(t, err)
+		assert.FileExists(t, filepath.Join(outDir, "scan.hdf.json"))
+	})
+
+	t.Run("a plain path is still a file", func(t *testing.T) {
+		outFile := filepath.Join(t.TempDir(), "out.json")
+		_, _, err := executeCommand("convert", "--from", "legacyhdf", inputPath, "-o", outFile)
+		require.NoError(t, err)
+		assert.FileExists(t, outFile)
+	})
+}
