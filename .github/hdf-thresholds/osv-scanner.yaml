@@ -9,6 +9,19 @@
 # passes a CVSS 8.2 finding. Tighten this to severity buckets once
 # hdf-libs-fxke lands; until then max: 0 is the only bound that bites.
 #
+# NO PINNED DATABASE, deliberately. OSV-Scanner keeps no local vulnerability
+# DB; it queries api.osv.dev per run, so the verdict is a function of the
+# advisory feed as well as the commit. A newly published advisory can turn this
+# gate red with no code change — that is correct behaviour, not drift to
+# suppress: the dependency really did become known-vulnerable. The response is
+# to fix, or to adjudicate it in .github/hdf-amendments/osv-scanner.json with
+# evidence and a review date. There is nothing to pin, and pinning would mean
+# choosing not to hear about new advisories.
+#
+# The same property means the scan needs the network. An unreachable API exits
+# 127 and a scan that matched no manifests exits 128; the job tolerates only 0
+# and 1, so neither can be mistaken for a clean tree.
+#
 # Zero is reachable because adjudicated findings are waived, not ignored:
 # .github/hdf-amendments/osv-scanner.json carries a riskAdjustment per triaged
 # advisory, with the dependency-path evidence and a review date. An expired

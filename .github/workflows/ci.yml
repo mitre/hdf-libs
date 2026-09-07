@@ -153,7 +153,7 @@ jobs:
           go install "github.com/google/osv-scanner/v2/cmd/osv-scanner@$OSV_SCANNER_VERSION"
           mkdir -p scan-artifacts
           osv-scanner scan source -r . \
-            --format sarif --output scan-artifacts/osv-scanner.sarif || [ "$?" -le 1 ]
+            --format sarif --output-file scan-artifacts/osv-scanner.sarif || [ "$?" -le 1 ]
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-deps
