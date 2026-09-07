@@ -20,28 +20,28 @@ import {
 
 interface JUnitTestSuites {
   testsuites?: {
-    name?: string;
+    '@_name'?: string;
     testsuite?: JUnitTestSuite[];
   };
   testsuite?: JUnitTestSuite;
 }
 
 interface JUnitTestSuite {
-  name?: string;
-  tests?: number;
-  failures?: number;
-  errors?: number;
-  skipped?: number;
-  time?: string;
-  timestamp?: string;
-  hostname?: string;
+  '@_name'?: string;
+  '@_tests'?: number;
+  '@_failures'?: number;
+  '@_errors'?: number;
+  '@_skipped'?: number;
+  '@_time'?: string;
+  '@_timestamp'?: string;
+  '@_hostname'?: string;
   testcase?: JUnitTestCase[];
 }
 
 interface JUnitTestCase {
-  classname?: string;
-  name: string;
-  time?: string;
+  '@_classname'?: string;
+  '@_name': string;
+  '@_time'?: string;
   failure?: JUnitFailure;
   error?: JUnitError;
   skipped?: JUnitSkipped | '';
@@ -59,19 +59,19 @@ interface JUnitFlaky {
 }
 
 interface JUnitFailure {
-  message?: string;
-  type?: string;
+  '@_message'?: string;
+  '@_type'?: string;
   '#text'?: string;
 }
 
 interface JUnitError {
-  message?: string;
-  type?: string;
+  '@_message'?: string;
+  '@_type'?: string;
   '#text'?: string;
 }
 
 interface JUnitSkipped {
-  message?: string;
+  '@_message'?: string;
 }
 
 const DEFAULT_NIST = ['SA-11'];
@@ -145,7 +145,7 @@ function hostComponents(suites: JUnitTestSuite[]): Component[] {
   const hosts: Component[] = [];
   const seen = new Set<string>();
   for (const suite of suites) {
-    const hostname = suite.hostname?.trim();
+    const hostname = suite['@_hostname']?.trim();
     if (!hostname || seen.has(hostname)) {
       continue;
     }
@@ -164,8 +164,8 @@ function hostComponents(suites: JUnitTestSuite[]): Component[] {
 // timestamp, and any no-findings placeholder.
 function resolveScanTime(suites: JUnitTestSuite[]): Date {
   for (const suite of suites) {
-    if (suite.timestamp) {
-      const parsed = parseTimestamp(suite.timestamp);
+    if (suite['@_timestamp']) {
+      const parsed = parseTimestamp(suite['@_timestamp']);
       if (parsed) {
         return parsed;
       }
@@ -175,12 +175,19 @@ function resolveScanTime(suites: JUnitTestSuite[]): Date {
 }
 
 function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string } {
-  const parsed = parseXmlWithArrays(input, ARRAY_TAGS) as JUnitTestSuites;
+  // Attributes are prefixed so they cannot collide with same-named child
+  // elements. Node's runner emits BOTH a failure= attribute and a <failure>
+  // child on <testcase>; with the shared default of no prefix the attribute
+  // overwrote the element, and the failure message, type and stack were lost.
+  // <testsuite skipped="N"> vs <testcase><skipped/> collides the same way.
+  const parsed = parseXmlWithArrays(input, ARRAY_TAGS, {
+    attributeNamePrefix: '@_',
+  }) as JUnitTestSuites;
 
   // <testsuites> root
   if (parsed.testsuites) {
     const suites = parsed.testsuites.testsuite ?? [];
-    const name = parsed.testsuites.name ? decodeXmlEntities(parsed.testsuites.name) : 'JUnit Test Results';
+    const name = parsed.testsuites['@_name'] ? decodeXmlEntities(parsed.testsuites['@_name']) : 'JUnit Test Results';
     return { suites, name };
   }
 
@@ -190,7 +197,7 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
     // When testsuite is root, parseXmlWithArrays may return it directly
     // (not wrapped in an array since ARRAY_TAGS only forces arrays for child elements)
     const suites = Array.isArray(suite) ? (suite as JUnitTestSuite[]) : [suite];
-    const suiteName = suites[0]?.name;
+    const suiteName = suites[0]?.['@_name'];
     const name = suiteName ? decodeXmlEntities(suiteName) : 'JUnit Test Results';
     return { suites, name };
   }
@@ -241,18 +248,18 @@ function testCaseToRequirement(
   if (message !== undefined) {
     result.message = message;
   }
-  if (tc.time) {
-    const parsed = parseFloat(tc.time);
+  if (tc['@_time']) {
+    const parsed = parseFloat(tc['@_time']);
     if (!isNaN(parsed)) {
       result.runTime = parsed;
     }
   }
 
-  const name = decodeXmlEntities(tc.name);
+  const name = decodeXmlEntities(tc['@_name']);
   const descriptions: Description[] = [
     {
       label: 'default',
-      data: `JUnit test: ${name} in ${tc.classname ? decodeXmlEntities(tc.classname) : 'unknown'}`,
+      data: `JUnit test: ${name} in ${tc['@_classname'] ? decodeXmlEntities(tc['@_classname']) : 'unknown'}`,
     },
   ];
   const { systemOut, systemErr } = collectSystemStreams(tc);
@@ -299,33 +306,33 @@ function collectSystemStreams(tc: JUnitTestCase): { systemOut: string; systemErr
 }
 
 function buildID(tc: JUnitTestCase): string {
-  if (tc.classname) {
-    return `${decodeXmlEntities(tc.classname)}.${decodeXmlEntities(tc.name)}`;
+  if (tc['@_classname']) {
+    return `${decodeXmlEntities(tc['@_classname'])}.${decodeXmlEntities(tc['@_name'])}`;
   }
-  return decodeXmlEntities(tc.name);
+  return decodeXmlEntities(tc['@_name']);
 }
 
 function resolveStatus(tc: JUnitTestCase): { status: ResultStatus; message?: string } {
   if (tc.failure) {
     const msg = buildFailureMessage(
-      tc.failure.message ?? '',
-      tc.failure.type ?? '',
+      tc.failure['@_message'] ?? '',
+      tc.failure['@_type'] ?? '',
       tc.failure['#text'] ?? ''
     );
     return { status: ResultStatus.Failed, message: msg };
   }
   if (tc.error) {
     const msg = buildFailureMessage(
-      tc.error.message ?? '',
-      tc.error.type ?? '',
+      tc.error['@_message'] ?? '',
+      tc.error['@_type'] ?? '',
       tc.error['#text'] ?? ''
     );
     return { status: ResultStatus.Error, message: msg };
   }
   if (tc.skipped !== undefined) {
     const skipped = typeof tc.skipped === 'object' ? tc.skipped : null;
-    if (skipped?.message) {
-      return { status: ResultStatus.NotReviewed, message: `Skipped: ${decodeXmlEntities(skipped.message)}` };
+    if (skipped?.['@_message']) {
+      return { status: ResultStatus.NotReviewed, message: `Skipped: ${decodeXmlEntities(skipped['@_message'])}` };
     }
     return { status: ResultStatus.NotReviewed, message: 'Skipped' };
   }
@@ -345,10 +352,10 @@ function buildFailureMessage(message: string, typeName: string, body: string): s
 }
 
 function buildCodeDesc(tc: JUnitTestCase): string {
-  if (tc.classname) {
-    return `${decodeXmlEntities(tc.classname)} :: ${decodeXmlEntities(tc.name)}`;
+  if (tc['@_classname']) {
+    return `${decodeXmlEntities(tc['@_classname'])} :: ${decodeXmlEntities(tc['@_name'])}`;
   }
-  return decodeXmlEntities(tc.name);
+  return decodeXmlEntities(tc['@_name']);
 }
 
 function noFindingsTarget(baselineName: string, suites: JUnitTestSuite[]): string {
@@ -356,7 +363,7 @@ function noFindingsTarget(baselineName: string, suites: JUnitTestSuite[]): strin
     return baselineName;
   }
   for (const s of suites) {
-    if (s.name) return decodeXmlEntities(s.name);
+    if (s['@_name']) return decodeXmlEntities(s['@_name']);
   }
   return 'JUnit test suite';
 }
