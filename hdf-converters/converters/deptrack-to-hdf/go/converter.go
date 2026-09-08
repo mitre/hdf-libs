@@ -420,8 +420,10 @@ func buildAffectedPackageFromComponent(c DeptrackComponent) *hdf.AffectedPackage
 	})
 }
 
-// ConvertDeptrackToHDF converts a Dependency-Track FPF JSON report to HDF format.
-func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the report.
+// ConvertDeptrackToHDF and ExpectedRequirementCount share it so they accept
+// and reject exactly the same inputs.
+func parseInput(input []byte) (*DeptrackReport, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("deptrack: empty input")
 	}
@@ -437,6 +439,32 @@ func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	// Validate it looks like a Dependency-Track report
 	if report.Findings == nil && report.Project.UUID == "" && report.Meta.Application == "" {
 		return nil, fmt.Errorf("deptrack: input does not appear to be a Dependency-Track report")
+	}
+	return &report, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per findings[] entry within the size limit, or one no-findings
+// requirement when there are none.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Dependency-Track findings"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	limited, _ := hdfutil.LimitSlice(report.Findings, 0)
+	count := len(limited)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertDeptrackToHDF converts a Dependency-Track FPF JSON report to HDF format.
+func ConvertDeptrackToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	report, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 
 	checksum := shared.InputChecksum(input)

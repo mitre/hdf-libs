@@ -166,34 +166,90 @@ type standardsControl struct {
 	SeverityRating string
 }
 
-// ConvertAsffToHDF converts an ASFF document to HDF Results.
-func ConvertAsffToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and parses the findings.
+// ConvertAsffToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) ([]asffFinding, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("asff: empty input")
 	}
 	if err := shared.ValidateJSONSize(input, "asff", 0); err != nil {
 		return nil, fmt.Errorf("asff: %w", err)
 	}
-
-	checksum := shared.InputChecksum(input)
-
 	findings, err := parseFindings(input)
 	if err != nil {
 		return nil, fmt.Errorf("asff: %w", err)
 	}
+	return findings, nil
+}
 
-	// Group findings into baselines (per product / per Security Hub standard),
-	// preserving first-seen order for deterministic output.
-	var baselineOrder []string
+// groupByBaseline groups findings into baselines (per product / per Security
+// Hub standard), preserving first-seen order for deterministic output.
+func groupByBaseline(findings []asffFinding) ([]string, map[string][]asffFinding) {
+	var order []string
 	byBaseline := map[string][]asffFinding{}
-	var accounts []string
-	seenAccount := map[string]bool{}
 	for _, f := range findings {
 		name := baselineName(f)
 		if _, ok := byBaseline[name]; !ok {
-			baselineOrder = append(baselineOrder, name)
+			order = append(order, name)
 		}
 		byBaseline[name] = append(byBaseline[name], f)
+	}
+	return order, byBaseline
+}
+
+// groupByControl groups one baseline's findings by control id in first-seen
+// order. With groupByBaseline it is the single definition of the
+// input-to-requirement relation: the conversion builds requirements from it
+// and ExpectedRequirementCount counts it.
+func groupByControl(findings []asffFinding) ([]string, map[string][]asffFinding) {
+	var order []string
+	groups := map[string][]asffFinding{}
+	for _, f := range findings {
+		id := controlID(f)
+		if _, ok := groups[id]; !ok {
+			order = append(order, id)
+		}
+		groups[id] = append(groups[id], f)
+	}
+	return order, groups
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct (baseline, control id) pair across the findings, or one
+// no-findings requirement when there are none. Computed from the input alone,
+// through the same grouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct ASFF control ids per product baseline"
+	findings, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	order, byBaseline := groupByBaseline(findings)
+	for _, name := range order {
+		ids, _ := groupByControl(byBaseline[name])
+		count += len(ids)
+	}
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertAsffToHDF converts an ASFF document to HDF Results.
+func ConvertAsffToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	findings, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+
+	checksum := shared.InputChecksum(input)
+
+	baselineOrder, byBaseline := groupByBaseline(findings)
+	var accounts []string
+	seenAccount := map[string]bool{}
+	for _, f := range findings {
 		if f.AwsAccountID != "" && !seenAccount[f.AwsAccountID] {
 			seenAccount[f.AwsAccountID] = true
 			accounts = append(accounts, f.AwsAccountID)
@@ -293,15 +349,7 @@ func parseNDJSON(input []byte) ([]asffFinding, error) {
 }
 
 func buildBaseline(name string, findings []asffFinding, checksum *hdf.Checksum) hdf.EvaluatedBaseline {
-	var order []string
-	groups := map[string][]asffFinding{}
-	for _, f := range findings {
-		id := controlID(f)
-		if _, ok := groups[id]; !ok {
-			order = append(order, id)
-		}
-		groups[id] = append(groups[id], f)
-	}
+	order, groups := groupByControl(findings)
 
 	reqs := make([]hdf.EvaluatedRequirement, 0, len(order))
 	for _, id := range order {

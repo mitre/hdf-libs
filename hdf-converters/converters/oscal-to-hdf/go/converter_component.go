@@ -13,31 +13,17 @@ import (
 // BaselineRequirements. If the document contains multiple components, only the
 // first component is used for the baseline (components are grouped by name).
 func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	doc, err := ParseOscalDocument(input, "component-definition", "oscal-component-definition")
+	compDef, comp, err := parseComponentDefinition(input)
 	if err != nil {
 		return nil, err
-	}
-
-	compDef := doc.ComponentDefinition
-
-	if len(compDef.Components) == 0 {
-		return nil, fmt.Errorf("oscal-component-definition: document contains no components")
 	}
 
 	integrity := shared.InputIntegrity(input)
 	meta := ExtractMetadata(compDef.Metadata)
 
-	// Use the first component to build the baseline
-	comp := compDef.Components[0]
-
 	var requirements []hdf.BaselineRequirement
-
-	for _, ci := range comp.ControlImplementations {
-		limitedIR := shared.LimitSliceWithWarning(ci.ImplementedRequirements, 0, "implemented requirement")
-		for _, ir := range limitedIR {
-			req := implementedRequirementToBaselineRequirement(&ir)
-			requirements = append(requirements, req)
-		}
+	for _, ir := range componentImplementedRequirements(comp) {
+		requirements = append(requirements, implementedRequirementToBaselineRequirement(ir))
 	}
 
 	name := comp.Title
@@ -61,6 +47,51 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 	}
 
 	return baseline, nil
+}
+
+// parseComponentDefinition applies the converter's guards and selects the
+// component the baseline is built from: the first one. ConvertComponentDefinitionToHDF
+// and ExpectedComponentDefinitionRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseComponentDefinition(input []byte) (*ComponentDefinition, *Component, error) {
+	doc, err := ParseOscalDocument(input, "component-definition", "oscal-component-definition")
+	if err != nil {
+		return nil, nil, err
+	}
+	compDef := doc.ComponentDefinition
+	if len(compDef.Components) == 0 {
+		return nil, nil, fmt.Errorf("oscal-component-definition: document contains no components")
+	}
+	return compDef, &compDef.Components[0], nil
+}
+
+// componentImplementedRequirements lists a component's implemented
+// requirements across its control implementations, within the per-implementation
+// cap. It is the single definition of the input-to-requirement relation: the
+// conversion builds requirements from it and
+// ExpectedComponentDefinitionRequirementCount counts it.
+func componentImplementedRequirements(comp *Component) []*ImplementedRequirement {
+	var out []*ImplementedRequirement
+	for i := range comp.ControlImplementations {
+		limitedIR := shared.LimitSliceWithWarning(comp.ControlImplementations[i].ImplementedRequirements, 0, "implemented requirement")
+		for j := range limitedIR {
+			out = append(out, &limitedIR[j])
+		}
+	}
+	return out
+}
+
+// ExpectedComponentDefinitionRequirementCount states how many requirements a
+// component definition must convert to: one per implemented requirement of the
+// first component only, which is the component the conversion reads. Computed
+// from the input alone, through the same selection the conversion uses.
+func ExpectedComponentDefinitionRequirementCount(input []byte) (int, string, error) {
+	const unit = "OSCAL implemented-requirements of the first component"
+	_, comp, err := parseComponentDefinition(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	return len(componentImplementedRequirements(comp)), unit, nil
 }
 
 // implementedRequirementToBaselineRequirement converts a single OSCAL

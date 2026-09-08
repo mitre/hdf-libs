@@ -28,19 +28,12 @@ var cweIDPattern = regexp.MustCompile(`\d+`)
 
 // ConvertFortifyToHDF converts Fortify FVDL XML to HDF format.
 func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("fortify: empty input")
-	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, fmt.Errorf("fortify: %w", err)
+	fvdl, err := parseFVDL(input)
+	if err != nil {
+		return nil, err
 	}
 
 	resultsChecksum := shared.InputChecksum(input)
-
-	var fvdl FVDL
-	if err := xml.Unmarshal(input, &fvdl); err != nil {
-		return nil, fmt.Errorf("failed to parse Fortify FVDL: %w", err)
-	}
 
 	// Build snippet lookup: snippet ID -> Snippet
 	snippetMap := buildSnippetMap(fvdl.Snippets.Snippet)
@@ -55,12 +48,12 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	vulnsByClassID := groupVulnsByClassID(fvdl.Vulnerabilities.Vulnerability)
 
 	// Build requirements — one per Description classID
-	limitedDescs := shared.LimitSliceWithWarning(fvdl.Descriptions, 0, "description")
+	limitedDescs := requirementDescriptions(fvdl)
 
 	requirements := make([]hdf.EvaluatedRequirement, len(limitedDescs))
 	for i, desc := range limitedDescs {
 		vulns := vulnsByClassID[desc.ClassID]
-		requirements[i] = buildRequirement(&desc, vulns, snippetMap, &fvdl)
+		requirements[i] = buildRequirement(&desc, vulns, snippetMap, fvdl)
 	}
 
 	targetName := fvdl.Build.SourceBasePath
@@ -108,6 +101,48 @@ func ConvertFortifyToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		},
 		Timestamp: &timestamp,
 	}), nil
+}
+
+// parseFVDL applies the converter's input guards and decodes the FVDL.
+// ConvertFortifyToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseFVDL(input []byte) (*FVDL, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("fortify: empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("fortify: %w", err)
+	}
+	var fvdl FVDL
+	if err := xml.Unmarshal(input, &fvdl); err != nil {
+		return nil, fmt.Errorf("failed to parse Fortify FVDL: %w", err)
+	}
+	return &fvdl, nil
+}
+
+// requirementDescriptions returns the capped Description list the conversion
+// builds one requirement from each. It is the single definition of the
+// input-to-requirement relation: the conversion builds requirements from it
+// and ExpectedRequirementCount counts it. A Vulnerability whose ClassID has no
+// Description attaches to nothing and is invisible to the count.
+func requirementDescriptions(fvdl *FVDL) []Description {
+	return shared.LimitSliceWithWarning(fvdl.Descriptions, 0, "description")
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per root-level Description classID (not per Vulnerability), or one
+// no-findings requirement when the FVDL carries no Descriptions.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Fortify vulnerability classes"
+	fvdl, err := parseFVDL(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := len(requirementDescriptions(fvdl))
+	if count == 0 {
+		return 1, unit, nil
+	}
+	return count, unit, nil
 }
 
 // buildSnippetMap creates a map from snippet ID to Snippet for quick lookup.

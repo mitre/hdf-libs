@@ -444,8 +444,19 @@ func verdictLabels(a IonChannelAnalysis) map[string]string {
 	return labels
 }
 
-// ConvertIonChannelToHDF converts Ion Channel analysis JSON to HDF format.
-func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parsedAnalysis is the input split the way the conversion consumes it: the
+// dependency graph flattened from the first "dependency" scan summary, and
+// every other scan summary, which gets a baseline of its own.
+type parsedAnalysis struct {
+	analysis    IonChannelAnalysis
+	contextDeps []contextualizedDependency
+	nonDepScans []ScanSummary
+}
+
+// parseInput applies the converter's input guards, decodes the analysis and
+// splits its scan summaries. ConvertIonChannelToHDF and ExpectedRequirementCount
+// share it so they accept and reject exactly the same inputs.
+func parseInput(input []byte) (*parsedAnalysis, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
@@ -480,8 +491,34 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 		nonDepScans = append(nonDepScans, scan)
 	}
 
-	// Flatten and contextualize
-	contextDeps := buildDependencyGraph(allDeps)
+	return &parsedAnalysis{
+		analysis:    analysis,
+		contextDeps: buildDependencyGraph(allDeps),
+		nonDepScans: nonDepScans,
+	}, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct org/name dependency anywhere in the dependency scan's
+// tree, plus one per other scan summary. An input with neither yields zero
+// (the dependency baseline is emitted empty). Computed from the input alone,
+// through the same flattening the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct Ion Channel dependencies plus non-dependency scan summaries"
+	parsed, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	return len(parsed.contextDeps) + len(parsed.nonDepScans), unit, nil
+}
+
+// ConvertIonChannelToHDF converts Ion Channel analysis JSON to HDF format.
+func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	parsed, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+	analysis, contextDeps, nonDepScans := parsed.analysis, parsed.contextDeps, parsed.nonDepScans
 
 	// Build requirements
 	requirements := make([]hdf.EvaluatedRequirement, len(contextDeps))

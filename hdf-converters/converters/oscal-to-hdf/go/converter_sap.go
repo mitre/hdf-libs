@@ -20,6 +20,20 @@ func ConvertAssessmentPlanToHDF(input []byte, converterVersion string) (*hdf.HDF
 	return assessmentPlanToHDFPlan(doc.AssessmentPlan, input, converterVersion)
 }
 
+// ExpectedAssessmentPlanRequirementCount states how many assessments a plan
+// must convert to: one per control-selection, else one per
+// control-objective-selection, else one synthetic assessment — and none when
+// the plan carries no reviewed-controls at all. Computed from the input alone,
+// through the same selection the conversion uses.
+func ExpectedAssessmentPlanRequirementCount(input []byte) (int, string, error) {
+	const unit = "OSCAL reviewed-control selections"
+	doc, err := ParseOscalDocument(input, "assessment-plan", "oscal-assessment-plan")
+	if err != nil {
+		return 0, unit, err
+	}
+	return len(selectAssessmentSources(doc.AssessmentPlan)), unit, nil
+}
+
 // assessmentPlanToHDFPlan converts a parsed AssessmentPlan to HDFPlan.
 func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersion string) (*hdf.HDFPlan, error) {
 	integrity := shared.InputIntegrity(rawInput)
@@ -58,55 +72,72 @@ func assessmentPlanToHDFPlan(ap *AssessmentPlan, rawInput []byte, converterVersi
 	return plan, nil
 }
 
+// assessmentSource is what one HDF assessment is built from: a
+// control-selection, a control-objective-selection, or neither (synthetic).
+type assessmentSource struct {
+	selection *ControlSelection
+	objective *ControlObjective
+}
+
+// selectAssessmentSources is the single definition of the plan's
+// input-to-assessment relation: control-selections when present, else
+// control-objective-selections, else one synthetic source; a plan with no
+// reviewed-controls section yields none. The conversion builds assessments
+// from it and ExpectedAssessmentPlanRequirementCount counts it.
+func selectAssessmentSources(ap *AssessmentPlan) []assessmentSource {
+	if ap.ReviewedControls == nil {
+		return nil
+	}
+	var sources []assessmentSource
+	for i := range ap.ReviewedControls.ControlSelections {
+		sources = append(sources, assessmentSource{selection: &ap.ReviewedControls.ControlSelections[i]})
+	}
+	if len(sources) == 0 {
+		for i := range ap.ReviewedControls.ControlObjectives {
+			sources = append(sources, assessmentSource{objective: &ap.ReviewedControls.ControlObjectives[i]})
+		}
+	}
+	if len(sources) == 0 {
+		sources = append(sources, assessmentSource{})
+	}
+	return sources
+}
+
 // buildAssessments creates HDF Assessment entries from the reviewed-controls
 // section of the assessment plan.
 func buildAssessments(ap *AssessmentPlan) []hdf.Assessment {
-	if ap.ReviewedControls == nil {
-		return []hdf.Assessment{}
-	}
-
-	var assessments []hdf.Assessment
-
-	for _, cs := range ap.ReviewedControls.ControlSelections {
-		assessment := hdf.Assessment{}
-
-		// Derive baselineRef from the import-ssp reference or control selection description
-		assessment.BaselineRef = deriveBaselineRef(ap, &cs)
-
-		// Add description from control selection
-		if cs.Description != "" {
-			assessment.Description = hdfutil.Ptr(cs.Description)
-		}
-
-		// Extract runner info from assessment-assets
-		assessment.Runner = extractRunnerConfig(ap)
-
-		// Build target selector from assessment-subjects
-		assessment.TargetSelector = buildTargetSelector(ap)
-
-		assessments = append(assessments, assessment)
-	}
-
-	// If no control selections but there are control-objective-selections, create
-	// assessments from those
-	if len(assessments) == 0 && len(ap.ReviewedControls.ControlObjectives) > 0 {
-		for _, co := range ap.ReviewedControls.ControlObjectives {
+	sources := selectAssessmentSources(ap)
+	assessments := make([]hdf.Assessment, 0, len(sources))
+	for _, src := range sources {
+		switch {
+		case src.selection != nil:
+			cs := src.selection
 			assessment := hdf.Assessment{
-				BaselineRef: deriveBaselineRefFromObjectives(ap, &co),
+				// Derive baselineRef from the import-ssp reference or control selection description
+				BaselineRef: deriveBaselineRef(ap, cs),
+				// Extract runner info from assessment-assets
+				Runner: extractRunnerConfig(ap),
+				// Build target selector from assessment-subjects
+				TargetSelector: buildTargetSelector(ap),
+			}
+			if cs.Description != "" {
+				assessment.Description = hdfutil.Ptr(cs.Description)
+			}
+			assessments = append(assessments, assessment)
+		case src.objective != nil:
+			co := src.objective
+			assessment := hdf.Assessment{
+				BaselineRef: deriveBaselineRefFromObjectives(ap, co),
 				Runner:      extractRunnerConfig(ap),
 			}
 			if co.Description != "" {
 				assessment.Description = hdfutil.Ptr(co.Description)
 			}
 			assessments = append(assessments, assessment)
+		default:
+			// Ensure at least one assessment exists
+			assessments = append(assessments, hdf.Assessment{BaselineRef: "oscal-assessment-plan"})
 		}
-	}
-
-	// Ensure at least one assessment exists
-	if len(assessments) == 0 {
-		assessments = append(assessments, hdf.Assessment{
-			BaselineRef: "oscal-assessment-plan",
-		})
 	}
 
 	return assessments

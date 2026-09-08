@@ -467,21 +467,14 @@ func buildComponent(report NeuVectorScanReport) hdf.Component {
 // to HDF format. Each vulnerability becomes a separate requirement with a unique
 // ID of name/package_name/package_version.
 func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("neuvector: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "neuvector", 0); err != nil {
-		return nil, fmt.Errorf("neuvector: %w", err)
-	}
-
-	var scan NeuVectorScan
-	if err := json.Unmarshal(input, &scan); err != nil {
-		return nil, fmt.Errorf("neuvector: invalid JSON: %w", err)
+	scan, err := parseScan(input)
+	if err != nil {
+		return nil, err
 	}
 
 	checksum := shared.InputChecksum(input)
 
-	vulns := shared.LimitSliceWithWarning(scan.Report.Vulnerabilities, 0, "vulnerability")
+	vulns := uniqueVulns(scan.Report.Vulnerabilities)
 
 	// NeuVector reports carry image build time (created_at) and CVE-DB version
 	// time (cvedb_create_time), but neither is the scan time, so use conversion
@@ -490,19 +483,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 
 	ml := buildModuleLookup(scan.Report.Modules)
 
-	// Each vulnerability is unique by name/package_name/package_version,
-	// so no grouping is needed (unlike Snyk which groups by vuln ID).
-	// However, we still deduplicate by the composite ID in case the input
-	// has exact duplicates.
-	seen := make(map[string]bool)
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(vulns))
 	for _, vuln := range vulns {
-		id := vulnID(vuln)
-		if seen[id] {
-			log.Printf("WARNING: Duplicate vulnerability ID %s skipped", id)
-			continue
-		}
-		seen[id] = true
 		requirements = append(requirements, buildRequirement(vuln, now, ml))
 	}
 
@@ -541,4 +523,60 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Components:       []hdf.Component{buildComponent(scan.Report)},
 		Timestamp:        &now,
 	}), nil
+}
+
+// parseScan applies the converter's input guards and decodes the scan.
+// ConvertNeuVectorToHDF and ExpectedRequirementCount share it so they accept
+// and reject exactly the same inputs.
+func parseScan(input []byte) (*NeuVectorScan, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("neuvector: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "neuvector", 0); err != nil {
+		return nil, fmt.Errorf("neuvector: %w", err)
+	}
+	var scan NeuVectorScan
+	if err := json.Unmarshal(input, &scan); err != nil {
+		return nil, fmt.Errorf("neuvector: invalid JSON: %w", err)
+	}
+	return &scan, nil
+}
+
+// uniqueVulns caps the vulnerabilities and drops exact duplicates of the
+// name/package_name/package_version composite ID (first wins, with a warning).
+// Each vulnerability is otherwise unique, so no grouping is needed (unlike Snyk,
+// which groups by vuln ID). It is the single definition of the
+// input-to-requirement relation: the conversion builds one requirement per
+// returned entry and ExpectedRequirementCount counts them.
+func uniqueVulns(vulns []NeuVectorVuln) []NeuVectorVuln {
+	limited := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
+	seen := make(map[string]bool)
+	unique := make([]NeuVectorVuln, 0, len(limited))
+	for _, vuln := range limited {
+		id := vulnID(vuln)
+		if seen[id] {
+			log.Printf("WARNING: Duplicate vulnerability ID %s skipped", id)
+			continue
+		}
+		seen[id] = true
+		unique = append(unique, vuln)
+	}
+	return unique
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct name/package_name/package_version, or one no-findings
+// requirement when the report carries no vulnerabilities. Computed from the
+// input alone, through the same dedup the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct NeuVector vulnerability ids"
+	scan, err := parseScan(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := len(uniqueVulns(scan.Report.Vulnerabilities))
+	if count == 0 {
+		return 1, unit, nil
+	}
+	return count, unit, nil
 }

@@ -103,25 +103,32 @@ type SplunkSourceLocation struct {
 	Line float64 `json:"line"`
 }
 
-// ConvertSplunkToHDF reassembles Splunk events (header, profile, control)
-// into HDF Results format. The input is a JSON array of Splunk events that
-// were originally decomposed from HDF data for Splunk storage.
-func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// guidGroup is one execution's events, reassembled: its single header, its
+// profile events, and its control events keyed by profile_sha256.
+type guidGroup struct {
+	header            SplunkHeader
+	profiles          []SplunkProfile
+	controlsByProfile map[string][]SplunkControl
+}
+
+// parseInput applies the converter's input guards, decodes the event array and
+// regroups it by GUID (sorted, for deterministic output). ConvertSplunkToHDF
+// and ExpectedRequirementCount share it so they accept and reject exactly the
+// same inputs.
+func parseInput(input []byte) ([]string, map[string]*guidGroup, error) {
 	if len(input) == 0 {
-		return nil, fmt.Errorf("splunk: empty input")
+		return nil, nil, fmt.Errorf("splunk: empty input")
 	}
 	if err := shared.ValidateJSONSize(input, "splunk", 0); err != nil {
-		return nil, fmt.Errorf("splunk: %w", err)
+		return nil, nil, fmt.Errorf("splunk: %w", err)
 	}
-
-	resultsChecksum := shared.InputChecksum(input)
 
 	var rawEvents []json.RawMessage
 	if err := json.Unmarshal(input, &rawEvents); err != nil {
-		return nil, fmt.Errorf("invalid Splunk JSON: %w", err)
+		return nil, nil, fmt.Errorf("invalid Splunk JSON: %w", err)
 	}
 	if len(rawEvents) == 0 {
-		return nil, fmt.Errorf("no Splunk events found in input")
+		return nil, nil, fmt.Errorf("no Splunk events found in input")
 	}
 
 	// Classify each raw event by extracting its meta.subtype, then group by GUID.
@@ -134,12 +141,12 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	for i, raw := range rawEvents {
 		var envelope SplunkEvent
 		if err := json.Unmarshal(raw, &envelope); err != nil {
-			return nil, fmt.Errorf("event %d: failed to parse envelope: %w", i, err)
+			return nil, nil, fmt.Errorf("event %d: failed to parse envelope: %w", i, err)
 		}
 
 		var meta SplunkMeta
 		if err := json.Unmarshal(envelope.Meta, &meta); err != nil {
-			return nil, fmt.Errorf("event %d: failed to parse meta: %w", i, err)
+			return nil, nil, fmt.Errorf("event %d: failed to parse meta: %w", i, err)
 		}
 
 		eventsByGUID[meta.GUID] = append(eventsByGUID[meta.GUID], classifiedEvent{
@@ -148,12 +155,6 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		})
 	}
 
-	// Process each GUID group into baselines and targets.
-	var allBaselines []hdf.EvaluatedBaseline
-	var allTargets []hdf.Component
-	var lastHeader *SplunkHeader
-	timestamp := time.Now()
-
 	// Sort GUIDs for deterministic output.
 	guids := make([]string, 0, len(eventsByGUID))
 	for guid := range eventsByGUID {
@@ -161,6 +162,7 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 	}
 	sort.Strings(guids)
 
+	groups := make(map[string]*guidGroup, len(guids))
 	for _, guid := range guids {
 		events := eventsByGUID[guid]
 
@@ -179,40 +181,84 @@ func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 
 		// Validate exactly 1 header event per GUID.
 		if len(headerEvents) != 1 {
-			return nil, fmt.Errorf("GUID %s: expected 1 header event, got %d", guid, len(headerEvents))
+			return nil, nil, fmt.Errorf("GUID %s: expected 1 header event, got %d", guid, len(headerEvents))
 		}
 
-		// Parse header.
-		var header SplunkHeader
-		if err := json.Unmarshal(headerEvents[0], &header); err != nil {
-			return nil, fmt.Errorf("GUID %s: failed to parse header: %w", guid, err)
+		g := &guidGroup{controlsByProfile: make(map[string][]SplunkControl)}
+		if err := json.Unmarshal(headerEvents[0], &g.header); err != nil {
+			return nil, nil, fmt.Errorf("GUID %s: failed to parse header: %w", guid, err)
 		}
-		lastHeader = &header
 
-		// Parse profiles.
-		profiles := make([]SplunkProfile, 0, len(profileEvents))
+		g.profiles = make([]SplunkProfile, 0, len(profileEvents))
 		for i, raw := range profileEvents {
 			var profile SplunkProfile
 			if err := json.Unmarshal(raw, &profile); err != nil {
-				return nil, fmt.Errorf("GUID %s: failed to parse profile %d: %w", guid, i, err)
+				return nil, nil, fmt.Errorf("GUID %s: failed to parse profile %d: %w", guid, i, err)
 			}
-			profiles = append(profiles, profile)
+			g.profiles = append(g.profiles, profile)
 		}
 
-		// Parse controls and group by profile_sha256.
-		controlsByProfile := make(map[string][]SplunkControl)
+		// Group controls by profile_sha256; a control whose sha matches no
+		// profile event is never emitted.
 		for i, raw := range controlEvents {
 			var control SplunkControl
 			if err := json.Unmarshal(raw, &control); err != nil {
-				return nil, fmt.Errorf("GUID %s: failed to parse control %d: %w", guid, i, err)
+				return nil, nil, fmt.Errorf("GUID %s: failed to parse control %d: %w", guid, i, err)
 			}
 			sha := control.Meta.ProfileSHA256
-			controlsByProfile[sha] = append(controlsByProfile[sha], control)
+			g.controlsByProfile[sha] = append(g.controlsByProfile[sha], control)
 		}
+		groups[guid] = g
+	}
+	return guids, groups, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per control event whose profile_sha256 matches a profile event in
+// the same execution. Orphan control events are dropped and a profile with no
+// controls yields an empty baseline, so the count can be zero. Computed from
+// the input alone, through the same regrouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Splunk control events attached to a profile event"
+	guids, groups, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for _, guid := range guids {
+		g := groups[guid]
+		for _, profile := range g.profiles {
+			count += len(g.controlsByProfile[profile.SHA256])
+		}
+	}
+	return count, unit, nil
+}
+
+// ConvertSplunkToHDF reassembles Splunk events (header, profile, control)
+// into HDF Results format. The input is a JSON array of Splunk events that
+// were originally decomposed from HDF data for Splunk storage.
+func ConvertSplunkToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	guids, groups, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+
+	resultsChecksum := shared.InputChecksum(input)
+
+	// Process each GUID group into baselines and targets.
+	var allBaselines []hdf.EvaluatedBaseline
+	var allTargets []hdf.Component
+	var lastHeader *SplunkHeader
+	timestamp := time.Now()
+
+	for _, guid := range guids {
+		g := groups[guid]
+		header := g.header
+		lastHeader = &header
 
 		// Convert each profile to an EvaluatedBaseline.
-		for _, profile := range profiles {
-			baseline := convertProfileToBaseline(profile, controlsByProfile[profile.SHA256], resultsChecksum)
+		for _, profile := range g.profiles {
+			baseline := convertProfileToBaseline(profile, g.controlsByProfile[profile.SHA256], resultsChecksum)
 			allBaselines = append(allBaselines, baseline)
 		}
 

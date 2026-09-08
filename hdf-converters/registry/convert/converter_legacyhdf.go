@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
-	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 )
 
 // legacyHDFConverter converts InSpec exec-json (the legacy HDF v2 format:
@@ -18,22 +17,19 @@ func (c *legacyHDFConverter) Name() string {
 	return "InSpec exec-json to HDF"
 }
 
+// legacyhdf.ExpectedRequirementCount is deliberately not declared here yet:
+// the CLI checks fidelity on the post-processed output, and `--to hdf@2`
+// downgrades to the profiles/controls shape it cannot count. Declare it once
+// the CLI counts the pre-downgrade document.
+
 // Convert transforms InSpec exec-json input to current HDF output.
 func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
-	if err := shared.ValidateJSONSize(input, "legacyhdf", 0); err != nil {
-		return nil, fmt.Errorf("legacyhdf input validation: %w", err)
+	v1, err := legacyhdf.ParseLegacyHDF(input)
+	if err != nil {
+		return nil, err
 	}
 
-	if !legacyhdf.IsLegacyHDF(input) {
-		return nil, fmt.Errorf("input is not valid InSpec exec-json format")
-	}
-
-	var v1 legacyhdf.LegacyHDFResults
-	if err := json.Unmarshal(input, &v1); err != nil {
-		return nil, fmt.Errorf("failed to parse InSpec input: %w", err)
-	}
-
-	v2 := legacyhdf.ConvertLegacyHDF(&v1, version)
+	v2 := legacyhdf.ConvertLegacyHDF(v1, version)
 
 	output, err := json.MarshalIndent(v2, "", "  ")
 	if err != nil {
@@ -41,6 +37,12 @@ func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+// ExpectedRequirementCount implements RequirementCountExpecter through the
+// package's own overlay-flattening relation.
+func (c *legacyHDFConverter) ExpectedRequirementCount(input []byte) (int, string, error) {
+	return legacyhdf.ExpectedRequirementCount(input)
 }
 
 func init() {

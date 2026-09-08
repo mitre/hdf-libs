@@ -318,29 +318,16 @@ func buildRequirement(checkID string, findings []finding, hasStatus bool) hdf.Ev
 // Supports both "Check Results Details" (has Result Status) and "Findings Detail"
 // (no Result Status; all rows are findings) report formats.
 func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("dbprotect: empty input")
-	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, fmt.Errorf("dbprotect: %w", err)
+	ds, err := parseDataset(input)
+	if err != nil {
+		return nil, err
 	}
 
 	resultsChecksum := shared.InputChecksum(input)
 
-	var ds Dataset
-	if err := xml.Unmarshal(input, &ds); err != nil {
-		return nil, fmt.Errorf("dbprotect: failed to parse XML: %w", err)
-	}
+	limitedFindings, order, groups := groupDataset(ds)
+	hasStatus := hasResultStatus(ds)
 
-	if len(ds.Data.Rows) == 0 {
-		return nil, fmt.Errorf("dbprotect: no data rows found")
-	}
-
-	findings := compileFindings(&ds)
-	limitedFindings := shared.LimitSliceWithWarning(findings, 0, "finding")
-	hasStatus := hasResultStatus(&ds)
-
-	order, groups := groupByCheckID(limitedFindings)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, checkID := range order {
 		requirements[i] = buildRequirement(checkID, groups[checkID], hasStatus)
@@ -385,4 +372,48 @@ func ConvertDbprotectToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Components:       components,
 		Timestamp:        timestamp,
 	}), nil
+}
+
+// parseDataset applies the converter's input guards and decodes the Cognos
+// dataset, rejecting one with no rows. ConvertDbprotectToHDF and
+// ExpectedRequirementCount share it so they accept and reject exactly the
+// same inputs.
+func parseDataset(input []byte) (*Dataset, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("dbprotect: empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("dbprotect: %w", err)
+	}
+	var ds Dataset
+	if err := xml.Unmarshal(input, &ds); err != nil {
+		return nil, fmt.Errorf("dbprotect: failed to parse XML: %w", err)
+	}
+	if len(ds.Data.Rows) == 0 {
+		return nil, fmt.Errorf("dbprotect: no data rows found")
+	}
+	return &ds, nil
+}
+
+// groupDataset compiles the rows into findings, caps them, and groups them by
+// Check ID. It is the single definition of the input-to-requirement relation:
+// the conversion builds requirements from it and ExpectedRequirementCount
+// counts it. The capped findings are returned for the scan-level metadata.
+func groupDataset(ds *Dataset) ([]finding, []string, map[string][]finding) {
+	limitedFindings := shared.LimitSliceWithWarning(compileFindings(ds), 0, "finding")
+	order, groups := groupByCheckID(limitedFindings)
+	return limitedFindings, order, groups
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct Check ID. DBProtect synthesizes no placeholder — a
+// dataset with no rows is rejected, exactly as the conversion rejects it.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct DBProtect check ids"
+	ds, err := parseDataset(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	_, order, _ := groupDataset(ds)
+	return len(order), unit, nil
 }

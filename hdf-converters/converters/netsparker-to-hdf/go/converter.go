@@ -436,49 +436,13 @@ func detectRootElement(input []byte) string {
 // ConvertNetsparkerToHDF converts Netsparker/Invicti XML scan results to HDF format.
 // Handles both <netsparker-enterprise> and <invicti-enterprise> root elements.
 func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("netsparker: empty input")
+	parsed, toolName, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, fmt.Errorf("netsparker: %w", err)
-	}
+	netsparkerData := *parsed
 
 	resultsChecksum := shared.InputChecksum(input)
-
-	// Detect root element to determine tool name
-	rootElement := detectRootElement(input)
-	isInvicti := strings.HasPrefix(rootElement, "invicti")
-
-	toolName := "Netsparker"
-	if isInvicti {
-		toolName = "Invicti"
-	}
-
-	// Parse XML — we need a wrapper struct that handles either root element.
-	// Since encoding/xml requires matching element names, we try invicti first,
-	// then netsparker.
-	var netsparkerData NetsparkerXML
-	if isInvicti {
-		type invictiWrapper struct {
-			XMLName xml.Name `xml:"invicti-enterprise"`
-			NetsparkerXML
-		}
-		var wrapper invictiWrapper
-		if err := xml.Unmarshal(input, &wrapper); err != nil {
-			return nil, fmt.Errorf("failed to parse Invicti XML: %w", err)
-		}
-		netsparkerData = wrapper.NetsparkerXML
-	} else {
-		type netsparkerWrapper struct {
-			XMLName xml.Name `xml:"netsparker-enterprise"`
-			NetsparkerXML
-		}
-		var wrapper netsparkerWrapper
-		if err := xml.Unmarshal(input, &wrapper); err != nil {
-			return nil, fmt.Errorf("failed to parse Netsparker XML: %w", err)
-		}
-		netsparkerData = wrapper.NetsparkerXML
-	}
 
 	vulns := netsparkerData.Vulnerabilities.Vulnerability
 	limitedVulns := shared.LimitSliceWithWarning(vulns, 0, "vulnerability")
@@ -541,4 +505,70 @@ func ConvertNetsparkerToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 			},
 		},
 	}), nil
+}
+
+// parseInput applies the converter's input guards and decodes the report under
+// whichever root element (Netsparker or Invicti) it carries, returning the
+// tool name that root implies. ConvertNetsparkerToHDF and
+// ExpectedRequirementCount share it so they accept and reject the same inputs.
+func parseInput(input []byte) (*NetsparkerXML, string, error) {
+	if len(input) == 0 {
+		return nil, "", fmt.Errorf("netsparker: empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, "", fmt.Errorf("netsparker: %w", err)
+	}
+
+	// Detect root element to determine tool name
+	rootElement := detectRootElement(input)
+	isInvicti := strings.HasPrefix(rootElement, "invicti")
+
+	toolName := "Netsparker"
+	if isInvicti {
+		toolName = "Invicti"
+	}
+
+	// Parse XML — we need a wrapper struct that handles either root element.
+	// Since encoding/xml requires matching element names, we try invicti first,
+	// then netsparker.
+	var netsparkerData NetsparkerXML
+	if isInvicti {
+		type invictiWrapper struct {
+			XMLName xml.Name `xml:"invicti-enterprise"`
+			NetsparkerXML
+		}
+		var wrapper invictiWrapper
+		if err := xml.Unmarshal(input, &wrapper); err != nil {
+			return nil, "", fmt.Errorf("failed to parse Invicti XML: %w", err)
+		}
+		netsparkerData = wrapper.NetsparkerXML
+	} else {
+		type netsparkerWrapper struct {
+			XMLName xml.Name `xml:"netsparker-enterprise"`
+			NetsparkerXML
+		}
+		var wrapper netsparkerWrapper
+		if err := xml.Unmarshal(input, &wrapper); err != nil {
+			return nil, "", fmt.Errorf("failed to parse Netsparker XML: %w", err)
+		}
+		netsparkerData = wrapper.NetsparkerXML
+	}
+	return &netsparkerData, toolName, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per <vulnerability> within the size limit, or one no-findings
+// requirement when the report carries none.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Netsparker vulnerabilities"
+	netsparkerData, _, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	limited, _ := hdfutil.LimitSlice(netsparkerData.Vulnerabilities.Vulnerability, 0)
+	count := len(limited)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
 }

@@ -99,9 +99,10 @@ type AffectedRef struct {
 	Ref string `json:"ref"`
 }
 
-// ConvertCycloneDXVEXToHDF parses a CycloneDX BOM with VEX analysis
-// statements and produces an HDF Amendments document.
-func ConvertCycloneDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments, error) {
+// parseInput applies the converter's input guards and decodes the BOM.
+// ConvertCycloneDXVEXToHDF and ExpectedRequirementCount share it so they
+// accept and reject exactly the same inputs.
+func parseInput(input []byte) (*BOM, error) {
 	if err := shared.ValidateJSONSize(input, "cyclonedx-vex-to-hdf", 0); err != nil {
 		return nil, err
 	}
@@ -112,6 +113,60 @@ func ConvertCycloneDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAm
 	if bom.BOMFormat != "CycloneDX" {
 		return nil, fmt.Errorf("cyclonedx-vex-to-hdf: bomFormat is %q; only 'CycloneDX' is supported", bom.BOMFormat)
 	}
+	return &bom, nil
+}
+
+// errNoActionableStatements is the refusal for a BOM with no override to
+// write: HDF Amendments requires overrides.minItems=1.
+var errNoActionableStatements = fmt.Errorf("cyclonedx-vex-to-hdf: BOM contains no actionable VEX statements (only exploitable/in_triage or no analysis); no amendment to write")
+
+// actionableTarget resolves the import target for a vulnerability, or
+// ok=false when it has no id, no analysis, or an analysis state with no
+// actionable canonical mapping (exploitable / in_triage). It is the single
+// definition of the input-to-override relation: the conversion builds
+// overrides from it and ExpectedRequirementCount counts it.
+func actionableTarget(v *Vulnerability) (vex.ImportTarget, bool) {
+	if v.ID == "" || v.Analysis == nil {
+		return vex.ImportTarget{}, false
+	}
+	canonical, ok := vex.NormalizeStatus(v.Analysis.State)
+	if !ok {
+		return vex.ImportTarget{}, false
+	}
+	return vex.ImportTargetFor(canonical)
+}
+
+// ExpectedRequirementCount states how many overrides the input must convert
+// to: one per vulnerability whose analysis state is actionable (not_affected
+// or fixed family). A BOM yielding none is an error, as it is for the
+// conversion. Computed from the input alone, through the same predicate the
+// conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "CycloneDX vulnerabilities with an actionable VEX analysis state"
+	bom, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for i := range bom.Vulnerabilities {
+		if _, ok := actionableTarget(&bom.Vulnerabilities[i]); ok {
+			count++
+		}
+	}
+	if count == 0 {
+		return 0, unit, errNoActionableStatements
+	}
+	return count, unit, nil
+}
+
+// ConvertCycloneDXVEXToHDF parses a CycloneDX BOM with VEX analysis
+// statements and produces an HDF Amendments document.
+func ConvertCycloneDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments, error) {
+	bomPtr, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+	bom := *bomPtr
 
 	docTime := time.Now().UTC()
 	if bom.Metadata != nil && bom.Metadata.Timestamp != "" {
@@ -132,7 +187,7 @@ func ConvertCycloneDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAm
 	}
 
 	if len(overrides) == 0 {
-		return nil, fmt.Errorf("cyclonedx-vex-to-hdf: BOM contains no actionable VEX statements (only exploitable/in_triage or no analysis); no amendment to write")
+		return nil, errNoActionableStatements
 	}
 
 	name := "CycloneDX VEX statements"
@@ -162,14 +217,7 @@ func ConvertCycloneDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAm
 // override. Returns ok=false when the analysis state has no actionable
 // canonical mapping (exploitable / in_triage).
 func vulnerabilityToOverride(v *Vulnerability, productLookup map[string]Component, docTime time.Time, bom *BOM) (hdf.StandaloneOverride, bool) {
-	if v.ID == "" || v.Analysis == nil {
-		return hdf.StandaloneOverride{}, false
-	}
-	canonical, ok := vex.NormalizeStatus(v.Analysis.State)
-	if !ok {
-		return hdf.StandaloneOverride{}, false
-	}
-	target, ok := vex.ImportTargetFor(canonical)
+	target, ok := actionableTarget(v)
 	if !ok {
 		return hdf.StandaloneOverride{}, false
 	}

@@ -108,32 +108,23 @@ type graphIndex struct {
 // HDF Amendments document. Returns an error when the document carries no
 // actionable VEX statements (only affected / under_investigation).
 func ConvertSPDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments, error) {
-	if err := shared.ValidateJSONSize(input, "spdx-vex-to-hdf", 0); err != nil {
+	docPtr, err := parseInput(input)
+	if err != nil {
 		return nil, err
 	}
-	var doc document
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("parse SPDX-3: %w", err)
-	}
-	if len(doc.Graph) == 0 {
-		return nil, fmt.Errorf("spdx-vex-to-hdf: document has no @graph elements")
-	}
+	doc := *docPtr
 
 	idx := buildIndex(&doc)
 
 	overrides := make([]hdf.StandaloneOverride, 0)
 	for i := range doc.Graph {
-		el := &doc.Graph[i]
-		if _, isVex := vexStatusByType[el.Type]; !isVex {
-			continue
-		}
-		if o, ok := idx.relationshipToOverride(el); ok {
+		if o, ok := idx.relationshipToOverride(&doc.Graph[i]); ok {
 			overrides = append(overrides, o)
 		}
 	}
 
 	if len(overrides) == 0 {
-		return nil, fmt.Errorf("spdx-vex-to-hdf: SPDX document contains no actionable VEX statements (only affected/under_investigation); no amendment to write")
+		return nil, errNoActionableStatements
 	}
 
 	appliedBy := idx.documentIdentity(&doc)
@@ -154,6 +145,73 @@ func ConvertSPDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 		},
 		Integrity: shared.InputIntegrity(input),
 	}, nil
+}
+
+// parseInput applies the converter's input guards and decodes the document.
+// ConvertSPDXVEXToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) (*document, error) {
+	if err := shared.ValidateJSONSize(input, "spdx-vex-to-hdf", 0); err != nil {
+		return nil, err
+	}
+	var doc document
+	if err := json.Unmarshal(input, &doc); err != nil {
+		return nil, fmt.Errorf("parse SPDX-3: %w", err)
+	}
+	if len(doc.Graph) == 0 {
+		return nil, fmt.Errorf("spdx-vex-to-hdf: document has no @graph elements")
+	}
+	return &doc, nil
+}
+
+// errNoActionableStatements is the refusal for a document with no override to
+// write: HDF Amendments requires overrides.minItems=1.
+var errNoActionableStatements = fmt.Errorf("spdx-vex-to-hdf: SPDX document contains no actionable VEX statements (only affected/under_investigation); no amendment to write")
+
+// actionableRelationship resolves a graph element's import target, CVE id and
+// vulnerability, or ok=false when it is not a VEX relationship, its status is
+// informational, or its vulnerability carries no cve externalIdentifier. It is
+// the single definition of the input-to-override relation: the conversion
+// builds overrides from it and ExpectedRequirementCount counts it.
+func (idx *graphIndex) actionableRelationship(rel *graphElement) (target vex.ImportTarget, requirementID string, vuln *graphElement, ok bool) {
+	canonical, ok := vexStatusByType[rel.Type]
+	if !ok {
+		return vex.ImportTarget{}, "", nil, false
+	}
+	target, ok = vex.ImportTargetFor(canonical)
+	if !ok {
+		return vex.ImportTarget{}, "", nil, false
+	}
+	vuln = idx.vulnByID[rel.From]
+	requirementID = cveIdentifier(vuln)
+	if requirementID == "" {
+		return vex.ImportTarget{}, "", nil, false
+	}
+	return target, requirementID, vuln, true
+}
+
+// ExpectedRequirementCount states how many overrides the input must convert
+// to: one per VEX relationship element (not-affected or fixed) whose
+// vulnerability resolves to a CVE id. A document yielding none is an error,
+// as it is for the conversion. Computed from the input alone, through the same
+// predicate the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "SPDX VEX relationships resolving to a CVE"
+	doc, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	idx := buildIndex(doc)
+	count := 0
+	for i := range doc.Graph {
+		if _, _, _, ok := idx.actionableRelationship(&doc.Graph[i]); ok {
+			count++
+		}
+	}
+	if count == 0 {
+		return 0, unit, errNoActionableStatements
+	}
+	return count, unit, nil
 }
 
 // buildIndex constructs the cross-reference tables for one document.
@@ -194,18 +252,8 @@ func buildIndex(doc *document) *graphIndex {
 // override, or returns (_, false) when the status is informational
 // (affected / under_investigation) or the CVE cannot be resolved.
 func (idx *graphIndex) relationshipToOverride(rel *graphElement) (hdf.StandaloneOverride, bool) {
-	canonical, ok := vexStatusByType[rel.Type]
+	target, requirementID, vuln, ok := idx.actionableRelationship(rel)
 	if !ok {
-		return hdf.StandaloneOverride{}, false
-	}
-	target, ok := vex.ImportTargetFor(canonical)
-	if !ok {
-		return hdf.StandaloneOverride{}, false
-	}
-
-	vuln := idx.vulnByID[rel.From]
-	requirementID := cveIdentifier(vuln)
-	if requirementID == "" {
 		return hdf.StandaloneOverride{}, false
 	}
 

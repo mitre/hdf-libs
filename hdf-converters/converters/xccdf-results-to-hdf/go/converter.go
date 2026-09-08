@@ -73,6 +73,21 @@ type groupedRule struct {
 	group *Group
 }
 
+// collectRules is the single definition of which rules a benchmark yields:
+// every rule with an id inside the Group tree, then every top-level rule with
+// an id (group nil). The baseline conversion and its count both walk it.
+func collectRules(benchmark *Benchmark) []groupedRule {
+	rules := flattenGroups(benchmark.Groups)
+	for i := range benchmark.Rules {
+		rule := &benchmark.Rules[i]
+		if rule.ID == "" {
+			continue
+		}
+		rules = append(rules, groupedRule{rule: rule})
+	}
+	return rules
+}
+
 // flattenGroups walks the Group tree depth-first, collecting every rule at any
 // depth. Rules may sit directly on a Group that also has nested Groups.
 func flattenGroups(groups []Group) []groupedRule {
@@ -494,16 +509,13 @@ var resultStatusMapping = map[string]hdf.ResultStatus{
 // XML to HDF Results format. The input must contain TestResult elements.
 // For benchmark-only documents (no TestResult), use ConvertXccdfBenchmarkToHDF.
 func ConvertXccdfResultsToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, fmt.Errorf("xccdf: %w", err)
+	rootLocal, rootSpace, err := parseRoot(input)
+	if err != nil {
+		return nil, err
 	}
 
 	resultsChecksum := shared.InputChecksum(input)
 
-	rootLocal, rootSpace := peekRootElement(input)
 	switch {
 	case rootLocal == "Benchmark" && isXccdfNS(rootSpace):
 		return convertBenchmarkResultsToHDF(input, converterVersion, resultsChecksum)
@@ -517,42 +529,175 @@ func ConvertXccdfResultsToHDF(input []byte, converterVersion string) (*hdf.HDFRe
 // ConvertXccdfBenchmarkToHDF converts an XCCDF benchmark document (no TestResult)
 // to HDF Baseline format. Supports both XCCDF 1.1 and 1.2 namespaces.
 func ConvertXccdfBenchmarkToHDF(input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
+	benchmark, err := parseBenchmarkInput(input)
+	if err != nil {
+		return nil, err
 	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, fmt.Errorf("xccdf: %w", err)
-	}
+	return convertBenchmarkToBaseline(benchmark, input, converterVersion)
+}
 
-	rootLocal, rootSpace := peekRootElement(input)
+// parseBenchmarkInput applies the benchmark converter's guards and decodes a
+// Benchmark that carries no TestResult. ConvertXccdfBenchmarkToHDF and
+// ExpectedBenchmarkRequirementCount share it.
+func parseBenchmarkInput(input []byte) (*Benchmark, error) {
+	rootLocal, rootSpace, err := parseRoot(input)
+	if err != nil {
+		return nil, err
+	}
 	if rootLocal != "Benchmark" || !isXccdfNS(rootSpace) {
 		return nil, fmt.Errorf("input is not an XCCDF Benchmark document")
 	}
 
-	var benchmark Benchmark
-	if err := xml.Unmarshal(input, &benchmark); err != nil {
-		return nil, fmt.Errorf("failed to parse XCCDF XML: %w", err)
+	benchmark, err := parseBenchmark(input)
+	if err != nil {
+		return nil, err
 	}
 
 	if benchmark.TestResult.ID != "" {
 		return nil, fmt.Errorf("input contains TestResult elements — this is a results document, not a benchmark. Use 'xccdf-results' or 'xccdf' instead")
 	}
+	return benchmark, nil
+}
 
-	return convertBenchmarkToBaseline(&benchmark, input, converterVersion)
+// parseRoot applies the input guards every XCCDF entry point shares and peeks
+// the root element that selects the document shape.
+func parseRoot(input []byte) (local, space string, err error) {
+	if len(input) == 0 {
+		return "", "", fmt.Errorf("empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return "", "", fmt.Errorf("xccdf: %w", err)
+	}
+	local, space = peekRootElement(input)
+	return local, space, nil
+}
+
+// parseBenchmark decodes an XCCDF Benchmark document.
+func parseBenchmark(input []byte) (*Benchmark, error) {
+	var benchmark Benchmark
+	if err := xml.Unmarshal(input, &benchmark); err != nil {
+		return nil, fmt.Errorf("failed to parse XCCDF XML: %w", err)
+	}
+	return &benchmark, nil
+}
+
+// parseArf decodes an ARF asset-report-collection document.
+func parseArf(input []byte) (*AssetReportCollection, error) {
+	var arc AssetReportCollection
+	if err := xml.Unmarshal(input, &arc); err != nil {
+		return nil, fmt.Errorf("failed to parse ARF XML: %w", err)
+	}
+	return &arc, nil
+}
+
+// isXccdfReport reports whether an ARF report carries an XCCDF TestResult;
+// other reports (e.g. OVAL) are skipped by the conversion and the count alike.
+func isXccdfReport(report *ArfReport) bool {
+	return report.Content.TestResult.ID != ""
+}
+
+// ruleResultCount is the results relation for one TestResult: one requirement
+// per rule-result within the size limit, or one no-findings requirement.
+func ruleResultCount(tr *TestResult) int {
+	limited, _ := hdfutil.LimitSlice(tr.RuleResults, 0)
+	if len(limited) == 0 {
+		return 1
+	}
+	return len(limited)
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to through ConvertXccdfResultsToHDF: one per <rule-result> of the Benchmark's
+// TestResult, or of every XCCDF report in an ARF (OVAL reports skipped), each
+// within the size limit, with one no-findings requirement per TestResult that
+// has none. Benchmarks without a TestResult are rejected, as the conversion
+// rejects them.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "XCCDF rule-results"
+	rootLocal, rootSpace, err := parseRoot(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	switch {
+	case rootLocal == "Benchmark" && isXccdfNS(rootSpace):
+		benchmark, err := parseBenchmark(input)
+		if err != nil {
+			return 0, unit, err
+		}
+		if benchmark.TestResult.ID == "" {
+			return 0, unit, fmt.Errorf("input has no TestResult elements — this is a benchmark. Use 'xccdf-benchmark' or 'xccdf' instead")
+		}
+		return ruleResultCount(&benchmark.TestResult), unit, nil
+	case rootLocal == "asset-report-collection" && rootSpace == arfNS:
+		arc, err := parseArf(input)
+		if err != nil {
+			return 0, unit, err
+		}
+		count, reports := 0, 0
+		for i := range arc.Reports.Reports {
+			report := &arc.Reports.Reports[i]
+			if !isXccdfReport(report) {
+				continue
+			}
+			reports++
+			count += ruleResultCount(&report.Content.TestResult)
+		}
+		if reports == 0 {
+			return 0, unit, fmt.Errorf("ARF document contains no XCCDF TestResult reports")
+		}
+		return count, unit, nil
+	default:
+		return 0, unit, fmt.Errorf("input is not an XCCDF or ARF document")
+	}
+}
+
+// ExpectedBenchmarkRequirementCount states how many requirements the input must
+// convert to through ConvertXccdfBenchmarkToHDF: one per <Rule> with an id, at
+// any Group depth or at the Benchmark top level, with no size limit. The
+// produced document is an HDF baseline whose requirements sit at the top level.
+func ExpectedBenchmarkRequirementCount(input []byte) (int, string, error) {
+	const unit = "XCCDF rules"
+	benchmark, err := parseBenchmarkInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	return len(collectRules(benchmark)), unit, nil
+}
+
+// ExpectedAutoDetectRequirementCount states how many requirements the input
+// must convert to through ConvertXccdfToHDF, dispatching by root shape exactly
+// as it does: ARF and Benchmark-with-TestResult follow the results relation,
+// a Benchmark without one follows the benchmark relation.
+func ExpectedAutoDetectRequirementCount(input []byte) (int, string, error) {
+	rootLocal, rootSpace, err := parseRoot(input)
+	if err != nil {
+		return 0, "", err
+	}
+	switch {
+	case rootLocal == "asset-report-collection" && rootSpace == arfNS:
+		return ExpectedRequirementCount(input)
+	case rootLocal == "Benchmark" && isXccdfNS(rootSpace):
+		benchmark, err := parseBenchmark(input)
+		if err != nil {
+			return 0, "", err
+		}
+		if benchmark.TestResult.ID != "" {
+			return ExpectedRequirementCount(input)
+		}
+		return ExpectedBenchmarkRequirementCount(input)
+	default:
+		return 0, "", fmt.Errorf("input is not an XCCDF or ARF document")
+	}
 }
 
 // ConvertXccdfToHDF auto-detects whether the input is an XCCDF benchmark or
 // results document (or ARF), and returns the appropriate JSON output.
 // Returns (json, "baseline"|"results", error).
 func ConvertXccdfToHDF(input []byte, converterVersion string) ([]byte, string, error) {
-	if len(input) == 0 {
-		return nil, "", fmt.Errorf("empty input")
+	rootLocal, rootSpace, err := parseRoot(input)
+	if err != nil {
+		return nil, "", err
 	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, "", fmt.Errorf("xccdf: %w", err)
-	}
-
-	rootLocal, rootSpace := peekRootElement(input)
 
 	switch {
 	case rootLocal == "asset-report-collection" && rootSpace == arfNS:
@@ -567,9 +712,9 @@ func ConvertXccdfToHDF(input []byte, converterVersion string) ([]byte, string, e
 		return out, "results", nil
 
 	case rootLocal == "Benchmark" && isXccdfNS(rootSpace):
-		var benchmark Benchmark
-		if err := xml.Unmarshal(input, &benchmark); err != nil {
-			return nil, "", fmt.Errorf("failed to parse XCCDF XML: %w", err)
+		benchmark, err := parseBenchmark(input)
+		if err != nil {
+			return nil, "", err
 		}
 
 		if benchmark.TestResult.ID != "" {
@@ -586,7 +731,7 @@ func ConvertXccdfToHDF(input []byte, converterVersion string) ([]byte, string, e
 		}
 
 		// No TestResult -> baseline
-		baseline, err := convertBenchmarkToBaseline(&benchmark, input, converterVersion)
+		baseline, err := convertBenchmarkToBaseline(benchmark, input, converterVersion)
 		if err != nil {
 			return nil, "", err
 		}
@@ -625,10 +770,11 @@ func peekRootElement(input []byte) (local, space string) {
 // ---------------------------------------------------------------------------
 
 func convertBenchmarkResultsToHDF(input []byte, converterVersion string, resultsChecksum *hdf.Checksum) (*hdf.HDFResults, error) {
-	var benchmark Benchmark
-	if err := xml.Unmarshal(input, &benchmark); err != nil {
-		return nil, fmt.Errorf("failed to parse XCCDF XML: %w", err)
+	parsed, err := parseBenchmark(input)
+	if err != nil {
+		return nil, err
 	}
+	benchmark := *parsed
 
 	if benchmark.TestResult.ID == "" {
 		return nil, fmt.Errorf("input has no TestResult elements — this is a benchmark. Use 'xccdf-benchmark' or 'xccdf' instead")
@@ -703,12 +849,16 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 	var requirements []hdf.BaselineRequirement
 	var groups []hdf.RequirementGroup
 
-	// One RequirementGroup per XCCDF Group, carrying every rule found in it.
+	// One RequirementGroup per XCCDF Group, carrying every rule found in it;
+	// top-level rules (nil group) join no group.
 	groupIndex := make(map[string]int)
-	for _, gr := range flattenGroups(benchmark.Groups) {
+	for _, gr := range collectRules(benchmark) {
 		req := convertRuleToBaselineRequirement(gr.rule, gr.group)
 		requirements = append(requirements, req)
 
+		if gr.group == nil {
+			continue
+		}
 		if idx, ok := groupIndex[gr.group.ID]; ok {
 			groups[idx].Requirements = append(groups[idx].Requirements, req.ID)
 			continue
@@ -719,15 +869,6 @@ func convertBenchmarkToBaseline(benchmark *Benchmark, input []byte, converterVer
 			Title:        hdfutil.Ptr(gr.group.Title),
 			Requirements: []string{req.ID},
 		})
-	}
-
-	for i := range benchmark.Rules {
-		rule := &benchmark.Rules[i]
-		if rule.ID == "" {
-			continue
-		}
-		req := convertRuleToBaselineRequirement(rule, nil)
-		requirements = append(requirements, req)
 	}
 
 	baselineName := kebabCase(benchmark.ID)
@@ -915,13 +1056,13 @@ func extractRuleID(ruleID string) string {
 // ---------------------------------------------------------------------------
 
 func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf.Checksum) (*hdf.HDFResults, error) {
-	var arc AssetReportCollection
-	if err := xml.Unmarshal(input, &arc); err != nil {
-		return nil, fmt.Errorf("failed to parse ARF XML: %w", err)
+	arc, err := parseArf(input)
+	if err != nil {
+		return nil, err
 	}
 
 	// Find the Benchmark from data-stream-collection components
-	benchmark := findBenchmarkInARF(&arc)
+	benchmark := findBenchmarkInARF(arc)
 
 	// Build rule map from Benchmark (if found)
 	var ruleMap map[string]*Rule
@@ -955,7 +1096,7 @@ func convertArfToHDF(input []byte, converterVersion string, resultsChecksum *hdf
 		report := &arc.Reports.Reports[i]
 
 		// Skip non-XCCDF reports (e.g. OVAL)
-		if report.Content.TestResult.ID == "" {
+		if !isXccdfReport(report) {
 			continue
 		}
 

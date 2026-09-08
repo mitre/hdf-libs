@@ -18,6 +18,70 @@ func ConvertCatalogToHDF(input []byte, converterVersion string) (*hdf.HDFBaselin
 	return catalogToBaseline(doc.Catalog, input, converterVersion)
 }
 
+// ExpectedCatalogRequirementCount states how many requirements a catalog must
+// convert to: every control in a group and every top-level control, each with
+// its direct enhancements, within the per-group control cap. Computed from the
+// input alone, through the same selection the conversion uses.
+func ExpectedCatalogRequirementCount(input []byte) (int, string, error) {
+	const unit = "OSCAL catalog controls at depth two"
+	doc, err := ParseOscalDocument(input, "catalog", "oscal-catalog")
+	if err != nil {
+		return 0, unit, err
+	}
+	return selectCatalogControls(doc.Catalog).count(), unit, nil
+}
+
+// groupSelection is one group's selected controls, each parent immediately
+// followed by its direct enhancements.
+type groupSelection struct {
+	group    *Group
+	controls []*Control
+}
+
+// catalogSelection is the set of catalog controls that become requirements.
+type catalogSelection struct {
+	groups   []groupSelection
+	topLevel []*Control
+}
+
+func (s catalogSelection) count() int {
+	n := len(s.topLevel)
+	for _, g := range s.groups {
+		n += len(g.controls)
+	}
+	return n
+}
+
+// withEnhancements lists a control followed by its direct enhancements only:
+// the conversion does not recurse deeper.
+func withEnhancements(ctrl *Control) []*Control {
+	out := []*Control{ctrl}
+	for k := range ctrl.Controls {
+		out = append(out, &ctrl.Controls[k])
+	}
+	return out
+}
+
+// selectCatalogControls is the single definition of the catalog's
+// input-to-requirement relation: the conversion builds requirements from it
+// and ExpectedCatalogRequirementCount counts it.
+func selectCatalogControls(catalog *Catalog) catalogSelection {
+	var sel catalogSelection
+	for i := range catalog.Groups {
+		group := &catalog.Groups[i]
+		gs := groupSelection{group: group}
+		limitedControls := shared.LimitSliceWithWarning(group.Controls, 0, "control")
+		for j := range limitedControls {
+			gs.controls = append(gs.controls, withEnhancements(&limitedControls[j])...)
+		}
+		sel.groups = append(sel.groups, gs)
+	}
+	for i := range catalog.Controls {
+		sel.topLevel = append(sel.topLevel, withEnhancements(&catalog.Controls[i])...)
+	}
+	return sel
+}
+
 // catalogToBaseline converts a parsed Catalog to HDFBaseline.
 // This is the shared logic used by both the catalog converter and the profile
 // resolver (which builds a filtered catalog first, then calls this).
@@ -28,46 +92,27 @@ func catalogToBaseline(catalog *Catalog, rawInput []byte, converterVersion strin
 	var requirements []hdf.BaselineRequirement
 	var groups []hdf.RequirementGroup
 
-	for i := range catalog.Groups {
-		group := &catalog.Groups[i]
+	sel := selectCatalogControls(catalog)
+	for _, gs := range sel.groups {
 		var reqIDs []string
-
-		limitedControls := shared.LimitSliceWithWarning(group.Controls, 0, "control")
-		for j := range limitedControls {
-			ctrl := &limitedControls[j]
+		for _, ctrl := range gs.controls {
 			req := controlToBaselineRequirement(ctrl)
 			requirements = append(requirements, req)
 			reqIDs = append(reqIDs, req.ID)
-
-			// Include control enhancements
-			for k := range ctrl.Controls {
-				enh := &ctrl.Controls[k]
-				enhReq := controlToBaselineRequirement(enh)
-				requirements = append(requirements, enhReq)
-				reqIDs = append(reqIDs, enhReq.ID)
-			}
 		}
 
 		if len(reqIDs) > 0 {
 			groups = append(groups, hdf.RequirementGroup{
-				ID:           group.ID,
-				Title:        hdfutil.Ptr(group.Title),
+				ID:           gs.group.ID,
+				Title:        hdfutil.Ptr(gs.group.Title),
 				Requirements: reqIDs,
 			})
 		}
 	}
 
 	// Top-level controls (outside groups)
-	for i := range catalog.Controls {
-		ctrl := &catalog.Controls[i]
-		req := controlToBaselineRequirement(ctrl)
-		requirements = append(requirements, req)
-
-		for j := range ctrl.Controls {
-			enh := &ctrl.Controls[j]
-			enhReq := controlToBaselineRequirement(enh)
-			requirements = append(requirements, enhReq)
-		}
+	for _, ctrl := range sel.topLevel {
+		requirements = append(requirements, controlToBaselineRequirement(ctrl))
 	}
 
 	status := "loaded"

@@ -3,5 +3,5 @@ package convert
 import cyclonedxvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cyclonedx-vex-to-hdf/go"
 
 func init() {
-	registerHDFAmendmentsConverter("cyclonedx-vex", "CycloneDX VEX to HDF Amendments", "cyclonedx-vex", cyclonedxvex.ConvertCycloneDXVEXToHDF)
+	registerHDFAmendmentsConverter("cyclonedx-vex", "CycloneDX VEX to HDF Amendments", "cyclonedx-vex", cyclonedxvex.ConvertCycloneDXVEXToHDF, WithExpectedRequirementCount(cyclonedxvex.ExpectedRequirementCount))
 }

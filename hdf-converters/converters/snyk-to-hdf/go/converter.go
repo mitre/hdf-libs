@@ -146,11 +146,14 @@ func formatDependencyPath(from []string) string {
 	return fmt.Sprintf("From: [ %s ]", strings.Join(from, ", "))
 }
 
-// groupByID groups vulnerabilities by ID, preserving insertion order.
+// groupByID caps a project's vulnerabilities and groups them by ID, preserving
+// insertion order. It is the single definition of the input-to-requirement
+// relation within a project: the conversion builds requirements from it and
+// ExpectedRequirementCount counts it.
 func groupByID(vulns []SnykVuln) ([]string, map[string][]SnykVuln) {
 	order := []string{}
 	groups := map[string][]SnykVuln{}
-	for _, vuln := range vulns {
+	for _, vuln := range shared.LimitSliceWithWarning(vulns, 0, "vulnerability") {
 		if _, seen := groups[vuln.ID]; !seen {
 			order = append(order, vuln.ID)
 		}
@@ -325,8 +328,7 @@ func buildRequirement(vulnID string, vulns []SnykVuln, now time.Time, packageMan
 
 // convertSingleProject converts a single Snyk project report to an HDF baseline.
 func convertSingleProject(report SnykReport, checksum *hdf.Checksum, now time.Time) hdf.EvaluatedBaseline {
-	limitedVulns := shared.LimitSliceWithWarning(report.Vulnerabilities, 0, "vulnerability")
-	order, groups := groupByID(limitedVulns)
+	order, groups := groupByID(report.Vulnerabilities)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, vulnID := range order {
 		requirements[i] = buildRequirement(vulnID, groups[vulnID], now, report.PackageManager)
@@ -370,42 +372,20 @@ func convertSingleProject(report SnykReport, checksum *hdf.Checksum, now time.Ti
 // automatically and delegated to the shared SARIF converter.
 // Handles both single-project (object) and multi-project (array) input.
 func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("snyk: empty input")
+	reports, multi, isSarif, err := parseReports(input)
+	if err != nil {
+		return nil, err
 	}
-	if err := shared.ValidateJSONSize(input, "snyk", 0); err != nil {
-		return nil, fmt.Errorf("snyk: %w", err)
-	}
-
-	// Detect format: if SARIF, delegate to the shared SARIF converter
-	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+	if isSarif {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 
 	checksum := shared.InputChecksum(input)
 
-	// Try single project first
-	var report SnykReport
-	if err := json.Unmarshal(input, &report); err != nil {
-		// Try array of projects
-		var reports []SnykReport
-		if arrErr := json.Unmarshal(input, &reports); arrErr != nil {
-			return nil, fmt.Errorf("snyk: invalid JSON: %w", err)
-		}
+	if multi {
 		return convertMultiProject(reports, checksum, converterVersion)
 	}
-
-	// Validate structure — must have vulnerabilities field
-	// (json.Unmarshal succeeds on any JSON; check for expected content)
-	if report.Vulnerabilities == nil {
-		// Re-check: maybe it was actually an array
-		var reports []SnykReport
-		if arrErr := json.Unmarshal(input, &reports); arrErr == nil && len(reports) > 0 {
-			return convertMultiProject(reports, checksum, converterVersion)
-		}
-		// Default to empty vulnerabilities — Snyk output for clean projects
-		// has "vulnerabilities": [] which parses as nil slice vs null
-	}
+	report := reports[0]
 
 	now := time.Now().UTC()
 
@@ -431,7 +411,7 @@ func ConvertSnykToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converterVersion string) (*hdf.HDFResults, error) {
 	now := time.Now().UTC()
 
-	limitedReports := shared.LimitSliceWithWarning(reports, 0, "project")
+	limitedReports := projectReports(reports, true)
 	baselines := make([]hdf.EvaluatedBaseline, len(limitedReports))
 	for i, report := range limitedReports {
 		baselines[i] = convertSingleProject(report, checksum, now)
@@ -444,4 +424,78 @@ func convertMultiProject(reports []SnykReport, checksum *hdf.Checksum, converter
 		Baselines:        baselines,
 		Timestamp:        &now,
 	}), nil
+}
+
+// parseReports applies the converter's input guards and decodes the Snyk
+// output. isSarif reports a SARIF-shaped input, which the converter delegates;
+// multi reports an array of projects (one baseline each), otherwise reports
+// holds the single project. ConvertSnykToHDF and ExpectedRequirementCount
+// share it so they accept and reject exactly the same inputs.
+func parseReports(input []byte) (reports []SnykReport, multi, isSarif bool, err error) {
+	if len(input) == 0 {
+		return nil, false, false, fmt.Errorf("snyk: empty input")
+	}
+	if sizeErr := shared.ValidateJSONSize(input, "snyk", 0); sizeErr != nil {
+		return nil, false, false, fmt.Errorf("snyk: %w", sizeErr)
+	}
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+		return nil, false, true, nil
+	}
+
+	// Try single project first
+	var report SnykReport
+	if objErr := json.Unmarshal(input, &report); objErr != nil {
+		// Try array of projects
+		if arrErr := json.Unmarshal(input, &reports); arrErr != nil {
+			return nil, false, false, fmt.Errorf("snyk: invalid JSON: %w", objErr)
+		}
+		return reports, true, false, nil
+	}
+
+	// Validate structure — must have vulnerabilities field
+	// (json.Unmarshal succeeds on any JSON; check for expected content)
+	if report.Vulnerabilities == nil {
+		// Re-check: maybe it was actually an array
+		if arrErr := json.Unmarshal(input, &reports); arrErr == nil && len(reports) > 0 {
+			return reports, true, false, nil
+		}
+		// Default to empty vulnerabilities — Snyk output for clean projects
+		// has "vulnerabilities": [] which parses as nil slice vs null
+	}
+	return []SnykReport{report}, false, false, nil
+}
+
+// projectReports returns the reports the conversion builds one baseline from
+// each: the capped array for multi-project input, the single report otherwise.
+func projectReports(reports []SnykReport, multi bool) []SnykReport {
+	if multi {
+		return shared.LimitSliceWithWarning(reports, 0, "project")
+	}
+	return reports
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: per project, one per distinct vulnerability id or one no-findings
+// requirement when the project carries none, summed across the (capped)
+// projects. SARIF-shaped input defers to the SARIF converter's own relation,
+// as the conversion does.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct Snyk vulnerability ids per project"
+	reports, multi, isSarif, err := parseReports(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	if isSarif {
+		return sarif.ExpectedRequirementCount(input)
+	}
+	count := 0
+	for _, report := range projectReports(reports, multi) {
+		order, _ := groupByID(report.Vulnerabilities)
+		if len(order) == 0 {
+			count++
+			continue
+		}
+		count += len(order)
+	}
+	return count, unit, nil
 }

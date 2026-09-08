@@ -540,18 +540,11 @@ func scannerName(f ddFinding) string {
 
 // ConvertDefectDojo converts a DefectDojo findings response to HDF Results.
 func ConvertDefectDojo(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("defectdojo: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "defectdojo", 0); err != nil {
-		return nil, fmt.Errorf("defectdojo: %w", err)
-	}
-	resultsChecksum := shared.InputChecksum(input)
-
-	findings, err := parseFindings(input)
+	findings, err := parseInput(input)
 	if err != nil {
 		return nil, err
 	}
+	resultsChecksum := shared.InputChecksum(input)
 
 	// Group findings into per-scanner baselines, preserving encounter order.
 	order := []string{}
@@ -602,6 +595,35 @@ func ConvertDefectDojo(input []byte, converterVersion string) (*hdf.HDFResults, 
 		opts.Timestamp = &ts
 	}
 	return shared.BuildHDFResults(opts), nil
+}
+
+// parseInput applies the converter's input guards and decodes the findings.
+// ConvertDefectDojo and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) ([]ddFinding, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("defectdojo: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "defectdojo", 0); err != nil {
+		return nil, fmt.Errorf("defectdojo: %w", err)
+	}
+	return parseFindings(input)
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per finding (envelope or bare array) with no size limit, or one
+// no-findings requirement when there are none.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "DefectDojo findings"
+	findings, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := len(findings)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
 }
 
 // parseFindings accepts the DRF envelope {results:[…]} or a bare findings array.

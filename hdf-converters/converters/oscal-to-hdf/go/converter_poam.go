@@ -21,6 +21,28 @@ func ConvertPOAMToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments
 	return poamToHDFAmendments(doc.PlanOfActionAndMilestones, input, converterVersion)
 }
 
+// ExpectedPOAMRequirementCount states how many overrides a POA&M must convert
+// to: one per poam-item within the item cap. An item with no usable deadline,
+// or a document with no usable last-modified, is rejected exactly as the
+// conversion rejects it. Computed from the input alone, through the same
+// schedule validation the conversion applies.
+func ExpectedPOAMRequirementCount(input []byte) (int, string, error) {
+	const unit = "OSCAL POA&M items"
+	doc, err := ParseOscalDocument(input, "plan-of-action-and-milestones", "oscal-poam")
+	if err != nil {
+		return 0, unit, err
+	}
+	poam := doc.PlanOfActionAndMilestones
+	riskMap := buildRiskMap(poam.Risks)
+	limitedPOAMItems := shared.LimitSliceWithWarning(poam.POAMItems, 0, "POA&M item")
+	for i := range limitedPOAMItems {
+		if _, _, err := poamItemSchedule(&limitedPOAMItems[i], riskMap, poam); err != nil {
+			return 0, unit, err
+		}
+	}
+	return len(limitedPOAMItems), unit, nil
+}
+
 // poamToHDFAmendments converts a parsed PlanOfActionAndMilestones to HDFAmendments.
 // Every emitted date is extracted from the OSCAL source — the override deadline
 // from risk.deadline, milestone ETAs from remediation task timing, appliedAt
@@ -85,13 +107,9 @@ func buildRiskMap(risks []Risk) map[string]*Risk {
 func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones) (hdf.StandaloneOverride, error) {
 	requirementID := extractRequirementIDFromPOAMItem(item, riskMap)
 
-	appliedAt, err := poamItemAppliedAt(poam)
+	appliedAt, expiresAt, err := poamItemSchedule(item, riskMap, poam)
 	if err != nil {
-		return hdf.StandaloneOverride{}, fmt.Errorf("poam-item %q: %w", requirementID, err)
-	}
-	expiresAt, err := poamItemExpiresAt(item, riskMap)
-	if err != nil {
-		return hdf.StandaloneOverride{}, fmt.Errorf("poam-item %q: %w", requirementID, err)
+		return hdf.StandaloneOverride{}, err
 	}
 
 	status := poamItemStatus(item, riskMap)
@@ -107,6 +125,23 @@ func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfAc
 	}
 
 	return override, nil
+}
+
+// poamItemSchedule resolves the item's appliedAt and deadline, failing loud on
+// either. It is the item-level acceptance rule: the conversion emits an
+// override only for an item that passes it, and ExpectedPOAMRequirementCount
+// applies the same rule.
+func poamItemSchedule(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones) (appliedAt, expiresAt time.Time, err error) {
+	requirementID := extractRequirementIDFromPOAMItem(item, riskMap)
+	appliedAt, err = poamItemAppliedAt(poam)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("poam-item %q: %w", requirementID, err)
+	}
+	expiresAt, err = poamItemExpiresAt(item, riskMap)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("poam-item %q: %w", requirementID, err)
+	}
+	return appliedAt, expiresAt, nil
 }
 
 // extractRequirementIDFromPOAMItem extracts a requirement ID from a poam-item.
