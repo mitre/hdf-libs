@@ -290,13 +290,31 @@ jobs:
         run: |
           mkdir -p release-assets
 
-          # CLI binaries + supply-chain artifacts from goreleaser
-          # (archives, SPDX SBOMs, checksums, cosign signature bundle)
+          # CLI binaries + supply-chain artifacts from goreleaser: archives,
+          # one SPDX SBOM per archive, checksums.txt, and the cosign bundle
+          # over it. A release with fewer assets than that is not a release,
+          # so this step asserts the set before anything is attached. The
+          # expected set comes from checksums.txt, goreleaser's own manifest
+          # of every archive and SBOM, so it moves with the goreleaser config;
+          # the floor below is independent of it, so a truncated manifest
+          # cannot vouch for itself.
+          manifest=cli-dist/checksums.txt
+          test -s "$manifest" || { echo "::error::$manifest is missing or empty"; exit 1; }
+          test -s "$manifest.bundle" || { echo "::error::$manifest.bundle (the cosign signature) is missing or empty"; exit 1; }
+          while read -r _ f; do
+            test -s "cli-dist/$f" || { echo "::error::$f is listed in checksums.txt but missing from cli-dist"; exit 1; }
+          done < "$manifest"
+          archives=$(grep -cE '\.(tar\.gz|zip)$' "$manifest")
+          sboms=$(grep -c '\.spdx\.json$' "$manifest")
+          if [ "$archives" -lt 5 ] || [ "$sboms" -ne "$archives" ]; then
+            echo "::error::checksums.txt lists $archives archives and $sboms SBOMs; expected at least 5 archives with one SBOM each"
+            exit 1
+          fi
+          (cd cli-dist && sha256sum -c checksums.txt)
           cp cli-dist/*.tar.gz cli-dist/*.zip cli-dist/*.spdx.json \
-             cli-dist/checksums.txt cli-dist/checksums.txt.bundle \
-             release-assets/ 2>/dev/null || true
+             "$manifest" "$manifest.bundle" release-assets/
 
-          # Schema files
+          # Schema files (bash -e: an unmatched glob makes cp fail here)
           cp schema-dist/*.schema.json release-assets/
 
           ls -la release-assets/
