@@ -14,7 +14,7 @@ import {
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
 import { formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
+import { validateInputSize, parseHdf, hdfTime, firstNonEmpty } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   fixedPackageIdentifier,
@@ -243,12 +243,32 @@ export function stripProductsLine(reason: string): string {
 }
 
 /**
+ * Fill CSAF references[].summary, which is required with minLength 1 while the
+ * HDF description backing it is optional. The URL is the documented fallback:
+ * the only text a reference always carries, where a placeholder would assert a
+ * description the source never gave.
+ */
+export function referenceSummary(description: string | undefined, url: string): string {
+  return firstNonEmpty(description, url);
+}
+
+/**
+ * The override reason with the machine-written 'Products:' line removed, or ''
+ * when no prose remains. Both sinks it feeds — threats[].details and
+ * notes[].text — are minLength 1 in CSAF, so an empty result means the element
+ * is omitted, never emitted blank.
+ */
+export function reasonProse(reason: string | undefined): string {
+  return firstNonEmpty(stripProductsLine(reason ?? ''));
+}
+
+/**
  * Surface the override reason prose as a CSAF description note. Used on the
  * not_affected/fixed paths, which otherwise drop reason (the affected path
  * keeps it as threats[impact]).
  */
 function appendReasonNote(v: Vulnerability, reason: string | undefined): void {
-  const text = stripProductsLine(reason ?? '');
+  const text = reasonProse(reason);
   if (!text) return;
   v.notes = v.notes ?? [];
   v.notes.push({ category: 'description', text });
@@ -347,13 +367,10 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
       emitted = true;
     } else if (canonical === VexStatus.Affected) {
       status.known_affected = (status.known_affected ?? []).concat(pids);
-      if (o.reason) {
+      const details = reasonProse(o.reason);
+      if (details) {
         v.threats = v.threats ?? [];
-        v.threats.push({
-          category: 'impact',
-          details: stripProductsLine(o.reason),
-          product_ids: pids,
-        });
+        v.threats.push({ category: 'impact', details, product_ids: pids });
       }
       if (o.type === OverrideType.Poam) {
         for (const m of o.milestones ?? []) {
@@ -374,7 +391,11 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
     for (const e of o.evidence ?? []) {
       if (e.type !== 'url' || !e.data) continue;
       v.references = v.references ?? [];
-      v.references.push({ category: 'external', summary: e.description ?? '', url: e.data });
+      v.references.push({
+        category: 'external',
+        summary: referenceSummary(e.description, e.data),
+        url: e.data,
+      });
     }
 
     // externalReferences carry advisory/CTI context (STIX, vendor advisories)
@@ -382,7 +403,11 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
     for (const r of o.externalReferences ?? []) {
       if (!r.href) continue;
       v.references = v.references ?? [];
-      v.references.push({ category: 'external', summary: r.description ?? '', url: r.href });
+      v.references.push({
+        category: 'external',
+        summary: referenceSummary(r.description, r.href),
+        url: r.href,
+      });
     }
   }
 
@@ -408,10 +433,12 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
 
   // Key order mirrors the Go Vulnerability struct so both languages emit
   // identical bytes.
+  // CSAF constrains product_status with minProperties 1, so an override that
+  // contributed no product bucket leaves the field out rather than emit {}.
   return {
     cve: v.cve,
     ...(v.notes && { notes: v.notes }),
-    product_status: status,
+    ...(Object.keys(status).length > 0 && { product_status: status }),
     ...(v.flags && { flags: v.flags }),
     ...(v.threats && { threats: v.threats }),
     ...(v.remediations && { remediations: v.remediations }),

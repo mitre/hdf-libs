@@ -1,0 +1,62 @@
+{
+  "$comment": "Shared table for the two CSAF minLength:1 text sinks in hdf-to-csaf-vex. Read by both converters/hdf-to-csaf-vex/go/schema_validation_test.go and converters/hdf-to-csaf-vex/typescript/schema-validation.test.ts so the Go and TS rules are asserted against one definition and cannot drift apart.",
+  "referenceSummary": {
+    "$comment": "references[].summary is required with minLength 1, while the HDF evidence description and externalReference description that back it are optional. The documented fallback is the reference URL itself — the only text the reference always carries; a placeholder would assert a description the source never gave.",
+    "cases": [
+      {
+        "name": "a description is used as-is",
+        "description": "NVD - CVE-2021-44228",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+        "want": "NVD - CVE-2021-44228"
+      },
+      {
+        "name": "an absent description falls back to the url",
+        "description": "",
+        "url": "https://example.com/advisory",
+        "want": "https://example.com/advisory"
+      },
+      {
+        "name": "a whitespace-only description is not text",
+        "description": "  \n\t ",
+        "url": "https://example.com/advisory",
+        "want": "https://example.com/advisory"
+      },
+      {
+        "name": "a padded description keeps its padding",
+        "description": " vendor advisory ",
+        "url": "https://example.com/advisory",
+        "want": " vendor advisory "
+      }
+    ]
+  },
+  "reasonProse": {
+    "$comment": "The override reason with the machine-written 'Products:' line removed. It feeds threats[].details and notes[].text, both required with minLength 1, so an empty result means the element is omitted, never emitted blank.",
+    "cases": [
+      {
+        "name": "prose survives",
+        "reason": "Accepted risk pending vendor patch",
+        "want": "Accepted risk pending vendor patch"
+      },
+      {
+        "name": "the products line is stripped from prose",
+        "reason": "Accepted risk pending vendor patch\nProducts: CSAFPID-0001, CSAFPID-0002",
+        "want": "Accepted risk pending vendor patch"
+      },
+      {
+        "name": "a products-only reason leaves no details",
+        "reason": "Products: CSAFPID-0001",
+        "want": ""
+      },
+      {
+        "name": "an empty reason leaves no details",
+        "reason": "",
+        "want": ""
+      },
+      {
+        "name": "a whitespace-only reason leaves no details",
+        "reason": "  \n ",
+        "want": ""
+      }
+    ]
+  }
+}
