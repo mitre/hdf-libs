@@ -166,32 +166,34 @@ func overrideToStatements(o *hdf.StandaloneOverride, docAuthor string) []Stateme
 		Products:  productsFor(o),
 	}
 
-	reason := stripProductsLine(o.Reason)
-	reasonEmitted := false
+	// HDF puts no minLength on reason, so a blank one is absent text, not text.
+	reason := shared.FirstNonEmpty(stripProductsLine(o.Reason))
 	switch canonical {
 	case vex.StatusNotAffected:
 		if o.Justification != nil {
 			stmt.Justification = string(*o.Justification)
 		}
-		stmt.ImpactStatement = reason
-		reasonEmitted = reason != ""
-	case vex.StatusFixed:
-		stmt.ActionStatement = firstMilestoneAction(o)
-		if stmt.ActionStatement == "" {
-			stmt.ActionStatement = "Fix applied; consumer re-scan confirmed clean."
+		// OpenVEX requires justification OR impact_statement here, so rationale
+		// text is substituted only when the justification enum is absent.
+		rationaleFallback := ""
+		if stmt.Justification == "" {
+			rationaleFallback = noImpactRationaleRecorded(o)
 		}
+		stmt.ImpactStatement = shared.FirstNonEmpty(reason, rationaleFallback)
+	case vex.StatusFixed:
+		stmt.ActionStatement = shared.FirstNonEmpty(firstMilestoneAction(o),
+			"Fix applied; consumer re-scan confirmed clean.")
 	case vex.StatusAffected:
 		// Open POA&M: the action_statement carries the planned remediation.
 		// Waivers / risk adjustments / operationalRequirement: the reason
 		// carries the rationale, which OpenVEX has no dedicated field for —
 		// fold it into action_statement so it's not lost.
-		stmt.ActionStatement = firstMilestoneAction(o)
-		if stmt.ActionStatement == "" {
-			stmt.ActionStatement = reason
-			reasonEmitted = reason != ""
-		}
+		stmt.ActionStatement = shared.FirstNonEmpty(firstMilestoneAction(o), reason,
+			noRemediationRecorded(o))
 	}
 
+	reasonEmitted := reason != "" &&
+		(stmt.ImpactStatement == reason || stmt.ActionStatement == reason)
 	stmt.StatusNotes = buildStatusNotes(o, reason, reasonEmitted, docAuthor)
 
 	return []Statement{stmt}
@@ -302,13 +304,27 @@ func productsFor(o *hdf.StandaloneOverride) []Product {
 	return out
 }
 
+// noRemediationRecorded states the absence OpenVEX has no other way to express:
+// action_statement is required on an affected statement, and a source override
+// may carry neither a milestone nor a reason to fill it.
+func noRemediationRecorded(o *hdf.StandaloneOverride) string {
+	return fmt.Sprintf("No remediation action was recorded for the %s override applied to %s.",
+		o.Type, o.RequirementID)
+}
+
+// noImpactRationaleRecorded is its not_affected peer, for an override carrying
+// neither a justification enum nor a reason.
+func noImpactRationaleRecorded(o *hdf.StandaloneOverride) string {
+	return fmt.Sprintf("No impact rationale was recorded for the %s override applied to %s.",
+		o.Type, o.RequirementID)
+}
+
 func firstMilestoneAction(o *hdf.StandaloneOverride) string {
+	descriptions := make([]string, 0, len(o.Milestones))
 	for _, m := range o.Milestones {
-		if m.Description != "" {
-			return m.Description
-		}
+		descriptions = append(descriptions, m.Description)
 	}
-	return ""
+	return shared.FirstNonEmpty(descriptions...)
 }
 
 func allMilestonesCompleted(o *hdf.StandaloneOverride) bool {
