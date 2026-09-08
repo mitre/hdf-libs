@@ -819,23 +819,25 @@ func isInSpecProfileDir(path string) bool {
 // Returns the JSON bytes so they can be parsed via the existing
 // tryParseInSpecJSON path.
 func generateProfileJSON(profileDir string) ([]byte, error) {
-	for _, bin := range []string{"cinc-auditor", "inspec"} {
-		if _, err := exec.LookPath(bin); err != nil {
-			continue
-		}
-		// #nosec G204 -- bin is from a fixed allowlist; profileDir is user-supplied
-		// path validated by isInSpecProfileDir before reaching here.
-		cmd := exec.CommandContext(context.Background(), bin, "json", profileDir)
-		out, err := cmd.Output()
-		if err != nil {
-			return nil, fmt.Errorf("running %s json: %w", bin, err)
-		}
-		return out, nil
+	// The binary is whichever of two literal names LookPath resolves, and it
+	// is invoked by that resolved path rather than re-resolved at exec time.
+	bin, err := exec.LookPath("cinc-auditor")
+	if err != nil {
+		bin, err = exec.LookPath("inspec")
 	}
-	return nil, fmt.Errorf("neither cinc-auditor nor inspec found on PATH " +
-		"(needed to read InSpec profile directories). Install one, or " +
-		"pre-generate profile.json with 'cinc-auditor json <dir>' and " +
-		"pass that file path instead")
+	if err != nil {
+		return nil, fmt.Errorf("neither cinc-auditor nor inspec found on PATH " +
+			"(needed to read InSpec profile directories). Install one, or " +
+			"pre-generate profile.json with 'cinc-auditor json <dir>' and " +
+			"pass that file path instead")
+	}
+	// #nosec G204 -- bin is LookPath's resolution of a literal name; profileDir
+	// is a user-supplied path validated by isInSpecProfileDir before reaching here.
+	out, err := exec.CommandContext(context.Background(), bin, "json", profileDir).Output()
+	if err != nil {
+		return nil, fmt.Errorf("running %s json: %w", bin, err)
+	}
+	return out, nil
 }
 
 // pruneStaleControlFiles removes .rb files from a controls directory
