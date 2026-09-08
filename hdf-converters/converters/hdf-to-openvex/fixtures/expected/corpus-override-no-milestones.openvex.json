@@ -1,0 +1,24 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-a9513f85b4b5c0d8476e6e15e17d2fc07e1231491c5fd7741768e7666d1ead30",
+  "author": "HDF Amendments Export",
+  "timestamp": "2020-01-01T00:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+        "name": "CVE-2021-44228"
+      },
+      "products": [
+        {
+          "@id": "HDFPID-0001"
+        }
+      ],
+      "status": "affected",
+      "action_statement": "accepted",
+      "status_notes": "HDF override type: waiver\nApplied by: test",
+      "timestamp": "2020-01-01T00:00:00Z"
+    }
+  ]
+}

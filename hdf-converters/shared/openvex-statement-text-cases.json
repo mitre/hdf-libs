@@ -1,0 +1,178 @@
+{
+  "$comment": "Shared table for the hdf-to-openvex statement text fields. Go (converters/hdf-to-openvex/go) and TypeScript (converters/hdf-to-openvex/typescript) both read it, so the rule has one definition rather than two hand-kept copies. OpenVEX v0.2.0 makes action_statement required when status is affected, and justification OR impact_statement required when status is not_affected (openvex_json_schema.json, statements[].allOf). HDF constrains none of the fields those derive from: reason has no minLength, justification and milestones are optional, and a milestone description may itself be blank. Every 'override' below is therefore schema-valid HDF, asserted as such by both suites before conversion. Each carries an affectedPackages purl so the emitted products are real IRIs and each case turns solely on the statement text. An expected value of \"\" means the field must be ABSENT from the emitted statement, not present and empty.",
+  "cases": [
+    {
+      "name": "affected-empty-reason-no-milestones",
+      "override": {
+        "type": "waiver",
+        "requirementId": "CVE-2021-44228",
+        "status": "failed",
+        "reason": "",
+        "affectedPackages": [{ "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1" }]
+      },
+      "status": "affected",
+      "actionStatement": "No remediation action was recorded for the waiver override applied to CVE-2021-44228.",
+      "impactStatement": "",
+      "justification": "",
+      "why": "the reported defect: an empty reason left action_statement empty, and omitempty then dropped a field the schema requires"
+    },
+    {
+      "name": "affected-blank-reason",
+      "override": {
+        "type": "riskAdjustment",
+        "requirementId": "CVE-2021-45046",
+        "status": "failed",
+        "reason": "   ",
+        "affectedPackages": [{ "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.15.0" }]
+      },
+      "status": "affected",
+      "actionStatement": "No remediation action was recorded for the riskAdjustment override applied to CVE-2021-45046.",
+      "impactStatement": "",
+      "justification": "",
+      "why": "whitespace-only text satisfies no schema's intent, so it must fall through to the fallback rather than ship as the remediation"
+    },
+    {
+      "name": "affected-reason-supplies-the-action",
+      "override": {
+        "type": "waiver",
+        "requirementId": "CVE-2022-22965",
+        "status": "failed",
+        "reason": "Accepted risk: the vulnerable binder is not reachable from an exposed endpoint.",
+        "affectedPackages": [{ "purl": "pkg:maven/org.springframework/spring-beans@5.3.15" }]
+      },
+      "status": "affected",
+      "actionStatement": "Accepted risk: the vulnerable binder is not reachable from an exposed endpoint.",
+      "impactStatement": "",
+      "justification": "",
+      "why": "OpenVEX has no field for a waiver rationale, so the reason carries it into action_statement"
+    },
+    {
+      "name": "affected-milestone-outranks-reason",
+      "override": {
+        "type": "poam",
+        "requirementId": "CVE-2021-44228",
+        "status": "failed",
+        "reason": "Patch scheduled for the next maintenance window.",
+        "affectedPackages": [{ "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1" }],
+        "milestones": [
+          {
+            "description": "Upgrade log4j-core to 2.17.1",
+            "estimatedCompletion": "2099-12-31T00:00:00Z",
+            "status": "pending"
+          }
+        ]
+      },
+      "status": "affected",
+      "actionStatement": "Upgrade log4j-core to 2.17.1",
+      "impactStatement": "",
+      "justification": "",
+      "why": "an open POA&M's planned remediation is the action_statement; the reason is provenance and moves to status_notes"
+    },
+    {
+      "name": "affected-blank-milestone-falls-through-to-reason",
+      "override": {
+        "type": "poam",
+        "requirementId": "CVE-2021-44832",
+        "status": "failed",
+        "reason": "Patch scheduled for the next maintenance window.",
+        "affectedPackages": [{ "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.17.0" }],
+        "milestones": [
+          {
+            "description": "  ",
+            "estimatedCompletion": "2099-12-31T00:00:00Z",
+            "status": "pending"
+          }
+        ]
+      },
+      "status": "affected",
+      "actionStatement": "Patch scheduled for the next maintenance window.",
+      "impactStatement": "",
+      "justification": "",
+      "why": "milestone description carries no minLength either, so a blank one must not win the selection"
+    },
+    {
+      "name": "fixed-blank-milestone-uses-the-fix-default",
+      "override": {
+        "type": "poam",
+        "requirementId": "CVE-2022-42889",
+        "status": "failed",
+        "reason": "",
+        "affectedPackages": [{ "purl": "pkg:maven/org.apache.commons/commons-text@1.9" }],
+        "milestones": [
+          {
+            "description": "   ",
+            "estimatedCompletion": "2020-06-01T00:00:00Z",
+            "status": "completed"
+          }
+        ]
+      },
+      "status": "fixed",
+      "actionStatement": "Fix applied; consumer re-scan confirmed clean.",
+      "impactStatement": "",
+      "justification": "",
+      "why": "action_statement is optional on fixed, but a blank one is noise; the completed-POA&M default states what happened"
+    },
+    {
+      "name": "not-affected-no-justification-empty-reason",
+      "override": {
+        "type": "falsePositive",
+        "requirementId": "CVE-2021-4104",
+        "status": "notApplicable",
+        "reason": "",
+        "affectedPackages": [{ "purl": "pkg:maven/log4j/log4j@1.2.17" }]
+      },
+      "status": "not_affected",
+      "actionStatement": "",
+      "impactStatement": "No impact rationale was recorded for the falsePositive override applied to CVE-2021-4104.",
+      "justification": "",
+      "why": "justification is optional in HDF, so a false positive with no reason left the not_affected branch with neither field the schema demands"
+    },
+    {
+      "name": "not-affected-reason-supplies-the-impact",
+      "override": {
+        "type": "attestation",
+        "requirementId": "CVE-2023-4863",
+        "status": "passed",
+        "reason": "Reviewed by the ISSO: the affected codec is not built into this image.",
+        "affectedPackages": [{ "purl": "pkg:generic/libwebp@1.3.1" }]
+      },
+      "status": "not_affected",
+      "actionStatement": "",
+      "impactStatement": "Reviewed by the ISSO: the affected codec is not built into this image.",
+      "justification": "",
+      "why": "a stated rationale is the impact_statement; no fallback text is invented over it"
+    },
+    {
+      "name": "not-affected-justification-alone",
+      "override": {
+        "type": "falsePositive",
+        "requirementId": "CVE-2021-44228",
+        "status": "notApplicable",
+        "reason": "",
+        "justification": "vulnerable_code_not_in_execute_path",
+        "affectedPackages": [{ "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1" }]
+      },
+      "status": "not_affected",
+      "actionStatement": "",
+      "impactStatement": "",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "why": "the schema's anyOf is already satisfied by the justification, so no impact_statement is manufactured to sit beside it"
+    },
+    {
+      "name": "not-affected-justification-and-reason",
+      "override": {
+        "type": "falsePositive",
+        "requirementId": "CVE-2022-22965",
+        "status": "notApplicable",
+        "reason": "The Spring binder is never reached from an untrusted request path.",
+        "justification": "vulnerable_code_not_in_execute_path",
+        "affectedPackages": [{ "purl": "pkg:maven/org.springframework/spring-beans@5.3.15" }]
+      },
+      "status": "not_affected",
+      "actionStatement": "",
+      "impactStatement": "The Spring binder is never reached from an untrusted request path.",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "why": "HDF documents both as complementary — the enum classifies, the reason explains — so both survive export"
+    }
+  ]
+}
