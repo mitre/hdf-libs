@@ -24,7 +24,10 @@
     "test:ts": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix",
+    "test:go": "cd go && go test ./..."
   },
   "repository": {
     "type": "git",

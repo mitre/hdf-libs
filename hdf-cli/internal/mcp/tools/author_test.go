@@ -11,6 +11,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -499,5 +500,69 @@ func TestHdfAuthor_Amendments_DryRun(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "a.json")); !os.IsNotExist(err) {
 		t.Fatal("dry_run must not write a file")
+	}
+}
+
+// The judgment path is where an agent records a risk decision, so it is the
+// route that most needs tamper evidence — and the existing tests all use a
+// single override, which cannot establish a chain and so cannot catch the
+// chaining being dropped.
+func TestAuthorAmendments_JudgmentPathChainsOverrides(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+
+	second := validJudgmentOverride()
+	second["requirementId"] = "V-5678"
+	second["reason"] = "Second decision in the same batch."
+	third := validJudgmentOverride()
+	third["requirementId"] = "V-9012"
+	third["reason"] = "Third decision in the same batch."
+
+	_, out := callAuthor(t, authorInput{
+		DocType: "amendments", Name: "Risk decisions",
+		Content: []map[string]any{validJudgmentOverride(), second, third},
+		Output:  "chained.json",
+	})
+	if !out.Valid {
+		t.Fatalf("authored document must validate: %+v", out)
+	}
+
+	doc := readAmendments(t, filepath.Join(os.Getenv("HDF_MCP_ROOT"), "chained.json"))
+	arr, ok := doc["overrides"].([]any)
+	if !ok || len(arr) != 3 {
+		t.Fatalf("expected 3 overrides, got %v", doc["overrides"])
+	}
+
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := amend.VerifyAmendments(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.Chain.Established {
+		t.Fatal("the judgment path must write a previousChecksum chain")
+	}
+	if !result.Chain.Valid {
+		t.Fatalf("its own chain must verify: %v", result.Chain.Breaks)
+	}
+
+	// And the chain must actually catch an edit made after authoring.
+	first, ok := arr[0].(map[string]any)
+	if !ok {
+		t.Fatalf("override is not an object: %v", arr[0])
+	}
+	first["reason"] = "TAMPERED after the agent recorded it"
+	tampered, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tamperedResult, err := amend.VerifyAmendments(tampered)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tamperedResult.Chain.Valid {
+		t.Fatal("an edit after authoring must break the chain")
 	}
 }

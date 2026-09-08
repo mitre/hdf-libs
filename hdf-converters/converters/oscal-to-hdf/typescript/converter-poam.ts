@@ -5,7 +5,7 @@
  */
 
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
-import { inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { chainOverrides, inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFAmendments,
   StandaloneOverride,
@@ -73,6 +73,9 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
 
   // Build appliedBy from metadata responsible-parties
   const appliedBy = extractAppliedBy(poam.metadata);
+
+  // Tamper-evidence must not depend on which route authored the document.
+  await chainOverrides(overrides);
 
   const amendments: HDFAmendments = {
     name: toKebabCase(poam.metadata.title, 'oscal-poam'),

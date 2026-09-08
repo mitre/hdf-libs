@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="passes" time="0.000397" classname="test" file="mixed.test.mjs"/>
+	<testcase name="fails" time="0.000454" classname="test" file="mixed.test.mjs" failure="Expected values to be strictly equal:&#10;&#10;2 !== 3&#10;">
+		<failure type="testCodeFailure" message="Expected values to be strictly equal:&#10;&#10;2 !== 3">
+[Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:
+
+2 !== 3
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 3
+  
+      at TestContext.&lt;anonymous> (file:///mixed.test.mjs:9:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name="is skipped" time="0.000054" classname="test" file="mixed.test.mjs">
+		<skipped type="skipped" message="not applicable on this platform"/>
+	</testcase>
+	<!-- tests 3 -->
+	<!-- suites 0 -->
+	<!-- pass 1 -->
+	<!-- fail 1 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 1 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 51.033375 -->
+</testsuites>

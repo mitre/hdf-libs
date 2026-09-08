@@ -23,9 +23,15 @@ function stamp(v: unknown): string | undefined {
 /** Maps a requirement onto the canonical effective-status input shape. */
 export function requirementStatusInput(req: EvaluatedRequirement): EffectiveStatusInput {
   return {
-    impact: req.impact,
-    resultStatuses: (req.results ?? []).map((r) => String(r.status)),
-    overrides: (req.statusOverrides ?? []).map(
+    // Go's typed decode gives an absent impact the zero value, so the ladder
+    // there reads it as notApplicable; without the same defaulting here the two
+    // languages disagree on a document that omits impact.
+    impact: req.impact ?? 0,
+    resultStatuses: (req.results ?? []).filter((r) => r != null).map((r) => String(r.status)),
+    // A null entry inside the array is valid JSON that Go's typed decode turns
+    // into a zero-value struct; reading through it here crashed the converter
+    // where the Go peer emitted a row.
+    overrides: (req.statusOverrides ?? []).filter((o) => o != null).map(
       (o): StatusOverrideInput => ({
         status: o.status ? String(o.status) : undefined,
         appliedAt: stamp(o.appliedAt),

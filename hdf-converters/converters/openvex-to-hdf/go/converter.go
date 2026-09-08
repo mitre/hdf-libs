@@ -108,6 +108,11 @@ func ConvertOpenVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	}
 	description := "Imported VEX statements from " + truncateID(doc.ID)
 
+	// Tamper-evidence must not depend on which route authored the document.
+	if err := shared.ChainOverrides(overrides); err != nil {
+		return nil, fmt.Errorf("openvex-to-hdf: %w", err)
+	}
+
 	return &hdf.HDFAmendments{
 		Name:        name,
 		Description: &description,

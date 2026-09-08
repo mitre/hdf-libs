@@ -18,6 +18,10 @@ type junitTestSuites struct {
 	XMLName    xml.Name         `xml:"testsuites"`
 	Name       string           `xml:"name,attr"`
 	TestSuites []junitTestSuite `xml:"testsuite"`
+	// Node's built-in runner (node --test --test-reporter=junit) emits testcases
+	// as DIRECT children of <testsuites> with no <testsuite> wrapper. Without this
+	// they parse as nothing, and a red run converts to an empty green document.
+	TestCases []junitTestCase `xml:"testcase"`
 }
 
 type junitTestSuite struct {
@@ -160,7 +164,15 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 		if name == "" {
 			name = "JUnit Test Results"
 		}
-		return suites.TestSuites, name, nil
+		// Testcases sitting directly under <testsuites> become an implicit suite so
+		// they convert exactly like wrapped ones. Appended after any explicit
+		// suites, so a document carrying both keeps all of its cases in a
+		// deterministic order rather than silently dropping the loose ones.
+		parsed := suites.TestSuites
+		if len(suites.TestCases) > 0 {
+			parsed = append(parsed, junitTestSuite{Name: name, TestCases: suites.TestCases})
+		}
+		return parsed, name, nil
 	}
 
 	var suite junitTestSuite

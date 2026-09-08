@@ -344,6 +344,7 @@ jobs:
           npm install @mitre/hdf-diff          # structural diff engine
           npm install @mitre/hdf-engine        # detection, query, compliance rollups
           npm install @mitre/hdf-generators    # InSpec profile generation
+          npm install @mitre/hdf-extension-graph  # profile/baseline extension chains
 
           # Go libraries
           EOF

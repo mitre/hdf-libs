@@ -1,0 +1,666 @@
+{
+  "$comment": "Awkward-but-plausible HDF shapes that once made the Go and TypeScript CSV converters disagree. Each is a whole HDF Results document. Go owns the expected output (fixtures/expected/parity-outputs.json, regenerated with -update); TypeScript verifies against it, so neither language can redefine parity to match itself. Added because the 13-case shared corpus is about converter contracts, not about the value-level formatting splits these expose. Shapes after impact-on-the-tie were added when a wider parity sweep found splits the first eight missed.",
+  "shapes": {
+    "absent-baseline-name": {
+      "baselines": [
+        {
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "absent-result-status": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "component-without-name-or-type": {
+      "components": [
+        {
+          "componentId": "3f2504e0-4f89-41d3-9a0c-0305e82c3301"
+        }
+      ],
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "tags-nist-mixed-types": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {
+                "nist": [
+                  "AC-1",
+                  2,
+                  null
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "tags-severity-numeric-array": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {
+                "severity": [
+                  1
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "padded-text-values": {
+      "baselines": [
+        {
+          "name": "  padded  ",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "  spaced  "
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "csv-hostile-values": {
+      "baselines": [
+        {
+          "name": "a,b\"c\nd",
+          "requirements": [
+            {
+              "id": "=cmd|' /C calc'!A0",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "+SUM(1)"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "impact-on-the-tie": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.25,
+              "effectiveImpact": 0.25,
+              "cvss": [
+                {
+                  "baseScore": 2.5
+                }
+              ],
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "cvss-on-the-tie": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "cvss": [
+                {
+                  "baseScore": 7.25
+                },
+                {
+                  "baseScore": 8.75
+                },
+                {
+                  "computedScore": 0.25
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "impact-off-grid-tie": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.125,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "effectiveImpact": 0.625
+            }
+          ]
+        }
+      ]
+    },
+    "epss-on-the-tie": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "epss": {
+                "score": 0.015625
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "status-override-without-expiry": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "waiver",
+                  "reason": "r",
+                  "appliedBy": {
+                    "identifier": "me"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "status-override-mixed-expiry": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "waiver",
+                  "reason": "r1",
+                  "appliedBy": {
+                    "identifier": "a"
+                  },
+                  "expiresAt": "2099-12-31T00:00:00Z"
+                },
+                {
+                  "type": "waiver",
+                  "reason": "r2",
+                  "appliedBy": {
+                    "identifier": "b"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "absent-impact": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "epss-without-score": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "epss": {}
+            }
+          ]
+        }
+      ]
+    },
+    "cwe-mixed-types": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "cwe": [
+                "CWE-79",
+                2,
+                null
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "exotic-leading-whitespace": {
+      "baselines": [
+        {
+          "name": " nbsp",
+          "requirements": [
+            {
+              "id": " emsp",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "　ideo"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "null-description-element": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                null,
+                {
+                  "label": "default",
+                  "data": "d"
+                },
+                {
+                  "label": "check",
+                  "data": "c"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "null-cvss-entry": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "cvss": [
+                null,
+                {
+                  "baseScore": 7.5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "null-cvss-score": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "cvss": [
+                {
+                  "baseScore": null
+                },
+                {
+                  "baseScore": 7.5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "null-status-override": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.5,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "statusOverrides": [
+                null,
+                {
+                  "type": "waiver",
+                  "reason": "r",
+                  "appliedBy": {
+                    "identifier": "a"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

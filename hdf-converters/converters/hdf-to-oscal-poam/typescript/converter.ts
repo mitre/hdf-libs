@@ -5,7 +5,7 @@
  */
 
 import { parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
+import { requireHdfAmendments, firstNonEmpty } from '../../../shared/typescript/converterutil.js';
 import type { HDFAmendments, StandaloneOverride, Evidence, Cvss, ExternalReference, Milestone, Identity } from '@mitre/hdf-schema';
 import type {
   Oscal,
@@ -30,7 +30,9 @@ import type {
 import {
   nistTagToControlId,
   hdfStatusToOscalRiskStatus,
+  oscalToken,
   OSCAL_VERSION,
+  oscalString,
 } from '../../oscal-to-hdf/typescript/shared.js';
 
 /**
@@ -40,18 +42,16 @@ import {
  * @returns OSCAL POA&M JSON string
  */
 export async function convertHdfToOscalPoam(input: string): Promise<string> {
-  validateInputSize(input, 'hdf-to-oscal-poam');
-
-  if (!input || input.trim().length === 0) {
-    throw new Error('hdf-to-oscal-poam: empty input');
-  }
-
-  let amendments: HDFAmendments;
-  try {
-    amendments = parseHdf<HDFAmendments>(input);
-  } catch {
-    throw new Error('hdf-to-oscal-poam: failed to parse JSON');
-  }
+  // The guard rejects a document that cannot be faithfully converted rather than
+  // letting a missing overrides array surface later as a TypeError. The
+  // amendments schema puts minItems 1 on overrides, so a document that amends
+  // nothing is invalid input, not a request for an empty POA&M — and it keeps
+  // poam-items and risks non-empty, which the OSCAL schema requires of both.
+  // Main's guard returns the decoded document and its top-level array rather
+  // than a typed value, matching the Go reconciliation: the shared names keep
+  // their contracts and the typed shape is taken here at the call site.
+  const { doc: amendmentsDoc } = requireHdfAmendments(input, 'hdf-to-oscal-poam');
+  const amendments = amendmentsDoc as unknown as HDFAmendments;
 
   const poam = amendmentsToPOAM(amendments);
 
@@ -60,6 +60,30 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
   };
 
   return JSON.stringify(doc, null, 2);
+}
+
+/**
+ * Picks the document title, which OSCAL requires on metadata. The HDF name is
+ * schema-required, so the fallbacks only matter for a document that slipped
+ * through some other producer's validation.
+ */
+function poamTitle(a: HDFAmendments): string {
+  // amendmentId is optional in HDF; main's firstNonEmpty takes strings, so the
+  // absent case is coerced here rather than widening the shared helper's contract.
+  return firstNonEmpty(a.name, a.amendmentId ?? '', 'HDF Amendments');
+}
+
+/**
+ * Supplies the text OSCAL requires for a risk's description and statement. HDF
+ * puts no minLength on reason, so an override can legitimately carry none; the
+ * fallback states that absence rather than inventing an impact assessment the
+ * source never made.
+ */
+function riskRationale(override: StandaloneOverride): string {
+  return firstNonEmpty(
+    override.reason,
+    `No rationale was recorded for the ${String(override.type)} override applied to ${override.requirementId}.`,
+  );
 }
 
 /** HDF dates arrive as strings from JSON.parse but are typed as Date. */
@@ -79,14 +103,19 @@ class PartyRegistry {
   private byId = new Map<string, Party>();
 
   getOrAdd(id: Identity): string {
-    const existing = this.byId.get(id.identifier);
+    // name is omitted, not emptied, when the source identity carries none:
+    // OSCAL requires only uuid and type on a party, and Property/Party name is
+    // StringDatatype, which an empty string violates. Mirrors Go's omitempty.
+    // Keying on the emitted name keeps two spellings that trim alike one party.
+    const name = oscalString(id.identifier);
+    const existing = this.byId.get(name);
     if (existing) return existing.uuid as string;
     const party = {
       uuid: crypto.randomUUID(),
       type: 'person',
-      name: id.identifier,
+      ...(name === '' ? {} : { name }),
     } as unknown as Party;
-    this.byId.set(id.identifier, party);
+    this.byId.set(name, party);
     return party.uuid as string;
   }
 
@@ -144,7 +173,7 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
   }
 
   const metadata = {
-    title: amendments.name,
+    title: poamTitle(amendments),
     'last-modified': latestAppliedAt(amendments.overrides),
     version: amendmentsVersion(amendments),
     'oscal-version': OSCAL_VERSION,
@@ -170,9 +199,15 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
     uuid: crypto.randomUUID(),
     metadata,
     'import-ssp': importSSP,
-    risks,
     'poam-items': poamItems,
   };
+  // Emitted only when non-empty, matching the Go peer's omitempty: the schema
+  // puts minItems 1 on risks, so an empty array would be invalid where absence
+  // is fine. The guard makes zero risks unreachable today; this keeps the two
+  // languages from diverging if that ever changes.
+  if (risks.length > 0) {
+    poam.risks = risks;
+  }
   if (observations.length > 0) {
     poam.observations = observations;
   }
@@ -204,12 +239,8 @@ function overrideToPOAMItem(
 
   // Build risk props: impacted control, override type (disposition), impact
   // override, controlled-vocabulary justification, and disambiguating scope.
-  const riskProps: Property[] = [
-    {
-      name: 'impacted-control-id',
-      value: controlID,
-    },
-  ];
+  const riskProps: Property[] = [];
+  pushStringProp(riskProps, 'impacted-control-id', controlID);
   if (override.type) {
     riskProps.push({ name: 'override-type', value: String(override.type) });
   }
@@ -217,13 +248,13 @@ function overrideToPOAMItem(
     riskProps.push({ name: 'impact-override', value: String(override.impact.value) });
   }
   if (override.justification) {
-    riskProps.push({ name: 'justification', value: String(override.justification) });
+    pushStringProp(riskProps, 'justification', String(override.justification));
   }
   if (override.baselineRef) {
-    riskProps.push({ name: 'baseline-ref', value: override.baselineRef });
+    pushStringProp(riskProps, 'baseline-ref', override.baselineRef);
   }
   if (override.componentRef) {
-    riskProps.push({ name: 'component-ref', value: override.componentRef });
+    pushStringProp(riskProps, 'component-ref', override.componentRef);
   }
 
   // Build remediations from milestones. Each milestone becomes a planned
@@ -305,11 +336,15 @@ function overrideToPOAMItem(
     }
   }
 
+  // OSCAL lists title, description, statement and status as required on a risk.
+  // HDF puts no minLength on reason, so an override can legitimately carry none.
+  const rationale = riskRationale(override);
+
   const risk = {
     uuid: riskUUID,
     title: override.requirementId,
-    description: override.reason,
-    statement: override.reason,
+    description: rationale,
+    statement: rationale,
     status: riskStatus,
     deadline,
     props: riskProps,
@@ -347,9 +382,22 @@ function latestAppliedAt(overrides: StandaloneOverride[]): string {
   return formatTimestampSeconds(latest ?? new Date());
 }
 
+/**
+ * Add a property whose value OSCAL types as StringDatatype, trimming it and
+ * omitting the property entirely when nothing survives. A prop with an empty
+ * value carries no more than an absent one and is schema-invalid. Mirrors
+ * appendStringProp in the Go peer.
+ */
+function pushStringProp(props: Property[], name: string, value: string | undefined | null): void {
+  const trimmed = oscalString(value ?? '');
+  if (trimmed !== '') {
+    props.push({ name, value: trimmed });
+  }
+}
+
 /** Sources metadata.version from the amendments document, defaulting when omitted. */
 function amendmentsVersion(a: HDFAmendments): string {
-  return a.version && a.version !== '' ? a.version : '1.0.0';
+  return oscalString(a.version ?? '') || '1.0.0';
 }
 
 /**
@@ -359,14 +407,43 @@ function amendmentsVersion(a: HDFAmendments): string {
 function metadataProps(a: HDFAmendments): Property[] {
   const props: Property[] = [];
   if (a.amendmentId) {
-    props.push({ name: 'amendment-id', value: a.amendmentId });
+    pushStringProp(props, 'amendment-id', a.amendmentId);
   }
   if (a.labels) {
-    for (const k of Object.keys(a.labels).sort()) {
-      props.push({ name: k, value: a.labels[k], class: 'amendment-label' } as unknown as Property);
+    for (const [key, value] of Object.entries(a.labels).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))) {
+      // A label whose value is empty after trimming says nothing the absent label
+      // would not, and Property.value is StringDatatype, which cannot hold it.
+      const prop = labelProp(key, value);
+      if (prop.value !== '') {
+        props.push(prop);
+      }
     }
   }
   return props;
+}
+
+/**
+ * Render one amendments label as a property. OSCAL types prop/@name as
+ * TokenDatatype while HDF puts no constraint on label keys, so the key is
+ * encoded and the source key kept in remarks when it had to change. Every label
+ * key in this package's converter fixtures is token-shaped today, so this guards a shape real
+ * data has not yet produced — but Kubernetes and OCI label keys are namespaced
+ * with '/', which HDF permits and OSCAL rejects.
+ *
+ * Mirrored by labelProp in the Go converter.
+ */
+function labelProp(key: string, value: string): Property {
+  // TokenDatatype requires at least one character, and an empty label key is
+  // valid HDF — labels constrains its values, not its property names.
+  const name = oscalToken(key) === '' ? '_' : oscalToken(key);
+  const prop: Property = { name, value: oscalString(value), class: 'amendment-label' };
+  // Recorded only when the name was encoded away from a non-empty key: an
+  // unchanged name has nothing to recover, and an empty key carries no text
+  // worth recovering.
+  if (key !== '' && name !== key) {
+    prop.remarks = key;
+  }
+  return prop;
 }
 
 /** Picks the collection timestamp for evidence observations. */
@@ -391,10 +468,10 @@ function evidenceObservation(ev: Evidence, uuid: string, defaultCollected: strin
 
   const props: Property[] = [];
   if (ev.mimeType) {
-    props.push({ name: 'mime-type', value: ev.mimeType });
+    pushStringProp(props, 'mime-type', ev.mimeType);
   }
   if (ev.capturedBy && ev.capturedBy.identifier) {
-    props.push({ name: 'captured-by', value: ev.capturedBy.identifier });
+    pushStringProp(props, 'captured-by', ev.capturedBy.identifier);
   }
 
   return {

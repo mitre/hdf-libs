@@ -80,7 +80,9 @@ type Role struct {
 type Party struct {
 	UUID string `json:"uuid"`
 	Type string `json:"type"`
-	Name string `json:"name"`
+	// Name is omitted when the source identity carries none: OSCAL requires only
+	// uuid and type on a party, so omitting says exactly what the source did.
+	Name string `json:"name,omitempty"`
 }
 
 // ResponsibleParty maps a role to party UUIDs.
@@ -91,11 +93,13 @@ type ResponsibleParty struct {
 
 // Property is a name-value pair with optional namespace and class.
 type Property struct {
-	Name    string `json:"name"`
-	Value   string `json:"value"`
-	Ns      string `json:"ns,omitempty"`
-	Class   string `json:"class,omitempty"`
-	UUID    string `json:"uuid,omitempty"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+	Ns    string `json:"ns,omitempty"`
+	Class string `json:"class,omitempty"`
+	UUID  string `json:"uuid,omitempty"`
+	// Remarks carries the source identifier when Name had to be encoded to a
+	// TokenDatatype, so the mapping back to the HDF value is not lost.
 	Remarks string `json:"remarks,omitempty"`
 }
 

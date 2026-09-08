@@ -2791,7 +2791,7 @@
             },
             "previousChecksum": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-              "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
+              "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
             },
             "cvss": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",
@@ -2968,7 +2968,7 @@
             },
             "previousChecksum": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-              "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
+              "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
             }
           },
           "examples": [
@@ -3321,7 +3321,7 @@
             },
             "previousChecksum": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-              "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
+              "description": "SHA-256 checksum of the prior amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment."
             },
             "cvss": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",

@@ -7,7 +7,7 @@
 
 import { formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
-import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
+import { hdfTime, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -25,9 +25,9 @@ import type {
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlId,
-  impactToSeverity,
-  oscalToken,
   oscalString,
+  oscalToken,
+  impactToSeverity,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
 
@@ -43,21 +43,29 @@ interface OscalSARDocument {
  * @returns OSCAL SAR JSON string
  */
 export async function convertHdfToOscalSar(input: string): Promise<string> {
-  validateInputSize(input, 'hdf-to-oscal-sar');
+  // Main's guard returns the decoded document and its top-level array rather than
+  // a typed value, matching the Go reconciliation: the shared names keep their
+  // contracts and the typed shape is taken here at the call site.
+  const { doc: hdfResultsDoc } = requireHdfResults(input, 'hdf-to-oscal-sar');
+  const hdfResults = hdfResultsDoc as unknown as HDFResults;
 
-  if (!input || input.trim().length === 0) {
-    throw new Error('hdf-to-oscal-sar: empty input');
-  }
-
-  let hdfResults: HDFResults;
-  try {
-    hdfResults = parseHdf<HDFResults>(input);
-  } catch {
-    throw new Error('hdf-to-oscal-sar: failed to parse HDF JSON');
-  }
-
-  if (!hdfResults || typeof hdfResults !== 'object' || !('baselines' in hdfResults)) {
-    throw new Error('hdf-to-oscal-sar: invalid HDF structure: missing baselines field');
+  // A converter-specific constraint the shared guard cannot express: the guard
+  // checks top-level shape, not the full HDF schema, and it accepts an empty
+  // baselines array because hdf-results puts no minItems on it. OSCAL Assessment
+  // Results, by contrast, requires results with minItems 1, and one result is
+  // emitted per baseline — so an assessment that evaluated nothing has no valid
+  // OSCAL representation. Emitting `results: []` would resolve successfully with
+  // a document the target schema rejects.
+  //
+  // Whether hdf-results should itself carry minItems 1 on baselines, as every
+  // sibling document schema except hdf-comparison does on its required
+  // collections, is an open schema question. If it gains one, requireHdfResults
+  // should reject an empty array the way requireHdfAmendments already rejects
+  // empty overrides, and this check becomes redundant.
+  if (hdfResults.baselines.length === 0) {
+    throw new Error(
+      'hdf-to-oscal-sar: cannot represent an assessment with no evaluated baselines as OSCAL Assessment Results, which requires at least one result',
+    );
   }
 
   const doc = buildOSCALDocument(hdfResults);
@@ -227,7 +235,7 @@ function baselineToResult(
     // finding is dropped rather than carrying a fabricated identifier. Compute
     // the control id once so the guard and the reviewed-controls encoding below
     // cannot drift.
-    const nistId = nistTagToControlId(req.id);
+    const nistId = nistTagToControlId(req.id ?? '');
     if (nistId === '') {
       continue;
     }
@@ -264,9 +272,13 @@ function baselineToResult(
     // Match Go's omitempty: an empty props list is omitted entirely.
     ...(resultProps.length > 0 ? { props: resultProps } : {}),
     'reviewed-controls': { 'control-selections': [controlSelection] },
-    findings,
-    observations,
-    risks,
+    // Match Go's omitempty on all three: OSCAL puts minItems 1 on each, so an
+    // empty array is invalid where absence is fine. Emitting [] here made a
+    // baseline whose requirements produced no risks fail the schema, while Go
+    // omitted the key and passed — a divergence the adversarial corpus caught.
+    ...(findings.length > 0 ? { findings } : {}),
+    ...(observations.length > 0 ? { observations } : {}),
+    ...(risks.length > 0 ? { risks } : {}),
   } as unknown as AssessmentResult;
 
   return { result, resources };
@@ -284,14 +296,23 @@ interface SubjectRef {
  * component's UUID (componentId when present, otherwise a fresh one) identifies
  * the subject; the HDF component type is a valid OSCAL subject type token and
  * its name becomes the subject title.
+ *
+ * A component with no type is skipped rather than given one. OSCAL requires both
+ * subject-uuid and type on a subject-reference, so the type cannot simply be
+ * omitted, and hdf-results defines no default component type to fall back on.
+ * String(c.type) turned an absent type into the literal "undefined" — a valid
+ * OSCAL token, so a schema check could not see it, asserting a component type
+ * the source never stated. Mirrors the Go peer.
  */
 function buildSubjects(components: HDFResults['components']): SubjectRef[] {
   if (!Array.isArray(components) || components.length === 0) return [];
-  return components.map((c) => ({
-    'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
-    type: String(c.type),
-    title: c.name,
-  }));
+  return components
+    .filter((c) => oscalString(c.type ?? '') !== '')
+    .map((c) => ({
+      'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
+      type: String(c.type),
+      title: c.name,
+    }));
 }
 
 /**
@@ -308,7 +329,7 @@ function requirementToFindingSet(
   // recorded in the hdf-requirement-id prop below (trimmed, because OSCAL forbids
   // a padded string value), so the encoding does not lose which requirement this
   // came from even though it is not injective.
-  const controlID = oscalToken(nistTagToControlId(req.id));
+  const controlID = oscalToken(nistTagToControlId(req.id ?? ''));
   // results/descriptions are optional and absent on real minimal HDF; normalize
   // to arrays so this converter matches the Go implementation, which ranges nil
   // slices safely rather than throwing.
@@ -332,6 +353,12 @@ function requirementToFindingSet(
   //
   // OSCAL prop values must be non-empty strings, so skip any empty value
   // (e.g. an empty source `code`) rather than emitting a schema-invalid value: ''.
+  // The source requirement id. target-id carries an encoded form, because OSCAL
+  // constrains it to a token, so without this the identifier the source tool
+  // reported would be unrecoverable — and the encoding is not injective in
+  // principle. Trimmed because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded
+  // value would itself be schema-invalid; nistTagToControlId trims for target-id
+  // too, so the two stay consistent.
   const props: Property[] = [{ name: 'hdf-requirement-id', value: oscalString(req.id) }];
   const addProp = (name: string, value: string): void => {
     if (value !== '') props.push({ name, value });

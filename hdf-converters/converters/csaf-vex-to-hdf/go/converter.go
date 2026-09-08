@@ -249,6 +249,11 @@ func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 		versionPtr = &docVersion
 	}
 
+	// Tamper-evidence must not depend on which route authored the document.
+	if err := shared.ChainOverrides(overrides); err != nil {
+		return nil, fmt.Errorf("csaf-vex-to-hdf: %w", err)
+	}
+
 	return &hdf.HDFAmendments{
 		Name:        name,
 		Description: &description,

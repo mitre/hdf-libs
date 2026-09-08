@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
+
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -419,5 +421,84 @@ func TestApplyAmendment_ErrorNextCallNamesOwnInputs(t *testing.T) {
 	}
 	if strings.Contains(tr2.NextCall, "source") {
 		t.Errorf("nextCall leaked `source`: %q", tr2.NextCall)
+	}
+}
+
+// An expired amendment must be refused here exactly as `hdf amend verify`
+// refuses it. Previously this tool applied whatever it was handed, so an agent
+// could launder a lapsed risk decision through the MCP surface at the same
+// moment the CLI refused to verify the same file.
+func TestApplyAmendment_RefusesExpired(t *testing.T) {
+	root, results, _ := applyEnv(t)
+	expiredRel := "expired.json"
+	expired := `{
+  "name": "Lapsed Waivers",
+  "overrides": [{
+    "type": "waiver",
+    "requirementId": "AC-1",
+    "status": "passed",
+    "reason": "Risk accepted per ATO",
+    "appliedBy": {"type": "email", "identifier": "admin@example.com"},
+    "appliedAt": "2020-01-01T00:00:00Z",
+    "expiresAt": "2020-06-30T00:00:00Z"
+  }]
+}`
+	if err := os.WriteFile(filepath.Join(root, expiredRel), []byte(expired), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	res, out := callApply(t, applyInput(results, expiredRel, "", false))
+	if res == nil || !res.IsError {
+		t.Fatal("an expired amendments document must be refused")
+	}
+	if out.Handle != "" || out.OutputPath != "" {
+		t.Fatalf("a refused apply must produce nothing: %+v", out)
+	}
+	if !strings.Contains(payloadText(t, res), "expired") {
+		t.Fatalf("the refusal must name the expiry: %s", payloadText(t, res))
+	}
+}
+
+func TestApplyAmendment_RefusesBrokenChain(t *testing.T) {
+	root, results, amendRel := applyEnv(t)
+
+	raw, err := os.ReadFile(filepath.Join(root, amendRel)) //nolint:gosec // test-controlled path
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]interface{}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	// Chain a second override to the first, then edit the first in place.
+	overrides := doc["overrides"].([]interface{})
+	first := overrides[0].(map[string]interface{})
+	second := map[string]interface{}{
+		"type": "waiver", "requirementId": "AC-1", "status": "passed",
+		"reason":    "second",
+		"appliedBy": map[string]interface{}{"type": "email", "identifier": "admin@example.com"},
+		"appliedAt": "2026-03-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+		"previousChecksum": map[string]interface{}{
+			"algorithm": "sha256", "value": amend.ChecksumOverride(first),
+		},
+	}
+	first["reason"] = "TAMPERED after the chain was written"
+	doc["overrides"] = []interface{}{first, second}
+
+	tampered, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tamperedRel := "tampered.json"
+	if err := os.WriteFile(filepath.Join(root, tamperedRel), tampered, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	res, _ := callApply(t, applyInput(results, tamperedRel, "", false))
+	if res == nil || !res.IsError {
+		t.Fatal("a tampered amendments document must be refused")
+	}
+	if !strings.Contains(payloadText(t, res), "chain") {
+		t.Fatalf("the refusal must name the chain: %s", payloadText(t, res))
 	}
 }

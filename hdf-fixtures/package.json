@@ -21,9 +21,11 @@
   "scripts": {
     "build": "tsdown",
     "clean": "rimraf dist",
-    "test": "echo 'No tests in hdf-fixtures (data-only package)' && exit 0",
-    "test:ts": "echo 'No tests in hdf-fixtures (data-only package)' && exit 0",
-    "type-check": "tsc --noEmit"
+    "test": "echo 'No TypeScript tests in hdf-fixtures (Go gate runs via test:go)' && exit 0",
+    "test:ts": "echo 'No TypeScript tests in hdf-fixtures (Go gate runs via test:go)' && exit 0",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src",
+    "test:go": "go test ./..."
   },
   "repository": {
     "type": "git",

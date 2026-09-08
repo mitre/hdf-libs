@@ -200,6 +200,11 @@ func ConvertCycloneDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAm
 		description = fmt.Sprintf("Imported CycloneDX VEX %s", bom.SerialNumber)
 	}
 
+	// Tamper-evidence must not depend on which route authored the document.
+	if err := shared.ChainOverrides(overrides); err != nil {
+		return nil, fmt.Errorf("cyclonedx-vex-to-hdf: %w", err)
+	}
+
 	return &hdf.HDFAmendments{
 		Name:        name,
 		Description: &description,

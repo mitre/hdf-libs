@@ -74,6 +74,10 @@
           "status": "pending"
         }
       ],
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "7e5ca7b45a450826e5329a9e3c74274f4d80f0e6947cb454436ad9127ca36f35"
+      },
       "reason": "Upgrade to 1.2.4 or later",
       "requirementId": "CVE-2024-2000",
       "status": "failed",

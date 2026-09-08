@@ -682,33 +682,36 @@ type Kev struct {
 // POAMs do NOT change the effectiveStatus - the requirement remains in its current state
 // while the POA&M tracks remediation efforts.
 type PoamElement struct {
-	// Timestamp when this POA&M was created. ISO 8601 format.                                             
-	AppliedAt                                                                                  time.Time   `json:"appliedAt"`
-	// Identity of who created this POA&M. For simple cases, use type 'simple' with just an                
-	// identifier.                                                                                         
-	AppliedBy                                                                                  Identity    `json:"appliedBy"`
-	// Supporting evidence for this POA&M, such as documentation of compensating controls or               
-	// mitigation implementation.                                                                          
-	Evidence                                                                                   []Evidence  `json:"evidence,omitempty"`
-	// Required deadline for this POA&M. A POA&M is a time-boxed acceptance of an open finding;            
-	// without a deadline it lets a failing requirement duck remediation indefinitely. Source a            
-	// real date (e.g. a remediation target or vendor-fix date) — never a wall-clock default.              
-	// ISO 8601 format.                                                                                    
-	ExpiresAt                                                                                  time.Time   `json:"expiresAt"`
-	// Detailed explanation of the plan, including what actions will be taken.                             
-	Explanation                                                                                string      `json:"explanation"`
-	// Optional array of milestones tracking progress toward completion.                                   
-	Milestones                                                                                 []Milestone `json:"milestones,omitempty"`
-	// SHA-256 checksum of the previous amendment in chronological order. Creates a                        
-	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment            
-	// on a requirement.                                                                                   
-	PreviousChecksum                                                                           *Checksum   `json:"previousChecksum,omitempty"`
-	// Optional digital signature for enhanced trust and non-repudiation.                                  
-	Signature                                                                                  *Signature  `json:"signature,omitempty"`
-	// The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via                    
-	// compensating controls. 'riskAcceptance' documents decision to accept risk.                          
-	// 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.               
-	Type                                                                                       POAMType    `json:"type"`
+	// Timestamp when this POA&M was created. ISO 8601 format.                                              
+	AppliedAt                                                                                   time.Time   `json:"appliedAt"`
+	// Identity of who created this POA&M. For simple cases, use type 'simple' with just an                 
+	// identifier.                                                                                          
+	AppliedBy                                                                                   Identity    `json:"appliedBy"`
+	// Supporting evidence for this POA&M, such as documentation of compensating controls or                
+	// mitigation implementation.                                                                           
+	Evidence                                                                                    []Evidence  `json:"evidence,omitempty"`
+	// Required deadline for this POA&M. A POA&M is a time-boxed acceptance of an open finding;             
+	// without a deadline it lets a failing requirement duck remediation indefinitely. Source a             
+	// real date (e.g. a remediation target or vendor-fix date) — never a wall-clock default.               
+	// ISO 8601 format.                                                                                     
+	ExpiresAt                                                                                   time.Time   `json:"expiresAt"`
+	// Detailed explanation of the plan, including what actions will be taken.                              
+	Explanation                                                                                 string      `json:"explanation"`
+	// Optional array of milestones tracking progress toward completion.                                    
+	Milestones                                                                                  []Milestone `json:"milestones,omitempty"`
+	// SHA-256 checksum of the previous amendment in chronological order. Each amendment's                  
+	// checksum is recorded by the NEXT one, so editing an amendment in place is detectable —               
+	// provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment,            
+	// the document envelope, deleted trailing amendments, and a chain that has been stripped or            
+	// recomputed wholesale are all outside what it can detect. Use signature for                           
+	// non-repudiation. Omitted on the first amendment on a requirement.                                    
+	PreviousChecksum                                                                            *Checksum   `json:"previousChecksum,omitempty"`
+	// Optional digital signature for enhanced trust and non-repudiation.                                   
+	Signature                                                                                   *Signature  `json:"signature,omitempty"`
+	// The type of POA&M. 'remediation' fixes root cause. 'mitigation' reduces risk via                     
+	// compensating controls. 'riskAcceptance' documents decision to accept risk.                           
+	// 'vendorDependency' tracks a fix that depends on a vendor releasing a patch or update.                
+	Type                                                                                        POAMType    `json:"type"`
 }
 
 // A milestone or task within a POA&M remediation plan.
@@ -839,9 +842,12 @@ type StatusOverride struct {
 	// round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the                            
 	// precedent vocabulary and rationale.                                                                          
 	Justification                                                                               *Justification      `json:"justification,omitempty"`
-	// SHA-256 checksum of the previous amendment in chronological order. Creates a                                 
-	// tamper-evident chain of amendments (similar to blockchain). Null for the first amendment                     
-	// on a requirement.                                                                                            
+	// SHA-256 checksum of the previous amendment in chronological order. Each amendment's                          
+	// checksum is recorded by the NEXT one, so editing an amendment in place is detectable —                       
+	// provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment,                    
+	// the document envelope, deleted trailing amendments, and a chain that has been stripped or                    
+	// recomputed wholesale are all outside what it can detect. Use signature for                                   
+	// non-repudiation. Omitted on the first amendment on a requirement.                                            
 	PreviousChecksum                                                                            *Checksum           `json:"previousChecksum,omitempty"`
 	// Explanation for why this override was applied.                                                               
 	Reason                                                                                      string              `json:"reason"`
@@ -2072,8 +2078,12 @@ type StandaloneOverride struct {
 	Justification                                                                               *Justification      `json:"justification,omitempty"`
 	// Remediation milestones (primarily for POA&M type amendments).                                                
 	Milestones                                                                                  []Milestone         `json:"milestones,omitempty"`
-	// Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null                     
-	// for the first amendment.                                                                                     
+	// SHA-256 checksum of the prior amendment in chronological order. Each amendment's checksum                    
+	// is recorded by the NEXT one, so editing an amendment in place is detectable — provided a                     
+	// later amendment is chained to it. It is NOT tamper-proof: the final amendment, the                           
+	// document envelope, deleted trailing amendments, and a chain that has been stripped or                        
+	// recomputed wholesale are all outside what it can detect. Use signature for                                   
+	// non-repudiation. Omitted on the first amendment.                                                             
 	PreviousChecksum                                                                            *Checksum           `json:"previousChecksum,omitempty"`
 	// Justification for this amendment.                                                                            
 	Reason                                                                                      string              `json:"reason"`

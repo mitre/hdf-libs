@@ -278,8 +278,7 @@ seven subtypes aligned with FedRAMP deviation request categories:
 | **inherited** | "Control provided by another system" | Status reflects inherited posture |
 | **poam** | "We'll fix this by date X" | Status unchanged (tracks work) |
 
-Each entry amends the assessment record. The amendment chain (`previousChecksum`)
-creates a tamper-evident linked list of modifications.
+Each entry amends the assessment record. The amendment chain (`previousChecksum`) links each amendment to the one before it, so an in-place edit of any amendment that has a successor is detectable. See [Applying amendments](#applying-amendments) for what that does and does not prove.
 
 ### Creating an amendment
 
@@ -335,11 +334,13 @@ The merged results have:
 - Amendment chain intact: `previousChecksum` links back to the original results.
 
 ```bash
-# Validate the amendments document on its own (chain integrity, signature shape, expirations)
+# Validate the amendments document on its own (structure, expirations, chain integrity)
 hdf amend verify portal-waivers.json
 ```
 
-`hdf amend verify` reports signature validity, amendment-chain integrity (each `previousChecksum` links to the prior state), and whether any waivers are expired or near-expiration.
+`hdf amend verify` checks the document against the hdf-amendments schema, checks that no amendment has passed its `expiresAt` date, and recomputes the `previousChecksum` chain linking each amendment to the one before it. Any of the three failing exits non-zero — an expired amendment is a failure, not a warning, and there is no flag to make one pass.
+
+Each amendment's checksum is recorded by the next one, so the chain detects an amendment edited in place — provided a later amendment is chained to it. It is not tamper-proof, and the gaps matter: the **last** amendment has no successor to record it and can be rewritten freely; the document envelope (`name`, `approvedBy`, `systemRef`) is outside the hash; deleted trailing amendments leave every surviving link consistent; and an editor who strips the chain entirely gets `Chain: not established`, which is not a failure. A single-amendment document has no chain at all. `signature` is what makes an amendment non-repudiable, and verify does not yet check it.
 
 The chain of trust:
 ```
@@ -426,8 +427,10 @@ not embedded content:
 # Quick summary: package name, preparer, contents-with-checksum-status, completeness summary
 hdf evidence info portal-ato-evidence-q1-2026.json
 
-# Cryptographic verification: referenced documents resolve and their checksums match,
-# any embedded signature is valid, amendment chains intact across the referenced amendments doc
+# Completeness: every baseline in the referenced plan has a results document in the
+# package. Add --checksums-only to skip that and verify referenced-file SHA-256s alone.
+# Note: this does NOT check signatures or amendment chains -- run `hdf amend verify`
+# on the amendments document for the chain.
 hdf evidence verify portal-ato-evidence-q1-2026.json
 ```
 

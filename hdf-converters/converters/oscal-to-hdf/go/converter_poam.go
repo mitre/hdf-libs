@@ -75,6 +75,11 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 	// Build appliedBy from metadata responsible-parties
 	appliedBy := extractAppliedBy(poam.Metadata)
 
+	// Tamper-evidence must not depend on which route authored the document.
+	if err := shared.ChainOverrides(overrides); err != nil {
+		return nil, fmt.Errorf("oscal-poam-to-hdf: %w", err)
+	}
+
 	genName := "oscal-poam-to-hdf"
 	amendments := &hdf.HDFAmendments{
 		Name:      ToKebabCase(poam.Metadata.Title, "oscal-poam"),

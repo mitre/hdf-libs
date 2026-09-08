@@ -75,6 +75,10 @@
           "status": "pending"
         }
       ],
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "a509a13a84e949b63134951b9fbe920be04245dcd7c472fed3b68e3b1da8743d"
+      },
       "reason": "Patched in the 2.3.1 build; fix backported from upstream.",
       "requirementId": "CVE-2024-30003",
       "status": "failed",

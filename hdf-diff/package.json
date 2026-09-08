@@ -22,7 +22,7 @@
     "clean": "rimraf dist",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
-    "test:go": "echo 'No Go tests yet in hdf-diff'",
+    "test:go": "cd go && go test ./...",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit"
