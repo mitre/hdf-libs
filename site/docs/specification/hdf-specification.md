@@ -381,7 +381,7 @@ Status overrides applied after assessment (waivers, attestations, POAMs).
 
 ### Override
 
-A deliberate change to an assessed requirement's compliance status. Waivers grant temporary acceptance of a known risk. Attestations assert manual verification of a requirement that cannot be automatically tested. POAMs track planned remediation with milestones. False positives mark findings confirmed as not applicable. Risk adjustments modify severity based on contextual analysis. Operational requirements document accepted deviations due to mission needs. Inherited overrides indicate that a control is provided by another component or system (typically overriding to notApplicable or passed). Each override records who authorized it, why, and when it expires. The `previousChecksum` field creates a tamper-evident chain linking each override to the document state at the time it was applied.
+A deliberate change to an assessed requirement's compliance status. Waivers grant temporary acceptance of a known risk. Attestations assert manual verification of a requirement that cannot be automatically tested. POAMs track planned remediation with milestones. False positives mark findings confirmed as not applicable. Risk adjustments modify severity based on contextual analysis. Operational requirements document accepted deviations due to mission needs. Inherited overrides indicate that a control is provided by another component or system (typically overriding to notApplicable or passed). Each override records who authorized it, why, and when it expires. The `previousChecksum` field chains each override to the one before it, making an override edited in place after the fact detectable by `hdf amend verify`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -399,7 +399,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 | affectedPackages | Affected_Package[] | no | Software packages this amendment is scoped to (purl/cpe/name+version), distinct from componentRef |
 | evidence | Evidence[] | no | Supporting evidence (screenshots, logs, URLs, documents) |
 | signature | Signature | no | Digital signature for non-repudiation |
-| previousChecksum | Checksum | no | Checksum of the prior amendment in the chain (tamper-evident linked list) |
+| previousChecksum | Checksum | no | Checksum of the prior amendment; detects an in-place edit of any amendment that has a later one chained to it |
 | cvss | CVSS | no | Structured CVSS scoring backing this override; on `riskAdjustment`, `impact.value` should be approximately `cvss.computedScore / 10.0` *(v3.3.0)* |
 | justification | Justification | no | Structured controlled-vocabulary classification (VEX-aligned: `component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`, `vulnerable_code_cannot_be_controlled_by_adversary`, `inline_mitigations_already_exist`). Complements (does not replace) `reason` *(v3.3.0)* |
 | milestones | Milestone[] | no | Remediation milestones (primarily for `poam` type) |
@@ -648,7 +648,7 @@ HDF supports 4 trust levels for tamper detection:
 ### Checksum Flow
 1. **originalChecksum**: SHA-256 of the baseline definition file (immutable)
 2. **resultsChecksum**: SHA-256 of raw results before amendments
-3. **previousChecksum**: Links each override to the prior state (chain)
+3. **previousChecksum**: Links each override to the previous override (chain)
 
 ---
 

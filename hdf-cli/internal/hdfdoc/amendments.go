@@ -5,6 +5,7 @@ import (
 	"time"
 
 	openvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/openvex-to-hdf/go"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
@@ -27,6 +28,9 @@ func AmendmentsFromVex(data []byte, expiresAt time.Time, converterVersion string
 	for i := range doc.Overrides {
 		doc.Overrides[i].ExpiresAt = expiresAt
 		doc.Overrides[i].AppliedBy.Type = hdf.IdentityTypeSystem
+	}
+	if err := shared.ChainOverrides(doc.Overrides); err != nil {
+		return nil, err
 	}
 	return doc, nil
 }

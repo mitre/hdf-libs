@@ -53,7 +53,7 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
-        # Auth is OIDC Trusted Publishing for all 9 packages. pnpm publishes
+        # Auth is OIDC Trusted Publishing for all 10 packages. pnpm publishes
         # natively (no npm CLI delegation) and prefers OIDC over a static
         # token per package — behavior introduced in pnpm 11.0.7, so the
         # exact version matters: it comes from the root package.json
@@ -65,7 +65,7 @@ jobs:
         # displaces the other.
         #
         # NODE_AUTH_TOKEN is a transition fallback only: once an rc-tag
-        # publish verifies all 9 packages publish tokenless, remove this env
+        # publish verifies all 10 packages publish tokenless, remove this env
         # line and revoke the token.
         #
         # --provenance attests every package (requires the id-token
@@ -280,6 +280,7 @@ jobs:
           npm install @mitre/hdf-diff          # structural diff engine
           npm install @mitre/hdf-engine        # detection, query, compliance rollups
           npm install @mitre/hdf-generators    # InSpec profile generation
+          npm install @mitre/hdf-extension-graph  # profile/baseline extension chains
 
           # Go libraries
           EOF

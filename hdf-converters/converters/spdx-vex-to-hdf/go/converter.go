@@ -143,6 +143,11 @@ func ConvertSPDXVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	}
 	description := "Imported SPDX 3.0.1 security-profile VEX statements"
 
+	// Tamper-evidence must not depend on which route authored the document.
+	if err := shared.ChainOverrides(overrides); err != nil {
+		return nil, fmt.Errorf("spdx-vex-to-hdf: %w", err)
+	}
+
 	return &hdf.HDFAmendments{
 		Name:        name,
 		Description: &description,

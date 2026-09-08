@@ -26,6 +26,7 @@ import {
 import {
   inputIntegrity,
   validateInputSize,
+  chainOverrides,
 } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageFromIdentifier,
@@ -180,6 +181,9 @@ export async function convertCsafVexToHdf(
   }
 
   const publisherName = publisher.name ?? '';
+  // Tamper-evidence must not depend on which route authored the document.
+  await chainOverrides(overrides);
+
   return {
     name: publisherName ? `CSAF VEX statements from ${publisherName}` : 'CSAF VEX statements',
     description: `Imported VEX advisory ${tracking.id ?? ''}`,
