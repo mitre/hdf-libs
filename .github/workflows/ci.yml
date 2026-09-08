@@ -89,10 +89,15 @@ env:
 # trading a few red-run runner-minutes for ~5 minutes of wall clock on
 # every green run (this repo is public; minutes are free, latency isn't).
 #
-# NOT YET IN EFFECT: `main` carries no branch protection and no ruleset, so
-# nothing is actually a required check and a red gate does not block a merge.
-# The gates run and report; making them binding is a repository-settings
-# change, and the "(required check)" notes above describe the intent.
+# IN EFFECT: the `main` ruleset requires "Gate scans on HDF thresholds",
+# "Gate test results on HDF thresholds" and "Verify packed tarballs
+# (publint + attw)" to pass, and blocks force-pushes and deletion. The scan
+# gate covers the scanners and check jobs (it fails, never skips, when one of
+# them fails) and the test gate covers build and every test leg (a leg that
+# reports nothing fails it), so those three are the binding surface. The
+# ruleset does not require a pull request, and organization admins bypass
+# it: the owner keeps the option of committing to main directly. Renaming a
+# gate job renames a required check; update the ruleset in the same change.
 #
 # Test phase: ubuntu+windows matrix; every leg emits JUnit which
 # gate-hdf-tests normalizes and thresholds the same way (if: always — red
