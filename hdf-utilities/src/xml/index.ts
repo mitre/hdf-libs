@@ -81,7 +81,9 @@ export function parseXml(
 /**
  * Build XML string from JavaScript object
  *
- * @param obj - JavaScript object to convert to XML
+ * @param obj - JavaScript object to convert to XML, or a preserveOrder node list.
+ *   An array is only meaningful with `preserveOrder: true`; without it the builder
+ *   indexes the array and emits elements named by its numeric keys.
  * @param options - Optional builder configuration (merged with defaults)
  * @returns XML string
  *
@@ -93,7 +95,7 @@ export function parseXml(
  * ```
  */
 export function buildXml(
-  obj: Record<string, unknown>,
+  obj: Record<string, unknown> | unknown[],
   options?: Partial<XmlBuilderOptions>
 ): string {
   const mergedOptions = {

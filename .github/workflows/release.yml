@@ -282,9 +282,15 @@ jobs:
           npm install @mitre/hdf-generators    # InSpec profile generation
           npm install @mitre/hdf-extension-graph  # profile/baseline extension chains
 
-          # Go libraries
+          # Go libraries — hdf-converters pulls in schema, parsers, utilities,
+          # mappings and validators; the rest are independent modules. hdf-cli is
+          # deliberately absent despite being tagged: its go.mod carries replace
+          # directives, so `go install` refuses it outright — it ships as a binary,
+          # covered below.
           EOF
-            echo "go get github.com/mitre/hdf-libs/hdf-converters/v3@${GITHUB_REF_NAME}"
+            for gomod in hdf-converters hdf-diff/go hdf-engine/go hdf-extension-graph/go hdf-generators/go; do
+              echo "go get github.com/mitre/hdf-libs/${gomod}/v3@${GITHUB_REF_NAME}"
+            done
             cat <<'EOF'
 
           # Go CLI — download a binary for your platform from the assets below, then:

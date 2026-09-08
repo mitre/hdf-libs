@@ -48,7 +48,8 @@ func BaselineDoc(name string, reqs ...hdf.BaselineRequirement) hdf.HDFBaseline {
 type OverrideOption func(*hdf.StandaloneOverride)
 
 // Override builds a schema-valid StandaloneOverride with defaults: applied now,
-// expires far-future (never expired), applied by a simple "test" identity.
+// expires far-future (never expired), applied by a simple "test" identity, and
+// the outcome the schema requires for the override type.
 func Override(overrideType hdf.OverrideType, reqID string, opts ...OverrideOption) hdf.StandaloneOverride {
 	o := hdf.StandaloneOverride{
 		Type:          overrideType,
@@ -58,10 +59,30 @@ func Override(overrideType hdf.OverrideType, reqID string, opts ...OverrideOptio
 		AppliedBy:     hdf.Identity{Type: hdf.Simple, Identifier: "test"},
 		Reason:        "test override",
 	}
+	defaultOverrideOutcome(&o)
 	for _, opt := range opts {
 		opt(&o)
 	}
 	return o
+}
+
+// defaultOverrideOutcome sets the status/impact axis Standalone_Override requires,
+// which is type-dependent: operationalRequirement may carry neither, riskAdjustment
+// moves impact only, poam tracks a finding that stays open, and the remaining types
+// neutralize it.
+func defaultOverrideOutcome(o *hdf.StandaloneOverride) {
+	switch o.Type {
+	case hdf.OperationalRequirement:
+		// Schema forbids both axes on this type.
+	case hdf.RiskAdjustment:
+		o.Impact = &hdf.ImpactOverride{Value: 0}
+	case hdf.Poam:
+		s := hdf.Failed
+		o.Status = &s
+	default:
+		s := hdf.Passed
+		o.Status = &s
+	}
 }
 
 // OverrideStatus sets the override's effective status.

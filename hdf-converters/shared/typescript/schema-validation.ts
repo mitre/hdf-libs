@@ -52,7 +52,13 @@ export function loadSchemaValidatorWithResources(
     validate: (v: string) => /^\d{4}-\d{2}-\d{2}[Tt]/.test(v) && registered.validate(v),
   });
   for (const [url, path] of Object.entries(companions)) {
-    ajv.addSchema(JSON.parse(readFileSync(path, 'utf-8')) as object, url);
+    // A companion may predate the main schema's dialect (CSAF $refs the
+    // FIRST.org CVSS schemas, two of which are draft-04): the registration URL
+    // supersedes draft-04's `id`, and its meta-schema is not one ajv carries, so
+    // skip the meta-schema lint of the companion itself.
+    const companion = JSON.parse(readFileSync(path, 'utf-8')) as { id?: string };
+    delete companion.id;
+    ajv.addSchema(companion, url, false, false);
   }
   return ajv.compile(schema);
 }

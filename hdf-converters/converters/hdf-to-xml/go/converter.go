@@ -8,7 +8,18 @@
 // in the output, so the XML never silently lags a schema addition (the previous
 // struct-mirror approach dropped ~30 post-v3.2 fields). The TypeScript converter
 // walks the same normalized JSON in the same order and produces output that is
-// identical after the shared XML golden normalization.
+// identical after the shared XML golden normalization for every shape this
+// repo's fixtures and parity tests cover.
+//
+// Equality after that normalization is NOT guaranteed in general, and the reason
+// is structural rather than a fixed list of cases: this package decodes JSON into an ordered
+// map and formats scalars with strconv, while the peer inherits JSON.parse (which
+// loses duplicate keys and hoists array-index keys before the serializer runs)
+// and V8's string forms for numbers; and encoding/xml here sanitizes every
+// XML-illegal rune to U+FFFD, which the peer's builder does not. Anything landing
+// in those seams can differ. Known instances are tracked as cards under the
+// exporter-conformance epic; assume a shape outside the fixture corpus needs
+// checking against the peer rather than that it is covered.
 package hdftoxml
 
 import (

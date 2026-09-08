@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import { convertHdfToXccdf } from './converter.js';
+import { convertHdfToXccdf, isXccdfGroupId, xccdfGroupId } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -40,15 +40,25 @@ function hdfWithGid(gid: string): string {
 }
 
 // The encoding is implemented twice, so the expectations live in one shared file
-// both languages read. Asserted through the converter rather than against the
-// helper directly, so this also pins that the encoder is actually wired up.
+// both languages read.
 describe('hdf-to-xccdf Group/@id', () => {
   it('has a populated shared table', () => {
     expect(CASES.length, 'an empty table would pass vacuously').toBeGreaterThan(0);
   });
 
+  // Every case, including the empty gid the converter skips before it can reach
+  // the encoder. The Go peer asserts the table against xccdfGroupID directly for
+  // the same reason, so filtering a row here would leave it pinned in one
+  // language only.
+  it.each(CASES.map((c) => [c.gid, c] as const))('encodes %j like the Go peer', (_gid, c) => {
+    expect(xccdfGroupId(c.gid), c.why).toBe(c.id);
+    expect(isXccdfGroupId(c.gid), c.why).toBe(c.passthrough);
+  });
+
+  // Through the converter as well, which pins that the encoder is wired up. The
+  // empty gid is not reachable this way — the caller skips it.
   it.each(CASES.filter((c) => c.gid !== '').map((c) => [c.gid, c] as const))(
-    'encodes %j like the Go peer',
+    'emits %j through the converter',
     (_gid, c) => {
       expect(convertHdfToXccdf(hdfWithGid(c.gid)), c.why).toContain(`id="${c.id}"`);
     },
