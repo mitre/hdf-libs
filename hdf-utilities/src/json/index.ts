@@ -1,3 +1,4 @@
+export { canonicalJson, canonicalChecksum } from './canonical.js';
 export { findValuesByKey as findJsonValues } from '../object/index.js';
 
 /**
