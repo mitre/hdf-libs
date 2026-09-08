@@ -362,11 +362,8 @@ func printVerifySummary(result *amend.VerifyResult) {
 	for _, brk := range result.Chain.Breaks {
 		fmt.Printf("  %s\n", sanitizeOutput(brk))
 	}
-	// Defensive: gojsonschema's messages carry only schema-derived field paths
-	// and enum lists, never document values, so nothing untrusted reaches here
-	// today and no test can exercise the sanitizer on this line. The guard stays
-	// because the validator engine is slated to change (hdf-libs-ov98) and a
-	// different one may quote the offending value.
+	// A schema error's field path can carry document-controlled text: labels is
+	// an open key space, so a bad label KEY lands in the path verbatim.
 	for _, schemaErr := range result.SchemaErrors {
 		fmt.Printf("  %s\n", sanitizeOutput(schemaErr))
 	}

@@ -972,6 +972,27 @@ func TestAmendUntrustedTextIsSanitized(t *testing.T) {
 		assert.NotContains(t, stdout, "\x1b")
 	})
 
+	// The schema-error line carries document-controlled text: `labels` is an open
+	// key space (additionalProperties: {type: string}), so a bad label KEY lands
+	// in the error path verbatim. An earlier version of this test used an enum
+	// violation, where the message quotes only schema-derived values, and so
+	// could never fail.
+	t.Run("schema error paths are stripped", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "labels.json")
+		doc := `{"name":"n","labels":{"evil\u001b[31mRED\u001b[0mkey":123},` +
+			`"overrides":[{"type":"waiver","requirementId":"AC-1","status":"passed","reason":"r",` +
+			`"appliedBy":{"type":"email","identifier":"admin@example.com"},` +
+			`"appliedAt":"2026-03-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", path)
+		require.Error(t, err)
+		assert.Contains(t, stdout, "Invalid type", "the schema error must still be reported")
+		assert.Contains(t, stdout, "RED", "the offending key is still named, just defanged")
+		assert.NotContains(t, stdout, "\x1b")
+	})
+
 	// The results-link line embeds the document's own recorded checksum value.
 	t.Run("the results link message is stripped", func(t *testing.T) {
 		dir := t.TempDir()
