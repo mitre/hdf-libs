@@ -286,3 +286,64 @@ describe('hdf-to-xml Converter', () => {
     });
   });
 });
+
+// A nested array renders as the inner array would on its own. This builder used to
+// double-wrap it (<item><item>x</item></item>) where the Go peer emitted one level.
+describe('hdf-to-xml nested arrays', () => {
+  it('does not wrap a nested array twice', () => {
+    const xml = convertHdfToXml(
+      JSON.stringify({
+        baselines: [
+          {
+            name: 'b',
+            requirements: [
+              {
+                id: 'r',
+                impact: 0,
+                tags: { nested: [['x']] },
+                descriptions: [{ label: 'default', data: 'd' }],
+                results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(xml.replace(/\s+/g, '')).toContain('<nested><item>x</item></nested>');
+  });
+});
+
+// The builder caps nesting depth where the Go peer does not, so a document deep
+// enough to trip it converts in one language and throws in the other. Pinned at
+// the observed boundary so a builder upgrade that moves it is visible rather than
+// silent — moving to the preserveOrder form already shifted it by one level.
+describe('hdf-to-xml nesting depth', () => {
+  const atDepth = (depth: number): string => {
+    let value: unknown = 'x';
+    for (let i = 0; i < depth; i++) value = { n: value };
+    return JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id: 'r',
+              impact: 0,
+              tags: { deep: value },
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    });
+  };
+
+  it('converts at the deepest supported nesting', () => {
+    expect(() => convertHdfToXml(atDepth(93))).not.toThrow();
+  });
+
+  it('throws one level deeper, where the Go peer still succeeds', () => {
+    expect(() => convertHdfToXml(atDepth(94))).toThrow(/nested/i);
+  });
+});
