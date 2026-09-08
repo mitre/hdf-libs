@@ -28,7 +28,6 @@ var productsRegexp = regexp.MustCompile(`(?m)^Products:\s*(.+)$`)
 const (
 	openvexContext   = "https://openvex.dev/ns/v0.2.0"
 	openvexNamespace = "https://openvex.dev/docs/public/"
-	defaultProductID = "HDFPID-0001"
 )
 
 // Document is the OpenVEX top-level document.
@@ -294,8 +293,13 @@ func productsFor(o *hdf.StandaloneOverride) []Product {
 			}
 		}
 	}
+	// Nothing identified the product: no affectedPackages, no componentRef, no
+	// legacy Products: line. OpenVEX types a component @id as an IRI and leaves
+	// statements[].products optional, so the array is omitted. A synthetic id
+	// would satisfy neither — it is not an IRI, and it would assert a product the
+	// source never named.
 	if len(ids) == 0 {
-		ids = []string{defaultProductID}
+		return nil
 	}
 	out := make([]Product, 0, len(ids))
 	for _, id := range ids {

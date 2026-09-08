@@ -11,6 +11,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/vex"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -212,4 +213,46 @@ func TestCorpusGoldenParity(t *testing.T) {
 			require.Equal(t, string(golden), string(out), "golden mismatch for %s", c.Name)
 		})
 	}
+}
+
+// An override carrying no affectedPackages, no componentRef and no legacy
+// Products: line has no product to name. OpenVEX types a component @id as an
+// IRI and makes statements[].products optional, so the array is omitted rather
+// than filled with a synthetic id that would assert a product the source never
+// identified.
+func TestConvertHDFToOpenVEX_OmitsProductsWhenNoneIdentified(t *testing.T) {
+	input := []byte(`{"amendmentId":"a1","name":"n",` +
+		`"overrides":[{"requirementId":"CVE-2021-44228","type":"waiver","status":"passed",` +
+		`"reason":"no product information at all","appliedBy":{"identifier":"admin"},` +
+		`"appliedAt":"2020-01-01T00:00:00Z"}]}`)
+
+	out, err := ConvertHDFToOpenVEX(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc struct {
+		Statements []struct {
+			Products []struct {
+				ID string `json:"@id"`
+			} `json:"products"`
+		} `json:"statements"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.Statements, 1)
+	assert.Empty(t, doc.Statements[0].Products,
+		"a synthetic product id asserts traceability the source never had")
+	assert.NotContains(t, string(out), "HDFPID",
+		"the placeholder is not an IRI and fails the OpenVEX schema")
+}
+
+// The adversarial corpus, adopted with no exemptions. This is the assertion the
+// card asked for and it could not pass while the converter minted a synthetic
+// product id: every MustConvert amendments case failed the OpenVEX schema on
+// products[].@id, which types as an IRI. Exempting those cases was rejected —
+// exempting every case the run has would make the adoption prove nothing.
+func TestConvertHDFToOpenVEX_AdversarialCorpus(t *testing.T) {
+	v := openvexValidator(t)
+
+	shared.RunSchemaCorpus(t, v, shared.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
+		return ConvertHDFToOpenVEX(in, "1.0.0")
+	})
 }
