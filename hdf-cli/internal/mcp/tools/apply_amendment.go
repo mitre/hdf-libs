@@ -78,6 +78,10 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 			return toolError(werr), applyAmendmentOutput{}, nil
 		}
 
+		if terr := refuseUnverifiedAmendments(amendments.Content); terr != nil {
+			return toolError(terr), applyAmendmentOutput{}, nil
+		}
+
 		merged, terr := applyMerge(results.Content, amendments.Content)
 		if terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
@@ -115,6 +119,16 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 	}
 }
 
+// refuseUnverifiedAmendments gates apply on the same verdict `hdf amend verify`
+// returns, so this tool cannot apply a document the CLI refuses to verify.
+func refuseUnverifiedAmendments(amendments []byte) *mcperr.Error {
+	if err := amend.RefuseUnverified(amendments); err != nil {
+		return mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+			WithNextCall("renew the expired amendments, repair the amendment chain, or fix the structural errors named above; there is no flag to apply them as-is")
+	}
+	return nil
+}
+
 // applyMerge runs the shared, deterministic amend.MergeAmendments and funnels
 // its error through the taxonomy (so the handler never checks a bare error and
 // returns nil in the Go-error slot).
@@ -122,7 +136,7 @@ func applyMerge(results, amendments []byte) ([]byte, *mcperr.Error) {
 	merged, err := amend.MergeAmendments(results, amendments)
 	if err != nil {
 		return nil, mcperr.New(mcperr.SchemaInvalid, "applying the amendments failed: "+err.Error(), nil).
-			WithNextCall("verify the amendments target requirement IDs in the results and are not an incomplete draft")
+			WithNextCall("verify the amendments target requirement IDs that exist in the results")
 	}
 	return merged, nil
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -153,7 +154,10 @@ func runAmendCreate(resultsPath, outputPath string) error {
 		return nil
 	}
 
-	amendments := buildAmendmentsFromOverrides(overrides)
+	amendments, err := buildAmendmentsFromOverrides(overrides)
+	if err != nil {
+		return err
+	}
 	return writeAmendmentsOutput(amendments, outputPath, len(overrides), overrides[0].AmendType)
 }
 
@@ -563,7 +567,7 @@ func determineRequirementStatus(req map[string]interface{}) string {
 // --- Document building ---
 
 // buildAmendmentsFromOverrides creates an amendments document from per-requirement overrides.
-func buildAmendmentsFromOverrides(overrides []amendOverride) map[string]interface{} {
+func buildAmendmentsFromOverrides(overrides []amendOverride) (map[string]interface{}, error) {
 	now := time.Now().UTC().Format(time.RFC3339)
 
 	docs := make([]map[string]interface{}, len(overrides))
@@ -589,6 +593,11 @@ func buildAmendmentsFromOverrides(overrides []amendOverride) map[string]interfac
 		}
 		docs[i] = doc
 	}
+	// Every override here is built from strings and numbers, so this cannot
+	// fail; an error would mean the builder above changed shape.
+	if err := amend.ChainOverrides(docs); err != nil {
+		return nil, err
+	}
 
 	// Derive name from most common amendment type
 	typeCounts := make(map[string]int)
@@ -605,7 +614,7 @@ func buildAmendmentsFromOverrides(overrides []amendOverride) map[string]interfac
 	return map[string]interface{}{
 		"name":      fmt.Sprintf("%ss-%s", dominantType, time.Now().Format("2006-01-02")),
 		"overrides": docs,
-	}
+	}, nil
 }
 
 // identityType returns "email" if the string contains @, otherwise "simple".

@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	"github.com/spf13/cobra"
@@ -58,6 +60,13 @@ for you — or an enrichment script — to complete. The document is marked
 "_draft": true and is REFUSED by 'hdf amend apply' until you complete the
 stubs and remove the marker. Complete drafts in bulk programmatically, or load
 one into 'hdf amend create' to finish interactively.
+
+A draft carries no previousChecksum chain, and nothing adds one when you
+complete it: a chain written over stubs that are meant to be edited would be
+stale the moment you filled them in. A completed draft therefore verifies as
+"Chain: not established" -- valid, and appliable, but with no tamper evidence.
+Author through 'hdf amend create --from <spec>' instead if you want the
+finished document chained.
 
 The draft deliberately does NOT copy scan-specific data (such as a finding's
 base CVSS) into the stubs — amendments are reusable org context, merged with
@@ -142,16 +151,33 @@ Examples:
 func newAmendVerifyCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "verify <amendments-file> [results-file]",
-		Short: "Verify amendment validity, expiration, and chain integrity",
-		Long: `Check that all amendments in an amendments file have valid, non-expired dates.
+		Short: "Verify amendment structure, expiration, and chain integrity",
+		Long: `Check an amendments file three ways and exit non-zero if any check fails:
 
-If a results file is also provided, performs full chain verification:
-- Verifies previousChecksum matches the SHA-256 of the results document
-- Checks that all requirementIds reference actual requirements in the results
+- Structure: the document validates against the hdf-amendments schema
+- Expiration: no amendment has passed its expiresAt date
+- Chain: each amendment's previousChecksum still matches the amendment before it
+
+An expired amendment is a failure, not a warning, and there is no flag to make
+one pass. An amendment that has outlived its review date is a suppression with
+no end date; the remedy is to review the finding and issue a new amendment.
+
+Each amendment's checksum is recorded by the NEXT amendment, so the chain check
+detects an amendment edited in place -- provided a later amendment is chained to
+it. It is not tamper-proof. Outside what it can detect: the LAST amendment (no
+successor records it), the document envelope (name, approvedBy, systemRef),
+trailing amendments that were deleted, and a chain that was stripped or
+recomputed wholesale. A document with one amendment, or with no previousChecksum
+at all, is reported as "not established" and gets no protection. Signatures, not
+the chain, are what make an amendment non-repudiable.
+
+If a results file is also provided, two further checks run:
+- The document-level previousChecksum matches the SHA-256 of that results file
+- Every requirementId references a requirement that exists in those results
 
 Examples:
-  hdf amend verify waivers.json                     # Expiration check only
-  hdf amend verify waivers.json results.json         # Full chain verification
+  hdf amend verify waivers.json                      # Structure, expiry, chain
+  hdf amend verify waivers.json results.json         # Also check against results
   hdf amend verify waivers.json results.json --json`,
 		Args: cobra.RangeArgs(1, 2),
 		RunE: runAmendVerify,
@@ -171,6 +197,13 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 
 	if _, typeErr := requireDocumentType(amendmentsData, []string{"amendments"}, "hdf amend apply"); typeErr != nil {
 		return typeErr
+	}
+
+	// The refusal embeds requirementIds and schema-error text taken from the
+	// document, so it goes through the same sanitizer as every other path that
+	// prints untrusted content.
+	if refuseErr := amend.RefuseUnverified(amendmentsData); refuseErr != nil {
+		return errors.New(sanitizeOutput(refuseErr.Error()))
 	}
 
 	merged, err := amend.MergeAmendments(resultsData, amendmentsData)
@@ -279,32 +312,59 @@ func runAmendVerify(_ *cobra.Command, args []string) error {
 		return runAmendVerifyChain(amendData, args[1])
 	}
 
-	// Otherwise, expiration check only
+	// Otherwise: structure, expiry and chain, all scoped to the document itself.
 	result, err := amend.VerifyAmendments(amendData)
 	if err != nil {
 		return err
 	}
 
+	// The verdict is the exit code on BOTH paths. Returning early here because
+	// the body carries the counts would hand a CI author piping to jq the same
+	// false green this command was fixed to stop emitting.
 	if jsonOutput {
 		output, marshalErr := json.MarshalIndent(result, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to serialize verification result: %w", marshalErr)
 		}
 		fmt.Println(string(output))
-		return nil
+	} else {
+		printVerifySummary(result)
 	}
-
-	fmt.Printf("Total amendments: %d\n", result.TotalOverrides)
-	fmt.Printf("Valid:            %d\n", result.ValidOverrides)
-	fmt.Printf("Expired:         %d\n", result.ExpiredCount)
 
 	if result.HasErrors {
-		fmt.Println("\nWarning: Some amendments are expired or invalid.")
-	} else {
-		fmt.Println("\nAll amendments are valid.")
+		return fmt.Errorf("verification failed: %s", sanitizeOutput(result.FailureSummary()))
 	}
 
+	if !jsonOutput {
+		fmt.Println("\nAll amendments are valid.")
+	}
 	return nil
+}
+
+// printVerifySummary renders the counts and the chain verdict. Expired and
+// invalid stay separate lines because they have different remedies: renew the
+// review, versus fix the document.
+func printVerifySummary(result *amend.VerifyResult) {
+	fmt.Printf("Total amendments: %d\n", result.TotalOverrides)
+	fmt.Printf("Valid:            %d\n", result.ValidOverrides)
+	fmt.Printf("Expired:          %d\n", result.ExpiredCount)
+	fmt.Printf("Invalid:          %d\n", result.InvalidCount)
+
+	switch {
+	case !result.Chain.Established:
+		fmt.Printf("Chain:            not established\n")
+	case result.Chain.Valid:
+		fmt.Printf("Chain:            \u2713 verified\n")
+	default:
+		fmt.Printf("Chain:            \u2717 broken\n")
+	}
+
+	for _, brk := range result.Chain.Breaks {
+		fmt.Printf("  %s\n", sanitizeOutput(brk))
+	}
+	for _, schemaErr := range result.SchemaErrors {
+		fmt.Printf("  %s\n", sanitizeOutput(schemaErr))
+	}
 }
 
 func runAmendVerifyChain(amendData []byte, resultsPath string) error {
@@ -318,41 +378,59 @@ func runAmendVerifyChain(amendData []byte, resultsPath string) error {
 		return err
 	}
 
+	exp := result.ExpirationResult
+
 	if jsonOutput {
 		output, marshalErr := json.MarshalIndent(result, "", "  ")
 		if marshalErr != nil {
 			return fmt.Errorf("failed to serialize chain verification: %w", marshalErr)
 		}
 		fmt.Println(string(output))
-		return nil
+		return chainVerdict(result)
 	}
 
-	// Expiration summary
-	exp := result.ExpirationResult
-	fmt.Printf("Expiration: %d/%d valid", exp.ValidOverrides, exp.TotalOverrides)
-	if exp.ExpiredCount > 0 {
-		fmt.Printf(", %d expired", exp.ExpiredCount)
-	}
-	fmt.Println()
+	printVerifySummary(exp)
 
-	// Chain verification
-	if result.ChainValid {
-		fmt.Printf("Chain: \u2713 %s\n", result.ChainMessage)
-	} else {
-		fmt.Printf("Chain: \u2717 %s\n", result.ChainMessage)
+	// Named for the results document, not the amendment chain above it: this is
+	// the link between the amendments file and the results it was authored
+	// against. An absent link gets no tick — a check that did not run must not
+	// read as a check that passed.
+	switch {
+	case !result.ChainEstablished:
+		fmt.Printf("Results link:     not recorded\n")
+	case result.ChainValid:
+		fmt.Printf("Results link:     \u2713 %s\n", sanitizeOutput(result.ChainMessage))
+	default:
+		fmt.Printf("Results link:     \u2717 %s\n", sanitizeOutput(result.ChainMessage))
 	}
 
-	// Missing requirements
 	if len(result.MissingReqIDs) > 0 {
-		fmt.Printf("Missing requirements: %v\n", result.MissingReqIDs)
+		fmt.Printf("Missing requirements: %s\n", sanitizeOutput(strings.Join(result.MissingReqIDs, ", ")))
 	}
 
-	if !result.ChainValid || exp.HasErrors || len(result.MissingReqIDs) > 0 {
-		return fmt.Errorf("verification failed")
+	if err := chainVerdict(result); err != nil {
+		return err
 	}
 
 	fmt.Println("\nAll checks passed.")
 	return nil
+}
+
+// chainVerdict turns a full verification result into the command's exit status,
+// naming every failing dimension.
+func chainVerdict(result *amend.ChainVerifyResult) error {
+	exp := result.ExpirationResult
+	if result.ChainValid && !exp.HasErrors && len(result.MissingReqIDs) == 0 {
+		return nil
+	}
+	reasons := exp.FailureSummary()
+	if !result.ChainValid {
+		reasons = joinReason(reasons, "results link does not match")
+	}
+	if len(result.MissingReqIDs) > 0 {
+		reasons = joinReason(reasons, fmt.Sprintf("%d requirementId(s) missing from the results", len(result.MissingReqIDs)))
+	}
+	return fmt.Errorf("verification failed: %s", sanitizeOutput(reasons))
 }
 
 // truncateToDate extracts the date portion from an RFC3339 timestamp string.
@@ -363,4 +441,12 @@ func truncateToDate(ts string) string {
 		return ts[:10]
 	}
 	return ts
+}
+
+// joinReason appends a reason to a possibly-empty comma-separated list.
+func joinReason(existing, reason string) string {
+	if existing == "" {
+		return reason
+	}
+	return existing + ", " + reason
 }
