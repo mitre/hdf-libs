@@ -1,4 +1,4 @@
-package shared
+package corpus
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -81,7 +82,7 @@ type CorpusCase struct {
 func mustJSON(v any) []byte {
 	b, err := json.Marshal(v)
 	if err != nil {
-		panic("schemacorpus: marshal corpus case: " + err.Error())
+		panic("corpus: marshal corpus case: " + err.Error())
 	}
 	return b
 }
@@ -485,10 +486,18 @@ type CorpusGolden struct {
 	Amendments []CorpusGoldenEntry `json:"amendments"`
 }
 
+// corpusDir is this package's own directory, resolved at runtime so the golden
+// path holds regardless of which package's test is running.
+func corpusDir() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Dir(filename)
+}
+
 // CorpusGoldenPath is the golden's location, resolved from this file so it works
-// regardless of the package under test.
+// regardless of the package under test. The golden lives beside the shared
+// helpers it describes, not beside this package.
 func CorpusGoldenPath() string {
-	return filepath.Join(getSharedDir(), "..", "corpus-golden.json")
+	return filepath.Join(corpusDir(), "..", "..", "shared", "corpus-golden.json")
 }
 
 // BuildCorpusGolden renders the current corpus in golden form.

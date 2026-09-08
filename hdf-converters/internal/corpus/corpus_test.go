@@ -1,4 +1,4 @@
-package shared
+package corpus
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,7 @@ import (
 // hdfSchema resolves a vendored HDF source schema, which the corpus contracts are
 // asserted against so a case's contract can never drift from reality.
 func hdfSchema(name string) string {
-	return filepath.Join(getSharedDir(), "..", "..", "..", "hdf-validators", "go", "schemas", name)
+	return filepath.Join(corpusDir(), "..", "..", "..", "hdf-validators", "go", "schemas", name)
 }
 
 // TestAdversarialCorpus_CoversDocumentedCases pins the corpus contents. A case
@@ -97,7 +98,7 @@ func corpusNames(cases []CorpusCase) []string {
 // cannot express without failing itself.
 
 func TestCheckCase_PanicFailsEveryContract(t *testing.T) {
-	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
+	v := shared.NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
 	panics := func([]byte) ([]byte, error) { panic("boom") }
 
 	// A panic is a crash, not a rejection. MustReject is satisfied by an error, so
@@ -112,7 +113,7 @@ func TestCheckCase_PanicFailsEveryContract(t *testing.T) {
 }
 
 func TestCheckCase_MustConvertContract(t *testing.T) {
-	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
+	v := shared.NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
 	c := CorpusCase{Name: "a", Input: []byte(`{}`), Contract: MustConvert, Why: "probe"}
 
 	t.Run("passes when output satisfies the schema", func(t *testing.T) {
@@ -133,7 +134,7 @@ func TestCheckCase_MustConvertContract(t *testing.T) {
 }
 
 func TestCheckCase_MustRejectContract(t *testing.T) {
-	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
+	v := shared.NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
 	c := CorpusCase{Name: "b", Input: []byte(`[]`), Contract: MustReject, Why: "probe"}
 
 	t.Run("passes when the converter returns an error", func(t *testing.T) {
@@ -160,7 +161,7 @@ func TestCheckCase_MustRejectContract(t *testing.T) {
 // the obligation that catches a converter emitting an out-of-pattern identifier
 // from a requirement with no id.
 func TestCheckCase_MustNotCorruptContract(t *testing.T) {
-	v := NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
+	v := shared.NewSchemaValidator(t, hdfSchema("hdf-results.schema.json"))
 	c := CorpusCase{
 		Name:     "nested",
 		Input:    []byte(`{"baselines":[{"name":"b","requirements":[]}]}`),
@@ -197,7 +198,7 @@ func TestValidateCorpus_RejectsEmptyCorpus(t *testing.T) {
 //
 // The golden is the contract the TypeScript corpus is verified against, so a
 // case added, renamed, reclassified, or altered on one side alone fails here or
-// there. Go owns regeneration (go test ./shared/go/ -update) and TypeScript only
+// there. Go owns regeneration (go test ./internal/corpus/ -update) and TypeScript only
 // verifies, so neither side can quietly redefine the shared corpus to match
 // itself.
 func TestCorpusGolden(t *testing.T) {
@@ -207,16 +208,16 @@ func TestCorpusGolden(t *testing.T) {
 	actual = append(actual, '\n')
 
 	path := CorpusGoldenPath()
-	if updateSnapshots {
+	if shared.UpdateSnapshots() {
 		require.NoError(t, os.WriteFile(path, actual, 0o600))
 		t.Logf("updated %s", path)
 		return
 	}
 
 	expected, err := os.ReadFile(path)
-	require.NoError(t, err, "missing corpus golden; regenerate with: go test ./shared/go/ -update")
+	require.NoError(t, err, "missing corpus golden; regenerate with: go test ./internal/corpus/ -update")
 	require.JSONEq(t, string(expected), string(actual),
-		"corpus changed; if intentional regenerate with: go test ./shared/go/ -update")
+		"corpus changed; if intentional regenerate with: go test ./internal/corpus/ -update")
 }
 
 // TestCanonicalJSON_RemovesLanguageArtifacts pins the two normalisations that
@@ -341,14 +342,14 @@ func TestCorpusContracts_AreDerivableFromTheSchemaAndGuard(t *testing.T) {
 	}{
 		{"hdf-results.schema.json", ResultsCorpus(), func(in []byte) error {
 			var out hdf.HDFResults
-			return RequireHDFResultsTyped(in, "probe", &out)
+			return shared.RequireHDFResultsTyped(in, "probe", &out)
 		}},
 		{"hdf-amendments.schema.json", AmendmentsCorpus(), func(in []byte) error {
 			var out hdf.HDFAmendments
-			return RequireHDFAmendmentsTyped(in, "probe", &out)
+			return shared.RequireHDFAmendmentsTyped(in, "probe", &out)
 		}},
 	} {
-		v := NewSchemaValidator(t, hdfSchema(tc.schema))
+		v := shared.NewSchemaValidator(t, hdfSchema(tc.schema))
 		for _, c := range tc.cases {
 			t.Run(tc.schema+"/"+c.Name, func(t *testing.T) {
 				schemaErr := v.Validate(c.Input)

@@ -90,7 +90,7 @@ describe('adversarial corpus', () => {
   });
 
   // The cross-language contract. Go owns regeneration of the golden
-  // (go test ./shared/go/ -update) and TypeScript only verifies it, so neither
+  // (go test ./internal/corpus/ -update) and TypeScript only verifies it, so neither
   // side can quietly redefine the shared corpus to match itself. Comparing
   // canonicalized inputs — not just case names — means a changed payload, a
   // reclassified case, or a reordered case all fail here.
