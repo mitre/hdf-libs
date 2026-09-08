@@ -209,14 +209,20 @@ jobs:
       # ── Dependency inventory ─────────────────────────────────────────────
       # NOT a gate. An SBOM is inventory, not findings: there is no threshold
       # to apply and no verdict to reach, so this step is in no gate loop and
-      # gate-hdf-scans does not wait on it; a policy over dependencies is the
-      # scanner's job, above. It records what the tree depends on at this
-      # commit, which the release job's SBOMs (what shipped) do not answer.
+      # no gate reads its artifact; a policy over dependencies is the
+      # scanner's job, above. (The scan gate does wait on this JOB, so the
+      # coverage floor below reddens it if an ecosystem goes uninventoried —
+      # that is a self-check on the inventory, not a policy over it.) It
+      # records what the tree depends on at this commit, which the release
+      # job's SBOMs (what shipped) do not answer.
       # Same fixture trap as the scanner: the converter fixtures and the shared
       # corpus are SBOMs and lockfiles by design, so they are excluded rather
       # than inventoried (measured: 44 fixture components otherwise). Build
       # outputs are excluded too: syft reads module info out of Go binaries,
-      # and a tool binary's dependencies are not this tree's.
+      # and a tool binary's dependencies are not this tree's. That pattern also
+      # covers hdf-schema/dist/go, a tracked go.work module whose generated
+      # go.mod carries no requirements; if it ever gains any, narrow the
+      # exclusion or the SBOM will silently omit them.
       - uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           syft-version: ${{ env.SYFT_VERSION }}
