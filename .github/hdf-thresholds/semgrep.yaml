@@ -4,32 +4,35 @@
 # issue than CodeQL's dataflow analysis. Its value is that findings land in the
 # same HDF artifact under the same committed policy as every other scanner.
 #
-# MEASURED BASELINE, not a default. The bounds below are the real finding set
-# on 2026-09-08 against the pinned ruleset — 18 findings, every one listed on
-# hdf-libs-wgvm.16 with a file:line. They have NOT been adjudicated yet; a
-# measured budget makes a NEW rule firing visible while triage happens, the
-# same reasoning as tests.yaml's skip budget. Zero is the target once each is
-# fixed or amended; tighten on the way down, never widen on the way up.
+# ZERO, AFTER ADJUDICATION. The pinned ruleset's first run produced 18
+# findings across 6 rules (2026-09-07, each listed with a file:line on
+# hdf-libs-wgvm.16). Every one was resolved before this bound was set, one of
+# two ways:
+#   - dangerous-exec-command, the one ERROR-severity rule, was FIXED in code:
+#     generate_upgrade.go now execs the path LookPath resolved from a literal
+#     name, the shape the rule recognizes as static. No suppression comment;
+#     the site had carried a #nosec justification that semgrep could not read.
+#   - the other five rules are AMENDED in .github/hdf-amendments/semgrep.json
+#     (four falsePositive, one riskAdjustment), each with the per-site reason
+#     and a review date. The gate applies that file before judging, so those
+#     requirements arrive as notApplicable and the count below is of what is
+#     left: nothing.
 #
-# THE UNIT IS THE RULE, NOT THE FINDING — read this before trusting the bound.
-# semgrep-to-hdf makes one requirement per rule and hangs every match under it
-# as a result, and the threshold counts requirements. So 18 findings across 6
-# rules is failed.total 6, and a SECOND match of a rule that already fires
-# (say a sixth shared-url-struct-mutation) does not move the count and passes.
-# The bound catches a new RULE firing, not a new instance of a known one.
-# Measured: a planted dangerous-exec-command — a rule already present — passed
-# the gate; a planted finding under a silent rule failed it. That limitation
-# closes only at zero, where any match is by definition a new rule: which is
-# the operational reason to adjudicate these rather than sit on the budget.
+# THE UNIT IS THE RULE, NOT THE FINDING. semgrep-to-hdf makes one requirement
+# per rule and hangs every match under it as a result, and the threshold
+# counts requirements. Two consequences, both deliberate:
+#   - An amendment waives a RULE, current and future matches alike, until its
+#     expiry. That is tolerable for the five amended rules only because every
+#     match is structurally a non-issue in this codebase (the reasons in the
+#     amendments file say why, site by site), and it is exactly why
+#     dangerous-exec-command was fixed rather than amended: waiving it would
+#     blind the gate to a new dangerous exec anywhere until the review date.
+#   - At zero, any match is a new rule and fails the gate. Above zero, a
+#     second match of a rule already firing would not move the count
+#     (measured: a planted dangerous-exec-command passed under the earlier
+#     budget of 1). Zero is the only bound at which the count means what it
+#     appears to mean.
 #
-#   failed.high    1   dangerous-exec-command in generate_upgrade.go — ALREADY
-#                      adjudicated in code with a #nosec G204 justification that
-#                      semgrep cannot read. The obvious first amendment.
-#   failed.total   6   rules firing: the one above, plus shared-url-struct-
-#                      mutation (5 matches, the fetchers), go-unsafe-
-#                      deserialization-interface (4, shared/go), detect-non-
-#                      literal-regexp (3), html-in-template-string (3),
-#                      detect-redos (2).
 #   skipped.total  2   semgrep's own partial-parse errors (a `~` in one Go file,
 #                      an inline import type in one TS file) arrive as a
 #                      notReviewed requirement. A NEW parse failure is a rule
@@ -55,10 +58,8 @@
 # OVERLAP WITH EXISTING SCANNERS: none. gosec reports 0 across all 13 modules
 # and eslint carries no security rules, so all 18 are new signal.
 failed:
-    high:
-        max: 1
     total:
-        max: 6
+        max: 0
 skipped:
     total:
         max: 2

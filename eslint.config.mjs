@@ -147,6 +147,9 @@ export default [
       'site/.vitepress/cache/**',
       'site/v*/**',
       'hdf-schema/generated/**',
+      // The semgrep ruleset ci.yml fetches here carries deliberately broken
+      // sample sources; it is gitignored and must not be linted.
+      '.semgrep-rules/**',
     ],
   },
   // `eslint .` also reaches ~15 .js/.mjs/.cjs files outside site/ — this file,

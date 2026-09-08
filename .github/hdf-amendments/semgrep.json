@@ -1,0 +1,81 @@
+{
+  "name": "falsePositives-2026-09-07",
+  "overrides": [
+    {
+      "appliedAt": "2026-09-08T02:57:00Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "reason": "Rule: mutating a *url.URL that may be shared. All five matches (hdf-converters/fetchers/defectdojo/go/defectdojo.go:152, fetchers/sonarqube/go/sonarqube.go:409, :472 and :560, fetchers/splunk/go/splunk.go:250) mutate the URL returned by ValidateAndBuildAPIURL in hdf-converters/fetchers/shared/go/shared.go, which parses its input and returns a freshly allocated url.URL on every call. No other reference to that value exists, so the mutation is local to the caller. Triaged 2026-09-07 by reading the constructor and each call site. Revisit if the shared helper starts caching or returning a package-level URL.",
+      "requirementId": "semgrep-rules.go.lang.security.shared-url-struct-mutation",
+      "status": "notApplicable",
+      "type": "falsePositive"
+    },
+    {
+      "appliedAt": "2026-09-08T02:57:00Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "5e69232be6ba13d85bc0320d3e10e00237c672ad9b061dab73416468356449e7"
+      },
+      "reason": "Rule: json.Unmarshal into interface{}. The four matches (hdf-converters/shared/go/anchor.go:57 CountJSONItemsUnderKey, goldenmask.go:34 MaskVolatileJSON, testing.go:248 RunSnapshotTestsRaw, testing.go:259 normalizeVolatileFields) are test-support helpers that decode this repository's own golden fixtures for structural comparison; two take a *testing.T and the other two are called only from those. They sit in non-_test.go files so that several packages' tests can import them, which is why the *_test.go exclusion does not cover them. No converter or CLI path calls them and no untrusted document reaches them. Triaged 2026-09-07 by listing every caller. Revisit if any of these helpers gains a non-test caller.",
+      "requirementId": "semgrep-rules.go.lang.security.deserialization.go-unsafe-deserialization-interface",
+      "status": "notApplicable",
+      "type": "falsePositive"
+    },
+    {
+      "appliedAt": "2026-09-08T02:57:00Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "4ac233c550eea3b399729b4ef03917c2bc0a78539d3f3a62ea10638fa1403ec3"
+      },
+      "reason": "Rule: angle-bracketed text inside a template literal, taken as HTML assembled from data. None of the three is markup: hdf-converters/shared/typescript/checklist/ckl.ts:93 is an error message naming the iSTIG and VULN XML elements, hdf-schema/src/create-index.ts:72 and site/schema-render.mjs:62 write TypeScript generic types (Readonly\u003cRecord\u003c...\u003e\u003e, Map\u003cstring, ...\u003e) into generated source and documentation text. No result is handed to a browser or an HTML sink. Triaged 2026-09-07. Revisit if the site renderer starts building markup from interpolated values.",
+      "requirementId": "semgrep-rules.javascript.lang.security.html-in-template-string",
+      "status": "notApplicable",
+      "type": "falsePositive"
+    },
+    {
+      "appliedAt": "2026-09-08T02:57:00Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "12ca7fc2dc64c13864e9e6726b10f76ffe5739499e82b7a239f7c5c2cc7a1ba3"
+      },
+      "reason": "Rule: RegExp compiled from a non-literal. hdf-converters/shared/typescript/anchor.ts:24 is countXmlElements, a test-only anchor helper whose every caller passes a literal element name; hdf-schema/src/generate-types.ts:220 is a build script whose field names come from this repository's own schema; hdf-engine/src/safematch.ts:57 is safeGlobMatch, which rejects a glob over 256 bytes and rejects the expanded regex over the same cap before compiling, and returns false on a compile error. Triaged 2026-09-07 by reading every caller. Revisit if a new call site compiles a pattern taken from scanned input.",
+      "requirementId": "semgrep-rules.javascript.lang.security.audit.detect-non-literal-regexp",
+      "status": "notApplicable",
+      "type": "falsePositive"
+    },
+    {
+      "appliedAt": "2026-09-08T02:57:00Z",
+      "appliedBy": {
+        "identifier": "wdower",
+        "type": "username"
+      },
+      "expiresAt": "2026-12-31T23:59:59Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "bb307d9c79b8479838ebdb5aa37a149ee649013055db4b78f23952fc03ba75e9"
+      },
+      "reason": "Rule: regex with overlapping quantifiers. hdf-mappings/scripts/generate-awsconfig-mappings.mjs:178 is a build-time script over AWS's own conformance-pack text, and its repeated group is a parenthesized [^)]* that cannot cross the closing parenthesis, so there is one way to match and nothing to backtrack over. hdf-converters/converters/twistlock-to-hdf/typescript/converter.ts:206 (FIX_VERSION_REGEX, used at :216) does overlap: the trailing character class accepts everything the repeated dot-digits group can, but that same fact means the match succeeds as soon as digits-dot-digits is found and never backtracks into the group; the worst case is a quadratic scan of a status string holding a long digit run with no dot. The input is a Twistlock report the operator chose to convert, already size-capped by validateInputSize. Accepted as low risk, not a false positive. Revisit if the fix-version parsing is rewritten or the input path changes.",
+      "requirementId": "semgrep-rules.javascript.lang.security.audit.detect-redos",
+      "status": "notApplicable",
+      "type": "riskAdjustment"
+    }
+  ]
+}
