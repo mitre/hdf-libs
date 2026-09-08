@@ -84,7 +84,9 @@ Grype/CVE-2021-36159  poam  failed          2027-09-30  libfetch vulnerability i
 $ hdf amend verify cve-poams.json
 Total amendments: 1
 Valid:            1
-Expired:         0
+Expired:          0
+Invalid:          0
+Chain:            not established
 
 All amendments are valid.
 ```
@@ -174,11 +176,15 @@ $ hdf amend draft --from scan-tuesday.json --type poam --select "CVE-2022-48174"
 Wrote draft draft.json with 2 poam stub(s). Complete each stub and remove the "_draft" marker before applying.
 ```
 
-Each stub arrives with `requirementId`, `type`, and `appliedAt` filled in, a human-readable `_label` identifying the finding, and the substantive fields (`reason`, `appliedBy`, `expiresAt`) left blank for you or an enrichment script to complete. The document is marked `"_draft": true`, and `hdf amend apply` refuses it until the stubs are completed and the marker removed:
+Each stub arrives with `requirementId`, `type`, and `appliedAt` filled in, a human-readable `_label` identifying the finding, and the substantive fields (`reason`, `appliedBy`, `expiresAt`) left blank for you or an enrichment script to complete.
+
+::: warning A completed draft carries no amendment chain
+A draft is meant to be edited, so it is not chained: a `previousChecksum` written over stubs would be stale the moment you filled them in. Nothing re-chains on completion either, so a completed draft verifies as `Chain: not established` — valid and appliable, but with no tamper evidence. Author through `hdf amend create --from <spec>` if you want the finished document chained.
+::: The document is marked `"_draft": true`, and `hdf amend apply` refuses it until the stubs are completed and the marker removed:
 
 ```console
 $ hdf amend apply --results scan-tuesday.json --amendments draft.json
-Error: merge failed: amendments document is an incomplete draft: complete the override stubs and remove the "_draft" marker before applying
+Error: amendments document is an incomplete draft: complete the override stubs and remove the "_draft" marker before applying
 ```
 
 ## Expiry and verification
@@ -187,13 +193,25 @@ No amendment is permanent — `expiresAt` is required, and `hdf amend verify` is
 
 ```console
 $ hdf amend verify cve-poams.json scan-monday.json
-Expiration: 1/1 valid
-Chain: ✓ no previousChecksum present (chain not established)
+Total amendments: 1
+Valid:            1
+Expired:          0
+Invalid:          0
+Chain:            not established
+Results link:     not recorded
 
 All checks passed.
 ```
 
-With a results file supplied, verify also confirms that every `requirementId` actually exists in the results and checks the `previousChecksum` chain where one is present (apply stamps a checksum into the merged output; a reusable standing document like this one never carries one itself). Expiry is enforced where it matters — on the read side: compliance rollups and threshold checks recompute effective status and ignore expired overrides, so an expired waiver's finding resurfaces at its raw status even if the stale document is still being merged. Run `hdf amend verify` on your governance directory in CI so the expiry surfaces as a named failure in your pipeline instead of as a silent compliance drop.
+**Verify exits non-zero when any check fails.** An expired amendment is a failure, not a warning, and no flag makes one pass — an amendment that has outlived its review date is a suppression with no end date, and the remedy is to review the finding and issue a new one. Wiring `hdf amend verify` over your governance directory in CI therefore gives you a step that genuinely gates, rather than one that reports and passes.
+
+The three counts are separate because their remedies are: `Expired` means renew the review, `Invalid` means the document does not satisfy the hdf-amendments schema, and a broken `Chain` means an amendment was edited after it was written. With a results file supplied, verify adds two more checks: that every `requirementId` exists in those results, and that any recorded link to the results document matches.
+
+**`hdf amend apply` refuses a document that does not verify** — expired, structurally invalid, or chain-broken — rather than merging it and leaving the read side to compensate. The same gate applies to the `hdf_apply_amendment` MCP tool, so an agent cannot apply what the CLI refuses. Read-side enforcement is still there as defence in depth: compliance rollups and threshold checks recompute effective status and ignore expired overrides.
+
+::: warning Amendments derived from VEX documents can be born expired
+`openvex-to-hdf`, `csaf-vex-to-hdf`, `cyclonedx-vex-to-hdf` and `spdx-vex-to-hdf` set each override's `expiresAt` to the source document's own timestamp plus one year. Convert a VEX document older than that and every override arrives already lapsed, so `hdf amend apply` refuses it. Use `hdf amend create --from-vex <vex> --expires <date>` instead: it derives the same overrides but makes the review horizon a current, explicit decision.
+:::
 
 ## Where to go next
 
