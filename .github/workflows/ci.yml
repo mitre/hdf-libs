@@ -461,12 +461,17 @@ jobs:
       # so the threshold counts effectiveStatus rather than the raw scanner
       # verdict. The finding itself stays in the artifact.
       #
-      # A tool with no amendments file is skipped, and an amendments file that
-      # matches nothing in a document is a clean pass-through (verified: output
-      # byte-identical). So this is a no-op for most tools, most of the time.
-      #
-      # Convention is provisional pending hdf-libs-wgvm.19, which designs
-      # amendment inclusion across every gate.
+      # Convention: one file per tool at .github/hdf-amendments/<tool>.json,
+      # mirroring the threshold file, applied to every document of that tool.
+      # A tool with no file is skipped; a file that matches nothing in a
+      # document changes no status (it still stamps the document-level
+      # previousChecksum), so this is a semantic no-op for most tools, most of
+      # the time. An absent amendment can only make the verdict stricter, since
+      # every committed override is suppressive. An expired, invalid or
+      # chain-broken file fails here: `hdf amend apply` refuses it with the
+      # reason, and there is no flag to tolerate that. Files are produced only
+      # by `hdf amend create` and reviewed as their diff; a hand edit breaks
+      # the chain and is refused the same way.
       - name: Apply committed amendments
         run: |
           shopt -s failglob
