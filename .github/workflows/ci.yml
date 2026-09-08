@@ -38,6 +38,10 @@ env:
   # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves
   # to the v1 line (1.9.2) and silently gives you an older scanner.
   OSV_SCANNER_VERSION: 'v2.5.1'
+  SEMGREP_VERSION: '1.176.1'
+  # semgrep-rules commit the scan uses. Bumping it is how the ruleset
+  # updates; re-measure .github/hdf-thresholds/semgrep.yaml in the same PR.
+  SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
   # The gate's CLI is built from main by the gate-cli job — see the comment
@@ -194,6 +198,71 @@ jobs:
           path: scan-artifacts/
           retention-days: 7
 
+  # ── Scan: static analysis, both languages at once ────────────────────────
+  # semgrep's OSS security rules cover TypeScript and Go in one invocation.
+  # Additive to CodeQL (which stays on default setup and does dataflow this
+  # cannot); the point is that findings reach the same gate as everything else.
+  scan-code:
+    name: Scan code (semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Rules are fetched by pinned commit into a FIXED relative path. semgrep
+      # derives every finding's id from the rule file's path, so the path has to
+      # be identical here and on a developer's machine or amendments cannot
+      # match. A registry ruleset (p/...) would drift with the upstream feed.
+      - name: Fetch the pinned ruleset
+        run: |
+          git init -q .semgrep-rules
+          git -C .semgrep-rules fetch -q --depth 1 https://github.com/semgrep/semgrep-rules.git "$SEMGREP_RULES_SHA"
+          git -C .semgrep-rules checkout -q FETCH_HEAD
+          # A bad SHA or an upstream restructure must fail HERE, not scan nothing.
+          for d in go/lang/security javascript/lang/security typescript/lang/security typescript/react/security; do
+            [ -d ".semgrep-rules/$d" ] || { echo "::error::ruleset dir missing: $d"; exit 1; }
+          done
+      # Exit codes with --error: 0 clean, 1 findings (the gate judges those),
+      # 2 target error, 7 bad config. Only 0 and 1 are tolerated here.
+      #
+      # Exclusions and the two disabled rules are explained in
+      # .github/hdf-thresholds/semgrep.yaml — in short: fixtures are insecure by
+      # design, tests are not shipped, and the two path rules fire on converters
+      # reading their input files, which is the product.
+      - name: semgrep (JSON; findings gate via HDF)
+        run: |
+          pip install --quiet "semgrep==$SEMGREP_VERSION"
+          mkdir -p scan-artifacts
+          rc=0
+          semgrep scan --metrics off --error \
+            --config .semgrep-rules/go/lang/security \
+            --config .semgrep-rules/javascript/lang/security \
+            --config .semgrep-rules/typescript/lang/security \
+            --config .semgrep-rules/typescript/react/security \
+            --exclude fixtures --exclude testdata --exclude hdf-fixtures \
+            --exclude dist --exclude node_modules --exclude .pnpm-store \
+            --exclude coverage --exclude test-results --exclude .semgrep-rules \
+            --exclude '*.test.ts' --exclude '*.test.js' --exclude '*.test.mjs' \
+            --exclude '*_test.go' --exclude test \
+            --exclude-rule semgrep-rules.javascript.lang.security.audit.detect-non-literal-fs-filename \
+            --exclude-rule semgrep-rules.javascript.lang.security.audit.path-traversal.path-join-resolve-traversal \
+            --json --output scan-artifacts/semgrep.json . || rc=$?
+          [ "$rc" -le 1 ] || exit "$rc"
+          # Both languages must actually have been scanned. This is a floor,
+          # not an exact count: it catches a language vanishing (a broken
+          # config path, a parser dropped upstream), not a partial one.
+          go=$(jq '[.paths.scanned[] | select(endswith(".go"))] | length' scan-artifacts/semgrep.json)
+          ts=$(jq '[.paths.scanned[] | select(endswith(".ts"))] | length' scan-artifacts/semgrep.json)
+          echo "scanned: go=$go ts=$ts"
+          [ "$go" -gt 0 ] && [ "$ts" -gt 0 ] \
+            || { echo "::error::semgrep scanned go=$go ts=$ts — a language went unscanned"; exit 1; }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: scan-code
+          path: scan-artifacts/
+          retention-days: 7
+
   # ── Gate: TypeScript checks ──────────────────────────────────────────────
   check-ts:
     name: Check TypeScript (lint + typecheck + audit)
@@ -337,7 +406,7 @@ jobs:
     name: Gate scans on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [gate-cli, scan-workflows, check-ts, check-go, scan-deps]
+    needs: [gate-cli, scan-workflows, check-ts, check-go, scan-deps, scan-code]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -359,7 +428,12 @@ jobs:
       # --from is explicit: auto-detect against a 60-converter registry could
       # mis-fingerprint and yield a valid document with zero findings.
       - name: Normalize every scan to HDF
-        run: hdf convert --from sarif scan-artifacts/*.sarif -o hdf-scans/
+        run: |
+          hdf convert --from sarif scan-artifacts/*.sarif -o hdf-scans/
+          # semgrep is the one scanner not on the SARIF path: its native JSON
+          # keeps CWE, refs and OWASP tags that its SARIF drops, and adds a
+          # scan-coverage requirement carrying the file count actually scanned.
+          hdf convert --from semgrep scan-artifacts/semgrep.json -o hdf-scans/
       # Adjudication, before judgement. A committed amendment records a triaged
       # finding as waived — with its evidence, its author and a review date —
       # so the threshold counts effectiveStatus rather than the raw scanner
@@ -374,7 +448,7 @@ jobs:
       - name: Apply committed amendments
         run: |
           shopt -s failglob
-          for tool in zizmor eslint golangci govulncheck osv-scanner; do
+          for tool in zizmor eslint golangci govulncheck osv-scanner semgrep; do
             amendments=".github/hdf-amendments/$tool.json"
             [ -f "$amendments" ] || continue
             for doc in hdf-scans/$tool*.hdf.json; do
@@ -387,7 +461,7 @@ jobs:
       - name: Apply each tool's threshold policy
         run: |
           shopt -s failglob
-          for tool in zizmor eslint golangci govulncheck osv-scanner; do
+          for tool in zizmor eslint golangci govulncheck osv-scanner semgrep; do
             hdf validate threshold hdf-scans/$tool*.hdf.json -T .github/hdf-thresholds/$tool.yaml
           done
       - name: Upload normalized HDF
