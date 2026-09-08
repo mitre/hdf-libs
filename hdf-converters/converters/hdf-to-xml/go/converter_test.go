@@ -2,11 +2,13 @@ package hdftoxml
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -329,4 +331,80 @@ func TestConvertHDFToXML(t *testing.T) {
 			require.NoError(t, terr)
 		}
 	})
+}
+
+// A nested array renders as the inner array would on its own: the outer array is
+// an object array, so each item recurses. The TypeScript peer double-wrapped this
+// before it moved to the preserveOrder builder.
+func TestConvertHDFToXMLNestedArray(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"r","impact":0,` +
+		`"tags":{"nested":[["x"]]},` +
+		`"descriptions":[{"label":"default","data":"d"}],` +
+		`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`)
+
+	out, err := ConvertHDFToXML(input)
+	require.NoError(t, err)
+	require.NoError(t, xmlWellFormed(out))
+	assert.Contains(t, shared.NormalizeXMLForGolden(string(out)), "<nested><item>x</item></nested>",
+		"a nested array must not gain a wrapper the peer does not emit")
+}
+
+// Element names come from HDF tag keys, which the schema leaves unconstrained,
+// while XML constrains them to Name. Real converter output already carries keys
+// that are not Names — sonarqube-to-hdf emits "sonarqube/hash" and
+// ionchannel-to-hdf emits "ionchannel/trigger" — and Go's encoder writes them
+// through without error, so the serializer silently produced XML no parser can
+// read. Each shape here is taken from this package's converter fixtures.
+func TestConvertHDFToXMLTagKeysAreValidElementNames(t *testing.T) {
+	for _, key := range []string{
+		"sonarqube/hash",
+		"sonarqube/quick_fix_available",
+		"ionchannel/trigger_author",
+	} {
+		t.Run(key, func(t *testing.T) {
+			input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"r","impact":0,` +
+				`"tags":{` + strconv.Quote(key) + `:"v"},` +
+				`"descriptions":[{"label":"default","data":"d"}],` +
+				`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`)
+
+			out, err := ConvertHDFToXML(input)
+			require.NoError(t, err)
+
+			require.NoError(t, xmlWellFormed(out),
+				"a tag key must not produce XML that fails to parse")
+
+			// The exact element the TypeScript peer must also emit, byte for byte.
+			name, _ := xmlElementName(key)
+			assert.Contains(t, string(out),
+				"<"+name+` name="`+key+`">v</`+name+">",
+				"the encoded element must carry the source key")
+		})
+	}
+}
+
+// The TypeScript builder caps nesting depth; this one does not. Pinned here so
+// that half of the parity claim is asserted in the language it is about, rather
+// than only named in the peer's test.
+func TestConvertHDFToXMLDeepNestingHasNoCap(t *testing.T) {
+	var value interface{} = "x"
+	for i := 0; i < 94; i++ {
+		value = map[string]interface{}{"n": value}
+	}
+	deep, err := json.Marshal(map[string]interface{}{
+		"baselines": []interface{}{map[string]interface{}{
+			"name": "b",
+			"requirements": []interface{}{map[string]interface{}{
+				"id": "r", "impact": 0,
+				"tags":         map[string]interface{}{"deep": value},
+				"descriptions": []interface{}{map[string]interface{}{"label": "default", "data": "d"}},
+				"results": []interface{}{map[string]interface{}{
+					"status": "passed", "codeDesc": "c", "startTime": "2020-01-01T00:00:00Z"}},
+			}},
+		}},
+	})
+	require.NoError(t, err)
+
+	out, err := ConvertHDFToXML(deep)
+	require.NoError(t, err, "the TypeScript peer throws at this depth; this one must not")
+	require.NoError(t, xmlWellFormed(out))
 }

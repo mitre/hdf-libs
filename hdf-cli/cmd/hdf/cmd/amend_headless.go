@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
@@ -310,20 +309,15 @@ func applyDefaultStatus(out map[string]interface{}, amendType string) {
 // (name, description, approvedBy, ...) is preserved; name is derived when absent.
 func buildAmendmentsFromSpecs(specs []map[string]interface{}, envelope map[string]interface{}, now time.Time) (map[string]interface{}, error) {
 	overrides := make([]map[string]interface{}, 0, len(specs))
-	var prevChecksum string
 	for i, spec := range specs {
 		ov, err := fattenOverrideSpec(spec, now)
 		if err != nil {
 			return nil, fmt.Errorf("override %d: %w", i, err)
 		}
-		if prevChecksum != "" {
-			ov["previousChecksum"] = map[string]interface{}{
-				"algorithm": "sha256",
-				"value":     prevChecksum,
-			}
-		}
-		prevChecksum = checksumOverride(ov)
 		overrides = append(overrides, ov)
+	}
+	if err := amend.ChainOverrides(overrides); err != nil {
+		return nil, err
 	}
 
 	doc := map[string]interface{}{}
@@ -335,16 +329,6 @@ func buildAmendmentsFromSpecs(specs []map[string]interface{}, envelope map[strin
 	}
 	doc["overrides"] = overrides
 	return doc, nil
-}
-
-// checksumOverride returns the hex SHA-256 of an override's canonical JSON.
-func checksumOverride(ov map[string]interface{}) string {
-	raw, err := json.Marshal(ov)
-	if err != nil {
-		return ""
-	}
-	sum := sha256.Sum256(raw)
-	return hex.EncodeToString(sum[:])
 }
 
 // deriveAmendmentsName builds a default document name from the dominant type.
@@ -380,6 +364,13 @@ func sortedKeys(m map[string]int) []string {
 
 // --- Draft ---
 
+// A draft is deliberately NOT chained. Its stubs are incomplete by design and
+// are meant to be edited, so any previousChecksum written here would be stale
+// the moment someone fills them in — a guaranteed broken chain rather than
+// tamper evidence. Nothing re-chains on completion, so a completed draft
+// carries no chain; `hdf amend create --from` is the route that produces a
+// chained document.
+//
 // runAmendDraft reads a results file, builds a draft amendments document of
 // stubs (one per matching requirement), and writes it. The output is marked
 // _draft and is rejected by `hdf amend apply` until completed.

@@ -311,8 +311,10 @@ func buildRequirement(q Query, startTime time.Time) hdf.EvaluatedRequirement {
 	}
 }
 
-// ConvertKicsToHDF converts native KICS JSON output to HDF.
-func ConvertKicsToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the report.
+// ConvertKicsToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) (*Report, error) {
 	if err := shared.ValidateJSONSize(input, "kics", 0); err != nil {
 		return nil, fmt.Errorf("kics: %w", err)
 	}
@@ -335,13 +337,49 @@ func ConvertKicsToHDF(input []byte, converterVersion string) (*hdf.HDFResults, e
 	if err := json.Unmarshal(input, &report); err != nil {
 		return nil, fmt.Errorf("kics: failed to parse report: %w", err)
 	}
+	return &report, nil
+}
+
+// firedQueries is the single definition of which queries become requirements:
+// only those that matched at least one file.
+func firedQueries(queries []Query) []Query {
+	fired := make([]Query, 0, len(queries))
+	for _, q := range queries {
+		if len(q.Files) > 0 {
+			fired = append(fired, q)
+		}
+	}
+	return fired
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per fired query (or one no-findings requirement when none fired),
+// plus the scan-coverage requirement that every conversion synthesizes.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "fired KICS queries plus the scan-coverage requirement"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := len(firedQueries(report.Queries))
+	if count == 0 {
+		count = 1
+	}
+	return count + 1, unit, nil
+}
+
+// ConvertKicsToHDF converts native KICS JSON output to HDF.
+func ConvertKicsToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	parsed, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+	report := *parsed
 
 	startTime := time.Now().UTC()
-	requirements := make([]hdf.EvaluatedRequirement, 0, len(report.Queries))
-	for _, q := range report.Queries {
-		if len(q.Files) == 0 {
-			continue
-		}
+	fired := firedQueries(report.Queries)
+	requirements := make([]hdf.EvaluatedRequirement, 0, len(fired))
+	for _, q := range fired {
 		requirements = append(requirements, buildRequirement(q, startTime))
 	}
 	if len(requirements) == 0 {

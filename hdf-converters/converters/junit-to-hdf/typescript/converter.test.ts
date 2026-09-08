@@ -591,3 +591,45 @@ describe('junit to HDF converter', async () => {
     });
   });
 });
+
+describe('testsuite-less JUnit (node --test)', () => {
+  // fixtures/input/node-test-{passing,mixed}.xml are real output from
+  // `node --test --test-reporter=junit`, which emits testcases as DIRECT children
+  // of <testsuites> with no <testsuite> wrapper. Only the capture directory was
+  // normalized out of the file= attributes and the stack trace; structure,
+  // attributes, messages and node's own footer comments are exactly as emitted.
+  it('produces one requirement per testcase, not one placeholder', async () => {
+    const hdf = await parseHdf('node-test-passing.xml');
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs).toHaveLength(2);
+    expect(reqs.map((r) => r.id)).not.toContain('junit-no-findings');
+    for (const r of reqs) {
+      expect(r.results[0]!.status).toBe(ResultStatus.Passed);
+    }
+  });
+
+  it('carries the failure and the skip rather than discarding them', async () => {
+    const hdf = await parseHdf('node-test-mixed.xml');
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs).toHaveLength(3);
+
+    const statuses = reqs.map((r) => r.results[0]!.status);
+    expect(statuses.filter((s) => s === ResultStatus.Passed)).toHaveLength(1);
+    expect(statuses.filter((s) => s === ResultStatus.Failed)).toHaveLength(1);
+    expect(statuses.filter((s) => s === ResultStatus.NotReviewed)).toHaveLength(1);
+
+    const failed = reqs.find((r) => r.results[0]!.status === ResultStatus.Failed);
+    expect(failed?.results[0]!.message).toContain('2 !== 3');
+  });
+
+  // A genuinely empty document and a populated testsuite-less one must stay
+  // distinguishable — today they both yielded the same green no-findings document,
+  // which is what let a red run pass.
+  it('still reports no-findings for a genuinely empty document', async () => {
+    const hdf = await parseHdf('empty.xml');
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.id).toBe('junit-no-findings');
+    expect(reqs[0]!.results[0]!.status).toBe(ResultStatus.Passed);
+  });
+});

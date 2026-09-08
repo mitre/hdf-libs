@@ -1,0 +1,79 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: adds two numbers in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: adds two numbers",
+              "runTime": 0.000696,
+              "startTime": "2026-09-07T20:33:57.815687Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.adds two numbers",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "adds two numbers",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: concatenates strings in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: concatenates strings",
+              "runTime": 0.00007,
+              "startTime": "2026-09-07T20:33:57.815687Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.concatenates strings",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "concatenates strings",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "04d4ca2f73981f4140caa73a3cbc3ae7974bce3e3972112a10c9c914008807c4"
+      },
+      "name": "JUnit Test Results"
+    }
+  ],
+  "components": [
+    {
+      "name": "JUnit Test Results",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "junit-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-07T20:33:57.815687Z",
+  "tool": {
+    "name": "JUnit XML"
+  }
+}

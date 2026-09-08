@@ -681,3 +681,36 @@ func TestValidateThreshold_InlineAcceptsEverySeverityField(t *testing.T) {
 		})
 	}
 }
+
+// A gate applies one policy to a directory of documents, so the command must
+// take more than one file — `convert` and `validate` already do. The template
+// is parsed once and applied per file.
+func TestValidateThreshold_AcceptsMultipleFiles(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+	require.NoError(t, os.WriteFile(thresholdFile, []byte("failed:\n  total:\n    max: 5\n"), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, resultsPath, "-T", thresholdFile)
+	assert.NoError(t, err)
+}
+
+// One failing document among several must fail the whole invocation — a gate
+// that passes because most files were fine is not a gate.
+func TestValidateThreshold_MultipleFilesFailIfAnyViolates(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+	require.NoError(t, os.WriteFile(thresholdFile, []byte("failed:\n  total:\n    max: 0\n"), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, resultsPath, "-T", thresholdFile)
+	require.Error(t, err)
+}
+
+// Zero files must be an error, not a vacuous pass: an unmatched shell glob
+// reaching the gate has to fail closed.
+func TestValidateThreshold_RejectsNoFiles(t *testing.T) {
+	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
+	require.NoError(t, os.WriteFile(thresholdFile, []byte("failed:\n  total:\n    max: 0\n"), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", "-T", thresholdFile)
+	require.Error(t, err)
+}

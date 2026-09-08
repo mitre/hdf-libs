@@ -409,8 +409,10 @@ func buildAffectedPackageFromEntry(entry XrayEntry) *hdf.AffectedPackage {
 	})
 }
 
-// ConvertJfrogXrayToHDF converts JFrog Xray JSON output to HDF format.
-func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards, decodes the report and
+// applies the entry cap. ConvertJfrogXrayToHDF and ExpectedRequirementCount
+// share it so they accept and reject exactly the same inputs.
+func parseInput(input []byte) ([]XrayEntry, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("jfrog-xray: empty input")
 	}
@@ -422,10 +424,36 @@ func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	if err := json.Unmarshal(input, &report); err != nil {
 		return nil, fmt.Errorf("jfrog-xray: invalid JSON: %w", err)
 	}
+	return shared.LimitSliceWithWarning(report.Data, 0, "entry"), nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct entry id (a hash of the summary standing in for a
+// missing id) within the entry cap, or one no-findings requirement when there
+// are none. Computed from the input alone, through the same grouping the
+// conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct JFrog Xray entry ids"
+	entries, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	order, _ := groupByID(entries)
+	count := len(order)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertJfrogXrayToHDF converts JFrog Xray JSON output to HDF format.
+func ConvertJfrogXrayToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	limitedEntries, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
 
 	checksum := shared.InputChecksum(input)
-
-	limitedEntries := shared.LimitSliceWithWarning(report.Data, 0, "entry")
 
 	// JFrog Xray output carries no scan-level timestamp (only per-entry `edited`
 	// dates, which mark when each vuln-DB record was last edited, not when the

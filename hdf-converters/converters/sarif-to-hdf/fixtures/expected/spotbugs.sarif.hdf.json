@@ -16,6 +16,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 23,
             "ref": "Boot.java"
@@ -67,6 +68,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 104,
             "ref": "Boot.java"
@@ -113,6 +115,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 210,
             "ref": "Boot.java"
@@ -154,6 +157,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 9,
             "ref": "Log.java"
@@ -195,6 +199,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 13,
             "ref": "Log.java"
@@ -231,6 +236,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 40,
             "ref": "XonoticLexer.java"
@@ -292,6 +298,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 536,
             "ref": "XonoticLexer.java"
@@ -343,6 +350,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 114,
             "ref": "XonoticLexer.java"
@@ -539,6 +547,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 1331,
             "ref": "XonoticParser.java"

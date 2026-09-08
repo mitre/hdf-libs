@@ -274,7 +274,7 @@ hdf amend set /tmp/example-hdf-amendments.json --amendment-id "550e8400-e29b-41d
 
 ```bash
 # Generate from XCCDF benchmark XML (auto-detected)
-hdf generate inspec-profile hdf-generators/test/fixtures/stig-rhel9-benchmark.xml /tmp/example-hdf-profile/
+hdf generate inspec-profile hdf-converters/converters/xccdf-results-to-hdf/fixtures/input/benchmark-minimal-1.2.xml /tmp/example-hdf-profile/
 ls /tmp/example-hdf-profile/controls/ | head -5
 
 # Verify with cinc-auditor

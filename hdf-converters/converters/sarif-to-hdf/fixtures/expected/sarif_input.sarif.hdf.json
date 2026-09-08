@@ -21,6 +21,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 36,
             "ref": "test/test-patched.c"
@@ -80,6 +81,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 60,
             "ref": "test/test-patched.c"
@@ -128,6 +130,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 61,
             "ref": "test/test-patched.c"
@@ -206,6 +209,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 64,
             "ref": "test/test-patched.c"
@@ -264,6 +268,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 77,
             "ref": "test/test-patched.c"
@@ -337,6 +342,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 13,
             "ref": "test/test-patched.c"
@@ -425,6 +431,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 24,
             "ref": "test/test-patched.c"
@@ -473,6 +480,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 27,
             "ref": "test/test-patched.c"
@@ -541,6 +549,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 29,
             "ref": "test/test-patched.c"
@@ -590,6 +599,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 42,
             "ref": "test/test-patched.c"
@@ -638,6 +648,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 53,
             "ref": "test/test-patched.c"
@@ -686,6 +697,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 56,
             "ref": "test/test-patched.c"
@@ -744,6 +756,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 79,
             "ref": "test/test-patched.c"
@@ -792,6 +805,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 95,
             "ref": "test/test-patched.c"
@@ -836,6 +850,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 81,
             "ref": "test/test.c"
@@ -900,6 +915,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 10,
             "ref": "test/no-ending-newline.c"
@@ -969,6 +985,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 54,
             "ref": "test/test-patched.c"
@@ -1017,6 +1034,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 101,
             "ref": "test/test-patched.c"
@@ -1065,6 +1083,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 57,
             "ref": "test/test-patched.c"
@@ -1113,6 +1132,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 58,
             "ref": "test/test-patched.c"
@@ -1161,6 +1181,7 @@
               "status": "failed"
             }
           ],
+          "severity": "low",
           "sourceLocation": {
             "line": 62,
             "ref": "test/test-patched.c"

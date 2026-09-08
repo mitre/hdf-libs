@@ -34,83 +34,27 @@ Designed for CI/CD compliance gates.`,
   # Inline (for CI one-liners)
   hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
   hdf validate threshold results.json -I "{passed.high.min: 20}, {failed.critical.max: 0}"`,
-		Args: cobra.ExactArgs(1),
+		// A gate applies one policy to a directory of documents, so this takes
+		// many files. MinimumNArgs rather than ArbitraryArgs: an unmatched shell
+		// glob must be an error, never a vacuous pass.
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			if templateFile == "" && templateInline == "" {
-				return fmt.Errorf("either --template (-T) or --inline (-I) is required")
-			}
-			if templateFile != "" && templateInline != "" {
-				return fmt.Errorf("--template (-T) and --inline (-I) are mutually exclusive")
+			// The template is the same for every file, so resolve it once.
+			config, cfgErr := resolveThresholdConfig(templateFile, templateInline)
+			if cfgErr != nil {
+				return cfgErr
 			}
 
-			// Read results
-			data, err := readInputFile(args[0])
+			files, err := expandGlobs(args)
 			if err != nil {
 				return err
 			}
-
-			// Parse threshold config from file or inline
-			var config ThresholdConfig
-			if templateFile != "" {
-				templateData, readErr := os.ReadFile(templateFile) //nolint:gosec // user-provided path
-				if readErr != nil {
-					return fmt.Errorf("failed to read threshold template: %w", readErr)
-				}
-				parsed, decodeErr := threshold.Decode(templateData)
-				if decodeErr != nil {
-					return fmt.Errorf("failed to parse threshold YAML: %w", decodeErr)
-				}
-				config = *parsed
-			} else {
-				parsed, parseErr := parseInlineThreshold(templateInline)
-				if parseErr != nil {
-					return parseErr
-				}
-				config = *parsed
+			if len(files) > 1 {
+				return runBulk(files, "threshold validation", "passed thresholds", func(file string) error {
+					return runValidateThresholdFile(file, config)
+				})
 			}
-
-			// A template that asserts nothing passes every document, so reporting
-			// success would be a green gate that checked nothing — the same false
-			// green a misspelled key used to produce.
-			if threshold.AssertionCount(&config) == 0 {
-				return threshold.ErrNoAssertions
-			}
-
-			// Count controls
-			counts, err := countControlsByStatusSeverity(data)
-			if err != nil {
-				return err
-			}
-
-			compliance := hdfengine.CalculateCompliance(counts)
-
-			if !quiet {
-				fmt.Fprintln(os.Stderr, agentOverrideReadout(countAgentOverrides(data)))
-			}
-
-			// Build control ID map for per-control validation
-			controlMap, mapErr := mapControlIDs(data)
-			if mapErr != nil {
-				return mapErr
-			}
-
-			// Validate all thresholds
-			violations := hdfengine.ValidateThresholds(&config, counts, compliance, controlMap)
-			if len(violations) > 0 {
-				for _, v := range violations {
-					fmt.Fprintf(os.Stderr, "FAIL: %s\n", v)
-				}
-				fmt.Fprintf(os.Stderr, "\n%d threshold violation(s)\n", len(violations))
-				return &exitCodeError{
-					code:    1,
-					message: fmt.Sprintf("threshold validation failed: %s", violations[0]),
-				}
-			}
-
-			if !quiet {
-				fmt.Fprintf(os.Stderr, "All thresholds passed\n")
-			}
-			return nil
+			return runValidateThresholdFile(files[0], config)
 		},
 	}
 
@@ -118,6 +62,87 @@ Designed for CI/CD compliance gates.`,
 	cmd.Flags().StringVarP(&templateInline, "inline", "I", "", `Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")`)
 
 	return cmd
+}
+
+// resolveThresholdConfig turns the -T/-I flag pair into a parsed, non-vacuous
+// threshold config. Separated from the per-file work because the policy is the
+// same for every document in a bulk run — parsing it once also means a broken
+// template fails before any file is read.
+func resolveThresholdConfig(templateFile, templateInline string) (*ThresholdConfig, error) {
+	if templateFile == "" && templateInline == "" {
+		return nil, fmt.Errorf("either --template (-T) or --inline (-I) is required")
+	}
+	if templateFile != "" && templateInline != "" {
+		return nil, fmt.Errorf("--template (-T) and --inline (-I) are mutually exclusive")
+	}
+
+	var config ThresholdConfig
+	if templateFile != "" {
+		templateData, readErr := os.ReadFile(templateFile) //nolint:gosec // user-provided path
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read threshold template: %w", readErr)
+		}
+		parsed, decodeErr := threshold.Decode(templateData)
+		if decodeErr != nil {
+			return nil, fmt.Errorf("failed to parse threshold YAML: %w", decodeErr)
+		}
+		config = *parsed
+	} else {
+		parsed, parseErr := parseInlineThreshold(templateInline)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		config = *parsed
+	}
+
+	// A template that asserts nothing passes every document, so reporting
+	// success would be a green gate that checked nothing — the same false
+	// green a misspelled key used to produce.
+	if threshold.AssertionCount(&config) == 0 {
+		return nil, threshold.ErrNoAssertions
+	}
+	return &config, nil
+}
+
+// runValidateThresholdFile applies an already-parsed threshold to one document.
+func runValidateThresholdFile(file string, config *ThresholdConfig) error {
+	data, err := readInputFile(file)
+	if err != nil {
+		return err
+	}
+
+	counts, err := countControlsByStatusSeverity(data)
+	if err != nil {
+		return err
+	}
+
+	compliance := hdfengine.CalculateCompliance(counts)
+
+	if !quiet {
+		fmt.Fprintln(os.Stderr, agentOverrideReadout(countAgentOverrides(data)))
+	}
+
+	controlMap, mapErr := mapControlIDs(data)
+	if mapErr != nil {
+		return mapErr
+	}
+
+	violations := hdfengine.ValidateThresholds(config, counts, compliance, controlMap)
+	if len(violations) > 0 {
+		for _, v := range violations {
+			fmt.Fprintf(os.Stderr, "FAIL: %s\n", v)
+		}
+		fmt.Fprintf(os.Stderr, "\n%d threshold violation(s)\n", len(violations))
+		return &exitCodeError{
+			code:    1,
+			message: fmt.Sprintf("threshold validation failed: %s", violations[0]),
+		}
+	}
+
+	if !quiet {
+		fmt.Fprintf(os.Stderr, "All thresholds passed\n")
+	}
+	return nil
 }
 
 // parseInlineThreshold parses SAF CLI-compatible inline threshold format:

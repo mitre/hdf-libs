@@ -537,8 +537,11 @@ func canonicalizeTimestamps(v interface{}) {
 	}
 }
 
-// ConvertCycloneDXToHDF converts CycloneDX SBOM/VEX JSON to HDF format.
-func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the BOM,
+// rejecting inventories that carry no vulnerabilities. ConvertCycloneDXToHDF
+// and ExpectedRequirementCount share it so they accept and reject exactly the
+// same inputs.
+func parseInput(input []byte) (*CycloneDXBom, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("cyclonedx: empty input")
 	}
@@ -568,6 +571,28 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		return nil, fmt.Errorf("cyclonedx: this file is an SBOM inventory with no vulnerabilities; " +
 			"to import SBOM data into a system document, use:\n" +
 			"  hdf system create <sbom-file> --component-name <name>")
+	}
+	return &bom, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per vulnerabilities[] entry within the size limit, with no dedup.
+// A BOM without vulnerabilities is rejected rather than counted as zero.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "CycloneDX vulnerabilities"
+	bom, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	limited, _ := hdfutil.LimitSlice(bom.Vulnerabilities, 0)
+	return len(limited), unit, nil
+}
+
+// ConvertCycloneDXToHDF converts CycloneDX SBOM/VEX JSON to HDF format.
+func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	bom, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 
 	checksum := shared.InputChecksum(input)

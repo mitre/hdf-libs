@@ -1995,3 +1995,315 @@ func TestConvertSarifToHDF_RequirementCodeNilWhenNoSnippet(t *testing.T) {
 		}
 	}
 }
+
+// --- security-severity (CVSS) impact + severity ---
+
+// sarifWithSecuritySeverity builds a one-rule, one-result SARIF where the rule
+// carries the given security-severity property and the result carries the given
+// level, so precedence between the two can be asserted directly.
+// A nil securitySeverity omits the property entirely; any other value is set as
+// given, so "present but blank" and "absent" are distinguishable.
+func sarifWithSecuritySeverity(t *testing.T, level string, securitySeverity interface{}) []byte {
+	t.Helper()
+	props := map[string]interface{}{}
+	if securitySeverity != nil {
+		props["security-severity"] = securitySeverity
+	}
+	input := map[string]interface{}{
+		"version": "2.1.0",
+		"runs": []map[string]interface{}{{
+			"tool": map[string]interface{}{
+				"driver": map[string]interface{}{
+					"name":    "Test",
+					"version": "1.0",
+					"rules": []map[string]interface{}{{
+						"id":         "TEST",
+						"properties": props,
+					}},
+				},
+			},
+			"results": []map[string]interface{}{{
+				"ruleId":    "TEST",
+				"level":     level,
+				"message":   map[string]string{"text": "test: description"},
+				"locations": []interface{}{},
+			}},
+		}},
+	}
+	b, err := json.Marshal(input)
+	require.NoError(t, err)
+	return b
+}
+
+// fixtures/input/grype.sarif is real grype 0.91.2 output over a public container
+// image, taken verbatim from chainguard-demo/auto-deploy-demo (MIT) at commit
+// cb4f28125158db261775b139b184f283539d7c42, path grype-results.sarif. Every result
+// is level "warning" while the rules carry distinct CVSS scores — the exact shape
+// that collapses to one impact when only level is read.
+func TestConvertSarifToHDF_SecuritySeverityDrivesImpact(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("grype.sarif"))
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	want := map[string]float64{
+		"CVE-2025-12781-python-3.12": 0.63,
+		"CVE-2025-15366-python-3.12": 0.59,
+		"CVE-2025-15367-python-3.12": 0.59,
+		"CVE-2026-2297-python-3.12":  0.57,
+	}
+	seen := map[string]bool{}
+	for _, req := range result.Baselines[0].Requirements {
+		expected, ok := want[req.ID]
+		if !ok {
+			continue
+		}
+		seen[req.ID] = true
+		assert.Equal(t, expected, req.Impact, "%s: impact must come from the rule's CVSS, not its level", req.ID)
+		require.NotNil(t, req.Severity, "%s: severity must be published, not left for consumers to re-derive", req.ID)
+		assert.Equal(t, hdf.SeverityMedium, *req.Severity, "%s", req.ID)
+	}
+	assert.Len(t, seen, len(want), "every CVE rule in the fixture should be asserted")
+}
+
+// severity is a schema field consumers read directly, so level-only SARIF gets one
+// too — the converter records the band rather than leaving consumers to re-derive it.
+func TestConvertSarifToHDF_SeverityPopulatedForLevelOnlySarif(t *testing.T) {
+	for _, tt := range []struct {
+		level  string
+		impact float64
+		want   hdf.Severity
+	}{
+		{"error", 0.7, hdf.SeverityHigh},
+		{"warning", 0.5, hdf.SeverityMedium},
+		{"note", 0.3, hdf.SeverityLow},
+	} {
+		t.Run(tt.level, func(t *testing.T) {
+			result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, tt.level, nil), testConverterVersion)
+			require.NoError(t, err)
+			req := result.Baselines[0].Requirements[0]
+			assert.Equal(t, tt.impact, req.Impact)
+			require.NotNil(t, req.Severity)
+			assert.Equal(t, tt.want, *req.Severity)
+		})
+	}
+}
+
+// An unusable security-severity must not produce a nonsense impact — it falls
+// back to the level mapping it would have used had the property been absent.
+func TestConvertSarifToHDF_MalformedSecuritySeverityFallsBackToLevel(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		value interface{}
+	}{
+		{"non-numeric", "abc"},
+		{"present but empty", ""},
+		{"present but whitespace", "   "},
+		{"negative", "-1"},
+		{"above the CVSS ceiling", "10.1"},
+		{"not a number", "NaN"},
+		{"infinity", "Inf"},
+		// Neither language may accept a literal the other rejects: Go's
+		// strconv.ParseFloat takes hex floats, JavaScript's Number() takes hex and
+		// binary integers. None is a CVSS score, so both reject all three.
+		{"hex integer literal", "0x8"},
+		{"binary integer literal", "0b101"},
+		{"hex float literal", "0x1p3"},
+		// Passes the decimal shape but overflows to infinity when parsed.
+		{"exponent overflow", "1e999"},
+		{"wrong JSON type", map[string]interface{}{"score": 7}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, "error", tt.value), testConverterVersion)
+			require.NoError(t, err)
+			req := result.Baselines[0].Requirements[0]
+			assert.Equal(t, 0.7, req.Impact, "should fall back to level 'error'")
+			require.NotNil(t, req.Severity)
+			assert.Equal(t, hdf.SeverityHigh, *req.Severity)
+		})
+	}
+}
+
+// CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
+// converter's existing zero-impact floor still applies, because a reported
+// finding must never be silently notApplicable.
+func TestConvertSarifToHDF_ZeroSecuritySeverityKeepsTheExistingFloor(t *testing.T) {
+	result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, "error", "0.0"), testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, 0.1, req.Impact, "CVSS 0.0 wins over level, then hits the existing 0.1 floor")
+	require.NotNil(t, req.Severity)
+	assert.Equal(t, hdf.SeverityLow, *req.Severity)
+}
+
+// Producers conventionally emit the score as a string, but a JSON number is
+// valid too — the TS counterpart accepts both, so this side must as well.
+func TestConvertSarifToHDF_SecuritySeverityAcceptsJSONNumber(t *testing.T) {
+	input := map[string]interface{}{
+		"version": "2.1.0",
+		"runs": []map[string]interface{}{{
+			"tool": map[string]interface{}{
+				"driver": map[string]interface{}{
+					"name":    "Test",
+					"version": "1.0",
+					"rules": []map[string]interface{}{{
+						"id":         "TEST",
+						"properties": map[string]interface{}{"security-severity": 9.1},
+					}},
+				},
+			},
+			"results": []map[string]interface{}{{
+				"ruleId":    "TEST",
+				"level":     "warning",
+				"message":   map[string]string{"text": "test: description"},
+				"locations": []interface{}{},
+			}},
+		}},
+	}
+	inputBytes, err := json.Marshal(input)
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputBytes, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, 0.91, req.Impact)
+	require.NotNil(t, req.Severity)
+	assert.Equal(t, hdf.SeverityCritical, *req.Severity)
+}
+
+// --- rules defined on tool.extensions ---
+
+func descriptionByLabel(t *testing.T, req hdf.EvaluatedRequirement, label string) string {
+	t.Helper()
+	for _, d := range req.Descriptions {
+		if d.Label == label {
+			return d.Data
+		}
+	}
+	t.Fatalf("requirement %s has no %q description", req.ID, label)
+	return ""
+}
+
+// fixtures/input/codeql-extensions.sarif is real CodeQL 2.17.4 output taken verbatim
+// from SecureCodeWarrior/github-action-add-sarif-contextual-training (MIT) at commit
+// 5b832744d3228f5fdea93c403514c2457e3485c4, path fixtures/codeql-extension-rules.sarif.
+// Its tool.driver.rules is EMPTY and both rules live on tool.extensions[0].rules —
+// the shape modern CodeQL emits, in which a driver-only rule map resolves nothing.
+func TestConvertSarifToHDF_ResolvesRulesFromExtensions(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("codeql-extensions.sarif"))
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, req := range result.Baselines[0].Requirements {
+		byID[req.ID] = req
+	}
+
+	// Resolving the rule is not the point — what the rule CARRIES is. Assert the
+	// metadata that only an extension-defined rule can supply.
+	pathInj, ok := byID["py/path-injection"]
+	require.True(t, ok, "requirement for py/path-injection should exist")
+	// The rationale description is the rule's fullDescription — nothing but a
+	// resolved rule can supply it, so it proves resolution rather than merely
+	// echoing the result. (Title is a weak witness here: deriveMetadata prefers
+	// rule.Name, and CodeQL sets name equal to the rule id.)
+	rationale := descriptionByLabel(t, pathInj, "rationale")
+	assert.Equal(t, "Accessing paths influenced by users can allow an attacker to access unexpected resources.", rationale,
+		"rationale must come from the extension rule's fullDescription")
+	assert.Equal(t, 0.75, pathInj.Impact, "security-severity 7.5 on the extension rule")
+	require.NotNil(t, pathInj.Severity)
+	assert.Equal(t, hdf.SeverityHigh, *pathInj.Severity)
+	assert.Contains(t, pathInj.Tags["cwe"], "CWE-022", "CWE must be extracted from the extension rule's tags")
+	assert.Equal(t, []string{"SI-10"}, pathInj.Tags["nist"], "NIST controls derive from those CWEs")
+
+	cmdInj, ok := byID["py/command-line-injection"]
+	require.True(t, ok, "requirement for py/command-line-injection should exist")
+	assert.Equal(t, 0.98, cmdInj.Impact, "security-severity 9.8 on the extension rule")
+	require.NotNil(t, cmdInj.Severity)
+	assert.Equal(t, hdf.SeverityCritical, *cmdInj.Severity)
+	assert.Contains(t, cmdInj.Tags["cwe"], "CWE-078")
+}
+
+// SARIF permits the same rule id on the driver and on an extension. The driver is
+// the primary tool component, so it wins; an extension must never silently shadow
+// the tool's own definition. Pinned so map-iteration order can never decide it.
+func TestConvertSarifToHDF_DriverRuleWinsOverExtensionRule(t *testing.T) {
+	input := map[string]interface{}{
+		"version": "2.1.0",
+		"runs": []map[string]interface{}{{
+			"tool": map[string]interface{}{
+				"driver": map[string]interface{}{
+					"name":    "Test",
+					"version": "1.0",
+					"rules": []map[string]interface{}{{
+						"id":               "DUP",
+						"shortDescription": map[string]string{"text": "from the driver"},
+					}},
+				},
+				"extensions": []map[string]interface{}{{
+					"name": "ext",
+					"rules": []map[string]interface{}{{
+						"id":               "DUP",
+						"shortDescription": map[string]string{"text": "from the extension"},
+					}},
+				}},
+			},
+			"results": []map[string]interface{}{{
+				"ruleId":    "DUP",
+				"level":     "warning",
+				"message":   map[string]string{"text": "dup: description"},
+				"locations": []interface{}{},
+			}},
+		}},
+	}
+	inputBytes, err := json.Marshal(input)
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputBytes, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "from the driver", *req.Title)
+}
+
+// The real CodeQL fixture's rules carry no helpUri, so the tag that only a
+// resolved rule can populate is pinned synthetically instead of left unproven.
+func TestConvertSarifToHDF_ExtensionRuleSuppliesHelpURI(t *testing.T) {
+	input := map[string]interface{}{
+		"version": "2.1.0",
+		"runs": []map[string]interface{}{{
+			"tool": map[string]interface{}{
+				"driver": map[string]interface{}{"name": "Test", "version": "1.0"},
+				"extensions": []map[string]interface{}{{
+					"name": "ext",
+					"rules": []map[string]interface{}{{
+						"id":               "EXT-1",
+						"shortDescription": map[string]string{"text": "defined only by the extension"},
+						"helpUri":          "https://example.invalid/rules/EXT-1",
+					}},
+				}},
+			},
+			"results": []map[string]interface{}{{
+				"ruleId":    "EXT-1",
+				"level":     "warning",
+				"message":   map[string]string{"text": "ext: description"},
+				"locations": []interface{}{},
+			}},
+		}},
+	}
+	inputBytes, err := json.Marshal(input)
+	require.NoError(t, err)
+
+	result, err := ConvertSarifToHDF(inputBytes, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "https://example.invalid/rules/EXT-1", req.Tags["helpUri"],
+		"helpUri must populate from a rule defined only on an extension")
+	require.NotNil(t, req.Title)
+	assert.Equal(t, "defined only by the extension", *req.Title)
+}

@@ -16,7 +16,12 @@ import {
   type Milestone,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
-import { validateInputSize, parseHdf, hdfTime } from '../../../shared/typescript/converterutil.js';
+import {
+  validateInputSize,
+  parseHdf,
+  hdfTime,
+  firstNonEmpty,
+} from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   exportStatusFor,
@@ -122,19 +127,20 @@ function overrideToStatement(o: StandaloneOverride, docAuthor: string): Statemen
 
   const notAffected = canonical === VexStatus.NotAffected;
   const justification = notAffected && o.justification ? String(o.justification) : '';
-  const reason = stripProductsLine(o.reason ?? '');
-  const impact = notAffected ? reason : '';
+  // HDF puts no minLength on reason, so a blank one is absent text, not text.
+  const reason = firstNonEmpty(stripProductsLine(o.reason ?? ''));
+  // OpenVEX requires justification OR impact_statement on not_affected, so
+  // rationale text is substituted only when the justification enum is absent.
+  const impact = notAffected
+    ? firstNonEmpty(reason, justification ? '' : noImpactRationaleRecorded(o))
+    : '';
   let action = '';
-  let reasonEmitted = notAffected && impact !== '';
   if (canonical === VexStatus.Fixed) {
-    action = firstMilestoneAction(o) || 'Fix applied; consumer re-scan confirmed clean.';
+    action = firstNonEmpty(firstMilestoneAction(o), 'Fix applied; consumer re-scan confirmed clean.');
   } else if (canonical === VexStatus.Affected) {
-    action = firstMilestoneAction(o);
-    if (!action) {
-      action = reason;
-      reasonEmitted = reason !== '';
-    }
+    action = firstNonEmpty(firstMilestoneAction(o), reason, noRemediationRecorded(o));
   }
+  const reasonEmitted = reason !== '' && (impact === reason || action === reason);
 
   const statusNotes = buildStatusNotes(o, reason, reasonEmitted, docAuthor);
 
@@ -214,11 +220,25 @@ export function productsFor(o: StandaloneOverride): { '@id': string }[] {
   return ids.map((id) => ({ '@id': id }));
 }
 
+/**
+ * States the absence OpenVEX has no other way to express: action_statement is
+ * required on an affected statement, and a source override may carry neither a
+ * milestone nor a reason to fill it.
+ */
+function noRemediationRecorded(o: StandaloneOverride): string {
+  return `No remediation action was recorded for the ${String(o.type)} override applied to ${o.requirementId}.`;
+}
+
+/**
+ * The not_affected peer of noRemediationRecorded, for an override carrying
+ * neither a justification enum nor a reason.
+ */
+function noImpactRationaleRecorded(o: StandaloneOverride): string {
+  return `No impact rationale was recorded for the ${String(o.type)} override applied to ${o.requirementId}.`;
+}
+
 function firstMilestoneAction(o: StandaloneOverride): string {
-  for (const m of o.milestones ?? []) {
-    if (m.description) return m.description;
-  }
-  return '';
+  return firstNonEmpty(...(o.milestones ?? []).map((m) => m.description));
 }
 
 function allMilestonesCompleted(o: StandaloneOverride): boolean {

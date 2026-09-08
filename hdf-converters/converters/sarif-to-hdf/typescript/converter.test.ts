@@ -139,6 +139,27 @@ describe('SARIF Converter', async () => {
       expect(req.results[0].codeDesc).toContain('zero findings');
     });
 
+    // A location with a file but no region is still a location: osv-scanner
+    // reports lockfile findings this way. Go keeps the reference; TS must too.
+    it('keeps the file reference when the region carries no line', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'osv-scanner', version: '2.5.1' } },
+          results: [{
+            ruleId: 'CVE-2026-0001',
+            level: 'error',
+            message: { text: 'vulnerable dependency' },
+            locations: [{ physicalLocation: { artifactLocation: { uri: 'file:///work/pnpm-lock.yaml', index: -1 } } }]
+          }]
+        }]
+      });
+
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.sourceLocation).toEqual({ ref: 'file:///work/pnpm-lock.yaml' });
+    });
+
     it('should handle missing locations', async () => {
       const input = JSON.stringify({
         version: '2.1.0',
@@ -1487,3 +1508,169 @@ async function convertWithLevel(level: string) {
 
   return JSON.parse(await convertSarifToHdf(input));
 }
+
+describe('security-severity (CVSS) impact and severity', () => {
+  // Builds a one-rule, one-result SARIF so precedence between the rule's
+  // security-severity and the result's level can be asserted directly.
+  function sarifWith(level: string, securitySeverity?: unknown): string {
+    const properties: Record<string, unknown> = {};
+    if (securitySeverity !== undefined) properties['security-severity'] = securitySeverity;
+    return JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: { driver: { name: 'Test', version: '1.0', rules: [{ id: 'TEST', properties }] } },
+        results: [{ ruleId: 'TEST', level, message: { text: 'test: description' }, locations: [] }]
+      }]
+    });
+  }
+
+  const firstRequirement = async (input: string) =>
+    JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+
+  // Real grype output: every result is level "warning" while the rules carry
+  // distinct CVSS scores — the shape that collapses when only level is read.
+  it('derives impact from the rule CVSS, not its level', async () => {
+    const result = JSON.parse(await convertSarifToHdf(loadFixture('input', 'grype.sarif')));
+    const byId = new Map<string, { impact: number; severity?: string }>(
+      result.baselines[0].requirements.map((r: { id: string; impact: number; severity?: string }) => [r.id, r])
+    );
+    for (const [id, impact] of [
+      ['CVE-2025-12781-python-3.12', 0.63],
+      ['CVE-2025-15366-python-3.12', 0.59],
+      ['CVE-2025-15367-python-3.12', 0.59],
+      ['CVE-2026-2297-python-3.12', 0.57]
+    ] as Array<[string, number]>) {
+      expect(byId.get(id)?.impact, id).toBe(impact);
+      expect(byId.get(id)?.severity, id).toBe('medium');
+    }
+  });
+
+  it.each([
+    ['error', 0.7, 'high'],
+    ['warning', 0.5, 'medium'],
+    ['note', 0.3, 'low']
+  ])('populates severity for level-only SARIF (%s)', async (level, impact, severity) => {
+    const req = await firstRequirement(sarifWith(level as string));
+    expect(req.impact).toBe(impact);
+    expect(req.severity).toBe(severity);
+  });
+
+  // An unusable score must not produce a nonsense impact — it falls back to the
+  // level mapping it would have used had the property been absent.
+  it.each([
+    ['non-numeric', 'abc'],
+    ['empty', ''],
+    ['blank', '   '],
+    ['negative', '-1'],
+    ['above the CVSS ceiling', '10.1'],
+    ['not a number', 'NaN'],
+    ['infinity', 'Infinity'],
+    // Neither language may accept a literal the other rejects: Number() takes hex
+    // and binary integers, Go's strconv.ParseFloat takes hex floats. None is a
+    // CVSS score, so both reject all three.
+    ['hex integer literal', '0x8'],
+    ['binary integer literal', '0b101'],
+    ['hex float literal', '0x1p3'],
+    // Passes the decimal shape but overflows to infinity when parsed.
+    ['exponent overflow', '1e999'],
+    ['wrong type', { score: 7 }]
+  ])('falls back to level when security-severity is %s', async (_name, value) => {
+    const req = await firstRequirement(sarifWith('error', value));
+    expect(req.impact).toBe(0.7);
+    expect(req.severity).toBe('high');
+  });
+
+  // CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
+  // converter's existing zero-impact floor still applies.
+  it('keeps the existing zero-impact floor for CVSS 0.0', async () => {
+    const req = await firstRequirement(sarifWith('error', '0.0'));
+    expect(req.impact).toBe(0.1);
+    expect(req.severity).toBe('low');
+  });
+
+  it('accepts a JSON number as well as the conventional string', async () => {
+    const req = await firstRequirement(sarifWith('warning', 9.1));
+    expect(req.impact).toBe(0.91);
+    expect(req.severity).toBe('critical');
+  });
+});
+
+describe('rules defined on tool.extensions', () => {
+  // fixtures/input/codeql-extensions.sarif is real CodeQL 2.17.4 output taken
+  // verbatim from SecureCodeWarrior/github-action-add-sarif-contextual-training
+  // (MIT) at commit 5b832744d3228f5fdea93c403514c2457e3485c4, path
+  // fixtures/codeql-extension-rules.sarif. Its tool.driver.rules is EMPTY and both
+  // rules live on tool.extensions[0].rules — the shape modern CodeQL emits, in
+  // which a driver-only rule map resolves nothing.
+  it('resolves extension-defined rules, with everything they carry', async () => {
+    const result = JSON.parse(await convertSarifToHdf(loadFixture('input', 'codeql-extensions.sarif')));
+    const byId = new Map<string, {
+      impact: number; severity?: string;
+      descriptions?: Array<{ label: string; data: string }>;
+      tags: Record<string, unknown>;
+    }>(result.baselines[0].requirements.map((r: { id: string }) => [r.id, r]));
+
+    const pathInj = byId.get('py/path-injection');
+    expect(pathInj).toBeDefined();
+    // The rationale is the rule's fullDescription — only a resolved rule supplies it.
+    expect(pathInj!.descriptions?.find((d) => d.label === 'rationale')?.data)
+      .toBe('Accessing paths influenced by users can allow an attacker to access unexpected resources.');
+    expect(pathInj!.impact).toBe(0.75);
+    expect(pathInj!.severity).toBe('high');
+    expect(pathInj!.tags.cwe).toContain('CWE-022');
+    expect(pathInj!.tags.nist).toEqual(['SI-10']);
+
+    const cmdInj = byId.get('py/command-line-injection');
+    expect(cmdInj).toBeDefined();
+    expect(cmdInj!.impact).toBe(0.98);
+    expect(cmdInj!.severity).toBe('critical');
+    expect(cmdInj!.tags.cwe).toContain('CWE-078');
+  });
+
+  // The real CodeQL fixture's rules carry no helpUri, so the tag that only a
+  // resolved rule can populate is pinned synthetically instead of left unproven.
+  it('populates helpUri from a rule defined only on an extension', async () => {
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {
+          driver: { name: 'Test', version: '1.0' },
+          extensions: [{
+            name: 'ext',
+            rules: [{
+              id: 'EXT-1',
+              shortDescription: { text: 'defined only by the extension' },
+              helpUri: 'https://example.invalid/rules/EXT-1'
+            }]
+          }]
+        },
+        results: [{ ruleId: 'EXT-1', level: 'warning', message: { text: 'ext: description' }, locations: [] }]
+      }]
+    });
+    const req = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(req.tags.helpUri).toBe('https://example.invalid/rules/EXT-1');
+    expect(req.title).toBe('defined only by the extension');
+  });
+
+  // SARIF permits the same rule id on the driver and on an extension. The driver is
+  // the primary tool component, so it wins; an extension must never silently shadow
+  // the tool's own definition.
+  it('prefers the driver rule when an extension defines the same id', async () => {
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {
+          driver: {
+            name: 'Test',
+            version: '1.0',
+            rules: [{ id: 'DUP', shortDescription: { text: 'from the driver' } }]
+          },
+          extensions: [{ name: 'ext', rules: [{ id: 'DUP', shortDescription: { text: 'from the extension' } }] }]
+        },
+        results: [{ ruleId: 'DUP', level: 'warning', message: { text: 'dup: description' }, locations: [] }]
+      }]
+    });
+    const result = JSON.parse(await convertSarifToHdf(input));
+    expect(result.baselines[0].requirements[0].title).toBe('from the driver');
+  });
+});

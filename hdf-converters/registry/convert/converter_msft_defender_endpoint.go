@@ -8,5 +8,6 @@ func init() {
 		"Microsoft Defender for Endpoint to HDF",
 		"msft-defender-endpoint",
 		msftdefenderendpoint.ConvertMsftDefenderEndpointToHDF,
+		WithExpectedRequirementCount(msftdefenderendpoint.ExpectedRequirementCount),
 	)
 }

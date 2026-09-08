@@ -1,0 +1,56 @@
+{
+  "$comment": "Pins Go and TypeScript to one verdict on HDF documents carrying a wrongly-typed field. Go decodes into generated structs, so encoding/json rejects these outright; TypeScript parsed untyped and cast, and `as T` is erased at runtime, so the same bytes converted and the bad value reached the output — as a wrong title, a silently zeroed impact, or a dropped reference. Every document here is invalid HDF; the question the table settles is what a converter does with input the schema rejects. Both languages now validate at the shared guard, so both reject. Cases are a base document plus one mutation, because the mutation is the whole point of the case.",
+  "base": {
+    "name": "p",
+    "generator": { "name": "g", "version": "1" },
+    "baselines": [
+      {
+        "name": "b",
+        "checksum": { "algorithm": "sha256", "value": "abc" },
+        "requirements": [
+          {
+            "id": "SV-1",
+            "title": "T",
+            "impact": 0.5,
+            "tags": {},
+            "descriptions": [{ "label": "default", "data": "d" }],
+            "refs": [{ "url": "http://x" }],
+            "cwe": ["CWE-79"],
+            "results": [
+              { "status": "passed", "codeDesc": "c", "startTime": "2020-01-01T00:00:00Z" }
+            ]
+          }
+        ]
+      }
+    ],
+    "components": [{ "name": "web01", "type": "host" }],
+    "statistics": {}
+  },
+  "cases": [
+    { "name": "unmutated base is valid HDF", "accept": true, "path": [], "value": null },
+
+    { "name": "title as a number", "accept": false, "path": ["baselines", 0, "requirements", 0, "title"], "value": 42,
+      "why": "TypeScript wrote 42 into the CSV Title column" },
+    { "name": "id as a number", "accept": false, "path": ["baselines", 0, "requirements", 0, "id"], "value": 42 },
+    { "name": "baseline name as a number", "accept": false, "path": ["baselines", 0, "name"], "value": 42 },
+    { "name": "component name as a number", "accept": false, "path": ["components", 0, "name"], "value": 42 },
+    { "name": "impact as a string", "accept": false, "path": ["baselines", 0, "requirements", 0, "impact"], "value": "0.5",
+      "why": "the dangerous member: TypeScript emitted impact 0.00 while severity still read medium — a wrong number in a compliance report, not an obviously broken cell" },
+    { "name": "impact as a boolean", "accept": false, "path": ["baselines", 0, "requirements", 0, "impact"], "value": true },
+    { "name": "epss score as a string", "accept": false, "path": ["baselines", 0, "requirements", 0, "epss"], "value": { "score": "0.5" } },
+    { "name": "cvss as a non-array", "accept": false, "path": ["baselines", 0, "requirements", 0, "cvss"], "value": "7.5" },
+    { "name": "refs as a non-array", "accept": false, "path": ["baselines", 0, "requirements", 0, "refs"], "value": "http://x",
+      "why": "TypeScript dropped the reference and emitted an empty References cell" },
+    { "name": "statusOverrides as a non-array", "accept": false, "path": ["baselines", 0, "requirements", 0, "statusOverrides"], "value": "waiver" },
+    { "name": "cwe as a non-array", "accept": false, "path": ["baselines", 0, "requirements", 0, "cwe"], "value": "CWE-79",
+      "why": "the member hdf-to-csv patched locally in .23 because a mixed array made TypeScript invent 'CWE-79; 2; '" },
+    { "name": "cwe array with a non-string entry", "accept": false, "path": ["baselines", 0, "requirements", 0, "cwe"], "value": ["CWE-79", 2],
+      "why": "the mixed array that made hdf-to-csv invent 'CWE-79; 2; '; it is why .23 added a local cweCell patch, which this guard replaces" },
+    { "name": "tags as a non-object", "accept": false, "path": ["baselines", 0, "requirements", 0, "tags"], "value": "a,b" },
+    { "name": "refs[0] as a string", "accept": false, "path": ["baselines", 0, "requirements", 0, "refs"], "value": ["http://x"] },
+    { "name": "result status as a number", "accept": false, "path": ["baselines", 0, "requirements", 0, "results"],
+      "value": [{ "status": 1, "codeDesc": "c", "startTime": "2020-01-01T00:00:00Z" }] },
+    { "name": "expiresAt unparseable", "accept": false, "path": ["baselines", 0, "requirements", 0, "statusOverrides"],
+      "value": [{ "type": "waiver", "reason": "r", "appliedBy": { "type": "username", "identifier": "a" }, "appliedAt": "2020-01-01T00:00:00Z", "expiresAt": "not-a-date" }] }
+  ]
+}

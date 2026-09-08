@@ -501,3 +501,35 @@ describe('XML Utilities', () => {
     });
   });
 });
+
+describe('buildXml preserveOrder node lists', () => {
+  it('emits siblings in list order, including repeated element names', () => {
+    const xml = buildXml(
+      [
+        {
+          root: [
+            { a: [{ '#text': 'first' }], ':@': { '@_name': 'a/b' } },
+            { z: [{ '#text': 'middle' }] },
+            { a: [{ '#text': 'second' }], ':@': { '@_name': 'a b' } },
+          ],
+        },
+      ],
+      { preserveOrder: true, attributeNamePrefix: '@_' },
+    );
+    // Collapse only between tags: a blanket whitespace strip would also eat the
+    // space inside name="a b", which is the point of the case.
+    expect(xml.replace(/>\s+</g, '><').trim()).toBe(
+      '<root><a name="a/b">first</a><z>middle</z><a name="a b">second</a></root>',
+    );
+  });
+});
+
+describe('buildXml array without preserveOrder', () => {
+  it('indexes the array into numeric element names, which is why the JSDoc warns', () => {
+    // Not a desired behaviour — pinned so the hazard the signature now permits is
+    // visible in a test rather than only in a doc comment.
+    expect(buildXml([{ a: [{ '#text': 'x' }] }]).replace(/>\s+</g, '><').trim()).toBe(
+      '<0><a>x</a></0>',
+    );
+  });
+});

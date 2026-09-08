@@ -394,10 +394,10 @@ func alertToRequirement(alert mdeAlert, scanTime time.Time) hdf.EvaluatedRequire
 	return req
 }
 
-// ConvertMsftDefenderEndpointToHDF converts Microsoft Defender for Endpoint alerts
-// (Microsoft Graph Security API v2 format) to HDF format.
-// Each alert becomes one requirement with one result.
-func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the alert
+// response. ConvertMsftDefenderEndpointToHDF and ExpectedRequirementCount
+// share it so they accept and reject exactly the same inputs.
+func parseInput(input []byte) (*mdeAlertResponse, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("msft-defender-endpoint: empty input")
 	}
@@ -412,6 +412,34 @@ func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*h
 
 	if response.Value == nil {
 		return nil, fmt.Errorf("msft-defender-endpoint: missing or invalid value array")
+	}
+	return &response, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per value[] alert within the size limit, or one no-findings
+// requirement when the array is empty.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Defender for Endpoint alerts"
+	response, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	limited, _ := hdfutil.LimitSlice(response.Value, 0)
+	count := len(limited)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertMsftDefenderEndpointToHDF converts Microsoft Defender for Endpoint alerts
+// (Microsoft Graph Security API v2 format) to HDF format.
+// Each alert becomes one requirement with one result.
+func ConvertMsftDefenderEndpointToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	response, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 
 	checksum := shared.InputChecksum(input)

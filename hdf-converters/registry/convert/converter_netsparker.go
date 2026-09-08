@@ -7,5 +7,6 @@ func init() {
 		[]string{"netsparker", "invicti"},
 		"Netsparker/Invicti to HDF", "netsparker",
 		netsparker.ConvertNetsparkerToHDF,
+		WithExpectedRequirementCount(netsparker.ExpectedRequirementCount),
 	)
 }

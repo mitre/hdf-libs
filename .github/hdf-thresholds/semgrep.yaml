@@ -1,0 +1,70 @@
+# Static-analysis policy for semgrep, which scans TypeScript and Go in one
+# invocation with the OSS security rulesets. Additive to CodeQL, not a
+# replacement: semgrep's rules are pattern-based and find a shallower class of
+# issue than CodeQL's dataflow analysis. Its value is that findings land in the
+# same HDF artifact under the same committed policy as every other scanner.
+#
+# ZERO, AFTER ADJUDICATION. The pinned ruleset's first run produced 18
+# findings across 6 rules (2026-09-07, each listed with a file:line on
+# hdf-libs-wgvm.16). Every one was resolved before this bound was set, one of
+# two ways:
+#   - dangerous-exec-command, the one ERROR-severity rule, was FIXED in code:
+#     generate_upgrade.go now execs the path LookPath resolved from a literal
+#     name, the shape the rule recognizes as static. The site's #nosec G204
+#     note stays for gosec, whose rule flags any variable argument (the
+#     profile path is user-supplied by design); semgrep cannot read it and
+#     no longer needs to.
+#   - the other five rules are AMENDED in .github/hdf-amendments/semgrep.json
+#     (four falsePositive, one riskAdjustment), each with the per-site reason
+#     and a review date. The gate applies that file before judging, so those
+#     requirements arrive as notApplicable and the count below is of what is
+#     left: nothing.
+#
+# THE UNIT IS THE RULE, NOT THE FINDING. semgrep-to-hdf makes one requirement
+# per rule and hangs every match under it as a result, and the threshold
+# counts requirements. Two consequences, both deliberate:
+#   - An amendment waives a RULE, current and future matches alike, until its
+#     expiry. That is tolerable for the five amended rules only because every
+#     match is structurally a non-issue in this codebase (the reasons in the
+#     amendments file say why, site by site), and it is exactly why
+#     dangerous-exec-command was fixed rather than amended: waiving it would
+#     blind the gate to a new dangerous exec anywhere until the review date.
+#   - At zero, any match is a new rule and fails the gate. Above zero, a
+#     second match of a rule already firing would not move the count
+#     (measured: a planted dangerous-exec-command passed under the earlier
+#     budget of 1). Zero is the only bound at which the count means what it
+#     appears to mean.
+#
+#   skipped.total  2   semgrep's own partial-parse errors (a `~` in one Go file,
+#                      an inline import type in one TS file) arrive as a
+#                      notReviewed requirement. A NEW parse failure is a rule
+#                      that silently stopped seeing part of the tree, so it is
+#                      budgeted rather than ignored.
+#
+# WHAT IS EXCLUDED FROM THE SCAN, and why — recorded here because a gate that
+# fires on the wrong things gets ignored within a week:
+#   - fixtures/, testdata/, hdf-fixtures/: this corpus is deliberately full of
+#     insecure-looking sample data; that is what it is for.
+#   - *.test.ts, *_test.go, test/: test code is not shipped, and its 10
+#     findings were template strings building expected HTML for assertions.
+#   - two JS rules, detect-non-literal-fs-filename and
+#     path-join-resolve-traversal: 175 of the unfiltered 203 findings, nearly
+#     all in converters READING INPUT FILES — which is the product. Excluding
+#     them is the narrower-ruleset outcome the card anticipated, not a
+#     suppression: they are named in ci.yml with the reason.
+#
+# RULES ARE PINNED BY COMMIT (SEMGREP_RULES_SHA in ci.yml), never pulled from
+# the registry at run time. A ruleset update is a reviewed SHA bump, and if it
+# changes the verdict the bounds above are re-measured in the same change.
+#
+# OVERLAP WITH EXISTING SCANNERS: none. gosec reports 0 across all 13 modules
+# and eslint carries no security rules, so all 18 are new signal.
+failed:
+    total:
+        max: 0
+skipped:
+    total:
+        max: 2
+error:
+    total:
+        max: 0

@@ -3,6 +3,9 @@ package sarif
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,9 +31,12 @@ type SarifRun struct {
 	Taxonomies []SarifTaxonomy `json:"taxonomies,omitempty"`
 }
 
-// SarifTool wraps the driver (and optional extensions).
+// SarifTool wraps the driver and any extensions. Rules may be defined on either:
+// modern CodeQL leaves tool.driver.rules empty and puts every rule on an
+// extension, so a driver-only reader resolves none of them.
 type SarifTool struct {
-	Driver *SarifDriver `json:"driver"`
+	Driver     *SarifDriver  `json:"driver"`
+	Extensions []SarifDriver `json:"extensions,omitempty"`
 }
 
 // SarifDriver describes the analysis tool.
@@ -183,7 +189,8 @@ type ArtifactContent struct {
 // --- Impact mapping ---
 // SARIF uses "error"/"warning"/"note" levels, not standard severity labels.
 // These are used as aliases; unknown levels fall through to 0.0 (then bumped
-// to 0.1 at the call site).
+// to 0.1 at the call site). This table is the FALLBACK — a rule carrying a
+// usable security-severity outranks it; see securitySeverityImpact.
 
 var sarifAliases = map[string]float64{
 	"error":   0.7,
@@ -200,34 +207,11 @@ var sarifAliases = map[string]float64{
 // the input's "version" field. SARIF 2.0 input is normalized to 2.1 structure
 // before processing.
 func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("sarif: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "sarif", 0); err != nil {
-		return nil, fmt.Errorf("sarif: %w", err)
-	}
-
 	resultsChecksum := shared.InputChecksum(input)
 
-	// Determine effective input version from parameter or input
-	effectiveVersion := ""
-	if len(inputVersion) > 0 && inputVersion[0] != "" {
-		effectiveVersion = inputVersion[0]
-	}
-
-	// Normalize SARIF 2.0 → 2.1 structure if needed
-	normalized, err := normalizeSarifVersion(input, effectiveVersion)
+	sarif, err := parseSarif(input, inputVersion...)
 	if err != nil {
 		return nil, err
-	}
-
-	var sarif SarifFile
-	if err := json.Unmarshal(normalized, &sarif); err != nil {
-		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
-	}
-
-	if len(sarif.Runs) == 0 {
-		return nil, fmt.Errorf("invalid SARIF structure: missing or empty runs field")
 	}
 
 	timestamp := time.Now()
@@ -354,30 +338,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	// Build rule lookup by ID
 	ruleMap := buildRuleMap(run)
 
-	// Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
-	// When ruleId is absent, fall back to message text as the grouping key.
-	type resultGroup struct {
-		ruleID  string
-		rule    *ReportingDescriptor
-		results []SarifResult
-	}
-	limitedResults := shared.LimitSliceWithWarning(run.Results, 0, "result")
-	groupOrder := []string{}
-	groupMap := make(map[string]*resultGroup)
-	for _, result := range limitedResults {
-		groupKey := result.RuleID
-		if groupKey == "" {
-			groupKey = resolveMessageText(result.Message, nil)
-		}
-		g, exists := groupMap[groupKey]
-		if !exists {
-			rule := lookupRule(ruleMap, result)
-			g = &resultGroup{ruleID: groupKey, rule: rule}
-			groupMap[groupKey] = g
-			groupOrder = append(groupOrder, groupKey)
-		}
-		g.results = append(g.results, result)
-	}
+	groupOrder, groupMap := groupResults(run, ruleMap)
 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(groupOrder))
 	for _, ruleID := range groupOrder {
@@ -430,9 +391,22 @@ func synthesizeNoFindingsRequirement(run SarifRun, timestamp time.Time) hdf.Eval
 	)
 }
 
+// buildRuleMap indexes every rule a run defines, from the driver and from any
+// extensions. Extensions are seeded first so the driver overwrites them: SARIF
+// permits the same rule id on both, the driver is the primary tool component, and
+// an extension must never silently shadow the tool's own definition. Seeding in a
+// fixed order also keeps the outcome independent of map iteration order.
 func buildRuleMap(run SarifRun) map[string]ReportingDescriptor {
 	ruleMap := make(map[string]ReportingDescriptor)
-	if run.Tool != nil && run.Tool.Driver != nil {
+	if run.Tool == nil {
+		return ruleMap
+	}
+	for _, ext := range run.Tool.Extensions {
+		for _, rule := range ext.Rules {
+			ruleMap[rule.ID] = rule
+		}
+	}
+	if run.Tool.Driver != nil {
 		for _, rule := range run.Tool.Driver.Rules {
 			ruleMap[rule.ID] = rule
 		}
@@ -467,10 +441,23 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	// Use the rule's defaultConfiguration.level, falling back to the first result's level,
 	// then to the SARIF default "warning".
 	ruleLevel := resolveRuleLevel(rule, sarifResults)
-	impact := hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
+	// The rule's security-severity is its CVSS base score and OUTRANKS level:
+	// level is the tool's own triage and several scanners emit one level for
+	// every finding, so preferring it would collapse the CVSS spread that is the
+	// only real severity signal such a document carries. Both are rule-level, so
+	// nothing per-result is discarded. Level remains the fallback.
+	impact, fromCvss := securitySeverityImpact(rule)
+	if !fromCvss {
+		impact = hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
+	}
 	if impact == 0 {
 		impact = 0.1
 	}
+	// severity is a schema field consumers read directly, so the converter records
+	// the band it already knows rather than leaving every consumer to re-derive it.
+	// (The threshold engine is not one of them — it falls back to impact when
+	// severity is absent — so this changes what is published, not what gates.)
+	severity := hdf.Severity(hdfutil.ImpactToSeverity(impact))
 
 	// Source location from first result's first location
 	var sourceLocationPtr *hdf.SourceLocation
@@ -518,6 +505,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		Title:              &title,
 		Descriptions:       descriptions,
 		Impact:             impact,
+		Severity:           &severity,
 		Tags:               tags,
 		Results:            results,
 		Code:               codePtr,
@@ -638,6 +626,50 @@ func packageFromSarifProperties(props map[string]interface{}) *hdf.AffectedPacka
 		CPE:            cpe,
 		FixedInVersion: fixed,
 	})
+}
+
+// decimalScore matches the plain decimal forms a CVSS score is written in. It
+// exists to keep Go and TypeScript agreeing on what parses: strconv.ParseFloat
+// accepts Go's hex-float literals ("0x1p3") while JavaScript's Number() accepts
+// "0x8" and "0b101", so each language would otherwise take a value the other
+// rejects. Neither form is a CVSS score, so both languages reject both.
+var decimalScore = regexp.MustCompile(`^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$`)
+
+// securitySeverityImpact reads the rule's security-severity property — the SARIF
+// convention for carrying a CVSS base score, and what GitHub's own ingestion keys
+// on — and scales it to an HDF impact. Reports false when the property is absent
+// or is not a finite score within 0.0-10.0, so the caller falls back to the level
+// mapping rather than deriving an impact from an unusable value. Producers emit
+// the score as a string; a JSON number is accepted too.
+func securitySeverityImpact(rule *ReportingDescriptor) (float64, bool) {
+	if rule == nil {
+		return 0, false
+	}
+	raw, ok := rule.Properties["security-severity"]
+	if !ok {
+		return 0, false
+	}
+	var score float64
+	switch v := raw.(type) {
+	case string:
+		trimmed := strings.TrimSpace(v)
+		if !decimalScore.MatchString(trimmed) {
+			return 0, false
+		}
+		parsed, err := strconv.ParseFloat(trimmed, 64)
+		if err != nil {
+			return 0, false
+		}
+		score = parsed
+	case float64:
+		score = v
+	default:
+		return 0, false
+	}
+	if math.IsNaN(score) || math.IsInf(score, 0) || score < 0 || score > 10 {
+		return 0, false
+	}
+	return hdfutil.RoundImpact(score / 10), true
 }
 
 // resolveRuleLevel determines the inherent severity level for a rule, independent of
@@ -1126,4 +1158,85 @@ func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp 
 		StartTime: timestamp,
 		Backtrace: backtrace,
 	}
+}
+
+// parseSarif applies the converter's input guards, normalizes SARIF 2.0 to
+// 2.1, and decodes. ConvertSarifToHDF and ExpectedRequirementCount share it so
+// they accept and reject exactly the same inputs.
+func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("sarif: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "sarif", 0); err != nil {
+		return nil, fmt.Errorf("sarif: %w", err)
+	}
+	effectiveVersion := ""
+	if len(inputVersion) > 0 && inputVersion[0] != "" {
+		effectiveVersion = inputVersion[0]
+	}
+	normalized, err := normalizeSarifVersion(input, effectiveVersion)
+	if err != nil {
+		return nil, err
+	}
+	var sarif SarifFile
+	if err := json.Unmarshal(normalized, &sarif); err != nil {
+		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
+	}
+	if len(sarif.Runs) == 0 {
+		return nil, fmt.Errorf("invalid SARIF structure: missing or empty runs field")
+	}
+	return &sarif, nil
+}
+
+// resultGroup is one requirement's worth of SARIF results: every result that
+// shares a ruleId (or, when ruleId is absent, the same message text).
+type resultGroup struct {
+	ruleID  string
+	rule    *ReportingDescriptor
+	results []SarifResult
+}
+
+// groupResults groups a run's results into requirements, in first-seen order.
+// It is the single definition of the input-to-requirement relation: the
+// conversion builds requirements from it and ExpectedRequirementCount counts it.
+func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]string, map[string]*resultGroup) {
+	limitedResults := shared.LimitSliceWithWarning(run.Results, 0, "result")
+	groupOrder := []string{}
+	groupMap := make(map[string]*resultGroup)
+	for _, result := range limitedResults {
+		groupKey := result.RuleID
+		if groupKey == "" {
+			groupKey = resolveMessageText(result.Message, nil)
+		}
+		g, exists := groupMap[groupKey]
+		if !exists {
+			g = &resultGroup{ruleID: groupKey, rule: lookupRule(ruleMap, result)}
+			groupMap[groupKey] = g
+			groupOrder = append(groupOrder, groupKey)
+		}
+		g.results = append(g.results, result)
+	}
+	return groupOrder, groupMap
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct rule in each run (message text standing in for a
+// missing ruleId), and one no-findings requirement for a run with no results.
+// Computed from the input alone, through the same grouping the conversion uses.
+func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string, error) {
+	const unit = "distinct SARIF rules"
+	sarif, err := parseSarif(input, inputVersion...)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for _, run := range shared.LimitSliceWithWarning(sarif.Runs, 0, "run") {
+		order, _ := groupResults(run, buildRuleMap(run))
+		if len(order) == 0 {
+			count++
+			continue
+		}
+		count += len(order)
+	}
+	return count, unit, nil
 }

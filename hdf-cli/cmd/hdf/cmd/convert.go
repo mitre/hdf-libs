@@ -37,7 +37,11 @@ func NewConvertCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if len(files) > 1 {
+			// A gate writes every scan into one directory with a single
+			// command, and whether that matched one file or twelve is an
+			// accident of how many scanners ran — so -o <dir> routes through
+			// the same directory logic at either arity.
+			if len(files) > 1 || isDirectoryOutput(outputPath) {
 				return runConvertBulk(cmd, files, fromFormat, toFormat, outputPath)
 			}
 			return runConvert(cmd, args, fromFormat, toFormat, outputPath)
@@ -233,7 +237,7 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	}
 
 	// Run conversion with version handling
-	output, err := runVersionedConvert(converter, data, fromVersion, toVersion)
+	output, err := runVersionedConvert(converter, data, fromVersion, toVersion, inputPath)
 	if err != nil {
 		return err
 	}
@@ -335,7 +339,7 @@ func normalizeLegacyHDFInput(data []byte, fromFormat, fromVersion, toFormat stri
 
 // runVersionedConvert passes version specifiers to the converter and runs
 // the conversion with optional post-processing for output version downgrades.
-func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersion string) ([]byte, error) {
+func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersion, inputPath string) ([]byte, error) {
 	// Pass input version to versioned converters
 	if fromVersion != "" {
 		if vc, ok := converter.(VersionedConverter); ok {
@@ -356,6 +360,15 @@ func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersio
 		return nil, fmt.Errorf("conversion failed: %w", err)
 	}
 	printDebug("Conversion produced %d bytes", len(output))
+
+	// Count fidelity: a converter that declares how many requirements its input
+	// must yield is held to it on the document it produced, before a version
+	// downgrade or anything else reshapes it.
+	if ex, ok := converter.(RequirementCountExpecter); ok {
+		if err := checkRequirementFidelity(ex, data, output, inputPath); err != nil {
+			return nil, err
+		}
+	}
 
 	// Post-process: downgrade HDF version if --to hdf@N was specified
 	// (only for non-HDF→HDF converters; the hdf→hdf converter handles it internally)

@@ -7,7 +7,7 @@ func TestGosecConverter(t *testing.T) {
 		Source:         "gosec",
 		DisplayName:    "gosec to HDF",
 		FixtureDir:     "gosec-to-hdf",
-		MinimalFixture: "input/minimal.json",
+		MinimalFixture: "input/real.json",
 		ErrPrefix:      "gosec conversion failed",
 	})
 }

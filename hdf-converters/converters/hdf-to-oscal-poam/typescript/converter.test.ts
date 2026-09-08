@@ -19,7 +19,9 @@ describe('convertHdfToOscalPoam', () => {
   });
 
   it('should reject invalid JSON', async () => {
-    await expect(convertHdfToOscalPoam('{not json')).rejects.toThrow('failed to parse JSON');
+    // main's shared guard is the incumbent and words this 'Invalid JSON'; the
+    // recovered test carried the branch guard's wording.
+    await expect(convertHdfToOscalPoam('{not json')).rejects.toThrow('Invalid JSON');
   });
 
   it('should convert minimal amendments', async () => {

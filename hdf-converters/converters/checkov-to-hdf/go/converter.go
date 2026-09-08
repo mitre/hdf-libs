@@ -163,6 +163,22 @@ func groupByCheckID(checks []checkWithType) ([]string, map[string][]checkWithTyp
 	return order, groups
 }
 
+// groupChecks merges the passed, failed and skipped checks of every framework
+// report, caps them, and groups them by check_id. It is the single definition
+// of the input-to-requirement relation: the conversion builds requirements
+// from it and ExpectedRequirementCount counts it.
+func groupChecks(reports []CheckovReport) ([]string, map[string][]checkWithType) {
+	var allChecks []checkWithType
+	for _, report := range reports {
+		for _, group := range [][]CheckovCheck{report.Results.PassedChecks, report.Results.FailedChecks, report.Results.SkippedChecks} {
+			for _, check := range group {
+				allChecks = append(allChecks, checkWithType{check: check, checkType: report.CheckType})
+			}
+		}
+	}
+	return groupByCheckID(shared.LimitSliceWithWarning(allChecks, 0, "check"))
+}
+
 // checkTypesOf collects the unique, sorted check_types of a group.
 func checkTypesOf(checks []checkWithType) []string {
 	seen := map[string]bool{}
@@ -276,39 +292,23 @@ func parseInput(input []byte) ([]CheckovReport, error) {
 // Accepts native checkov JSON (single object or array) and SARIF format.
 // SARIF input is detected automatically and delegated to the shared SARIF converter.
 func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("checkov: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "checkov", 0); err != nil {
-		return nil, fmt.Errorf("checkov: %w", err)
-	}
-
-	// Detect SARIF format and delegate
-	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
-		return sarif.ConvertSarifToHDF(input, converterVersion)
-	}
-
-	reports, err := parseInput(input)
+	reports, isSarif, err := parseReports(input)
 	if err != nil {
-		return nil, fmt.Errorf("checkov: %w", err)
+		return nil, err
+	}
+	if isSarif {
+		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 
 	checksum := shared.InputChecksum(input)
 
-	// Merge all checks from all frameworks
-	var allChecks []checkWithType
+	// Scan-level metadata across all frameworks
 	var checkTypes []string
 	var version string
-
 	for _, report := range reports {
 		checkTypes = append(checkTypes, report.CheckType)
 		if version == "" && report.Summary.CheckovVersion != "" {
 			version = report.Summary.CheckovVersion
-		}
-		for _, group := range [][]CheckovCheck{report.Results.PassedChecks, report.Results.FailedChecks, report.Results.SkippedChecks} {
-			for _, check := range group {
-				allChecks = append(allChecks, checkWithType{check: check, checkType: report.CheckType})
-			}
 		}
 	}
 
@@ -316,8 +316,7 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	// for every result's StartTime, the no-findings placeholder, and the doc Timestamp.
 	now := time.Now().UTC()
 
-	limitedChecks := shared.LimitSliceWithWarning(allChecks, 0, "check")
-	order, groups := groupByCheckID(limitedChecks)
+	order, groups := groupChecks(reports)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, checkID := range order {
 		requirements[i] = buildRequirement(checkID, groups[checkID], now)
@@ -355,4 +354,45 @@ func ConvertCheckovToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Timestamp:        &now,
 	}), nil
+}
+
+// parseReports applies the converter's input guards and decodes the report or
+// report array. isSarif reports a SARIF-shaped input, which the converter
+// delegates. ConvertCheckovToHDF and ExpectedRequirementCount share it so they
+// accept and reject exactly the same inputs.
+func parseReports(input []byte) (reports []CheckovReport, isSarif bool, err error) {
+	if len(input) == 0 {
+		return nil, false, fmt.Errorf("checkov: empty input")
+	}
+	if sizeErr := shared.ValidateJSONSize(input, "checkov", 0); sizeErr != nil {
+		return nil, false, fmt.Errorf("checkov: %w", sizeErr)
+	}
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+		return nil, true, nil
+	}
+	reports, err = parseInput(input)
+	if err != nil {
+		return nil, false, fmt.Errorf("checkov: %w", err)
+	}
+	return reports, false, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct check_id across every framework report, or one
+// no-findings requirement when no report carries a check. SARIF-shaped input
+// defers to the SARIF converter's own relation, as the conversion does.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct Checkov check ids"
+	reports, isSarif, err := parseReports(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	if isSarif {
+		return sarif.ExpectedRequirementCount(input)
+	}
+	order, _ := groupChecks(reports)
+	if len(order) == 0 {
+		return 1, unit, nil
+	}
+	return len(order), unit, nil
 }

@@ -13,25 +13,28 @@ import (
 
 // converterFixturePath returns the absolute path to a fixture file for a named converter.
 // converterDirName is the directory name under hdf-converters/converters/ (e.g. "sarif-to-hdf").
-// The test is skipped if the fixture file does not exist.
+// Converter fixtures are tracked in this repository, so an absent one means the test
+// is pointed at the wrong path — failing keeps that visible instead of turning it
+// into a permanently green test that never runs.
 func converterFixturePath(t *testing.T, converterDirName, name string) string {
 	t.Helper()
 	path := filepath.Join(shared.GetConvertersDir(), converterDirName, "fixtures", name)
 	path = filepath.Clean(path)
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		t.Skipf("Fixture not found: %s", path)
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("converter fixture not found: %s (%v)", path, err)
 	}
 	return path
 }
 
 // bomFixturePath returns the absolute path to a file in the shared
-// bom-fixtures corpus (real CycloneDX/SPDX/ML BOM documents). The test is
-// skipped if the fixture file does not exist.
+// bom-fixtures corpus (real CycloneDX/SPDX/ML BOM documents). That corpus is
+// tracked, so a missing entry is a broken test path rather than an optional
+// download.
 func bomFixturePath(t *testing.T, name string) string {
 	t.Helper()
 	path := filepath.Clean(filepath.Join(shared.GetBOMFixturesDir(), name))
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		t.Skipf("Fixture not found: %s", path)
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("BOM fixture not found: %s (%v)", path, err)
 	}
 	return path
 }

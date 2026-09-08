@@ -256,24 +256,13 @@ const sonarTimestampFormat = "2006-01-02T15:04:05-0700"
 
 // ConvertSonarqubeToHDF converts SonarQube issues JSON to HDF format
 func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("sonarqube: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "sonarqube", 0); err != nil {
-		return nil, fmt.Errorf("sonarqube: %w", err)
+	sonarData, err := parseIssues(input)
+	if err != nil {
+		return nil, err
 	}
 
 	// Calculate checksum of source scan data
 	resultsChecksum := shared.InputChecksum(input)
-
-	var sonarData IssuesResponse
-	if err := json.Unmarshal(input, &sonarData); err != nil {
-		return nil, fmt.Errorf("invalid SonarQube JSON: %w", err)
-	}
-
-	if sonarData.Issues == nil {
-		return nil, fmt.Errorf("invalid SonarQube structure: missing or invalid issues field")
-	}
 
 	// Create lookup maps for components and rules
 	componentMap := make(map[string]Component)
@@ -286,20 +275,7 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		ruleMap[rule.Key] = rule
 	}
 
-	// Group issues by project
-	limitedIssues := shared.LimitSliceWithWarning(sonarData.Issues, 0, "issue")
-	issuesByProject := make(map[string][]Issue)
-	for _, issue := range limitedIssues {
-		projectKey := issue.Project
-		issuesByProject[projectKey] = append(issuesByProject[projectKey], issue)
-	}
-
-	// Sorted project keys keep baselines and targets in a stable order across runs.
-	projectKeys := make([]string, 0, len(issuesByProject))
-	for projectKey := range issuesByProject {
-		projectKeys = append(projectKeys, projectKey)
-	}
-	sort.Strings(projectKeys)
+	projectKeys, issuesByProject := groupByProject(sonarData.Issues)
 
 	// Convert each project to a baseline
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(issuesByProject))
@@ -348,6 +324,83 @@ func ConvertSonarqubeToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	}), nil
 }
 
+// parseIssues applies the converter's input guards and decodes the issues
+// response, rejecting one without an issues array. ConvertSonarqubeToHDF and
+// ExpectedRequirementCount share it so they accept and reject exactly the
+// same inputs.
+func parseIssues(input []byte) (*IssuesResponse, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("sonarqube: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "sonarqube", 0); err != nil {
+		return nil, fmt.Errorf("sonarqube: %w", err)
+	}
+	var sonarData IssuesResponse
+	if err := json.Unmarshal(input, &sonarData); err != nil {
+		return nil, fmt.Errorf("invalid SonarQube JSON: %w", err)
+	}
+	if sonarData.Issues == nil {
+		return nil, fmt.Errorf("invalid SonarQube structure: missing or invalid issues field")
+	}
+	return &sonarData, nil
+}
+
+// groupByProject caps the issues and groups them by project key, returning
+// the keys sorted so baselines and targets land in a stable order across
+// runs. Together with groupByRule it is the single definition of the
+// input-to-requirement relation shared by the conversion and
+// ExpectedRequirementCount.
+func groupByProject(issues []Issue) ([]string, map[string][]Issue) {
+	issuesByProject := make(map[string][]Issue)
+	for _, issue := range shared.LimitSliceWithWarning(issues, 0, "issue") {
+		issuesByProject[issue.Project] = append(issuesByProject[issue.Project], issue)
+	}
+	projectKeys := make([]string, 0, len(issuesByProject))
+	for projectKey := range issuesByProject {
+		projectKeys = append(projectKeys, projectKey)
+	}
+	sort.Strings(projectKeys)
+	return projectKeys, issuesByProject
+}
+
+// groupByRule groups one project's issues by rule key, returning the keys
+// sorted — ranging a map directly would emit requirements in a random order
+// each run.
+func groupByRule(issues []Issue) ([]string, map[string][]Issue) {
+	issuesByRule := make(map[string][]Issue)
+	for _, issue := range issues {
+		issuesByRule[issue.Rule] = append(issuesByRule[issue.Rule], issue)
+	}
+	ruleKeys := make([]string, 0, len(issuesByRule))
+	for ruleKey := range issuesByRule {
+		ruleKeys = append(ruleKeys, ruleKey)
+	}
+	sort.Strings(ruleKeys)
+	return ruleKeys, issuesByRule
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct (project, rule) pair, or one no-findings requirement
+// when the issues array is empty. Computed from the input alone, through the
+// same grouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct SonarQube rules per project"
+	sonarData, err := parseIssues(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	projectKeys, issuesByProject := groupByProject(sonarData.Issues)
+	if len(projectKeys) == 0 {
+		return 1, unit, nil
+	}
+	count := 0
+	for _, projectKey := range projectKeys {
+		ruleKeys, _ := groupByRule(issuesByProject[projectKey])
+		count += len(ruleKeys)
+	}
+	return count, unit, nil
+}
+
 func deriveEmptyScanTarget(components []Component) string {
 	for _, c := range components {
 		if c.Qualifier == "TRK" {
@@ -367,20 +420,7 @@ func convertProjectToBaseline(
 	ruleMap map[string]Rule,
 	resultsChecksum *hdf.Checksum,
 ) hdf.EvaluatedBaseline {
-	// Group issues by rule
-	issuesByRule := make(map[string][]Issue)
-	for _, issue := range issues {
-		ruleKey := issue.Rule
-		issuesByRule[ruleKey] = append(issuesByRule[ruleKey], issue)
-	}
-
-	// Convert each rule to a requirement. Iterate rule keys in sorted order —
-	// ranging a map directly would emit requirements in a random order each run.
-	ruleKeys := make([]string, 0, len(issuesByRule))
-	for ruleKey := range issuesByRule {
-		ruleKeys = append(ruleKeys, ruleKey)
-	}
-	sort.Strings(ruleKeys)
+	ruleKeys, issuesByRule := groupByRule(issues)
 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(issuesByRule))
 	for _, ruleKey := range ruleKeys {

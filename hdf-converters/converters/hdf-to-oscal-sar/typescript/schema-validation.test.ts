@@ -6,6 +6,7 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { results } from '@mitre/hdf-fixtures';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
+import { resultsCorpus, runSchemaCorpus, jsonDocumentValidator } from '../../../shared/typescript/schema-corpus.js';
 import { convertHdfToOscalSar } from './converter.js';
 import { oscalToken, nistTagToControlId } from '../../oscal-to-hdf/typescript/shared.js';
 
@@ -256,5 +257,215 @@ describe('hdf-to-oscal-sar encodes non-token requirement ids', () => {
     expect(oscalToken(nistTagToControlId('3.1.1/AC-2:enh'))).toBe(f.target['target-id']);
     const sourceId = (f.props ?? []).find((p) => p.name === 'hdf-requirement-id')?.value;
     expect(sourceId).toBe('3.1.1/AC-2:enh');
+  });
+});
+describe('hdf-to-oscal-sar empty-assessment handling', () => {
+  // The converter-specific constraint the shared guard cannot express: the guard
+  // checks top-level shape, not the full HDF schema, and it accepts an empty
+  // baselines array because hdf-results puts no minItems on it. OSCAL requires
+  // results with minItems 1. Whether the HDF schema should carry that constraint
+  // too is an open question.
+  it('rejects an assessment with no evaluated baselines', async () => {
+    await expect(convertHdfToOscalSar('{"baselines":[]}')).rejects.toThrow(/at least one result/);
+  });
+
+  // Pins the omitempty alignment between the two languages. OSCAL puts minItems 1
+  // on a result's findings, observations and risks, so an empty array is invalid
+  // where absence is fine. TypeScript emitted [] for all three where Go omits
+  // them, which made a baseline whose requirements produce no risks fail the
+  // schema on one side only.
+  // Unlike the risks case this is NOT reachable from schema-valid HDF —
+  // Evaluated_Requirement requires results with minItems 1 — so the input below
+  // is deliberately schema-invalid and the branch is defence-in-depth: the shared
+  // guard checks top-level shape only, so an upstream producer that skips
+  // validation can still reach it. Pinned here because TypeScript is the side
+  // that emitted [] for all three fields, and a risks-only test left this path
+  // uncovered.
+  it('omits observations rather than emitting an empty array', async () => {
+    const req = testhdf.req('AC-1', { impact: 0 });
+    delete (req as { results?: unknown }).results;
+    const out = await convertHdfToOscalSar(JSON.stringify(testhdf.results(req)));
+
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+    expect(out).not.toContain('"observations": []');
+  });
+
+  it('omits risks rather than emitting an empty array', async () => {
+    // impact 0 produces a finding but no risk.
+    const input = JSON.stringify(
+      testhdf.results(testhdf.req('AC-1', { impact: 0, status: 'passed' })),
+    );
+    const out = await convertHdfToOscalSar(input);
+
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+    expect(out).not.toContain('"risks": []');
+  });
+});
+
+describe('hdf-to-oscal-sar findings without a control id', () => {
+  // OSCAL types finding-target.target-id as a token, so an empty one fails the
+  // pattern and the whole document with it. The finding is dropped rather than
+  // given a derived identifier: an index or a UUID would satisfy the pattern
+  // while manufacturing traceability the source never had.
+  it('omits the finding and keeps the identified ones', async () => {
+    const input = JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+            {
+              id: 'AC-1',
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const out = await convertHdfToOscalSar(input);
+    const doc = JSON.parse(out) as {
+      'assessment-results': {
+        results: Array<{ findings?: Array<{ target: { 'target-id': string } }> }>;
+      };
+    };
+
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+    const findings = doc['assessment-results'].results[0].findings ?? [];
+    expect(findings).toHaveLength(1);
+    expect(findings[0].target['target-id']).toBe('ac-1');
+  });
+});
+
+// Mirrors the Go corpus run, including the same single exemption. Adding this
+// caught a crash Go never saw: req.id arrives undefined here where Go's zero
+// value is the empty string.
+describe('hdf-to-oscal-sar against the adversarial corpus', () => {
+  const CORPUS_EXEMPTIONS: Record<string, string> = {
+    'zero-baselines':
+      'baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately',
+  };
+
+  it('satisfies every contract for every non-exempt case', async () => {
+    const cases = resultsCorpus().filter((c) => !(c.name in CORPUS_EXEMPTIONS));
+    expect(cases.length, 'every case exempted — the run would prove nothing').toBeGreaterThan(0);
+    await runSchemaCorpus(jsonDocumentValidator(validateAR), cases, (input) => convertHdfToOscalSar(input));
+  });
+});
+
+// Mirrors the Go peer. Asserts the PROP specifically: a bare substring check on
+// the whole document passes via the risk title, which also carries the id, so it
+// would stay green with the prop deleted.
+describe('hdf-to-oscal-sar non-token requirement ids', () => {
+  it.each([
+    ['AC-1', 'AC-1'],
+    ['V-38497', 'V-38497'],
+    ['1.1', '1.1'],
+    ['10180', '10180'],
+    ['CVE-2018-25032/ruby:nokogiri/1.10.9', 'CVE-2018-25032/ruby:nokogiri/1.10.9'],
+    ['RHSA-2023:7205/nodejs/1:18.20.4-1', 'RHSA-2023:7205/nodejs/1:18.20.4-1'],
+    ['CM-2 (1)', 'CM-2 (1)'],
+    ['  AC-2  ', 'AC-2'],
+    ['café-1', 'café-1'],
+  ])('converts %s and preserves the source id', async (id, wantProp) => {
+    const input = JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id,
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const out = await convertHdfToOscalSar(input);
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+
+    const doc = JSON.parse(out) as {
+      'assessment-results': {
+        results: Array<{ findings: Array<{ props?: Array<{ name: string; value: string }> }> }>;
+      };
+    };
+    const props = doc['assessment-results'].results[0].findings[0].props ?? [];
+    expect(props.find((p) => p.name === 'hdf-requirement-id')?.value).toBe(wantProp);
+  });
+});
+
+
+// A component with no type cannot come from valid HDF — Base_Component requires
+// type and every Component variant is an allOf over it, so a typeless component
+// matches none of the oneOf branches. Converters do not schema-validate their
+// input, though, so a caller can still hand one over. This one produced
+// `"type": "undefined"` — the JavaScript string, from stringifying an absent
+// value — which is a VALID OSCAL token and therefore invisible to a schema
+// check, while asserting a component type the source never stated. That is
+// fabricated data in a security artifact. Since OSCAL requires both
+// subject-uuid and type on a subject-reference, and hdf-results defines no
+// default component type, the subject is omitted; the Go peer, which emitted an
+// empty token here, omits the same subject.
+describe('typeless component', () => {
+  const withComponents = (components: unknown[]) =>
+    JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id: 'AC-1',
+              impact: 0,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+      components,
+    });
+
+  it('omits the subject and fabricates nothing', async () => {
+    const out = await convertHdfToOscalSar(
+      withComponents([{ name: 'web01' }, { name: 'db01', type: 'host' }]),
+    );
+
+    // Asserted on the raw text: "undefined" is a valid OSCAL token, so a schema
+    // check alone cannot see this defect.
+    expect(out, 'nothing may be fabricated for an absent value').not.toContain('"undefined"');
+    expect(out, 'no empty token may reach the output').not.toContain('"type": ""');
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
+
+    const subjects = (
+      JSON.parse(out) as {
+        'assessment-results': {
+          results: Array<{ observations: Array<{ subjects?: Array<Record<string, string>> }> }>;
+        };
+      }
+    )['assessment-results'].results[0]!.observations[0]!.subjects;
+
+    expect(subjects, 'the typed component keeps its subject; the typeless one is dropped').toHaveLength(1);
+    expect(subjects![0]!.type).toBe('host');
+    expect(subjects![0]!.title).toBe('db01');
+  });
+
+  it('omits the subjects key entirely when every component is typeless', async () => {
+    const out = await convertHdfToOscalSar(withComponents([{ name: 'web01' }]));
+    expect(out).not.toContain('"undefined"');
+    expect(out, 'an empty subjects array is not valid OSCAL').not.toContain('"subjects": []');
+    expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
   });
 });

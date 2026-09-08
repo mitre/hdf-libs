@@ -53,26 +53,22 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
-        # Auth is OIDC Trusted Publishing for all 9 packages. pnpm publishes
-        # natively (no npm CLI delegation) and prefers OIDC over a static
-        # token per package — behavior introduced in pnpm 11.0.7, so the
-        # exact version matters: it comes from the root package.json
-        # `packageManager` field, which pnpm/action-setup resolves above.
+        # Auth is OIDC Trusted Publishing for every package below; there is
+        # no npm token in this workflow, so a package without a trusted
+        # publisher for this repo fails to publish rather than falling back.
+        # pnpm publishes natively (no npm CLI delegation) with OIDC support
+        # from pnpm 11.0.7, so the exact version matters: it comes from the
+        # root package.json `packageManager` field, which pnpm/action-setup
+        # resolves above.
         #
         # npm allows up to 10 trusted publishers per package, so
         # @mitre/hdf-converters carries this repo's publisher ALONGSIDE
         # mitre/heimdall2's (which still publishes v2.x patches) — neither
         # displaces the other.
         #
-        # NODE_AUTH_TOKEN is a transition fallback only: once an rc-tag
-        # publish verifies all 9 packages publish tokenless, remove this env
-        # line and revoke the token.
-        #
         # --provenance attests every package (requires the id-token
         # permission and the correct public repository field in each
         # package.json).
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Publish order matters: dependencies first
           PACKAGES=(
@@ -110,6 +106,32 @@ jobs:
           # npm publish ships package.json verbatim and breaks consumers with
           # EUNSUPPORTEDPROTOCOL. --no-git-checks is required because the
           # "Set version from tag" step above leaves the working tree dirty.
+          #
+          # The loop is idempotent. npm versions are immutable, so a re-run of
+          # a release whose earlier attempt published some packages would 403
+          # on each of those and never converge. Before publishing, ask the
+          # registry whether this exact version exists: 404 means publish;
+          # 200 means compare CONTENT and skip only if it is the same build;
+          # anything else means the answer is unknown, and guessing either
+          # way is wrong (a transport failure aborts the step through curl's
+          # own exit). "Same build" is judged on CONTENT, not on the
+          # registry's integrity field, which hashes the gzip envelope and
+          # varies with the producer's OS byte. Two measurements shaped the
+          # digest below: rc.2 rebuilt from its tag on another machine
+          # matched byte-for-byte inside the tarball, except that pnpm's
+          # workspace: rewrite does not keep package.json key order stable
+          # between builds (same commit, same pnpm 11.10.0, two dependency
+          # keys swapped). So every file is hashed by path, with package.json
+          # taken as canonical JSON.
+          content_digest() {
+            local dir
+            dir=$(mktemp -d)
+            tar -xzf "$1" -C "$dir"
+            jq -S . "$dir/package/package.json" > "$dir/package/package.json.canonical"
+            rm "$dir/package/package.json"
+            (cd "$dir" && find . -type f | LC_ALL=C sort | xargs sha256sum | sha512sum | cut -d' ' -f1)
+          }
+          REGISTRY="https://registry.npmjs.org"
           for pkg in "${PACKAGES[@]}"; do
             TAG_FLAG=""
             if [[ "$pkg" == "hdf-converters" ]]; then
@@ -121,7 +143,31 @@ jobs:
             elif [[ "$VERSION" == *"-rc"* ]]; then
               TAG_FLAG="--tag next"
             fi
-            echo "Publishing $pkg@$VERSION ${TAG_FLAG:-"(latest)"}..."
+
+            name="@mitre/$pkg"
+            meta="$RUNNER_TEMP/$pkg.version.json"
+            code=$(curl -sS -o "$meta" -w '%{http_code}' "$REGISTRY/${name/\//%2f}/$VERSION")
+            case "$code" in
+              404) ;;
+              200)
+                curl -sS -o "$RUNNER_TEMP/$pkg.published.tgz" "$(jq -r .dist.tarball "$meta")"
+                (cd "$pkg" && pnpm pack --pack-destination "$RUNNER_TEMP/pack-$pkg" >/dev/null)
+                published=$(content_digest "$RUNNER_TEMP/$pkg.published.tgz")
+                fresh=$(content_digest "$RUNNER_TEMP/pack-$pkg/"*.tgz)
+                if [ "$published" = "$fresh" ]; then
+                  echo "Skipping $name@$VERSION: already published with identical content (digest $fresh)"
+                  continue
+                fi
+                echo "::error::$name@$VERSION is already published with DIFFERENT content: published digest $published, this build $fresh. Versions are immutable, and this run is not a retry of the run that published it."
+                exit 1
+                ;;
+              *)
+                echo "::error::registry check for $name@$VERSION returned HTTP $code; cannot tell whether it is already published"
+                exit 1
+                ;;
+            esac
+
+            echo "Publishing $name@$VERSION ${TAG_FLAG:-"(latest)"}..."
             cd "$pkg"
             pnpm publish --access public --no-git-checks --provenance $TAG_FLAG
             cd ..
@@ -244,13 +290,31 @@ jobs:
         run: |
           mkdir -p release-assets
 
-          # CLI binaries + supply-chain artifacts from goreleaser
-          # (archives, SPDX SBOMs, checksums, cosign signature bundle)
+          # CLI binaries + supply-chain artifacts from goreleaser: archives,
+          # one SPDX SBOM per archive, checksums.txt, and the cosign bundle
+          # over it. A release with fewer assets than that is not a release,
+          # so this step asserts the set before anything is attached. The
+          # expected set comes from checksums.txt, goreleaser's own manifest
+          # of every archive and SBOM, so it moves with the goreleaser config;
+          # the floor below is independent of it, so a truncated manifest
+          # cannot vouch for itself.
+          manifest=cli-dist/checksums.txt
+          test -s "$manifest" || { echo "::error::$manifest is missing or empty"; exit 1; }
+          test -s "$manifest.bundle" || { echo "::error::$manifest.bundle (the cosign signature) is missing or empty"; exit 1; }
+          while read -r _ f; do
+            test -s "cli-dist/$f" || { echo "::error::$f is listed in checksums.txt but missing from cli-dist"; exit 1; }
+          done < "$manifest"
+          archives=$(grep -cE '\.(tar\.gz|zip)$' "$manifest")
+          sboms=$(grep -c '\.spdx\.json$' "$manifest")
+          if [ "$archives" -lt 5 ] || [ "$sboms" -ne "$archives" ]; then
+            echo "::error::checksums.txt lists $archives archives and $sboms SBOMs; expected at least 5 archives with one SBOM each"
+            exit 1
+          fi
+          (cd cli-dist && sha256sum -c checksums.txt)
           cp cli-dist/*.tar.gz cli-dist/*.zip cli-dist/*.spdx.json \
-             cli-dist/checksums.txt cli-dist/checksums.txt.bundle \
-             release-assets/ 2>/dev/null || true
+             "$manifest" "$manifest.bundle" release-assets/
 
-          # Schema files
+          # Schema files (bash -e: an unmatched glob makes cp fail here)
           cp schema-dist/*.schema.json release-assets/
 
           ls -la release-assets/
@@ -280,10 +344,17 @@ jobs:
           npm install @mitre/hdf-diff          # structural diff engine
           npm install @mitre/hdf-engine        # detection, query, compliance rollups
           npm install @mitre/hdf-generators    # InSpec profile generation
+          npm install @mitre/hdf-extension-graph  # profile/baseline extension chains
 
-          # Go libraries
+          # Go libraries — hdf-converters pulls in schema, parsers, utilities,
+          # mappings and validators; the rest are independent modules. hdf-cli is
+          # deliberately absent despite being tagged: its go.mod carries replace
+          # directives, so `go install` refuses it outright — it ships as a binary,
+          # covered below.
           EOF
-            echo "go get github.com/mitre/hdf-libs/hdf-converters/v3@${GITHUB_REF_NAME}"
+            for gomod in hdf-converters hdf-diff/go hdf-engine/go hdf-extension-graph/go hdf-generators/go; do
+              echo "go get github.com/mitre/hdf-libs/${gomod}/v3@${GITHUB_REF_NAME}"
+            done
             cat <<'EOF'
 
           # Go CLI — download a binary for your platform from the assets below, then:

@@ -1,11 +1,11 @@
-import { parseJSON, parsePurl, severityToImpactWithAliases, worstStatus } from '@mitre/hdf-utilities';
+import { impactToSeverity, parseJSON, parsePurl, roundImpact, severityToImpactWithAliases, worstStatus } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
-import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, StatusOverride } from '@mitre/hdf-schema';
+import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
@@ -17,8 +17,11 @@ interface SarifFile {
 }
 
 interface SarifRun {
+  // Rules may be defined on the driver or on any extension: modern CodeQL leaves
+  // tool.driver.rules empty and puts every rule on an extension.
   tool?: {
     driver?: SarifDriver;
+    extensions?: SarifDriver[];
   };
   results: SarifResult[];
   taxonomies?: SarifTaxonomy[];
@@ -156,7 +159,8 @@ interface SarifLocation {
 // --- Impact mapping ---
 // SARIF "error"/"warning"/"note" levels are aliases; unknown levels fall
 // through the shared standard map to 0.0, then get bumped to a 0.1 floor at
-// the call site. Mirrors Go's sarifAliases + getImpact.
+// the call site. Mirrors Go's sarifAliases + getImpact. This table is the
+// FALLBACK — a rule carrying a usable security-severity outranks it.
 const SARIF_ALIASES: Record<string, number> = {
   error: 0.7,
   warning: 0.5,
@@ -254,12 +258,20 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, t
   });
 }
 
+// Indexes every rule a run defines, from the driver and from any extensions.
+// Extensions are seeded first so the driver overwrites them: SARIF permits the
+// same rule id on both, the driver is the primary tool component, and an
+// extension must never silently shadow the tool's own definition. Mirrors Go's
+// buildRuleMap.
 function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
   const map = new Map<string, ReportingDescriptor>();
-  if (run.tool?.driver?.rules) {
-    for (const rule of run.tool.driver.rules) {
+  for (const ext of run.tool?.extensions ?? []) {
+    for (const rule of ext.rules ?? []) {
       map.set(rule.id, rule);
     }
+  }
+  for (const rule of run.tool?.driver?.rules ?? []) {
+    map.set(rule.id, rule);
   }
   return map;
 }
@@ -281,9 +293,15 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   const nistControls = mapCWEToNIST(cweIds, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
   const cciControls = nistToCci(nistControls);
 
-  // Determine requirement-level impact from the rule's inherent severity
+  // Determine requirement-level impact from the rule's inherent severity.
+  // The rule's security-severity is its CVSS base score and OUTRANKS level:
+  // level is the tool's own triage and several scanners emit one level for
+  // every finding, so preferring it would collapse the CVSS spread that is the
+  // only real severity signal such a document carries. Both are rule-level, so
+  // nothing per-result is discarded. Level remains the fallback.
   const ruleLevel = resolveRuleLevel(rule, sarifResults);
-  const impact = severityToImpactWithAliases(ruleLevel, SARIF_ALIASES, 0.0) || 0.1;
+  const cvssImpact = securitySeverityImpact(rule);
+  const impact = (cvssImpact ?? severityToImpactWithAliases(ruleLevel, SARIF_ALIASES, 0.0)) || 0.1;
 
   // Source location from first result's first location
   const sourceLocation = firstResult.locations && firstResult.locations.length > 0
@@ -308,7 +326,7 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   const tags = buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls, allSuppressions);
 
   const options: {
-    sourceLocation?: { ref: string; line: number };
+    sourceLocation?: SourceLocation;
     tags: Record<string, unknown>;
   } = { tags };
 
@@ -317,6 +335,11 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   }
 
   const req = createRequirement(ruleId, title, descriptions, impact, results, options);
+  // severity is a schema field consumers read directly, so the converter records
+  // the band it already knows rather than leaving every consumer to re-derive it.
+  // (The threshold engine is not one of them — it falls back to impact when
+  // severity is absent — so this changes what is published, not what gates.)
+  req.severity = impactToSeverity(impact) as Severity;
   const controlType = deriveControlTypeFromTags(nistControls);
   if (controlType !== undefined) {
     req.controlType = controlType;
@@ -413,6 +436,36 @@ function packageFromSarifProperties(props: SarifResult['properties']): ReturnTyp
     cpe: props.cpe,
     fixedInVersion: props.fixedInVersion,
   });
+}
+
+// Matches the plain decimal forms a CVSS score is written in. It exists to keep
+// TypeScript and Go agreeing on what parses: Number() accepts "0x8" and "0b101"
+// while Go's strconv.ParseFloat accepts hex-float literals ("0x1p3"), so each
+// language would otherwise take a value the other rejects. Neither form is a CVSS
+// score, so both languages reject both. Mirrors Go's decimalScore.
+const DECIMAL_SCORE = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+// Reads the rule's security-severity property — the SARIF convention for carrying
+// a CVSS base score, and what GitHub's own ingestion keys on — and scales it to an
+// HDF impact. Returns undefined when the property is absent or is not a finite
+// score within 0.0-10.0, so the caller falls back to the level mapping rather than
+// deriving an impact from an unusable value. Producers emit the score as a string;
+// a JSON number is accepted too. Mirrors Go's securitySeverityImpact.
+function securitySeverityImpact(rule?: ReportingDescriptor): number | undefined {
+  const raw = rule?.properties?.['security-severity'];
+  if (raw === undefined || raw === null) return undefined;
+  let score: number;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!DECIMAL_SCORE.test(trimmed)) return undefined;
+    score = Number(trimmed);
+  } else if (typeof raw === 'number') {
+    score = raw;
+  } else {
+    return undefined;
+  }
+  if (!Number.isFinite(score) || score < 0 || score > 10) return undefined;
+  return roundImpact(score / 10);
 }
 
 // Determines the inherent severity level for a rule, independent of per-result kind overrides.
@@ -768,15 +821,20 @@ function buildTags(
 
 // --- Location helpers ---
 
-function extractSourceLocation(location: SarifLocation): { ref: string; line: number } | undefined {
+// Either half alone is a location (the schema requires neither): a lockfile
+// finding has a file and no line. Mirrors the Go converter.
+function extractSourceLocation(location: SarifLocation): SourceLocation | undefined {
   const uri = location.physicalLocation?.artifactLocation?.uri;
   const line = location.physicalLocation?.region?.startLine;
 
-  if (!uri || !line) {
-    return undefined;
+  const sourceLocation: SourceLocation = {};
+  if (uri) {
+    sourceLocation.ref = uri;
   }
-
-  return { ref: uri, line };
+  if (line) {
+    sourceLocation.line = line;
+  }
+  return sourceLocation.ref !== undefined || sourceLocation.line !== undefined ? sourceLocation : undefined;
 }
 
 function createHDFResult(

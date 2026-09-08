@@ -84,32 +84,38 @@ func convertVulnToRequirement(vuln NiktoVulnerability) hdf.EvaluatedRequirement 
 	}
 }
 
-// ConvertNiktoToHDF converts Nikto JSON to HDF
-func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseReport applies the converter's input guards and decodes the report.
+// ConvertNiktoToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseReport(input []byte) (*NiktoReport, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("nikto: empty input")
 	}
 	if err := shared.ValidateJSONSize(input, "nikto", 0); err != nil {
 		return nil, fmt.Errorf("nikto: %w", err)
 	}
-
-	resultsChecksum := shared.InputChecksum(input)
-
 	var niktoData NiktoReport
 	if err := json.Unmarshal(input, &niktoData); err != nil {
 		return nil, fmt.Errorf("invalid Nikto JSON: %w", err)
 	}
+	return &niktoData, nil
+}
 
-	// Group vulnerabilities by ID to handle duplicates
-	type vulnGroup struct {
-		primary NiktoVulnerability
-		extras  []NiktoVulnerability
-	}
+// vulnGroup is one requirement's worth of Nikto findings: the first with an
+// id and every later duplicate of it.
+type vulnGroup struct {
+	primary NiktoVulnerability
+	extras  []NiktoVulnerability
+}
+
+// groupVulns caps the vulnerabilities and groups them by id in first-seen
+// order. It is the single definition of the input-to-requirement relation:
+// the conversion builds requirements from it and ExpectedRequirementCount
+// counts it.
+func groupVulns(vulns []NiktoVulnerability) ([]string, map[string]*vulnGroup) {
 	groups := make(map[string]*vulnGroup)
-	var order []string // Preserve insertion order
-
-	limitedVulns := shared.LimitSliceWithWarning(niktoData.Vulnerabilities, 0, "vulnerability")
-	for _, vuln := range limitedVulns {
+	var order []string
+	for _, vuln := range shared.LimitSliceWithWarning(vulns, 0, "vulnerability") {
 		if g, ok := groups[vuln.ID]; ok {
 			g.extras = append(g.extras, vuln)
 		} else {
@@ -117,6 +123,36 @@ func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 			order = append(order, vuln.ID)
 		}
 	}
+	return order, groups
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct id, or one no-findings requirement when the report
+// carries no vulnerabilities. Computed from the input alone, through the same
+// grouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct Nikto ids"
+	niktoData, err := parseReport(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	order, _ := groupVulns(niktoData.Vulnerabilities)
+	if len(order) == 0 {
+		return 1, unit, nil
+	}
+	return len(order), unit, nil
+}
+
+// ConvertNiktoToHDF converts Nikto JSON to HDF
+func ConvertNiktoToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	niktoData, err := parseReport(input)
+	if err != nil {
+		return nil, err
+	}
+
+	resultsChecksum := shared.InputChecksum(input)
+
+	order, groups := groupVulns(niktoData.Vulnerabilities)
 
 	requirements := []hdf.EvaluatedRequirement{}
 	zeroTime := time.Time{}

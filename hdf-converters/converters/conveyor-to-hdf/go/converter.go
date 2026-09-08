@@ -377,9 +377,10 @@ func buildScannerBaseline(scannerName string, results []ConveyorResult, shaMap m
 	}
 }
 
-// ConvertConveyorToHDF converts Conveyor scan results to HDF format.
-// Results are grouped by scanner name, producing one baseline per scanner.
-func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the report.
+// ConvertConveyorToHDF and ExpectedRequirementCount share it so they accept
+// and reject exactly the same inputs.
+func parseInput(input []byte) (*ConveyorData, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("conveyor: empty input")
 	}
@@ -398,6 +399,38 @@ func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 
 	if data.APIResponse.Results == nil {
 		return nil, fmt.Errorf("conveyor: missing api_response.results field")
+	}
+	return &data, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per api_response.results entry, counted through the same per-scanner
+// grouping and size limit the conversion applies, or one no-findings
+// requirement when the results map is empty.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Conveyor scan results"
+	data, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	scanners, groups := groupResultsByScanner(data.APIResponse.Results)
+	count := 0
+	for _, scannerName := range scanners {
+		limited, _ := hdfutil.LimitSlice(groups[scannerName], 0)
+		count += len(limited)
+	}
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertConveyorToHDF converts Conveyor scan results to HDF format.
+// Results are grouped by scanner name, producing one baseline per scanner.
+func ConvertConveyorToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	data, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 
 	checksum := shared.InputChecksum(input)

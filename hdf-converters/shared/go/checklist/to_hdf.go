@@ -10,6 +10,17 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
+// VulnCount is the number of rules across every STIG in the checklist — the
+// checklist-to-HDF relation is one requirement per rule, so it is also the
+// requirement count ChecklistToHDF produces.
+func (cl *Checklist) VulnCount() int {
+	n := 0
+	for i := range cl.Stigs {
+		n += len(cl.Stigs[i].Vulns)
+	}
+	return n
+}
+
 // ChecklistToHDF maps the format-neutral Checklist model to HDF Results.
 // One EvaluatedBaseline per Stig; one EvaluatedRequirement per Vuln.
 //

@@ -1,0 +1,83 @@
+{
+  "$comment": "Shared table for the hdf-to-xccdf Group/@id encoder. Go (xccdfGroupID) and TypeScript (xccdfGroupId) both read it. XCCDF types Group/@id as groupIdType: an NCName that must also match xccdf_[^_]+_group_.+ (xccdf_1.2.xsd:821). 'passthrough' marks a gid that already conforms and must be emitted unchanged.",
+  "cases": [
+    {
+      "gid": "xccdf_mil.disa.stig_group_V-204393",
+      "id": "xccdf_mil.disa.stig_group_V-204393",
+      "passthrough": true,
+      "why": "real STIG group id: already conforms, so it is preserved"
+    },
+    {
+      "gid": "xccdf_org.cisecurity_group_1.1.1",
+      "id": "xccdf_org.cisecurity_group_1.1.1",
+      "passthrough": true,
+      "why": "reverse-DNS owner with dots is a legal NCName"
+    },
+    {
+      "gid": "V-257777",
+      "id": "xccdf_hdf_group_V-257777",
+      "passthrough": false,
+      "why": "real container-scan gid: bare STIG id fails the pattern"
+    },
+    {
+      "gid": "V-204393",
+      "id": "xccdf_hdf_group_V-204393",
+      "passthrough": false,
+      "why": "real RHEL7 STIG gid"
+    },
+    {
+      "gid": "SV-86603r1_rule",
+      "id": "xccdf_hdf_group_SV-86603r1_rule",
+      "passthrough": false,
+      "why": "real SV-style id; underscores are legal inside the trailing name"
+    },
+    {
+      "gid": "1.1.1 Ensure mounting is disabled",
+      "id": "xccdf_hdf_group_1.1.1_Ensure_mounting_is_disabled",
+      "passthrough": false,
+      "why": "real CIS-style gid: spaces are not NCName characters"
+    },
+    {
+      "gid": "xccdf_group_V-1",
+      "id": "xccdf_hdf_group_xccdf_group_V-1",
+      "passthrough": false,
+      "why": "empty owner segment does not satisfy xccdf_[^_]+_group_"
+    },
+    {
+      "gid": "xccdf_a_b_group_V-1",
+      "id": "xccdf_hdf_group_xccdf_a_b_group_V-1",
+      "passthrough": false,
+      "why": "an owner containing '_' does not satisfy [^_]+"
+    },
+    {
+      "gid": "xccdf_mil.disa.stig_group_",
+      "id": "xccdf_hdf_group_xccdf_mil.disa.stig_group_",
+      "passthrough": false,
+      "why": "the trailing name is required by .+"
+    },
+    {
+      "gid": "café",
+      "id": "xccdf_hdf_group_caf_",
+      "passthrough": false,
+      "why": "outside the ASCII set the check deliberately narrows to"
+    },
+    {
+      "gid": "xccdf_org_group_café",
+      "id": "xccdf_hdf_group_xccdf_org_group_caf_",
+      "passthrough": false,
+      "why": "matches the pattern but is not ASCII, so it is re-encoded rather than trusted"
+    },
+    {
+      "gid": "",
+      "id": "xccdf_hdf_group_unnamed",
+      "passthrough": false,
+      "why": "the pattern's .+ requires a trailing name; the converter skips empty gids, so this only keeps the encoder total"
+    },
+    {
+      "gid": "a🎉b",
+      "id": "xccdf_hdf_group_a_b",
+      "passthrough": false,
+      "why": "astral code point: one character, so one underscore — the TS regex needs the u flag to match Go's rune-wise Map"
+    }
+  ]
+}

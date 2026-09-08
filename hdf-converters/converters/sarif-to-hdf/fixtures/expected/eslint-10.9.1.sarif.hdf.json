@@ -1,0 +1,1669 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Unexpected console statement.",
+              "label": "default"
+            }
+          ],
+          "disposition": "waiver",
+          "effectiveStatus": "passed",
+          "results": [
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/aws-config-to-hdf/typescript/converter.ts LINE : 142 COLUMN : 3",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/aws-config-to-hdf/typescript/converter.ts LINE : 298 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/burpsuite-to-hdf/typescript/converter.ts LINE : 221 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/checkov-to-hdf/typescript/converter.ts LINE : 251 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/cyclonedx-to-hdf/typescript/converter.ts LINE : 656 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/dbprotect-to-hdf/typescript/converter.ts LINE : 351 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/fortify-to-hdf/typescript/converter.ts LINE : 435 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/fortify-to-hdf/typescript/converter.ts LINE : 527 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/gitlab-to-hdf/typescript/converter.ts LINE : 305 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/gosec-to-hdf/typescript/converter.ts LINE : 276 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/grype-to-hdf/typescript/converter.ts LINE : 528 COLUMN : 7",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/grype-to-hdf/typescript/converter.ts LINE : 541 COLUMN : 7",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/jfrog-xray-to-hdf/typescript/converter.ts LINE : 399 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/junit-to-hdf/typescript/converter.ts LINE : 206 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/junit-to-hdf/typescript/converter.ts LINE : 216 COLUMN : 7",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-defender-cloud-to-hdf/typescript/converter.ts LINE : 198 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-defender-endpoint-to-hdf/typescript/converter.ts LINE : 461 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-secure-score-to-hdf/typescript/converter.ts LINE : 339 COLUMN : 7",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nessus-to-hdf/typescript/converter.ts LINE : 177 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nessus-to-hdf/typescript/converter.ts LINE : 266 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts LINE : 501 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/neuvector-to-hdf/typescript/converter.ts LINE : 484 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nikto-to-hdf/typescript/converter.ts LINE : 104 COLUMN : 7",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-sar.ts LINE : 75 COLUMN : 7",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sarif-to-hdf/typescript/converter.ts LINE : 192 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sarif-to-hdf/typescript/converter.ts LINE : 219 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/snyk-to-hdf/typescript/converter.ts LINE : 390 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/snyk-to-hdf/typescript/converter.ts LINE : 474 COLUMN : 7",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sonarqube-to-hdf/typescript/converter.ts LINE : 303 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/twistlock-to-hdf/typescript/converter.ts LINE : 389 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/typescript/converter.ts LINE : 477 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/typescript/converter.ts LINE : 759 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts LINE : 230 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts LINE : 267 COLUMN : 9",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 43 COLUMN : 7",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 44 COLUMN : 7",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 45 COLUMN : 7",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 46 COLUMN : 7",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 47 COLUMN : 7",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 82 COLUMN : 5",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 83 COLUMN : 5",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 84 COLUMN : 5",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 85 COLUMN : 5",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 94 COLUMN : 5",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 108 COLUMN : 7",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 114 COLUMN : 5",
+              "message": "Suppressed: CLI tool requires console output",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/converterutil.ts LINE : 145 COLUMN : 5",
+              "message": "Suppressed: Intentional warning for truncated input",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts LINE : 90 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts LINE : 138 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts LINE : 219 COLUMN : 5",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "medium",
+          "sourceLocation": {
+            "line": 142,
+            "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/aws-config-to-hdf/typescript/converter.ts"
+          },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "CLI tool requires console output",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Intentional warning for truncated input",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "id": "no-console",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "helpUri": "https://eslint.org/docs/latest/rules/no-console",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "warning",
+            "suppressions": [
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "CLI tool requires console output",
+                "kind": "inSource"
+              },
+              {
+                "justification": "Intentional warning for truncated input",
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              }
+            ]
+          },
+          "title": "Disallow the use of `console`",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Do not parse a tool timestamp with `new Date(value)` (zone-less values are read as host-local). Use `parseTimestamp` from @mitre/hdf-utilities. See site/docs/contributing/developer-guide.md (Timestamp Handling).",
+              "label": "default"
+            }
+          ],
+          "disposition": "waiver",
+          "effectiveStatus": "passed",
+          "results": [
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts LINE : 150 COLUMN : 24",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts LINE : 349 COLUMN : 24",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-utilities/src/string/index.ts LINE : 117 COLUMN : 27",
+              "message": "Suppressed: sanctioned parse-helper implementation",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "sourceLocation": {
+            "line": 150,
+            "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts"
+          },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "sanctioned parse-helper implementation",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "id": "no-restricted-syntax",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "helpUri": "https://eslint.org/docs/latest/rules/no-restricted-syntax",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error",
+            "suppressions": [
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "justification": "sanctioned parse-helper implementation",
+                "kind": "inSource"
+              }
+            ]
+          },
+          "title": "Disallow specified syntax",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Unexpected any. Specify a different type.",
+              "label": "default"
+            }
+          ],
+          "disposition": "waiver",
+          "effectiveStatus": "passed",
+          "results": [
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 115 COLUMN : 53",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 156 COLUMN : 4",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 163 COLUMN : 53",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 164 COLUMN : 53",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 170 COLUMN : 22",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 182 COLUMN : 29",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 191 COLUMN : 27",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 198 COLUMN : 23",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 260 COLUMN : 32",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 277 COLUMN : 29",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 64 COLUMN : 27",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 65 COLUMN : 28",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 67 COLUMN : 19",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 72 COLUMN : 32",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "sourceLocation": {
+            "line": 115,
+            "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts"
+          },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "id": "@typescript-eslint/no-explicit-any",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "helpUri": "https://typescript-eslint.io/rules/no-explicit-any",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error",
+            "suppressions": [
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              }
+            ]
+          },
+          "title": "Disallow the `any` type",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "An empty interface declaration allows any non-nullish value, including literals like `0` and `\"\"`.\n- If that's what you want, disable this lint rule with an inline comment or configure the 'allowInterfaces' rule option.\n- If you want a type meaning \"any object\", you probably want `object` instead.\n- If you want a type meaning \"any value\", you probably want `unknown` instead.",
+              "label": "default"
+            }
+          ],
+          "disposition": "waiver",
+          "effectiveStatus": "passed",
+          "results": [
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts LINE : 606 COLUMN : 18",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts LINE : 4372 COLUMN : 18",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts LINE : 4559 COLUMN : 18",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "sourceLocation": {
+            "line": 606,
+            "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts"
+          },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "id": "@typescript-eslint/no-empty-object-type",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "helpUri": "https://typescript-eslint.io/rules/no-empty-object-type",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error",
+            "suppressions": [
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              }
+            ]
+          },
+          "title": "Disallow accidentally using the \"empty object\" type",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "'before' is assigned a value but never used.",
+              "label": "default"
+            }
+          ],
+          "disposition": "waiver",
+          "effectiveStatus": "passed",
+          "results": [
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-diff/src/renderers/json.ts LINE : 13 COLUMN : 11",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-diff/src/renderers/json.ts LINE : 13 COLUMN : 19",
+              "message": "Suppressed: Suppressed in SARIF source",
+              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "status": "failed"
+            }
+          ],
+          "severity": "high",
+          "sourceLocation": {
+            "line": 13,
+            "ref": "file:///home/runner/work/hdf-libs/hdf-libs/hdf-diff/src/renderers/json.ts"
+          },
+          "statusOverrides": [
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedBy": {
+                "identifier": "sarif suppression",
+                "type": "other"
+              },
+              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "reason": "Suppressed in SARIF source",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "id": "@typescript-eslint/no-unused-vars",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "cwe": [],
+            "helpUri": "https://typescript-eslint.io/rules/no-unused-vars",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "severity": "error",
+            "suppressions": [
+              {
+                "kind": "inSource"
+              },
+              {
+                "kind": "inSource"
+              }
+            ]
+          },
+          "title": "Disallow unused variables",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "920d087ef7c2b492cb2414843977a3e3555ac50e49d0d9ef96fd20f393156241"
+      },
+      "name": "ESLint",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-08T14:24:08.657804-04:00",
+  "tool": {
+    "format": "SARIF",
+    "name": "ESLint",
+    "version": "10.9.1"
+  }
+}

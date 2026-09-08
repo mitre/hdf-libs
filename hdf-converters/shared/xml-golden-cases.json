@@ -1,0 +1,221 @@
+{
+  "$comment": "Shared table for the XML golden normalizer. Go (NormalizeXMLForGolden) and TypeScript (normalizeXmlForGolden) both read it, so the canonicalization every XML parity assertion is measured against cannot drift between languages. Each row carries the exact normalized output for both inputs, so the two languages are pinned to the same literal rather than only to the same relation - two implementations returning different strings would otherwise both pass every row. 'equal' restates whether the two outputs coincide; the false rows are the ones that matter, because a normalizer that erases content makes genuinely different documents look identical.",
+  "cases": [
+    {
+      "name": "entity and literal tab are the same content",
+      "a": "<r><k>&#x9;</k></r>",
+      "b": "<r><k>\t</k></r>",
+      "expectedA": "<r><k>\t</k></r>",
+      "expectedB": "<r><k>\t</k></r>",
+      "equal": true,
+      "why": "Go escapes a tab as a character reference where the TypeScript builder emits it literally; absorbing that difference is what this normalizer is for"
+    },
+    {
+      "name": "whitespace content is not empty content",
+      "a": "<r><k>\t</k></r>",
+      "b": "<r><k></k></r>",
+      "expectedA": "<r><k>\t</k></r>",
+      "expectedB": "<r><k></k></r>",
+      "equal": false,
+      "why": "the collapse used to erase the tab, so these compared equal and a real difference was masked"
+    },
+    {
+      "name": "a single space is content too",
+      "a": "<r><k> </k></r>",
+      "b": "<r><k></k></r>",
+      "expectedA": "<r><k> </k></r>",
+      "expectedB": "<r><k></k></r>",
+      "equal": false,
+      "why": "same masking, and space is the shape a serializer is most likely to emit by accident"
+    },
+    {
+      "name": "newline content survives in both spellings",
+      "a": "<r><k>&#xA;</k></r>",
+      "b": "<r><k>\n</k></r>",
+      "expectedA": "<r><k>\n</k></r>",
+      "expectedB": "<r><k>\n</k></r>",
+      "equal": true,
+      "why": "the content is a newline in both, written two ways"
+    },
+    {
+      "name": "a no-break space is content, not formatting",
+      "a": "<r><k> </k></r>",
+      "b": "<r><k></k></r>",
+      "expectedA": "<r><k> </k></r>",
+      "expectedB": "<r><k></k></r>",
+      "equal": false,
+      "why": "U+00A0 is a legal XML character that appears in real tool output. It is in JavaScript's \\s but not Go's, so a \\s-based collapse erased it in one language only"
+    },
+    {
+      "name": "an ideographic space is content, not formatting",
+      "a": "<r><k>　</k></r>",
+      "b": "<r><k></k></r>",
+      "expectedA": "<r><k>　</k></r>",
+      "expectedB": "<r><k></k></r>",
+      "equal": false,
+      "why": "same class as U+00A0: matched by JavaScript's \\s, not Go's"
+    },
+    {
+      "name": "a form feed is content, not formatting",
+      "a": "<r><k>\f</k></r>",
+      "b": "<r><k></k></r>",
+      "expectedA": "<r><k>\f</k></r>",
+      "expectedB": "<r><k></k></r>",
+      "equal": false,
+      "why": "U+000C is in BOTH languages' \\s and in neither encoder, so a \\s-based collapse erased it in both — unlike U+00A0 above, which only JavaScript's \\s reaches. Pinning both shapes is why the class is XML's S production rather than either language's shorthand"
+    },
+    {
+      "name": "indentation between siblings is still collapsed",
+      "a": "<r>\n  <a>x</a>\n  <b>y</b>\n</r>",
+      "b": "<r><a>x</a><b>y</b></r>",
+      "expectedA": "<r><a>x</a><b>y</b></r>",
+      "expectedB": "<r><a>x</a><b>y</b></r>",
+      "equal": true,
+      "why": "pretty-printing is formatting, not content - collapsing it is the normalizer's original job and must still happen"
+    },
+    {
+      "name": "indentation around a nested element is collapsed",
+      "a": "<r>\n  <a>\n    <b>y</b>\n  </a>\n</r>",
+      "b": "<r><a><b>y</b></a></r>",
+      "expectedA": "<r><a><b>y</b></a></r>",
+      "expectedB": "<r><a><b>y</b></a></r>",
+      "equal": true,
+      "why": "an open tag followed by another open tag is formatting, not content"
+    },
+    {
+      "name": "whitespace after a self-closing element is formatting",
+      "a": "<r><a/> </r>",
+      "b": "<r><a/></r>",
+      "expectedA": "<r><a/></r>",
+      "expectedB": "<r><a/></r>",
+      "equal": true,
+      "why": "the discriminating case for the self-closing guard: a self-closing tag opens no element, so what follows it is not content. Drop the guard and this pair diverges"
+    },
+    {
+      "name": "a self-closing element is not treated as content",
+      "a": "<r><a/>\n<b>y</b></r>",
+      "b": "<r><a/><b>y</b></r>",
+      "expectedA": "<r><a/><b>y</b></r>",
+      "expectedB": "<r><a/><b>y</b></r>",
+      "equal": true,
+      "why": "the preceding tag ends in '/>', so the whitespace after it is formatting"
+    },
+    {
+      "name": "the XML declaration is dropped",
+      "a": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<r><k>x</k></r>",
+      "b": "<r><k>x</k></r>",
+      "expectedA": "<r><k>x</k></r>",
+      "expectedB": "<r><k>x</k></r>",
+      "equal": true,
+      "why": "Go emits a declaration and the TypeScript builder does not"
+    },
+    {
+      "name": "apostrophe escapes are equivalent",
+      "a": "<r><k>&#39;</k></r>",
+      "b": "<r><k>&apos;</k></r>",
+      "expectedA": "<r><k>'</k></r>",
+      "expectedB": "<r><k>'</k></r>",
+      "equal": true,
+      "why": "the two libraries pick different escapes for the same character"
+    },
+    {
+      "name": "a capital X is not a character reference",
+      "a": "<r><k>&#XA;</k></r>",
+      "b": "<r><k>&#xA;</k></r>",
+      "expectedA": "<r><k>&#XA;</k></r>",
+      "expectedB": "<r><k>\n</k></r>",
+      "equal": false,
+      "why": "XML's CharRef production requires a lowercase x, so &#XA; is literal text and must not decode. A case-insensitive decoder folded the x in one language and not the other"
+    },
+    {
+      "name": "a carriage return decodes in both spellings",
+      "a": "<r><k>&#xD;</k></r>",
+      "b": "<r><k>\r</k></r>",
+      "expectedA": "<r><k>\r</k></r>",
+      "expectedB": "<r><k>\r</k></r>",
+      "equal": true,
+      "why": "the CR entry is the one decoder member no other row exercises"
+    },
+    {
+      "name": "a byte-order mark is trimmed wherever it sits at a boundary",
+      "a": "﻿﻿<r><k>x</k></r>",
+      "b": "<r><k>x</k></r>﻿",
+      "expectedA": "<r><k>x</k></r>",
+      "expectedB": "<r><k>x</k></r>",
+      "equal": true,
+      "why": "doubled leading and trailing, because a single-leading-BOM strip left both languages disagreeing at the other placements"
+    },
+    {
+      "name": "quote escapes are equivalent",
+      "a": "<r><k>&#34;</k></r>",
+      "b": "<r><k>&quot;</k></r>",
+      "expectedA": "<r><k>\"</k></r>",
+      "expectedB": "<r><k>\"</k></r>",
+      "equal": true,
+      "why": "the double-quote pair, the one decoder entry no other row reaches"
+    },
+    {
+      "name": "a lowercase hex digit decodes like an uppercase one",
+      "a": "<r><k>&#xa;</k></r>",
+      "b": "<r><k>&#xA;</k></r>",
+      "expectedA": "<r><k>\n</k></r>",
+      "expectedB": "<r><k>\n</k></r>",
+      "equal": true,
+      "why": "Go enumerates the two spellings separately, so each needs its own row; the capital-X row proves only that the x is not folded"
+    },
+    {
+      "name": "a lowercase carriage-return reference decodes too",
+      "a": "<r><k>&#xd;</k></r>",
+      "b": "<r><k>&#xD;</k></r>",
+      "expectedA": "<r><k>\r</k></r>",
+      "expectedB": "<r><k>\r</k></r>",
+      "equal": true,
+      "why": "the second half of the CR pair"
+    },
+    {
+      "name": "a capital X never decodes, for every hex reference",
+      "a": "<r><k>&#XD;&#X9;&#X20;</k></r>",
+      "b": "<r><k>\r\t </k></r>",
+      "expectedA": "<r><k>&#XD;&#X9;&#X20;</k></r>",
+      "expectedB": "<r><k>\r\t </k></r>",
+      "equal": false,
+      "why": "the capital-X row covers only the newline reference; a case-insensitive decoder on any of the other three would decode text that XML says is literal"
+    },
+    {
+      "name": "a no-break space at the boundary is not trimmed",
+      "a": " <r><k>x</k></r> ",
+      "b": "<r><k>x</k></r>",
+      "expectedA": " <r><k>x</k></r> ",
+      "expectedB": "<r><k>x</k></r>",
+      "equal": false,
+      "why": "JavaScript's trim() treats NBSP as whitespace and Go's TrimSpace does too, so either shorthand eats it and the boundary stops matching the explicit class. Must be its own row: pairing it with U+0085 lets whichever character a given language does not trim shield the other"
+    },
+    {
+      "name": "a next-line character at the boundary is not trimmed",
+      "a": "<r><k>x</k></r>",
+      "b": "<r><k>x</k></r>",
+      "expectedA": "<r><k>x</k></r>",
+      "expectedB": "<r><k>x</k></r>",
+      "equal": false,
+      "why": "the mirror: U+0085 is in Go's TrimSpace but not JavaScript's trim(), so this row pins the Go half of the same invariant"
+    },
+    {
+      "name": "literal spaces at the boundary are trimmed",
+      "a": "  <r><k>x</k></r>  ",
+      "b": "<r><k>x</k></r>",
+      "expectedA": "<r><k>x</k></r>",
+      "expectedB": "<r><k>x</k></r>",
+      "equal": true,
+      "why": "the space member of the trim class: dropping it, or adding a form feed, passed every other row"
+    },
+    {
+      "name": "a form feed at the boundary is not trimmed",
+      "a": "\f<r><k>x</k></r>\f",
+      "b": "<r><k>x</k></r>",
+      "expectedA": "\f<r><k>x</k></r>\f",
+      "expectedB": "<r><k>x</k></r>",
+      "equal": false,
+      "why": "form feed is not XML whitespace, so widening the trim class to either language's \\s would eat it. Completes the boundary set: space in, form feed and NBSP and U+0085 out"
+    }
+  ]
+}

@@ -61,8 +61,10 @@ type Recommendation struct {
 	RiskPolicy string          `json:"risk_policy"`
 }
 
-// ConvertHipcheckToHDF converts a Hipcheck JSON report to HDF Results.
-func ConvertHipcheckToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the report.
+// ConvertHipcheckToHDF and ExpectedRequirementCount share it so they accept
+// and reject exactly the same inputs.
+func parseInput(input []byte) (*Report, error) {
 	if err := shared.ValidateJSONSize(input, "hipcheck", 0); err != nil {
 		return nil, fmt.Errorf("hipcheck: %w", err)
 	}
@@ -77,6 +79,32 @@ func ConvertHipcheckToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	if report.HipcheckVersion == "" && report.RepoName == "" {
 		return nil, fmt.Errorf("hipcheck: input does not look like a Hipcheck report")
 	}
+	return &report, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per passing, failing, and errored analysis with no size limit, or
+// one no-findings requirement when the report carries none.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Hipcheck analyses"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := len(report.Passing) + len(report.Failing) + len(report.Errored)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertHipcheckToHDF converts a Hipcheck JSON report to HDF Results.
+func ConvertHipcheckToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	parsed, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+	report := *parsed
 
 	startTime := hdfutil.ParseTimestamp(report.AnalyzedAt)
 	if startTime.IsZero() {

@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -200,9 +203,8 @@ func TestAmendVerifyCommand(t *testing.T) {
 		require.NoError(t, os.WriteFile(amendmentsPath, []byte(expiredAmendments), 0o600))
 
 		stdout, _, err := executeCommand("amend", "verify", amendmentsPath)
-		require.NoError(t, err)
-		assert.Contains(t, stdout, "Expired:         1")
-		assert.Contains(t, stdout, "expired or invalid")
+		require.Error(t, err)
+		assert.Regexp(t, `Expired:\s+1`, stdout)
 	})
 
 	t.Run("verify with --json returns JSON", func(t *testing.T) {
@@ -278,11 +280,8 @@ func TestAmendVerifyCommand(t *testing.T) {
 		require.NoError(t, os.WriteFile(amendPath, []byte(badAmendments), 0o600))
 
 		stdout, _, err := executeCommand("amend", "verify", amendPath, resultsPath)
-		// Chain verification may fail or succeed depending on impl, but output should mention missing
-		if err != nil {
-			assert.Contains(t, err.Error(), "verification failed")
-		}
-		_ = stdout
+		require.Error(t, err)
+		assert.Contains(t, stdout, "NONEXISTENT-99")
 	})
 
 	t.Run("missing file returns error", func(t *testing.T) {
@@ -308,7 +307,8 @@ func TestBuildAmendmentsFromOverrides(t *testing.T) {
 		{RequirementID: "AC-1", AmendType: "waiver", Reason: "Risk accepted", ExpiresAt: "2026-12-31", Approver: "issm@acme.com"},
 		{RequirementID: "AC-2", AmendType: "waiver", Reason: "Risk accepted", ExpiresAt: "2026-12-31", Approver: "issm@acme.com"},
 	}
-	doc := buildAmendmentsFromOverrides(overrides)
+	doc, err := buildAmendmentsFromOverrides(overrides)
+	require.NoError(t, err)
 
 	rawOverrides, ok := doc["overrides"].([]map[string]interface{})
 	require.True(t, ok)
@@ -470,4 +470,580 @@ func TestTruncateToDate(t *testing.T) {
 			assert.Equal(t, tt.want, truncateToDate(tt.input))
 		})
 	}
+}
+
+// writeChainedAmendments writes an amendments file whose overrides are linked
+// by previousChecksum, the way `hdf amend create` emits them.
+func writeChainedAmendments(t *testing.T, dir, name string, reasons ...string) string {
+	t.Helper()
+	overrides := make([]map[string]interface{}, 0, len(reasons))
+	prev := ""
+	for i, reason := range reasons {
+		ov := map[string]interface{}{
+			"type":          "waiver",
+			"requirementId": fmt.Sprintf("AC-%d", i+1),
+			"status":        "passed",
+			"reason":        reason,
+			"appliedBy":     map[string]interface{}{"type": "email", "identifier": "admin@example.com"},
+			"appliedAt":     "2026-03-01T00:00:00Z",
+			"expiresAt":     "2099-12-31T00:00:00Z",
+		}
+		if prev != "" {
+			ov["previousChecksum"] = map[string]interface{}{"algorithm": "sha256", "value": prev}
+		}
+		prev = amend.ChecksumOverride(ov)
+		overrides = append(overrides, ov)
+	}
+	raw, err := json.Marshal(map[string]interface{}{"name": "chained", "overrides": overrides})
+	require.NoError(t, err)
+	path := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, raw, 0o600))
+	return path
+}
+
+func TestAmendVerifyExitStatus(t *testing.T) {
+	t.Run("all-valid file exits zero", func(t *testing.T) {
+		dir := t.TempDir()
+		path := writeChainedAmendments(t, dir, "valid.json", "first reason", "second reason")
+
+		stdout, _, err := executeCommand("amend", "verify", path)
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "All amendments are valid")
+	})
+
+	t.Run("expired amendment exits non-zero with no flag required", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "expired.json")
+		doc := `{
+			"name": "expired",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "lapsed",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2020-01-01T00:00:00Z",
+				"expiresAt": "2020-06-30T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		_, _, err := executeCommand("amend", "verify", path)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expired")
+	})
+
+	t.Run("tampered amendment exits non-zero", func(t *testing.T) {
+		dir := t.TempDir()
+		path := writeChainedAmendments(t, dir, "chained.json", "first reason", "second reason", "third reason")
+
+		raw, readErr := os.ReadFile(path) //nolint:gosec // test-controlled path
+		require.NoError(t, readErr)
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(raw, &doc))
+		second := doc["overrides"].([]interface{})[1].(map[string]interface{})
+		second["reason"] = "TAMPERED - actually we just wanted it gone"
+		tampered, marshalErr := json.Marshal(doc)
+		require.NoError(t, marshalErr)
+		tamperedPath := filepath.Join(dir, "tampered.json")
+		require.NoError(t, os.WriteFile(tamperedPath, tampered, 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", tamperedPath)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "chain")
+		assert.Contains(t, stdout, "AC-3")
+	})
+
+	t.Run("structurally invalid amendment exits non-zero", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "malformed.json")
+		doc := `{
+			"name": "malformed",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", path)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid")
+		assert.Contains(t, stdout, "reason is required")
+	})
+
+	// Expired and invalid have different remedies (renew the review vs fix the
+	// document), so the summary must not collapse them into one number.
+	t.Run("summary distinguishes expired from invalid", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "mixed.json")
+		doc := `{
+			"name": "mixed",
+			"overrides": [
+				{
+					"type": "waiver",
+					"requirementId": "AC-1",
+					"status": "passed",
+					"reason": "lapsed",
+					"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+					"appliedAt": "2020-01-01T00:00:00Z",
+					"expiresAt": "2020-06-30T00:00:00Z"
+				},
+				{
+					"type": "waiver",
+					"requirementId": "AC-2",
+					"status": "passed",
+					"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+					"appliedAt": "2026-03-01T00:00:00Z",
+					"expiresAt": "2099-12-31T00:00:00Z"
+				}
+			]
+		}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", path)
+		require.Error(t, err)
+		assert.Regexp(t, `Expired:\s+1`, stdout)
+		assert.Regexp(t, `Invalid:\s+1`, stdout)
+	})
+
+	// The ruling on this command is that an expired amendment is a failure, not
+	// a warning: no flag may opt back into the old green. Asserting on the flag
+	// set is not enough — inspecting a parentless cobra command shows an empty
+	// set because root's persistent flags are not attached, which is how --json
+	// bypassed the exit code undetected. Execute every flag instead.
+	t.Run("no flag tolerates an expired amendment", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "expired.json")
+		doc := `{
+			"name": "expired",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "lapsed",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2020-01-01T00:00:00Z",
+				"expiresAt": "2020-06-30T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		resultsPath := filepath.Join(dir, "results.json")
+		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
+
+		for _, args := range [][]string{
+			{"amend", "verify", path},
+			{"amend", "verify", "--json", path},
+			{"amend", "verify", path, resultsPath},
+			{"amend", "verify", "--json", path, resultsPath},
+			{"amend", "verify", "--no-headers", path},
+			{"amend", "verify", "--debug", path},
+		} {
+			_, _, err := executeCommand(args...)
+			require.Errorf(t, err, "expired amendment passed under %v", args)
+			require.Containsf(t, err.Error(), "verification failed",
+				"under %v the error was not a verification verdict: %v", args, err)
+		}
+	})
+
+	// The JSON body reported the failure while the process exited 0, so anything
+	// piping to jq saw a green step. The verdict belongs in the exit code on
+	// both paths.
+	t.Run("json output does not bypass the exit code", func(t *testing.T) {
+		dir := t.TempDir()
+		path := writeChainedAmendments(t, dir, "chained.json", "first reason", "second reason", "third reason")
+
+		raw, readErr := os.ReadFile(path) //nolint:gosec // test-controlled path
+		require.NoError(t, readErr)
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(raw, &doc))
+		doc["overrides"].([]interface{})[1].(map[string]interface{})["reason"] = "TAMPERED"
+		tampered, marshalErr := json.Marshal(doc)
+		require.NoError(t, marshalErr)
+		tamperedPath := filepath.Join(dir, "tampered.json")
+		require.NoError(t, os.WriteFile(tamperedPath, tampered, 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", "--json", tamperedPath)
+		require.Error(t, err)
+
+		// The body must still be parseable JSON carrying the verdict.
+		var result amend.VerifyResult
+		require.NoError(t, json.Unmarshal([]byte(stdout), &result))
+		assert.False(t, result.Chain.Valid)
+		assert.True(t, result.HasErrors)
+	})
+
+	t.Run("json output carries the chain and invalid counts", func(t *testing.T) {
+		dir := t.TempDir()
+		path := writeChainedAmendments(t, dir, "valid.json", "first reason", "second reason")
+
+		stdout, _, err := executeCommand("amend", "verify", "--json", path)
+		require.NoError(t, err)
+
+		var result amend.VerifyResult
+		require.NoError(t, json.Unmarshal([]byte(stdout), &result))
+		assert.Equal(t, 2, result.TotalOverrides)
+		assert.Equal(t, 2, result.ValidOverrides)
+		assert.Equal(t, 0, result.InvalidCount)
+		assert.True(t, result.Chain.Established)
+		assert.True(t, result.Chain.Valid)
+	})
+}
+
+func TestAmendApplyRefusesUnverified(t *testing.T) {
+	setup := func(t *testing.T) (string, string) {
+		t.Helper()
+		dir := t.TempDir()
+		resultsPath := filepath.Join(dir, "results.json")
+		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
+		return dir, resultsPath
+	}
+
+	t.Run("expired amendments are refused, not applied", func(t *testing.T) {
+		dir, resultsPath := setup(t)
+		path := filepath.Join(dir, "expired.json")
+		doc := `{
+			"name": "expired",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "lapsed",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2020-01-01T00:00:00Z",
+				"expiresAt": "2020-06-30T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		outPath := filepath.Join(dir, "out.json")
+		err := runAmendApply(nil, resultsPath, path, outPath)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expired")
+		assert.NoFileExists(t, outPath, "a refused apply must not write output")
+	})
+
+	t.Run("a broken chain is refused", func(t *testing.T) {
+		dir, resultsPath := setup(t)
+		path := writeChainedAmendments(t, dir, "chained.json", "first reason", "second reason")
+
+		raw, readErr := os.ReadFile(path) //nolint:gosec // test-controlled path
+		require.NoError(t, readErr)
+		var doc map[string]interface{}
+		require.NoError(t, json.Unmarshal(raw, &doc))
+		doc["overrides"].([]interface{})[0].(map[string]interface{})["reason"] = "TAMPERED"
+		tampered, marshalErr := json.Marshal(doc)
+		require.NoError(t, marshalErr)
+		tamperedPath := filepath.Join(dir, "tampered.json")
+		require.NoError(t, os.WriteFile(tamperedPath, tampered, 0o600))
+
+		err := runAmendApply(nil, resultsPath, tamperedPath, filepath.Join(dir, "out.json"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "chain")
+	})
+
+	t.Run("a structurally invalid document is refused", func(t *testing.T) {
+		dir, resultsPath := setup(t)
+		path := filepath.Join(dir, "malformed.json")
+		doc := `{
+			"name": "malformed",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		err := runAmendApply(nil, resultsPath, path, filepath.Join(dir, "out.json"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid")
+	})
+
+	// Apply and verify must never disagree about the same file.
+	t.Run("apply accepts exactly what verify accepts", func(t *testing.T) {
+		dir, resultsPath := setup(t)
+		path := filepath.Join(dir, "valid.json")
+		doc := `{
+			"name": "valid",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "risk accepted",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		_, _, verifyErr := executeCommand("amend", "verify", path)
+		require.NoError(t, verifyErr)
+
+		outPath := filepath.Join(dir, "out.json")
+		require.NoError(t, runAmendApply(nil, resultsPath, path, outPath))
+		assert.FileExists(t, outPath)
+	})
+}
+
+// The two-argument path reports on the amendments document's own link to the
+// results it was authored against. A check that did not run must not render as
+// a check that passed, so an absent link gets no tick.
+func TestAmendVerifyResultsLink(t *testing.T) {
+	writeResults := func(t *testing.T, dir string) string {
+		t.Helper()
+		p := filepath.Join(dir, "results.json")
+		require.NoError(t, os.WriteFile(p, []byte(testResults), 0o600))
+		return p
+	}
+
+	t.Run("an absent link reads as not recorded, not as a pass", func(t *testing.T) {
+		dir := t.TempDir()
+		resultsPath := writeResults(t, dir)
+		amendPath := filepath.Join(dir, "amend.json")
+		doc := `{
+			"name": "no-link",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "risk accepted",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(amendPath, []byte(doc), 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", amendPath, resultsPath)
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "Results link:     not recorded")
+		assert.NotContains(t, stdout, "Results link:     ✓")
+	})
+
+	t.Run("a matching link renders as verified", func(t *testing.T) {
+		dir := t.TempDir()
+		resultsPath := writeResults(t, dir)
+		sum := sha256.Sum256([]byte(testResults))
+
+		amendPath := filepath.Join(dir, "amend.json")
+		doc := fmt.Sprintf(`{
+			"name": "linked",
+			"previousChecksum": {"algorithm": "sha256", "value": %q},
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "risk accepted",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`, hex.EncodeToString(sum[:]))
+		require.NoError(t, os.WriteFile(amendPath, []byte(doc), 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", amendPath, resultsPath)
+		require.NoError(t, err)
+		assert.Contains(t, stdout, "Results link:     \u2713")
+		assert.Contains(t, stdout, "matches the results document")
+	})
+
+	t.Run("a mismatched link fails and is reported", func(t *testing.T) {
+		dir := t.TempDir()
+		resultsPath := writeResults(t, dir)
+		amendPath := filepath.Join(dir, "amend.json")
+		doc := `{
+			"name": "bad-link",
+			"previousChecksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"},
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "risk accepted",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(amendPath, []byte(doc), 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", amendPath, resultsPath)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "results link does not match")
+		assert.Contains(t, stdout, "✗")
+	})
+
+	// A mismatched link on an otherwise-clean document must still exit non-zero
+	// under --json, and joins any other failing dimension in the message.
+	t.Run("a mismatched link and an expiry are both named", func(t *testing.T) {
+		dir := t.TempDir()
+		resultsPath := writeResults(t, dir)
+		amendPath := filepath.Join(dir, "amend.json")
+		doc := `{
+			"name": "bad-link-expired",
+			"previousChecksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"},
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "AC-1",
+				"status": "passed",
+				"reason": "lapsed",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2020-01-01T00:00:00Z",
+				"expiresAt": "2020-06-30T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(amendPath, []byte(doc), 0o600))
+
+		_, _, err := executeCommand("amend", "verify", "--json", amendPath, resultsPath)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "1 expired")
+		assert.Contains(t, err.Error(), "results link does not match")
+	})
+}
+
+// requirementIds and schema-error text come straight out of an untrusted
+// document and land in a refusal message on the terminal, so every path that
+// renders them must strip escape sequences.
+func TestAmendUntrustedTextIsSanitized(t *testing.T) {
+	const esc = "\x1b[31mRED\x1b[0m"
+
+	writeAmendments := func(t *testing.T, dir, name, reqID string) string {
+		t.Helper()
+		overrides := []map[string]interface{}{
+			{
+				"type": "waiver", "requirementId": reqID, "status": "passed",
+				"reason":    "first",
+				"appliedBy": map[string]interface{}{"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+			},
+		}
+		second := map[string]interface{}{
+			"type": "waiver", "requirementId": reqID + "-2", "status": "passed",
+			"reason":    "second",
+			"appliedBy": map[string]interface{}{"type": "email", "identifier": "admin@example.com"},
+			"appliedAt": "2026-03-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+			"previousChecksum": map[string]interface{}{
+				"algorithm": "sha256", "value": amend.ChecksumOverride(overrides[0]),
+			},
+		}
+		// Break the chain so the refusal has to name the offending override.
+		overrides[0]["reason"] = "TAMPERED"
+		raw, err := json.Marshal(map[string]interface{}{
+			"name": "esc", "overrides": []interface{}{overrides[0], second},
+		})
+		require.NoError(t, err)
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(path, raw, 0o600))
+		return path
+	}
+
+	t.Run("apply refusal strips escape sequences", func(t *testing.T) {
+		dir := t.TempDir()
+		resultsPath := filepath.Join(dir, "results.json")
+		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
+		amendPath := writeAmendments(t, dir, "esc.json", "AC-"+esc)
+
+		err := runAmendApply(nil, resultsPath, amendPath, filepath.Join(dir, "out.json"))
+		require.Error(t, err)
+		assert.NotContains(t, err.Error(), "\x1b", "refusal must not carry escape sequences")
+		assert.Contains(t, err.Error(), "RED", "the identifier itself is still reported")
+	})
+
+	// The chain-break line is where an attacker-controlled requirementId reaches
+	// the terminal, so assert it is BOTH present and stripped — a test that only
+	// checks for absence of ESC would pass on empty output.
+	t.Run("verify summary strips escape sequences from the chain break", func(t *testing.T) {
+		dir := t.TempDir()
+		amendPath := writeAmendments(t, dir, "esc.json", "AC-"+esc)
+
+		stdout, _, err := executeCommand("amend", "verify", amendPath)
+		require.Error(t, err)
+		assert.Contains(t, stdout, "previousChecksum does not match")
+		assert.Contains(t, stdout, "RED", "the identifier is still reported, just defanged")
+		assert.NotContains(t, stdout, "\x1b")
+	})
+
+	// The schema-error line carries document-controlled text: `labels` is an open
+	// key space (additionalProperties: {type: string}), so a bad label KEY lands
+	// in the error path verbatim. An earlier version of this test used an enum
+	// violation, where the message quotes only schema-derived values, and so
+	// could never fail.
+	t.Run("schema error paths are stripped", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "labels.json")
+		doc := `{"name":"n","labels":{"evil\u001b[31mRED\u001b[0mkey":123},` +
+			`"overrides":[{"type":"waiver","requirementId":"AC-1","status":"passed","reason":"r",` +
+			`"appliedBy":{"type":"email","identifier":"admin@example.com"},` +
+			`"appliedAt":"2026-03-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]}`
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", path)
+		require.Error(t, err)
+		assert.Contains(t, stdout, "Invalid type", "the schema error must still be reported")
+		assert.Contains(t, stdout, "RED", "the offending key is still named, just defanged")
+		assert.NotContains(t, stdout, "\x1b")
+	})
+
+	// The results-link line embeds the document's own recorded checksum value.
+	t.Run("the results link message is stripped", func(t *testing.T) {
+		dir := t.TempDir()
+		resultsPath := filepath.Join(dir, "results.json")
+		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
+
+		path := filepath.Join(dir, "link.json")
+		doc := map[string]interface{}{
+			"name": "link",
+			"previousChecksum": map[string]interface{}{
+				"algorithm": "sha256", "value": "dead" + esc + "beef",
+			},
+			"overrides": []interface{}{map[string]interface{}{
+				"type": "waiver", "requirementId": "AC-1", "status": "passed", "reason": "r",
+				"appliedBy": map[string]interface{}{"type": "email", "identifier": "a@b.c"},
+				"appliedAt": "2026-03-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+			}},
+		}
+		raw, marshalErr := json.Marshal(doc)
+		require.NoError(t, marshalErr)
+		require.NoError(t, os.WriteFile(path, raw, 0o600))
+
+		stdout, _, err := executeCommand("amend", "verify", path, resultsPath)
+		require.Error(t, err)
+		assert.Contains(t, stdout, "Results link:")
+		assert.Contains(t, stdout, "mismatch")
+		assert.NotContains(t, stdout, "\x1b")
+	})
+
+	t.Run("missing requirement ids are stripped", func(t *testing.T) {
+		dir := t.TempDir()
+		resultsPath := filepath.Join(dir, "results.json")
+		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
+
+		amendPath := filepath.Join(dir, "missing.json")
+		doc := map[string]interface{}{
+			"name": "missing",
+			"overrides": []interface{}{map[string]interface{}{
+				"type": "waiver", "requirementId": "NOPE-" + esc, "status": "passed",
+				"reason":    "unmatched",
+				"appliedBy": map[string]interface{}{"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+			}},
+		}
+		raw, err := json.Marshal(doc)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(amendPath, raw, 0o600))
+
+		stdout, _, cmdErr := executeCommand("amend", "verify", amendPath, resultsPath)
+		require.Error(t, cmdErr)
+		assert.NotContains(t, stdout, "\x1b")
+		assert.Contains(t, stdout, "Missing requirements:")
+	})
 }

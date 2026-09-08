@@ -81,28 +81,12 @@ var arnRe = regexp.MustCompile(`arn:aws[^:]*:config:([^:]+):(\d{12}):config-rule
 
 // ConvertAWSConfigToHDF converts a ConfigRulesFile JSON export to HDF format.
 func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "aws-config", 0); err != nil {
-		return nil, fmt.Errorf("aws-config: %w", err)
+	limitedRules, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 
 	resultsChecksum := shared.InputChecksum(input)
-
-	var data ConfigRulesFile
-	if err := json.Unmarshal(input, &data); err != nil {
-		return nil, fmt.Errorf("failed to parse AWS Config JSON: %w", err)
-	}
-	if data.ConfigRules == nil {
-		return nil, fmt.Errorf("invalid AWS Config export: ConfigRules field is required")
-	}
-
-	limitedRules := shared.LimitSliceWithWarning(data.ConfigRules, 0, "rule")
-
-	if err := checkRevisionAlignment(limitedRules); err != nil {
-		return nil, err
-	}
 
 	baseline := buildBaseline(limitedRules, resultsChecksum)
 	now := time.Now().UTC()
@@ -133,6 +117,45 @@ func ConvertAWSConfigToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Components:       []hdf.Component{target},
 		Timestamp:        &now,
 	}), nil
+}
+
+// parseInput applies the converter's input guards and returns the size-limited,
+// revision-aligned ConfigRules. ConvertAWSConfigToHDF and
+// ExpectedRequirementCount share it so they accept and reject the same inputs.
+func parseInput(input []byte) ([]ConfigRule, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "aws-config", 0); err != nil {
+		return nil, fmt.Errorf("aws-config: %w", err)
+	}
+
+	var data ConfigRulesFile
+	if err := json.Unmarshal(input, &data); err != nil {
+		return nil, fmt.Errorf("failed to parse AWS Config JSON: %w", err)
+	}
+	if data.ConfigRules == nil {
+		return nil, fmt.Errorf("invalid AWS Config export: ConfigRules field is required")
+	}
+
+	limitedRules := shared.LimitSliceWithWarning(data.ConfigRules, 0, "rule")
+
+	if err := checkRevisionAlignment(limitedRules); err != nil {
+		return nil, err
+	}
+	return limitedRules, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per ConfigRules[] entry within the size limit. An empty export
+// yields zero — the converter emits no no-findings placeholder.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "AWS Config rules"
+	rules, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	return len(rules), unit, nil
 }
 
 // buildBaseline creates one EvaluatedBaseline from the (already size-limited) ConfigRules.

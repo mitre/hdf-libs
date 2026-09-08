@@ -28,6 +28,12 @@ func (c *gitlabConverter) Convert(input []byte) ([]byte, error) {
 	return output, nil
 }
 
+// ExpectedRequirementCount implements RequirementCountExpecter with the
+// converter's own input-to-requirement relation.
+func (c *gitlabConverter) ExpectedRequirementCount(input []byte) (int, string, error) {
+	return gitlab.ExpectedRequirementCount(input)
+}
+
 func init() {
 	conv := &gitlabConverter{}
 	RegisterConverter("gitlab", "hdf", conv)

@@ -135,18 +135,56 @@ func groupKey(f TrufflehogFinding) string {
 	return f.DetectorName + " " + f.DecoderName
 }
 
-// groupFindings groups findings by DetectorName+DecoderName, preserving insertion order.
-func groupFindings(findings []TrufflehogFinding) ([]string, map[string][]TrufflehogFinding) {
+// groupFindings caps the findings and groups them by DetectorName+DecoderName,
+// preserving insertion order. It is the single definition of the
+// input-to-requirement relation: the conversion builds requirements from it
+// and ExpectedRequirementCount counts it. The capped slice is returned for the
+// scan-target metadata.
+func groupFindings(findings []TrufflehogFinding) ([]TrufflehogFinding, []string, map[string][]TrufflehogFinding) {
+	limitedFindings := shared.LimitSliceWithWarning(findings, 0, "finding")
 	order := []string{}
 	groups := map[string][]TrufflehogFinding{}
-	for _, f := range findings {
+	for _, f := range limitedFindings {
 		key := groupKey(f)
 		if _, seen := groups[key]; !seen {
 			order = append(order, key)
 		}
 		groups[key] = append(groups[key], f)
 	}
-	return order, groups
+	return limitedFindings, order, groups
+}
+
+// parseInput applies the converter's input guards and decodes the findings. A
+// clean TruffleHog scan emits empty stdout (exit-code-first), not [], so
+// empty/whitespace-only input is zero findings, like an explicit [].
+// ConvertTrufflehogToHDF and ExpectedRequirementCount share it so they accept
+// and reject exactly the same inputs.
+func parseInput(input []byte) ([]TrufflehogFinding, error) {
+	if err := shared.ValidateJSONSize(input, "trufflehog", 0); err != nil {
+		return nil, fmt.Errorf("trufflehog: %w", err)
+	}
+	if len(bytes.TrimSpace(input)) == 0 {
+		return nil, nil
+	}
+	return parseFindings(input)
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct detector/decoder pair, or one no-findings requirement
+// when there are none — including for empty input, which the converter
+// accepts as a clean scan. Computed from the input alone, through the same
+// grouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct TruffleHog detector/decoder pairs"
+	findings, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	_, order, _ := groupFindings(findings)
+	if len(order) == 0 {
+		return 1, unit, nil
+	}
+	return len(order), unit, nil
 }
 
 // marshalPlain serializes v without Go's default HTML escaping, so `<` and `>`
@@ -327,25 +365,14 @@ func firstSourceName(findings []TrufflehogFinding) string {
 // ConvertTrufflehogToHDF converts TruffleHog output to HDF format.
 // Accepts JSON array, single JSON object, or NDJSON input.
 func ConvertTrufflehogToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if err := shared.ValidateJSONSize(input, "trufflehog", 0); err != nil {
-		return nil, fmt.Errorf("trufflehog: %w", err)
-	}
-
-	// A clean TruffleHog scan emits empty stdout (exit-code-first), not []. Treat
-	// empty/whitespace-only input as zero findings, like an explicit [].
-	var findings []TrufflehogFinding
-	if len(bytes.TrimSpace(input)) > 0 {
-		var err error
-		findings, err = parseFindings(input)
-		if err != nil {
-			return nil, err
-		}
+	findings, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 
 	checksum := shared.InputChecksum(input)
 
-	limitedFindings := shared.LimitSliceWithWarning(findings, 0, "finding")
-	order, groups := groupFindings(limitedFindings)
+	limitedFindings, order, groups := groupFindings(findings)
 
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, reqID := range order {

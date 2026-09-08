@@ -3,14 +3,15 @@ name: Workflow Lint
 # Static security analysis of the workflow files themselves (credential
 # persistence, cache poisoning, template injection, impostor pins).
 # Annotation mode (advanced-security: false) needs no security-events
-# permission, so it also runs on PRs from forks.
+# permission.
+#
+# Weekly re-scan only: push/PR runs live in ci.yml's scan-workflows job,
+# which emits SARIF and gates the pipeline through the HDF threshold check
+# (gate-hdf-scans). This schedule exists so newly added zizmor audits surface
+# without waiting for a PR.
 
 on:
-  push:
-    branches: [main]
-  pull_request:
   schedule:
-    # Weekly re-scan so newly added zizmor audits surface without a PR.
     - cron: '30 6 * * 1'
 
 permissions: {}

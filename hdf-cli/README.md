@@ -483,18 +483,19 @@ USAGE
   hdf amend <subcommand> [flags]
 
 SUBCOMMANDS
-  apply    Merge amendments into a results file (sets effectiveStatus)
+  apply    Merge amendments into a results file (sets effectiveStatus); refuses
+           a document that does not verify
   create   Create waivers, attestations, and other amendments
   draft    Scaffold an incomplete amendments draft from a results file
   list     List amendments in an amendments file
-  verify   Verify amendment validity, expiration, and chain integrity
+  verify   Verify amendment structure, expiration, and chain integrity
   set      Set/unset top-level fields
 
 EXAMPLES
   hdf amend apply --results results.json --amendments waivers.json -o merged.json
   hdf amend list waivers.json
-  hdf amend verify waivers.json                     # expiration check
-  hdf amend verify waivers.json results.json         # full chain verification
+  hdf amend verify waivers.json                     # structure, expiry, chain
+  hdf amend verify waivers.json results.json         # also check against results
 ```
 
 Example output:
@@ -512,10 +513,18 @@ AC-1         waiver  passed          2099-12-31  Risk accepted per ATO
 $ hdf amend verify waivers.json
 Total amendments: 1
 Valid:            1
-Expired:         0
+Expired:          0
+Invalid:          0
+Chain:            not established
 
 All amendments are valid.
 ```
+
+`verify` exits non-zero when any amendment is expired, structurally invalid, or
+when the `previousChecksum` chain is broken. An expired amendment is a failure,
+not a warning, and no flag makes one pass — so the command is safe to wire
+directly into CI as a gate. `apply` refuses the same documents rather than
+merging them, as does the `hdf_apply_amendment` MCP tool.
 
 ### enrich
 

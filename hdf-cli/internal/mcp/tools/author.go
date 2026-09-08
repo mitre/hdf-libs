@@ -14,6 +14,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -192,6 +193,12 @@ func assembleJudgmentAmendments(in authorInput, gen *hdf.Generator) ([]byte, int
 	now := time.Now().UTC().Format(time.RFC3339)
 	if terr := stampAgentOverrides(in.Content, now); terr != nil {
 		return nil, 0, terr
+	}
+	// Chained after stamping, so the hash covers the server's authority fields.
+	// This is the route where an agent records a risk decision, so it is the
+	// one that most needs to be tamper-evident.
+	if err := amend.ChainOverrides(in.Content); err != nil {
+		return nil, 0, mcperr.New(mcperr.SchemaInvalid, "could not chain the overrides: "+err.Error(), nil)
 	}
 	b, err := hdfdoc.BuildAmendments(in.Name, in.Content, gen)
 	if err != nil {

@@ -14,6 +14,7 @@ func init() {
 		"oscal-catalog",
 		"OSCAL Catalog to HDF Baseline", "oscal-catalog",
 		oscal.ConvertCatalogToHDF,
+		WithExpectedRequirementCount(oscal.ExpectedCatalogRequirementCount),
 	)
 
 	// oscal-component-definition — Convert component definition to baseline
@@ -21,6 +22,7 @@ func init() {
 		"oscal-component-definition",
 		"OSCAL Component Definition to HDF Baseline", "oscal-component-definition",
 		oscal.ConvertComponentDefinitionToHDF,
+		WithExpectedRequirementCount(oscal.ExpectedComponentDefinitionRequirementCount),
 	)
 
 	// oscal-ssp — Convert system security plan to HDF system
@@ -38,6 +40,7 @@ func init() {
 		"oscal-assessment-plan",
 		"OSCAL Assessment Plan to HDF Plan", "oscal-assessment-plan",
 		oscal.ConvertAssessmentPlanToHDF,
+		WithExpectedRequirementCount(oscal.ExpectedAssessmentPlanRequirementCount),
 	)
 
 	// oscal-poam — Convert POA&M to HDF amendments
@@ -45,6 +48,7 @@ func init() {
 		"oscal-poam",
 		"OSCAL POA&M to HDF Amendments", "oscal-poam",
 		oscal.ConvertPOAMToHDF,
+		WithExpectedRequirementCount(oscal.ExpectedPOAMRequirementCount),
 	)
 
 	// oscal-assessment-results / oscal-sar — Convert SAR to HDF results
@@ -52,9 +56,10 @@ func init() {
 		[]string{"oscal-assessment-results", "oscal-sar"},
 		"OSCAL Assessment Results to HDF", "oscal-assessment-results",
 		oscal.ConvertAssessmentResultsToHDF,
+		WithExpectedRequirementCount(oscal.ExpectedAssessmentResultsRequirementCount),
 	)
 
-	// oscal — Auto-detect OSCAL document type and delegate
+	// oscal — Auto-detect OSCAL document type and delegate, relation included.
 	RegisterConverter("oscal", "hdf", &oscalAutoDetectConverter{})
 }
 
@@ -83,13 +88,14 @@ func (c *oscalAutoDetectConverter) Name() string {
 	return "OSCAL (auto-detect) to HDF"
 }
 
-func (c *oscalAutoDetectConverter) Convert(input []byte) ([]byte, error) {
+// oscalDelegate resolves the typed converter for the detected document type.
+// Convert and ExpectedRequirementCount share it so both route identically.
+func oscalDelegate(input []byte) (Converter, string, error) {
 	docType, err := oscal.DetectDocumentType(input)
 	if err != nil {
-		return nil, fmt.Errorf("oscal auto-detect failed: %w", err)
+		return nil, "", fmt.Errorf("oscal auto-detect failed: %w", err)
 	}
 
-	// Map detected type to registered converter name
 	converterName := ""
 	switch docType {
 	case "catalog":
@@ -107,15 +113,40 @@ func (c *oscalAutoDetectConverter) Convert(input []byte) ([]byte, error) {
 	case "plan-of-action-and-milestones":
 		converterName = "oscal-poam"
 	default:
-		return nil, fmt.Errorf("oscal auto-detect: unsupported document type %q", docType)
+		return nil, "", fmt.Errorf("oscal auto-detect: unsupported document type %q", docType)
 	}
 
 	delegate, err := GetConverter(converterName, "hdf")
 	if err != nil {
-		return nil, fmt.Errorf("oscal auto-detect: no converter for %s: %w", docType, err)
+		return nil, "", fmt.Errorf("oscal auto-detect: no converter for %s: %w", docType, err)
 	}
+	return delegate, docType, nil
+}
 
+func (c *oscalAutoDetectConverter) Convert(input []byte) ([]byte, error) {
+	delegate, _, err := oscalDelegate(input)
+	if err != nil {
+		return nil, err
+	}
 	return delegate.Convert(input)
+}
+
+// ExpectedRequirementCount routes to the delegate's relation. An SSP yields an
+// hdf-system document with no primary items, so the converter states no
+// relation for it rather than a count.
+func (c *oscalAutoDetectConverter) ExpectedRequirementCount(input []byte) (int, string, error) {
+	delegate, docType, err := oscalDelegate(input)
+	if err != nil {
+		return 0, "", err
+	}
+	if docType == "system-security-plan" {
+		return 0, "", ErrNoExpectation
+	}
+	ex, ok := delegate.(RequirementCountExpecter)
+	if !ok {
+		return 0, "", ErrNoExpectation
+	}
+	return ex.ExpectedRequirementCount(input)
 }
 
 // oscalProfileConverter handles OSCAL profile → HDF baseline conversion,
@@ -126,7 +157,9 @@ func (c *oscalProfileConverter) Name() string {
 	return "OSCAL Profile to HDF Baseline"
 }
 
-func (c *oscalProfileConverter) Convert(input []byte) ([]byte, error) {
+// readOSCALCatalog loads the catalog the profile is resolved against. Convert
+// and ExpectedRequirementCount share it so both fail identically without one.
+func readOSCALCatalog() ([]byte, error) {
 	if oscalCatalogPath == "" {
 		return nil, fmt.Errorf("--catalog flag is required for oscal-profile conversion.\n" +
 			"Usage: hdf convert oscal-profile to hdf profile.json --catalog catalog.json [output.json]\n" +
@@ -136,6 +169,24 @@ func (c *oscalProfileConverter) Convert(input []byte) ([]byte, error) {
 	catalogData, err := os.ReadFile(oscalCatalogPath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return nil, fmt.Errorf("failed to read catalog file %q: %w", oscalCatalogPath, err)
+	}
+	return catalogData, nil
+}
+
+// ExpectedRequirementCount implements RequirementCountExpecter by resolving
+// the profile against the same catalog Convert uses.
+func (c *oscalProfileConverter) ExpectedRequirementCount(input []byte) (int, string, error) {
+	catalogData, err := readOSCALCatalog()
+	if err != nil {
+		return 0, "", err
+	}
+	return oscal.ExpectedProfileRequirementCount(input, catalogData)
+}
+
+func (c *oscalProfileConverter) Convert(input []byte) ([]byte, error) {
+	catalogData, err := readOSCALCatalog()
+	if err != nil {
+		return nil, err
 	}
 
 	baseline, err := oscal.ConvertProfileToHDF(input, catalogData, version)

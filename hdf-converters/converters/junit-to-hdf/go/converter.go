@@ -18,6 +18,10 @@ type junitTestSuites struct {
 	XMLName    xml.Name         `xml:"testsuites"`
 	Name       string           `xml:"name,attr"`
 	TestSuites []junitTestSuite `xml:"testsuite"`
+	// Node's built-in runner (node --test --test-reporter=junit) emits testcases
+	// as DIRECT children of <testsuites> with no <testsuite> wrapper. Without this
+	// they parse as nothing, and a red run converts to an empty green document.
+	TestCases []junitTestCase `xml:"testcase"`
 }
 
 type junitTestSuite struct {
@@ -75,14 +79,7 @@ var defaultNIST = []string{"SA-11"}
 
 // ConvertJUnitToHDF converts JUnit XML test results to HDF format.
 func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input")
-	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, fmt.Errorf("junit: %w", err)
-	}
-
-	suites, name, err := parseJUnitXML(input)
+	suites, name, err := parseInput(input)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +164,15 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 		if name == "" {
 			name = "JUnit Test Results"
 		}
-		return suites.TestSuites, name, nil
+		// Testcases sitting directly under <testsuites> become an implicit suite so
+		// they convert exactly like wrapped ones. Appended after any explicit
+		// suites, so a document carrying both keeps all of its cases in a
+		// deterministic order rather than silently dropping the loose ones.
+		parsed := suites.TestSuites
+		if len(suites.TestCases) > 0 {
+			parsed = append(parsed, junitTestSuite{Name: name, TestCases: suites.TestCases})
+		}
+		return parsed, name, nil
 	}
 
 	var suite junitTestSuite
@@ -341,4 +346,38 @@ func buildCodeDesc(tc junitTestCase) string {
 		return fmt.Sprintf("%s :: %s", tc.ClassName, tc.Name)
 	}
 	return tc.Name
+}
+
+// parseInput applies the converter's input guards and parses the suites.
+// ConvertJUnitToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) ([]junitTestSuite, string, error) {
+	if len(input) == 0 {
+		return nil, "", fmt.Errorf("empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, "", fmt.Errorf("junit: %w", err)
+	}
+	return parseJUnitXML(input)
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per testcase across every suite, within the same size limits the
+// conversion applies, or one no-findings requirement when there are none.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "JUnit testcases"
+	suites, _, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	limitedSuites, _ := hdfutil.LimitSlice(suites, 0)
+	for _, suite := range limitedSuites {
+		limited, _ := hdfutil.LimitSlice(suite.TestCases, 0)
+		count += len(limited)
+	}
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
 }

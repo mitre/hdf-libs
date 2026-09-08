@@ -363,24 +363,16 @@ func buildSiteRequirements(site *ZapSite, startTime time.Time) []hdf.EvaluatedRe
 // intact. One baseline per host — linked to its component via the "component"
 // label — is the lossless, attributable representation.
 func ConvertZapToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("zap: empty input")
+	parsed, isSarif, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
-	if err := shared.ValidateJSONSize(input, "zap", 0); err != nil {
-		return nil, fmt.Errorf("zap: %w", err)
-	}
-
-	// SARIF routing — delegate to the shared SARIF converter
-	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+	if isSarif {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
+	zapData := *parsed
 
 	resultsChecksum := shared.InputChecksum(input)
-
-	var zapData ZapReport
-	if err := json.Unmarshal(input, &zapData); err != nil {
-		return nil, fmt.Errorf("invalid ZAP JSON: %w", err)
-	}
 
 	summary := fmt.Sprintf("ZAP Version %s", zapData.Version)
 	multiSite := len(zapData.Site) > 1
@@ -517,4 +509,57 @@ func parseCweID(cweid string) int {
 		return 0
 	}
 	return n
+}
+
+// parseInput applies the converter's input guards and decodes the report,
+// reporting SARIF-shaped input (which the SARIF converter handles) instead of
+// decoding it. ConvertZapToHDF and ExpectedRequirementCount share it so they
+// accept, reject, and route exactly the same inputs.
+func parseInput(input []byte) (*ZapReport, bool, error) {
+	if len(input) == 0 {
+		return nil, false, fmt.Errorf("zap: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "zap", 0); err != nil {
+		return nil, false, fmt.Errorf("zap: %w", err)
+	}
+
+	// SARIF routing — delegate to the shared SARIF converter
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+		return nil, true, nil
+	}
+
+	var zapData ZapReport
+	if err := json.Unmarshal(input, &zapData); err != nil {
+		return nil, false, fmt.Errorf("invalid ZAP JSON: %w", err)
+	}
+	return &zapData, false, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per site[*].alerts[] entry within the size limit (repeated pluginids
+// are suffixed, never merged), one no-findings requirement per site with no
+// alerts, and a single placeholder when site[] is empty. SARIF-shaped input
+// defers to the SARIF converter's relation, as the conversion does.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "ZAP alerts"
+	zapData, isSarif, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	if isSarif {
+		return sarif.ExpectedRequirementCount(input)
+	}
+	if len(zapData.Site) == 0 {
+		return 1, unit, nil
+	}
+	count := 0
+	for i := range zapData.Site {
+		limited, _ := hdfutil.LimitSlice(zapData.Site[i].Alerts, 0)
+		if len(limited) == 0 {
+			count++
+			continue
+		}
+		count += len(limited)
+	}
+	return count, unit, nil
 }

@@ -110,6 +110,27 @@ export function baselineDoc(name, ...reqs) {
 // ===== HDF Amendments =====
 
 /**
+ * The status/impact axis Standalone_Override requires, which is type-dependent:
+ * operationalRequirement may carry neither, riskAdjustment moves impact only,
+ * poam tracks a finding that stays open, and the remaining types neutralize it.
+ *
+ * @param {string} type
+ * @returns {{status?: string, impact?: {value: number}}}
+ */
+function defaultOverrideOutcome(type) {
+  switch (type) {
+    case 'operationalRequirement':
+      return {};
+    case 'riskAdjustment':
+      return { impact: { value: 0 } };
+    case 'poam':
+      return { status: 'failed' };
+    default:
+      return { status: 'passed' };
+  }
+}
+
+/**
  * @param {string} type - override type (waiver, falsePositive, poam, ...)
  * @param {string} reqId
  * @param {{status?:string, reason?:string, appliedBy?:object, milestones?:object[]}} [opts]
@@ -123,6 +144,7 @@ export function override(type, reqId, opts = {}) {
     expiresAt: DEFAULT_EXPIRY,
     appliedBy: opts.appliedBy ?? { type: 'simple', identifier: 'test' },
     reason: opts.reason ?? 'test override',
+    ...defaultOverrideOutcome(type),
   };
   if (opts.status !== undefined) o.status = opts.status;
   if (opts.milestones !== undefined) o.milestones = opts.milestones;

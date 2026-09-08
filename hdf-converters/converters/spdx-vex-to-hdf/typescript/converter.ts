@@ -34,6 +34,7 @@ import {
 import {
   inputIntegrity,
   validateInputSize,
+  chainOverrides,
 } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackagesFromIdentifiers,
@@ -136,6 +137,9 @@ export async function convertSpdxVexToHdf(
     appliedBy.identifier && appliedBy.identifier !== DEFAULT_APPLIED_BY
       ? `SPDX VEX statements from ${appliedBy.identifier}`
       : 'SPDX VEX statements';
+
+  // Tamper-evidence must not depend on which route authored the document.
+  await chainOverrides(overrides);
 
   return {
     name,

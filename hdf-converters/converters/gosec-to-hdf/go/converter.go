@@ -202,12 +202,14 @@ func issueToResult(issue GosecIssue, startTime time.Time) hdf.RequirementResult 
 	}
 }
 
-// groupByRuleID groups issues by rule_id, preserving insertion order of first
-// occurrence so that output is deterministic.
+// groupByRuleID caps the issues and groups them by rule_id, preserving
+// insertion order of first occurrence so that output is deterministic. It is
+// the single definition of the input-to-requirement relation: the conversion
+// builds requirements from it and ExpectedRequirementCount counts it.
 func groupByRuleID(issues []GosecIssue) ([]string, map[string][]GosecIssue) {
 	order := []string{}
 	groups := map[string][]GosecIssue{}
-	for _, issue := range issues {
+	for _, issue := range shared.LimitSliceWithWarning(issues, 0, "issue") {
 		if _, seen := groups[issue.RuleID]; !seen {
 			order = append(order, issue.RuleID)
 		}
@@ -302,21 +304,12 @@ func buildGosecExtensions(report GosecReport) map[string]interface{} {
 // Accepts both native gosec JSON and SARIF format — SARIF input is detected
 // automatically and delegated to the shared SARIF converter.
 func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("gosec: empty input")
+	report, isSarif, err := parseReport(input)
+	if err != nil {
+		return nil, err
 	}
-	if err := shared.ValidateJSONSize(input, "gosec", 0); err != nil {
-		return nil, fmt.Errorf("gosec: %w", err)
-	}
-
-	// Detect format: if SARIF, delegate to the shared SARIF converter
-	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+	if isSarif {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
-	}
-
-	var report GosecReport
-	if err := json.Unmarshal(input, &report); err != nil {
-		return nil, fmt.Errorf("gosec: invalid JSON: %w", err)
 	}
 
 	checksum := shared.InputChecksum(input)
@@ -325,8 +318,7 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	// value for every result's startTime and the document timestamp.
 	now := time.Now().UTC()
 
-	limitedIssues := shared.LimitSliceWithWarning(report.Issues, 0, "issue")
-	order, groups := groupByRuleID(limitedIssues)
+	order, groups := groupByRuleID(report.Issues)
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, ruleID := range order {
 		requirements[i] = buildRequirement(ruleID, groups[ruleID], now)
@@ -346,7 +338,7 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		Name:            "gosec Scan",
 		Requirements:    requirements,
 		ResultsChecksum: checksum,
-		Extensions:      buildGosecExtensions(report),
+		Extensions:      buildGosecExtensions(*report),
 	}
 
 	return shared.BuildHDFResults(shared.HDFResultsOptions{
@@ -357,4 +349,45 @@ func ConvertGosecToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Timestamp:        &now,
 	}), nil
+}
+
+// parseReport applies the converter's input guards and decodes a native gosec
+// report. isSarif reports a SARIF-shaped input, which the converter delegates.
+// ConvertGosecToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseReport(input []byte) (report *GosecReport, isSarif bool, err error) {
+	if len(input) == 0 {
+		return nil, false, fmt.Errorf("gosec: empty input")
+	}
+	if sizeErr := shared.ValidateJSONSize(input, "gosec", 0); sizeErr != nil {
+		return nil, false, fmt.Errorf("gosec: %w", sizeErr)
+	}
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+		return nil, true, nil
+	}
+	var r GosecReport
+	if err := json.Unmarshal(input, &r); err != nil {
+		return nil, false, fmt.Errorf("gosec: invalid JSON: %w", err)
+	}
+	return &r, false, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct rule_id, or one no-findings requirement when the report
+// carries no issues. SARIF-shaped input defers to the SARIF converter's own
+// relation, as the conversion does.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct gosec rules"
+	report, isSarif, err := parseReport(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	if isSarif {
+		return sarif.ExpectedRequirementCount(input)
+	}
+	order, _ := groupByRuleID(report.Issues)
+	if len(order) == 0 {
+		return 1, unit, nil
+	}
+	return len(order), unit, nil
 }

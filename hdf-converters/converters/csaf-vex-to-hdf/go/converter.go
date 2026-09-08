@@ -169,9 +169,10 @@ type Flag struct {
 	ProductIDs []string `json:"product_ids,omitempty"`
 }
 
-// ConvertCSAFVEXToHDF parses a CSAF VEX document and produces an HDF
-// Amendments document.
-func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments, error) {
+// parseInput applies the converter's input guards and decodes the document.
+// ConvertCSAFVEXToHDF and ExpectedRequirementCount share it so they accept
+// and reject exactly the same inputs.
+func parseInput(input []byte) (*Document, error) {
 	if err := shared.ValidateJSONSize(input, "csaf-vex-to-hdf", 0); err != nil {
 		return nil, err
 	}
@@ -182,6 +183,43 @@ func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	if doc.Document.Category != "csaf_vex" {
 		return nil, fmt.Errorf("csaf-vex-to-hdf: document.category is %q; only 'csaf_vex' is supported", doc.Document.Category)
 	}
+	return &doc, nil
+}
+
+// errNoActionableStatements is the refusal for a document with no override to
+// write: HDF Amendments requires overrides.minItems=1.
+var errNoActionableStatements = fmt.Errorf("csaf-vex-to-hdf: CSAF VEX document contains no actionable statements (only affected/under_investigation/recommended); no amendment to write")
+
+// ExpectedRequirementCount states how many overrides the input must convert
+// to: per vulnerability, one for a non-empty known_not_affected bucket and one
+// for a non-empty fixed/first_fixed bucket, skipping entries with no CVE or no
+// product_status. A document yielding none is an error, as it is for the
+// conversion. Computed from the input alone, through the same bucketing the
+// conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "CSAF VEX actionable product-status buckets"
+	doc, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for i := range doc.Vulnerabilities {
+		count += len(actionableBuckets(&doc.Vulnerabilities[i]))
+	}
+	if count == 0 {
+		return 0, unit, errNoActionableStatements
+	}
+	return count, unit, nil
+}
+
+// ConvertCSAFVEXToHDF parses a CSAF VEX document and produces an HDF
+// Amendments document.
+func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments, error) {
+	docPtr, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+	doc := *docPtr
 
 	docTime := hdfutil.ParseTimestamp(doc.Document.Tracking.CurrentReleaseDate)
 	if docTime.IsZero() {
@@ -196,7 +234,7 @@ func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	}
 
 	if len(overrides) == 0 {
-		return nil, fmt.Errorf("csaf-vex-to-hdf: CSAF VEX document contains no actionable statements (only affected/under_investigation/recommended); no amendment to write")
+		return nil, errNoActionableStatements
 	}
 
 	name := "CSAF VEX statements"
@@ -209,6 +247,11 @@ func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	var versionPtr *string
 	if docVersion != "" {
 		versionPtr = &docVersion
+	}
+
+	// Tamper-evidence must not depend on which route authored the document.
+	if err := shared.ChainOverrides(overrides); err != nil {
+		return nil, fmt.Errorf("csaf-vex-to-hdf: %w", err)
 	}
 
 	return &hdf.HDFAmendments{
@@ -225,42 +268,53 @@ func ConvertCSAFVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	}, nil
 }
 
-// vulnerabilityToOverrides emits one override per actionable status bucket
-// on the vulnerability. A vuln with both known_not_affected and fixed
-// buckets produces TWO overrides (one falsePositive, one POA&M). Buckets
-// with no canonical mapping are skipped.
-func vulnerabilityToOverrides(vuln *Vulnerability, doc *Document, docTime time.Time, productLookup map[string]hdf.AffectedPackage) []hdf.StandaloneOverride {
-	if vuln.CVE == "" {
+// statusBucket is one override's worth of a vulnerability: the canonical
+// status, its import target, and the products the bucket names.
+type statusBucket struct {
+	target   vex.ImportTarget
+	products []string
+}
+
+// actionableBuckets lists the status buckets on a vulnerability that yield an
+// override: a non-empty known_not_affected bucket and a non-empty
+// fixed/first_fixed bucket. A vulnerability with no CVE or no product_status
+// yields none; so do buckets with no canonical mapping. It is the single
+// definition of the input-to-override relation: the conversion builds
+// overrides from it and ExpectedRequirementCount counts it.
+func actionableBuckets(vuln *Vulnerability) []statusBucket {
+	if vuln.CVE == "" || vuln.ProductStatus == nil {
 		return nil
 	}
 	status := vuln.ProductStatus
-	if status == nil {
-		return nil
-	}
-
-	var out []hdf.StandaloneOverride
-	if len(status.KnownNotAffected) > 0 {
-		if o, ok := buildOverride(vuln, doc, docTime, vex.StatusNotAffected, status.KnownNotAffected, productLookup); ok {
-			out = append(out, o)
+	var out []statusBucket
+	add := func(canonical vex.Status, products []string) {
+		if len(products) == 0 {
+			return
+		}
+		if target, ok := vex.ImportTargetFor(canonical); ok {
+			out = append(out, statusBucket{target: target, products: products})
 		}
 	}
-	fixedProducts := append(append([]string{}, status.Fixed...), status.FirstFixed...)
-	if len(fixedProducts) > 0 {
-		if o, ok := buildOverride(vuln, doc, docTime, vex.StatusFixed, fixedProducts, productLookup); ok {
-			out = append(out, o)
-		}
-	}
+	add(vex.StatusNotAffected, status.KnownNotAffected)
+	add(vex.StatusFixed, append(append([]string{}, status.Fixed...), status.FirstFixed...))
 	// known_affected / first_affected / last_affected / under_investigation /
 	// recommended produce no override (informational; consumer creates an
 	// amendment later if they decide to act).
 	return out
 }
 
-func buildOverride(vuln *Vulnerability, doc *Document, docTime time.Time, canonical vex.Status, products []string, productLookup map[string]hdf.AffectedPackage) (hdf.StandaloneOverride, bool) {
-	target, ok := vex.ImportTargetFor(canonical)
-	if !ok {
-		return hdf.StandaloneOverride{}, false
+// vulnerabilityToOverrides emits one override per actionable status bucket
+// on the vulnerability. A vuln with both known_not_affected and fixed
+// buckets produces TWO overrides (one falsePositive, one POA&M).
+func vulnerabilityToOverrides(vuln *Vulnerability, doc *Document, docTime time.Time, productLookup map[string]hdf.AffectedPackage) []hdf.StandaloneOverride {
+	var out []hdf.StandaloneOverride
+	for _, b := range actionableBuckets(vuln) {
+		out = append(out, buildOverride(vuln, doc, docTime, b.target, b.products, productLookup))
 	}
+	return out
+}
+
+func buildOverride(vuln *Vulnerability, doc *Document, docTime time.Time, target vex.ImportTarget, products []string, productLookup map[string]hdf.AffectedPackage) hdf.StandaloneOverride {
 	override := hdf.StandaloneOverride{
 		Type:             target.OverrideType,
 		Status:           target.Status,
@@ -303,7 +357,7 @@ func buildOverride(vuln *Vulnerability, doc *Document, docTime time.Time, canoni
 		}}
 	}
 
-	return override, true
+	return override
 }
 
 // pickJustification returns the first flag whose product_ids overlap with
