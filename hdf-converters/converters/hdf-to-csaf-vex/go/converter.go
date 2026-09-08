@@ -536,10 +536,10 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 			emittedAny = true
 		case vex.StatusAffected:
 			status.KnownAffected = append(status.KnownAffected, pids...)
-			if o.Reason != "" {
+			if details := reasonProse(o.Reason); details != "" {
 				v.Threats = append(v.Threats, Threat{
 					Category:   "impact",
-					Details:    stripProductsLine(o.Reason),
+					Details:    details,
 					ProductIDs: pids,
 				})
 			}
@@ -571,7 +571,7 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 			}
 			v.References = append(v.References, Reference{
 				Category: "external",
-				Summary:  desc,
+				Summary:  referenceSummary(desc, e.Data),
 				URL:      e.Data,
 			})
 		}
@@ -589,7 +589,7 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 			}
 			v.References = append(v.References, Reference{
 				Category: "external",
-				Summary:  summary,
+				Summary:  referenceSummary(summary, *r.Href),
 				URL:      *r.Href,
 			})
 		}
@@ -603,7 +603,9 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 	dedupeStrings(&status.FirstFixed)
 	dedupeStrings(&status.KnownAffected)
 	dedupeStrings(&status.KnownNotAffected)
-	v.ProductStatus = status
+	if hasProductStatus(status) {
+		v.ProductStatus = status
+	}
 	dedupeReferences(&v.References)
 	return v, true
 }
@@ -612,7 +614,7 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 // note on the vulnerability. Used on the not_affected/fixed paths, which
 // otherwise drop reason (the affected path keeps it as threats[impact]).
 func appendReasonNote(v *Vulnerability, reason string) {
-	text := stripProductsLine(reason)
+	text := reasonProse(reason)
 	if text == "" {
 		return
 	}
@@ -688,6 +690,29 @@ func productIDsFor(o *hdf.StandaloneOverride) []string {
 func stripProductsLine(reason string) string {
 	out := productsRegexp.ReplaceAllString(reason, "")
 	return strings.TrimRight(out, "\n")
+}
+
+// referenceSummary fills CSAF references[].summary, which is required with
+// minLength 1 while the HDF description backing it is optional. The URL is the
+// documented fallback: the only text a reference always carries, where a
+// placeholder would assert a description the source never gave.
+func referenceSummary(description, url string) string {
+	return shared.FirstNonEmpty(description, url)
+}
+
+// reasonProse is the override reason with the machine-written 'Products:' line
+// removed, or "" when no prose remains. Both sinks it feeds — threats[].details
+// and notes[].text — are minLength 1 in CSAF, so an empty result means the
+// element is omitted, never emitted blank.
+func reasonProse(reason string) string {
+	return shared.FirstNonEmpty(stripProductsLine(reason))
+}
+
+// hasProductStatus reports whether any product bucket was filled. CSAF
+// constrains product_status with minProperties 1, so an override that
+// contributed no bucket must leave the field out rather than emit {}.
+func hasProductStatus(s *ProductStatus) bool {
+	return len(s.Fixed)+len(s.FirstFixed)+len(s.KnownAffected)+len(s.KnownNotAffected) > 0
 }
 
 func dedupeStrings(s *[]string) {
