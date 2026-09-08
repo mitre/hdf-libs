@@ -63,6 +63,10 @@
       ],
       "expiresAt": "2023-01-13T00:00:00Z",
       "justification": "inline_mitigations_already_exist",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "8ec9f34475251c2f79a24ca11c157a5d1e4804598120c76755ba8d18c26f7e78"
+      },
       "reason": "Vulnerability is not exploitable due to existing mitigating controls that prevent user-controlled input from being passed to JNDI.",
       "requirementId": "CVE-2020-14195",
       "status": "passed",

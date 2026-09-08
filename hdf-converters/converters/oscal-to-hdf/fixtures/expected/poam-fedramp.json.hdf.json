@@ -56,6 +56,10 @@
           "status": "pending"
         }
       ],
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "b3b82b3d2e87834e1e48a9e87489f347f99631ee298a7dab45eee80f94215e8a"
+      },
       "reason": "An example set of infrastructure scan findings.",
       "requirementId": "AC-2",
       "status": "failed",

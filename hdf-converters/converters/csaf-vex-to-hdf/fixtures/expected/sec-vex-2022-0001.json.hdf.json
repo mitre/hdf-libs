@@ -62,6 +62,10 @@
       ],
       "expiresAt": "2023-05-27T10:00:00Z",
       "justification": "component_not_present",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "2f46d3ce5e178b1fd13c5ae8c887e0900bda7f8101487d9b649c72576a7a6f01"
+      },
       "reason": "It was found that the fix to address CVE-2021-44228 in Apache Log4j 2.15.0 was incomplete in certain non-default configurations. This could allows attackers with control over Thread Context Map (MDC) input data when the logging configuration uses a non-default Pattern Layout with either a Context Lookup (for example, $${ctx:loginId}) or a Thread Context Map pattern (%X, %mdc, or %MDC) to craft malicious input data using a JNDI Lookup pattern resulting in an information leak and remote code execution in some environments and local code execution in all environments. Log4j 2.16.0 (Java 8) and 2.12.2 (Java 7) fix this issue by removing support for message lookup patterns and disabling JNDI functionality by default.\nSecvisogram is written in JavaScript. No Java is included.",
       "requirementId": "CVE-2021-45046",
       "status": "passed",
@@ -88,6 +92,10 @@
       ],
       "expiresAt": "2023-05-27T10:00:00Z",
       "justification": "component_not_present",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "49aee9823d32b437177072c87626f24823f53e666487c2670adc21081ef5cd0f"
+      },
       "reason": "Apache Log4j2 versions 2.0-alpha1 through 2.16.0 (excluding 2.12.3 and 2.3.1) did not protect from uncontrolled recursion from self-referential lookups. This allows an attacker with control over Thread Context Map data to cause a denial of service when a crafted string is interpreted. This issue was fixed in Log4j 2.17.0, 2.12.3, and 2.3.1.\nSecvisogram is written in JavaScript. No Java is included.",
       "requirementId": "CVE-2021-45105",
       "status": "passed",

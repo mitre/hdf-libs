@@ -26,6 +26,7 @@ import {
 import {
   inputIntegrity,
   validateInputSize,
+  chainOverrides,
 } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageFromIdentifier,
@@ -140,6 +141,9 @@ export async function convertCyclonedxVexToHdf(
   const description = bom.serialNumber
     ? `Imported CycloneDX VEX ${bom.serialNumber}`
     : 'Imported CycloneDX VEX';
+
+  // Tamper-evidence must not depend on which route authored the document.
+  await chainOverrides(overrides);
 
   return {
     name,

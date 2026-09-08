@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -833,4 +834,129 @@ func TestWarnRiskAdjustmentInconsistencies_SilentWhenEitherSideMissing(t *testin
 		warnRiskAdjustmentInconsistencies(doc, &buf)
 		assert.Empty(t, buf.String(), "case %d should not warn", i)
 	}
+}
+
+// The chain is only meaningful if the writer and the verifier agree. Nothing
+// asserted that end to end: the chain-writing test only checked the checksum was
+// non-empty, and the verify tests built their own fixtures. This runs the real
+// `amend create` output through the real verifier, across every override type
+// and the optional fields that carry nested objects and arrays.
+func TestAmendCreate_OutputVerifiesCleanly(t *testing.T) {
+	specs := []map[string]interface{}{
+		{"type": "waiver", "requirementId": "SV-1", "status": "passed", "reason": "vendor A & B agreed; risk < threshold — accepted", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31"},
+		{"type": "attestation", "requirementId": "SV-2", "status": "passed", "reason": "manually verified", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31",
+			"evidence": []interface{}{map[string]interface{}{"type": "url", "data": "https://example.com/proof"}}},
+		{"type": "falsePositive", "requirementId": "SV-3", "status": "notApplicable", "reason": "scanner misfire", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31"},
+		{"type": "riskAdjustment", "requirementId": "SV-4", "status": "failed", "reason": "compensating control", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31",
+			"impact": map[string]interface{}{"value": 0.3}},
+		// operationalRequirement carries neither status nor impact — the schema
+		// forbids both on that type.
+		{"type": "operationalRequirement", "requirementId": "SV-5", "reason": "mission need", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31"},
+		{"type": "inherited", "requirementId": "SV-6", "status": "passed", "reason": "provided by platform", "appliedBy": "a@b.gov", "expiresAt": "2099-12-31"},
+	}
+	doc, err := buildAmendmentsFromSpecs(specs, nil, fixedNow())
+	require.NoError(t, err)
+	raw, marshalErr := json.Marshal(doc)
+	require.NoError(t, marshalErr)
+
+	result, verifyErr := amend.VerifyAmendments(raw)
+	require.NoError(t, verifyErr)
+	assert.True(t, result.Chain.Established, "create must write a chain across multiple overrides")
+	assert.True(t, result.Chain.Valid, "create's own output must verify: %v", result.Chain.Breaks)
+	assert.Empty(t, result.SchemaErrors)
+	assert.Equal(t, len(specs), result.ValidOverrides)
+	assert.False(t, result.HasErrors)
+
+	// The same output must survive a reserialization that changes key order and
+	// whitespace, since a consumer may reformat the file before applying it.
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(raw, &parsed))
+	reserialized, reErr := json.MarshalIndent(parsed, "", "\t")
+	require.NoError(t, reErr)
+	reResult, reVerifyErr := amend.VerifyAmendments(reserialized)
+	require.NoError(t, reVerifyErr)
+	assert.True(t, reResult.Chain.Valid, "reformatted output must still verify: %v", reResult.Chain.Breaks)
+
+	// And apply must accept what verify accepts.
+	assert.NoError(t, amend.RefuseUnverified(raw))
+}
+
+// Whether a document carries tamper-evidence must not depend on which command
+// wrote it. These pin the chain across every authoring route, and pin the one
+// route that deliberately does not chain.
+func TestAuthoringRoutesChain(t *testing.T) {
+	verifies := func(t *testing.T, raw []byte) *amend.VerifyResult {
+		t.Helper()
+		result, err := amend.VerifyAmendments(raw)
+		require.NoError(t, err)
+		return result
+	}
+
+	t.Run("interactive create chains its overrides", func(t *testing.T) {
+		doc, chainErr := buildAmendmentsFromOverrides([]amendOverride{
+			{AmendType: "waiver", RequirementID: "AC-1", Reason: "first", Approver: "a@b.gov", ExpiresAt: "2099-12-31"},
+			{AmendType: "waiver", RequirementID: "AC-2", Reason: "second", Approver: "a@b.gov", ExpiresAt: "2099-12-31"},
+			{AmendType: "waiver", RequirementID: "AC-3", Reason: "third", Approver: "a@b.gov", ExpiresAt: "2099-12-31"},
+		})
+		require.NoError(t, chainErr)
+		raw, err := json.Marshal(doc)
+		require.NoError(t, err)
+
+		result := verifies(t, raw)
+		assert.True(t, result.Chain.Established, "interactive create must write a chain")
+		assert.True(t, result.Chain.Valid, "%v", result.Chain.Breaks)
+		assert.False(t, result.HasErrors)
+	})
+
+	t.Run("an interactively created document detects tampering", func(t *testing.T) {
+		doc, chainErr := buildAmendmentsFromOverrides([]amendOverride{
+			{AmendType: "waiver", RequirementID: "AC-1", Reason: "first", Approver: "a@b.gov", ExpiresAt: "2099-12-31"},
+			{AmendType: "waiver", RequirementID: "AC-2", Reason: "second", Approver: "a@b.gov", ExpiresAt: "2099-12-31"},
+		})
+		require.NoError(t, chainErr)
+		raw, err := json.Marshal(doc)
+		require.NoError(t, err)
+
+		var parsed map[string]interface{}
+		require.NoError(t, json.Unmarshal(raw, &parsed))
+		parsed["overrides"].([]interface{})[0].(map[string]interface{})["reason"] = "TAMPERED"
+		tampered, err := json.Marshal(parsed)
+		require.NoError(t, err)
+
+		result := verifies(t, tampered)
+		assert.False(t, result.Chain.Valid, "an edit after authoring must be detectable")
+	})
+
+	t.Run("the first override starts the chain unlinked", func(t *testing.T) {
+		doc, chainErr := buildAmendmentsFromOverrides([]amendOverride{
+			{AmendType: "waiver", RequirementID: "AC-1", Reason: "only", Approver: "a@b.gov", ExpiresAt: "2099-12-31"},
+			{AmendType: "waiver", RequirementID: "AC-2", Reason: "next", Approver: "a@b.gov", ExpiresAt: "2099-12-31"},
+		})
+		require.NoError(t, chainErr)
+		overrides := doc["overrides"].([]map[string]interface{})
+		_, first := overrides[0]["previousChecksum"]
+		assert.False(t, first, "the first override has nothing to chain to")
+		_, second := overrides[1]["previousChecksum"]
+		assert.True(t, second)
+	})
+
+	// A draft is deliberately incomplete: chaining its blank stubs would
+	// guarantee a broken chain the moment someone fills them in, so this route
+	// stays unchained on purpose.
+	t.Run("draft deliberately does not chain", func(t *testing.T) {
+		tmp := t.TempDir()
+		resultsPath := filepath.Join(tmp, "results.json")
+		draftPath := filepath.Join(tmp, "draft.json")
+		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
+		require.NoError(t, runAmendDraft(resultsPath, "waiver", "", "", "1y", draftPath))
+
+		raw, err := os.ReadFile(draftPath) //nolint:gosec // test reads the temp file it wrote
+		require.NoError(t, err)
+		var parsed map[string]interface{}
+		require.NoError(t, json.Unmarshal(raw, &parsed))
+		for i, ovRaw := range parsed["overrides"].([]interface{}) {
+			_, chained := ovRaw.(map[string]interface{})["previousChecksum"]
+			assert.Falsef(t, chained, "draft stub %d must not be chained", i)
+		}
+	})
 }
