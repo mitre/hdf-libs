@@ -107,3 +107,6 @@ hdf-cli/SAF_CLI_COMPARISON.md
 # VitePress build cache (regenerated locally; not part of release artifact)
 site/.vitepress/cache/
 .tools/
+
+# In-repo pnpm content-addressable store (kept for offline installs, never committed)
+.pnpm-store/
