@@ -10,6 +10,7 @@ import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimest
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
+import { validateResults } from '@mitre/hdf-validators';
 
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS };
 
@@ -204,9 +205,11 @@ export function extractCWEIDs(text: string): string[] {
  * value may be absent; it is a selection helper, not a normalizer, and never
  * decides to OMIT a field (that stays the caller's call). Go parity: FirstNonEmpty.
  */
-export function firstNonEmpty(...candidates: string[]): string {
+export function firstNonEmpty(...candidates: Array<string | undefined | null>): string {
   for (const c of candidates) {
-    if (c.trim() !== '') return c;
+    // Optional HDF fields arrive undefined at runtime even where the type says
+    // string; Go's peer takes the zero value and skips it rather than panicking.
+    if (c != null && c.trim() !== '') return c;
   }
   return '';
 }
@@ -278,7 +281,14 @@ export function requireHdfAmendments(
   input: string,
   converterName: string,
 ): { doc: Record<string, unknown>; items: unknown[] } {
-  return requireHdfStructure(input, converterName, 'overrides');
+  const r = requireHdfStructure(input, converterName, 'overrides');
+  // overrides carries minItems 1, so a document that amends nothing is invalid
+  // input rather than a request for an empty POA&M. Go's typed guard rejects the
+  // same way (len(v.Overrides) == 0); baselines has no minItems and stays exempt.
+  if (r.items.length === 0) {
+    throw new Error(`${converterName}: invalid HDF structure: missing overrides field`);
+  }
+  return r;
 }
 
 /**
@@ -305,6 +315,17 @@ function requireHdfStructure(
   const items = doc[field];
   if (!Array.isArray(items)) {
     throw new Error(`${converterName}: invalid HDF structure: missing ${field} field`);
+  }
+  // Decoding into a plain object cannot fail on a wrongly-typed field the way
+  // Go's typed decode does, so without this the two languages disagree on the
+  // same document. Results-shaped input only, matching Go's guard.
+  if (field === 'baselines') {
+    const violations = typeViolations(validateResults(doc));
+    if (violations.length > 0) {
+      throw new Error(
+        `${converterName}: input is not valid HDF: ${violations.slice(0, 5).join('; ')}`,
+      );
+    }
   }
   return { doc, items };
 }
@@ -670,4 +691,35 @@ export const UNRATED_SEVERITY_VALUE = 'unrated';
 
 export function markUnratedSeverity(tags: Record<string, unknown>, severity?: string | null): void {
   if (isUnratedSeverity(severity)) tags[UNRATED_SEVERITY_TAG] = UNRATED_SEVERITY_VALUE;
+}
+
+/**
+ * The schema violations Go's typed decode would also reject.
+ *
+ * encoding/json refuses exactly two things: a JSON value whose type does not fit
+ * the target field, and a string that will not parse into a time.Time. Every
+ * other schema rule — required, enum, minItems, uuid and uri formats — decodes
+ * cleanly into the generated structs, so rejecting it here would put the two
+ * languages back out of step in the opposite direction.
+ *
+ * null is exempt for the same reason. Go unmarshals a JSON null into a slice,
+ * map or pointer as nil and into anything else as a no-op, never as an error, so
+ * a null cvss entry or a null results array reaches the converter there and must
+ * reach it here too — several parity goldens pin exactly that.
+ */
+function typeViolations(result: {
+  valid: boolean;
+  errors?: Array<{
+    field?: string;
+    message?: string;
+    keyword?: string;
+    format?: string;
+    value?: unknown;
+  }>;
+}): string[] {
+  if (result.valid) return [];
+  return (result.errors ?? [])
+    .filter((e) => e.value !== null)
+    .filter((e) => e.keyword === 'type' || (e.keyword === 'format' && e.format === 'date-time'))
+    .map((e) => `${e.field ?? ''} ${e.message ?? ''}`.trim());
 }

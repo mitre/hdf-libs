@@ -235,6 +235,40 @@ Decision and rationale are recorded in beads memory `hdf-timestamp-canonical-utc
 
 ---
 
+## Schema `format` Assertion
+
+JSON Schema 2020-12 treats `format` as an annotation unless a validator opts in.
+Both test harnesses opt in, so a `uuid`, `date-time`, `uri` or `date` violation
+fails validation rather than passing silently — which matters because converter
+tests assert "this input is valid HDF" before converting, and a validator that
+skips `format` lets such a test prove nothing while looking green.
+
+### Vocabularies asserted
+
+The HDF schemas assert eight formats: `uuid`, `date-time`, `date`, `uri`,
+`uri-reference`, `hostname`, `ipv4` and `ipv6`. Both harnesses implement all
+eight. Enabling more later changes what every existing test accepts, so treat it
+as a deliberate change, not a dependency bump.
+
+### The two harnesses are pinned to each other
+
+`hdf-converters/shared/testdata/format-assertion-cases.json` is read by both
+`shared/go/schemavalidation_test.go` and
+`shared/typescript/format-assertion.test.ts`. Each case records the verdict the
+validators must produce, in both dialects. Three libraries are involved —
+santhosh-tekuri (Go, 2020-12), gojsonschema (Go, draft-07) and ajv-formats
+(TypeScript, both) — and where they genuinely disagree the table records each
+side's verdict instead of forcing one to imitate the other, so a library upgrade
+that changes either answer fails a test. The `divergences` array in that file
+explains every case that does this and why.
+
+One divergence was closed rather than recorded: ajv-formats accepted the RFC 3339
+space separator (`2020-01-01 00:00:00Z`) where Go required the `T`. HDF's
+canonical timestamp requires the `T`, so `loadSchemaValidatorWithResources`
+overrides ajv's `date-time` to match Go.
+
+---
+
 ## Exit Code Conventions
 
 The `hdf diff` CLI uses a researched exit code scheme. All future HDF CLI commands

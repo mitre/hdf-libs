@@ -2,6 +2,8 @@ package hdfvalidators
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -705,4 +707,61 @@ func TestValidateRequirementChangeEvent(t *testing.T) {
 		result := ValidateRequirementChangeEvent(data)
 		assert.False(t, result.Valid, "split is batch-only and not producer-computable")
 	})
+}
+
+// shippedFormatCase is one row of ../testdata/shipped-format-cases.json. The
+// TypeScript peer reads the same file, so the two shipped validators cannot
+// disagree about whether a document is valid HDF without a test saying so.
+type shippedFormatCase struct {
+	Name  string `json:"name"`
+	Field string `json:"field"`
+	Value string `json:"value"`
+	Valid bool   `json:"valid"`
+	Why   string `json:"why"`
+}
+
+// formatCaseDocument places the case's value at a real `format`-bearing site in
+// hdf-results: componentId on a component, startTime on a result.
+func formatCaseDocument(t *testing.T, tc shippedFormatCase) []byte {
+	t.Helper()
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(resultsWith(""), &doc))
+	switch tc.Field {
+	case "componentId":
+		doc["components"] = []any{map[string]any{
+			"componentId": tc.Value, "type": "host", "name": "h",
+		}}
+	case "startTime":
+		baseline := doc["baselines"].([]any)[0].(map[string]any)
+		req := baseline["requirements"].([]any)[0].(map[string]any)
+		req["results"].([]any)[0].(map[string]any)["startTime"] = tc.Value
+	default:
+		t.Fatalf("unknown field %q", tc.Field)
+	}
+	raw, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return raw
+}
+
+// The shipped Go validator and the shipped TypeScript validator are a public API
+// pair: a document one accepts, the other must accept. gojsonschema's format
+// checkers broke that in four ways at once — rejecting an uppercase UUID and a
+// lowercase RFC 3339 `t`, rejecting a legal leap second, and accepting a bare
+// date as a date-time — so `hdf validate` disagreed with validateResults on
+// documents that are valid HDF.
+func TestValidateResults_FormatsMatchTheRFCs(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "shipped-format-cases.json"))
+	require.NoError(t, err, "read the shared format table")
+	var table struct {
+		Cases []shippedFormatCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases)
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			result := ValidateResults(formatCaseDocument(t, tc))
+			assert.Equal(t, tc.Valid, result.Valid, "%s\ngot: %s", tc.Why, result.Error())
+		})
+	}
 }

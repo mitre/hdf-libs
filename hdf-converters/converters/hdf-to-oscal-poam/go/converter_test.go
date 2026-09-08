@@ -26,7 +26,9 @@ func TestConvertHDFToOSCALPOAM_EmptyInput(t *testing.T) {
 func TestConvertHDFToOSCALPOAM_InvalidJSON(t *testing.T) {
 	_, err := ConvertHDFToOSCALPOAM([]byte(`{not json`), "1.0.0")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse JSON")
+	// Wording comes from the shared guard, which hdf-to-oscal-sar and exportmap
+	// already emit — this converter previously said "failed to parse JSON".
+	assert.Contains(t, err.Error(), "failed to parse HDF JSON")
 }
 
 func TestConvertHDFToOSCALPOAM_MinimalAmendments(t *testing.T) {

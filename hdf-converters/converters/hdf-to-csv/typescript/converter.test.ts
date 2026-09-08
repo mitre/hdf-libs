@@ -3,6 +3,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
+import { resultsCorpus } from '../../../shared/typescript/schema-corpus.js';
 import { convertHdfToCsv } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -30,13 +31,17 @@ describe('hdfcsv Converter', () => {
         statistics: { duration: 0 }
       });
 
-      const result = convertHdfToCsv(input);
-
-      // When there are no rows, buildCsv returns empty string
-      expect(result).toBe('');
+      // baselines carries no minItems, so an assessment that evaluated nothing
+      // is valid HDF and still converts — to an empty report.
+      expect(convertHdfToCsv(input)).toBe('');
     });
 
-    it('should handle baselines with no requirements', () => {
+    // A baseline with an empty requirements array is malformed, not empty:
+    // requirements carries minItems 1. It was previously converted to an empty
+    // report, which is indistinguishable from a valid assessment that evaluated
+    // nothing — and top-level baselines, which genuinely has no minItems, is the
+    // shape that legitimately produces that. Mirrors the Go peer.
+    it('rejects a baseline with an empty requirements array', () => {
       const input = JSON.stringify({
         baselines: [{
           name: 'Empty Baseline',
@@ -53,10 +58,9 @@ describe('hdfcsv Converter', () => {
         statistics: { duration: 0 }
       });
 
-      const result = convertHdfToCsv(input);
-
-      // When there are no rows, buildCsv returns empty string
-      expect(result).toBe('');
+      expect(() => convertHdfToCsv(input)).toThrow(
+        'hdf-to-csv: baseline "Empty Baseline" has no requirements',
+      );
     });
   });
 
@@ -453,5 +457,204 @@ describe('stale stored effectiveStatus is ignored', () => {
     const effIdx = headers.indexOf('Effective Status');
     expect(effIdx).toBeGreaterThan(-1);
     expect(rows[1]!.split(',')[effIdx]).toBe('failed');
+  });
+});
+
+// A requirement with no results is malformed: hdf-results puts minItems 1 on
+// results, no requirement in this repo's HDF fixtures carries an empty one, and
+// "not evaluated" already has its own representation as a result with status
+// notReviewed. So there is no legitimate producer, and the converter rejects
+// rather than emitting a row whose blank Status cell is indistinguishable from a
+// genuinely blank one. Mirrors the Go peer.
+describe('hdf-to-csv malformed input', () => {
+  const emptyResults = JSON.stringify({
+    baselines: [
+      {
+        name: 'b',
+        requirements: [
+          {
+            id: 'V-1',
+            impact: 0,
+            tags: {},
+            descriptions: [{ label: 'default', data: 'd' }],
+            results: [],
+          },
+        ],
+      },
+    ],
+  });
+
+  it('rejects a requirement with no results', () => {
+    expect(() => convertHdfToCsv(emptyResults)).toThrow(
+      'hdf-to-csv: requirement "V-1" has no results',
+    );
+  });
+
+  // The shared guard owns this wording so the two languages cannot drift; before,
+  // Go said "invalid" and this side "Invalid", and neither carried the prefix.
+  it('reports the canonical missing-baselines message', () => {
+    expect(() => convertHdfToCsv('{}')).toThrow(
+      'hdf-to-csv: invalid HDF structure: missing baselines field',
+    );
+  });
+});
+
+// The two languages are compared against one another rather than each against
+// its own expectations. Go owns the golden
+// (go test ./converters/hdf-to-csv/go/ -update); this side only verifies, so
+// neither language can quietly redefine parity to match itself.
+describe('hdf-to-csv corpus output parity', () => {
+  const golden = JSON.parse(
+    readFileSync(join(fixturesDir, 'expected', 'corpus-outputs.json'), 'utf-8'),
+  ) as Record<string, string>;
+
+  it('covers every corpus case', () => {
+    expect(Object.keys(golden).sort()).toEqual(resultsCorpus().map((c) => c.name).sort());
+  });
+
+  it.each(resultsCorpus().map((c) => [c.name, c] as const))(
+    'emits what the Go peer emits for %s',
+    (name, c) => {
+      let actual: string;
+      try {
+        actual = convertHdfToCsv(c.input);
+      } catch {
+        actual = 'REJECTED';
+      }
+      expect(actual, `TypeScript and Go diverged on corpus case ${name}`).toBe(golden[name]);
+    },
+  );
+});
+
+// Both shapes reach the same guard: an absent id must not be named "undefined"
+// in the message (the column coercion was added for exactly that, and the
+// message needed it too), and a null results must not throw a TypeError from
+// the destructure before the guard can report it. Go reaches both by way of a
+// zero-value string and a nil slice; these pin that TypeScript agrees.
+describe('hdf-to-csv malformed results shapes', () => {
+  const doc = (requirement: Record<string, unknown>) =>
+    JSON.stringify({ baselines: [{ name: 'b', requirements: [requirement] }] });
+
+  const base = {
+    impact: 0,
+    tags: {},
+    descriptions: [{ label: 'default', data: 'd' }],
+  };
+
+  it('names an absent id as empty, never "undefined"', () => {
+    expect(() => convertHdfToCsv(doc({ ...base, results: [] }))).toThrow(
+      'hdf-to-csv: requirement "" has no results',
+    );
+  });
+
+  it('reports a null results rather than throwing a TypeError', () => {
+    expect(() => convertHdfToCsv(doc({ ...base, id: 'V-1', results: null }))).toThrow(
+      'hdf-to-csv: requirement "V-1" has no results',
+    );
+  });
+});
+
+// Impact's canonical precision is 2 decimal places — it is defined on 0.0-1.0
+// with a natural 0.01 grid, which is why hdf-utilities' roundImpact rounds to
+// that grid wherever impact is computed. Rendering it at one decimal discarded
+// the second digit of every value that used it (0.45 became "0.5"), silently, in
+// a compliance artifact.
+//
+// Precision alone does not settle the digits: Go's fmt rounds halves to even
+// while toFixed rounds them away from zero, so raising the precision only moved
+// the tie from 0.25 to 0.125. Go now formats through a helper matching toFixed's
+// rule; the tie values themselves are pinned by the parity fixtures.
+//
+// CVSS keeps one decimal: that is the precision the CVSS spec defines and the
+// source carries. Mirrors the Go peer.
+describe('hdf-to-csv numeric precision', () => {
+  const COL = { impact: 14, effectiveImpact: 23, cvss: 28 };
+
+  it.each([
+    ['two-decimal impact is preserved', 0.45, 7.5, '0.45', '7.5'],
+    ['the tie value both languages once disagreed on', 0.25, 2.5, '0.25', '2.5'],
+    ['one-decimal impact is padded to canonical precision', 0.5, 9.8, '0.50', '9.8'],
+    ['a whole impact keeps the grid', 1, 10, '1.00', '10.0'],
+  ])('%s', (_label, impact, cvss, wantImpact, wantCvss) => {
+    const out = convertHdfToCsv(
+      JSON.stringify({
+        baselines: [
+          {
+            name: 'b',
+            requirements: [
+              {
+                id: 'V-1',
+                impact,
+                effectiveImpact: impact,
+                tags: {},
+                cvss: [{ baseScore: cvss }],
+                descriptions: [{ label: 'default', data: 'd' }],
+                results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const row = out.trim().split('\n')[1]!.split(',');
+    expect(row[COL.impact], 'Impact').toBe(wantImpact);
+    expect(row[COL.effectiveImpact], 'Effective Impact').toBe(wantImpact);
+    expect(row[COL.cvss], 'CVSS keeps the source precision').toBe(wantCvss);
+  });
+});
+
+// Awkward-but-plausible HDF shapes that once made the two languages disagree on
+// cell VALUES rather than on whether to convert at all — splits the shared
+// corpus cannot see, because it is about converter contracts. Go owns the golden
+// (go test ./converters/hdf-to-csv/go/ -update); this side only verifies.
+describe('hdf-to-csv parity shapes', () => {
+  const shapes = (
+    JSON.parse(readFileSync(join(fixturesDir, 'input', 'parity-shapes.json'), 'utf-8')) as {
+      shapes: Record<string, unknown>;
+    }
+  ).shapes;
+  const golden = JSON.parse(
+    readFileSync(join(fixturesDir, 'expected', 'parity-outputs.json'), 'utf-8'),
+  ) as Record<string, string>;
+
+  it('covers every shape', () => {
+    expect(Object.keys(golden).sort()).toEqual(Object.keys(shapes).sort());
+  });
+
+  it.each(Object.keys(shapes).sort())('emits what the Go peer emits for %s', (name) => {
+    let actual: string;
+    try {
+      actual = convertHdfToCsv(JSON.stringify(shapes[name]));
+    } catch {
+      actual = 'REJECTED';
+    }
+    expect(actual, `TypeScript and Go diverged on shape ${name}`).toBe(golden[name]);
+  });
+});
+
+// requirements and descriptions both carry minItems 1 on top of being required,
+// so absent or empty is malformed input — the same reasoning that made an empty
+// results array a rejection. Top-level baselines is deliberately excluded: it
+// carries no minItems, so an assessment that evaluated nothing is legal HDF.
+// Mirrors the Go peer case for case.
+describe('hdf-to-csv malformed containers', () => {
+  it.each([
+    ['baseline with no requirements key', { baselines: [{ name: 'b' }] },
+      'hdf-to-csv: baseline "b" has no requirements'],
+    ['baseline with empty requirements', { baselines: [{ name: 'b', requirements: [] }] },
+      'hdf-to-csv: baseline "b" has no requirements'],
+    ['requirement with no descriptions key',
+      { baselines: [{ name: 'b', requirements: [{ id: 'V-1', impact: 0, tags: {}, results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }] }] }] },
+      'hdf-to-csv: requirement "V-1" has no descriptions'],
+    ['requirement with empty descriptions',
+      { baselines: [{ name: 'b', requirements: [{ id: 'V-1', impact: 0, tags: {}, descriptions: [], results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }] }] }] },
+      'hdf-to-csv: requirement "V-1" has no descriptions'],
+  ])('rejects a %s', (_label, doc, want) => {
+    expect(() => convertHdfToCsv(JSON.stringify(doc))).toThrow(want);
+  });
+
+  it('still converts an assessment with zero baselines', () => {
+    expect(convertHdfToCsv('{"baselines":[]}')).toBe('');
   });
 });
