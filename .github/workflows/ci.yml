@@ -407,14 +407,24 @@ jobs:
   # findings mode, so this threshold verdict is what fails CI, whereas a red
   # test has already failed its own job.
   #
-  # The steps below ARE the demonstration: convert each scanner's SARIF to one
+  # The steps below ARE the demonstration: convert each scanner's report to one
   # document shape, then apply a committed, reviewable policy per tool.
   gate-hdf-scans:
     name: Gate scans on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [gate-cli, scan-workflows, check-ts, check-go, scan-deps, scan-code]
+    # always(): a job that is skipped because an upstream job failed counts as
+    # PASSED by branch protection, so a red scanner would turn into a green
+    # required check. Run regardless, and fail explicitly on any upstream that
+    # did not succeed, so the verdict is red rather than absent.
+    if: always()
     steps:
+      - name: Every upstream job must have succeeded
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: |
+          echo "::error::an upstream job failed, was cancelled or was skipped; the scan gate cannot judge a partial run"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
