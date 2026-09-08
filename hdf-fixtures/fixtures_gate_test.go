@@ -1,6 +1,10 @@
-// Self-contained validation gate for the hdf-fixtures corpus. Every fixture
-// in results/ must validate as HDF Results, baseline/* as HDF Baseline,
-// amendments/* as HDF Amendments.
+// Self-contained validation gate for the hdf-fixtures corpus: the fixtures
+// listed in the groups below must validate as HDF Results, HDF Baseline and
+// HDF Amendments respectively.
+//
+// The list is hand-maintained, not a directory walk, so a fixture added to the
+// corpus without a matching entry here is silently ungated. Adding one is step
+// 5 of the checklist in README.md.
 // inspec/* is exempt — those files are InSpec runner output (NOT
 // HDF), kept here as input for the legacyhdf-to-hdf converter and as the
 // negative-case feed for the cross-language parser parity test.
