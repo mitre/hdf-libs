@@ -38,6 +38,9 @@ env:
   # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves
   # to the v1 line (1.9.2) and silently gives you an older scanner.
   OSV_SCANNER_VERSION: 'v2.5.1'
+  # syft for the per-commit dependency SBOM (scan-deps). The release job's
+  # download-syft action is SHA-pinned; this pins the syft release it fetches.
+  SYFT_VERSION: 'v1.51.1'
   SEMGREP_VERSION: '1.176.1'
   # semgrep-rules commit the scan uses. Bumping it is how the ruleset
   # updates; re-measure .github/hdf-thresholds/semgrep.yaml in the same PR.
@@ -203,6 +206,44 @@ jobs:
           name: scan-deps
           path: scan-artifacts/
           retention-days: 7
+      # ── Dependency inventory ─────────────────────────────────────────────
+      # NOT a gate. An SBOM is inventory, not findings: there is no threshold
+      # to apply and no verdict to reach, so this step is in no gate loop and
+      # gate-hdf-scans does not wait on it; a policy over dependencies is the
+      # scanner's job, above. It records what the tree depends on at this
+      # commit, which the release job's SBOMs (what shipped) do not answer.
+      # Same fixture trap as the scanner: the converter fixtures and the shared
+      # corpus are SBOMs and lockfiles by design, so they are excluded rather
+      # than inventoried (measured: 44 fixture components otherwise). Build
+      # outputs are excluded too: syft reads module info out of Go binaries,
+      # and a tool binary's dependencies are not this tree's.
+      - uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          syft-version: ${{ env.SYFT_VERSION }}
+      - name: Dependency SBOM (SPDX JSON; inventory, no verdict)
+        run: |
+          mkdir -p sbom
+          syft dir:. \
+            --exclude './**/fixtures/**' --exclude './**/testdata/**' \
+            --exclude './hdf-fixtures/**' --exclude './**/node_modules/**' \
+            --exclude './.pnpm-store/**' --exclude './.beads/**' \
+            --exclude './**/dist/**' --exclude './.tools/**' \
+            --source-name hdf-libs --source-version "$GITHUB_SHA" \
+            -o "spdx-json=sbom/hdf-libs-$GITHUB_SHA.spdx.json"
+          # Both ecosystems must be present, or the inventory is partial and
+          # would pass unnoticed. Counted from purls, independent of syft's
+          # own summary.
+          set -o pipefail
+          go=$(jq '[.packages[].externalRefs[]? | select(.referenceType=="purl") | .referenceLocator | select(startswith("pkg:golang/"))] | length' sbom/*.spdx.json)
+          npm=$(jq '[.packages[].externalRefs[]? | select(.referenceType=="purl") | .referenceLocator | select(startswith("pkg:npm/"))] | length' sbom/*.spdx.json)
+          echo "inventory: golang=$go npm=$npm"
+          [ "$go" -gt 0 ] && [ "$npm" -gt 0 ] \
+            || { echo "::error::SBOM covers golang=$go npm=$npm — an ecosystem went uninventoried"; exit 1; }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom
+          path: sbom/
+          retention-days: 90
 
   # ── Scan: static analysis, both languages at once ────────────────────────
   # semgrep's OSS security rules cover TypeScript and Go in one invocation.
