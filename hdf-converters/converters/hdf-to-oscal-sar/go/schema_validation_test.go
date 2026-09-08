@@ -299,8 +299,8 @@ func TestConvertHDFToOSCALSAR_OriginActorsResolve(t *testing.T) {
 // nested-invalid, and this converter converts both into schema-valid output,
 // which that contract permits. Only genuine gaps remain.
 var corpusExemptions = map[string]string{
-	"zero-baselines":         "hdf-libs-wq3u: baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately",
-	"requirement-missing-id": "hdf-libs-5gri.17: converts into output carrying an empty target-id, which fails the OSCAL token pattern",
+	"zero-baselines":         "baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately",
+	"requirement-missing-id": "converts into output carrying an empty target-id, which fails the OSCAL token pattern",
 }
 
 func corpusMinusExemptions(t *testing.T) []shared.CorpusCase {

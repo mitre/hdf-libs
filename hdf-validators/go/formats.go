@@ -29,7 +29,12 @@ var (
 	rxRFC4122 = regexp.MustCompile(`(?i)^(?:urn:uuid:)?[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$`)
 
 	rxRFC3339Date = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})$`)
-	// The offset is required here: RFC 3339 date-time has no floating form.
+	// The offset is required — RFC 3339 date-time has no floating form — but its
+	// shape is deliberately looser than the RFC: ajv-formats accepts an hour-only
+	// "+05" and a basic-format "+0530", so rejecting them here would make the
+	// shipped Go validator disagree with its TypeScript peer, which is the
+	// divergence this file exists to close. Both shapes are pinned in
+	// ../testdata/shipped-format-cases.json.
 	rxRFC3339Time = regexp.MustCompile(`(?i)^(\d\d):(\d\d):(\d\d(?:\.\d+)?)(?:(z)|([+-])(\d\d):?(\d\d)?)$`)
 
 	daysInMonth = [...]int{0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}

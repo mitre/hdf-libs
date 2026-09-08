@@ -35,11 +35,11 @@ func ConvertHDFToOSCALSAR(input []byte, _ string) ([]byte, error) {
 	// OSCAL representation. Emitting "results": [] would exit 0 with a document
 	// the target schema rejects.
 	//
-	// hdf-libs-wq3u decides whether hdf-results should carry minItems 1 on
-	// baselines, as every sibling document schema except hdf-comparison does on
-	// its required collections. If
-	// it does, RequireHDFResults should switch from its nil check to the len == 0
-	// check RequireHDFAmendments already uses, and this check becomes redundant.
+	// Whether hdf-results should itself carry minItems 1 on baselines, as every
+	// sibling document schema except hdf-comparison does on its required
+	// collections, is an open schema question. If it gains one, RequireHDFResults
+	// should switch from its nil check to the len == 0 check RequireHDFAmendments
+	// already uses, and this check becomes redundant.
 	if len(hdfResults.Baselines) == 0 {
 		return nil, fmt.Errorf("hdf-to-oscal-sar: cannot represent an assessment with no evaluated baselines as OSCAL Assessment Results, which requires at least one result")
 	}

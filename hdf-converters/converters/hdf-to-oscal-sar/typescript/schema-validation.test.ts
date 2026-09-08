@@ -263,8 +263,8 @@ describe('hdf-to-oscal-sar empty-assessment handling', () => {
   // The converter-specific constraint the shared guard cannot express: the guard
   // checks top-level shape, not the full HDF schema, and it accepts an empty
   // baselines array because hdf-results puts no minItems on it. OSCAL requires
-  // results with minItems 1. hdf-libs-wq3u decides whether the HDF schema should
-  // carry that constraint too.
+  // results with minItems 1. Whether the HDF schema should carry that constraint
+  // too is an open question.
   it('rejects an assessment with no evaluated baselines', async () => {
     await expect(convertHdfToOscalSar('{"baselines":[]}')).rejects.toThrow(/at least one result/);
   });
@@ -351,7 +351,7 @@ describe('hdf-to-oscal-sar findings without a control id', () => {
 describe('hdf-to-oscal-sar against the adversarial corpus', () => {
   const CORPUS_EXEMPTIONS: Record<string, string> = {
     'zero-baselines':
-      'hdf-libs-wq3u: baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately',
+      'baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately',
   };
 
   it('satisfies every contract for every non-exempt case', async () => {

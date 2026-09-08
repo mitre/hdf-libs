@@ -57,12 +57,11 @@ export async function convertHdfToOscalSar(input: string): Promise<string> {
   // OSCAL representation. Emitting `results: []` would resolve successfully with
   // a document the target schema rejects.
   //
-  // hdf-libs-wq3u decides whether hdf-results should carry minItems 1 on
-  // baselines, as every sibling document schema except hdf-comparison does on
-  // its required collections. If
-  // it does, requireHdfResults should reject an empty array the way
-  // requireHdfAmendments already rejects empty overrides, and this check becomes
-  // redundant.
+  // Whether hdf-results should itself carry minItems 1 on baselines, as every
+  // sibling document schema except hdf-comparison does on its required
+  // collections, is an open schema question. If it gains one, requireHdfResults
+  // should reject an empty array the way requireHdfAmendments already rejects
+  // empty overrides, and this check becomes redundant.
   if (hdfResults.baselines.length === 0) {
     throw new Error(
       'hdf-to-oscal-sar: cannot represent an assessment with no evaluated baselines as OSCAL Assessment Results, which requires at least one result',

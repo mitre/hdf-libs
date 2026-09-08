@@ -66,6 +66,27 @@
       "why": "RFC 3339 requires an offset"
     },
     {
+      "name": "date-time with an hour-only offset",
+      "field": "startTime",
+      "value": "2020-01-01T00:00:00+05",
+      "valid": true,
+      "why": "RFC 3339 requires +HH:MM, but ajv-formats accepts a bare hour and so does the Go peer. Pinned as agreement, not as correctness: tightening either side alone would reopen the divergence this table exists to close"
+    },
+    {
+      "name": "date-time with a basic-format offset",
+      "field": "startTime",
+      "value": "2020-01-01T00:00:00+0530",
+      "valid": true,
+      "why": "ISO 8601 basic form, which RFC 3339 also excludes and both libraries also accept"
+    },
+    {
+      "name": "date-time with a one-digit offset minute",
+      "field": "startTime",
+      "value": "2020-01-01T00:00:00+05:3",
+      "valid": false,
+      "why": "the laxness above stops here: neither library accepts a partial minute field"
+    },
+    {
       "name": "space where the T separator belongs",
       "field": "startTime",
       "value": "2020-01-01 00:00:00Z",

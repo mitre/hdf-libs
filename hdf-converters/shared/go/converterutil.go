@@ -717,12 +717,6 @@ func MarkUnratedSeverity(tags map[string]interface{}, severity string) {
 // --- Typed structural guards ------------------------------------------------
 // The map guards above keep their names and contracts for existing callers;
 // these decode into the generated structs, which rejects a wrongly-typed field
-// outright. Both paths now agree, because the map path calls
-// rejectWronglyTypedFields.
-
-// --- Typed structural guards -----------------------------------------------
-// The map guards above keep their names and contracts for existing callers;
-// these decode into the generated structs, which rejects a wrongly-typed field
 // outright. Both paths agree because the map path calls rejectWronglyTypedFields.
 
 // --- Structural input guard ---------------------------------------------------
