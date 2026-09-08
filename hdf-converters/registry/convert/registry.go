@@ -79,6 +79,7 @@ type EmptyInputAccepting interface {
 // converterOptions collects optional behaviors set at registration time.
 type converterOptions struct {
 	acceptsEmpty bool
+	expect       ExpectedCountFn
 }
 
 // ConverterOption customizes a converter registration.
@@ -122,6 +123,12 @@ func RegisterConverter(source, dest string, converter Converter) {
 		Dest:   normalizeFormat(dest),
 	}
 	converterRegistry[pair] = converter
+}
+
+// UnregisterConverter removes a converter registered under the format pair.
+// Tests that register doubles use it to leave the registry as they found it.
+func UnregisterConverter(source, dest string) {
+	delete(converterRegistry, FormatPair{Source: normalizeFormat(source), Dest: normalizeFormat(dest)})
 }
 
 // GetConverter retrieves a converter for the given format pair.
@@ -196,12 +203,12 @@ func (c *hdfResultsConverter) Convert(input []byte) ([]byte, error) {
 // Optional ConverterOption values (e.g. WithEmptyInputOK) tune its behavior.
 func registerHDFConverter(source, displayName, errPrefix string, fn HDFResultsConvertFn, opts ...ConverterOption) {
 	o := applyConverterOptions(opts)
-	RegisterConverter(source, "hdf", &hdfResultsConverter{
+	RegisterConverter(source, "hdf", withExpectation(&hdfResultsConverter{
 		displayName:  displayName,
 		errPrefix:    errPrefix,
 		convertFn:    fn,
 		acceptsEmpty: o.acceptsEmpty,
-	})
+	}, o))
 }
 
 // registerHDFConverterMulti registers a standard HDF Results converter under
@@ -209,12 +216,12 @@ func registerHDFConverter(source, displayName, errPrefix string, fn HDFResultsCo
 // The dest is always "hdf". Optional ConverterOption values tune its behavior.
 func registerHDFConverterMulti(sources []string, displayName, errPrefix string, fn HDFResultsConvertFn, opts ...ConverterOption) {
 	o := applyConverterOptions(opts)
-	c := &hdfResultsConverter{
+	c := withExpectation(&hdfResultsConverter{
 		displayName:  displayName,
 		errPrefix:    errPrefix,
 		convertFn:    fn,
 		acceptsEmpty: o.acceptsEmpty,
-	}
+	}, o)
 	for _, src := range sources {
 		RegisterConverter(src, "hdf", c)
 	}

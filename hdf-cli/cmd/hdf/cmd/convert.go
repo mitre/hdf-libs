@@ -242,6 +242,16 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return err
 	}
 
+	// Count fidelity: a converter that declares how many requirements its input
+	// must yield is held to it before anything else touches the document.
+	if strings.EqualFold(toFormat, "hdf") {
+		if ex, ok := converter.(RequirementCountExpecter); ok {
+			if err := checkRequirementFidelity(ex, data, output, inputPath); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Apply labels if --labels flag was provided
 	labelPairs, _ := cmd.Flags().GetStringSlice("labels")
 	if len(labelPairs) > 0 {
