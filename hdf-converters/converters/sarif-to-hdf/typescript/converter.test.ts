@@ -139,6 +139,27 @@ describe('SARIF Converter', async () => {
       expect(req.results[0].codeDesc).toContain('zero findings');
     });
 
+    // A location with a file but no region is still a location: osv-scanner
+    // reports lockfile findings this way. Go keeps the reference; TS must too.
+    it('keeps the file reference when the region carries no line', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: { driver: { name: 'osv-scanner', version: '2.5.1' } },
+          results: [{
+            ruleId: 'CVE-2026-0001',
+            level: 'error',
+            message: { text: 'vulnerable dependency' },
+            locations: [{ physicalLocation: { artifactLocation: { uri: 'file:///work/pnpm-lock.yaml', index: -1 } } }]
+          }]
+        }]
+      });
+
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.sourceLocation).toEqual({ ref: 'file:///work/pnpm-lock.yaml' });
+    });
+
     it('should handle missing locations', async () => {
       const input = JSON.stringify({
         version: '2.1.0',

@@ -5,7 +5,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
-import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, StatusOverride } from '@mitre/hdf-schema';
+import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
@@ -326,7 +326,7 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
   const tags = buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls, allSuppressions);
 
   const options: {
-    sourceLocation?: { ref: string; line: number };
+    sourceLocation?: SourceLocation;
     tags: Record<string, unknown>;
   } = { tags };
 
@@ -821,15 +821,20 @@ function buildTags(
 
 // --- Location helpers ---
 
-function extractSourceLocation(location: SarifLocation): { ref: string; line: number } | undefined {
+// Either half alone is a location (the schema requires neither): a lockfile
+// finding has a file and no line. Mirrors the Go converter.
+function extractSourceLocation(location: SarifLocation): SourceLocation | undefined {
   const uri = location.physicalLocation?.artifactLocation?.uri;
   const line = location.physicalLocation?.region?.startLine;
 
-  if (!uri || !line) {
-    return undefined;
+  const sourceLocation: SourceLocation = {};
+  if (uri) {
+    sourceLocation.ref = uri;
   }
-
-  return { ref: uri, line };
+  if (line) {
+    sourceLocation.line = line;
+  }
+  return sourceLocation.ref !== undefined || sourceLocation.line !== undefined ? sourceLocation : undefined;
 }
 
 function createHDFResult(

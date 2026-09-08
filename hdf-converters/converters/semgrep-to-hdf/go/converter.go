@@ -471,50 +471,17 @@ func jsonValueHasPrefix(raw json.RawMessage, prefix byte) bool {
 // ConvertSemgrepToHDF converts native `semgrep scan --json` output to HDF.
 // SARIF input is detected and delegated to the SARIF converter.
 func ConvertSemgrepToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if err := shared.ValidateJSONSize(input, "semgrep", 0); err != nil {
-		return nil, fmt.Errorf("semgrep: %w", err)
+	report, isSarif, err := parseReport(input)
+	if err != nil {
+		return nil, err
 	}
-	if len(strings.TrimSpace(string(input))) == 0 {
-		return nil, fmt.Errorf("semgrep: empty input")
-	}
-
 	// Format routing: semgrep also emits SARIF; delegate transparently.
-	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+	if isSarif {
 		return sarif.ConvertSarifToHDF(input, converterVersion)
 	}
 
-	// Decoded loosely first so a document whose containers are missing or not
-	// arrays is rejected as "not semgrep" — matching the TypeScript guard and
-	// this converter's own fingerprint, which score the same bytes zero.
-	var probe map[string]json.RawMessage
-	if err := json.Unmarshal(input, &probe); err != nil {
-		return nil, fmt.Errorf("semgrep: failed to parse report: %w", err)
-	}
-	if !jsonValueHasPrefix(probe["results"], '[') || !jsonValueHasPrefix(probe["errors"], '[') {
-		return nil, fmt.Errorf("semgrep: input does not look like a Semgrep report")
-	}
-
-	var report Report
-	if err := json.Unmarshal(input, &report); err != nil {
-		return nil, fmt.Errorf("semgrep: failed to parse report: %w", err)
-	}
-
 	startTime := time.Now().UTC()
-
-	// Group by rule, preserving the order rules were first seen. Go randomizes
-	// map iteration, so the order is tracked separately.
-	groups := make(map[string][]Result)
-	order := make([]string, 0, len(report.Results))
-	for _, result := range report.Results {
-		checkID := string(result.CheckID)
-		if checkID == "" {
-			continue
-		}
-		if _, seen := groups[checkID]; !seen {
-			order = append(order, checkID)
-		}
-		groups[checkID] = append(groups[checkID], result)
-	}
+	order, groups := groupResults(report)
 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(order)+3)
 	for _, checkID := range order {
@@ -530,7 +497,7 @@ func ConvertSemgrepToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 	if len(report.Errors) > 0 {
 		requirements = append(requirements, buildErrorsRequirement(report.Errors, startTime))
 	}
-	requirements = append(requirements, buildCoverageRequirement(report, len(order), startTime))
+	requirements = append(requirements, buildCoverageRequirement(*report, len(order), startTime))
 
 	title := "Semgrep static analysis scan"
 	baseline := hdf.EvaluatedBaseline{
@@ -548,4 +515,81 @@ func ConvertSemgrepToHDF(input []byte, converterVersion string) (*hdf.HDFResults
 		Baselines:        []hdf.EvaluatedBaseline{baseline},
 		Timestamp:        &startTime,
 	}), nil
+}
+
+// parseReport applies the converter's input guards and decodes a native
+// semgrep report. isSarif reports a SARIF-shaped input, which the converter
+// delegates. ConvertSemgrepToHDF and ExpectedRequirementCount share it so they
+// accept and reject exactly the same inputs.
+func parseReport(input []byte) (report *Report, isSarif bool, err error) {
+	if err := shared.ValidateJSONSize(input, "semgrep", 0); err != nil {
+		return nil, false, fmt.Errorf("semgrep: %w", err)
+	}
+	if len(strings.TrimSpace(string(input))) == 0 {
+		return nil, false, fmt.Errorf("semgrep: empty input")
+	}
+	if result := registry.DetectConverter(input); result != nil && result.Fingerprint.ID == "sarif-to-hdf" {
+		return nil, true, nil
+	}
+
+	// Decoded loosely first so a document whose containers are missing or not
+	// arrays is rejected as "not semgrep" — matching the TypeScript guard and
+	// this converter's own fingerprint, which score the same bytes zero.
+	var probe map[string]json.RawMessage
+	if err := json.Unmarshal(input, &probe); err != nil {
+		return nil, false, fmt.Errorf("semgrep: failed to parse report: %w", err)
+	}
+	if !jsonValueHasPrefix(probe["results"], '[') || !jsonValueHasPrefix(probe["errors"], '[') {
+		return nil, false, fmt.Errorf("semgrep: input does not look like a Semgrep report")
+	}
+	var r Report
+	if err := json.Unmarshal(input, &r); err != nil {
+		return nil, false, fmt.Errorf("semgrep: failed to parse report: %w", err)
+	}
+	return &r, false, nil
+}
+
+// groupResults groups findings by rule, preserving the order rules were first
+// seen (Go randomizes map iteration, so the order is tracked separately). It
+// is the single definition of the input-to-requirement relation: the
+// conversion builds requirements from it and ExpectedRequirementCount counts it.
+func groupResults(report *Report) ([]string, map[string][]Result) {
+	groups := make(map[string][]Result)
+	order := make([]string, 0, len(report.Results))
+	for _, result := range report.Results {
+		checkID := string(result.CheckID)
+		if checkID == "" {
+			continue
+		}
+		if _, seen := groups[checkID]; !seen {
+			order = append(order, checkID)
+		}
+		groups[checkID] = append(groups[checkID], result)
+	}
+	return order, groups
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct rule with findings (or one no-findings requirement when
+// there are none), one for the scan errors when semgrep reported any, and one
+// scan-coverage requirement always. SARIF-shaped input defers to the SARIF
+// converter's own relation, as the conversion does.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct semgrep rules plus the scan-status requirements"
+	report, isSarif, err := parseReport(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	if isSarif {
+		return sarif.ExpectedRequirementCount(input)
+	}
+	order, _ := groupResults(report)
+	count := len(order)
+	if count == 0 {
+		count = 1
+	}
+	if len(report.Errors) > 0 {
+		count++
+	}
+	return count + 1, unit, nil
 }

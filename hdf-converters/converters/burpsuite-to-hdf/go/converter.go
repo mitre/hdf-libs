@@ -245,31 +245,14 @@ func parseBurpTimestamp(s string) time.Time {
 
 // ConvertBurpsuiteToHDF converts BurpSuite XML export to HDF Results.
 func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("burpsuite: empty input")
-	}
-	if err := shared.ValidateXMLInput(input, 0); err != nil {
-		return nil, fmt.Errorf("burpsuite: %w", err)
+	burpData, err := parseBurpIssues(input)
+	if err != nil {
+		return nil, err
 	}
 
 	resultsChecksum := shared.InputChecksum(input)
 
-	var burpData BurpIssues
-	if err := xml.Unmarshal(input, &burpData); err != nil {
-		return nil, fmt.Errorf("failed to parse BurpSuite XML: %w", err)
-	}
-
-	limitedIssues := shared.LimitSliceWithWarning(burpData.Issues, 0, "issue")
-
-	// Group issues by type (preserving insertion order)
-	order := []string{}
-	groups := map[string][]BurpIssue{}
-	for _, issue := range limitedIssues {
-		if _, seen := groups[issue.Type]; !seen {
-			order = append(order, issue.Type)
-		}
-		groups[issue.Type] = append(groups[issue.Type], issue)
-	}
+	limitedIssues, order, groups := groupIssues(burpData.Issues)
 
 	// Parse the report export time once; it seeds both the top-level timestamp
 	// and every result's start_time (h2 sets result start_time = exportTime).
@@ -332,6 +315,57 @@ func ConvertBurpsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	})
 
 	return hdfResult, nil
+}
+
+// parseBurpIssues applies the converter's input guards and decodes the export.
+// ConvertBurpsuiteToHDF and ExpectedRequirementCount share it so they accept
+// and reject exactly the same inputs.
+func parseBurpIssues(input []byte) (*BurpIssues, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("burpsuite: empty input")
+	}
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
+		return nil, fmt.Errorf("burpsuite: %w", err)
+	}
+	var burpData BurpIssues
+	if err := xml.Unmarshal(input, &burpData); err != nil {
+		return nil, fmt.Errorf("failed to parse BurpSuite XML: %w", err)
+	}
+	return &burpData, nil
+}
+
+// groupIssues caps the issues and groups them by type in first-seen order. It
+// is the single definition of the input-to-requirement relation: the
+// conversion builds requirements from it and ExpectedRequirementCount counts
+// it. The capped slice is returned for the scan-target metadata.
+func groupIssues(issues []BurpIssue) ([]BurpIssue, []string, map[string][]BurpIssue) {
+	limitedIssues := shared.LimitSliceWithWarning(issues, 0, "issue")
+	order := []string{}
+	groups := map[string][]BurpIssue{}
+	for _, issue := range limitedIssues {
+		if _, seen := groups[issue.Type]; !seen {
+			order = append(order, issue.Type)
+		}
+		groups[issue.Type] = append(groups[issue.Type], issue)
+	}
+	return limitedIssues, order, groups
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct issue type, or one no-findings requirement when the
+// export carries no issues. Computed from the input alone, through the same
+// grouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct Burp issue types"
+	burpData, err := parseBurpIssues(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	_, order, _ := groupIssues(burpData.Issues)
+	if len(order) == 0 {
+		return 1, unit, nil
+	}
+	return len(order), unit, nil
 }
 
 // buildRequirement converts a group of issues sharing a type into one

@@ -1,0 +1,11 @@
+# golangci-lint policy: any finding fails CI.
+#
+# Same shape as eslint.yaml today, kept separate so the two can diverge
+# without editing a file that governs both — a per-tool policy is the unit a
+# reviewer can reason about.
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0

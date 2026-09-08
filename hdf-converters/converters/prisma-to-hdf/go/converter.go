@@ -421,14 +421,7 @@ func buildBaseline(hostname string, records []prismaRecord, checksum *hdf.Checks
 // ConvertPrismaToHDF converts Prisma Cloud CSV compliance scan output to HDF format.
 // Records are grouped by hostname, producing one baseline per host.
 func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("prisma: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "prisma", 0); err != nil {
-		return nil, fmt.Errorf("prisma: %w", err)
-	}
-
-	records, err := parseCSV(input)
+	records, err := parseInput(input)
 	if err != nil {
 		return nil, err
 	}
@@ -479,4 +472,39 @@ func ConvertPrismaToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		Components:       targets,
 		Timestamp:        &now,
 	}), nil
+}
+
+// parseInput applies the converter's input guards and decodes the CSV rows.
+// ConvertPrismaToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) ([]prismaRecord, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("prisma: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "prisma", 0); err != nil {
+		return nil, fmt.Errorf("prisma: %w", err)
+	}
+	return parseCSV(input)
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per CSV data row, counted through the same per-hostname grouping and
+// size limit the conversion applies, or one no-findings requirement when the
+// export has no rows.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Prisma Cloud CSV rows"
+	records, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	if len(records) == 0 {
+		return 1, unit, nil
+	}
+	count := 0
+	hostOrder, hostGroups := groupByHostname(records)
+	for _, hostname := range hostOrder {
+		limited, _ := hdfutil.LimitSlice(hostGroups[hostname], 0)
+		count += len(limited)
+	}
+	return count, unit, nil
 }

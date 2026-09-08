@@ -17,12 +17,13 @@ func init() { convreg.SetVersion(version) }
 
 // Relocated types — aliased so cmd call sites and tests compile unchanged.
 type (
-	Converter           = convreg.Converter
-	VersionedConverter  = convreg.VersionedConverter
-	OutputVersionSetter = convreg.OutputVersionSetter
-	EmptyInputAccepting = convreg.EmptyInputAccepting
-	FormatPair          = convreg.FormatPair
-	ConverterOption     = convreg.ConverterOption
+	Converter                = convreg.Converter
+	VersionedConverter       = convreg.VersionedConverter
+	OutputVersionSetter      = convreg.OutputVersionSetter
+	EmptyInputAccepting      = convreg.EmptyInputAccepting
+	RequirementCountExpecter = convreg.RequirementCountExpecter
+	FormatPair               = convreg.FormatPair
+	ConverterOption          = convreg.ConverterOption
 )
 
 // ErrConverterNotFound is re-exported from the lifted registry.
@@ -30,8 +31,10 @@ var ErrConverterNotFound = convreg.ErrConverterNotFound
 
 // Relocated functions — bound to the lifted registry (no reimplementation).
 var (
-	RegisterConverter = convreg.RegisterConverter
-	GetConverter      = convreg.GetConverter
-	ListConverters    = convreg.ListConverters
-	WithEmptyInputOK  = convreg.WithEmptyInputOK
+	RegisterConverter            = convreg.RegisterConverter
+	GetConverter                 = convreg.GetConverter
+	UnregisterConverter          = convreg.UnregisterConverter
+	ListConverters               = convreg.ListConverters
+	WithEmptyInputOK             = convreg.WithEmptyInputOK
+	WithExpectedRequirementCount = convreg.WithExpectedRequirementCount
 )

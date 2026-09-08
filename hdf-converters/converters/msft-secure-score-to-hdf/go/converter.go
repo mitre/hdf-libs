@@ -311,10 +311,10 @@ func buildRequirement(cs ControlScore, profiles []SecureScoreControlProfile, cre
 	}
 }
 
-// ConvertMsftSecureScoreToHDF converts Microsoft Secure Score JSON to HDF format.
-// Input is the combined JSON containing both secureScore and profiles data
-// from the Microsoft Graph API.
-func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the combined
+// response. ConvertMsftSecureScoreToHDF and ExpectedRequirementCount share it
+// so they accept and reject exactly the same inputs.
+func parseInput(input []byte) (*CombinedResponse, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("msft-secure-score: empty input")
 	}
@@ -337,6 +337,36 @@ func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HD
 	if len(combined.SecureScore.Value) == 0 {
 		return nil, fmt.Errorf("msft-secure-score: secureScore.value is empty")
 	}
+	return &combined, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per controlScores[] entry of every secureScore.value[] snapshot,
+// each within the size limit. A snapshot with no control scores yields zero —
+// the converter emits no no-findings placeholder.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Secure Score control scores"
+	combined, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for _, ss := range combined.SecureScore.Value {
+		limited, _ := hdfutil.LimitSlice(ss.ControlScores, 0)
+		count += len(limited)
+	}
+	return count, unit, nil
+}
+
+// ConvertMsftSecureScoreToHDF converts Microsoft Secure Score JSON to HDF format.
+// Input is the combined JSON containing both secureScore and profiles data
+// from the Microsoft Graph API.
+func ConvertMsftSecureScoreToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	parsed, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+	combined := *parsed
 
 	checksum := shared.InputChecksum(input)
 

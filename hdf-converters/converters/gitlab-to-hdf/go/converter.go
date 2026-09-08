@@ -370,8 +370,10 @@ func buildContainerCodeDesc(loc *GitLabLocation) string {
 	return strings.Join(parts, " | ")
 }
 
-// ConvertGitlabToHDF converts a GitLab Security Report JSON to HDF Results.
-func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the report.
+// ConvertGitlabToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) (*GitLabReport, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
@@ -379,12 +381,38 @@ func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults,
 		return nil, fmt.Errorf("gitlab: %w", err)
 	}
 
-	resultsChecksum := shared.InputChecksum(input)
-
 	var report GitLabReport
 	if err := json.Unmarshal(input, &report); err != nil {
 		return nil, fmt.Errorf("invalid GitLab JSON: %w", err)
 	}
+	return &report, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per vulnerabilities[] entry within the size limit, or one
+// no-findings requirement when the array is empty or absent.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "GitLab vulnerabilities"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	limited, _ := hdfutil.LimitSlice(report.Vulnerabilities, 0)
+	count := len(limited)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertGitlabToHDF converts a GitLab Security Report JSON to HDF Results.
+func ConvertGitlabToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	report, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+
+	resultsChecksum := shared.InputChecksum(input)
 
 	scanType := "sast"
 	scannerName := "GitLab Security Scanner"

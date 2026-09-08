@@ -23,6 +23,54 @@ func ConvertAssessmentResultsToHDF(input []byte, converterVersion string) (*hdf.
 	return sarToHDFResults(doc.AssessmentResults, input, converterVersion)
 }
 
+// ExpectedAssessmentResultsRequirementCount states how many requirements a
+// SAR must convert to: per results[] entry that has findings, one per distinct
+// control id across its findings (within the finding cap; an unresolvable id
+// groups under "unknown"). Entries with no findings are skipped. Computed from
+// the input alone, through the same grouping the conversion uses.
+func ExpectedAssessmentResultsRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct control ids across OSCAL results with findings"
+	doc, err := ParseOscalDocument(input, "assessment-results", "oscal-assessment-results")
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for i := range doc.AssessmentResults.Results {
+		r := &doc.AssessmentResults.Results[i]
+		if !resultHasFindings(r) {
+			continue
+		}
+		order, _ := groupFindingsByControl(r)
+		count += len(order)
+	}
+	return count, unit, nil
+}
+
+// resultHasFindings reports whether a results[] entry yields a baseline; an
+// empty result set is skipped by the conversion.
+func resultHasFindings(r *Result) bool {
+	return len(r.Findings) > 0
+}
+
+// groupFindingsByControl groups a result's findings by control id in
+// first-seen order, within the finding cap. It is the single definition of the
+// SAR's input-to-requirement relation: the conversion builds requirements from
+// it and ExpectedAssessmentResultsRequirementCount counts it.
+func groupFindingsByControl(result *Result) ([]string, map[string][]*Finding) {
+	order := make([]string, 0)
+	groups := make(map[string][]*Finding)
+	limitedFindings := shared.LimitSliceWithWarning(result.Findings, 0, "finding")
+	for i := range limitedFindings {
+		f := &limitedFindings[i]
+		controlID := extractControlIDFromFinding(f)
+		if _, ok := groups[controlID]; !ok {
+			order = append(order, controlID)
+		}
+		groups[controlID] = append(groups[controlID], f)
+	}
+	return order, groups
+}
+
 // sarToHDFResults converts a parsed AssessmentResults to HDFResults.
 func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion string) (*hdf.HDFResults, error) {
 	meta := ExtractMetadata(sar.Metadata)
@@ -34,7 +82,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(sar.Results))
 	for i := range sar.Results {
 		r := &sar.Results[i]
-		if len(r.Findings) == 0 {
+		if !resultHasFindings(r) {
 			title := r.Title
 			if title == "" {
 				title = r.UUID
@@ -87,33 +135,12 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 	riskMap := buildRiskMap(result.Risks)
 
 	// Group findings by control ID, preserving insertion order
-	type controlFindings struct {
-		controlID string
-		findings  []*Finding
-	}
-	controlOrder := make([]string, 0)
-	controlMap := make(map[string]*controlFindings)
-
-	limitedFindings := shared.LimitSliceWithWarning(result.Findings, 0, "finding")
-	for i := range limitedFindings {
-		f := &limitedFindings[i]
-		controlID := extractControlIDFromFinding(f)
-		if existing, ok := controlMap[controlID]; ok {
-			existing.findings = append(existing.findings, f)
-		} else {
-			controlOrder = append(controlOrder, controlID)
-			controlMap[controlID] = &controlFindings{
-				controlID: controlID,
-				findings:  []*Finding{f},
-			}
-		}
-	}
+	controlOrder, controlMap := groupFindingsByControl(result)
 
 	// Build requirements in insertion order
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(controlOrder))
 	for _, controlID := range controlOrder {
-		cf := controlMap[controlID]
-		req := findingsToEvaluatedRequirement(cf.controlID, cf.findings, obsMap, riskMap, result, scanTime)
+		req := findingsToEvaluatedRequirement(controlID, controlMap[controlID], obsMap, riskMap, result, scanTime)
 		requirements = append(requirements, req)
 	}
 

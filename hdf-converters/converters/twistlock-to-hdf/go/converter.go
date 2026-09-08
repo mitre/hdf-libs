@@ -473,33 +473,13 @@ func convertSingleResult(result TwistlockResult, checksum *hdf.Checksum) hdf.Eva
 // Handles both container image scans (with "results" wrapper) and code repository
 // scans (single result object without wrapper).
 func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("twistlock: empty input")
+	parsed, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
-	if err := shared.ValidateJSONSize(input, "twistlock", 0); err != nil {
-		return nil, fmt.Errorf("twistlock: %w", err)
-	}
+	report := *parsed
 
 	checksum := shared.InputChecksum(input)
-
-	// Try parsing as wrapped report (has "results" key)
-	var report TwistlockReport
-	if err := json.Unmarshal(input, &report); err != nil {
-		return nil, fmt.Errorf("twistlock: invalid JSON: %w", err)
-	}
-
-	// If no results array found, this might be a code repo scan (unwrapped single result)
-	if report.Results == nil {
-		var singleResult TwistlockResult
-		if err := json.Unmarshal(input, &singleResult); err != nil {
-			return nil, fmt.Errorf("twistlock: invalid JSON: %w", err)
-		}
-		report.Results = []TwistlockResult{singleResult}
-	}
-
-	if len(report.Results) == 0 {
-		return nil, fmt.Errorf("twistlock: no scan results found")
-	}
 
 	baselines := make([]hdf.EvaluatedBaseline, len(report.Results))
 	for i, result := range report.Results {
@@ -528,4 +508,57 @@ func ConvertTwistlockToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		Components:       []hdf.Component{component},
 		Timestamp:        &now,
 	}), nil
+}
+
+// parseInput applies the converter's input guards and decodes either the
+// wrapped report or an unwrapped single result. ConvertTwistlockToHDF and
+// ExpectedRequirementCount share it so they accept and reject the same inputs.
+func parseInput(input []byte) (*TwistlockReport, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("twistlock: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "twistlock", 0); err != nil {
+		return nil, fmt.Errorf("twistlock: %w", err)
+	}
+
+	// Try parsing as wrapped report (has "results" key)
+	var report TwistlockReport
+	if err := json.Unmarshal(input, &report); err != nil {
+		return nil, fmt.Errorf("twistlock: invalid JSON: %w", err)
+	}
+
+	// If no results array found, this might be a code repo scan (unwrapped single result)
+	if report.Results == nil {
+		var singleResult TwistlockResult
+		if err := json.Unmarshal(input, &singleResult); err != nil {
+			return nil, fmt.Errorf("twistlock: invalid JSON: %w", err)
+		}
+		report.Results = []TwistlockResult{singleResult}
+	}
+
+	if len(report.Results) == 0 {
+		return nil, fmt.Errorf("twistlock: no scan results found")
+	}
+	return &report, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per vulnerabilities[] entry of every results[] element, each within
+// the size limit, with one no-findings requirement for a result that has none.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Twistlock vulnerabilities"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for _, result := range report.Results {
+		limited, _ := hdfutil.LimitSlice(result.Vulnerabilities, 0)
+		if len(limited) == 0 {
+			count++
+			continue
+		}
+		count += len(limited)
+	}
+	return count, unit, nil
 }

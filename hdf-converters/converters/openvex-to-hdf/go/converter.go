@@ -74,13 +74,11 @@ type Product struct {
 // 'under_investigation' produce no amendment (informational only — the
 // consumer creates an amendment later if they decide to act).
 func ConvertOpenVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendments, error) {
-	if err := shared.ValidateJSONSize(input, "openvex-to-hdf", 0); err != nil {
+	docPtr, err := parseInput(input)
+	if err != nil {
 		return nil, err
 	}
-	var doc Document
-	if err := json.Unmarshal(input, &doc); err != nil {
-		return nil, fmt.Errorf("parse OpenVEX: %w", err)
-	}
+	doc := *docPtr
 
 	docTime := hdfutil.ParseTimestamp(doc.Timestamp)
 	if docTime.IsZero() {
@@ -101,7 +99,7 @@ func ConvertOpenVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	// payload, so we refuse to write an empty amendments document. The user
 	// can ingest the same VEX document later once they decide to act.
 	if len(overrides) == 0 {
-		return nil, fmt.Errorf("openvex-to-hdf: VEX document contains no actionable statements (all 'affected' or 'under_investigation'); no amendment to write")
+		return nil, errNoActionableStatements
 	}
 
 	name := "OpenVEX statements"
@@ -128,23 +126,76 @@ func ConvertOpenVEXToHDF(input []byte, converterVersion string) (*hdf.HDFAmendme
 	}, nil
 }
 
-// statementToOverride converts one OpenVEX statement to an HDF override,
-// or returns (_, false) when no amendment should be synthesized.
-func statementToOverride(stmt *Statement, doc *Document, docTime time.Time) (hdf.StandaloneOverride, bool) {
+// parseInput applies the converter's input guards and decodes the document.
+// ConvertOpenVEXToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) (*Document, error) {
+	if err := shared.ValidateJSONSize(input, "openvex-to-hdf", 0); err != nil {
+		return nil, err
+	}
+	var doc Document
+	if err := json.Unmarshal(input, &doc); err != nil {
+		return nil, fmt.Errorf("parse OpenVEX: %w", err)
+	}
+	return &doc, nil
+}
+
+// errNoActionableStatements is the refusal for a document with no override to
+// write: HDF Amendments requires overrides.minItems=1.
+var errNoActionableStatements = fmt.Errorf("openvex-to-hdf: VEX document contains no actionable statements (all 'affected' or 'under_investigation'); no amendment to write")
+
+// actionableStatement resolves a statement's import target and requirement id,
+// or ok=false when its status is informational or it names no vulnerability
+// (neither name nor @id). It is the single definition of the
+// input-to-override relation: the conversion builds overrides from it and
+// ExpectedRequirementCount counts it.
+func actionableStatement(stmt *Statement) (target vex.ImportTarget, requirementID string, ok bool) {
 	canonical, ok := vex.NormalizeStatus(stmt.Status)
 	if !ok {
-		return hdf.StandaloneOverride{}, false
+		return vex.ImportTarget{}, "", false
 	}
-	target, ok := vex.ImportTargetFor(canonical)
+	target, ok = vex.ImportTargetFor(canonical)
 	if !ok {
-		return hdf.StandaloneOverride{}, false
+		return vex.ImportTarget{}, "", false
 	}
-
-	requirementID := stmt.Vulnerability.Name
+	requirementID = stmt.Vulnerability.Name
 	if requirementID == "" {
 		requirementID = stmt.Vulnerability.ID
 	}
 	if requirementID == "" {
+		return vex.ImportTarget{}, "", false
+	}
+	return target, requirementID, true
+}
+
+// ExpectedRequirementCount states how many overrides the input must convert
+// to: one per statement with an actionable status (not_affected or fixed) that
+// names a vulnerability. A document yielding none is an error, as it is for
+// the conversion. Computed from the input alone, through the same predicate
+// the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "OpenVEX statements with an actionable status"
+	doc, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for i := range doc.Statements {
+		if _, _, ok := actionableStatement(&doc.Statements[i]); ok {
+			count++
+		}
+	}
+	if count == 0 {
+		return 0, unit, errNoActionableStatements
+	}
+	return count, unit, nil
+}
+
+// statementToOverride converts one OpenVEX statement to an HDF override,
+// or returns (_, false) when no amendment should be synthesized.
+func statementToOverride(stmt *Statement, doc *Document, docTime time.Time) (hdf.StandaloneOverride, bool) {
+	target, requirementID, ok := actionableStatement(stmt)
+	if !ok {
 		return hdf.StandaloneOverride{}, false
 	}
 

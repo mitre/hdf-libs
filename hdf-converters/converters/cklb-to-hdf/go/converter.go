@@ -26,14 +26,37 @@ import (
 // maxInputSize caps CKLB JSON input at 50MB.
 const maxInputSize = 50 * 1024 * 1024
 
-// ConvertCKLBToHDF converts a DISA STIG Viewer 3.x .cklb document to HDF Results.
-func ConvertCKLBToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and parses the checklist.
+// ConvertCKLBToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) (*checklist.Checklist, error) {
 	if err := shared.ValidateJSONSize(input, "cklb", maxInputSize); err != nil {
 		return nil, fmt.Errorf("cklb: %w", err)
 	}
 	cl, err := checklist.ParseCKLB(input)
 	if err != nil {
 		return nil, fmt.Errorf("cklb: %w", err)
+	}
+	return cl, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per stigs[].rules[] entry. The parser already rejects a checklist
+// with no stigs or a stig with no rules, so the count is never zero.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "CKLB rules"
+	cl, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	return cl.VulnCount(), unit, nil
+}
+
+// ConvertCKLBToHDF converts a DISA STIG Viewer 3.x .cklb document to HDF Results.
+func ConvertCKLBToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	cl, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 	return checklist.ChecklistToHDF(cl, shared.InputChecksum(input), converterVersion, "cklb-to-hdf"), nil
 }

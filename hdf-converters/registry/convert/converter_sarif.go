@@ -36,6 +36,12 @@ func (c *versionedSarifConverter) Convert(input []byte) ([]byte, error) {
 
 // SetInputVersion sets the SARIF schema version of the input.
 // An empty string means "use the latest supported version" (2.1.0).
+// ExpectedRequirementCount implements RequirementCountExpecter with the
+// converter's own grouping, honoring the selected input version.
+func (c *versionedSarifConverter) ExpectedRequirementCount(input []byte) (int, string, error) {
+	return sarif.ExpectedRequirementCount(input, c.inputVersion)
+}
+
 func (c *versionedSarifConverter) SetInputVersion(v string) {
 	c.inputVersion = v
 }

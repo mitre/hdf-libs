@@ -1,6 +1,8 @@
 package legacyhdf
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -443,21 +445,36 @@ func convertSupports(supports []map[string]interface{}) []hdf.SupportedPlatform 
 	return out
 }
 
-// convertProfile converts a v1.0 profile to v2.0 EvaluatedBaseline.
-func convertProfile(v1 LegacyProfile) hdf.EvaluatedBaseline {
+// baselineIdentity carries the profile fields overlay flattening keys on: the
+// name, the parent reference and the depends list (alias resolution). Both
+// convertProfile and the requirement-count relation build from it so the
+// flattening decisions are identical.
+func baselineIdentity(v1 LegacyProfile) hdf.EvaluatedBaseline {
 	v2 := hdf.EvaluatedBaseline{
 		Name:           v1.Name,
-		Version:        v1.Version,
-		Title:          v1.Title,
-		Maintainer:     v1.Maintainer,
-		Summary:        v1.Summary,
-		License:        v1.License,
-		Copyright:      v1.Copyright,
-		CopyrightEmail: v1.CopyrightEmail,
-		Status:         v1.Status,
-		StatusMessage:  v1.StatusMessage,
 		ParentBaseline: v1.ParentProfile,
 	}
+	if v1.Depends != nil {
+		v2.Depends = make([]hdf.Dependency, len(v1.Depends))
+		for i, d := range v1.Depends {
+			v2.Depends[i] = convertDependency(d)
+		}
+	}
+	return v2
+}
+
+// convertProfile converts a v1.0 profile to v2.0 EvaluatedBaseline.
+func convertProfile(v1 LegacyProfile) hdf.EvaluatedBaseline {
+	v2 := baselineIdentity(v1)
+	v2.Version = v1.Version
+	v2.Title = v1.Title
+	v2.Maintainer = v1.Maintainer
+	v2.Summary = v1.Summary
+	v2.License = v1.License
+	v2.Copyright = v1.Copyright
+	v2.CopyrightEmail = v1.CopyrightEmail
+	v2.Status = v1.Status
+	v2.StatusMessage = v1.StatusMessage
 
 	// Transform sha256 to integrity object
 	if v1.SHA256 != nil {
@@ -491,14 +508,6 @@ func convertProfile(v1 LegacyProfile) hdf.EvaluatedBaseline {
 		v2.Requirements = make([]hdf.EvaluatedRequirement, len(v1.Controls))
 		for i, c := range v1.Controls {
 			v2.Requirements[i] = convertControl(c)
-		}
-	}
-
-	// Transform depends
-	if v1.Depends != nil {
-		v2.Depends = make([]hdf.Dependency, len(v1.Depends))
-		for i, d := range v1.Depends {
-			v2.Depends[i] = convertDependency(d)
 		}
 	}
 
@@ -569,6 +578,51 @@ func documentTimestamp(v1 *LegacyHDFResults) *time.Time {
 		return nil
 	}
 	return &latest
+}
+
+// ParseLegacyHDF applies the converter's input guards and decodes InSpec
+// exec-json. The registry's Convert and ExpectedRequirementCount share it so
+// they accept and reject exactly the same inputs.
+func ParseLegacyHDF(input []byte) (*LegacyHDFResults, error) {
+	if err := shared.ValidateJSONSize(input, "legacyhdf", 0); err != nil {
+		return nil, fmt.Errorf("legacyhdf input validation: %w", err)
+	}
+	if !IsLegacyHDF(input) {
+		return nil, fmt.Errorf("input is not valid InSpec exec-json format")
+	}
+	var v1 LegacyHDFResults
+	if err := json.Unmarshal(input, &v1); err != nil {
+		return nil, fmt.Errorf("failed to parse InSpec input: %w", err)
+	}
+	return &v1, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per control per profile, then merged by control id within each
+// overlay tree exactly as the conversion merges them. The tree decisions
+// (roots, parent aliases via depends) are made by the same FlattenOverlays
+// call the conversion uses, fed only the identity of each profile and the ids
+// of its controls — never the converted requirements.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "InSpec controls after overlay flattening"
+	v1, err := ParseLegacyHDF(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	skeleton := hdf.HDFResults{Baselines: make([]hdf.EvaluatedBaseline, 0, len(v1.Profiles))}
+	for _, p := range v1.Profiles {
+		b := baselineIdentity(p)
+		b.Requirements = make([]hdf.EvaluatedRequirement, len(p.Controls))
+		for i, c := range p.Controls {
+			b.Requirements[i] = hdf.EvaluatedRequirement{ID: c.ID}
+		}
+		skeleton.Baselines = append(skeleton.Baselines, b)
+	}
+	count := 0
+	for _, b := range hdfparsers.FlattenOverlays(skeleton).Results.Baselines {
+		count += len(b.Requirements)
+	}
+	return count, unit, nil
 }
 
 // ConvertLegacyHDF converts HDF v1.0 results to v2.0 format.

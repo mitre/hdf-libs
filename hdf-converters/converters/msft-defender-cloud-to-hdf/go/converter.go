@@ -94,37 +94,16 @@ func extractSubscriptionID(resourcePath string) string {
 // ConvertMsftDefenderCloudToHDF converts Microsoft Defender for Cloud assessment
 // output (Azure REST API format) to HDF format.
 func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("msft-defender-cloud: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "msft-defender-cloud", 0); err != nil {
-		return nil, fmt.Errorf("msft-defender-cloud: %w", err)
-	}
-
-	var raw defenderCloudInput
-	if err := json.Unmarshal(input, &raw); err != nil {
-		return nil, fmt.Errorf("msft-defender-cloud: invalid JSON: %w", err)
-	}
-
-	if raw.Value == nil {
-		return nil, fmt.Errorf("msft-defender-cloud: missing or invalid value array")
+	raw, err := parseAssessments(input)
+	if err != nil {
+		return nil, err
 	}
 
 	scanTime := time.Now().UTC()
 
 	checksum := shared.InputChecksum(input)
 
-	limitedAssessments := shared.LimitSliceWithWarning(raw.Value, 0, "assessment")
-
-	// Group assessments by assessment name (GUID), preserving insertion order.
-	order := []string{}
-	groups := map[string][]assessment{}
-	for _, a := range limitedAssessments {
-		if _, seen := groups[a.Name]; !seen {
-			order = append(order, a.Name)
-		}
-		groups[a.Name] = append(groups[a.Name], a)
-	}
+	limitedAssessments, order, groups := groupAssessments(raw.Value)
 
 	requirements := make([]hdf.EvaluatedRequirement, len(order))
 	for i, assessmentID := range order {
@@ -181,6 +160,62 @@ func ConvertMsftDefenderCloudToHDF(input []byte, converterVersion string) (*hdf.
 		Components:       targets,
 		Timestamp:        &scanTime,
 	}), nil
+}
+
+// parseAssessments applies the converter's input guards and decodes the
+// assessment list, rejecting a document without a value array.
+// ConvertMsftDefenderCloudToHDF and ExpectedRequirementCount share it so they
+// accept and reject exactly the same inputs.
+func parseAssessments(input []byte) (*defenderCloudInput, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("msft-defender-cloud: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "msft-defender-cloud", 0); err != nil {
+		return nil, fmt.Errorf("msft-defender-cloud: %w", err)
+	}
+	var raw defenderCloudInput
+	if err := json.Unmarshal(input, &raw); err != nil {
+		return nil, fmt.Errorf("msft-defender-cloud: invalid JSON: %w", err)
+	}
+	if raw.Value == nil {
+		return nil, fmt.Errorf("msft-defender-cloud: missing or invalid value array")
+	}
+	return &raw, nil
+}
+
+// groupAssessments caps the assessments and groups them by assessment name
+// (GUID) in first-seen order. It is the single definition of the
+// input-to-requirement relation: the conversion builds requirements from it
+// and ExpectedRequirementCount counts it. The capped slice is returned for the
+// subscription metadata.
+func groupAssessments(assessments []assessment) ([]assessment, []string, map[string][]assessment) {
+	limitedAssessments := shared.LimitSliceWithWarning(assessments, 0, "assessment")
+	order := []string{}
+	groups := map[string][]assessment{}
+	for _, a := range limitedAssessments {
+		if _, seen := groups[a.Name]; !seen {
+			order = append(order, a.Name)
+		}
+		groups[a.Name] = append(groups[a.Name], a)
+	}
+	return limitedAssessments, order, groups
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct assessment name, or one no-findings requirement when
+// the value array is empty. Computed from the input alone, through the same
+// grouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "distinct Defender for Cloud assessment names"
+	raw, err := parseAssessments(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	_, order, _ := groupAssessments(raw.Value)
+	if len(order) == 0 {
+		return 1, unit, nil
+	}
+	return len(order), unit, nil
 }
 
 // buildRequirement converts a group of assessments sharing an assessment ID

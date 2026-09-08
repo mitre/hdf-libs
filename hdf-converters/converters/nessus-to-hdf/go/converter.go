@@ -43,20 +43,14 @@ var nessusAliases = map[string]float64{
 
 // ConvertNessusToHDF converts Nessus XML scan results to HDF format
 func ConvertNessusToHDF(nessusXML []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(nessusXML) == 0 {
-		return nil, fmt.Errorf("nessus: empty input")
+	parsed, err := parseInput(nessusXML)
+	if err != nil {
+		return nil, err
 	}
-	if err := shared.ValidateXMLInput(nessusXML, 0); err != nil {
-		return nil, fmt.Errorf("nessus: %w", err)
-	}
+	nessus := *parsed
 
 	// Calculate checksum of source scan data for integrity verification
 	resultsChecksum := shared.InputChecksum(nessusXML)
-
-	var nessus NessusXML
-	if err := xml.Unmarshal(nessusXML, &nessus); err != nil {
-		return nil, fmt.Errorf("failed to parse Nessus XML: %w", err)
-	}
 
 	policyName := nessus.Policy.PolicyName
 	version := extractVersion(&nessus)
@@ -788,4 +782,45 @@ func isIPAddress(s string) bool {
 		}
 	}
 	return true
+}
+
+// parseInput applies the converter's input guards and decodes the scan.
+// ConvertNessusToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(nessusXML []byte) (*NessusXML, error) {
+	if len(nessusXML) == 0 {
+		return nil, fmt.Errorf("nessus: empty input")
+	}
+	if err := shared.ValidateXMLInput(nessusXML, 0); err != nil {
+		return nil, fmt.Errorf("nessus: %w", err)
+	}
+
+	var nessus NessusXML
+	if err := xml.Unmarshal(nessusXML, &nessus); err != nil {
+		return nil, fmt.Errorf("failed to parse Nessus XML: %w", err)
+	}
+	return &nessus, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per ReportItem of every ReportHost, hosts and items each within the
+// size limits the conversion applies, with one no-findings requirement for a
+// host that has no items.
+func ExpectedRequirementCount(nessusXML []byte) (int, string, error) {
+	const unit = "Nessus report items"
+	nessus, err := parseInput(nessusXML)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	limitedHosts, _ := hdfutil.LimitSlice(nessus.Report.ReportHosts, 0)
+	for _, host := range limitedHosts {
+		limitedItems, _ := hdfutil.LimitSlice(host.ReportItems, 0)
+		if len(limitedItems) == 0 {
+			count++
+			continue
+		}
+		count += len(limitedItems)
+	}
+	return count, unit, nil
 }

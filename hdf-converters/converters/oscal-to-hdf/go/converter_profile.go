@@ -26,35 +26,10 @@ import (
 //
 // For full profile resolution, use NIST's oscal-cli or pre-resolved catalogs.
 func ConvertProfileToHDF(profileInput, catalogInput []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	profileDoc, err := ParseOscalDocument(profileInput, "profile", "oscal-profile")
+	profile, resolvedCatalog, err := resolveProfile(profileInput, catalogInput)
 	if err != nil {
 		return nil, err
 	}
-	profile := profileDoc.Profile
-
-	catalogDoc, err := ParseOscalDocument(catalogInput, "catalog", "oscal-profile-catalog")
-	if err != nil {
-		return nil, err
-	}
-	catalog := catalogDoc.Catalog
-
-	// Validate: single import only
-	if len(profile.Imports) == 0 {
-		return nil, fmt.Errorf("oscal-profile: profile has no imports")
-	}
-	if len(profile.Imports) > 1 {
-		return nil, fmt.Errorf("oscal-profile: profile has %d imports — this converter only supports single-catalog imports. Use NIST's oscal-cli to resolve complex profiles, or use a pre-resolved catalog", len(profile.Imports))
-	}
-
-	// Collect included control IDs
-	imp := profile.Imports[0]
-	includedIDs := collectIncludedIDs(imp)
-
-	// Collect excluded control IDs
-	excludedIDs := collectExcludedIDs(imp)
-
-	// Filter catalog
-	resolvedCatalog := filterCatalog(catalog, includedIDs, excludedIDs)
 
 	// Apply alter directives (add/remove parts and props on controls)
 	if profile.Modify != nil && len(profile.Modify.Alters) > 0 {
@@ -88,6 +63,51 @@ func ConvertProfileToHDF(profileInput, catalogInput []byte, converterVersion str
 	baseline.Integrity = integrity
 
 	return baseline, nil
+}
+
+// resolveProfile applies both documents' guards, validates the single-import
+// constraint and filters the catalog down to the profile's selection. Alters
+// and parameter overrides are applied afterwards by the conversion; they never
+// change which controls are selected. ConvertProfileToHDF and
+// ExpectedProfileRequirementCount share it so they accept and reject exactly
+// the same inputs.
+func resolveProfile(profileInput, catalogInput []byte) (*Profile, *Catalog, error) {
+	profileDoc, err := ParseOscalDocument(profileInput, "profile", "oscal-profile")
+	if err != nil {
+		return nil, nil, err
+	}
+	profile := profileDoc.Profile
+
+	catalogDoc, err := ParseOscalDocument(catalogInput, "catalog", "oscal-profile-catalog")
+	if err != nil {
+		return nil, nil, err
+	}
+	catalog := catalogDoc.Catalog
+
+	// Validate: single import only
+	if len(profile.Imports) == 0 {
+		return nil, nil, fmt.Errorf("oscal-profile: profile has no imports")
+	}
+	if len(profile.Imports) > 1 {
+		return nil, nil, fmt.Errorf("oscal-profile: profile has %d imports — this converter only supports single-catalog imports. Use NIST's oscal-cli to resolve complex profiles, or use a pre-resolved catalog", len(profile.Imports))
+	}
+
+	imp := profile.Imports[0]
+	resolvedCatalog := filterCatalog(catalog, collectIncludedIDs(imp), collectExcludedIDs(imp))
+	return profile, resolvedCatalog, nil
+}
+
+// ExpectedProfileRequirementCount states how many requirements a profile must
+// convert to against the given catalog: the catalog controls (at depth two)
+// that survive the profile's include/exclude selection. Computed from the
+// inputs alone, through the same resolution and selection the conversion uses.
+func ExpectedProfileRequirementCount(profileInput, catalogInput []byte) (int, string, error) {
+	const unit = "OSCAL catalog controls selected by the profile"
+	_, resolvedCatalog, err := resolveProfile(profileInput, catalogInput)
+	if err != nil {
+		return 0, unit, err
+	}
+	return selectCatalogControls(resolvedCatalog).count(), unit, nil
 }
 
 // collectIncludedIDs extracts all control IDs from an import's include-controls.

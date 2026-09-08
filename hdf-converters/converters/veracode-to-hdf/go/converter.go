@@ -295,8 +295,11 @@ func (r *latin1Reader) Read(p []byte) (int, error) {
 	return j, err
 }
 
-// ConvertVeracodeToHDF converts Veracode DetailedReport XML to HDF format.
-func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes a detailed
+// report, rejecting the unsupported summary report. ConvertVeracodeToHDF and
+// ExpectedRequirementCount share it so they accept and reject exactly the same
+// inputs.
+func parseInput(input []byte) (*DetailedReport, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("veracode: empty input")
 	}
@@ -310,8 +313,6 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 		return nil, fmt.Errorf("veracode: summary reports are not supported; use a detailed report")
 	}
 
-	checksum := shared.InputChecksum(input)
-
 	var report DetailedReport
 	if err := unmarshalVeracodeXML(input, &report); err != nil {
 		return nil, fmt.Errorf("veracode: failed to parse XML: %w", err)
@@ -320,6 +321,46 @@ func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	if report.XMLName.Local != "detailedreport" {
 		return nil, fmt.Errorf("veracode: expected <detailedreport> root element, got <%s>", report.XMLName.Local)
 	}
+	return &report, nil
+}
+
+// countCategories is the static-analysis half of the input-to-requirement
+// relation: one requirement per <category> under every <severity>.
+func countCategories(severities []Severity) int {
+	n := 0
+	for _, sev := range severities {
+		n += len(sev.Categories)
+	}
+	return n
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per static-analysis CWE category plus one per distinct SCA CVE id
+// (skipping components with no vulnerabilities and entries with no CVE id), or
+// one no-findings requirement when there are none. Computed from the input
+// alone, through the same grouping the conversion uses.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "Veracode CWE categories plus distinct SCA CVE ids"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	cveOrder, _ := groupCVEs(report.SoftwareCompositionSCA)
+	count := countCategories(report.Severities) + len(cveOrder)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertVeracodeToHDF converts Veracode DetailedReport XML to HDF format.
+func ConvertVeracodeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	report, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+
+	checksum := shared.InputChecksum(input)
 
 	// Build CWE-based requirements from severity categories
 	cweRequirements := buildCWERequirements(report.Severities, report.FirstBuildSubmitted)
@@ -578,19 +619,23 @@ func formatFlawMessage(flaw Flaw) string {
 // buildCVERequirements creates HDF requirements from SCA vulnerable components.
 // CVEs are grouped across components — each unique CVE becomes one requirement,
 // with one result per affected component.
-func buildCVERequirements(sca *SoftwareCompositionSCA, firstBuildDate string) []hdf.EvaluatedRequirement {
-	if sca == nil {
-		return nil
-	}
+// cveEntry is one SCA requirement's worth of input: a CVE and every component
+// it was reported against.
+type cveEntry struct {
+	vuln       Vulnerability
+	components []Component
+}
 
-	// Group vulnerabilities by CVE ID across all components
-	type cveEntry struct {
-		vuln       Vulnerability
-		components []Component
-	}
-
+// groupCVEs groups SCA vulnerabilities by CVE id across all components, in
+// first-seen order. It is the SCA half of the input-to-requirement relation:
+// the conversion builds requirements from it and ExpectedRequirementCount
+// counts it.
+func groupCVEs(sca *SoftwareCompositionSCA) ([]string, map[string]*cveEntry) {
 	cveOrder := []string{}
 	cveMap := map[string]*cveEntry{}
+	if sca == nil {
+		return cveOrder, cveMap
+	}
 
 	for _, comp := range sca.VulnerableComponents.Components {
 		if comp.Vulnerabilities == "0" {
@@ -611,6 +656,15 @@ func buildCVERequirements(sca *SoftwareCompositionSCA, firstBuildDate string) []
 			}
 		}
 	}
+	return cveOrder, cveMap
+}
+
+func buildCVERequirements(sca *SoftwareCompositionSCA, firstBuildDate string) []hdf.EvaluatedRequirement {
+	if sca == nil {
+		return nil
+	}
+
+	cveOrder, cveMap := groupCVEs(sca)
 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(cveOrder))
 	for _, cveID := range cveOrder {

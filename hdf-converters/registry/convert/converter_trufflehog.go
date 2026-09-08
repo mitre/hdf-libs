@@ -4,5 +4,5 @@ import trufflehog "github.com/mitre/hdf-libs/hdf-converters/v3/converters/truffl
 
 func init() {
 	// A clean TruffleHog scan emits empty stdout; accept it as zero findings.
-	registerHDFConverter("trufflehog", "TruffleHog to HDF", "trufflehog", trufflehog.ConvertTrufflehogToHDF, WithEmptyInputOK())
+	registerHDFConverter("trufflehog", "TruffleHog to HDF", "trufflehog", trufflehog.ConvertTrufflehogToHDF, WithEmptyInputOK(), WithExpectedRequirementCount(trufflehog.ExpectedRequirementCount))
 }

@@ -8,5 +8,6 @@ func init() {
 		"Microsoft Defender for Cloud to HDF",
 		"msft-defender-cloud",
 		msftdefendercloud.ConvertMsftDefenderCloudToHDF,
+		WithExpectedRequirementCount(msftdefendercloud.ExpectedRequirementCount),
 	)
 }

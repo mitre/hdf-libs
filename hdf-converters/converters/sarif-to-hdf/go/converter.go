@@ -207,34 +207,11 @@ var sarifAliases = map[string]float64{
 // the input's "version" field. SARIF 2.0 input is normalized to 2.1 structure
 // before processing.
 func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("sarif: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "sarif", 0); err != nil {
-		return nil, fmt.Errorf("sarif: %w", err)
-	}
-
 	resultsChecksum := shared.InputChecksum(input)
 
-	// Determine effective input version from parameter or input
-	effectiveVersion := ""
-	if len(inputVersion) > 0 && inputVersion[0] != "" {
-		effectiveVersion = inputVersion[0]
-	}
-
-	// Normalize SARIF 2.0 → 2.1 structure if needed
-	normalized, err := normalizeSarifVersion(input, effectiveVersion)
+	sarif, err := parseSarif(input, inputVersion...)
 	if err != nil {
 		return nil, err
-	}
-
-	var sarif SarifFile
-	if err := json.Unmarshal(normalized, &sarif); err != nil {
-		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
-	}
-
-	if len(sarif.Runs) == 0 {
-		return nil, fmt.Errorf("invalid SARIF structure: missing or empty runs field")
 	}
 
 	timestamp := time.Now()
@@ -361,30 +338,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	// Build rule lookup by ID
 	ruleMap := buildRuleMap(run)
 
-	// Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
-	// When ruleId is absent, fall back to message text as the grouping key.
-	type resultGroup struct {
-		ruleID  string
-		rule    *ReportingDescriptor
-		results []SarifResult
-	}
-	limitedResults := shared.LimitSliceWithWarning(run.Results, 0, "result")
-	groupOrder := []string{}
-	groupMap := make(map[string]*resultGroup)
-	for _, result := range limitedResults {
-		groupKey := result.RuleID
-		if groupKey == "" {
-			groupKey = resolveMessageText(result.Message, nil)
-		}
-		g, exists := groupMap[groupKey]
-		if !exists {
-			rule := lookupRule(ruleMap, result)
-			g = &resultGroup{ruleID: groupKey, rule: rule}
-			groupMap[groupKey] = g
-			groupOrder = append(groupOrder, groupKey)
-		}
-		g.results = append(g.results, result)
-	}
+	groupOrder, groupMap := groupResults(run, ruleMap)
 
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(groupOrder))
 	for _, ruleID := range groupOrder {
@@ -1204,4 +1158,85 @@ func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp 
 		StartTime: timestamp,
 		Backtrace: backtrace,
 	}
+}
+
+// parseSarif applies the converter's input guards, normalizes SARIF 2.0 to
+// 2.1, and decodes. ConvertSarifToHDF and ExpectedRequirementCount share it so
+// they accept and reject exactly the same inputs.
+func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
+	if len(input) == 0 {
+		return nil, fmt.Errorf("sarif: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "sarif", 0); err != nil {
+		return nil, fmt.Errorf("sarif: %w", err)
+	}
+	effectiveVersion := ""
+	if len(inputVersion) > 0 && inputVersion[0] != "" {
+		effectiveVersion = inputVersion[0]
+	}
+	normalized, err := normalizeSarifVersion(input, effectiveVersion)
+	if err != nil {
+		return nil, err
+	}
+	var sarif SarifFile
+	if err := json.Unmarshal(normalized, &sarif); err != nil {
+		return nil, fmt.Errorf("invalid SARIF JSON: %w", err)
+	}
+	if len(sarif.Runs) == 0 {
+		return nil, fmt.Errorf("invalid SARIF structure: missing or empty runs field")
+	}
+	return &sarif, nil
+}
+
+// resultGroup is one requirement's worth of SARIF results: every result that
+// shares a ruleId (or, when ruleId is absent, the same message text).
+type resultGroup struct {
+	ruleID  string
+	rule    *ReportingDescriptor
+	results []SarifResult
+}
+
+// groupResults groups a run's results into requirements, in first-seen order.
+// It is the single definition of the input-to-requirement relation: the
+// conversion builds requirements from it and ExpectedRequirementCount counts it.
+func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]string, map[string]*resultGroup) {
+	limitedResults := shared.LimitSliceWithWarning(run.Results, 0, "result")
+	groupOrder := []string{}
+	groupMap := make(map[string]*resultGroup)
+	for _, result := range limitedResults {
+		groupKey := result.RuleID
+		if groupKey == "" {
+			groupKey = resolveMessageText(result.Message, nil)
+		}
+		g, exists := groupMap[groupKey]
+		if !exists {
+			g = &resultGroup{ruleID: groupKey, rule: lookupRule(ruleMap, result)}
+			groupMap[groupKey] = g
+			groupOrder = append(groupOrder, groupKey)
+		}
+		g.results = append(g.results, result)
+	}
+	return groupOrder, groupMap
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per distinct rule in each run (message text standing in for a
+// missing ruleId), and one no-findings requirement for a run with no results.
+// Computed from the input alone, through the same grouping the conversion uses.
+func ExpectedRequirementCount(input []byte, inputVersion ...string) (int, string, error) {
+	const unit = "distinct SARIF rules"
+	sarif, err := parseSarif(input, inputVersion...)
+	if err != nil {
+		return 0, unit, err
+	}
+	count := 0
+	for _, run := range shared.LimitSliceWithWarning(sarif.Runs, 0, "run") {
+		order, _ := groupResults(run, buildRuleMap(run))
+		if len(order) == 0 {
+			count++
+			continue
+		}
+		count += len(order)
+	}
+	return count, unit, nil
 }

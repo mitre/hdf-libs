@@ -73,17 +73,10 @@ type runEnrichment struct {
 // It delegates base conversion to the generic SARIF converter and enriches the output with
 // MSDO-specific metadata (repository targets, tool metadata, security policies, result properties).
 func ConvertMsftDefenderDevopsToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if len(input) == 0 {
-		return nil, fmt.Errorf("msft-defender-devops: empty input")
-	}
-	if err := shared.ValidateJSONSize(input, "msft-defender-devops", 0); err != nil {
-		return nil, fmt.Errorf("msft-defender-devops: %w", err)
-	}
-
 	// 1. Parse raw SARIF to extract MSDO-specific fields
-	var raw msdoSarif
-	if err := json.Unmarshal(input, &raw); err != nil {
-		return nil, fmt.Errorf("msft-defender-devops: invalid JSON: %w", err)
+	raw, err := parseMsdoSarif(input)
+	if err != nil {
+		return nil, err
 	}
 	targets, runEnrichments := extractEnrichments(raw)
 
@@ -107,6 +100,39 @@ func ConvertMsftDefenderDevopsToHDF(input []byte, converterVersion string) (*hdf
 	}
 
 	return result, nil
+}
+
+// parseMsdoSarif applies the converter's input guards and decodes the
+// MSDO-specific fields; the SARIF converter re-reads the same bytes for the
+// base document. ConvertMsftDefenderDevopsToHDF and ExpectedRequirementCount
+// share it so they accept and reject exactly the same inputs.
+func parseMsdoSarif(input []byte) (msdoSarif, error) {
+	var raw msdoSarif
+	if len(input) == 0 {
+		return raw, fmt.Errorf("msft-defender-devops: empty input")
+	}
+	if err := shared.ValidateJSONSize(input, "msft-defender-devops", 0); err != nil {
+		return raw, fmt.Errorf("msft-defender-devops: %w", err)
+	}
+	if err := json.Unmarshal(input, &raw); err != nil {
+		return raw, fmt.Errorf("msft-defender-devops: invalid JSON: %w", err)
+	}
+	return raw, nil
+}
+
+// ExpectedRequirementCount applies the MSDO guards and then defers to the
+// SARIF converter's relation, exactly as the conversion does: one requirement
+// per distinct rule in each run, one no-findings requirement for a run with
+// no results. Enrichment adds tags and components, never requirements.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	if _, err := parseMsdoSarif(input); err != nil {
+		return 0, "distinct SARIF rules", err
+	}
+	count, unit, err := sarif.ExpectedRequirementCount(input)
+	if err != nil {
+		return 0, unit, fmt.Errorf("msft-defender-devops: %w", err)
+	}
+	return count, unit, nil
 }
 
 // extractEnrichments parses all MSDO-specific data from the raw SARIF.

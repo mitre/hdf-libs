@@ -26,14 +26,37 @@ import (
 // maxInputSize caps CKL input at 50MB (entity-expansion + size guard).
 const maxInputSize = 50 * 1024 * 1024
 
-// ConvertCKLToHDF converts a DISA STIG Viewer .ckl document to HDF Results.
-func ConvertCKLToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and parses the checklist.
+// ConvertCKLToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) (*checklist.Checklist, error) {
 	if err := shared.ValidateXMLInput(input, maxInputSize); err != nil {
 		return nil, fmt.Errorf("ckl: %w", err)
 	}
 	cl, err := checklist.ParseCKL(input)
 	if err != nil {
 		return nil, fmt.Errorf("ckl: %w", err)
+	}
+	return cl, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per <VULN> across every <iSTIG>. The parser already rejects a
+// checklist with no iSTIG or an iSTIG with no VULN, so the count is never zero.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "CKL VULN entries"
+	cl, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	return cl.VulnCount(), unit, nil
+}
+
+// ConvertCKLToHDF converts a DISA STIG Viewer .ckl document to HDF Results.
+func ConvertCKLToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	cl, err := parseInput(input)
+	if err != nil {
+		return nil, err
 	}
 	return checklist.ChecklistToHDF(cl, shared.InputChecksum(input), converterVersion, "ckl-to-hdf"), nil
 }

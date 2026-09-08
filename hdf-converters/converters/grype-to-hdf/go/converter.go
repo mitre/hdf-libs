@@ -653,8 +653,10 @@ func firstNonEmpty(values []string) string {
 	return ""
 }
 
-// ConvertGrypeToHDF converts Grype JSON to HDF
-func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseInput applies the converter's input guards and decodes the report.
+// ConvertGrypeToHDF and ExpectedRequirementCount share it so they accept and
+// reject exactly the same inputs.
+func parseInput(input []byte) (*GrypeReport, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("grype: empty input")
 	}
@@ -662,14 +664,41 @@ func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		return nil, fmt.Errorf("grype: %w", err)
 	}
 
-	// Calculate checksum of input data
-	resultsChecksum := shared.InputChecksum(input)
-
-	// Parse Grype JSON
 	var grypeData GrypeReport
 	if err := json.Unmarshal(input, &grypeData); err != nil {
 		return nil, fmt.Errorf("invalid Grype JSON: %w", err)
 	}
+	return &grypeData, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to: one per matches[] entry plus one per ignoredMatches[] entry, each array
+// within its own size limit, or one no-findings requirement when both are empty.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "grype matches and ignored matches"
+	report, err := parseInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+	limitedMatches, _ := hdfutil.LimitSlice(report.Matches, 0)
+	limitedIgnored, _ := hdfutil.LimitSlice(report.IgnoredMatches, 0)
+	count := len(limitedMatches) + len(limitedIgnored)
+	if count == 0 {
+		count = 1
+	}
+	return count, unit, nil
+}
+
+// ConvertGrypeToHDF converts Grype JSON to HDF
+func ConvertGrypeToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	report, err := parseInput(input)
+	if err != nil {
+		return nil, err
+	}
+	grypeData := *report
+
+	// Calculate checksum of input data
+	resultsChecksum := shared.InputChecksum(input)
 
 	// Build baseline name from source
 	targetName := grypeData.Source.Target.UserInput

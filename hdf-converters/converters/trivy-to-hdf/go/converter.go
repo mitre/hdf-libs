@@ -39,15 +39,9 @@ var staticCCI = cci.NISTToCCI(shared.DefaultStaticAnalysisNIST)
 // parsed directly; SARIF / CycloneDX / ASFF / GitLab are delegated to their
 // converters. Returns an error for input that is not a recognized Trivy format.
 func ConvertTrivyToHDF(input []byte, converterVersion string) (*hdf.HDFResults, error) {
-	if err := shared.ValidateJSONSize(input, "trivy", 0); err != nil {
+	probe, err := probeInput(input)
+	if err != nil {
 		return nil, err
-	}
-	if len(strings.TrimSpace(string(input))) == 0 {
-		return nil, fmt.Errorf("trivy: empty input")
-	}
-	var probe map[string]json.RawMessage
-	if err := json.Unmarshal(input, &probe); err != nil {
-		return nil, fmt.Errorf("trivy: input is not a JSON object: %w", err)
 	}
 
 	switch {
@@ -69,6 +63,64 @@ func ConvertTrivyToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 // isNativeTrivy keys on markers the delegate formats lack: a numeric
 // SchemaVersion plus ArtifactName/ArtifactType. Results may be absent (a clean
 // scan omits it entirely), so it is not required.
+// probeInput applies the router's input guards and decodes the top-level keys
+// that pick the output shape. ConvertTrivyToHDF and ExpectedRequirementCount
+// share it so they accept, reject, and route exactly the same inputs.
+func probeInput(input []byte) (map[string]json.RawMessage, error) {
+	if err := shared.ValidateJSONSize(input, "trivy", 0); err != nil {
+		return nil, err
+	}
+	if len(strings.TrimSpace(string(input))) == 0 {
+		return nil, fmt.Errorf("trivy: empty input")
+	}
+	var probe map[string]json.RawMessage
+	if err := json.Unmarshal(input, &probe); err != nil {
+		return nil, fmt.Errorf("trivy: input is not a JSON object: %w", err)
+	}
+	return probe, nil
+}
+
+// ExpectedRequirementCount states how many requirements the input must convert
+// to, routed by shape exactly as ConvertTrivyToHDF routes the conversion: a
+// delegated shape defers to that converter's relation; native Trivy JSON
+// yields one requirement per entry of every Results[*] finding array
+// (Vulnerabilities, Misconfigurations, Secrets, Licenses), with no size limit,
+// or one no-findings requirement when there are none. An entry the conversion
+// cannot decode is counted here and so surfaces as a lost finding.
+func ExpectedRequirementCount(input []byte) (int, string, error) {
+	const unit = "trivy findings"
+	probe, err := probeInput(input)
+	if err != nil {
+		return 0, unit, err
+	}
+
+	switch {
+	case isNativeTrivy(probe):
+		report, err := parseNative(input)
+		if err != nil {
+			return 0, unit, err
+		}
+		count := 0
+		for _, res := range report.Results {
+			count += len(res.Vulnerabilities) + len(res.Misconfigurations) + len(res.Secrets) + len(res.Licenses)
+		}
+		if count == 0 {
+			count = 1
+		}
+		return count, unit, nil
+	case stringFieldEquals(probe, "bomFormat", "CycloneDX"):
+		return cyclonedx.ExpectedRequirementCount(input)
+	case hasKey(probe, "runs") && hasKey(probe, "version"):
+		return sarif.ExpectedRequirementCount(input)
+	case hasKey(probe, "Findings") || hasKey(probe, "ProductArn"):
+		return asff.ExpectedRequirementCount(input)
+	case hasKey(probe, "vulnerabilities"):
+		return gitlab.ExpectedRequirementCount(input)
+	default:
+		return 0, unit, fmt.Errorf("trivy: not a recognized Trivy output format (native JSON, SARIF, CycloneDX, ASFF, or GitLab)")
+	}
+}
+
 func isNativeTrivy(m map[string]json.RawMessage) bool {
 	return hasKey(m, "SchemaVersion") && hasKey(m, "ArtifactName") && hasKey(m, "ArtifactType")
 }
@@ -182,11 +234,22 @@ type trivyLicense struct {
 
 // --- native conversion ------------------------------------------------------
 
-func convertNative(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+// parseNative decodes native Trivy JSON; convertNative and
+// ExpectedRequirementCount share it.
+func parseNative(input []byte) (*trivyReport, error) {
 	var report trivyReport
 	if err := json.Unmarshal(input, &report); err != nil {
 		return nil, fmt.Errorf("trivy: parsing native JSON: %w", err)
 	}
+	return &report, nil
+}
+
+func convertNative(input []byte, converterVersion string) (*hdf.HDFResults, error) {
+	parsed, err := parseNative(input)
+	if err != nil {
+		return nil, err
+	}
+	report := *parsed
 	startTime := hdfutil.ParseTimestamp(report.CreatedAt)
 
 	var requirements []hdf.EvaluatedRequirement
