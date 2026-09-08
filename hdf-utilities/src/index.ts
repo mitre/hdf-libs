@@ -23,6 +23,8 @@ export {
   parseXml,
   buildXml,
   isValidXml,
+  isXmlChar,
+  xmlSafeText,
   parseXmlWithArrays,
   extractTextFromXml,
   findXmlValues,

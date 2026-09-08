@@ -533,3 +533,28 @@ describe('buildXml array without preserveOrder', () => {
     );
   });
 });
+
+describe('isValidXml rejects characters XML 1.0 forbids', () => {
+  // fast-xml-parser's validator checks structure, not the Char production, so it
+  // called a document well-formed that a conforming parser refuses to read. That
+  // is why a converter emitting a raw ESC passed its own well-formedness check.
+  it.each([
+    ['ESC', '<r>a\u001bb</r>'],
+    ['NUL', '<r>a\u0000b</r>'],
+    ['form feed', '<r>a\u000cb</r>'],
+    ['U+FFFE', '<r>a\ufffeb</r>'],
+    ['U+FFFF', '<r>a\uffffb</r>'],
+  ])('rejects %s', (_label, xml) => {
+    expect(isValidXml(xml)).toBe(false);
+  });
+
+  it.each([
+    ['tab', '<r>a\tb</r>'],
+    ['newline', '<r>a\nb</r>'],
+    ['carriage return', '<r>a\rb</r>'],
+    ['the replacement character', '<r>a\ufffdb</r>'],
+    ['an astral character', '<r>a\u{1f600}b</r>'],
+  ])('still accepts %s', (_label, xml) => {
+    expect(isValidXml(xml)).toBe(true);
+  });
+});

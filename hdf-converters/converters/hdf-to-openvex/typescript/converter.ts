@@ -36,7 +36,6 @@ const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
 const OPENVEX_CONTEXT = 'https://openvex.dev/ns/v0.2.0';
 const OPENVEX_NAMESPACE = 'https://openvex.dev/docs/public/';
-const DEFAULT_PRODUCT_ID = 'HDFPID-0001';
 
 interface Document {
   '@context': string;
@@ -196,7 +195,7 @@ function formatMilestone(m: Milestone): string {
   return meta.length === 0 ? label : `${label} (${meta.join(', ')})`;
 }
 
-export function productsFor(o: StandaloneOverride): { '@id': string }[] {
+export function productsFor(o: StandaloneOverride): { '@id': string }[] | undefined {
   // Structured affectedPackages is the source of truth (v3.2.x and later).
   if (o.affectedPackages && o.affectedPackages.length > 0) {
     const ids = o.affectedPackages
@@ -216,7 +215,12 @@ export function productsFor(o: StandaloneOverride): { '@id': string }[] {
       ids = m[1].split(',').map((s) => s.trim()).filter(Boolean);
     }
   }
-  if (ids.length === 0) ids = [DEFAULT_PRODUCT_ID];
+  // Nothing identified the product: no affectedPackages, no componentRef, no
+  // legacy Products: line. OpenVEX types a component @id as an IRI and leaves
+  // statements[].products optional, so the array is omitted. A synthetic id
+  // would satisfy neither — it is not an IRI, and it would assert a product the
+  // source never named.
+  if (ids.length === 0) return undefined;
   return ids.map((id) => ({ '@id': id }));
 }
 

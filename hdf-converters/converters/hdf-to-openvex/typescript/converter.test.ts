@@ -307,8 +307,10 @@ describe('helpers', () => {
       { '@id': 'B' },
     ]);
   });
-  it('productsFor falls back to default', () => {
-    expect(productsFor({ reason: 'no products' } as never)).toEqual([{ '@id': 'HDFPID-0001' }]);
+  it('productsFor omits products when nothing identifies one', () => {
+    // Was: asserted a synthetic 'HDFPID-0001'. Not an IRI, which OpenVEX requires
+    // of a component @id, and it asserted a product the source never named.
+    expect(productsFor({ reason: 'no products' } as never)).toBeUndefined();
   });
   it('stripProductsLine removes the tail', () => {
     expect(stripProductsLine('prose\nProducts: A')).toBe('prose');

@@ -1,0 +1,71 @@
+{
+  "$comment": "Shared table for XML 1.0 Char handling. Go's encoding/xml substitutes U+FFFD for every character the Char production forbids and that behaviour is not configurable, so it is the reference; the TypeScript builder must match it because the two are held to byte equality. Each case gives the raw value a converter might carry and the text that must reach the document. Read by both languages: the Go side asserts what encoding/xml actually does, so the expectation is anchored to a real strict encoder rather than to a predicate the emitter and its test both copied.",
+  "cases": [
+    {
+      "name": "escape sequence in a result message",
+      "value": "\u001b[31mFAIL\u001b[0m",
+      "expected": "�[31mFAIL�[0m",
+      "why": "ANSI colour in an InSpec codeDesc — the everyday case, and the one that shipped invalid documents"
+    },
+    {
+      "name": "null",
+      "value": "a\u0000b",
+      "expected": "a�b",
+      "why": "C0 controls other than tab, LF and CR are outside Char"
+    },
+    {
+      "name": "form feed",
+      "value": "a\fb",
+      "expected": "a�b",
+      "why": "legal in neither XML 1.0 nor either language's whitespace class"
+    },
+    {
+      "name": "vertical tab",
+      "value": "a\u000bb",
+      "expected": "a�b",
+      "why": "the other C0 character a serializer is likely to meet"
+    },
+    {
+      "name": "U+FFFE",
+      "value": "a￾b",
+      "expected": "a�b",
+      "why": "illegal but not a control character, so a C0-only guard misses it"
+    },
+    {
+      "name": "U+FFFF",
+      "value": "a￿b",
+      "expected": "a�b",
+      "why": "the other non-character at the end of the BMP"
+    },
+    {
+      "name": "tab is legal",
+      "value": "a\tb",
+      "expected": "a\tb",
+      "why": "Char admits tab, LF and CR; substituting them would corrupt real text"
+    },
+    {
+      "name": "newline is legal",
+      "value": "a\nb",
+      "expected": "a\nb",
+      "why": "ditto"
+    },
+    {
+      "name": "carriage return is legal",
+      "value": "a\rb",
+      "expected": "a\rb",
+      "why": "ditto"
+    },
+    {
+      "name": "the replacement character itself is legal",
+      "value": "a�b",
+      "expected": "a�b",
+      "why": "U+FFFD is inside Char, so a document already carrying one passes through unchanged"
+    },
+    {
+      "name": "astral characters are legal",
+      "value": "a😀b",
+      "expected": "a😀b",
+      "why": "above the BMP, where a naive code-unit loop would split a surrogate pair"
+    }
+  ]
+}
