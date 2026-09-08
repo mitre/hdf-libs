@@ -200,7 +200,7 @@ func TestCorpusGolden(t *testing.T) {
 		return
 	}
 
-	expected, err := os.ReadFile(path) //nolint:gosec // test-only, reads a checked-in golden
+	expected, err := os.ReadFile(path)
 	require.NoError(t, err, "missing corpus golden; regenerate with: go test ./shared/go/ -update")
 	require.JSONEq(t, string(expected), string(actual),
 		"corpus changed; if intentional regenerate with: go test ./shared/go/ -update")

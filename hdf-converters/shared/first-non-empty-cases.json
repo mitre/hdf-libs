@@ -1,0 +1,15 @@
+{
+  "$comment": "Shared table for FirstNonEmpty / firstNonEmpty. Read by both shared/go/converterutil_test.go and shared/typescript/converterutil.test.ts so the two implementations are asserted against one definition and cannot drift apart.",
+  "cases": [
+    { "name": "first candidate wins", "candidates": ["a", "b"], "want": "a" },
+    { "name": "skips an empty first candidate", "candidates": ["", "b"], "want": "b" },
+    { "name": "skips a whitespace-only candidate", "candidates": [" ", "b"], "want": "b" },
+    { "name": "skips tabs and newlines", "candidates": ["\t\n", "b"], "want": "b" },
+    { "name": "skips several empties", "candidates": ["", " ", "", "d"], "want": "d" },
+    { "name": "returns empty when every candidate is empty", "candidates": ["", " ", "\t"], "want": "" },
+    { "name": "returns empty for no candidates", "candidates": [], "want": "" },
+    { "name": "preserves interior whitespace", "candidates": ["a b"], "want": "a b" },
+    { "name": "does not trim the value it returns", "candidates": [" padded "], "want": " padded " },
+    { "name": "treats a lone zero as non-empty", "candidates": ["0"], "want": "0" }
+  ]
+}
