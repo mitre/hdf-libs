@@ -86,7 +86,7 @@ func TestRequireHDFResults_RejectsWronglyTypedFields(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			input := applyMutation(t, base, tc.Path, tc.Value)
 			var doc hdf.HDFResults
-			err := RequireHDFResults(input, "test", &doc)
+			err := RequireHDFResultsTyped(input, "test", &doc)
 			if tc.Accept {
 				require.NoError(t, err, "valid HDF must still convert. %s", tc.Why)
 				return

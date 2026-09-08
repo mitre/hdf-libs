@@ -23,7 +23,7 @@ import (
 // to conform to the RawConvertFn signature.
 func ConvertHDFToOSCALSAR(input []byte, _ string) ([]byte, error) {
 	var hdfResults hdf.HDFResults
-	if err := shared.RequireHDFResults(input, "hdf-to-oscal-sar", &hdfResults); err != nil {
+	if err := shared.RequireHDFResultsTyped(input, "hdf-to-oscal-sar", &hdfResults); err != nil {
 		return nil, err
 	}
 

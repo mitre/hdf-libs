@@ -44,7 +44,7 @@ describe('convertHdfToOscalSar', () => {
   });
 
   it('should reject invalid JSON', async () => {
-    await expect(convertHdfToOscalSar('{invalid')).rejects.toThrow('failed to parse HDF JSON');
+    await expect(convertHdfToOscalSar('{invalid')).rejects.toThrow('Invalid JSON');
   });
 
   it('should reject missing baselines', async () => {

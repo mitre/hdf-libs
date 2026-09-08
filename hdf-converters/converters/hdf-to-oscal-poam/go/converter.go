@@ -25,7 +25,7 @@ func ConvertHDFToOSCALPOAM(input []byte, converterVersion string) ([]byte, error
 	// schema requires (both carry minItems 1, so an empty array would be as
 	// invalid as the null a nil slice used to produce).
 	var amendments hdf.HDFAmendments
-	if err := shared.RequireHDFAmendments(input, "hdf-to-oscal-poam", &amendments); err != nil {
+	if err := shared.RequireHDFAmendmentsTyped(input, "hdf-to-oscal-poam", &amendments); err != nil {
 		return nil, err
 	}
 

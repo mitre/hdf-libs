@@ -26,6 +26,7 @@ func TestAdversarialCorpus_CoversDocumentedCases(t *testing.T) {
 		"no-timestamp",
 		"requirement-without-title",
 		"requirement-without-code",
+		"requirement-with-non-token-id",
 		"requirement-without-severity",
 		"baselines-missing",
 		"baselines-null",
@@ -272,11 +273,14 @@ func TestCanonicalJSON_RemovesLanguageArtifacts(t *testing.T) {
 func TestCorpusContracts_AreExplicitAndCorrectlyAssigned(t *testing.T) {
 	want := map[string]CorpusContract{
 		// Sparse but schema-valid HDF.
-		"zero-baselines":               MustConvert,
-		"no-timestamp":                 MustConvert,
-		"requirement-without-title":    MustConvert,
-		"requirement-without-code":     MustConvert,
-		"requirement-without-severity": MustConvert,
+		"zero-baselines":            MustConvert,
+		"no-timestamp":              MustConvert,
+		"requirement-without-title": MustConvert,
+		// Added on main after this table was written: a package-style id is the
+		// commonest non-token shape in real data, and it must still convert.
+		"requirement-with-non-token-id": MustConvert,
+		"requirement-without-code":      MustConvert,
+		"requirement-without-severity":  MustConvert,
 		// Top-level shape is wrong: the document is not HDF Results at all.
 		"baselines-missing":    MustReject,
 		"baselines-null":       MustReject,
@@ -337,11 +341,11 @@ func TestCorpusContracts_AreDerivableFromTheSchemaAndGuard(t *testing.T) {
 	}{
 		{"hdf-results.schema.json", ResultsCorpus(), func(in []byte) error {
 			var out hdf.HDFResults
-			return RequireHDFResults(in, "probe", &out)
+			return RequireHDFResultsTyped(in, "probe", &out)
 		}},
 		{"hdf-amendments.schema.json", AmendmentsCorpus(), func(in []byte) error {
 			var out hdf.HDFAmendments
-			return RequireHDFAmendments(in, "probe", &out)
+			return RequireHDFAmendmentsTyped(in, "probe", &out)
 		}},
 	} {
 		v := NewSchemaValidator(t, hdfSchema(tc.schema))

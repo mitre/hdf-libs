@@ -15,7 +15,7 @@ import (
 // ConvertHDFToCSV converts HDF JSON to CSV format
 func ConvertHDFToCSV(input []byte) ([]byte, error) {
 	var hdfData hdf.HDFResults
-	if err := shared.RequireHDFResults(input, "hdf-to-csv", &hdfData); err != nil {
+	if err := shared.RequireHDFResultsTyped(input, "hdf-to-csv", &hdfData); err != nil {
 		return nil, err
 	}
 

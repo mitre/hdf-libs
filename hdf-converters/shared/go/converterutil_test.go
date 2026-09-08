@@ -547,7 +547,7 @@ func TestRequireHDFResults_MissingFieldMessageIsCanonical(t *testing.T) {
 	// Pinned because exportmap and hdf-to-oscal-sar already emit exactly this and
 	// consumers may match on it; adopting the shared guard must not churn it.
 	var out hdf.HDFResults
-	err := RequireHDFResults([]byte(`{}`), "hdf-to-oscal-sar", &out)
+	err := RequireHDFResultsTyped([]byte(`{}`), "hdf-to-oscal-sar", &out)
 	require.EqualError(t, err, "hdf-to-oscal-sar: invalid HDF structure: missing baselines field")
 }
 
@@ -566,7 +566,7 @@ func TestRequireHDFAmendments_RejectsMalformedInput(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var out hdf.HDFAmendments
-			err := RequireHDFAmendments([]byte(tc.input), "probe", &out)
+			err := RequireHDFAmendmentsTyped([]byte(tc.input), "probe", &out)
 			require.Error(t, err, "structurally invalid HDF must be rejected, not zero-filled")
 		})
 	}
@@ -580,7 +580,7 @@ func TestRequireHDFAmendments_RejectsMalformedInput(t *testing.T) {
 // be silently converted into an empty one.
 func TestRequireHDFAmendments_RejectsEmptyOverrides(t *testing.T) {
 	var out hdf.HDFAmendments
-	err := RequireHDFAmendments([]byte(`{"name":"a","overrides":[]}`), "probe", &out)
+	err := RequireHDFAmendmentsTyped([]byte(`{"name":"a","overrides":[]}`), "probe", &out)
 	require.Error(t, err, "overrides has minItems 1; an empty array is not a convertible document")
 }
 
@@ -591,7 +591,7 @@ func TestRequireHDFAmendments_RejectsEmptyOverrides(t *testing.T) {
 func TestRequireHDFAmendments_MatchesCorpusContracts(t *testing.T) {
 	for _, c := range AmendmentsCorpus() {
 		var out hdf.HDFAmendments
-		err := RequireHDFAmendments(c.Input, "probe", &out)
+		err := RequireHDFAmendmentsTyped(c.Input, "probe", &out)
 		switch c.Contract {
 		case MustConvert:
 			require.NoError(t, err, "%s is valid HDF; the guard must not reject it", c.Name)
@@ -605,15 +605,15 @@ func TestRequireHDFAmendments_MatchesCorpusContracts(t *testing.T) {
 
 func TestRequireHDFAmendments_MissingFieldMessageIsCanonical(t *testing.T) {
 	var out hdf.HDFAmendments
-	err := RequireHDFAmendments([]byte(`{"name":"a"}`), "hdf-to-oscal-poam", &out)
+	err := RequireHDFAmendmentsTyped([]byte(`{"name":"a"}`), "hdf-to-oscal-poam", &out)
 	require.EqualError(t, err, "hdf-to-oscal-poam: invalid HDF structure: missing overrides field")
 }
 
-// TestRequireHDFResultsDoc_MatchesTypedGuard pins that the generic-map variant
+// TestRequireHDFResults_MatchesTypedGuard pins that the generic-map variant
 // (what exportmap needs, since it maps fields dynamically) applies the same
 // contract as the typed one. Two decode targets are legitimate; two different
 // contracts would not be.
-func TestRequireHDFResultsDoc_MatchesTypedGuard(t *testing.T) {
+func TestRequireHDFResults_MatchesTypedGuard(t *testing.T) {
 	for _, input := range []string{
 		``, `not json`, `[]`, `null`, `{}`, `{"baselines":"x"}`, `{"baselines":null}`,
 		// Wrongly-typed nested content, which the map decode cannot fail on by
@@ -623,13 +623,13 @@ func TestRequireHDFResultsDoc_MatchesTypedGuard(t *testing.T) {
 		`{"baselines":[],"components":[{"name":42,"type":"host"}]}`,
 	} {
 		var typed hdf.HDFResults
-		typedErr := RequireHDFResults([]byte(input), "probe", &typed)
-		_, _, docErr := RequireHDFResultsDoc([]byte(input), "probe")
+		typedErr := RequireHDFResultsTyped([]byte(input), "probe", &typed)
+		_, _, docErr := RequireHDFResults([]byte(input), "probe")
 		require.Equal(t, typedErr != nil, docErr != nil,
 			"typed and map guards disagree on %q", input)
 	}
 
-	doc, baselines, err := RequireHDFResultsDoc([]byte(`{"baselines":[],"timestamp":"2020-01-01T00:00:00Z"}`), "probe")
+	doc, baselines, err := RequireHDFResults([]byte(`{"baselines":[],"timestamp":"2020-01-01T00:00:00Z"}`), "probe")
 	require.NoError(t, err)
 	require.Equal(t, "2020-01-01T00:00:00Z", doc["timestamp"])
 	require.Empty(t, baselines)
@@ -646,10 +646,10 @@ func TestRequireHDFResults_DiagnosticsDifferOnWrongTypedField(t *testing.T) {
 	input := []byte(`{"baselines":"not-an-array"}`)
 
 	var typed hdf.HDFResults
-	typedErr := RequireHDFResults(input, "probe", &typed)
+	typedErr := RequireHDFResultsTyped(input, "probe", &typed)
 	require.ErrorContains(t, typedErr, "probe: failed to parse HDF JSON")
 
-	_, _, docErr := RequireHDFResultsDoc(input, "probe")
+	_, _, docErr := RequireHDFResults(input, "probe")
 	require.EqualError(t, docErr, "probe: invalid HDF structure: missing baselines field")
 }
 
@@ -665,7 +665,7 @@ func TestRequireHDFResults_RejectsCorpusTopLevelShapes(t *testing.T) {
 	}
 	for _, c := range ResultsCorpus() {
 		var out hdf.HDFResults
-		err := RequireHDFResults(c.Input, "probe", &out)
+		err := RequireHDFResultsTyped(c.Input, "probe", &out)
 		if topLevel[c.Name] {
 			require.Error(t, err, "%s is a top-level shape defect and must be rejected", c.Name)
 			continue

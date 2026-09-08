@@ -457,7 +457,8 @@ describe('stale stored effectiveStatus is ignored', () => {
     const effIdx = headers.indexOf('Effective Status');
     expect(effIdx).toBeGreaterThan(-1);
     expect(rows[1]!.split(',')[effIdx]).toBe('failed');
-}
+  });
+});
 
 // A requirement with no results is malformed: hdf-results puts minItems 1 on
 // results, no requirement in this repo's HDF fixtures carries an empty one, and

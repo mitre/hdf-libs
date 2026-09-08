@@ -617,7 +617,51 @@ func requireHDFStructure(input []byte, converterName, field string) (map[string]
 	if !ok {
 		return nil, nil, fmt.Errorf("%s: invalid HDF structure: missing %s field", converterName, field)
 	}
+	// Decoding into a map cannot fail on a wrongly-typed field the way a typed
+	// decode does, so without this the map guard is laxer than the typed one and
+	// the two disagree on the same document. Results-shaped input only: the
+	// rejection is defined against the HDF Results schema.
+	if field == "baselines" {
+		if err := rejectWronglyTypedFields(input, converterName); err != nil {
+			return nil, nil, err
+		}
+	}
 	return doc, items, nil
+}
+
+// rejectWronglyTypedFields refuses the violations a typed decode would have
+// refused, and only those.
+//
+// The typed guards need no such call: encoding/json already rejects a value whose
+// JSON type does not fit the generated struct field. Decoding into a map cannot
+// fail that way, so this path was the one place a wrongly-typed field reached a
+// converter in Go — and the TypeScript peer, whose runtime cast checks nothing,
+// let it through everywhere until it grew the same check.
+//
+// Deliberately narrow: required, enum and minItems violations decode cleanly into
+// the generated structs, so rejecting them here would make this path stricter than
+// the typed one and put the two languages back out of step in the other direction.
+// null is exempt for the same reason — encoding/json unmarshals it as nil or as a
+// no-op, never as an error, and several parity goldens pin a null reaching the
+// converter.
+func rejectWronglyTypedFields(input []byte, converterName string) error {
+	res := hdfvalidators.ValidateResults(hdfutil.NormalizeHDFTimestamps(input))
+	if res.Valid {
+		return nil
+	}
+	var msgs []string
+	for _, e := range res.Errors {
+		if e.Value == nil {
+			continue
+		}
+		if e.Keyword == "invalid_type" || (e.Keyword == "format" && e.Format == "date-time") {
+			msgs = append(msgs, fmt.Sprintf("%s: %s", e.Field, e.Description))
+		}
+	}
+	if len(msgs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s: input is not valid HDF: %s", converterName, strings.Join(msgs, "; "))
 }
 
 // DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).
@@ -668,4 +712,91 @@ func MarkUnratedSeverity(tags map[string]interface{}, severity string) {
 		return
 	}
 	tags[UnratedSeverityTag] = UnratedSeverityValue
+}
+
+// --- Typed structural guards ------------------------------------------------
+// The map guards above keep their names and contracts for existing callers;
+// these decode into the generated structs, which rejects a wrongly-typed field
+// outright. Both paths now agree, because the map path calls
+// rejectWronglyTypedFields.
+
+// --- Typed structural guards -----------------------------------------------
+// The map guards above keep their names and contracts for existing callers;
+// these decode into the generated structs, which rejects a wrongly-typed field
+// outright. Both paths agree because the map path calls rejectWronglyTypedFields.
+
+// --- Structural input guard ---------------------------------------------------
+
+// guardHDFInput runs the prologue every HDF exporter shares before it looks at
+// any content: reject empty input, then enforce the size limit. Split out so the
+// typed and generic-map guards below cannot drift apart on the cheap checks.
+func guardHDFInput(input []byte, converterName string) error {
+	if len(input) == 0 {
+		return fmt.Errorf("%s: empty input", converterName)
+	}
+	if err := ValidateJSONSize(input, converterName, 0); err != nil {
+		return fmt.Errorf("%s: %w", converterName, err)
+	}
+	return nil
+}
+
+// missingFieldError is the single definition of the missing-required-field
+// message. exportmap and hdf-to-oscal-sar already emit exactly this wording and
+// consumers may match on it, so it lives in one place rather than being retyped
+// at each call site.
+func missingFieldError(converterName, field string) error {
+	return fmt.Errorf("%s: invalid HDF structure: missing %s field", converterName, field)
+}
+
+// RequireHDFResults decodes input into v after checking the document's top-level
+// shape: non-empty, within the size limit, parseable, and carrying a baselines
+// array.
+//
+// Without this check a typed decode silently zero-fills — an arbitrary JSON
+// object becomes an HDFResults with no baselines, and the converter emits a
+// confident, empty, and usually schema-invalid document instead of an error.
+// A nil Baselines after decode means the key was absent or null.
+//
+// Scope: top-level shape only. It does not validate nested content (an empty
+// requirements array, a requirement missing id) — that belongs to schema
+// validation, and widening this guard would hide where that check really lives.
+//
+// Two deliberate asymmetries with the TypeScript peer, both from typed decode:
+// a wrong-typed baselines fails the decode here (reported as a parse error)
+// where TypeScript reports it as a missing field, and a deep type mismatch
+// anywhere in the document (say a numeric timestamp) is rejected here but not
+// there. Both languages still reject or accept the same documents at the top
+// level; only the diagnostic differs.
+func RequireHDFResultsTyped(input []byte, converterName string, v *hdf.HDFResults) error {
+	if err := guardHDFInput(input, converterName); err != nil {
+		return err
+	}
+	if err := DecodeHDF(input, v); err != nil {
+		return fmt.Errorf("%s: failed to parse HDF JSON: %w", converterName, err)
+	}
+	if v.Baselines == nil {
+		return missingFieldError(converterName, "baselines")
+	}
+	return nil
+}
+
+// RequireHDFAmendments is RequireHDFResults for HDF Amendments documents, keyed
+// on the overrides array.
+//
+// Unlike baselines, an empty overrides array is rejected. The asymmetry is the
+// schemas': baselines carries no minItems, so an assessment that evaluated
+// nothing is legal HDF, while overrides carries minItems 1 — a document that
+// amends nothing is not a valid amendments document, and converting it yields an
+// empty output the target schema then rejects.
+func RequireHDFAmendmentsTyped(input []byte, converterName string, v *hdf.HDFAmendments) error {
+	if err := guardHDFInput(input, converterName); err != nil {
+		return err
+	}
+	if err := DecodeHDF(input, v); err != nil {
+		return fmt.Errorf("%s: failed to parse HDF JSON: %w", converterName, err)
+	}
+	if len(v.Overrides) == 0 {
+		return missingFieldError(converterName, "overrides")
+	}
+	return nil
 }

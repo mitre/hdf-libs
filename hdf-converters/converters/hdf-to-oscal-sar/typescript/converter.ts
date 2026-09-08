@@ -7,7 +7,7 @@
 
 import { formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
-import { validateInputSize, parseHdf, hdfTime, requireHdfResults } from '../../../shared/typescript/converterutil.js';
+import { hdfTime, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -236,7 +236,7 @@ function baselineToResult(
     // finding is dropped rather than carrying a fabricated identifier. Compute
     // the control id once so the guard and the reviewed-controls encoding below
     // cannot drift.
-    const nistId = nistTagToControlId(req.id);
+    const nistId = nistTagToControlId(req.id ?? '');
     if (nistId === '') {
       continue;
     }
@@ -330,7 +330,7 @@ function requirementToFindingSet(
   // recorded in the hdf-requirement-id prop below (trimmed, because OSCAL forbids
   // a padded string value), so the encoding does not lose which requirement this
   // came from even though it is not injective.
-  const controlID = oscalToken(nistTagToControlId(req.id));
+  const controlID = oscalToken(nistTagToControlId(req.id ?? ''));
   // results/descriptions are optional and absent on real minimal HDF; normalize
   // to arrays so this converter matches the Go implementation, which ranges nil
   // slices safely rather than throwing.
