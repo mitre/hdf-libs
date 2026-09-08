@@ -180,7 +180,9 @@ Each stub arrives with `requirementId`, `type`, and `appliedAt` filled in, a hum
 
 ::: warning A completed draft carries no amendment chain
 A draft is meant to be edited, so it is not chained: a `previousChecksum` written over stubs would be stale the moment you filled them in. Nothing re-chains on completion either, so a completed draft verifies as `Chain: not established` — valid and appliable, but with no tamper evidence. Author through `hdf amend create --from <spec>` if you want the finished document chained.
-::: The document is marked `"_draft": true`, and `hdf amend apply` refuses it until the stubs are completed and the marker removed:
+:::
+
+The document is marked `"_draft": true`, and `hdf amend apply` refuses it until the stubs are completed and the marker removed:
 
 ```console
 $ hdf amend apply --results scan-tuesday.json --amendments draft.json

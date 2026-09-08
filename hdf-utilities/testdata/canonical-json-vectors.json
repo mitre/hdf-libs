@@ -206,13 +206,15 @@
     {
       "name": "keys that are prefixes of one another",
       "input": {
-        "a": 1,
-        "ab": 2,
+        "reasonCode": 1,
+        "reason": 2,
         "abc": 3,
-        "b": 4
+        "ab": 4,
+        "a": 5,
+        "b": 6
       },
-      "canonical": "{\"a\":1,\"ab\":2,\"abc\":3,\"b\":4}",
-      "checksum": "b3a80376d3c962fd4f1dcee7a1a710aa378a9efb635c0b5cbec11549d346d151"
+      "canonical": "{\"a\":5,\"ab\":4,\"abc\":3,\"b\":6,\"reason\":2,\"reasonCode\":1}",
+      "checksum": "478d7ec421e026e0a92ff4cb180bab2e37f5ddacba87a7e9e3daf8e3b98ce5bf"
     },
     {
       "name": "deep nesting",

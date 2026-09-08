@@ -972,29 +972,6 @@ func TestAmendUntrustedTextIsSanitized(t *testing.T) {
 		assert.NotContains(t, stdout, "\x1b")
 	})
 
-	// Schema-error text is quoted straight out of the document.
-	t.Run("schema error text is stripped", func(t *testing.T) {
-		dir := t.TempDir()
-		path := filepath.Join(dir, "bad.json")
-		doc := map[string]interface{}{
-			"name": "bad" + esc,
-			"overrides": []interface{}{map[string]interface{}{
-				"type": "waiver", "requirementId": "AC-1" + esc, "status": "nonsense" + esc,
-				"reason":    "r",
-				"appliedBy": map[string]interface{}{"type": "email", "identifier": "a@b.c"},
-				"appliedAt": "2026-03-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
-			}},
-		}
-		raw, marshalErr := json.Marshal(doc)
-		require.NoError(t, marshalErr)
-		require.NoError(t, os.WriteFile(path, raw, 0o600))
-
-		stdout, _, err := executeCommand("amend", "verify", path)
-		require.Error(t, err)
-		assert.Contains(t, stdout, "must be one of the following")
-		assert.NotContains(t, stdout, "\x1b")
-	})
-
 	// The results-link line embeds the document's own recorded checksum value.
 	t.Run("the results link message is stripped", func(t *testing.T) {
 		dir := t.TempDir()

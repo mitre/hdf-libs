@@ -362,6 +362,11 @@ func printVerifySummary(result *amend.VerifyResult) {
 	for _, brk := range result.Chain.Breaks {
 		fmt.Printf("  %s\n", sanitizeOutput(brk))
 	}
+	// Defensive: gojsonschema's messages carry only schema-derived field paths
+	// and enum lists, never document values, so nothing untrusted reaches here
+	// today and no test can exercise the sanitizer on this line. The guard stays
+	// because the validator engine is slated to change (hdf-libs-ov98) and a
+	// different one may quote the offending value.
 	for _, schemaErr := range result.SchemaErrors {
 		fmt.Printf("  %s\n", sanitizeOutput(schemaErr))
 	}
