@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 )
 
 // fidelityFake converts like the real SARIF converter but declares whatever
@@ -70,4 +72,53 @@ func TestConvertCommand_FidelityIsCheckedInBulk(t *testing.T) {
 	entries, readErr := os.ReadDir(outDir)
 	require.NoError(t, readErr)
 	require.Empty(t, entries, "bulk convert must not write a document that lost findings")
+}
+
+// A downgrade to a legacy output version rewrites the document into the
+// profiles shape after conversion. The declaration is about what the
+// converter produced, so the check must run before that post-processing.
+func TestConvertCommand_FidelityRunsBeforeVersionDowngrade(t *testing.T) {
+	fixture := registerFidelityFake(t, "fidelity-fake-downgrade", 1)
+	out := filepath.Join(t.TempDir(), "out.json")
+
+	_, stderr, err := executeCommand("convert", "--from", "fidelity-fake-downgrade", "--to", "hdf@2", fixture, "-o", out)
+	require.NoError(t, err, "stderr: %s", stderr)
+	require.Contains(t, stderr, "1 requirement")
+}
+
+// noRelationFake converts but declines to state a relation for its input,
+// the way a dispatching converter does when its delegate emits a document
+// with no primary items. The conversion must proceed unchecked, not fail.
+type noRelationFake struct{ inner Converter }
+
+func (f *noRelationFake) Name() string                      { return "No-relation fake" }
+func (f *noRelationFake) Convert(in []byte) ([]byte, error) { return f.inner.Convert(in) }
+func (f *noRelationFake) ExpectedRequirementCount([]byte) (int, string, error) {
+	return 0, "", convreg.ErrNoExpectation
+}
+
+func TestConvertCommand_FidelitySkippedWhenConverterStatesNoRelation(t *testing.T) {
+	inner, err := GetConverter("sarif", "hdf")
+	require.NoError(t, err)
+	RegisterConverter("fidelity-fake-norelation", "hdf", &noRelationFake{inner: inner})
+	t.Cleanup(func() { UnregisterConverter("fidelity-fake-norelation", "hdf") })
+	fixture := converterFixturePath(t, "sarif-to-hdf", "input/empty-results.sarif")
+	out := filepath.Join(t.TempDir(), "out.json")
+
+	_, stderr, err := executeCommand("convert", "--from", "fidelity-fake-norelation", "--to", "hdf", fixture, "-o", out)
+	require.NoError(t, err, "stderr: %s", stderr)
+	require.NotContains(t, stderr, "matching the input")
+	_, statErr := os.Stat(out)
+	require.NoError(t, statErr)
+}
+
+// Bulk mode captures each file's stderr and prints one line per file, so
+// the relation has to travel on that line or the pipeline log never sees it.
+func TestConvertCommand_BulkOkLineCarriesTheRelation(t *testing.T) {
+	fixture := registerFidelityFake(t, "fidelity-fake-bulk-ok", 1)
+	outDir := t.TempDir()
+
+	_, stderr, err := executeCommand("convert", "--from", "fidelity-fake-bulk-ok", "--to", "hdf", fixture, fixture, "-o", outDir)
+	require.NoError(t, err, "stderr: %s", stderr)
+	require.Contains(t, stderr, "ok (1 requirement, matching the input's fake findings)")
 }

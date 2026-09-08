@@ -33,9 +33,11 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) 
 
 		// In bulk mode, capture all output from the inner function.
 		// On success: print captured stdout. On failure: print a short error.
+		fidelityNote = ""
 		captured, fnErr := captureOutput(func() error {
 			return processFn(file)
 		})
+		note := takeFidelityNote()
 		if fnErr != nil {
 			result.Success = false
 			result.Error = firstLine(fnErr.Error())
@@ -50,7 +52,7 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) 
 		case jsonOutput:
 			// JSON failure: error is captured in result.Error for the array output.
 		case result.Success:
-			fmt.Fprintf(os.Stderr, "%s: ok\n", file)
+			fmt.Fprintf(os.Stderr, "%s: ok%s\n", file, note)
 		default:
 			fmt.Fprintf(os.Stderr, "%s: error\n", file)
 		}

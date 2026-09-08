@@ -434,6 +434,11 @@ jobs:
           echo "${{ runner.temp }}/gate-cli" >> "$GITHUB_PATH"
       # --from is explicit: auto-detect against a 60-converter registry could
       # mis-fingerprint and yield a valid document with zero findings.
+      # Count fidelity is checked INSIDE convert: a converter declares how many
+      # requirements its input must yield and convert refuses a document that
+      # lost findings (exit non-zero, nothing written). That happens here,
+      # before the amendment step below, so a waived finding is never mistaken
+      # for a lost one. It is a count check only; severities are not compared.
       - name: Normalize every scan to HDF
         run: |
           hdf convert --from sarif scan-artifacts/*.sarif -o hdf-scans/

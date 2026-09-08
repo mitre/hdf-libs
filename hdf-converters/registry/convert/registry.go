@@ -257,13 +257,14 @@ func (c *hdfBaselineConverter) Convert(input []byte) ([]byte, error) {
 }
 
 // registerHDFBaselineConverter registers an HDF Baseline converter under one
-// source format name. The dest is always "hdf".
-func registerHDFBaselineConverter(source, displayName, errPrefix string, fn HDFBaselineConvertFn) {
-	RegisterConverter(source, "hdf", &hdfBaselineConverter{
+// source format name. The dest is always "hdf". Optional ConverterOption
+// values (e.g. WithExpectedRequirementCount) tune its behavior.
+func registerHDFBaselineConverter(source, displayName, errPrefix string, fn HDFBaselineConvertFn, opts ...ConverterOption) {
+	RegisterConverter(source, "hdf", withTypedExpectation(&hdfBaselineConverter{
 		displayName: displayName,
 		errPrefix:   errPrefix,
 		convertFn:   fn,
-	})
+	}, applyConverterOptions(opts)))
 }
 
 // RawConvertFn is the signature for converters that handle their own JSON
@@ -291,12 +292,13 @@ func (c *rawConverter) Convert(input []byte) ([]byte, error) {
 
 // registerRawConverter registers a raw converter (handles its own JSON
 // serialization) under one source format name. The dest is always "hdf".
-func registerRawConverter(source, displayName, errPrefix string, fn RawConvertFn) {
-	RegisterConverter(source, "hdf", &rawConverter{
+func registerRawConverter(source, displayName, errPrefix string, fn RawConvertFn, opts ...ConverterOption) {
+	o := applyConverterOptions(opts)
+	RegisterConverter(source, "hdf", withTypedExpectation(&rawConverter{
 		displayName: displayName,
 		errPrefix:   errPrefix,
 		convertFn:   fn,
-	})
+	}, o))
 }
 
 // HDFPlanConvertFn is the signature for converters that produce HDF Plan.
@@ -329,13 +331,14 @@ func (c *hdfPlanConverter) Convert(input []byte) ([]byte, error) {
 }
 
 // registerHDFPlanConverter registers an HDF Plan converter under one source
-// format name. The dest is always "hdf".
-func registerHDFPlanConverter(source, displayName, errPrefix string, fn HDFPlanConvertFn) {
-	RegisterConverter(source, "hdf", &hdfPlanConverter{
+// format name. The dest is always "hdf". Optional ConverterOption values tune
+// its behavior.
+func registerHDFPlanConverter(source, displayName, errPrefix string, fn HDFPlanConvertFn, opts ...ConverterOption) {
+	RegisterConverter(source, "hdf", withTypedExpectation(&hdfPlanConverter{
 		displayName: displayName,
 		errPrefix:   errPrefix,
 		convertFn:   fn,
-	})
+	}, applyConverterOptions(opts)))
 }
 
 // HDFAmendmentsConvertFn is the signature for converters that produce HDF Amendments.
@@ -368,13 +371,14 @@ func (c *hdfAmendmentsConverter) Convert(input []byte) ([]byte, error) {
 }
 
 // registerHDFAmendmentsConverter registers an HDF Amendments converter under
-// one source format name. The dest is always "hdf".
-func registerHDFAmendmentsConverter(source, displayName, errPrefix string, fn HDFAmendmentsConvertFn) {
-	RegisterConverter(source, "hdf", &hdfAmendmentsConverter{
+// one source format name. The dest is always "hdf". Optional ConverterOption
+// values tune its behavior.
+func registerHDFAmendmentsConverter(source, displayName, errPrefix string, fn HDFAmendmentsConvertFn, opts ...ConverterOption) {
+	RegisterConverter(source, "hdf", withTypedExpectation(&hdfAmendmentsConverter{
 		displayName: displayName,
 		errPrefix:   errPrefix,
 		convertFn:   fn,
-	})
+	}, applyConverterOptions(opts)))
 }
 
 // oscalCatalogPath is the filesystem path to the OSCAL catalog used to resolve
