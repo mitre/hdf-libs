@@ -52,10 +52,13 @@ env:
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
-#   scan-workflows ─┐
-#   check-ts ───────┼── gate-hdf-scans              (intended required check)
+#   gate-cli ───────┐
+#   scan-workflows ─┤
+#   scan-deps ──────┤
+#   scan-code ──────┼── gate-hdf-scans              (intended required check)
+#   check-ts ───────┤
 #   check-go ───────┘
-#   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┬─ gate-hdf-tests
+#   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┬─ gate-hdf-tests (+ gate-cli)
 #           ├── test-go (junit; ubuntu leg = coverage) ─┴─ sonar
 #           ├── verify-packages                            (intended required check)
 #           └── site-build
@@ -67,12 +70,15 @@ env:
 # Both have the same shape — convert to HDF, apply a committed threshold.
 #
 # Scan phase: compilers and audits hard-fail as before, but the scanners
-# (zizmor, eslint, golangci-lint, govulncheck) run ONCE in SARIF mode and
-# tolerate only their documented findings exit. Findings are gated by
-# gate-hdf-scans, inline in this file: the gate CLI converts every scan to
-# HDF (--from is explicit, never auto-detected) and applies one committed
-# threshold template per tool (.github/hdf-thresholds/<tool>.yaml). The
-# threshold verdict — not the scanners' exit codes — is what fails CI.
+# (zizmor, eslint, golangci-lint, govulncheck, OSV-Scanner, semgrep) run ONCE
+# in findings-tolerant mode — SARIF for all but semgrep, whose native JSON
+# keeps more — and tolerate only their documented findings exit. Findings
+# are gated by gate-hdf-scans, inline in this file: the gate CLI (built from
+# main by gate-cli) converts every scan to HDF (--from is explicit, never
+# auto-detected), applies any committed amendments
+# (.github/hdf-amendments/<tool>.json), then applies one committed threshold
+# template per tool (.github/hdf-thresholds/<tool>.yaml). The threshold
+# verdict — not the scanners' exit codes — is what fails CI.
 #
 # build/test deliberately do NOT wait for gate-hdf-scans: the checks jobs
 # still hard-fail fast on compile/tool errors, while scan findings block the
@@ -393,7 +399,8 @@ jobs:
 
   # ── Gate: scan findings, judged as HDF ───────────────────────────────────
   # One of two HDF gates. This one judges what the tools report by READING the
-  # code (zizmor, eslint, golangci-lint, govulncheck); gate-hdf-tests judges
+  # code (zizmor, eslint, golangci-lint, govulncheck, OSV-Scanner, semgrep);
+  # gate-hdf-tests judges
   # what the suites report by RUNNING it. They are separate jobs because the
   # two kinds of evidence arrive at different points in the run, and because
   # their failure authorities differ: the scanners here run in tolerate-
