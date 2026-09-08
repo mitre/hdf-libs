@@ -10,8 +10,10 @@
 # two ways:
 #   - dangerous-exec-command, the one ERROR-severity rule, was FIXED in code:
 #     generate_upgrade.go now execs the path LookPath resolved from a literal
-#     name, the shape the rule recognizes as static. No suppression comment;
-#     the site had carried a #nosec justification that semgrep could not read.
+#     name, the shape the rule recognizes as static. The site's #nosec G204
+#     note stays for gosec, whose rule flags any variable argument (the
+#     profile path is user-supplied by design); semgrep cannot read it and
+#     no longer needs to.
 #   - the other five rules are AMENDED in .github/hdf-amendments/semgrep.json
 #     (four falsePositive, one riskAdjustment), each with the per-site reason
 #     and a review date. The gate applies that file before judging, so those
