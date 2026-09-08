@@ -408,3 +408,55 @@ func TestConvertHDFToXMLDeepNestingHasNoCap(t *testing.T) {
 	require.NoError(t, err, "the TypeScript peer throws at this depth; this one must not")
 	require.NoError(t, xmlWellFormed(out))
 }
+
+type xmlCharCase struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Expected string `json:"expected"`
+	Why      string `json:"why"`
+}
+
+func loadXMLCharCases(t *testing.T) []xmlCharCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "xml-char-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Cases []xmlCharCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+	return table.Cases
+}
+
+// This side has no sanitizer: encoding/xml substitutes U+FFFD itself, and that
+// is not configurable. Asserting it here anchors the shared table to a real
+// strict encoder, so the TypeScript peer is pinned to observed behaviour rather
+// than to a predicate its own emitter and test both copied.
+func TestConvertHDFToXMLCharSubstitutionMatchesSharedTable(t *testing.T) {
+	for _, c := range loadXMLCharCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			input, err := json.Marshal(map[string]interface{}{
+				"baselines": []interface{}{map[string]interface{}{
+					"name": "b",
+					"requirements": []interface{}{map[string]interface{}{
+						"id": "r", "impact": 0,
+						"descriptions": []interface{}{map[string]interface{}{"label": "default", "data": "d"}},
+						"results": []interface{}{map[string]interface{}{
+							"status": "passed", "codeDesc": c.Value, "startTime": "2020-01-01T00:00:00Z"}},
+					}},
+				}},
+			})
+			require.NoError(t, err)
+
+			out, err := ConvertHDFToXML(input)
+			require.NoError(t, err)
+			require.NoError(t, xmlWellFormed(out), c.Why)
+			// Compared on the canonical form: encoding/xml escapes a literal tab
+			// as &#x9; where the TypeScript builder emits it raw, and absorbing
+			// that difference is exactly what the shared normalizer is for. The
+			// Char substitution this table pins survives normalization.
+			assert.Contains(t, shared.NormalizeXMLForGolden(string(out)),
+				"<codeDesc>"+c.Expected+"</codeDesc>", c.Why)
+		})
+	}
+}

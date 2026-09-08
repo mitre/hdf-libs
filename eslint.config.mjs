@@ -150,6 +150,11 @@ export default [
       // The semgrep ruleset ci.yml fetches here carries deliberately broken
       // sample sources; it is gitignored and must not be linted.
       '.semgrep-rules/**',
+      // Gitignored git worktrees. Linting from the root walks into them, and
+      // their files resolve against no package tsconfig from here, so the type
+      // service falls back to a root tsconfig that does not exist. CI never has
+      // this directory; a contributor with a worktree got 256 parse errors.
+      '.claude/worktrees/**',
     ],
   },
   // `eslint .` also reaches ~15 .js/.mjs/.cjs files outside site/ — this file,

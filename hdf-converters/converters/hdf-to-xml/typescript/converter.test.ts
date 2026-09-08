@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { isXmlChar } from '@mitre/hdf-utilities';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -345,5 +346,56 @@ describe('hdf-to-xml nesting depth', () => {
 
   it('throws one level deeper, where the Go peer still succeeds', () => {
     expect(() => convertHdfToXml(atDepth(94))).toThrow(/nested/i);
+  });
+});
+
+// XML 1.0 has no legal escape for most C0 controls or U+FFFE/U+FFFF, so a
+// document carrying one cannot be represented at all. Go's encoding/xml
+// substitutes U+FFFD and its output parses; this builder emitted the raw byte
+// and produced a document no conforming parser accepts.
+//
+// Driven by the shared table the Go peer also reads, and the Go side asserts
+// what encoding/xml actually does — so the expectation is anchored to a real
+// strict encoder rather than to a predicate this file and the emitter both copy.
+describe('hdf-to-xml XML-illegal characters', () => {
+  interface XmlCharCase {
+    name: string;
+    value: string;
+    expected: string;
+    why: string;
+  }
+  const CASES = (
+    JSON.parse(
+      readFileSync(join(__dirname, '..', '..', '..', 'shared', 'xml-char-cases.json'), 'utf-8'),
+    ) as { cases: XmlCharCase[] }
+  ).cases;
+
+  const withCodeDesc = (text: string): string =>
+    JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id: 'r',
+              impact: 0,
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'passed', codeDesc: text, startTime: '2020-01-01T00:00:00Z' }],
+            },
+          ],
+        },
+      ],
+    });
+
+  it('has a populated shared table', () => {
+    expect(CASES.length, 'an empty table would pass vacuously').toBeGreaterThan(0);
+  });
+
+  it.each(CASES.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    const xml = convertHdfToXml(withCodeDesc(c.value));
+    expect(normalizeXmlForGolden(xml), c.why).toContain(`<codeDesc>${c.expected}</codeDesc>`);
+    // The property the substitution exists to guarantee, asserted against the
+    // shared predicate rather than a local copy of the rule.
+    expect([...xml].filter((ch) => !isXmlChar(ch)), c.why).toEqual([]);
   });
 });

@@ -252,11 +252,12 @@ func TestProductsFor_ParsesProductsLine(t *testing.T) {
 	assert.Equal(t, "C", got[2].ID)
 }
 
-func TestProductsFor_DefaultsWhenNothingPresent(t *testing.T) {
+// Was: asserted a synthetic "HDFPID-0001". That value is not an IRI, which
+// OpenVEX requires of a component @id, and it asserted a product the source
+// never named. products is optional, so nothing is emitted.
+func TestProductsFor_OmitsWhenNothingPresent(t *testing.T) {
 	t.Parallel()
-	got := productsFor(&hdf.StandaloneOverride{Reason: "no products"})
-	require.Len(t, got, 1)
-	assert.Equal(t, defaultProductID, got[0].ID)
+	assert.Empty(t, productsFor(&hdf.StandaloneOverride{Reason: "no products"}))
 }
 
 func TestBuildDocumentID_UsesAmendmentIDWhenPresent(t *testing.T) {

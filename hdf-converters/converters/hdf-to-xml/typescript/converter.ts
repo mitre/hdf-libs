@@ -1,4 +1,4 @@
-import { buildXml } from '@mitre/hdf-utilities';
+import { buildXml, xmlSafeText } from '@mitre/hdf-utilities';
 import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
 /**
@@ -107,7 +107,7 @@ function present(value: unknown): boolean {
  */
 function nodesFor(key: string, value: unknown): XmlNode[] {
   const [name, rewritten] = xmlElementName(key);
-  const attrs = rewritten ? { ':@': { [NAME_ATTR]: key } } : {};
+  const attrs = rewritten ? { ':@': { [NAME_ATTR]: xmlSafeText(key) } } : {};
 
   if (Array.isArray(value)) {
     if (value.length === 0) {
@@ -122,7 +122,8 @@ function nodesFor(key: string, value: unknown): XmlNode[] {
   if (typeof value === 'object') {
     return [{ [name]: buildNodes(value as Record<string, unknown>), ...attrs }];
   }
-  return [{ [name]: [{ '#text': value }], ...attrs }];
+  const text = typeof value === 'string' ? xmlSafeText(value) : value;
+  return [{ [name]: [{ '#text': text }], ...attrs }];
 }
 
 /**

@@ -10,11 +10,6 @@
         "@id": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
         "name": "CVE-2021-44228"
       },
-      "products": [
-        {
-          "@id": "HDFPID-0001"
-        }
-      ],
       "status": "affected",
       "action_statement": "accepted",
       "status_notes": "HDF override type: waiver\nApplied by: test",

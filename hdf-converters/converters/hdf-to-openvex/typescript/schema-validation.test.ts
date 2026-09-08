@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
-import { amendmentsCorpus, canonicalJSON } from '../../../shared/typescript/schema-corpus.js';
+import {
+  amendmentsCorpus,
+  canonicalJSON,
+  runSchemaCorpus,
+  jsonDocumentValidator,
+} from '../../../shared/typescript/schema-corpus.js';
 import { convertHdfToOpenVex } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -159,5 +164,18 @@ describe('hdf-to-openvex corpus golden parity (TS↔Go)', () => {
       'utf-8',
     );
     expect(out).toBe(golden);
+  });
+});
+
+// The adversarial corpus, adopted with no exemptions, mirroring the Go peer.
+// This could not pass while the converter minted a synthetic product id: every
+// MustConvert amendments case failed the OpenVEX schema on products[].@id,
+// which types as an IRI. Exempting those cases was rejected — exempting every
+// case the run has would make the adoption prove nothing.
+describe('hdf-to-openvex against the adversarial corpus', () => {
+  it('satisfies every contract for every case', async () => {
+    await runSchemaCorpus(jsonDocumentValidator(validate), amendmentsCorpus(), (input) =>
+      convertHdfToOpenVex(input),
+    );
   });
 });

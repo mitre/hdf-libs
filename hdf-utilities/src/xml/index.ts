@@ -120,9 +120,45 @@ export function buildXml(
  * isValidXml('not xml'); // false
  * ```
  */
+/**
+ * Whether a character is legal in an XML 1.0 document, per the Char production.
+ * The one home for this rule: an emitter deciding what to replace and a
+ * validator deciding what to reject must not answer it differently.
+ */
+export function isXmlChar(ch: string): boolean {
+  const c = ch.codePointAt(0) as number;
+  return (
+    c === 0x9 ||
+    c === 0xa ||
+    c === 0xd ||
+    (c >= 0x20 && c <= 0xd7ff) ||
+    (c >= 0xe000 && c <= 0xfffd) ||
+    c >= 0x10000
+  );
+}
+
+/**
+ * Replace every character XML 1.0 forbids with U+FFFD, which is what Go's
+ * encoding/xml does. XML defines no escape for these — a numeric reference to a
+ * C0 control is itself illegal — so the choice is a replacement character or a
+ * document no conforming parser will read.
+ */
+export function xmlSafeText(value: string): string {
+  let out = '';
+  for (const ch of value) out += isXmlChar(ch) ? ch : '\ufffd';
+  return out;
+}
+
 export function isValidXml(xml: string): boolean {
   if (!xml || xml.trim().length === 0) {
     return false;
+  }
+
+  // The structural validator does not enforce XML 1.0's Char production, so it
+  // called a document well-formed that no conforming parser will read — which is
+  // how a converter emitting a raw ESC passed its own well-formedness check.
+  for (const ch of xml) {
+    if (!isXmlChar(ch)) return false;
   }
 
   const result = XMLValidator.validate(xml);
