@@ -17,11 +17,6 @@ func (c *legacyHDFConverter) Name() string {
 	return "InSpec exec-json to HDF"
 }
 
-// legacyhdf.ExpectedRequirementCount is deliberately not declared here yet:
-// the CLI checks fidelity on the post-processed output, and `--to hdf@2`
-// downgrades to the profiles/controls shape it cannot count. Declare it once
-// the CLI counts the pre-downgrade document.
-
 // Convert transforms InSpec exec-json input to current HDF output.
 func (c *legacyHDFConverter) Convert(input []byte) ([]byte, error) {
 	v1, err := legacyhdf.ParseLegacyHDF(input)
