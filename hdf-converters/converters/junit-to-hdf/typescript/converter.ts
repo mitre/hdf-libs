@@ -32,10 +32,10 @@ interface JUnitTestSuites {
 
 interface JUnitTestSuite {
   '@_name'?: string;
-  '@_tests'?: number;
-  '@_failures'?: number;
-  '@_errors'?: number;
-  '@_skipped'?: number;
+  '@_tests'?: string;
+  '@_failures'?: string;
+  '@_errors'?: string;
+  '@_skipped'?: string;
   '@_time'?: string;
   '@_timestamp'?: string;
   '@_hostname'?: string;
