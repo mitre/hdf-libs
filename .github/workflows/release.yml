@@ -53,26 +53,22 @@ jobs:
           pnpm -r exec -- npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish packages
-        # Auth is OIDC Trusted Publishing for all 9 packages. pnpm publishes
-        # natively (no npm CLI delegation) and prefers OIDC over a static
-        # token per package — behavior introduced in pnpm 11.0.7, so the
-        # exact version matters: it comes from the root package.json
-        # `packageManager` field, which pnpm/action-setup resolves above.
+        # Auth is OIDC Trusted Publishing for every package below; there is
+        # no npm token in this workflow, so a package without a trusted
+        # publisher for this repo fails to publish rather than falling back.
+        # pnpm publishes natively (no npm CLI delegation) with OIDC support
+        # from pnpm 11.0.7, so the exact version matters: it comes from the
+        # root package.json `packageManager` field, which pnpm/action-setup
+        # resolves above.
         #
         # npm allows up to 10 trusted publishers per package, so
         # @mitre/hdf-converters carries this repo's publisher ALONGSIDE
         # mitre/heimdall2's (which still publishes v2.x patches) — neither
         # displaces the other.
         #
-        # NODE_AUTH_TOKEN is a transition fallback only: once an rc-tag
-        # publish verifies all 9 packages publish tokenless, remove this env
-        # line and revoke the token.
-        #
         # --provenance attests every package (requires the id-token
         # permission and the correct public repository field in each
         # package.json).
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Publish order matters: dependencies first
           PACKAGES=(
