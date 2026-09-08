@@ -106,6 +106,32 @@ jobs:
           # npm publish ships package.json verbatim and breaks consumers with
           # EUNSUPPORTEDPROTOCOL. --no-git-checks is required because the
           # "Set version from tag" step above leaves the working tree dirty.
+          #
+          # The loop is idempotent. npm versions are immutable, so a re-run of
+          # a release whose earlier attempt published some packages would 403
+          # on each of those and never converge. Before publishing, ask the
+          # registry whether this exact version exists: 404 means publish;
+          # 200 means compare CONTENT and skip only if it is the same build;
+          # anything else means the answer is unknown, and guessing either
+          # way is wrong (a transport failure aborts the step through curl's
+          # own exit). "Same build" is judged on CONTENT, not on the
+          # registry's integrity field, which hashes the gzip envelope and
+          # varies with the producer's OS byte. Two measurements shaped the
+          # digest below: rc.2 rebuilt from its tag on another machine
+          # matched byte-for-byte inside the tarball, except that pnpm's
+          # workspace: rewrite does not keep package.json key order stable
+          # between builds (same commit, same pnpm 11.10.0, two dependency
+          # keys swapped). So every file is hashed by path, with package.json
+          # taken as canonical JSON.
+          content_digest() {
+            local dir
+            dir=$(mktemp -d)
+            tar -xzf "$1" -C "$dir"
+            jq -S . "$dir/package/package.json" > "$dir/package/package.json.canonical"
+            rm "$dir/package/package.json"
+            (cd "$dir" && find . -type f | LC_ALL=C sort | xargs sha256sum | sha512sum | cut -d' ' -f1)
+          }
+          REGISTRY="https://registry.npmjs.org"
           for pkg in "${PACKAGES[@]}"; do
             TAG_FLAG=""
             if [[ "$pkg" == "hdf-converters" ]]; then
@@ -117,7 +143,31 @@ jobs:
             elif [[ "$VERSION" == *"-rc"* ]]; then
               TAG_FLAG="--tag next"
             fi
-            echo "Publishing $pkg@$VERSION ${TAG_FLAG:-"(latest)"}..."
+
+            name="@mitre/$pkg"
+            meta="$RUNNER_TEMP/$pkg.version.json"
+            code=$(curl -sS -o "$meta" -w '%{http_code}' "$REGISTRY/${name/\//%2f}/$VERSION")
+            case "$code" in
+              404) ;;
+              200)
+                curl -sS -o "$RUNNER_TEMP/$pkg.published.tgz" "$(jq -r .dist.tarball "$meta")"
+                (cd "$pkg" && pnpm pack --pack-destination "$RUNNER_TEMP/pack-$pkg" >/dev/null)
+                published=$(content_digest "$RUNNER_TEMP/$pkg.published.tgz")
+                fresh=$(content_digest "$RUNNER_TEMP/pack-$pkg/"*.tgz)
+                if [ "$published" = "$fresh" ]; then
+                  echo "Skipping $name@$VERSION: already published with identical content (digest $fresh)"
+                  continue
+                fi
+                echo "::error::$name@$VERSION is already published with DIFFERENT content: published digest $published, this build $fresh. Versions are immutable, and this run is not a retry of the run that published it."
+                exit 1
+                ;;
+              *)
+                echo "::error::registry check for $name@$VERSION returned HTTP $code; cannot tell whether it is already published"
+                exit 1
+                ;;
+            esac
+
+            echo "Publishing $name@$VERSION ${TAG_FLAG:-"(latest)"}..."
             cd "$pkg"
             pnpm publish --access public --no-git-checks --provenance $TAG_FLAG
             cd ..
