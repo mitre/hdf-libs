@@ -7,9 +7,20 @@ import { validateInputSize, parseHdf } from '../../../shared/typescript/converte
  * The document is walked as a plain JSON tree and every key is emitted in
  * source-JSON order, so the output can never silently lag a schema addition the
  * way the previous hand-maintained struct mirror did (it dropped ~30 post-v3.2
- * fields). JSON.parse preserves object key insertion order, and the Go converter
- * walks the same normalized JSON in the same order, so the two languages emit
- * output that is identical after the shared XML golden normalization.
+ * fields). The Go converter walks the same normalized JSON in the same order, so
+ * the two languages emit output that is identical after the shared XML golden
+ * normalization for every shape this repo's fixtures and parity tests cover.
+ *
+ * Equality after that normalization is NOT guaranteed in general, and the reason
+ * is structural rather than a fixed list of cases: JSON.parse loses duplicate
+ * keys and hoists
+ * array-index keys before this builder ever runs, V8's number-to-string forms
+ * differ from Go's strconv at the extremes, and Go's encoding/xml sanitizes every
+ * XML-illegal rune to U+FFFD where this builder emits it verbatim. This builder
+ * also caps nesting depth, which the Go peer does not. Anything landing in those
+ * seams can differ; known instances are tracked as cards under the
+ * exporter-conformance epic. Assume a shape outside the fixture corpus needs
+ * checking against the peer rather than that it is covered.
  */
 
 /**
@@ -72,14 +83,6 @@ export function xmlElementName(key: string): [string, boolean] {
 const NAME_ATTR = '@_name';
 
 /**
- * Wrap a primitive so fast-xml-parser renders it as element text rather than an
- * attribute.
- */
-function wrapScalar(value: string | number | boolean): { '#text': string | number | boolean } {
-  return { '#text': value };
-}
-
-/**
  * True for a JSON scalar (string, number, bool) or a null/undefined placeholder.
  * Nested objects and arrays are not scalar, which selects the wrapped
  * object-array rendering.
@@ -88,60 +91,47 @@ function isScalar(value: unknown): boolean {
   return value === null || value === undefined || typeof value !== 'object';
 }
 
-/**
- * Convert an object-array item into its fast-xml-parser representation. Items
- * are objects (the object-array rule), but a scalar in a heterogeneous array is
- * wrapped so it renders as <singular>text</singular>, matching the Go walker.
- */
-function toXmlValue(value: unknown): unknown {
-  if (value === null || value === undefined) {
-    return undefined;
-  }
-  if (Array.isArray(value)) {
-    return { item: value.filter(v => v !== null && v !== undefined).map(toXmlValue) };
-  }
-  if (typeof value === 'object') {
-    return buildObject(value as Record<string, unknown>);
-  }
-  return wrapScalar(value as string | number | boolean);
+/** One fast-xml-parser preserveOrder node: a single tag key, plus optional attributes. */
+type XmlNode = Record<string, unknown>;
+
+function present(value: unknown): boolean {
+  return value !== null && value !== undefined;
 }
 
 /**
- * Walk a JSON object into a fast-xml-parser-ready structure, emitting keys in
- * source order. Null-valued keys are omitted (parity with the old omitempty
- * semantics). A scalar array repeats its key unwrapped (<nist>AU-12</nist>); an
- * object array becomes a wrapper whose per-item child name comes from the
- * plural->singular map; an empty array becomes an empty wrapper element.
+ * Render one JSON key as the sibling nodes it becomes, mirroring the Go
+ * writeValue case for case. A list rather than a single node because a scalar
+ * array repeats its key unwrapped, and because two keys can encode to one
+ * element name — preserveOrder keeps each at its own position, which a plain
+ * object keyed by element name could not.
  */
-function buildObject(obj: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value === null || value === undefined) {
-      continue;
-    }
-    const [name, rewritten] = xmlElementName(key);
-    // A rewritten element carries the source key, so the encoding stays lossless.
-    const withKey = (node: Record<string, unknown>): Record<string, unknown> =>
-      rewritten ? { ...node, [NAME_ATTR]: key } : node;
+function nodesFor(key: string, value: unknown): XmlNode[] {
+  const [name, rewritten] = xmlElementName(key);
+  const attrs = rewritten ? { ':@': { [NAME_ATTR]: key } } : {};
 
-    if (Array.isArray(value)) {
-      const items = value.filter(v => v !== null && v !== undefined);
-      if (value.length === 0) {
-        out[name] = withKey({}); // empty array -> empty wrapper <key></key>
-      } else if (value.every(isScalar)) {
-        // Scalar array -> repeated, unwrapped key element.
-        out[name] = items.map(v => withKey(wrapScalar(v as string | number | boolean)));
-      } else {
-        // Object array -> wrapper element with one singular-named child per item.
-        out[name] = withKey({ [singularFor(key)]: items.map(toXmlValue) });
-      }
-    } else if (typeof value === 'object') {
-      out[name] = withKey(buildObject(value as Record<string, unknown>));
-    } else {
-      out[name] = withKey(wrapScalar(value as string | number | boolean));
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return [{ [name]: [], ...attrs }]; // empty array -> empty wrapper <key></key>
     }
+    if (value.every(isScalar)) {
+      return value.filter(present).flatMap((item) => nodesFor(key, item));
+    }
+    const child = singularFor(key);
+    return [{ [name]: value.filter(present).flatMap((item) => nodesFor(child, item)), ...attrs }];
   }
-  return out;
+  if (typeof value === 'object') {
+    return [{ [name]: buildNodes(value as Record<string, unknown>), ...attrs }];
+  }
+  return [{ [name]: [{ '#text': value }], ...attrs }];
+}
+
+/**
+ * Walk a JSON object into fast-xml-parser preserveOrder nodes, emitting keys in
+ * source order. Null-valued keys are omitted, matching the old omitempty
+ * semantics and the Go peer.
+ */
+function buildNodes(obj: Record<string, unknown>): XmlNode[] {
+  return Object.entries(obj).flatMap(([key, value]) => (present(value) ? nodesFor(key, value) : []));
 }
 
 /**
@@ -164,5 +154,12 @@ export function convertHdfToXml(input: string): string {
     throw new Error('Invalid HDF structure: baselines must be an array');
   }
 
-  return buildXml({ HdfResults: buildObject(hdf) }, { attributeNamePrefix: '@_' });
+  // preserveOrder frames the document differently — a leading newline and no
+  // trailing one — which the golden normalizer's trim() hides. Restored so a
+  // caller concatenating an XML prolog still gets a valid document.
+  const xml = buildXml([{ HdfResults: buildNodes(hdf) }], {
+    preserveOrder: true,
+    attributeNamePrefix: '@_',
+  });
+  return `${xml.trim()}\n`;
 }

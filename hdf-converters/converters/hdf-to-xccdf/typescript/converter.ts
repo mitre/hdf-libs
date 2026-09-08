@@ -115,9 +115,11 @@ function xccdfNamePart(name: string): string {
  * sanitized and namespaced under this converter, matching what the benchmark,
  * profile, and rule ids already do.
  *
- * Mirrored by xccdfGroupID in the Go converter.
+ * Mirrored by xccdfGroupID in the Go converter. Exported so the shared table
+ * can be asserted against the encoder directly, including the empty gid the
+ * converter itself skips.
  */
-function xccdfGroupId(gid: string): string {
+export function xccdfGroupId(gid: string): string {
   if (isXccdfGroupId(gid)) return gid;
   // The trailing name is required by the pattern's .+, so an empty gid needs a
   // placeholder. The caller skips empty gids; this keeps the encoder total.
@@ -130,7 +132,7 @@ function xccdfGroupId(gid: string): string {
  * re-encoded rather than trusted, which errs toward valid output and keeps the
  * check identical to the Go peer's.
  */
-function isXccdfGroupId(id: string): boolean {
+export function isXccdfGroupId(id: string): boolean {
   return /^xccdf_[^_]+_group_.+$/.test(id) && /^[A-Za-z0-9._-]+$/.test(id);
 }
 

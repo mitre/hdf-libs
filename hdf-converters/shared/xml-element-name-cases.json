@@ -17,5 +17,10 @@
     { "key": "", "name": "_", "rewritten": true, "why": "an empty key has no Name to emit" },
     { "key": "café", "name": "caf_", "rewritten": true, "why": "outside the ASCII kept set, which is deliberately narrower than XML Name" },
     { "key": "日本", "name": "__", "rewritten": true, "why": "ditto — no fixture key is non-ASCII, so this costs nothing on real data" }
+  ],
+  "$collisions": "The encoder is not injective, so two source keys can reach one element name. Both languages emit one element per key, at that key's own source position, each carrying its own name attribute — dropping or reordering either would break this converter's lossless, order-preserving contract. 'between' places a non-colliding key between two colliding ones, the shape that distinguishes real source-order preservation from merely emitting both. No collision of any kind exists across this package's real fixture keys today.",
+  "collisions": [
+    { "name": "a_b", "keys": ["a/b", "a b"], "why": "'/' and ' ' both encode to '_', so two distinct tag keys reach one element name" },
+    { "name": "a_b", "keys": ["a/b", "a b"], "between": "zebra", "why": "a non-colliding key between two colliding ones must stay between them in both languages" }
   ]
 }
