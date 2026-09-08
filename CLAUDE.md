@@ -8,7 +8,8 @@ Project context for Claude Code and human developers working in this repository.
 pnpm install          # Install all dependencies
 pnpm build            # Build TS + Go
 pnpm test             # Run all tests (TS + Go)
-pnpm check            # Full CI gate: build + lint + test + security
+pnpm check            # Pre-commit gate: TS build + lint + typecheck + TS tests + audit
+                      # (Go: lints 3 of 13 modules, tests only hdf-cli — CI covers the rest)
 pnpm lint             # ESLint (TS) + golangci-lint (Go)
 pnpm security         # pnpm audit + govulncheck
 ```
@@ -132,7 +133,9 @@ Multiple Go modules in the monorepo with `replace` directives for local developm
 
 ## Pre-commit Hook
 
-`.husky/pre-commit` runs `pnpm check` (build + lint + test + security). This is the full CI gate. If it fails, fix the issue — do not bypass with `--no-verify` unless batching commits with no code changes between them.
+`.husky/pre-commit` runs `pnpm check`: TypeScript build, ESLint and the repo's own lint scripts, typecheck, TypeScript tests with coverage, and the dependency audit. If it fails, fix the issue — do not bypass with `--no-verify` unless batching commits with no code changes between them.
+
+**It is not the full CI gate, and the gap is on the Go side.** `check` builds no Go at all (it calls `build:ts`, not `build`), lints 3 of the 13 workspace modules, runs Go *tests* for `hdf-cli` alone, and runs govulncheck and gosec only there. CI is broader but not total: it lints and runs govulncheck across all 13 modules and runs every Go test, while gosec reaches only the nine modules carrying a `.golangci.yml` — there is no standalone gosec step, so `hdf-engine/go`, `hdf-fixtures`, `hdf-schema/dist/go` and `hdf-schema/testhdf/go` are never scanned by it. So a Go change that passes locally has had roughly one module's worth of scrutiny; wait for CI before treating it as verified, or run `pnpm test:go` and `golangci-lint run` in the module you touched.
 
 ## Security Requirements
 

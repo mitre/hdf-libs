@@ -127,3 +127,6 @@ Each new fixture must:
    sides have parallel access.
 4. Have its original location deleted (no duplicates) and every consumer
    updated to import from here.
+5. Be added to the group map in `fixtures_gate_test.go`, which validates each
+   fixture against its schema. That map is hand-maintained: a fixture missing
+   from it is never validated, and nothing reports the omission.
