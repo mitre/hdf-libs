@@ -130,6 +130,22 @@ make_module "$root/liba" "example.com/fixture/liba/v3"
 printf '//go:build windows\n\npackage different\n' > "$root/liba/conflict.go"
 expect "a module whose packages cannot be listed fails" 1 "$root"
 
+# --- progress output must never be mistaken for a package path --------------
+# `go` writes "go: downloading ..." to stderr. An earlier version captured it
+# with 2>&1 and passed those words to `go list -deps` as package arguments —
+# invisible on a warm cache, a false FAIL on CI's cold one. The package-path
+# filter is what stops it, so exercise the filter directly: a warm local cache
+# cannot reproduce the condition.
+progress_input="$(printf 'example.com/fixture/liba/v3\ngo: downloading example.com/dep v1.1.0\nexample.com/fixture/liba/v3/internal/x\n')"
+filtered="$(printf '%s\n' "$progress_input" | grep -E '^[^[:space:]:]+$' | grep -v '/internal/' || true)"
+if [ "$filtered" = "example.com/fixture/liba/v3" ]; then
+  echo "ok   progress lines are not mistaken for package paths"
+  pass=$((pass + 1))
+else
+  echo "FAIL progress lines are not mistaken for package paths — got: $filtered"
+  fail=$((fail + 1))
+fi
+
 # --- a module whose only packages are internal/ must not read as a pass -----
 root="$(make_fixture internalonly '            "liba"')"
 mkdir -p "$root/liba/internal/only"

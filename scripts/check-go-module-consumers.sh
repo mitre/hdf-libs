@@ -116,6 +116,12 @@ is_published() {
 
 # --- check each module on each platform -------------------------------------
 
+# go writes progress ("go: downloading ...") to stderr. Capturing it into the
+# package list fed those lines to `go list -deps` as arguments — harmless on a
+# warm cache, a false alarm on CI's cold one.
+stderr_file="$(mktemp)"
+trap 'rm -f "$stderr_file"' EXIT
+
 failed=0
 checked=0
 
@@ -127,20 +133,20 @@ for dir in "${GO_MODULES[@]}"; do
   for platform in "${PLATFORMS[@]}"; do
     read -r goos goarch cgo <<<"$platform"
 
-    if ! packages="$(cd "$dir" && GOOS="$goos" GOARCH="$goarch" CGO_ENABLED="$cgo" go list ./... 2>&1)"; then
+    if ! packages="$(cd "$dir" && GOOS="$goos" GOARCH="$goarch" CGO_ENABLED="$cgo" go list ./... 2>"$stderr_file")"; then
       echo "FAIL $dir [$goos/$goarch cgo=$cgo] — could not list packages, so nothing was checked:" >&2
-      printf '%s\n' "$packages" | sed 's/^/    /' >&2
+      sed 's/^/    /' "$stderr_file" >&2
       module_ok=0
       continue
     fi
 
-    checkable="$(printf '%s\n' "$packages" | grep -v '/internal/' || true)"
+    checkable="$(printf '%s\n' "$packages" | grep -E '^[^[:space:]:]+$' | grep -v '/internal/' || true)"
     [ -z "$checkable" ] && continue
 
     if ! deps="$(cd "$dir" && GOOS="$goos" GOARCH="$goarch" CGO_ENABLED="$cgo" \
-        go list -deps -f '{{if .Module}}{{.Module.Path}}{{end}}' $checkable 2>&1)"; then
+        go list -deps -f '{{if .Module}}{{.Module.Path}}{{end}}' $checkable 2>"$stderr_file")"; then
       echo "FAIL $dir [$goos/$goarch cgo=$cgo] — could not resolve the build graph:" >&2
-      printf '%s\n' "$deps" | sed 's/^/    /' >&2
+      sed 's/^/    /' "$stderr_file" >&2
       module_ok=0
       continue
     fi
