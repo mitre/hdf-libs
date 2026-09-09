@@ -112,6 +112,16 @@ func impactFor(result Result) float64 {
 	return hdfutil.SeverityToImpactWithAliases(string(result.Extra.Severity), semgrepSeverityAliases, defaultImpact)
 }
 
+// severityFor publishes the band the impact already implies, so the two fields
+// cannot disagree. An absent or redacted severity stays nil: the unrated tag is
+// what tells a consumer the 0.5 was a default, and a "medium" here would hide it.
+func severityFor(result Result) *hdf.Severity {
+	if !isPresent(result.Extra.Severity) {
+		return nil
+	}
+	return hdfutil.Ptr(hdf.Severity(hdfutil.ImpactToSeverity(impactFor(result))))
+}
+
 // titleFor derives a readable rule name. Semgrep rule ids are dotted paths
 // whose final segment is the rule name; the JSON output carries no
 // human-readable title anywhere, unlike its SARIF output.
@@ -289,6 +299,7 @@ func buildRequirement(checkID string, results []Result, startTime time.Time) hdf
 		ID:                 checkID,
 		Title:              &title,
 		Impact:             impactFor(representative),
+		Severity:           severityFor(representative),
 		Tags:               tags,
 		Cwe:                cweCatalogFor(metadata),
 		Refs:               refsFor(metadata),

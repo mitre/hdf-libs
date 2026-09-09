@@ -1,4 +1,4 @@
-import { parseJSON, severityToImpactWithAliases } from '@mitre/hdf-utilities';
+import { impactToSeverity, parseJSON, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { getCweNistControl, nistToCci } from '@mitre/hdf-mappings';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
@@ -19,6 +19,7 @@ import type {
   EvaluatedRequirement,
   Reference,
   RequirementResult,
+  Severity,
   SourceLocation,
 } from '@mitre/hdf-schema';
 import {
@@ -186,6 +187,18 @@ function impactFor(result: SemgrepResult): number {
     return DEFAULT_IMPACT;
   }
   return severityToImpactWithAliases(severity, SEMGREP_SEVERITY_ALIASES, DEFAULT_IMPACT);
+}
+
+/**
+ * Publishes the band the impact already implies, so the two fields cannot
+ * disagree. An absent or redacted severity stays unset: the unrated tag is what
+ * tells a consumer the 0.5 was a default, and a "medium" here would hide it.
+ */
+function severityFor(result: SemgrepResult): Severity | undefined {
+  if (!isPresent(result.extra?.severity)) {
+    return undefined;
+  }
+  return impactToSeverity(impactFor(result)) as Severity;
 }
 
 /**
@@ -386,6 +399,10 @@ function buildRequirement(
     },
   ) as EvaluatedRequirement;
 
+  const severity = severityFor(representative);
+  if (severity !== undefined) {
+    requirement.severity = severity;
+  }
   requirement.verificationMethod = VerificationMethodEnum.Automated;
   const controlType = deriveControlTypeFromTags(tags.nist as string[]);
   if (controlType !== undefined) {
