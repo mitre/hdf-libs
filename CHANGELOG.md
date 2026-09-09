@@ -36,6 +36,10 @@ All notable changes to this project will be documented in this file.
 
 - **`hdf validate threshold` accepts multiple files, applying one policy to many documents.** It was the only verb in the chain still limited to a single file, which forced CI gates into shell loops that rebuilt the output filenames `hdf convert` already generates. The template is parsed once and applied per file, so a broken template fails before any document is read, and `runBulk` semantics apply: every file is processed and the verdict reported at the end, with `-F` aborting early. `MinimumNArgs(1)` rather than arbitrary args, so an unmatched shell glob is an error rather than a vacuous pass. Single-file output, exit codes and violation text are unchanged. (#289)
 
+### Fixes
+
+- **`semgrep-to-hdf` now publishes `requirement.severity`; it was `null` on every finding.** The converter set `impact` from semgrep's severity (0.7 for ERROR, 0.5 for WARNING, 0.3 for INFO) and copied the raw label into `tags.severity`, but never filled the canonical top-level field — measured on a real 203-finding run, every requirement carried `severity: null`. Gates were unaffected, since the threshold engine falls back to impact, but any consumer reading the artifact had to know to look in `tags` or re-derive the band. The field is now the band the impact already implies (ERROR → `high`, WARNING → `medium`, INFO → `low`), so the two can never disagree. A finding whose severity semgrep withheld or omitted still has no `severity`, on purpose: its `tags.severity_rating: unrated` marker is what says the 0.5 was a default, and a published `medium` would hide that.
+
 ## [3.5.1] - 2026-08-11
 
 Patch release: a new SPDX-VEX importer, NIST Rev 4 ↔ Rev 5 revision infrastructure, export-side field fidelity (the override channel now survives export), broad import-converter field backfills, and supply-chain hardening. No schema changes — schema `$id` URLs remain at v3.5.0.

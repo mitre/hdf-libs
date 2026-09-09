@@ -21,6 +21,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 7,
             "ref": ".github/workflows/build.yml"
@@ -94,6 +95,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 9,
             "ref": ".github/workflows/build.yml"
