@@ -758,6 +758,29 @@ func TestBuildNetsparkerCvss(t *testing.T) {
 	t.Run("no blocks", func(t *testing.T) {
 		assert.Empty(t, buildNetsparkerCvss(NetsparkerClassification{}))
 	})
+	// The element name pins the version: <cvss> is 3.0 and <cvss31> is 3.1.
+	// A block with no vector has no other signal, so discarding which element
+	// it came from is what made a vectorless 3.0 block report 3.1.
+	t.Run("vectorless block takes its version from the element", func(t *testing.T) {
+		thirty := buildNetsparkerCvss(NetsparkerClassification{
+			CVSS: NetsparkerCVSS{Scores: []NetsparkerCVSSScore{{Type: "Base", Value: "6.8"}}},
+		})
+		require.Len(t, thirty, 1)
+		assert.Equal(t, hdf.The30, thirty[0].Version)
+
+		thirtyOne := buildNetsparkerCvss(NetsparkerClassification{
+			CVSS31: NetsparkerCVSS{Scores: []NetsparkerCVSSScore{{Type: "Base", Value: "4.0"}}},
+		})
+		require.Len(t, thirtyOne, 1)
+		assert.Equal(t, hdf.The31, thirtyOne[0].Version)
+	})
+	t.Run("a vector still outranks the element", func(t *testing.T) {
+		out := buildNetsparkerCvss(NetsparkerClassification{
+			CVSS: NetsparkerCVSS{Vector: "CVSS:3.1/AV:N", Scores: []NetsparkerCVSSScore{{Type: "Base", Value: "6.8"}}},
+		})
+		require.Len(t, out, 1)
+		assert.Equal(t, hdf.The31, out[0].Version, "a vector-bearing block keeps vector-derived versioning")
+	})
 }
 
 func TestSnapshots(t *testing.T) {

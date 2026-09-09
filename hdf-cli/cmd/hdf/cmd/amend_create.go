@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -647,11 +648,27 @@ func amendTypeToStatus(amendType string) string {
 
 // --- Output ---
 
-// writeAmendmentsOutput serializes and writes the amendments document.
+// validateGeneratedAmendments is the single schema gate every authoring route
+// shares, so the interactive form cannot emit a document the headless routes
+// would have refused.
+func validateGeneratedAmendments(output []byte) error {
+	if res := validators.ValidateAmendments(output); !res.Valid {
+		return fmt.Errorf("generated amendments failed schema validation: %s", res.Error())
+	}
+	return nil
+}
+
+// writeAmendmentsOutput serializes, validates and writes the amendments
+// document. stdout is gated too: piping an invalid document to a consumer is
+// the same defect as writing one to disk.
 func writeAmendmentsOutput(amendments map[string]interface{}, outputPath string, count int, amendType string) error {
 	output, err := json.MarshalIndent(amendments, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize amendments: %w", err)
+	}
+
+	if err := validateGeneratedAmendments(output); err != nil {
+		return err
 	}
 
 	if outputPath == "" {

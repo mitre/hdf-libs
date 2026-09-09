@@ -68,7 +68,7 @@ $ cat cve-poams.json
 }
 ```
 
-The interactive form is one of three authoring routes; all converge on this same document shape. For automation, `hdf amend create --from spec.json` builds the document headlessly from a lean spec array — the place to attach richer fields the form does not collect, such as POA&M `milestones` (the waiver later in this guide is authored that way), and it schema-validates the result before writing anything, so a spec with a wrong value is rejected with the exact schema error rather than producing an invalid file. And to generate starting stubs from the scan itself instead of typing requirement IDs, `hdf amend draft` enumerates a results file for you — see [Scaffolding at scale](#scaffolding-at-scale).
+The interactive form is one of three authoring routes; all converge on this same document shape. For automation, `hdf amend create --from spec.json` builds the document headlessly from a lean spec array — the place to attach richer fields the form does not collect, such as POA&M `milestones` (the waiver later in this guide is authored that way). All three `hdf amend create` routes schema-validate the result before writing anything, so a wrong value is rejected with the exact schema error rather than producing an invalid file. `hdf amend draft` is deliberately outside that gate: it emits incomplete stubs for you to fill in, which are not yet valid amendments. And to generate starting stubs from the scan itself instead of typing requirement IDs, `hdf amend draft` enumerates a results file for you — see [Scaffolding at scale](#scaffolding-at-scale).
 
 Inspect what you made:
 

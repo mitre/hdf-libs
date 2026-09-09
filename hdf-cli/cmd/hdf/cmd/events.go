@@ -280,11 +280,13 @@ func firstValidationError(result validators.ValidationResult) string {
 	if len(result.Errors) == 0 {
 		return "schema validation failed"
 	}
+	// Reaches a terminal through the errors its three callers return, and the
+	// field path can quote a document-controlled key.
 	first := result.Errors[0]
 	if first.Field != "" {
-		return fmt.Sprintf("%s: %s", first.Field, first.Description)
+		return sanitizeOutput(fmt.Sprintf("%s: %s", first.Field, first.Description))
 	}
-	return first.Description
+	return sanitizeOutput(first.Description)
 }
 
 // loadChangeEvents reads one event batch source (NDJSON, single object, or
