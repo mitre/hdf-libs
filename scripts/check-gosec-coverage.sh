@@ -28,12 +28,30 @@ set -uo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-if ! command -v golangci-lint >/dev/null 2>&1; then
-  echo "error: golangci-lint is not on PATH; cannot verify gosec coverage" >&2
+# Preflight every tool before using it. Without this, a missing `go` or `jq`
+# leaves the pipeline below empty and the run dies reporting "go.work lists no
+# modules" — a false diagnosis of the repository rather than of the machine.
+for tool in go jq golangci-lint; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "error: $tool is not on PATH; cannot verify gosec coverage" >&2
+    exit 1
+  fi
+done
+
+# Enumerated in two steps on purpose: a pipeline reports only the LAST command's
+# status, so `go work edit -json | jq` would swallow a failure of `go` itself.
+if ! workspace_json="$(go work edit -json 2>&1)"; then
+  echo "error: could not read go.work:" >&2
+  printf '%s\n' "$workspace_json" | sed 's/^/    /' >&2
   exit 1
 fi
 
-modules="$(go work edit -json | jq -r '.Use[].DiskPath')"
+if ! modules="$(printf '%s' "$workspace_json" | jq -r '.Use[].DiskPath' 2>&1)"; then
+  echo "error: could not parse the go.work module list:" >&2
+  printf '%s\n' "$modules" | sed 's/^/    /' >&2
+  exit 1
+fi
+
 if [ -z "$modules" ]; then
   echo "error: go.work lists no modules" >&2
   exit 1

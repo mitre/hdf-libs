@@ -15,6 +15,16 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly CHECKER="$script_dir/check-gosec-coverage.sh"
 readonly LIBRARY_CONFIG="$script_dir/../.golangci.yml"
 
+# Preflight, because this runs in `pnpm check` and CI: without it a missing tool
+# surfaces as "no gosec finding reported", which reads as a real coverage
+# regression rather than a machine that cannot run the check at all.
+for tool in go golangci-lint; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "error: $tool is not on PATH; cannot exercise gosec coverage" >&2
+    exit 1
+  fi
+done
+
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
