@@ -13,7 +13,6 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
-	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // cvssImpactWarnTolerance — 0.05 on the impact scale ≈ 0.5 on CVSS 0-10.
@@ -58,8 +57,8 @@ func runAmendCreateHeadless(specPath, outputPath string) error {
 		return fmt.Errorf("failed to serialize amendments: %w", err)
 	}
 
-	if res := validators.ValidateAmendments(output); !res.Valid {
-		return fmt.Errorf("generated amendments failed schema validation: %s", res.Error())
+	if err := validateGeneratedAmendments(output); err != nil {
+		return err
 	}
 
 	warnRiskAdjustmentInconsistencies(doc, os.Stderr)
