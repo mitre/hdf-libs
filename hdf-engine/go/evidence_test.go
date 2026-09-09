@@ -164,3 +164,16 @@ func TestAgentOverridesInPackage_CountsZonelessTimestamps(t *testing.T) {
 		t.Fatalf("agent overrides = %d, want 1 — a zone-less startTime must not drop the document", got)
 	}
 }
+
+// The count deliberately does not require a schema-valid document: an agent's
+// judgment is worth reporting even where validation would reject the file. This
+// pins that choice, which is otherwise only stated in a comment.
+func TestAgentOverridesInPackage_CountsSchemaInvalidDocuments(t *testing.T) {
+	// No baseline name and no results: rejected by the schema, decodable as JSON.
+	invalid := []byte(`{"baselines":[{"requirements":[{"statusOverrides":[{"appliedBy":{"type":"agent"}}]}]}]}`)
+	contents := []EvidenceContent{{URI: "bad.json", Type: "hdf-results"}}
+	fetch := memFetch(map[string][]byte{"bad.json": invalid})
+	if got := AgentOverridesInPackage(contents, fetch); got != 1 {
+		t.Fatalf("agent overrides = %d, want 1 — schema validity is deliberately not required", got)
+	}
+}

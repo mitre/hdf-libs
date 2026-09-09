@@ -89,6 +89,34 @@ describe('evidence-verify engine — unit', () => {
     expect(() => coveredBaselineNames('x')).toThrow();
   });
 
+  // Go decodes into a typed struct, so a JSON null document leaves zero values
+  // and a wrong-typed field is a decode error. The TS peer must not TypeError
+  // where Go returns a value or a message.
+  it('tolerates a null document, as Go does', () => {
+    expect(parseEvidencePackage('null')).toEqual({ planRef: '', contents: [] });
+    expect(plannedBaselineRefs('null')).toEqual([]);
+    expect(coveredBaselineNames('null')).toEqual([]);
+  });
+
+  it('tolerates a null content entry, as Go does', () => {
+    const { contents } = parseEvidencePackage(JSON.stringify({ contents: [null, { uri: 'a' }] }));
+    expect(contents).toEqual([
+      { uri: '', type: '', checksum: '' },
+      { uri: 'a', type: '', checksum: '' },
+    ]);
+    expect(plannedBaselineRefs(JSON.stringify({ assessments: [null, { baselineRef: 'A' }] }))).toEqual(['A']);
+    expect(coveredBaselineNames(JSON.stringify({ baselines: [null, { name: 'X' }] }))).toEqual(['X']);
+  });
+
+  it('reports a wrong-typed field as an error, as Go does', () => {
+    expect(() => parseEvidencePackage('[]')).toThrow(/parse evidence package/);
+    expect(() => parseEvidencePackage('"x"')).toThrow(/parse evidence package/);
+    expect(() => parseEvidencePackage(JSON.stringify({ contents: 'x' }))).toThrow(/parse evidence package/);
+    expect(() => parseEvidencePackage(JSON.stringify({ contents: ['x'] }))).toThrow(/parse evidence package/);
+    expect(() => plannedBaselineRefs(JSON.stringify({ assessments: 'x' }))).toThrow(/parse plan/);
+    expect(() => coveredBaselineNames(JSON.stringify({ baselines: 'x' }))).toThrow(/parse results/);
+  });
+
   it('reports complete when every planned baseline is covered', () => {
     const comp = completeness(['A'], ['A', 'extra']);
     expect(comp.complete).toBe(true);

@@ -43,21 +43,54 @@ export interface CompletenessResult {
  * uri cannot be read. */
 export type FetchFn = (uri: string) => Uint8Array;
 
-interface RawContent {
-  uri?: string;
-  type?: string;
-  checksum?: { value?: string };
+type RawObject = Record<string, unknown>;
+
+/** Go decodes into a typed struct, so a JSON `null` document leaves zero values
+ * while a wrong-typed one is a decode error. These three helpers give the TS
+ * peer the same split instead of asserting a shape onto untrusted input. */
+function parseDocument(text: string, what: string): RawObject {
+  const doc: unknown = JSON.parse(text);
+  if (doc === null) return {};
+  if (typeof doc !== 'object' || Array.isArray(doc)) {
+    throw new Error(`parse ${what}: cannot unmarshal ${describe(doc)} into an object`);
+  }
+  return doc as RawObject;
+}
+
+function objectArray(value: unknown, what: string, field: string): RawObject[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new Error(`parse ${what}: cannot unmarshal ${describe(value)} into ${field}`);
+  }
+  return value.map((entry: unknown) => {
+    if (entry === null) return {};
+    if (typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`parse ${what}: cannot unmarshal ${describe(entry)} into a ${field} entry`);
+    }
+    return entry as RawObject;
+  });
+}
+
+function str(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function describe(value: unknown): string {
+  return Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
 }
 
 /** Extracts the planRef and content entries from an evidence-package document. */
 export function parseEvidencePackage(pkg: string): { planRef: string; contents: EvidenceContent[] } {
-  const doc = JSON.parse(pkg) as { planRef?: string; contents?: RawContent[] };
-  const contents: EvidenceContent[] = (doc.contents ?? []).map((c) => ({
-    uri: c.uri ?? '',
-    type: c.type ?? '',
-    checksum: c.checksum?.value ?? '',
-  }));
-  return { planRef: doc.planRef ?? '', contents };
+  const doc = parseDocument(pkg, 'evidence package');
+  const contents: EvidenceContent[] = objectArray(doc.contents, 'evidence package', 'contents').map((c) => {
+    const checksum = c.checksum;
+    return {
+      uri: str(c.uri),
+      type: str(c.type),
+      checksum: typeof checksum === 'object' && checksum !== null ? str((checksum as RawObject).value) : '',
+    };
+  });
+  return { planRef: str(doc.planRef), contents };
 }
 
 /** Verifies each content entry's sha256 against fetch(uri), preserving entry
@@ -86,15 +119,19 @@ export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): Ch
 /** Extracts assessment baselineRefs from a plan document, deduped in first-seen
  * order. */
 export function plannedBaselineRefs(plan: string): string[] {
-  const doc = JSON.parse(plan) as { assessments?: Array<{ baselineRef?: string }> };
-  const refs = (doc.assessments ?? []).map((a) => a.baselineRef ?? '').filter((s) => s !== '');
+  const doc = parseDocument(plan, 'plan');
+  const refs = objectArray(doc.assessments, 'plan', 'assessments')
+    .map((a) => str(a.baselineRef))
+    .filter((s) => s !== '');
   return dedupe(refs);
 }
 
 /** Extracts baseline names from a results document, deduped in first-seen order. */
 export function coveredBaselineNames(results: string): string[] {
-  const doc = JSON.parse(results) as { baselines?: Array<{ name?: string }> };
-  const names = (doc.baselines ?? []).map((b) => b.name ?? '').filter((s) => s !== '');
+  const doc = parseDocument(results, 'results');
+  const names = objectArray(doc.baselines, 'results', 'baselines')
+    .map((b) => str(b.name))
+    .filter((s) => s !== '');
   return dedupe(names);
 }
 
