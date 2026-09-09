@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { parseJSON, stringifyJSON, isValidJSON } from '../src/json/index.js';
+import { parseJSON, stringifyJSON, isValidJSON, formatJsonNumber } from '../src/json/index.js';
 
 describe('parseJSON', () => {
   it('should parse valid JSON string', () => {
@@ -166,5 +166,61 @@ describe('isValidJSON', () => {
     expect(isValidJSON(123 as any)).toBe(false);
     expect(isValidJSON({} as any)).toBe(false);
     expect(isValidJSON([] as any)).toBe(false);
+  });
+});
+
+// The shared table in hdf-converters pins this against the Go peer through the
+// converter. These cover the function's own contract, including the shapes JSON
+// input can never carry and so the table cannot reach.
+describe('formatJsonNumber', () => {
+  it.each([
+    ['1e21', 1e21, '1000000000000000000000'],
+    ['-1e21', -1e21, '-1000000000000000000000'],
+    ['1e-7', 1e-7, '0.0000001'],
+    ['1.5e-7', 1.5e-7, '0.00000015'],
+    ['1e20', 1e20, '100000000000000000000'],
+    ['1e-6', 1e-6, '0.000001'],
+    ['zero', 0, '0'],
+    ['integer', 123, '123'],
+    ['fraction', 0.5, '0.5'],
+  ])('renders %s positionally', (_label, value, expected) => {
+    expect(formatJsonNumber(value)).toBe(expected);
+  });
+
+  it('keeps the sign of negative zero, which String() drops', () => {
+    expect(String(-0)).toBe('0');
+    expect(formatJsonNumber(-0)).toBe('-0');
+  });
+
+  it('renders the smallest denormal in full, which toFixed cannot', () => {
+    const out = formatJsonNumber(5e-324);
+    expect(out.startsWith('0.')).toBe(true);
+    expect(out.endsWith('5')).toBe(true);
+    expect(out).toHaveLength(326);
+    expect(Number(out)).toBe(5e-324);
+  });
+
+  it('round-trips every rendering back to the same double', () => {
+    for (const v of [1e21, -1e21, 1e-7, 1.5e-7, 5e-324, 1e308, 0.1, 1 / 3]) {
+      expect(Number(formatJsonNumber(v)), `round-trip for ${v}`).toBe(v);
+    }
+  });
+
+  // JSON has no literal for these, but JSON.parse manufactures Infinity from any
+  // overflow literal, so the first two are reachable input rather than defensive
+  // dead code. The Go peer renders such a literal from its original token text
+  // ("1e400"), which is a documented divergence, not something this can fix:
+  // JSON.parse has already discarded the token.
+  it.each([
+    ['Infinity', Infinity, 'Infinity'],
+    ['-Infinity', -Infinity, '-Infinity'],
+    ['NaN', NaN, 'NaN'],
+  ])('passes %s through rather than expanding it', (_label, value, expected) => {
+    expect(formatJsonNumber(value)).toBe(expected);
+  });
+
+  it('is reached by an overflow literal, not only by a direct caller', () => {
+    expect(JSON.parse('{"n":1e400}').n).toBe(Infinity);
+    expect(formatJsonNumber(JSON.parse('{"n":1e400}').n)).toBe('Infinity');
   });
 });

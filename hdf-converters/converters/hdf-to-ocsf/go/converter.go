@@ -485,8 +485,9 @@ func buildEvidences(req map[string]interface{}) []interface{} {
 }
 
 // floatMetric renders a float as a plain decimal string for an OCSF Metric
-// value (Metric.value is String). Go's shortest-decimal format and JS's String()
-// agree over the low-precision decimals used here, keeping Go/TS byte-identical.
+// value (Metric.value is String). The peer matches this through
+// formatJsonNumber, NOT through JS's String(), which renders negative zero as
+// "0" and switches to exponent notation outside [1e-6, 1e21).
 func floatMetric(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
 }

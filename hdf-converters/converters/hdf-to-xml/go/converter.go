@@ -11,15 +11,20 @@
 // identical after the shared XML golden normalization for every shape this
 // repo's fixtures and parity tests cover.
 //
-// Equality after that normalization is NOT guaranteed in general, and the reason
-// is structural rather than a fixed list of cases: this package decodes JSON into an ordered
-// map and formats scalars with strconv, while the peer inherits JSON.parse (which
-// loses duplicate keys and hoists array-index keys before the serializer runs)
-// and V8's string forms for numbers; and encoding/xml here sanitizes every
-// XML-illegal rune to U+FFFD, which the peer's builder does not. Anything landing
-// in those seams can differ. Known instances are tracked as cards under the
-// exporter-conformance epic; assume a shape outside the fixture corpus needs
-// checking against the peer rather than that it is covered.
+// Equality is NOT guaranteed in general. The largest seam is that JavaScript's
+// JSON.parse discards information before the peer's builder runs, so what it
+// drops cannot be reconstructed on that side: this package keeps every value of
+// a duplicate object key where the peer keeps only the last, holds an
+// integer-like key at its source position where the peer hoists it, and renders
+// a number too large for a double from its original token text where the peer
+// has only Infinity. shared/xml-divergence-cases.json is the census of THAT
+// seam, read and pinned by both languages.
+//
+// That table is NOT the whole list, and at least one divergence has a different
+// cause: the peer's builder caps nesting depth where this one does not, so a
+// deep enough document converts here and throws there (pinned by the
+// deep-nesting tests in both languages). A shape outside the fixture corpus
+// needs checking against the peer rather than assuming it is covered.
 package hdftoxml
 
 import (
@@ -340,9 +345,12 @@ func allScalar(items []interface{}) bool {
 }
 
 // scalarText renders a JSON scalar as text. Numbers go through ParseFloat +
-// FormatFloat('f') so the rendering is byte-identical to JavaScript's default
-// Number-to-string for every value HDF carries (impacts, scores, line numbers,
-// durations) — no exponent, no forced ".0".
+// FormatFloat('f'): positional always, shortest round-trip digits, no forced
+// ".0". This is the canonical form, and the peer matches it through
+// formatJsonNumber -- NOT through JavaScript's default Number-to-string, which
+// switches to exponent outside [1e-6, 1e21) and drops the sign of negative zero.
+// A literal too large for a double falls through to its original text here,
+// which the peer cannot reproduce; see the package comment.
 func scalarText(v interface{}) string {
 	switch s := v.(type) {
 	case string:
