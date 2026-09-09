@@ -1057,10 +1057,13 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | `hdf` | `ckl` | Export to DISA STIG Viewer checklist (`.ckl` XML) |
 | `hdf` | `cklb` | Export to DISA STIG Viewer 3.x checklist (`.cklb` JSON) |
 | `hdf` | `oscal-sar` | Export to OSCAL Assessment Results |
+| `hdf` | `hdf@2` | Export to the legacy Heimdall HDF schema (InSpec exec-json shape; loads in Heimdall2) |
 | `hdf-amendments` | `csaf-vex` | Export HDF Amendments as CSAF VEX advisory (partial-fidelity round-trip) |
 | `hdf-amendments` | `openvex` | Export HDF Amendments as OpenVEX statements (partial-fidelity round-trip) |
 | `hdf-amendments` | `cyclonedx-vex` | Export HDF Amendments as CycloneDX BOM with VEX analysis (partial-fidelity round-trip) |
 | `hdf-amendments` | `oscal-poam` | Export to OSCAL Plan of Action and Milestones |
+
+Both `--from` and `--to` accept `format@version` when a format has more than one schema version: `--to hdf@2` writes the legacy Heimdall schema, `--to hdf@3` (the default) writes the modern one, and `--from hdf@2` reads a legacy document back. The same syntax selects an input schema version elsewhere, as in `--from sarif@2.0`. Note that `hdf@1` is not a distinct schema — for raw InSpec output use `--from inspec`.
 
 ## Credential Handling
 

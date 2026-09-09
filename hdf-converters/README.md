@@ -33,6 +33,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Ion Channel | `convertIonchannelToHdf` | JSON |
 | JFrog Xray | `convertJfrogXrayToHdf` | JSON |
 | JUnit | `convertJunitToHdf` | XML |
+| KICS | `convertKicsToHdf` | JSON |
 | MSFT Defender for Cloud | `convertMsftDefenderCloudToHdf` | JSON |
 | MSFT Defender for DevOps | `convertMsftDefenderDevopsToHdf` | JSON |
 | MSFT Defender for Endpoint | `convertMsftDefenderEndpointToHdf` | JSON |

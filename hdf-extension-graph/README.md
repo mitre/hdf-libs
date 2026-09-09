@@ -148,7 +148,7 @@ Builds a bidirectional extension graph from an HDF Results file. Links baselines
 
 ```typescript
 interface Modification {
-  field: string;        // 'impact', 'title', or 'severity'
+  field: string;        // 'impact', 'title', 'severity', 'effectiveImpact', or 'disposition'
   originalValue: unknown;
   newValue: unknown;
   inBaseline: string;   // Name of the baseline making the change
