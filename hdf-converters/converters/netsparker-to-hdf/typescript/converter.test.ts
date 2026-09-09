@@ -769,4 +769,25 @@ describe('structured CVSS', () => {
     expect(buildNetsparkerCvss({})).toHaveLength(0);
     expect(buildNetsparkerCvss(undefined)).toHaveLength(0);
   });
+
+  // The element name pins the version: <cvss> is 3.0 and <cvss31> is 3.1. A
+  // block with no vector has no other signal, so discarding which element it
+  // came from is what made a vectorless 3.0 block report 3.1.
+  it('takes a vectorless block version from the element it came from', () => {
+    const thirty = buildNetsparkerCvss({ cvss: { score: [{ type: 'Base', value: '6.8' }] } });
+    expect(thirty).toHaveLength(1);
+    expect(thirty[0]!.version).toBe('3.0');
+
+    const thirtyOne = buildNetsparkerCvss({ cvss31: { score: [{ type: 'Base', value: '4.0' }] } });
+    expect(thirtyOne).toHaveLength(1);
+    expect(thirtyOne[0]!.version).toBe('3.1');
+  });
+
+  it('lets a vector outrank the element it came from', () => {
+    const out = buildNetsparkerCvss({
+      cvss: { vector: 'CVSS:3.1/AV:N', score: [{ type: 'Base', value: '6.8' }] },
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0]!.version).toBe('3.1');
+  });
 });
