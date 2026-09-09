@@ -41,7 +41,8 @@ env:
   # syft for the per-commit dependency SBOM (scan-deps). The release job's
   # download-syft action is SHA-pinned; this pins the syft release it fetches.
   SYFT_VERSION: 'v1.51.1'
-  SEMGREP_VERSION: '1.176.1'
+  # semgrep's version lives in .github/requirements/requirements.in, not here:
+  # the install is hash-pinned and one version pin is enough.
   # semgrep-rules commit the scan uses. Bumping it is how the ruleset
   # updates; re-measure .github/hdf-thresholds/semgrep.yaml in the same PR.
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
@@ -291,7 +292,10 @@ jobs:
       # reading their input files, which is the product.
       - name: semgrep (JSON; findings gate via HDF)
         run: |
-          pip install --quiet "semgrep==$SEMGREP_VERSION"
+          # --require-hashes: a version tag is deterministic only if the registry
+          # is honest. The pinned file also fixes every transitive dependency, so
+          # nothing in the scanner's tree can move underneath a run.
+          pip install --quiet --require-hashes -r .github/requirements/semgrep.txt
           mkdir -p scan-artifacts
           rc=0
           semgrep scan --metrics off --error \
