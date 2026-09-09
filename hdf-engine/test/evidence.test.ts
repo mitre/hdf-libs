@@ -133,6 +133,29 @@ describe('evidence-verify engine — unit', () => {
     expect(coveredBaselinesInPackage([], mem)).toEqual([]);
   });
 
+  // Go's typed decode rejects a zone-less startTime outright, so this input is
+  // the one that pulled the two languages apart. Both must count it.
+  it('counts a document whose result timestamps carry no zone', () => {
+    const zoneless = JSON.stringify({
+      baselines: [
+        {
+          name: 'A',
+          requirements: [
+            {
+              statusOverrides: [{ appliedBy: { type: 'agent' } }],
+              results: [{ status: 'passed', startTime: '2024-01-01T00:00:00' }],
+            },
+          ],
+        },
+      ],
+    });
+    const mem: FetchFn = (uri) => {
+      if (uri !== 'z.json') throw new Error('no such file: ' + uri);
+      return new TextEncoder().encode(zoneless);
+    };
+    expect(agentOverridesInPackage([{ uri: 'z.json', type: 'hdf-results', checksum: '' }], mem)).toBe(1);
+  });
+
   it('classifies a non-Error throw as error with the stringified value', () => {
     const throwing: FetchFn = () => {
       throw 'plain string failure';

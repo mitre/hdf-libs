@@ -151,3 +151,16 @@ func TestPackageAggregators_SkipNonResultsUnreadableAndUnparseable(t *testing.T)
 		t.Fatalf("empty package must yield no covered names, got %v", got)
 	}
 }
+
+// Real InSpec-derived HDF carries zone-less result timestamps, which a typed
+// decode rejects outright — so a package referencing one must still be counted,
+// not silently skipped as unparseable.
+func TestAgentOverridesInPackage_CountsZonelessTimestamps(t *testing.T) {
+	zoneless := []byte(`{"baselines":[{"name":"A","requirements":[{"statusOverrides":[{"appliedBy":{"type":"agent"}}],` +
+		`"results":[{"status":"passed","startTime":"2024-01-01T00:00:00"}]}]}]}`)
+	contents := []EvidenceContent{{URI: "z.json", Type: "hdf-results"}}
+	fetch := memFetch(map[string][]byte{"z.json": zoneless})
+	if got := AgentOverridesInPackage(contents, fetch); got != 1 {
+		t.Fatalf("agent overrides = %d, want 1 — a zone-less startTime must not drop the document", got)
+	}
+}

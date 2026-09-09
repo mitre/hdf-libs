@@ -164,12 +164,17 @@ func CoveredBaselinesInPackage(contents []EvidenceContent, fetch FetchFunc) []st
 
 // AgentOverridesInPackage sums the agent-attributed override count across every
 // hdf-results document the package references — the detective surface at the
-// evidence-package level. Unreadable or unparseable entries are skipped.
+// evidence-package level. Unreadable or unparseable entries are skipped, but
+// schema validity is deliberately not required: an agent's judgment is worth
+// reporting even in a document that fails validation elsewhere.
 func AgentOverridesInPackage(contents []EvidenceContent, fetch FetchFunc) int {
 	total := 0
 	forEachResultsDocument(contents, fetch, func(data []byte) {
 		var r hdf.HDFResults
-		if json.Unmarshal(data, &r) == nil {
+		// Normalize first: real HDF carries zone-less result timestamps, which
+		// the generated time.Time fields reject, and a typed decode would drop
+		// the whole document rather than miscount it.
+		if json.Unmarshal(hdfutil.NormalizeHDFTimestamps(data), &r) == nil {
 			total += AgentOverrideCount(r)
 		}
 	})
