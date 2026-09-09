@@ -5,9 +5,9 @@ Parse and load Heimdall Data Format (HDF) documents with validation. Provides a 
 ## Scope and Responsibilities
 
 **hdf-parsers** provides validated parsing of HDF documents:
-- Parse HDF Results and Baseline documents from JSON
+- Parse HDF Results, Baseline, System, Plan, Evidence Package, and Comparison documents from JSON
 - Automatic schema validation via hdf-validators
-- Auto-detection of document type (Results vs Baseline)
+- Auto-detection of document type across those six document types
 - Type-safe output using hdf-schema types
 - Detailed error reporting with validation messages
 - Support for both TypeScript and Go implementations
@@ -37,7 +37,7 @@ npm install @mitre/hdf-parsers
 ### TypeScript
 
 ```typescript
-import { parseResults, parseBaseline, parse } from '@mitre/hdf-parsers';
+import { parseResults, parseBaseline, parseSystem, parsePlan, parseEvidencePackage, parseComparison, parse } from '@mitre/hdf-parsers';
 
 // Parse HDF Results
 const json = '{"baselines":[...],"targets":[],"statistics":{}}';
@@ -64,11 +64,11 @@ if (baselineResult.success) {
 
 ```typescript
 // Auto-detect document type
-const unknownJson = '...'; // Could be Results or Baseline
+const unknownJson = '...'; // Any of the six detected document types
 const autoResult = parse(unknownJson);
 
 if (autoResult.success) {
-  console.log('Document type:', autoResult.type); // "results" or "baseline"
+  console.log('Document type:', autoResult.type); // "results" | "baseline" | "system" | "plan" | "evidencePackage" | "comparison"
   console.log('Parsed data:', autoResult.data);
 }
 ```
@@ -129,7 +129,7 @@ if result.Success {
 result := parsers.Parse(data)
 
 if result.Success {
-	fmt.Println("Document type:", result.Type) // "results" or "baseline"
+	fmt.Println("Document type:", result.Type) // "results", "baseline", "system", "plan", "evidencePackage", or "comparison"
 }
 ```
 
@@ -153,9 +153,19 @@ Parse HDF Baseline document from JSON string or bytes.
   - `input` - JSON string or Uint8Array to parse
 - **Returns:** `ParseResult<HDFBaseline>` with parsed data or error
 
-#### `parse(input: string | Uint8Array): ParseResult<HDFResults | HDFBaseline>`
+#### `parseSystem(input: string | Uint8Array): ParseResult<HDFSystem>`
 
-Parse HDF document with auto-detection of type (Results vs Baseline).
+#### `parsePlan(input: string | Uint8Array): ParseResult<HDFPlan>`
+
+#### `parseEvidencePackage(input: string | Uint8Array): ParseResult<HDFEvidencePackage>`
+
+#### `parseComparison(input: string | Uint8Array): ParseResult<HDFComparison>`
+
+Typed parsers for the other HDF document types, with the same input handling and `ParseResult` shape as `parseResults`.
+
+#### `parse(input: string | Uint8Array): ParseResult<HDFResults | HDFBaseline | HDFSystem | HDFPlan | HDFEvidencePackage | HDFComparison>`
+
+Parse HDF document with auto-detection of type. Detection is by root-level discriminator, checked in this order: `baselines` (results), `requirementDiffs` (comparison), `assessments` (plan), `contents` (evidence package), `name` with `requirements` (baseline), then `components` (system).
 
 - **Parameters:**
   - `input` - JSON string or Uint8Array to parse
@@ -168,9 +178,17 @@ interface ParseResult<T> {
   success: boolean;           // True if parsing succeeded
   data?: T;                   // Parsed data (undefined if failed)
   error?: string;             // Error message (undefined if succeeded)
-  type?: 'results' | 'baseline';  // Document type (only for parse())
+  type?: 'results' | 'baseline' | 'system' | 'plan' | 'evidencePackage' | 'comparison';  // Document type (only for parse())
 }
 ```
+
+#### `flattenOverlays(results: HDFResults): FlattenResult`
+
+Flatten overlay and wrapper baselines in a parsed Results document into their root baselines. Handles deep nesting (overlay chains sharing control IDs via `parentBaseline`), wide nesting (wrapper profiles aggregating independent bases), and hybrids of both. Returns the flattened `results` plus `metadata` describing each merge (`FlattenMetadata`, `BaselineMerge`).
+
+#### `normalizeTimestamps(input: string): string`
+
+Rewrite zone-less ISO timestamps in raw JSON text to UTC (`Z`) so both language implementations parse them identically. Every parser above applies it before parsing.
 
 ### Go
 
@@ -190,13 +208,31 @@ Parse HDF Baseline document from JSON bytes.
   - `input` - JSON bytes to parse
 - **Returns:** `BaselineParseResult` with parsed data or error
 
+#### `ParseSystem(input []byte) SystemParseResult`
+
+#### `ParsePlan(input []byte) PlanParseResult`
+
+#### `ParseEvidencePackage(input []byte) EvidencePackageParseResult`
+
+#### `ParseComparison(input []byte) ComparisonParseResult`
+
+Typed parsers for the other HDF document types; each result type carries `Success`, a typed `Data` pointer, and `Error`, like `ResultsParseResult`.
+
 #### `Parse(input []byte) ParseResult`
 
-Parse HDF document with auto-detection of type.
+Parse HDF document with auto-detection of type, using the same root-level discriminators as the TypeScript `parse()`.
 
 - **Parameters:**
   - `input` - JSON bytes to parse
 - **Returns:** `ParseResult` with parsed data, type indicator, or error
+
+#### `FlattenOverlays(results hdf.HDFResults) FlattenResult`
+
+Go twin of `flattenOverlays`: merges overlay and wrapper baselines into their roots and returns the flattened `Results` with `Metadata` (`FlattenMetadata`, `BaselineMerge`, `MergePattern`).
+
+#### `NormalizeTimestamps(input []byte) []byte`
+
+Go twin of `normalizeTimestamps`; every parser above applies it before decoding.
 
 #### Parse Result Types
 
@@ -217,7 +253,7 @@ type ParseResult struct {
     Success bool        `json:"success"`
     Data    interface{} `json:"data,omitempty"`
     Error   string      `json:"error,omitempty"`
-    Type    string      `json:"type,omitempty"` // "results" or "baseline"
+    Type    string      `json:"type,omitempty"` // "results", "baseline", "system", "plan", "evidencePackage", or "comparison"
 }
 ```
 

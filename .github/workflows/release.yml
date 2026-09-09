@@ -339,7 +339,7 @@ jobs:
           ```bash
           # TypeScript/Node.js — install the packages you need
           npm install @mitre/hdf-converters@next   # converters + schema + parsers + utilities + mappings
-          # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @v3, or an exact version)
+          # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @rc, or an exact version)
           npm install @mitre/hdf-validators    # schema validation
           npm install @mitre/hdf-diff          # structural diff engine
           npm install @mitre/hdf-engine        # detection, query, compliance rollups

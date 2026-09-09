@@ -29,6 +29,7 @@ HDF (Heimdall Data Format) is a standardized JSON format for security assessment
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
     - [fetch sonarqube](#fetch-sonarqube) -- SonarQube issues
     - [fetch splunk](#fetch-splunk) -- Splunk HDF events
+  - [mcp](#mcp) -- Run the HDF MCP server (stdio transport)
   - [version](#version) -- Print version information
 - [Global Flags](#global-flags)
 - [Supported Conversions](#supported-conversions)
@@ -51,7 +52,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.5.0
+VERSION=3.6.0
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -62,7 +63,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${V
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.5.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.6.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -119,11 +120,14 @@ Example output:
 ```console
 $ hdf validate results.json
 ✓ results.json is a valid HDF results file
+Agent-attributed overrides: 0
 
 $ echo '{"not":"hdf"}' | hdf validate -
 ✗ <stdin> — input not recognized as any HDF document type
   Use --type to specify: results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event
 ```
+
+For a results document the success line is followed by `Agent-attributed overrides: N` -- the number of status overrides whose `appliedBy.type` is `agent`, so an auditor can see at a glance how much AI-attributed judgment a document carries. `--quiet` suppresses it, and `--json` reports it as the `agentOverrides` field.
 
 #### validate threshold
 
@@ -347,6 +351,8 @@ $ hdf validate reconciled.hdf.json
 ✓ reconciled.hdf.json is a valid HDF results file
 ```
 
+Because `reconciled.hdf.json` is a results document, `hdf validate` also prints the `Agent-attributed overrides: N` readout described under [validate](#validate); the count depends on the overrides carried by the applied events.
+
 ### convert
 
 Convert security assessment data between HDF and other formats. Supports auto-detection, explicit `--from`/`--to` flags, stdin, and stdout.
@@ -398,12 +404,17 @@ Example output:
 ```console
 $ hdf convert compliance.nessus -o results.json
 Detected: Nessus 2 (confidence: 100%)
+compliance.nessus: 5 requirements, matching the input's Nessus report items
+
+$ hdf convert --from nessus compliance.nessus -o results.json
+compliance.nessus: 5 requirements, matching the input's Nessus report items
 
 $ hdf validate results.json
 ✓ results.json is a valid HDF results file
+Agent-attributed overrides: 0
 ```
 
-On auto-detection the source format and a confidence score are reported; with an explicit `--from` the conversion runs silently and writes to `-o` (or stdout).
+On auto-detection the source format and a confidence score are reported on the `Detected:` line; an explicit `--from` skips only that line. Both forms write to `-o` (or stdout) and print the per-file `<file>: N requirements, ...` summary on stderr whenever the converter declares how many requirements its input must yield; if the produced count differs, the conversion is refused and no output is written.
 
 See [Supported Conversions](#supported-conversions) for the full list.
 
@@ -416,17 +427,19 @@ USAGE
   hdf system <subcommand> <file> [flags]
 
 SUBCOMMANDS
-  create            Bootstrap a system document from a results file or SBOM
+  create            Bootstrap a system document from a results file or SBOM (positional input; --from only verifies a detected BOM format)
   info              Summarize a system document
   add-component     Add a component from an SBOM
   update-component  Update a component's SBOM reference
   set               Set/unset top-level fields
 
 EXAMPLES
-  hdf system create --from results.json --name "Portal Prod" -o portal.hdf-system.json
+  hdf system create results.json --name "Portal Prod" -o portal.hdf-system.json
   hdf system info portal.hdf-system.json
   hdf system info portal.hdf-system.json --json
 ```
+
+`hdf system create` takes its input as a positional file path or URL and auto-detects the format. Its `--from` flag (`cyclonedx | spdx | cyclonedx-mlbom | spdx-ai`) does not select a parser the way `hdf convert --from` does: it only asserts that the detected BOM format matches, and the command fails if it does not.
 
 Example output:
 
@@ -907,6 +920,39 @@ EXAMPLES
   hdf fetch splunk --url https://splunk.example.com --index hdf --guid abc123 | jq .
 ```
 
+### mcp
+
+Run the HDF Model Context Protocol (MCP) server over stdio, so an MCP client (an AI agent or any MCP-aware host) can read, analyze, and author HDF documents through a small typed tool surface instead of shelling out to the CLI. The client launches `hdf mcp` as a subprocess; stdout carries only JSON-RPC frames and must not be shared with any other output, and logs go to stderr.
+
+```
+USAGE
+  hdf mcp [flags]
+
+FLAGS
+      --tools string   tools to advertise: comma-separated names (hdf_open,hdf_query) or a profile (read|all); default all
+
+EXAMPLES
+  hdf mcp                               # advertise every tool
+  hdf mcp --tools read                  # read/analysis tools only
+  hdf mcp --tools hdf_open,hdf_query    # an explicit tool list
+  HDF_MCP_ROOT=/data/hdf hdf mcp        # confine file access to one directory
+```
+
+`--tools` accepts a comma-separated mix of exact tool names and profile words. The `read` profile is `hdf_open`, `hdf_inspect`, `hdf_query`, `hdf_compliance`, `hdf_aggregate`, `hdf_diff`, and `hdf_validate`; `all` (the default) adds the write tools `hdf_convert`, `hdf_author`, and `hdf_apply_amendment`. Advertising fewer tools shrinks the schema an agent re-sends every turn. An unknown name is a startup error that lists the valid tools and profiles.
+
+Environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HDF_MCP_ROOT` | Path-confinement root; every tool path and write output is resolved under it and anything outside is refused | process working directory |
+| `HDF_MCP_ENABLE_WRITES` | Write gate; `1`, `true`, `yes`, or `on` permits writes to disk, anything else leaves the write tools in preview mode | disabled |
+| `HDF_MCP_MAX_SIZE` | Per-document input ceiling in bytes, applied before a file is read | 50 MB |
+| `HDF_MCP_CACHE_BYTES` | Budget for the parsed-document cache | 256 MB |
+| `HDF_MCP_LOG_LEVEL` | Stderr log level: `error`, `warn`, `info`, or `debug` | `info` |
+| `HDF_MCP_TOOLS` | Same syntax as `--tools`; the flag takes precedence when both are set | all tools |
+
+The tool contracts, the source and handle model, response budgets, and a worked example are documented in the [HDF MCP Server guide](https://github.com/mitre/hdf-libs/blob/main/site/docs/guides/hdf-mcp.md).
+
 ### version
 
 Print version, commit hash, build date, and Go version.
@@ -1068,9 +1114,10 @@ See the [`/build-converter` skill documentation](https://github.com/mitre/hdf-li
 
 1. Implement Go converter in `hdf-converters/converters/<name>/go/converter.go`
 2. Implement TypeScript converter in `hdf-converters/converters/<name>/typescript/converter.ts`
-3. Register CLI integration in `hdf-cli/cmd/hdf/cmd/converter_<name>.go`
-4. Add tests for all three layers
-5. Source real fixtures from tool output -- never fabricate test data
+3. Register the converter in `hdf-converters/registry/convert/converter_<name>.go` with an `init()` that calls the helper for its output type: `registerHDFConverter` (results), `registerHDFBaselineConverter` (baseline), `registerHDFPlanConverter` (plan), or `registerHDFAmendmentsConverter` (amendments)
+4. Add the converter's fingerprint blank-import to `hdf-converters/registry/all/all.go` so auto-detection sees it
+5. Add tests for all layers, including the CLI integration test at `hdf-cli/cmd/hdf/cmd/converter_<name>_test.go` (the CLI holds no per-converter registration code; `converter_registry.go` only re-exports the shared registry)
+6. Source real fixtures from tool output -- never fabricate test data
 
 ### Test Fixtures
 

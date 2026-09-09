@@ -37,7 +37,7 @@ All libraries are available for both TypeScript (npm) and Go. See [Installation]
 | [`hdf-generators`](./hdf-generators/README.md) | Generate InSpec profiles from HDF baselines or XCCDF benchmarks |
 | [`hdf-diff`](./hdf-diff/README.md) | Structural diff engine for HDF results, baselines, and systems |
 | [`hdf-engine`](./hdf-engine/README.md) | Schema-typed read-side engines — document detection, query/filtering, compliance rollups |
-| [`hdf-extension-graph`](./hdf-extension-graph/README.md) | InSpec overlay/extension chain resolution (TypeScript only) |
+| [`hdf-extension-graph`](./hdf-extension-graph/README.md) | InSpec overlay/extension chain resolution |
 | [`hdf-cli`](./hdf-cli/README.md) | Command-line tool wrapping all of the above — convert, validate, query, diff, amend |
 | [`hdf-fixtures`](./hdf-fixtures/README.md) | Shared real-world HDF test data (internal; not published — used by cross-package tests in this monorepo) |
 
@@ -97,7 +97,7 @@ Install only the packages you need. Each package is published independently to n
 | **Generators** — InSpec profile generation from baselines | `npm install @mitre/hdf-generators` | `go get github.com/mitre/hdf-libs/hdf-generators/go/v3` |
 | **Diff** — structural diff engine for assessments | `npm install @mitre/hdf-diff` | `go get github.com/mitre/hdf-libs/hdf-diff/go/v3` |
 | **Engine** — schema-typed read-side engines (detect, query, compliance) | `npm install @mitre/hdf-engine` | `go get github.com/mitre/hdf-libs/hdf-engine/go/v3` |
-| **Extension Graph** — InSpec overlay/extension chain resolution | `npm install @mitre/hdf-extension-graph` | — |
+| **Extension Graph** — InSpec overlay/extension chain resolution | `npm install @mitre/hdf-extension-graph` | `go get github.com/mitre/hdf-libs/hdf-extension-graph/go/v3` |
 
 The npm packages declare their dependencies, so `npm install @mitre/hdf-converters@next` automatically pulls in schema, parsers, utilities, and mappings. Note the explicit `@next`: the `@mitre/hdf-converters` npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), whose v2 line owns the `latest` dist-tag — install this repo's v3 line via `@next` or an exact version.
 

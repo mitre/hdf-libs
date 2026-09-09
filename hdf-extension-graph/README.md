@@ -24,6 +24,10 @@ pnpm add @mitre/hdf-extension-graph
 
 Requires `@mitre/hdf-schema` as a peer dependency.
 
+```bash
+go get github.com/mitre/hdf-libs/hdf-extension-graph/go/v3
+```
+
 ## Usage
 
 ### Build the graph
@@ -151,9 +155,49 @@ interface Modification {
 }
 ```
 
+## Go
+
+The Go module (package `hdfextension`) mirrors the TypeScript package: the same graph, the same derived properties, and `Modification` output that serializes identically. The `test/cross-language-equivalence.test.ts` suite builds the `go/cmd/equivalence-dump` command and compares its canonical graph dump with the TypeScript dumper's (`test/equivalence-dump.ts`) on the same fixtures, so the two implementations cannot drift.
+
+```go
+import hdfextension "github.com/mitre/hdf-libs/hdf-extension-graph/go/v3"
+
+graph := hdfextension.BuildExtensionGraph(results) // results is a *hdf.HDFResults
+
+stig := graph.FindBaseline("rhel9-stig-baseline")
+for _, overlay := range stig.ExtendedBy {
+    fmt.Printf("%s extends %s\n", overlay.Data.Name, stig.Data.Name)
+}
+
+for _, req := range graph.FindRequirements("SV-238196") {
+    if !req.IsRedundant() {
+        for _, mod := range req.Modifications() {
+            fmt.Printf("%s: %v → %v\n", mod.Field, mod.OriginalValue, mod.NewValue)
+        }
+    }
+}
+```
+
+### `BuildExtensionGraph(results *hdf.HDFResults) *ExtensionGraph`
+
+Builds the bidirectional graph from an HDF Results document, linking baselines via `parentBaseline` and requirements by matching `id` across linked baselines.
+
+| TypeScript | Go |
+|---|---|
+| `graph.baselines` | `graph.Baselines` (`[]*ContextualizedBaseline`) |
+| `graph.requirements` | `graph.Requirements` (`[]*ContextualizedRequirement`) |
+| `graph.rootBaselines` | `graph.RootBaselines()` |
+| `graph.findBaseline(name)` | `graph.FindBaseline(name)` (nil when absent) |
+| `graph.findRequirements(id)` | `graph.FindRequirements(id)` |
+| `baseline.data` / `sourcedFrom` / `extendsFrom` / `extendedBy` / `requirements` | `Data` / `SourcedFrom` / `ExtendsFrom` / `ExtendedBy` / `Requirements` fields on `ContextualizedBaseline` |
+| `req.data` / `sourcedFrom` / `extendsFrom` / `extendedBy` | `Data` / `SourcedFrom` / `ExtendsFrom` / `ExtendedBy` fields on `ContextualizedRequirement` |
+| `req.root` / `isRedundant` / `fullCode` / `extensionChain` / `modifications` | `Root()` / `IsRedundant()` / `FullCode()` / `ExtensionChain()` / `Modifications()` methods |
+| `Modification` | `Modification{Field, OriginalValue, NewValue, InBaseline}` |
+
+`hdfextension.TrackedFields` lists the requirement fields `Modifications()` compares, in emission order.
+
 ## Notes
 
-- **TypeScript only** — there is no Go implementation of hdf-extension-graph.
 - The HDF schemas consumed by this package are documented at <https://mitre.github.io/hdf-libs/schemas/>.
 
 ## License
