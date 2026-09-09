@@ -47,29 +47,6 @@ func TestResolveSource_ReadFailureRedactsAbsolutePath(t *testing.T) {
 	}
 }
 
-// A symlink inside the root to a regular file is still a regular file once
-// followed, so the non-regular-file guard must not reject it.
-func TestReadFile_SymlinkToRegularFileStillReads(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("creating a symlink needs a privilege on Windows; the guard is OS-agnostic and covered on unix")
-	}
-	root := t.TempDir()
-	t.Setenv("HDF_MCP_ROOT", root)
-	if err := os.WriteFile(filepath.Join(root, "real.json"), fixtures.Results.Minimal, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink("real.json", filepath.Join(root, "link.json")); err != nil {
-		t.Fatal(err)
-	}
-	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: "link.json"}})
-	if errRes != nil && errRes.IsError {
-		t.Fatalf("a symlink to a regular file inside the root must read: %s", payloadText(t, errRes))
-	}
-	if out.DocType != "results" {
-		t.Errorf("docType = %q, want results", out.DocType)
-	}
-}
-
 // The read itself is bounded, independently of the Stat-based guard, so a file
 // that delivers more bytes than the ceiling is refused rather than buffered.
 func TestReadLimited_RejectsBytesBeyondTheCeiling(t *testing.T) {

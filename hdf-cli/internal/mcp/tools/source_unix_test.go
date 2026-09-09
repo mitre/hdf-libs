@@ -3,6 +3,7 @@
 package tools
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 )
 
 // A FIFO under HDF_MCP_ROOT stats as a zero-byte file, so the size guard alone
@@ -34,5 +36,25 @@ func TestReadFile_RejectsFIFO(t *testing.T) {
 	}
 	if strings.Contains(payloadText(t, errRes), root) {
 		t.Errorf("client payload leaked the absolute root: %s", payloadText(t, errRes))
+	}
+}
+
+// A symlink inside the root to a regular file is still a regular file once
+// followed, so the non-regular-file guard must not reject it.
+func TestReadFile_SymlinkToRegularFileStillReads(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	if err := os.WriteFile(filepath.Join(root, "real.json"), fixtures.Results.Minimal, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("real.json", filepath.Join(root, "link.json")); err != nil {
+		t.Fatal(err)
+	}
+	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: "link.json"}})
+	if errRes != nil && errRes.IsError {
+		t.Fatalf("a symlink to a regular file inside the root must read: %s", payloadText(t, errRes))
+	}
+	if out.DocType != "results" {
+		t.Errorf("docType = %q, want results", out.DocType)
 	}
 }
