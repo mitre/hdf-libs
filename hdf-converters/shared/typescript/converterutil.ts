@@ -6,9 +6,18 @@
  * - Re-exports of shared constants and utilities
  */
 
-import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, isUnratedSeverity } from '@mitre/hdf-utilities';
+import {
+  sha256,
+  trimUtcFraction,
+  parseJSON,
+  normalizeHdfTimestamps,
+  parseTimestamp,
+  isUnratedSeverity,
+  validateInputSize as guardInputSize,
+  DEFAULT_MAX_INPUT_SIZE,
+} from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
-import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, VerificationMethodEnum } from '@mitre/hdf-schema';
+import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, Severity, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import { validateResults } from '@mitre/hdf-validators';
 
@@ -178,8 +187,8 @@ export function mapCWEToNIST(
   return controls.size > 0 ? [...controls].sort() : fallback;
 }
 
-/** Matches CWE identifiers like "CWE-79", "CWE 89", "cwe22". */
-const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
+/** Matches CWE identifiers like "CWE-79", "CWE 89", "cwe22"; group 1 is the number. */
+export const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
 
 /**
  * Extract all numeric CWE IDs from text.
@@ -215,36 +224,44 @@ export function firstNonEmpty(...candidates: Array<string | undefined | null>): 
   return '';
 }
 
-/** Default maximum input size for converters (50MB) */
-export const DEFAULT_MAX_INPUT_SIZE = 50 * 1024 * 1024;
+/** The one input-size limit (50 MB), defined by @mitre/hdf-utilities. */
+export { DEFAULT_MAX_INPUT_SIZE };
 
 /**
- * Validates that input string doesn't exceed maximum allowed size.
- *
- * Note: string.length gives char count, not bytes. For multi-byte chars this
- * underestimates. This is acceptable as a coarse safety check — exact byte
- * counting would require TextEncoder.
- *
- * @param input - Raw input string to validate
- * @param converterName - Name of the converter (used in error message)
- * @param maxSize - Maximum allowed character count (defaults to DEFAULT_MAX_INPUT_SIZE)
- * @throws Error if input exceeds maxSize
+ * The converter-facing face of the @mitre/hdf-utilities size guard: same
+ * limit, same UTF-8 byte-length measure as Go's ValidateJSONSize, with the
+ * converter name prefixed onto the error. A non-positive maxSize means "use
+ * the default" (an explicitly-passed 0 never rejects all non-empty input).
  */
 export function validateInputSize(
   input: string,
   converterName: string,
   maxSize = DEFAULT_MAX_INPUT_SIZE,
 ): void {
-  // Mirror Go's ValidateJSONSize: a non-positive limit means "use the default"
-  // (so an explicitly-passed 0 or negative never rejects all non-empty input).
-  if (maxSize <= 0) {
-    maxSize = DEFAULT_MAX_INPUT_SIZE;
+  const limit = maxSize > 0 ? maxSize : DEFAULT_MAX_INPUT_SIZE;
+  try {
+    guardInputSize(input, limit);
+  } catch (err) {
+    // Prefix the converter name and keep the guard's own wording, the way Go's
+    // ValidateJSONSize wraps with %w — otherwise the two languages report the
+    // same rejection differently.
+    throw new Error(`${converterName}: ${err instanceof Error ? err.message : String(err)}`);
   }
-  if (input.length > maxSize) {
-    throw new Error(
-      `${converterName}: input exceeds maximum allowed size of ${maxSize} characters`,
-    );
-  }
+}
+
+/** The schema's Severity enum keyed by its lowercase token. */
+const HDF_SEVERITIES: ReadonlyMap<string, Severity> = new Map(
+  Object.values(Severity).map((s) => [s, s]),
+);
+
+/**
+ * Map a raw severity token onto the schema's Severity enum, case-insensitively.
+ * The one place the enum vocabulary is spelled out for converters that must not
+ * cast an off-vocabulary source value into the typed field. Whitespace is not
+ * trimmed; callers own that normalization. Go parity: shared.ParseSeverity.
+ */
+export function parseSeverity(s: string): Severity | undefined {
+  return HDF_SEVERITIES.get(s.toLowerCase());
 }
 
 /**

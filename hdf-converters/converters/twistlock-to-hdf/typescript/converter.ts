@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { CWE_PATTERN, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -146,16 +146,15 @@ export function buildCvss(vuln: TwistlockVuln): Cvss | undefined {
   });
 }
 
-const CWE_REGEX = /cwe[-_]?(\d+)/gi;
-
 /**
- * Extracts canonical CWE-N identifiers from a free-form string.
+ * Extracts canonical CWE-N identifiers from a free-form string, deduplicated
+ * in source order.
  */
 export function parseCwes(raw: string | undefined): string[] {
   if (!raw) return [];
   const out: string[] = [];
   const seen = new Set<string>();
-  for (const m of raw.matchAll(CWE_REGEX)) {
+  for (const m of raw.matchAll(CWE_PATTERN)) {
     const id = `CWE-${m[1]}`;
     if (seen.has(id)) continue;
     seen.add(id);

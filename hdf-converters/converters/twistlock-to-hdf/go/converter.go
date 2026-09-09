@@ -151,19 +151,14 @@ func buildCvss(vuln TwistlockVuln) *hdf.Cvss {
 	return &cv
 }
 
-// cwePattern matches a CWE identifier (case-insensitive prefix, capturing the
-// numeric portion). Used to normalize various Twistlock spellings ("CWE-79",
-// "cwe-79", "79") to the canonical "CWE-79" form.
-var cwePattern = regexp.MustCompile(`(?i)cwe[-_]?(\d+)`)
-
 // parseCwes extracts CWE identifiers from a free-form string and returns them
-// in canonical "CWE-N" format. Empty input yields a nil slice (omitted from
-// JSON output).
+// in canonical "CWE-N" format, deduplicated in source order. Empty input yields
+// a nil slice (omitted from JSON output).
 func parseCwes(raw string) []string {
 	if raw == "" {
 		return nil
 	}
-	matches := cwePattern.FindAllStringSubmatch(raw, -1)
+	matches := hdfutil.CWEPattern.FindAllStringSubmatch(raw, -1)
 	if len(matches) == 0 {
 		return nil
 	}

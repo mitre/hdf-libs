@@ -11,7 +11,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -47,22 +46,16 @@ const (
 	coverageID          = "semgrep-scan-coverage"
 )
 
-var cweIDPattern = regexp.MustCompile(`(?i)CWE-(\d+)`)
-
 func isPresent[T ~string](value T) bool {
 	return value != "" && string(value) != redactedPlaceholder
 }
 
-// extractCweIDs pulls the bare number out of semgrep's prose CWE form,
-// "CWE-89: Improper Neutralization of ...".
+// extractCweIDs pulls the bare numbers out of semgrep's prose CWE form,
+// "CWE-89: Improper Neutralization of ...", entry by entry in source order.
 func extractCweIDs(metadata Metadata) []string {
 	ids := make([]string, 0, len(metadata.CWE))
 	for _, entry := range metadata.CWE {
-		match := cweIDPattern.FindStringSubmatch(entry)
-		if match == nil {
-			continue
-		}
-		ids = append(ids, match[1])
+		ids = append(ids, hdfutil.ExtractCWEIDs(entry)...)
 	}
 	return ids
 }

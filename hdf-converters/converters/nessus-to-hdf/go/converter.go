@@ -21,10 +21,6 @@ import (
 // cveSourcePattern matches a CVE-shaped identifier (e.g. CVE-2022-21291).
 var cveSourcePattern = regexp.MustCompile(`^CVE-\d{4}-\d{4,}$`)
 
-// cwePattern matches a CWE identifier in any common form (CWE-79, CWE 79,
-// cwe79). The capture group is the numeric ID.
-var cwePattern = regexp.MustCompile(`(?i)CWE[- ]?(\d+)`)
-
 // htmlTagPattern matches an HTML tag in Nessus plugin text.
 var htmlTagPattern = regexp.MustCompile(`<[^>]*>`)
 
@@ -701,7 +697,7 @@ func buildCweIDs(item *ReportItem) []string {
 	seen := map[string]struct{}{}
 	for _, raw := range item.CWE {
 		// Match "CWE-N" / "CWE N" / "cweN" patterns first.
-		for _, m := range cwePattern.FindAllStringSubmatch(raw, -1) {
+		for _, m := range hdfutil.CWEPattern.FindAllStringSubmatch(raw, -1) {
 			if len(m) >= 2 {
 				seen[m[1]] = struct{}{}
 			}

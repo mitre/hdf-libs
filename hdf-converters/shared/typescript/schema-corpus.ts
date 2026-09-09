@@ -10,6 +10,7 @@ import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { EvidenceType, type HDFResults } from '@mitre/hdf-schema';
 import type { ValidateFunction } from 'ajv';
 import { schemaErrors } from './schema-validation.js';
+import { canonicalize } from './exportmap.js';
 
 /**
  * The obligation an exporter owes for one corpus input.
@@ -423,8 +424,9 @@ function parseIfString(out: unknown): unknown {
 // --- Cross-language parity ---------------------------------------------------
 
 /**
- * Re-serialize a document with object keys sorted, so the same values produce
- * the same bytes in TypeScript and Go.
+ * Re-serialize a document with object keys in Go's map-key order (code point,
+ * via exportmap's canonicalize), so the same values produce the same bytes in
+ * TypeScript and Go.
  *
  * Raw serialization cannot be compared across the two: Go marshals struct fields
  * in declaration order while TS uses insertion order. Both are language
@@ -441,18 +443,9 @@ export function canonicalJSON(raw: string): string {
   // Go's encoder escapes U+2028/U+2029; JSON.stringify emits them literally.
   // Escaping here keeps the two byte-equal (and the output valid JavaScript,
   // where a bare U+2028 is a line terminator).
-  return JSON.stringify(sortValue(JSON.parse(raw)))
+  return JSON.stringify(canonicalize(JSON.parse(raw)))
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
-}
-
-function sortValue(v: unknown): unknown {
-  if (Array.isArray(v)) return v.map(sortValue);
-  if (v === null || typeof v !== 'object') return v;
-  const src = v as Record<string, unknown>;
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(src).sort()) out[k] = sortValue(src[k]);
-  return out;
 }
 
 /** One case as recorded in the cross-language golden. */

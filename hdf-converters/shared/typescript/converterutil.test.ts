@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments } from './converterutil.js';
+import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity } from './converterutil.js';
+import { DEFAULT_MAX_INPUT_SIZE as UTIL_DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 
 describe('inputChecksum', () => {
   it('should return a sha256 checksum', async () => {
@@ -204,6 +205,32 @@ describe('validateInputSize', () => {
 
   it('should export DEFAULT_MAX_INPUT_SIZE as 50MB', () => {
     expect(DEFAULT_MAX_INPUT_SIZE).toBe(50 * 1024 * 1024);
+  });
+
+  it('is the @mitre/hdf-utilities guard: one limit, measured in UTF-8 bytes like Go', () => {
+    expect(DEFAULT_MAX_INPUT_SIZE).toBe(UTIL_DEFAULT_MAX_INPUT_SIZE);
+    // 30 code units but 60 UTF-8 bytes: over a 50-byte limit for Go's []byte length.
+    const multibyte = 'é'.repeat(30);
+    expect(() => validateInputSize(multibyte, 'test', 50)).toThrow('test: input exceeds maximum allowed size of 50 bytes (60 bytes provided)');
+    expect(() => validateInputSize(multibyte, 'test', 60)).not.toThrow();
+  });
+});
+
+describe('parseSeverity', () => {
+  it('maps the HDF severity vocabulary case-insensitively', () => {
+    expect(parseSeverity('critical')).toBe('critical');
+    expect(parseSeverity('High')).toBe('high');
+    expect(parseSeverity('MEDIUM')).toBe('medium');
+    expect(parseSeverity('low')).toBe('low');
+    expect(parseSeverity('informational')).toBe('informational');
+  });
+
+  it('returns undefined for anything outside the vocabulary', () => {
+    // Callers own whitespace handling; scanner vocabulary that is not an HDF
+    // severity (XCCDF info/unknown) stays rejected.
+    for (const raw of ['wibble', '', ' high', 'info', 'unknown', 'constructor']) {
+      expect(parseSeverity(raw), raw).toBeUndefined();
+    }
   });
 });
 

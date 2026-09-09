@@ -8,20 +8,17 @@ import type {
 } from '@mitre/hdf-schema';
 import {
   TargetType,
-  Severity,
   createMinimalBaseline,
   createRequirement,
   createResult,
   severityToImpact,
 } from '@mitre/hdf-schema';
 import { getCCINistMappings } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, stripHTML } from '../converterutil.js';
+import { deriveControlTypeFromTags, parseSeverity, stripHTML } from '../converterutil.js';
 import { Asset, Checklist, Stig, Vuln } from './model.js';
 import { statusToHdf } from './status.js';
 
 const CONVERTER_VERSION = '1.0.0';
-
-const VALID_SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'informational']);
 
 /**
  * Map the format-neutral Checklist model to an HDF Results object.
@@ -111,7 +108,8 @@ function vulnToRequirement(v: Vuln, scanTime: Date): EvaluatedRequirement {
   // Gate the typed field on the schema enum: an off-vocabulary CKL severity
   // must not be cast raw (schema-invalid output); it stays discoverable via
   // tags.severity. Same sanitization stance as the xccdf converter.
-  if (VALID_SEVERITIES.has(severity)) req.severity = severity as Severity;
+  const hdfSeverity = parseSeverity(severity);
+  if (hdfSeverity !== undefined) req.severity = hdfSeverity;
 
   const controlType = deriveControlTypeFromTags(nistTags);
   if (controlType !== undefined) req.controlType = controlType;

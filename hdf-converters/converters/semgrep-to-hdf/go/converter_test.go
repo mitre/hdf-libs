@@ -494,3 +494,17 @@ func TestNativeInputNotRoutedToSarif(t *testing.T) {
 	out := convertFixture(t, "real.json")
 	assert.Equal(t, "Semgrep Scan", out.Baselines[0].Name)
 }
+
+// The CWE id is read with the shared CWE vocabulary, so the spaced and bare
+// spellings the other converters accept are accepted here too.
+func TestCweIDsUseSharedVocabulary(t *testing.T) {
+	input := []byte(`{"results":[{"check_id":"a.b","path":"a.py","start":{"line":1},
+		"extra":{"message":"m","severity":"ERROR","metadata":{"cwe":["CWE 89: SQL Injection","cwe79: XSS"]}}}],
+		"errors":[],"paths":{"scanned":["a.py"]}}`)
+	out, err := ConvertSemgrepToHDF(input, testVersion)
+	require.NoError(t, err)
+	req := findReq(out.Baselines[0].Requirements, "a.b")
+	require.NotNil(t, req)
+	assert.Equal(t, []string{"CWE-89", "CWE-79"}, req.Cwe)
+	assert.Contains(t, shared.NISTTagsFromMap(req.Tags), "SI-10")
+}

@@ -572,3 +572,26 @@ func TestExtractXMLRootElement(t *testing.T) {
 		assert.Equal(t, "issues", ExtractXMLRootElement(input))
 	})
 }
+
+func TestTagStrings(t *testing.T) {
+	cases := []struct {
+		name string
+		tags map[string]any
+		want []string
+	}{
+		{"nil map", nil, nil},
+		{"absent key", map[string]any{"cci": []string{"CCI-000001"}}, nil},
+		{"explicit null", map[string]any{"nist": nil}, nil},
+		{"bare string", map[string]any{"nist": "AC-1"}, []string{"AC-1"}},
+		{"string slice", map[string]any{"nist": []string{"AC-1", "AC-2"}}, []string{"AC-1", "AC-2"}},
+		{"interface slice keeps only strings", map[string]any{"nist": []any{"AC-1", 42, "AC-2", true}}, []string{"AC-1", "AC-2"}},
+		{"empty string slice is no tags", map[string]any{"nist": []string{}}, nil},
+		{"interface slice with no strings is no tags", map[string]any{"nist": []any{1, true}}, nil},
+		{"unsupported type", map[string]any{"nist": 7}, nil},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.want, TagStrings(c.tags, "nist"))
+		})
+	}
+}

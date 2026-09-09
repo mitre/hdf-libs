@@ -47,6 +47,29 @@ func SafeStringSlice(v any) []string {
 	return result
 }
 
+// TagStrings reads tags[key] as a list of strings, tolerating the three shapes
+// HDF tag values take at runtime: a bare string, a []string assigned directly,
+// and the []any a JSON round-trip produces (non-string elements are skipped).
+// A nil map, absent key, unsupported type or empty result yields nil.
+func TagStrings(tags map[string]any, key string) []string {
+	if tags == nil {
+		return nil
+	}
+	var out []string
+	switch v := tags[key].(type) {
+	case string:
+		out = []string{v}
+	case []string:
+		out = v
+	case []any:
+		out = SafeStringSlice(v)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 // StringsToInterfaces converts a string slice to an interface slice.
 // This is needed because Go's type system does not allow direct assignment
 // of []string to []any in JSON-serializable map values.

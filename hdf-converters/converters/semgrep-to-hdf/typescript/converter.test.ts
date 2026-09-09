@@ -300,6 +300,17 @@ describe('sparse and malformed rules', () => {
     expect(req.tags?.references).toBeUndefined();
   });
 
+  it('reads CWE ids with the shared vocabulary (spaced and bare spellings)', async () => {
+    const hdf = JSON.parse(
+      await convertSemgrepToHdf(
+        scan([{ check_id: 'a.b', extra: { metadata: { cwe: ['CWE 89: SQL Injection', 'cwe79: XSS'] } } }]),
+      ),
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements[0]!;
+    expect(req.cwe).toEqual(['CWE-89', 'CWE-79']);
+    expect(req.tags?.nist).toContain('SI-10');
+  });
+
   it('ignores a CWE entry that carries no parsable id', async () => {
     const hdf = JSON.parse(
       await convertSemgrepToHdf(
