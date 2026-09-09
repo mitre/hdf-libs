@@ -1,4 +1,4 @@
-import { buildXml, xmlSafeText } from '@mitre/hdf-utilities';
+import { buildXml, xmlSafeText, formatJsonNumber } from '@mitre/hdf-utilities';
 import { validateInputSize, parseHdf } from '../../../shared/typescript/converterutil.js';
 
 /**
@@ -7,20 +7,21 @@ import { validateInputSize, parseHdf } from '../../../shared/typescript/converte
  * The document is walked as a plain JSON tree and every key is emitted in
  * source-JSON order, so the output can never silently lag a schema addition the
  * way the previous hand-maintained struct mirror did (it dropped ~30 post-v3.2
- * fields). The Go converter walks the same normalized JSON in the same order, so
- * the two languages emit output that is identical after the shared XML golden
- * normalization for every shape this repo's fixtures and parity tests cover.
+ * fields). The Go converter walks the same normalized JSON in the same order and
+ * emits identical output after the shared XML golden normalization for every
+ * shape this repo's fixtures and parity tests cover.
  *
- * Equality after that normalization is NOT guaranteed in general, and the reason
- * is structural rather than a fixed list of cases: JSON.parse loses duplicate
- * keys and hoists
- * array-index keys before this builder ever runs, V8's number-to-string forms
- * differ from Go's strconv at the extremes, and Go's encoding/xml sanitizes every
- * XML-illegal rune to U+FFFD where this builder emits it verbatim. This builder
- * also caps nesting depth, which the Go peer does not. Anything landing in those
- * seams can differ; known instances are tracked as cards under the
- * exporter-conformance epic. Assume a shape outside the fixture corpus needs
- * checking against the peer rather than that it is covered.
+ * Equality is NOT guaranteed in general, and the reason is one structural seam
+ * rather than a list: JSON.parse discards information before this builder ever
+ * runs, so anything it drops is unreachable from the serializer. The known
+ * instances live in shared/xml-divergence-cases.json, which both languages read
+ * and both pin -- a duplicate key keeps only the last value, an integer-like key
+ * is hoisted ahead of its siblings, and a number too large for a double arrives
+ * as Infinity with its original token text gone. Treat that file as the current
+ * census, not as a closed set: a shape outside the fixture corpus needs checking
+ * against the peer rather than assuming it is covered. Closing any of them means
+ * parsing untrusted input with a parser that preserves order, duplicates and the
+ * number token, which is a worse trade than the divergence.
  */
 
 /**
@@ -122,7 +123,16 @@ function nodesFor(key: string, value: unknown): XmlNode[] {
   if (typeof value === 'object') {
     return [{ [name]: buildNodes(value as Record<string, unknown>), ...attrs }];
   }
-  const text = typeof value === 'string' ? xmlSafeText(value) : value;
+  // Numbers go through formatJsonNumber rather than the builder's own
+  // stringification, which switches to exponent notation outside
+  // [1e-6, 1e21) and drops the sign of negative zero; the Go peer does
+  // neither.
+  const text =
+    typeof value === 'string'
+      ? xmlSafeText(value)
+      : typeof value === 'number'
+        ? formatJsonNumber(value)
+        : value;
   return [{ [name]: [{ '#text': text }], ...attrs }];
 }
 

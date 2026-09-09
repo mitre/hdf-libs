@@ -13,7 +13,7 @@ import {
   epochMillis,
   floatNumber,
 } from '../../../shared/typescript/exportmap.js';
-import { impactToSeverity } from '@mitre/hdf-utilities';
+import { impactToSeverity, formatJsonNumber } from '@mitre/hdf-utilities';
 
 /**
  * HDF Results -> OCSF (Open Cybersecurity Schema Framework) Finding NDJSON.
@@ -379,9 +379,10 @@ function buildEvidences(req: Obj): Obj[] {
 }
 
 // A float as a plain decimal string for an OCSF Metric value (Metric.value is
-// String). JS's String() agrees with Go's shortest-decimal format over the
-// low-precision decimals used here, keeping Go/TS byte-identical.
+// String). String() does NOT agree with the Go peer's FormatFloat('f', -1): it
+// renders negative zero as "0" and switches to exponent notation outside
+// [1e-6, 1e21). formatJsonNumber is the shared renderer that matches.
 function floatMetric(f: number): string {
-  return String(f);
+  return formatJsonNumber(f);
 }
 

@@ -1,0 +1,80 @@
+{
+  "$comment": "Shared table for hdf-to-xml scalar number rendering. Go (scalarText) and TypeScript (formatJsonNumber) both read it, so neither language can drift. 'json' is the raw JSON number text the converter receives; 'text' is the canonical rendering emitted as XML character data. The canonical form is positional with shortest-round-trip digits and never exponent notation -- Go's strconv.FormatFloat(f, 'f', -1, 64) -- because it is what every shipped golden and the released CLI already emit, and because exponent notation in XML character data requires the reader to know the field is numeric.",
+  "cases": [
+    {
+      "json": "1e21",
+      "text": "1000000000000000000000",
+      "why": "at the magnitude where JavaScript switches to exponent notation and Go does not"
+    },
+    {
+      "json": "-1e21",
+      "text": "-1000000000000000000000",
+      "why": "the same switch on the negative side"
+    },
+    {
+      "json": "1e-7",
+      "text": "0.0000001",
+      "why": "below the small-magnitude threshold where JavaScript switches to exponent"
+    },
+    {
+      "json": "-1e-7",
+      "text": "-0.0000001",
+      "why": "the same threshold on the negative side"
+    },
+    {
+      "json": "1.5e-7",
+      "text": "0.00000015",
+      "why": "significand carries a fraction, so the expansion is not just appended zeros"
+    },
+    {
+      "json": "1e308",
+      "text": "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "why": "near the top of the double range: 309 digits positional"
+    },
+    {
+      "json": "5e-324",
+      "text": "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+      "why": "the smallest positive denormal, the longest positional form a double can produce"
+    },
+    {
+      "json": "-0",
+      "text": "-0",
+      "why": "IEEE negative zero: Go keeps the sign bit, JavaScript's Number::toString drops it"
+    },
+    {
+      "json": "1e20",
+      "text": "100000000000000000000",
+      "why": "one magnitude below the switch: both languages already agree, pinned so neither drifts"
+    },
+    {
+      "json": "1e-6",
+      "text": "0.000001",
+      "why": "one magnitude above the small-side switch: both already agree"
+    },
+    {
+      "json": "0",
+      "text": "0",
+      "why": "ordinary zero"
+    },
+    {
+      "json": "123",
+      "text": "123",
+      "why": "ordinary integer"
+    },
+    {
+      "json": "0.5",
+      "text": "0.5",
+      "why": "ordinary fraction"
+    },
+    {
+      "json": "1.0",
+      "text": "1",
+      "why": "shortest round-trip drops the trailing zero in both languages"
+    },
+    {
+      "json": "9007199254740993",
+      "text": "9007199254740992",
+      "why": "beyond 2^53: both languages lose the same bit, so they still agree"
+    }
+  ]
+}

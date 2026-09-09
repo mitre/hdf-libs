@@ -310,3 +310,28 @@ describe('hdf-to-ocsf converter', () => {
     }
   });
 });
+
+// The Go peer renders this metric with strconv.FormatFloat(f,'f',-1,64). String()
+// would agree over ordinary decimals but not at negative zero or the exponent
+// extremes, so this pins the two places the two renderers used to part company.
+describe('hdf-to-ocsf metric number rendering matches the Go peer', () => {
+  // The score is carried as a raw JSON token, never a JS number: both
+  // JSON.stringify(-0) and `${-0}` render "0", so any literal round-trip would
+  // destroy the very distinction being pinned.
+  it.each([
+    ['negative zero keeps its sign', '-0', '-0'],
+    ['no exponent notation at 1e21', '1e21', '1000000000000000000000'],
+    ['no exponent notation at 1e-7', '1e-7', '0.0000001'],
+    ['ordinary decimals are unaffected', '4.6', '4.6'],
+  ])('%s', (_label, token, expected) => {
+    const raw =
+      `{"baselines":[{"name":"b","requirements":[{"id":"r","impact":0,` +
+      `"descriptions":[{"label":"default","data":"d"}],` +
+      `"cvss":[{"threatScore":${token}}],` +
+      `"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`;
+    const out = convertHdfToOcsf(raw, VERSION);
+    expect(out, `threatScore ${token} must render as ${expected}`).toContain(
+      `{"name":"Threat Score","value":"${expected}"}`,
+    );
+  });
+});
