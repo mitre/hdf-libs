@@ -30,6 +30,7 @@ import {
   ResultStatus,
   TargetType,
   VerificationMethodEnum,
+  Version as CvssVersion,
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
 
@@ -258,14 +259,20 @@ function baseScoreFromBlock(block: NetsparkerCvssBlock | undefined): number | un
  */
 export function buildNetsparkerCvss(classification: NetsparkerClassification | undefined): Cvss[] {
   const out: Cvss[] = [];
-  for (const block of [classification?.cvss, classification?.cvss31]) {
+  // The element name pins the version, so it is the fallback for a block
+  // carrying a score but no vector; a vector still outranks it.
+  const blocks: [NetsparkerCvssBlock | undefined, CvssVersion][] = [
+    [classification?.cvss, CvssVersion.The30],
+    [classification?.cvss31, CvssVersion.The31],
+  ];
+  for (const [block, elementVersion] of blocks) {
     const baseScore = baseScoreFromBlock(block);
     const vector = block?.vector ?? '';
     if (!vector && baseScore === undefined) {
       continue;
     }
     out.push(buildCvss({
-      version: cvssVersionFromVector(vector),
+      version: cvssVersionFromVector(vector, elementVersion),
       baseScore,
       baseVector: vector,
     }));

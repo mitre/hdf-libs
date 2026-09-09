@@ -65,6 +65,12 @@ describe('semgrep to HDF converter', () => {
       expect(findReq(hdf, 'dynamic-urllib-use-detected')?.impact).toBe(0.5);
     });
 
+    it('publishes severity as the band the impact implies', async () => {
+      const hdf = await convert('real.json');
+      expect(findReq(hdf, 'subprocess-shell-true')?.severity).toBe('high');
+      expect(findReq(hdf, 'dynamic-urllib-use-detected')?.severity).toBe('medium');
+    });
+
     it('resolves NIST tags from the rule CWE', async () => {
       const hdf = await convert('real.json');
       const req = findReq(hdf, 'subprocess-shell-true');
@@ -218,6 +224,38 @@ describe('sparse and malformed rules', () => {
     expect(reqs.find((r) => r.id === 'a')!.impact).toBe(0.5);
     expect(reqs.find((r) => r.id === 'b')!.impact).toBe(0.5);
     expect(reqs.find((r) => r.id === 'c')!.impact).toBe(0.9);
+  });
+
+  it('keeps severity consistent with impact and absent when the tool gave no rating', async () => {
+    const hdf = JSON.parse(
+      await convertSemgrepToHdf(
+        scan([
+          { check_id: 'a.error', extra: { severity: 'ERROR' } },
+          { check_id: 'a.warning', extra: { severity: 'WARNING' } },
+          { check_id: 'a.info', extra: { severity: 'INFO' } },
+          { check_id: 'a.critical', extra: { severity: 'CRITICAL' } },
+          { check_id: 'a.novel', extra: { severity: 'NOVEL' } },
+          { check_id: 'a.unrated' },
+          { check_id: 'a.redacted', extra: { severity: 'requires login' } },
+        ], { errors: [{ code: 2, level: 'error', type: 'ParseError', message: 'm', path: 'b.py' }] }),
+      ),
+    ) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    const byId = (id: string) => reqs.find((r) => r.id === id)!;
+    const want: Record<string, [string, number]> = {
+      'a.error': ['high', 0.7],
+      'a.warning': ['medium', 0.5],
+      'a.info': ['low', 0.3],
+      'a.critical': ['critical', 0.9],
+      'a.novel': ['medium', 0.5],
+    };
+    for (const [id, [severity, impact]] of Object.entries(want)) {
+      expect(byId(id).severity, id).toBe(severity);
+      expect(byId(id).impact, id).toBe(impact);
+    }
+    for (const id of ['a.unrated', 'a.redacted', 'semgrep-scan-errors', 'semgrep-scan-coverage']) {
+      expect(byId(id).severity, `${id} carries no tool rating`).toBeUndefined();
+    }
   });
 
   it('renders a multi-line span and a path-only location', async () => {

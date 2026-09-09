@@ -103,9 +103,3 @@ func TestWithExpectedRequirementCount_TypedRegisterHelpers(t *testing.T) {
 		})
 	}
 }
-
-// Converters registered as custom structs must declare the relation on the
-// struct itself. Two stay undeclared on purpose: the auto-detect oscal entry
-// (its SSP delegate produces a document with nothing to count) and legacyhdf
-// (the CLI counts the post-downgrade output, which `--to hdf@2` turns into the
-// uncountable profiles/controls shape).

@@ -1,7 +1,7 @@
 /**
  * Adversarial exporter inputs, shared across every converter's schema tests.
  *
- * The TS peer of shared/go/schemacorpus.go. The two corpora are asserted
+ * The TS peer of internal/corpus/corpus.go. The two corpora are asserted
  * byte-equal (after canonicalization) against a Go-generated golden, so a case
  * added, renamed, reclassified, or altered on one side alone fails the build rather
  * than silently going uncovered on the other.

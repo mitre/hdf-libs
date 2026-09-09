@@ -41,10 +41,8 @@ env:
   # syft for the per-commit dependency SBOM (scan-deps). The release job's
   # download-syft action is SHA-pinned; this pins the syft release it fetches.
   SYFT_VERSION: 'v1.51.1'
-  # The real pin is the hash closure in .github/semgrep-requirements.txt; this
-  # stays the one place a bump is declared, and the scan step refuses to run if
-  # the two disagree. Regeneration instructions are in that file's header.
-  SEMGREP_VERSION: '1.176.1'
+  # semgrep's version lives in .github/requirements/requirements.in, not here:
+  # the install is hash-pinned and one version pin is enough.
   # semgrep-rules commit the scan uses. Bumping it is how the ruleset
   # updates; re-measure .github/hdf-thresholds/semgrep.yaml in the same PR.
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
@@ -92,15 +90,16 @@ env:
 # trading a few red-run runner-minutes for ~5 minutes of wall clock on
 # every green run (this repo is public; minutes are free, latency isn't).
 #
-# IN EFFECT: the `main` ruleset requires "Gate scans on HDF thresholds",
-# "Gate test results on HDF thresholds" and "Verify packed tarballs
-# (publint + attw)" to pass, and blocks force-pushes and deletion. The scan
-# gate covers the scanners and check jobs (it fails, never skips, when one of
-# them fails) and the test gate covers build and every test leg (a leg that
-# reports nothing fails it), so those three are the binding surface. The
-# ruleset does not require a pull request, and organization admins bypass
-# it: the owner keeps the option of committing to main directly. Renaming a
-# gate job renames a required check; update the ruleset in the same change.
+# IN EFFECT: the repository ruleset "main" (target: default branch) requires
+# "Gate scans on HDF thresholds", "Gate test results on HDF thresholds" and
+# "Verify packed tarballs (publint + attw)" to pass, and blocks deletion and
+# force-pushes. Build is not listed by name: a failed Build skips the test
+# legs and gate-hdf-tests then fails on "produced nothing", so its coverage
+# is transitive. There is no pull-request requirement and organization
+# admins can bypass, so the owner's occasional direct commits to main still
+# land — accepted as not best practice. gate-hdf-scans runs `if: always()`
+# and fails on any upstream failure, because a SKIPPED required check
+# satisfies a ruleset and would otherwise be a false green.
 #
 # Test phase: ubuntu+windows matrix; every leg emits JUnit which
 # gate-hdf-tests normalizes and thresholds the same way (if: always — red
@@ -293,12 +292,10 @@ jobs:
       # reading their input files, which is the product.
       - name: semgrep (JSON; findings gate via HDF)
         run: |
-          # Hash-pinned: semgrep is the only findings-producing scanner here
-          # that comes from a package index rather than a checksum database, so
-          # an unpinned transitive tree could move the findings the gate judges.
-          grep -qxF "semgrep==$SEMGREP_VERSION \\" .github/semgrep-requirements.txt \
-            || { echo "::error::semgrep-requirements.txt does not pin semgrep==$SEMGREP_VERSION — regenerate it"; exit 1; }
-          pip install --quiet --require-hashes -r .github/semgrep-requirements.txt
+          # --require-hashes: a version tag is deterministic only if the registry
+          # is honest. The pinned file also fixes every transitive dependency, so
+          # nothing in the scanner's tree can move underneath a run.
+          pip install --quiet --require-hashes -r .github/requirements/semgrep.txt
           mkdir -p scan-artifacts
           rc=0
           semgrep scan --metrics off --error \
@@ -412,6 +409,13 @@ jobs:
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
       # That makes any nonzero exit a tool failure, which the step's own
       # `bash -e` already fails on.
+      - name: Published Go modules depend only on tagged modules
+        # Static check, not a consumer build: it asserts nothing consumer-
+        # reachable depends on an in-repo module a release never tags. A local
+        # `go build ./...` cannot catch that — the replace directives make it
+        # pass here and fail for everyone else. A real external build is only
+        # possible after a tag exists.
+        run: pnpm run lint:go-consumers
       - name: govulncheck (SARIF; findings gate via HDF)
         run: |
           go install "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION"

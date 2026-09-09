@@ -40,6 +40,19 @@ updates:
       default-days: 7
     open-pull-requests-limit: 5
 
+  # pip — the hash-pinned semgrep install used by the ci.yml scan step.
+  # requirements.in holds the intent (semgrep==X); semgrep.txt is the
+  # fully-resolved, hash-pinned output. Regenerate with
+  #   uv pip compile requirements.in --generate-hashes --universal --python-version 3.11
+  - package-ecosystem: "pip"
+    directory: "/.github/requirements"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+
   # Go modules — each go.mod is a separate ecosystem entry
   # Go modules use go.sum checksums (content-addressed, like lockfile integrity).
   - package-ecosystem: "gomod"

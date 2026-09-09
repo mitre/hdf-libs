@@ -20,6 +20,7 @@
               "status": "failed"
             }
           ],
+          "severity": "high",
           "sourceLocation": {
             "line": 7,
             "ref": "app/handlers.py"
@@ -97,6 +98,7 @@
               "status": "failed"
             }
           ],
+          "severity": "medium",
           "sourceLocation": {
             "line": 12,
             "ref": "app/handlers.py"

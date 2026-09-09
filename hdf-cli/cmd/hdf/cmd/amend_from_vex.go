@@ -9,7 +9,6 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
-	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // amendmentsFromVex delegates to the shared hdfdoc.AmendmentsFromVex helper so
@@ -48,8 +47,8 @@ func runAmendFromVex(vexPath, expires, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to serialize amendments: %w", err)
 	}
-	if res := validators.ValidateAmendments(output); !res.Valid {
-		return fmt.Errorf("generated amendments failed schema validation: %s", res.Error())
+	if err := validateGeneratedAmendments(output); err != nil {
+		return err
 	}
 
 	if outputPath == "" {

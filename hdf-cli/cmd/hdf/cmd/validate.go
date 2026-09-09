@@ -207,13 +207,20 @@ func outputValidationHuman(displayName, schemaType string, vr *validators.Valida
 			line = hdfutil.LookupLineNumber(lineMap, e.Field)
 		}
 
+		// Both strings carry document-controlled text: a field path can quote
+		// a key from an open key space, and a description can quote a value.
+		// Branch selection stays on the raw field so sanitizing cannot change
+		// which message shape is chosen.
+		field := sanitizeOutput(e.Field)
+		description := sanitizeOutput(e.Description)
+
 		switch {
 		case line > 0 && e.Field != "" && e.Field != hdfutil.FieldRoot:
-			fmt.Fprintf(os.Stderr, "    line %d: %s: %s\n", line, e.Field, e.Description)
+			fmt.Fprintf(os.Stderr, "    line %d: %s: %s\n", line, field, description)
 		case e.Field != "" && e.Field != hdfutil.FieldRoot:
-			fmt.Fprintf(os.Stderr, "    %s: %s\n", e.Field, e.Description)
+			fmt.Fprintf(os.Stderr, "    %s: %s\n", field, description)
 		default:
-			fmt.Fprintf(os.Stderr, "    %s\n", e.Description)
+			fmt.Fprintf(os.Stderr, "    %s\n", description)
 		}
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
@@ -425,7 +426,7 @@ func (csvStructureValidator) Validate(doc []byte) error {
 // corpus contracts. Strictness makes the empty-results case a rejection, which
 // the MustNotCorrupt contract permits.
 func TestConvertHDFToCSV_AdversarialCorpus(t *testing.T) {
-	shared.RunSchemaCorpus(t, csvStructureValidator{}, shared.ResultsCorpus(), ConvertHDFToCSV)
+	corpus.RunSchemaCorpus(t, csvStructureValidator{}, corpus.ResultsCorpus(), ConvertHDFToCSV)
 }
 
 // corpusRejected marks a corpus case the converter refuses; the two languages
@@ -437,13 +438,13 @@ const corpusRejected = "REJECTED"
 // each against its own expectations. Go owns regeneration
 // (go test ./converters/hdf-to-csv/go/ -update); TypeScript only verifies.
 func TestConvertHDFToCSV_CorpusOutputGolden(t *testing.T) {
-	outputs := make(map[string]string, len(shared.ResultsCorpus()))
-	for _, c := range shared.ResultsCorpus() {
+	outputs := make(map[string]string, len(corpus.ResultsCorpus()))
+	for _, c := range corpus.ResultsCorpus() {
 		// A panic here would abort the whole package run rather than failing this
 		// one test. It is folded into the same marker as a clean rejection, so this
 		// golden pins output parity only — crash-versus-rejection is the corpus
 		// contract's job, which type-switches on PanicError.
-		out, err := shared.ConvertNoPanic(ConvertHDFToCSV, c.Input)
+		out, err := corpus.ConvertNoPanic(ConvertHDFToCSV, c.Input)
 		if err != nil {
 			outputs[c.Name] = corpusRejected
 			continue
@@ -568,7 +569,7 @@ func TestConvertHDFToCSV_ParityShapesGolden(t *testing.T) {
 	shapes := parityShapes(t)
 	outputs := make(map[string]string, len(shapes))
 	for name, doc := range shapes {
-		out, err := shared.ConvertNoPanic(ConvertHDFToCSV, doc)
+		out, err := corpus.ConvertNoPanic(ConvertHDFToCSV, doc)
 		if err != nil {
 			outputs[name] = corpusRejected
 			continue

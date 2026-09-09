@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
@@ -115,7 +116,7 @@ func TestConvertHDFToCSAFVEX_SchemaValid(t *testing.T) {
 // converter is held to both contracts an exporter owes rather than only to
 // fully-populated fixtures — the gap that let its empty-summary defect ship.
 func TestConvertHDFToCSAFVEX_AdversarialCorpus(t *testing.T) {
-	shared.RunSchemaCorpus(t, csafValidator(t), shared.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
+	corpus.RunSchemaCorpus(t, csafValidator(t), corpus.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
 		return ConvertHDFToCSAFVEX(in, "1.0.0")
 	})
 }
@@ -150,8 +151,8 @@ func TestConvertHDFToCSAFVEX_OmitsEmptyProductStatus(t *testing.T) {
 // implementations are most likely to drift, which the happy-path goldens never
 // touched. Every value is deterministic, so the comparison is byte-for-byte.
 func TestCorpusGoldenParity(t *testing.T) {
-	for _, c := range shared.AmendmentsCorpus() {
-		if c.Contract != shared.MustConvert {
+	for _, c := range corpus.AmendmentsCorpus() {
+		if c.Contract != corpus.MustConvert {
 			continue // anything else may be rejected, so there is no output to freeze
 		}
 		t.Run(c.Name, func(t *testing.T) {

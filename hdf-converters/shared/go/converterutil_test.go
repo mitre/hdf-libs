@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -587,18 +588,18 @@ func TestRequireHDFAmendments_RejectsEmptyOverrides(t *testing.T) {
 
 // TestRequireHDFAmendments_MatchesCorpusContracts ties the guard to the shared
 // adversarial corpus. The guard checks top-level shape, so it is responsible for
-// exactly the MustReject cases; a MustNotCorrupt case would be nested-invalid and
-// deliberately outside its remit, and the amendments corpus has none today.
+// exactly the MustReject cases; a MustNotCorrupt case would be nested-invalid
+// and deliberately outside its remit, and the amendments corpus has none today.
 func TestRequireHDFAmendments_MatchesCorpusContracts(t *testing.T) {
-	for _, c := range AmendmentsCorpus() {
+	for _, c := range corpus.AmendmentsCorpus() {
 		var out hdf.HDFAmendments
 		err := RequireHDFAmendmentsTyped(c.Input, "probe", &out)
 		switch c.Contract {
-		case MustConvert:
+		case corpus.MustConvert:
 			require.NoError(t, err, "%s is valid HDF; the guard must not reject it", c.Name)
-		case MustReject:
+		case corpus.MustReject:
 			require.Error(t, err, "%s is invalid at the top level and must be rejected", c.Name)
-		case MustNotCorrupt:
+		case corpus.MustNotCorrupt:
 			t.Skipf("%s is nested-invalid, which the top-level guard deliberately does not check", c.Name)
 		}
 	}
@@ -664,7 +665,7 @@ func TestRequireHDFResults_RejectsCorpusTopLevelShapes(t *testing.T) {
 		"baselines-missing": true, "baselines-null": true,
 		"baselines-wrong-type": true, "top-level-array": true,
 	}
-	for _, c := range ResultsCorpus() {
+	for _, c := range corpus.ResultsCorpus() {
 		var out hdf.HDFResults
 		err := RequireHDFResultsTyped(c.Input, "probe", &out)
 		if topLevel[c.Name] {

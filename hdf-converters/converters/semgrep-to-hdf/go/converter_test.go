@@ -9,6 +9,7 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,6 +94,46 @@ func TestMapsSeverityToImpact(t *testing.T) {
 	reqs := out.Baselines[0].Requirements
 	assert.Equal(t, 0.7, findReq(reqs, "subprocess-shell-true").Impact)
 	assert.Equal(t, 0.5, findReq(reqs, "dynamic-urllib-use-detected").Impact)
+}
+
+func TestPopulatesSeverityFromSemgrepSeverity(t *testing.T) {
+	out := convertFixture(t, "real.json")
+	reqs := out.Baselines[0].Requirements
+	require.NotNil(t, findReq(reqs, "subprocess-shell-true").Severity)
+	assert.Equal(t, hdf.SeverityHigh, *findReq(reqs, "subprocess-shell-true").Severity)
+	require.NotNil(t, findReq(reqs, "dynamic-urllib-use-detected").Severity)
+	assert.Equal(t, hdf.SeverityMedium, *findReq(reqs, "dynamic-urllib-use-detected").Severity)
+}
+
+func TestSeverityBandMatchesImpact(t *testing.T) {
+	// The published severity is the band the impact already implies, so the two
+	// fields can never disagree; an absent or redacted severity stays absent
+	// because the unrated marker, not a defaulted band, is what says "untagged".
+	input := []byte(`{"results":[
+		{"check_id":"a.error","path":"a.py","start":{"line":1},"extra":{"message":"m","severity":"ERROR"}},
+		{"check_id":"a.warning","path":"a.py","start":{"line":2},"extra":{"message":"m","severity":"WARNING"}},
+		{"check_id":"a.info","path":"a.py","start":{"line":3},"extra":{"message":"m","severity":"INFO"}},
+		{"check_id":"a.critical","path":"a.py","start":{"line":4},"extra":{"message":"m","severity":"CRITICAL"}},
+		{"check_id":"a.novel","path":"a.py","start":{"line":5},"extra":{"message":"m","severity":"NOVEL"}},
+		{"check_id":"a.unrated","path":"a.py","start":{"line":6},"extra":{"message":"m"}},
+		{"check_id":"a.redacted","path":"a.py","start":{"line":7},"extra":{"message":"m","severity":"requires login"}}
+	],"errors":[{"code":2,"level":"error","type":"ParseError","message":"m","path":"b.py"}],"paths":{"scanned":["a.py"]}}`)
+	out, err := ConvertSemgrepToHDF(input, testVersion)
+	require.NoError(t, err)
+	reqs := out.Baselines[0].Requirements
+	want := map[string]hdf.Severity{
+		"a.error": hdf.SeverityHigh, "a.warning": hdf.SeverityMedium, "a.info": hdf.SeverityLow,
+		"a.critical": hdf.SeverityCritical, "a.novel": hdf.SeverityMedium,
+	}
+	for id, sev := range want {
+		req := findReq(reqs, id)
+		require.NotNil(t, req.Severity, id)
+		assert.Equal(t, sev, *req.Severity, id)
+		assert.Equal(t, string(sev), hdfutil.ImpactToSeverity(req.Impact), "%s: severity must match the impact band", id)
+	}
+	for _, id := range []string{"a.unrated", "a.redacted", scanErrorsID, coverageID} {
+		assert.Nil(t, findReq(reqs, id).Severity, "%s carries no tool rating, so no severity", id)
+	}
 }
 
 func TestResolvesNistAndCciTags(t *testing.T) {

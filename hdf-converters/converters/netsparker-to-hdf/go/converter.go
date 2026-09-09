@@ -260,15 +260,24 @@ func baseScoreFromScores(scores []NetsparkerCVSSScore) *float64 {
 // score becomes one entry; the schema Version derives from the vector prefix.
 func buildNetsparkerCvss(c NetsparkerClassification) []hdf.Cvss {
 	var out []hdf.Cvss
-	for _, block := range []NetsparkerCVSS{c.CVSS, c.CVSS31} {
-		score := baseScoreFromScores(block.Scores)
-		if block.Vector == "" && score == nil {
+	// The element name pins the version, so it is the fallback for a block
+	// carrying a score but no vector; a vector still outranks it.
+	blocks := []struct {
+		cvss    NetsparkerCVSS
+		version hdf.Version
+	}{
+		{c.CVSS, hdf.The30},
+		{c.CVSS31, hdf.The31},
+	}
+	for _, block := range blocks {
+		score := baseScoreFromScores(block.cvss.Scores)
+		if block.cvss.Vector == "" && score == nil {
 			continue
 		}
 		out = append(out, shared.BuildCvss(shared.CvssInput{
-			Version:    shared.CvssVersionFromVector(block.Vector),
+			Version:    shared.CvssVersionFromVector(block.cvss.Vector, block.version),
 			BaseScore:  score,
-			BaseVector: block.Vector,
+			BaseVector: block.cvss.Vector,
 		}))
 	}
 	return out

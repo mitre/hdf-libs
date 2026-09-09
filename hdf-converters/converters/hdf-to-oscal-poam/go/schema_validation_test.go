@@ -10,6 +10,7 @@ import (
 	"time"
 
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
+	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -86,7 +87,7 @@ func TestConvertHDFToOSCALPOAM_AdversarialCorpus(t *testing.T) {
 	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
 
-	shared.RunSchemaCorpus(t, v, shared.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
+	corpus.RunSchemaCorpus(t, v, corpus.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
 		return ConvertHDFToOSCALPOAM(in, "1.0.0")
 	})
 }
@@ -200,8 +201,8 @@ func TestPOAMTitleFallback(t *testing.T) {
 // never touched. Fresh UUIDs and the conversion timestamp are masked; the UUID
 // reference graph survives masking, so wiring differences still fail.
 func TestCorpusGoldenParity(t *testing.T) {
-	for _, c := range shared.AmendmentsCorpus() {
-		if c.Contract != shared.MustConvert {
+	for _, c := range corpus.AmendmentsCorpus() {
+		if c.Contract != corpus.MustConvert {
 			continue // anything else may be rejected, so there is no output to freeze
 		}
 		t.Run(c.Name, func(t *testing.T) {

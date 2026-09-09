@@ -7,12 +7,12 @@ require (
 	github.com/mitre/hdf-libs/hdf-schema/testhdf/go v0.0.0-00010101000000-000000000000
 	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.6.0
-	github.com/protobom/protobom v0.6.0
+	github.com/protobom/protobom v0.6.1
 	github.com/stretchr/testify v1.12.1
 )
 
 require (
-	github.com/CycloneDX/cyclonedx-go v0.11.0 // indirect
+	github.com/CycloneDX/cyclonedx-go v0.12.0 // indirect
 	github.com/anchore/go-struct-converter v0.1.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/carabiner-dev/spdx3 v0.1.0 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/olekukonko/errors v1.2.0 // indirect
 	github.com/olekukonko/ll v0.1.6 // indirect
 	github.com/olekukonko/tablewriter v1.1.4 // indirect
-	github.com/sirupsen/logrus v1.10.1 // indirect
+	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spdx/tools-golang v0.5.7 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect

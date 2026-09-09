@@ -364,6 +364,9 @@ func parseInput(input []byte) ([]junitTestSuite, string, error) {
 // ExpectedRequirementCount states how many requirements the input must convert
 // to: one per testcase across every suite, within the same size limits the
 // conversion applies, or one no-findings requirement when there are none.
+// Suites nested inside a suite are not walked, by either path: the relation
+// shares parseInput with the conversion, so the two agree on that shape and
+// must change together when nested suites are supported.
 func ExpectedRequirementCount(input []byte) (int, string, error) {
 	const unit = "JUnit testcases"
 	suites, _, err := parseInput(input)
