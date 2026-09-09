@@ -316,6 +316,22 @@ describe('convertOscalComponentToHdf', () => {
       expect(req.tags?.['nist']).toBeDefined();
     }
   });
+
+  it('should convert every component of a multi-component definition', async () => {
+    const output = await convertOscalComponentToHdf(
+      loadFixture('component-definition-multi.json'),
+    );
+    const baseline = JSON.parse(output) as HDFBaseline;
+
+    // Two components (comp_aa, comp_ab) with two implemented requirements
+    // each, in document order.
+    expect(baseline.requirements.map((r) => r.id)).toEqual(['AC-1', 'AC-3', 'AC-1', 'AT-1']);
+    expect(baseline.requirements[0]!.descriptions[0]!.data).toContain('from comp aa');
+    expect(baseline.requirements[3]!.descriptions[0]!.data).toContain('from comp ab');
+
+    // A multi-component definition is named for the definition, not component #1.
+    expect(baseline.name).toBe('comp-def-a');
+  });
 });
 
 // ---------------------------------------------------------------------------

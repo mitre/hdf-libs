@@ -8,7 +8,7 @@ import { parseJSON } from '@mitre/hdf-utilities';
 import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type { HDFBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description } from '@mitre/hdf-schema';
-import type { Oscal, ImplementedRequirementElement, ComponentDefinitionComponent, ComponentDefinition } from './types.js';
+import type { Oscal, ImplementedRequirementElement, ComponentDefinition } from './types.js';
 import { controlIdToNistTag, extractMetadata, toKebabCase } from './shared.js';
 
 /**
@@ -40,18 +40,18 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
   const integrity = await inputIntegrity(input);
   const meta = extractMetadata(compDef.metadata);
 
-  // Use the first component to build the baseline
-  const comp = compDef.components[0]!;
-
+  // Every component's implemented-requirements convert, in document order.
   const requirements: BaselineRequirement[] = [];
-  for (const ci of comp['control-implementations'] ?? []) {
-    for (const ir of ci['implemented-requirements'] ?? []) {
-      requirements.push(implementedRequirementToBaselineRequirement(ir));
+  for (const comp of compDef.components) {
+    for (const ci of comp['control-implementations'] ?? []) {
+      for (const ir of ci['implemented-requirements'] ?? []) {
+        requirements.push(implementedRequirementToBaselineRequirement(ir));
+      }
     }
   }
 
   const baseline: HDFBaseline = {
-    name: componentBaselineName(comp, compDef),
+    name: definitionBaselineName(compDef),
     title: meta.title,
     version: meta.version,
     status: 'loaded',
@@ -109,11 +109,14 @@ function implementedRequirementToBaselineRequirement(
   };
 }
 
-/** Derives a baseline name from the component or component-definition metadata. */
-function componentBaselineName(
-  comp: ComponentDefinitionComponent,
-  compDef: ComponentDefinition,
-): string {
-  const name = comp.title || compDef.metadata.title;
+/**
+ * Derives the baseline name: a single-component definition is named for its
+ * component, a multi-component one for the definition itself.
+ */
+function definitionBaselineName(compDef: ComponentDefinition): string {
+  let name = compDef.metadata.title;
+  if (compDef.components?.length === 1 && compDef.components[0]!.title) {
+    name = compDef.components[0]!.title;
+  }
   return toKebabCase(name, 'oscal-component-definition');
 }
