@@ -39,8 +39,11 @@
 # available fix suppresses them permanently and silently, which is precisely the
 # behaviour the amendments file replaces. An unfixable transitive should stay
 # visible and be adjudicated by a person, with a reason and a review date, not
-# excused by a rule. All five findings adjudicated today are of exactly that
+# excused by a rule. The three findings adjudicated here are of exactly that
 # kind — real advisories with no fix this repo can apply on its own schedule.
+# Two qs adjudications were retired once an override reached a fixed version:
+# a waiver whose finding is gone stops matching silently and still reads as
+# accepted risk, so retiring it is part of the fix, not tidying afterwards.
 #
 # WHO RESPONDS WHEN THE FEED MOVES: @wdower. Because the verdict depends on the
 # advisory feed as well as the commit, this gate can go red across every branch
