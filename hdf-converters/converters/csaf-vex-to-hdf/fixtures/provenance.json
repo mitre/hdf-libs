@@ -1,0 +1,28 @@
+{
+  "schemas": [
+    {
+      "file": "csaf_json_schema.json",
+      "source": "https://docs.oasis-open.org/csaf/csaf/v2.0/os/schemas/csaf_json_schema.json",
+      "sha256": "29c114b35b0a30831f1674f2ab8b3ed9b2890cfeaa63b924ac6ed9d70ef44262",
+      "retrieved": "2026-09-09"
+    },
+    {
+      "file": "cvss-v2.0.json",
+      "source": "https://www.first.org/cvss/cvss-v2.0.json",
+      "sha256": "cd1a7c0815b7a47dc12fb7dded10622b96d562841f7bc6d2d8765c5d937a28f2",
+      "retrieved": "2026-09-09"
+    },
+    {
+      "file": "cvss-v3.0.json",
+      "source": "https://www.first.org/cvss/cvss-v3.0.json",
+      "sha256": "b2b587e5dfa6d9a4be89e25cb593df04f14e7ffbe8fe5b167ceee17b6097d919",
+      "retrieved": "2026-09-09"
+    },
+    {
+      "file": "cvss-v3.1.json",
+      "source": "https://www.first.org/cvss/cvss-v3.1.json",
+      "sha256": "77ff3df106e4588e2bb5c9cf0237f962c62d35c5002443c4bf7cc7ca16ee171f",
+      "retrieved": "2026-09-09"
+    }
+  ]
+}

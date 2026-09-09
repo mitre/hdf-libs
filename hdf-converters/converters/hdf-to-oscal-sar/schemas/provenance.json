@@ -1,0 +1,10 @@
+{
+  "schemas": [
+    {
+      "file": "oscal_assessment-results_schema-v1.1.2.json",
+      "source": "https://github.com/usnistgov/OSCAL/releases/download/v1.1.2/oscal_assessment-results_schema.json",
+      "sha256": "d033da70154cf6625ae46a746199e88e58f2928b1387dfac051d381b92f41b0d",
+      "retrieved": "2026-09-09"
+    }
+  ]
+}

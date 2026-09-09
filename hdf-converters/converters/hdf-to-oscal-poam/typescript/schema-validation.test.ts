@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { convertHdfToOscalPoam } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// NIST OSCAL v1.1.2 POA&M schema (draft-07). See ../schemas/PROVENANCE.md.
+// NIST OSCAL v1.1.2 POA&M schema (draft-07). See ../schemas/provenance.txt.
 const validate = loadSchemaValidator(join(__dirname, '..', 'schemas', 'oscal_poam_schema-v1.1.2.json'));
 /** The HDF schema the converter's inputs must themselves satisfy. */
 const validateHdfAmendments = loadSchemaValidator(

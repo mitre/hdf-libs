@@ -1,0 +1,10 @@
+{
+  "schemas": [
+    {
+      "file": "openvex_json_schema.json",
+      "source": "https://raw.githubusercontent.com/openvex/spec/main/openvex_json_schema.json",
+      "sha256": "9373597734ed1d3ea5161a8b46d3866c4a8cfe76fd632fdd16aef01fb34b3238",
+      "retrieved": "2026-09-09"
+    }
+  ]
+}

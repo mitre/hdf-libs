@@ -1,0 +1,10 @@
+{
+  "schemas": [
+    {
+      "file": "oscal_poam_schema-v1.1.2.json",
+      "source": "https://github.com/usnistgov/OSCAL/releases/download/v1.1.2/oscal_poam_schema.json",
+      "sha256": "906725163d767036c6189aec51252109b203214e121fc1acaff494b4d2dfbc04",
+      "retrieved": "2026-09-09"
+    }
+  ]
+}
