@@ -461,7 +461,7 @@ func rawInput(src *handle.Source, content string) ([]byte, *mcperr.Error) {
 	case hasContent && hasSource:
 		return nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
 	case hasContent:
-		if err := hdfutil.ValidateInputSize([]byte(content), int(mcpMaxInputSize())); err != nil {
+		if err := hdfutil.ValidateInputSize([]byte(content), mcpMaxInputSizeInt()); err != nil {
 			return nil, mcperr.New(mcperr.TooLarge, err.Error(), nil).
 				WithNextCall("write the tool output to a file under HDF_MCP_ROOT and pass source.path instead")
 		}

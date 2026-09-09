@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"os"
 	"strconv"
 
@@ -54,6 +55,17 @@ func mcpMaxInputSize() int64 {
 		}
 	}
 	return int64(hdfutil.DefaultMaxInputSize)
+}
+
+// mcpMaxInputSizeInt is the ceiling for callers that need an int. The env value
+// parses as int64, so narrowing happens only under a guard proving both bounds:
+// past int32 it clamps, which comfortably exceeds any sane per-document limit
+// and cannot wrap on a 32-bit build.
+func mcpMaxInputSizeInt() int {
+	if sz := mcpMaxInputSize(); sz > 0 && sz <= math.MaxInt32 {
+		return int(sz)
+	}
+	return math.MaxInt32
 }
 
 // redactFileErr builds a filesystem taxonomy error whose CLIENT payload names

@@ -1,8 +1,6 @@
 package tools
 
 import (
-	"math"
-
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -22,15 +20,7 @@ func RegisterAll(s *sdkmcp.Server) {
 // Keeping the mcp package free of any dependency on this one, the wiring is
 // injected: mcp never imports tools.
 func RegisterSelected(s *sdkmcp.Server, names []string) {
-	// HDF_MCP_MAX_SIZE parses as int64; narrow to int only under a guard proving
-	// both bounds, so the value provably fits int on every platform (32-bit
-	// included). Out-of-range values fall back to the 2 GiB ceiling, which
-	// comfortably exceeds any sane per-document limit (default 50 MB).
-	maxSize := math.MaxInt32
-	if sz := mcpMaxInputSize(); sz > 0 && sz <= math.MaxInt32 {
-		maxSize = int(sz)
-	}
-	ldr := loader.New(maxSize, 0, 0)
+	ldr := loader.New(mcpMaxInputSizeInt(), 0, 0)
 	if len(names) == 0 {
 		names = canonicalToolOrder
 	}
