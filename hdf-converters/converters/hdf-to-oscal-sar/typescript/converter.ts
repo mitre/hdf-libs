@@ -5,7 +5,7 @@
  * Results JSON and produces an OSCAL 1.1.2 assessment-results JSON document.
  */
 
-import { formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
 import { hdfTime, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
@@ -444,7 +444,7 @@ function requirementToFindingSet(
       uuid: resourceUuid,
       title: `Check source code for ${req.id}`,
       base64: {
-        value: Buffer.from(req.code, 'utf-8').toString('base64'),
+        value: encodeBase64Utf8(req.code),
         'media-type': 'text/plain',
       },
     };

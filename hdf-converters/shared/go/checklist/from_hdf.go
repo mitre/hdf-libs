@@ -21,8 +21,8 @@ import (
 // any HDF yields a valid checklist.
 func HDFToChecklist(input []byte) (*Checklist, error) {
 	var results hdf.HDFResults
-	if err := shared.DecodeHDF(input, &results); err != nil {
-		return nil, fmt.Errorf("hdf to checklist: parse HDF: %w", err)
+	if err := shared.RequireHDFResultsTyped(input, "hdf to checklist", &results); err != nil {
+		return nil, err
 	}
 	if len(results.Baselines) == 0 {
 		return nil, fmt.Errorf("hdf to checklist: HDF has no baselines")

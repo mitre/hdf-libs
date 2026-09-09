@@ -130,8 +130,10 @@ func buildDependencyGraph(deps []Dependency) []contextualizedDependency {
 		}
 	}
 
-	// Associate parent relationships
-	for _, dep := range graph {
+	// Associate parent relationships, walking parents in insertion order so a
+	// child's ParentDependencies is deterministic (map order would leak into output).
+	for _, key := range insertionOrder {
+		dep := graph[key]
 		for _, sub := range dep.Dependencies {
 			subKey := sub.Org + "/" + sub.Name
 			if child, ok := graph[subKey]; ok {

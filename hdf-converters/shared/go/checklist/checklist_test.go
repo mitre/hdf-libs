@@ -676,3 +676,16 @@ func TestSeverityEnumSanitized(t *testing.T) {
 	require.NotNil(t, ok.Severity)
 	assert.Equal(t, hdf.SeverityHigh, *ok.Severity)
 }
+
+// HDFToChecklist is the entry point for both hdf-to-ckl and hdf-to-cklb, so it
+// must run the same input prologue as every other HDF exporter.
+func TestHDFToChecklistRunsInputGuard(t *testing.T) {
+	_, err := HDFToChecklist(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty input")
+
+	over := make([]byte, shared.DefaultMaxJSONSize+1)
+	_, err = HDFToChecklist(over)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+}

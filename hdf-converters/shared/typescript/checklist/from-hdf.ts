@@ -1,4 +1,4 @@
-import { parseHdf, hdfTime } from '../converterutil.js';
+import { hdfTime, requireHdfResults } from '../converterutil.js';
 import { requirementEffectiveStatus } from '../status.js';
 import type {
   HDFResults,
@@ -20,8 +20,8 @@ import { statusFromHdf } from './status.js';
  * fields are synthesized best-effort so any HDF yields a valid checklist.
  */
 export function hdfToChecklist(input: string): Checklist {
-  const hdf = parseHdf<HDFResults>(input);
-  if (!hdf || !Array.isArray(hdf.baselines) || hdf.baselines.length === 0) {
+  const hdf = requireHdfResults(input, 'hdf to checklist').doc as unknown as HDFResults;
+  if (hdf.baselines.length === 0) {
     throw new Error('hdf to checklist: HDF has no baselines');
   }
 
