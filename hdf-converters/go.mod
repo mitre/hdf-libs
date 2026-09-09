@@ -9,12 +9,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.70.1
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.78.1
 	github.com/mitre/hdf-libs/hdf-fixtures v0.0.0-00010101000000-000000000000
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.5.1
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.5.1
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.5.1
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-schema/testhdf/go v0.0.0-00010101000000-000000000000
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.5.1
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.1
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.6.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/stretchr/testify v1.12.1
 	github.com/terminalstatic/go-xsd-validate v0.1.8

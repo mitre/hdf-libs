@@ -3,7 +3,7 @@
 // library by the CLI and the MCP; sibling to @mitre/hdf-diff. See ADR-0007.
 
 /** Library version, kept on the workspace lockstep. */
-export const engineVersion = '3.5.0';
+export const engineVersion = '3.6.0';
 
 // Detection engine (peer of hdf-engine/go/detect.go).
 export { detect, type HdfDocType } from './detect.js';
