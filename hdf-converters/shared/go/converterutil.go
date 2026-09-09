@@ -389,6 +389,32 @@ func DeriveVerificationMethod(code *string) *hdf.VerificationMethodEnum {
 	return &automated
 }
 
+// oscalSeverityByHDFBand renames the HDF severity bands into the OSCAL risk
+// characterization facet vocabulary (medium is "moderate" there, informational
+// is "info").
+var oscalSeverityByHDFBand = map[string]string{
+	"critical":      "critical",
+	"high":          "high",
+	"medium":        "moderate",
+	"low":           "low",
+	"informational": "info",
+}
+
+// OSCALSeverityFromHDF maps an HDF severity band to the OSCAL risk-facet
+// severity vocabulary. Returns "" for anything outside the HDF vocabulary so
+// callers omit the facet rather than emit a value OSCAL does not define.
+func OSCALSeverityFromHDF(severity string) string {
+	return oscalSeverityByHDFBand[strings.ToLower(severity)]
+}
+
+// DefaultOverrideExpiry returns the expiresAt an override takes when the source
+// tool records no expiration: one calendar year after appliedAt, in UTC. A
+// calendar year (not 365 days) keeps the date on the same month/day across leap
+// years, and normalizing to UTC first keeps the result off the host timezone.
+func DefaultOverrideExpiry(appliedAt time.Time) time.Time {
+	return appliedAt.UTC().AddDate(1, 0, 0)
+}
+
 // LimitSliceWithWarning returns at most maxItems elements from items and logs
 // a warning if the slice was truncated. The label parameter identifies the item
 // type in the warning message (e.g., "issue", "vulnerability").

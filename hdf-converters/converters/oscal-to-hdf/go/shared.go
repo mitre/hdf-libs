@@ -137,25 +137,25 @@ func FlattenPartsByName(parts []Part, name string) string {
 	return strings.TrimSpace(sb.String())
 }
 
+// riskFacetSeverityAliases carries the one OSCAL spelling the standard severity
+// map does not know; every other facet value is standard vocabulary.
+var riskFacetSeverityAliases = map[string]float64{"moderate": 0.5}
+
+// unrecognizedFacetImpact is the sentinel for "this facet's value is not a
+// severity" — impact is 0.0–1.0, so a negative can never be a real reading.
+const unrecognizedFacetImpact = -1.0
+
 // ExtractRiskSeverity extracts impact/severity from risk characterization
 // facets and returns a normalized 0.0–1.0 impact value. Looks for facets
 // named "impact" or "risk" in any system. Falls back to defaultImpact.
 func ExtractRiskSeverity(characterizations []Characterization, defaultImpact float64) float64 {
 	for _, c := range characterizations {
 		for _, f := range c.Facets {
-			if f.Name == "impact" || f.Name == "risk" || f.Name == "likelihood" {
-				switch strings.ToLower(f.Value) {
-				case "critical":
-					return 0.9
-				case "high":
-					return 0.7
-				case "moderate", "medium":
-					return 0.5
-				case "low":
-					return 0.3
-				case "info", "informational", "none":
-					return 0.0
-				}
+			if f.Name != "impact" && f.Name != "risk" && f.Name != "likelihood" {
+				continue
+			}
+			if impact := hdfutil.SeverityToImpactWithAliases(f.Value, riskFacetSeverityAliases, unrecognizedFacetImpact); impact >= 0 {
+				return impact
 			}
 		}
 	}
@@ -240,18 +240,7 @@ func GenerateUUID() string {
 // ImpactToSeverity converts a 0.0-1.0 impact value to an OSCAL severity string.
 // This is the reverse of ExtractRiskSeverity.
 func ImpactToSeverity(impact float64) string {
-	switch {
-	case impact >= 0.9:
-		return "critical"
-	case impact >= 0.7:
-		return "high"
-	case impact >= 0.4:
-		return "moderate"
-	case impact >= 0.1:
-		return "low"
-	default:
-		return "info"
-	}
+	return shared.OSCALSeverityFromHDF(hdfutil.ImpactToSeverity(impact))
 }
 
 // HDFStatusToOSCALRiskStatus maps an HDF ResultStatus to an OSCAL risk status

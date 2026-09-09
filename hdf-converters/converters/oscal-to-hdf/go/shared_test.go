@@ -282,7 +282,7 @@ func TestImpactToSeverity(t *testing.T) {
 		{0.3, "low"},
 		{0.1, "low"},
 		{0.0, "info"},
-		{0.05, "info"},
+		{0.05, "low"},
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.expected, ImpactToSeverity(tt.impact))

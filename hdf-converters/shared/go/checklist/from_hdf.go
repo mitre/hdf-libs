@@ -229,27 +229,37 @@ func overrideSeverity(req *hdf.EvaluatedRequirement) (severity, justification st
 	for i := range req.StatusOverrides {
 		o := &req.StatusOverrides[i]
 		if o.Impact != nil {
-			return qualSeverityFromImpact(o.Impact.Value), o.Reason
+			sev := cklSeverityFromImpact(o.Impact.Value)
+			if sev == "" {
+				// An override that zeroes impact still has to name a CAT level;
+				// low is the checklist's floor.
+				sev = "low"
+			}
+			return sev, o.Reason
 		}
 	}
 	return "", ""
 }
 
-// qualSeverityFromImpact maps an impact score to STIG's qualitative severity
-// bucket, inverse of the standard SeverityToImpact mapping.
-func qualSeverityFromImpact(impact float64) string {
-	switch {
-	case impact >= 0.7:
+// cklSeverityFromImpact maps an impact score to STIG's qualitative severity
+// bucket via the shared band mapper. The checklist vocabulary is CAT I/II/III
+// only, so critical folds into high and the informational band has no bucket at
+// all — callers decide what an absent bucket means.
+func cklSeverityFromImpact(impact float64) string {
+	switch hdfutil.ImpactToSeverity(impact) {
+	case "critical", "high":
 		return "high"
-	case impact >= 0.4:
+	case "medium":
 		return "medium"
-	default:
+	case "low":
 		return "low"
+	default:
+		return ""
 	}
 }
 
 // resolveSeverity prefers the round-tripped tags.severity, else derives from
-// impact thresholds (the inverse of SeverityToImpact's standard mapping).
+// the impact bands.
 func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{}) string {
 	if s := tagStr(tags, "severity"); s != "" {
 		return s
@@ -257,16 +267,7 @@ func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{})
 	if req.Severity != nil && *req.Severity != "" {
 		return strings.ToLower(string(*req.Severity))
 	}
-	switch {
-	case req.Impact >= 0.7:
-		return "high"
-	case req.Impact >= 0.4:
-		return "medium"
-	case req.Impact > 0:
-		return "low"
-	default:
-		return ""
-	}
+	return cklSeverityFromImpact(req.Impact)
 }
 
 // resolveCCIs prefers explicit tags.cci, else reverses tags.nist via NISTToCCI.

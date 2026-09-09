@@ -673,7 +673,7 @@ func TestSuppressionIntegration_AcceptedWaiverOverride(t *testing.T) {
 	assert.Equal(t, "sarif suppression", ov.AppliedBy.Identifier)
 	assert.Equal(t, hdf.IdentityTypeOther, ov.AppliedBy.Type)
 	assert.False(t, ov.AppliedAt.IsZero())
-	assert.Equal(t, ov.AppliedAt.AddDate(1, 0, 0), ov.ExpiresAt)
+	assert.Equal(t, shared.DefaultOverrideExpiry(ov.AppliedAt), ov.ExpiresAt)
 
 	require.NotNil(t, req.EffectiveStatus)
 	assert.Equal(t, hdf.Passed, *req.EffectiveStatus)

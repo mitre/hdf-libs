@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { CWE_PATTERN, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -176,7 +176,9 @@ function debDistro(distro: string): boolean {
 
 /**
  * Maps a Twistlock package type plus the result's distro string to a schema
- * Ecosystem value. Defaults to 'generic' for unknown types.
+ * Ecosystem value. Only the Twistlock spellings that differ from the PURL type
+ * vocabulary are listed; the rest defer to the shared resolver, which falls
+ * back to 'generic' for unknown types.
  */
 export function resolveEcosystem(packageType: string | undefined, distro: string | undefined): Ecosystem {
   const t = (packageType ?? '').toLowerCase();
@@ -186,19 +188,10 @@ export function resolveEcosystem(packageType: string | undefined, distro: string
       if (rhelDistro(d)) return Ecosystem.RPM;
       if (debDistro(d)) return Ecosystem.Deb;
       return Ecosystem.Generic;
-    case 'rpm': return Ecosystem.RPM;
-    case 'deb': return Ecosystem.Deb;
-    case 'jar':
-    case 'maven': return Ecosystem.Maven;
-    case 'python':
-    case 'pypi': return Ecosystem.Pypi;
-    case 'nodejs':
-    case 'npm': return Ecosystem.Npm;
-    case 'gem': return Ecosystem.Gem;
-    case 'nuget': return Ecosystem.Nuget;
-    case 'go': return Ecosystem.Go;
-    case 'cargo': return Ecosystem.Cargo;
-    default: return Ecosystem.Generic;
+    case 'jar': return Ecosystem.Maven;
+    case 'python': return Ecosystem.Pypi;
+    case 'nodejs': return Ecosystem.Npm;
+    default: return ecosystemFromPurlType(t);
   }
 }
 
@@ -217,24 +210,22 @@ export function extractFixedInVersion(vuln: TwistlockVuln): string {
 }
 
 /**
- * Builds an AffectedPackage entry from per-vulnerability fields. Returns
- * undefined when packageName or packageVersion are missing (both required).
+ * Builds an AffectedPackage entry from per-vulnerability fields. Twistlock
+ * carries no purl or cpe, so the shared builder returns undefined unless the
+ * name + version + ecosystem triple is complete.
  */
 export function buildAffectedPackage(
   vuln: TwistlockVuln,
   packageTypes: Map<string, string>,
   distro: string | undefined,
 ): AffectedPackage | undefined {
-  if (!vuln.packageName || !vuln.packageVersion) return undefined;
-  const pkgType = vuln.packageType ?? packageTypes.get(vuln.packageName);
-  const pkg: AffectedPackage = {
+  const pkgType = vuln.packageType ?? packageTypes.get(vuln.packageName ?? '');
+  return buildSharedAffectedPackage({
     name: vuln.packageName,
     version: vuln.packageVersion,
     ecosystem: resolveEcosystem(pkgType, distro),
-  };
-  const fixed = extractFixedInVersion(vuln);
-  if (fixed) pkg.fixedInVersion = fixed;
-  return pkg;
+    fixedInVersion: extractFixedInVersion(vuln),
+  });
 }
 
 /**

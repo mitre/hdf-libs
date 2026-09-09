@@ -8,7 +8,6 @@ import {
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type Reference,
-  type RequirementResult,
   ResultStatus,
   type SourceLocation,
   TargetType,
@@ -22,6 +21,7 @@ import {
   inputChecksum,
   buildNistCciTags,
   buildNoFindingsRequirement,
+  buildAffectedPackage,
   deriveControlTypeFromTags,
   digestToChecksums,
   ecosystemFromPurlType,
@@ -241,16 +241,12 @@ function convertVuln(v: TrivyVuln, res: TrivyResult, startTime: Date): Evaluated
         codeDesc: buildVulnCodeDesc(v, res),
         startTime,
         message: `Severity: ${firstNonEmpty(v.Severity ?? '', 'UNKNOWN')}`,
-      } as RequirementResult,
+      },
     ],
   };
-  // Emit affectedPackages only when it satisfies the schema anyOf. Package
-  // identity comes from the PURL (which also yields the ecosystem); a
-  // name/version without a PURL lacks the required ecosystem and would be
-  // schema-invalid, so gate on the PURL.
-  const ap = buildAffectedPackage(v);
-  if (ap.purl) req.affectedPackages = [ap];
-  if (v.PkgPath) req.sourceLocation = {ref: v.PkgPath} as SourceLocation;
+  const ap = buildTrivyAffectedPackage(v);
+  if (ap) req.affectedPackages = [ap];
+  if (v.PkgPath) req.sourceLocation = {ref: v.PkgPath};
   return req;
 }
 
@@ -277,7 +273,7 @@ function convertMisconf(m: TrivyMisconf, res: TrivyResult, startTime: Date): Eva
         status: misconfStatus(m.Status),
         codeDesc: firstNonEmpty(m.Message ?? '', m.Title ?? ''),
         startTime,
-      } as RequirementResult,
+      },
     ],
   };
   if (res.Target) {
@@ -305,7 +301,7 @@ function convertSecret(s: TrivySecret, res: TrivyResult, startTime: Date): Evalu
     code: JSON.stringify(s, null, 2),
     controlType: deriveControlTypeFromTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS),
     verificationMethod: VerificationMethodEnum.Automated,
-    results: [{status: ResultStatus.Failed, codeDesc: s.Match ?? '', startTime} as RequirementResult],
+    results: [{status: ResultStatus.Failed, codeDesc: s.Match ?? '', startTime}],
   };
   if (res.Target) {
     const sl: SourceLocation = {ref: res.Target};
@@ -338,10 +334,10 @@ function convertLicense(l: TrivyLicense, res: TrivyResult, startTime: Date): Eva
     controlType: deriveControlTypeFromTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS),
     verificationMethod: VerificationMethodEnum.Automated,
     results: [
-      {status: ResultStatus.Failed, codeDesc: `${l.PkgName ?? ''}: ${l.Name ?? ''} license`, startTime} as RequirementResult,
+      {status: ResultStatus.Failed, codeDesc: `${l.PkgName ?? ''}: ${l.Name ?? ''} license`, startTime},
     ],
   };
-  if (l.FilePath) req.sourceLocation = {ref: l.FilePath} as SourceLocation;
+  if (l.FilePath) req.sourceLocation = {ref: l.FilePath};
   return req;
 }
 
@@ -350,9 +346,9 @@ function convertLicense(l: TrivyLicense, res: TrivyResult, startTime: Date): Eva
 function buildComponent(report: TrivyReport): Component | undefined {
   if (!report.ArtifactName) return undefined;
   if (report.ArtifactType !== 'container_image') {
-    return {name: report.ArtifactName, type: TargetType.Artifact} as Component;
+    return {name: report.ArtifactName, type: TargetType.Artifact};
   }
-  const c: Component = {name: report.ArtifactName, type: TargetType.ContainerImage} as Component;
+  const c: Component = {name: report.ArtifactName, type: TargetType.ContainerImage};
   const md = report.Metadata;
   if (!md) return c;
   if (md.ImageID) c.imageId = md.ImageID;
@@ -412,18 +408,18 @@ function buildCvssEntries(m?: Record<string, TrivyCvss>): Cvss[] | undefined {
   return entries.length > 0 ? entries : undefined;
 }
 
-function buildAffectedPackage(v: TrivyVuln): AffectedPackage {
-  const ap: AffectedPackage = {};
-  if (v.PkgName) ap.name = v.PkgName;
-  if (v.InstalledVersion) ap.version = v.InstalledVersion;
-  if (v.FixedVersion) ap.fixedInVersion = v.FixedVersion;
+// Returns undefined when the identifiers don't satisfy the schema's anyOf —
+// Trivy's package identity comes from the PURL, so a name/version without one
+// lacks the required ecosystem.
+function buildTrivyAffectedPackage(v: TrivyVuln): AffectedPackage | undefined {
   const purl = v.PkgIdentifier?.PURL;
-  if (purl) {
-    ap.purl = purl;
-    const eco = ecosystemFromPurl(purl);
-    if (eco) ap.ecosystem = eco;
-  }
-  return ap;
+  return buildAffectedPackage({
+    name: v.PkgName,
+    version: v.InstalledVersion,
+    fixedInVersion: v.FixedVersion,
+    purl,
+    ecosystem: purl ? ecosystemFromPurl(purl) : undefined,
+  });
 }
 
 // The shared helper returns Ecosystem.Generic for a purl type it doesn't know;

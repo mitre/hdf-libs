@@ -1,4 +1,4 @@
-import { buildCsv, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
+import { buildCsv, impactToSeverity, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description, StatusOverride, Cvss } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
@@ -294,11 +294,11 @@ function getSeverity(requirement: EvaluatedRequirement): string {
     }
   }
 
-  // Derive from impact if not provided
-  const impact = requirement.impact;
-  if (impact >= 0.7) return 'high';
-  if (impact >= 0.4) return 'medium';
-  return 'low';
+  // Derive from impact via the shared mapper so the critical band is not
+  // reported as high. Zero impact keeps the historical 'low' floor: the CSV has
+  // no separate no-severity column.
+  const derived = impactToSeverity(requirement.impact);
+  return derived === 'informational' ? 'low' : derived;
 }
 
 /**

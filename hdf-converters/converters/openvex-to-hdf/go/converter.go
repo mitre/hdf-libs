@@ -25,12 +25,6 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// defaultExpiryHorizon is the override expiresAt offset from the
-// statement's timestamp. VEX statements are meant to be re-evaluated as
-// new information arrives; one year is a defensive default consistent
-// with the no-permanent-amendment rule on Standalone_Override.
-const defaultExpiryHorizon = 365 * 24 * time.Hour
-
 // Document is the OpenVEX top-level document.
 type Document struct {
 	Context    string      `json:"@context"`
@@ -224,7 +218,7 @@ func statementToOverride(stmt *Statement, doc *Document, docTime time.Time) (hdf
 		Status:           target.Status,
 		RequirementID:    requirementID,
 		AppliedAt:        stmtTime,
-		ExpiresAt:        stmtTime.Add(defaultExpiryHorizon),
+		ExpiresAt:        shared.DefaultOverrideExpiry(stmtTime),
 		AppliedBy:        *identityFor(author, doc.Role),
 		Reason:           buildReason(stmt, target.POAMActionTemplate),
 		AffectedPackages: affectedPackages,
@@ -244,7 +238,7 @@ func statementToOverride(stmt *Statement, doc *Document, docTime time.Time) (hdf
 		override.Milestones = []hdf.Milestone{{
 			Description:         target.POAMActionTemplate,
 			Status:              hdf.Pending,
-			EstimatedCompletion: stmtTime.Add(defaultExpiryHorizon),
+			EstimatedCompletion: shared.DefaultOverrideExpiry(stmtTime),
 		}}
 	}
 

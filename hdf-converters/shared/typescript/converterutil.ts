@@ -676,6 +676,42 @@ export function deriveVerificationMethod(code: string | undefined | null): Verif
   return VerificationMethodEnum.Automated;
 }
 
+/**
+ * Renames the HDF severity bands into the OSCAL risk characterization facet
+ * vocabulary (medium is 'moderate' there, informational is 'info'). Returns ''
+ * for anything outside the HDF vocabulary so callers omit the facet rather than
+ * emit a value OSCAL does not define. Go peer: shared.OSCALSeverityFromHDF.
+ */
+const OSCAL_SEVERITY_BY_HDF_BAND: Record<string, string> = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'moderate',
+  low: 'low',
+  informational: 'info',
+};
+
+export function oscalSeverityFromHdf(severity: string | undefined | null): string {
+  const band = (severity ?? '').toLowerCase();
+  return Object.prototype.hasOwnProperty.call(OSCAL_SEVERITY_BY_HDF_BAND, band)
+    ? OSCAL_SEVERITY_BY_HDF_BAND[band]!
+    : '';
+}
+
+/**
+ * The expiresAt an override takes when the source tool records no expiration:
+ * one calendar year after appliedAt, computed in UTC. A calendar year (not 365
+ * days) keeps the date on the same month/day across leap years, and doing the
+ * rollover in UTC keeps the result off the host timezone. Go peer:
+ * shared.DefaultOverrideExpiry.
+ */
+export function defaultOverrideExpiry(appliedAt: Date): Date {
+  // setTime rather than new Date(value): the timestamp guard bans the latter.
+  const expiresAt = new Date();
+  expiresAt.setTime(appliedAt.getTime());
+  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+  return expiresAt;
+}
+
 // Synthesized passed placeholder for tools that ran clean. Required because
 // the HDF schema enforces requirements.minItems=1.
 export function buildNoFindingsRequirement(

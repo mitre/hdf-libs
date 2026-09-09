@@ -835,3 +835,44 @@ func TestValidateJSONSize_IsHdfutilWithPrefix(t *testing.T) {
 	assert.NoError(t, ValidateJSONSize(big, "probe", 0))
 	assert.NoError(t, ValidateJSONSize(big, "probe", 10))
 }
+
+func TestDefaultOverrideExpiry(t *testing.T) {
+	tests := []struct {
+		name      string
+		appliedAt time.Time
+		want      string
+	}{
+		{
+			name:      "calendar year, not 365 days, across a leap day",
+			appliedAt: time.Date(2027, 3, 1, 12, 0, 0, 0, time.UTC),
+			want:      "2028-03-01T12:00:00Z",
+		},
+		{
+			name:      "non-UTC input is normalized before the year is added",
+			appliedAt: time.Date(2026, 1, 1, 20, 0, 0, 0, time.FixedZone("UTC-8", -8*3600)),
+			want:      "2027-01-02T04:00:00Z",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DefaultOverrideExpiry(tt.appliedAt)
+			require.Equal(t, tt.want, got.Format(time.RFC3339))
+			require.Equal(t, time.UTC, got.Location())
+		})
+	}
+}
+
+func TestOSCALSeverityFromHDF(t *testing.T) {
+	cases := map[string]string{
+		"critical":      "critical",
+		"high":          "high",
+		"medium":        "moderate",
+		"low":           "low",
+		"informational": "info",
+		"":              "",
+		"bogus":         "",
+	}
+	for in, want := range cases {
+		assert.Equal(t, want, OSCALSeverityFromHDF(in), "OSCALSeverityFromHDF(%q)", in)
+	}
+}

@@ -366,13 +366,11 @@ func getSeverity(requirement *hdf.EvaluatedRequirement) string {
 		}
 	}
 
-	// Derive from impact
-	impact := requirement.Impact
-	if impact >= 0.7 {
-		return "high"
-	}
-	if impact >= 0.4 {
-		return "medium"
+	// Derive from impact via the shared mapper so the critical band is not
+	// reported as high. Zero impact keeps the historical "low" floor: the CSV
+	// has no separate no-severity column.
+	if sev := hdfutil.ImpactToSeverity(requirement.Impact); sev != "informational" {
+		return sev
 	}
 	return "low"
 }

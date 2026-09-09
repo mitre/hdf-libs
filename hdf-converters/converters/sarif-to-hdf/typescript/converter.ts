@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
@@ -677,9 +677,7 @@ function buildSuppressionOverride(result: SarifResult, timestamp: Date): { overr
   const type = isFalsePositive ? OverrideType.FalsePositive : OverrideType.Waiver;
   const effective = isFalsePositive ? ResultStatus.NotApplicable : ResultStatus.Passed;
   // expiresAt = appliedAt + 1yr; setTime avoids the eslint new Date(value) ban.
-  const expiresAt = new Date();
-  expiresAt.setTime(timestamp.getTime());
-  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+  const expiresAt = defaultOverrideExpiry(timestamp);
   const override: StatusOverride = {
     type,
     status: effective,

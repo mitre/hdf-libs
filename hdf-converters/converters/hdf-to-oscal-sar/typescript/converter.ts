@@ -7,7 +7,7 @@
 
 import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
-import { hdfTime, requireHdfResults } from '../../../shared/typescript/converterutil.js';
+import { hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -645,20 +645,7 @@ function sourceLocationText(loc: NonNullable<EvaluatedRequirement['sourceLocatio
 
 /** Maps an explicit HDF severity to the OSCAL risk facet value vocabulary. */
 function severityToFacetValue(s: string): string {
-  switch (s) {
-    case 'critical':
-      return 'critical';
-    case 'high':
-      return 'high';
-    case 'medium':
-      return 'moderate';
-    case 'low':
-      return 'low';
-    case 'informational':
-      return 'info';
-    default:
-      return '';
-  }
+  return oscalSeverityFromHdf(s);
 }
 
 /**

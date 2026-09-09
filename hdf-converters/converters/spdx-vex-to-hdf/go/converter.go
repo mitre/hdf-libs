@@ -32,12 +32,6 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// defaultExpiryHorizon is the override expiresAt offset from the statement's
-// assessment time. VEX statements are meant to be re-evaluated as new
-// information arrives; one year is a defensive default consistent with the
-// no-permanent-amendment rule on Standalone_Override.
-const defaultExpiryHorizon = 365 * 24 * time.Hour
-
 // defaultAppliedByIdentifier is the fallback system identity when no supplier
 // agent can be resolved for a statement.
 const defaultAppliedByIdentifier = "spdx-vex-import"
@@ -275,7 +269,7 @@ func (idx *graphIndex) relationshipToOverride(rel *graphElement) (hdf.Standalone
 		Status:           target.Status,
 		RequirementID:    requirementID,
 		AppliedAt:        appliedAt,
-		ExpiresAt:        appliedAt.Add(defaultExpiryHorizon),
+		ExpiresAt:        shared.DefaultOverrideExpiry(appliedAt),
 		AppliedBy:        idx.identityFor(rel.CreationInfoRef),
 		Reason:           buildReason(vuln, rel, target.POAMActionTemplate),
 		AffectedPackages: idx.affectedPackages(rel.To),
@@ -303,7 +297,7 @@ func (idx *graphIndex) relationshipToOverride(rel *graphElement) (hdf.Standalone
 		override.Milestones = []hdf.Milestone{{
 			Description:         desc,
 			Status:              hdf.Pending,
-			EstimatedCompletion: appliedAt.Add(defaultExpiryHorizon),
+			EstimatedCompletion: shared.DefaultOverrideExpiry(appliedAt),
 		}}
 	}
 
@@ -418,21 +412,12 @@ func buildCvss(rel *graphElement, cve string) *hdf.Cvss {
 // cvssVersion derives the CVSS spec version from the vector prefix
 // ("CVSS:3.1/...") when present, else from the relationship subtype.
 func cvssVersion(relType, vector string) hdf.Version {
-	if strings.HasPrefix(vector, "CVSS:") {
-		rest := vector[len("CVSS:"):]
-		if i := strings.IndexByte(rest, '/'); i > 0 {
-			switch rest[:i] {
-			case "2.0":
-				return hdf.The20
-			case "3.0":
-				return hdf.The30
-			case "3.1":
-				return hdf.The31
-			case "4.0":
-				return hdf.The40
-			}
-		}
-	}
+	return shared.CvssVersionFromVector(vector, cvssVersionFromRelType(relType))
+}
+
+// cvssVersionFromRelType is the fallback when the vector carries no recognized
+// prefix: the relationship subtype names the CVSS generation.
+func cvssVersionFromRelType(relType string) hdf.Version {
 	switch {
 	case strings.Contains(relType, "CvssV2"):
 		return hdf.The20

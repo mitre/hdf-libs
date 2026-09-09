@@ -364,12 +364,8 @@ func convertVuln(raw json.RawMessage, res trivyResult, startTime time.Time) (hdf
 			Message:   hdfutil.Ptr(fmt.Sprintf("Severity: %s", shared.FirstNonEmpty(v.Severity, "UNKNOWN"))),
 		}},
 	}
-	// Emit affectedPackages only when it satisfies the schema anyOf. Trivy's
-	// package identity comes from the PURL (which also yields the ecosystem);
-	// a name/version without a PURL lacks the required ecosystem and would be
-	// schema-invalid, so gate on the PURL.
-	if ap := buildAffectedPackage(v); ap.Purl != nil {
-		req.AffectedPackages = []hdf.AffectedPackage{ap}
+	if ap := buildAffectedPackage(v); ap != nil {
+		req.AffectedPackages = []hdf.AffectedPackage{*ap}
 	}
 	if v.PkgPath != "" {
 		req.SourceLocation = &hdf.SourceLocation{Ref: hdfutil.Ptr(v.PkgPath)}
@@ -590,24 +586,20 @@ func buildCvssEntries(m map[string]trivyCVSS) []hdf.Cvss {
 	return out
 }
 
-func buildAffectedPackage(v trivyVuln) hdf.AffectedPackage {
-	ap := hdf.AffectedPackage{}
-	if v.PkgName != "" {
-		ap.Name = hdfutil.Ptr(v.PkgName)
-	}
-	if v.InstalledVersion != "" {
-		ap.Version = hdfutil.Ptr(v.InstalledVersion)
-	}
-	if v.FixedVersion != "" {
-		ap.FixedInVersion = hdfutil.Ptr(v.FixedVersion)
+// buildAffectedPackage returns nil when the identifiers don't satisfy the
+// schema's anyOf — Trivy's package identity comes from the PURL, so a
+// name/version without one lacks the required ecosystem.
+func buildAffectedPackage(v trivyVuln) *hdf.AffectedPackage {
+	opts := shared.AffectedPackageOptions{
+		Name:           v.PkgName,
+		Version:        v.InstalledVersion,
+		FixedInVersion: v.FixedVersion,
 	}
 	if v.PkgIdentifier != nil && v.PkgIdentifier.PURL != "" {
-		ap.Purl = hdfutil.Ptr(v.PkgIdentifier.PURL)
-		if eco := ecosystemFromPURL(v.PkgIdentifier.PURL); eco != "" {
-			ap.Ecosystem = &eco
-		}
+		opts.Purl = v.PkgIdentifier.PURL
+		opts.Ecosystem = ecosystemFromPURL(v.PkgIdentifier.PURL)
 	}
-	return ap
+	return shared.BuildAffectedPackage(opts)
 }
 
 // ecosystemFromPURL resolves the AffectedPackage ecosystem from a PURL. The

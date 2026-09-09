@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity } from './converterutil.js';
+import { buildAffectedPackage, defaultOverrideExpiry, oscalSeverityFromHdf, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity } from './converterutil.js';
 import { DEFAULT_MAX_INPUT_SIZE as UTIL_DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 
 describe('inputChecksum', () => {
@@ -495,23 +498,22 @@ describe('markUnratedSeverity', () => {
   });
 });
 
-describe('firstNonEmpty — shared non-empty-text fallback', () => {
-  // Identical parity table to Go's firstNonEmptyCases (converterutil_test.go).
-  // Every case here MUST match the Go table one-for-one (AC4).
-  const cases: Array<{ name: string; in: string[]; want: string }> = [
-    { name: 'first candidate is non-empty', in: ['a', 'b'], want: 'a' },
-    { name: 'skips a leading empty string', in: ['', 'b'], want: 'b' },
-    { name: 'skips whitespace-only candidates', in: ['   ', '\t', '\n', 'b'], want: 'b' },
-    { name: 'returns the first non-empty candidate as-is (no trimming of content)', in: ['', '  real title  '], want: '  real title  ' },
-    { name: 'all empty or whitespace yields empty string', in: ['', '  ', '\t\n'], want: '' },
-    { name: 'no candidates yields empty string', in: [], want: '' },
-    { name: 'single non-empty candidate', in: ['x'], want: 'x' },
-    { name: 'returns the final fallback when earlier candidates are empty', in: ['', ' ', 'fallback'], want: 'fallback' },
-  ];
+// The helper is implemented twice, so the vectors live in one shared file both
+// languages read — an inline copy here could drift from Go's without failing.
+const FIRST_NON_EMPTY_CASES = (
+  JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'first-non-empty-cases.json'), 'utf-8'),
+  ) as { cases: Array<{ name: string; candidates: string[]; want: string }> }
+).cases;
 
-  for (const tc of cases) {
+describe('firstNonEmpty — shared non-empty-text fallback', () => {
+  it('has a populated shared table', () => {
+    expect(FIRST_NON_EMPTY_CASES.length).toBeGreaterThan(0);
+  });
+
+  for (const tc of FIRST_NON_EMPTY_CASES) {
     it(tc.name, () => {
-      expect(firstNonEmpty(...tc.in)).toBe(tc.want);
+      expect(firstNonEmpty(...tc.candidates)).toBe(tc.want);
     });
   }
 });
@@ -546,5 +548,38 @@ describe('requireHdfResults / requireHdfAmendments — structural input guard', 
     }
     const { items } = requireHdfAmendments('{"overrides":[{"type":"waiver"}]}', 'test-conv');
     expect(items).toHaveLength(1);
+  });
+});
+
+describe('defaultOverrideExpiry', () => {
+  it('adds a calendar year, not 365 days, across a leap day', () => {
+    const appliedAt = new Date(Date.UTC(2027, 2, 1, 12, 0, 0));
+    expect(defaultOverrideExpiry(appliedAt).toISOString()).toBe('2028-03-01T12:00:00.000Z');
+  });
+
+  it('adds the year in UTC so the result does not depend on the host timezone', () => {
+    // 2026-01-01T04:00:00Z is 2025-12-31 locally west of UTC; a local-time
+    // rollover would land on 2026-12-31 there and 2027-01-01 elsewhere.
+    const appliedAt = new Date(Date.UTC(2026, 0, 1, 4, 0, 0));
+    expect(defaultOverrideExpiry(appliedAt).toISOString()).toBe('2027-01-01T04:00:00.000Z');
+  });
+
+  it('does not mutate the input', () => {
+    const appliedAt = new Date(Date.UTC(2026, 5, 15, 0, 0, 0));
+    defaultOverrideExpiry(appliedAt);
+    expect(appliedAt.toISOString()).toBe('2026-06-15T00:00:00.000Z');
+  });
+});
+
+describe('oscalSeverityFromHdf', () => {
+  it('renames the HDF bands OSCAL spells differently and rejects the rest', () => {
+    expect(oscalSeverityFromHdf('critical')).toBe('critical');
+    expect(oscalSeverityFromHdf('high')).toBe('high');
+    expect(oscalSeverityFromHdf('medium')).toBe('moderate');
+    expect(oscalSeverityFromHdf('low')).toBe('low');
+    expect(oscalSeverityFromHdf('informational')).toBe('info');
+    expect(oscalSeverityFromHdf('')).toBe('');
+    expect(oscalSeverityFromHdf('bogus')).toBe('');
+    expect(oscalSeverityFromHdf('constructor')).toBe('');
   });
 });
