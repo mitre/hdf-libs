@@ -8,6 +8,8 @@ import {
   verifyChecksums,
   plannedBaselineRefs,
   coveredBaselineNames,
+  coveredBaselinesInPackage,
+  agentOverridesInPackage,
   completeness,
   type EvidenceContent,
   type FetchFn,
@@ -34,6 +36,12 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     const comp = completeness(['RHEL9-STIG', 'PostgreSQL-STIG'], ['RHEL9-STIG']);
     expect(comp.complete).toBe(false);
     expect(comp.missing).toEqual(['PostgreSQL-STIG']);
+  });
+
+  it('aggregates covered baselines and agent overrides across the package (same as Go)', () => {
+    const { contents } = parseEvidencePackage(readText('package.json'));
+    expect(coveredBaselinesInPackage(contents, fetch)).toEqual(['RHEL9-STIG', 'PostgreSQL-STIG', 'RHEL9-STIG']);
+    expect(agentOverridesInPackage(contents, fetch)).toBe(2);
   });
 
   it('classifies checksums: match, mismatch, skipped (same as Go)', () => {
@@ -101,6 +109,28 @@ describe('evidence-verify engine — unit', () => {
     // fall back to '' and be filtered out — exercises the nullish-default branch.
     expect(plannedBaselineRefs(JSON.stringify({ assessments: [{ baselineRef: 'A' }, {}] }))).toEqual(['A']);
     expect(coveredBaselineNames(JSON.stringify({ baselines: [{ name: 'X' }, {}] }))).toEqual(['X']);
+  });
+
+  it('package aggregators consult only hdf-results entries with a uri and skip unreadable or unparseable ones', () => {
+    const agent = new TextEncoder().encode(
+      '{"baselines":[{"name":"A","requirements":[{"statusOverrides":[{"appliedBy":{"type":"agent"}}]}]}]}'
+    );
+    const files: Record<string, Uint8Array> = { 'a.json': agent, 'b.json': new TextEncoder().encode('not json'), 'base.json': agent };
+    const mem: FetchFn = (uri) => {
+      const data = files[uri];
+      if (data === undefined) throw new Error('no such file: ' + uri);
+      return data;
+    };
+    const contents: EvidenceContent[] = [
+      { uri: 'a.json', type: 'hdf-results', checksum: '' },
+      { uri: 'b.json', type: 'hdf-results', checksum: '' },
+      { uri: 'missing.json', type: 'hdf-results', checksum: '' },
+      { uri: '', type: 'hdf-results', checksum: '' },
+      { uri: 'base.json', type: 'hdf-baseline', checksum: '' },
+    ];
+    expect(coveredBaselinesInPackage(contents, mem)).toEqual(['A']);
+    expect(agentOverridesInPackage(contents, mem)).toBe(1);
+    expect(coveredBaselinesInPackage([], mem)).toEqual([]);
   });
 
   it('classifies a non-Error throw as error with the stringified value', () => {

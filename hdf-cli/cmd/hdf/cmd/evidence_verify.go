@@ -88,7 +88,7 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 	// engine performs no IO and classifies match/mismatch/skipped/error.
 	fetch := confinedFetch(pkgDir)
 	results, counts := toVerifyResults(hdfengine.VerifyChecksums(contents, fetch))
-	renderVerifyOutput(doc, results, counts, aggregateAgentOverrides(fetch, contents))
+	renderVerifyOutput(doc, results, counts, hdfengine.AgentOverridesInPackage(contents, fetch))
 
 	if counts.mismatch > 0 || counts.errors > 0 {
 		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
@@ -205,30 +205,6 @@ func toVerifyResults(checksums []hdfengine.ChecksumResult) ([]evidenceVerifyResu
 		}
 	}
 	return results, counts
-}
-
-// aggregateAgentOverrides sums the agent-attributed override count across the
-// hdf-results documents the evidence package references, reusing the shared
-// engine count. Unreadable or non-results entries are skipped (checksum
-// verification already reports read failures); the read is the same SafePath-
-// confined fetch used for checksums.
-func aggregateAgentOverrides(fetch hdfengine.FetchFunc, contents []hdfengine.EvidenceContent) int {
-	total := 0
-	for _, c := range contents {
-		if c.Type != "hdf-results" || c.URI == "" {
-			continue
-		}
-		data, err := fetch(c.URI)
-		if err != nil {
-			continue
-		}
-		results, err := parseHDFResults(data)
-		if err != nil {
-			continue
-		}
-		total += hdfengine.AgentOverrideCount(results)
-	}
-	return total
 }
 
 func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResult, counts verifyCounts, agentOverrides int) {

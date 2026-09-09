@@ -2,7 +2,6 @@
 package amend
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -179,8 +178,7 @@ func buildStatusOverride(override map[string]interface{}) map[string]interface{}
 
 // computeSHA256 returns the hex-encoded SHA-256 checksum of the data.
 func computeSHA256(data []byte) string {
-	h := sha256.Sum256(data)
-	return fmt.Sprintf("%x", h[:])
+	return hdfutil.SHA256Hex(data)
 }
 
 // ParsedOverride holds a parsed standalone override for display purposes.
@@ -282,8 +280,7 @@ func VerifyChain(resultsData, amendmentsData []byte) (*ChainVerifyResult, error)
 		expectedValue, _ := prevChecksum["value"].(string)
 		if expectedValue != "" {
 			result.ChainEstablished = true
-			hash := sha256.Sum256(resultsData)
-			actualValue := fmt.Sprintf("%x", hash)
+			actualValue := hdfutil.SHA256Hex(resultsData)
 			if actualValue != expectedValue {
 				result.ChainValid = false
 				result.ChainMessage = fmt.Sprintf("previousChecksum mismatch: expected %s, got %s", expectedValue, actualValue)

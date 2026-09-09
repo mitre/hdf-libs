@@ -6,6 +6,8 @@
 // which runs both over the same fixtures).
 
 import { createHash } from 'node:crypto';
+import { agentOverrideCount } from './compliance.js';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 /** Classifies a single content entry's checksum verification. */
 export type ChecksumStatus = 'match' | 'mismatch' | 'skipped' | 'error';
@@ -94,6 +96,57 @@ export function coveredBaselineNames(results: string): string[] {
   const doc = JSON.parse(results) as { baselines?: Array<{ name?: string }> };
   const names = (doc.baselines ?? []).map((b) => b.name ?? '').filter((s) => s !== '');
   return dedupe(names);
+}
+
+/** Concatenates the covered baseline names of every hdf-results document the
+ * package references, in entry order. An entry that cannot be fetched or parsed
+ * is skipped: checksum verification is what reports a read failure, and a
+ * partial coverage list is what the completeness diff needs. */
+export function coveredBaselinesInPackage(contents: EvidenceContent[], fetch: FetchFn): string[] {
+  const covered: string[] = [];
+  forEachResultsDocument(contents, fetch, (text) => {
+    try {
+      covered.push(...coveredBaselineNames(text));
+    } catch {
+      return;
+    }
+  });
+  return covered;
+}
+
+/** Sums the agent-attributed override count across every hdf-results document
+ * the package references. Unreadable or unparseable entries are skipped. */
+export function agentOverridesInPackage(contents: EvidenceContent[], fetch: FetchFn): number {
+  let total = 0;
+  forEachResultsDocument(contents, fetch, (text) => {
+    try {
+      total += agentOverrideCount(JSON.parse(text) as HDFResults);
+    } catch {
+      return;
+    }
+  });
+  return total;
+}
+
+/** Fetches each referenced hdf-results document in entry order, skipping
+ * entries that carry no uri or cannot be read. */
+function forEachResultsDocument(
+  contents: EvidenceContent[],
+  fetch: FetchFn,
+  visit: (text: string) => void
+): void {
+  for (const c of contents) {
+    if (c.type !== 'hdf-results' || c.uri === '') {
+      continue;
+    }
+    let data: Uint8Array;
+    try {
+      data = fetch(c.uri);
+    } catch {
+      continue;
+    }
+    visit(new TextDecoder().decode(data));
+  }
 }
 
 /** Diffs planned baseline refs against covered baseline names. A planned ref is

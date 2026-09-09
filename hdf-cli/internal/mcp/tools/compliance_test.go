@@ -565,6 +565,9 @@ func TestNistFamilies(t *testing.T) {
 		{"multi + sub-control", map[string]any{"nist": []any{"AC-2", "AC-6(1)", "CM-6"}}, []string{"AC", "CM"}},
 		{"no nist tag", map[string]any{"cci": []any{"CCI-1"}}, []string{"unmapped"}},
 		{"nil tags", nil, []string{"unmapped"}},
+		{"bare string tag", map[string]any{"nist": "AC-2"}, []string{"AC"}},
+		{"string slice tag", map[string]any{"nist": []string{"AC-2", "CM-6"}}, []string{"AC", "CM"}},
+		{"non-string tag value", map[string]any{"nist": 42}, []string{"unmapped"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -573,24 +576,6 @@ func TestNistFamilies(t *testing.T) {
 				t.Errorf("families = %v, want %v", got, c.want)
 			}
 		})
-	}
-}
-
-func TestTagStrings_Shapes(t *testing.T) {
-	if got := tagStrings(map[string]any{"nist": "AC-2"}, "nist"); len(got) != 1 || got[0] != "AC-2" {
-		t.Errorf("string shape = %v", got)
-	}
-	if got := tagStrings(map[string]any{"nist": []string{"AC-2", "CM-6"}}, "nist"); len(got) != 2 {
-		t.Errorf("[]string shape = %v", got)
-	}
-	if got := tagStrings(map[string]any{"nist": []any{"AC-2", 42}}, "nist"); len(got) != 1 {
-		t.Errorf("[]any shape must skip non-strings, got %v", got)
-	}
-	if got := tagStrings(nil, "nist"); got != nil {
-		t.Errorf("nil tags = %v, want nil", got)
-	}
-	if got := tagStrings(map[string]any{"nist": 42}, "nist"); got != nil {
-		t.Errorf("non-string tag value = %v, want nil", got)
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -70,7 +71,7 @@ func TestBenchHeavyOps(t *testing.T) {
 		}
 
 		st := time.Now()
-		matches := hdfengine.Filter(ctx, doc, hdfengine.Options{Count: true, StatusOf: effectiveStatus})
+		matches := hdfengine.Filter(ctx, doc, hdfengine.Options{Count: true, StatusOf: shared.RequirementEffectiveStatus})
 		rows := projectRows(doc, matches, "full", nil)
 		record("query full-verbosity ("+fx.label+", "+strconv.Itoa(len(rows))+" rows)", st)
 

@@ -20,6 +20,8 @@ export {
   verifyChecksums,
   plannedBaselineRefs,
   coveredBaselineNames,
+  coveredBaselinesInPackage,
+  agentOverridesInPackage,
   completeness,
   type ChecksumStatus,
   type EvidenceContent,

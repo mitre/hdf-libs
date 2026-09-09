@@ -2,8 +2,6 @@ package tools
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,6 +11,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -207,14 +206,14 @@ func applySummary(before, after []byte) (applyAmendmentOutput, *mcperr.Error) {
 	if err := json.Unmarshal(after, &a); err != nil {
 		return applyAmendmentOutput{}, mcperr.New(mcperr.SchemaInvalid, "could not parse the applied results: "+err.Error(), nil)
 	}
-	sum := sha256.Sum256(after)
+
 	return applyAmendmentOutput{
 		ProjectedCompliance: projectedCompliance{
 			Before: hdfengine.CalculateCompliance(countByEffectiveStatus(b)),
 			After:  hdfengine.CalculateCompliance(countByEffectiveStatus(a)),
 		},
 		ChangedRequirementCount: changedRequirementCount(b, a),
-		Sha256:                  hex.EncodeToString(sum[:]),
+		Sha256:                  hdfutil.SHA256Hex(after),
 		Valid:                   true,
 	}, nil
 }
@@ -228,7 +227,7 @@ func changedRequirementCount(before, after hdf.HDFResults) int {
 	for _, baseline := range after.Baselines {
 		for i := range baseline.Requirements {
 			key := baseline.Name + "\x00" + baseline.Requirements[i].ID
-			if prev, ok := beforeStatus[key]; !ok || prev != effectiveStatus(baseline.Requirements[i]) {
+			if prev, ok := beforeStatus[key]; !ok || prev != shared.RequirementEffectiveStatus(baseline.Requirements[i]) {
 				changed++
 			}
 		}
@@ -240,7 +239,7 @@ func effectiveStatusByKey(results hdf.HDFResults) map[string]string {
 	m := make(map[string]string)
 	for _, baseline := range results.Baselines {
 		for i := range baseline.Requirements {
-			m[baseline.Name+"\x00"+baseline.Requirements[i].ID] = effectiveStatus(baseline.Requirements[i])
+			m[baseline.Name+"\x00"+baseline.Requirements[i].ID] = shared.RequirementEffectiveStatus(baseline.Requirements[i])
 		}
 	}
 	return m

@@ -7,11 +7,13 @@
 package hdfengine
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sort"
+
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // ChecksumStatus classifies a single content entry's checksum verification.
@@ -145,6 +147,50 @@ func CoveredBaselineNames(results []byte) ([]string, error) {
 	return dedupe(names), nil
 }
 
+// CoveredBaselinesInPackage concatenates the covered baseline names of every
+// hdf-results document the package references, in entry order. An entry that
+// cannot be fetched or parsed is skipped: checksum verification is what reports
+// a read failure, and a partial coverage list is what the completeness diff
+// needs to name the missing baselines.
+func CoveredBaselinesInPackage(contents []EvidenceContent, fetch FetchFunc) []string {
+	var covered []string
+	forEachResultsDocument(contents, fetch, func(data []byte) {
+		if names, err := CoveredBaselineNames(data); err == nil {
+			covered = append(covered, names...)
+		}
+	})
+	return covered
+}
+
+// AgentOverridesInPackage sums the agent-attributed override count across every
+// hdf-results document the package references — the detective surface at the
+// evidence-package level. Unreadable or unparseable entries are skipped.
+func AgentOverridesInPackage(contents []EvidenceContent, fetch FetchFunc) int {
+	total := 0
+	forEachResultsDocument(contents, fetch, func(data []byte) {
+		var r hdf.HDFResults
+		if json.Unmarshal(data, &r) == nil {
+			total += AgentOverrideCount(r)
+		}
+	})
+	return total
+}
+
+// forEachResultsDocument fetches each referenced hdf-results document in entry
+// order, skipping entries that carry no URI or cannot be read.
+func forEachResultsDocument(contents []EvidenceContent, fetch FetchFunc, visit func(data []byte)) {
+	for _, c := range contents {
+		if c.Type != "hdf-results" || c.URI == "" {
+			continue
+		}
+		data, err := fetch(c.URI)
+		if err != nil {
+			continue
+		}
+		visit(data)
+	}
+}
+
 // Completeness diffs planned baseline refs against covered baseline names. A
 // planned ref is covered when some results baseline shares its name. Missing is
 // sorted so the outcome is deterministic across languages and runs.
@@ -169,8 +215,7 @@ func Completeness(planned, covered []string) CompletenessResult {
 }
 
 func sha256HexOf(b []byte) string {
-	sum := sha256.Sum256(b)
-	return hex.EncodeToString(sum[:])
+	return hdfutil.SHA256Hex(b)
 }
 
 func dedupe(in []string) []string {

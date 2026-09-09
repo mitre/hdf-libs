@@ -2,8 +2,6 @@ package tools
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -17,6 +15,8 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // diffNarrowParam names the response controls a truncation notice recommends.
@@ -213,8 +213,7 @@ func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dry
 	// Validate and hash the comparison regardless of whether it is written, so a
 	// dry-run/writes-disabled preview still reports what would land on disk.
 	out.Valid = validators.Validate(docBytes, validators.TypeComparison).Valid
-	sum := sha256.Sum256(docBytes)
-	out.Sha256 = hex.EncodeToString(sum[:])
+	out.Sha256 = hdfutil.SHA256Hex(docBytes)
 
 	// The write itself goes through the one shared write model (gate + dry_run +
 	// confinement) — no direct filesystem write in the tool.
