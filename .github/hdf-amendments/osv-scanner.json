@@ -8,38 +8,6 @@
         "type": "username"
       },
       "expiresAt": "2026-12-31T23:59:59Z",
-      "reason": "GHSA-4mjr-xmp4-gh2g: qs 6.15.2 reaches this repo only as a transitive DEV dependency, by two paths: typed-rest-client under @stryker-mutator/core (mutation testing, used by hdf-parsers, hdf-utilities, hdf-validators and hdf-mappings), and union under http-server (local static serving, used by hdf-schema). Traced 2026-09-07: 'pnpm why qs -r --prod' returns no paths, every path in the unfiltered trace terminates in devDependencies, and no published package declares a runtime dependency that reaches it — the published runtime closure is ajv, ajv-formats, d3-dsv, fast-xml-parser and internal @mitre packages. The released CLI is a Go binary and carries no npm dependencies. Revisit if stryker's or http-server's chain changes, or if qs enters a runtime path.",
-      "requirementId": "CVE-2026-82417",
-      "status": "notApplicable",
-      "type": "riskAdjustment"
-    },
-    {
-      "appliedAt": "2026-09-07T15:01:58Z",
-      "appliedBy": {
-        "identifier": "wdower",
-        "type": "username"
-      },
-      "expiresAt": "2026-12-31T23:59:59Z",
-      "previousChecksum": {
-        "algorithm": "sha256",
-        "value": "de95a2fd0c76a2a64cc8801d1aefa732864ae2fec5909ee4c3f7d3c1bd934ac4"
-      },
-      "reason": "GHSA-x5fp-wj9c-mxmx: qs 6.15.2 reaches this repo only as a transitive DEV dependency, by two paths: typed-rest-client under @stryker-mutator/core (mutation testing, used by hdf-parsers, hdf-utilities, hdf-validators and hdf-mappings), and union under http-server (local static serving, used by hdf-schema). Traced 2026-09-07: 'pnpm why qs -r --prod' returns no paths, every path in the unfiltered trace terminates in devDependencies, and no published package declares a runtime dependency that reaches it — the published runtime closure is ajv, ajv-formats, d3-dsv, fast-xml-parser and internal @mitre packages. The released CLI is a Go binary and carries no npm dependencies. Revisit if stryker's or http-server's chain changes, or if qs enters a runtime path.",
-      "requirementId": "CVE-2026-82562",
-      "status": "notApplicable",
-      "type": "riskAdjustment"
-    },
-    {
-      "appliedAt": "2026-09-07T15:01:58Z",
-      "appliedBy": {
-        "identifier": "wdower",
-        "type": "username"
-      },
-      "expiresAt": "2026-12-31T23:59:59Z",
-      "previousChecksum": {
-        "algorithm": "sha256",
-        "value": "d12f1d560705220639dee747eb2b77e1dc6c9624fc5b364cad5b86f1d5e007f3"
-      },
       "reason": "GHSA-4w7w-66w2-5vf9: vite 5.4.21 reaches this repo only as a transitive dev dependency of vitepress under @mitre/hdf-schema-site, the documentation site, which is not a published package. Traced 2026-09-07: 'pnpm why vite -r --prod' returns no paths. The workspace's own direct vite dependency resolves to 8.2.2 and is unaffected. Revisit when vitepress 2.x lands.",
       "requirementId": "CVE-2026-39365",
       "status": "notApplicable",
@@ -54,7 +22,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "6d6521eaba3f47bcc7f5cb5293be85f6a45ad11f409428267609a5a57c90fd25"
+        "value": "c9e4806f8543d18823e6f94c170c80bc040d7c3c911f1e20f81c912312c38b21"
       },
       "reason": "GHSA-fx2h-pf6j-xcff: vite 5.4.21 reaches this repo only as a transitive dev dependency of vitepress under @mitre/hdf-schema-site, the documentation site, which is not a published package. Traced 2026-09-07: 'pnpm why vite -r --prod' returns no paths. The workspace's own direct vite dependency resolves to 8.2.2 and is unaffected. Revisit when vitepress 2.x lands.",
       "requirementId": "CVE-2026-53571",
@@ -70,7 +38,7 @@
       "expiresAt": "2026-12-31T23:59:59Z",
       "previousChecksum": {
         "algorithm": "sha256",
-        "value": "f6ca6181bc2a096410d23c90ec0b9ad0cdd12a293d03967bb246504a0858c3ef"
+        "value": "304cbb8e103bedd8fde53a82998f2e19d135a190449c94bdd12ab546fc267650"
       },
       "reason": "GHSA-v6wh-96g9-6wx3: vite 5.4.21 reaches this repo only as a transitive dev dependency of vitepress under @mitre/hdf-schema-site, the documentation site, which is not a published package. Traced 2026-09-07: 'pnpm why vite -r --prod' returns no paths. The workspace's own direct vite dependency resolves to 8.2.2 and is unaffected. Revisit when vitepress 2.x lands.",
       "requirementId": "CVE-2026-53632",
