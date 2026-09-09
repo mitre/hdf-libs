@@ -11,17 +11,20 @@
 // identical after the shared XML golden normalization for every shape this
 // repo's fixtures and parity tests cover.
 //
-// Equality is NOT guaranteed in general, and the reason is one structural seam
-// rather than a list: JavaScript's JSON.parse discards information before the
-// peer's builder ever runs, so anything it drops is unreachable from either
-// serializer. The known instances live in shared/xml-divergence-cases.json,
-// which both languages read and both pin -- this package keeps every value of a
-// duplicate object key where the peer keeps only the last, holds an integer-like
-// key at its source position where the peer hoists it, and renders a number too
-// large for a double from its original token text where the peer has only
-// Infinity. Treat that file as the current census, not as a closed set; a shape
-// outside the fixture corpus needs checking against the peer rather than
-// assuming it is covered.
+// Equality is NOT guaranteed in general. The largest seam is that JavaScript's
+// JSON.parse discards information before the peer's builder runs, so what it
+// drops cannot be reconstructed on that side: this package keeps every value of
+// a duplicate object key where the peer keeps only the last, holds an
+// integer-like key at its source position where the peer hoists it, and renders
+// a number too large for a double from its original token text where the peer
+// has only Infinity. shared/xml-divergence-cases.json is the census of THAT
+// seam, read and pinned by both languages.
+//
+// That table is NOT the whole list, and at least one divergence has a different
+// cause: the peer's builder caps nesting depth where this one does not, so a
+// deep enough document converts here and throws there (pinned by the
+// deep-nesting tests in both languages). A shape outside the fixture corpus
+// needs checking against the peer rather than assuming it is covered.
 package hdftoxml
 
 import (

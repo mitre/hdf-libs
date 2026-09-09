@@ -11,17 +11,20 @@ import { validateInputSize, parseHdf } from '../../../shared/typescript/converte
  * emits identical output after the shared XML golden normalization for every
  * shape this repo's fixtures and parity tests cover.
  *
- * Equality is NOT guaranteed in general, and the reason is one structural seam
- * rather than a list: JSON.parse discards information before this builder ever
- * runs, so anything it drops is unreachable from the serializer. The known
- * instances live in shared/xml-divergence-cases.json, which both languages read
- * and both pin -- a duplicate key keeps only the last value, an integer-like key
- * is hoisted ahead of its siblings, and a number too large for a double arrives
- * as Infinity with its original token text gone. Treat that file as the current
- * census, not as a closed set: a shape outside the fixture corpus needs checking
- * against the peer rather than assuming it is covered. Closing any of them means
- * parsing untrusted input with a parser that preserves order, duplicates and the
- * number token, which is a worse trade than the divergence.
+ * Equality is NOT guaranteed in general. The largest seam is that JSON.parse
+ * discards information before this builder ever runs, so anything it drops is
+ * unreachable from the serializer; shared/xml-divergence-cases.json is the
+ * census of THAT seam, read and pinned by both languages -- a duplicate key
+ * keeps only the last value, an integer-like key is hoisted ahead of its
+ * siblings, and a number too large for a double arrives as Infinity with its
+ * token text gone. Closing any of them means parsing untrusted input with a
+ * parser that preserves order, duplicates and the number token, a worse trade.
+ *
+ * That table is NOT the whole list, and at least one divergence has a different
+ * cause: the underlying builder caps nesting depth where the Go peer does not,
+ * so a deep enough document converts there and throws here (pinned by the
+ * nesting-depth tests in both languages). A shape outside the fixture corpus
+ * needs checking against the peer rather than assuming it is covered.
  */
 
 /**
