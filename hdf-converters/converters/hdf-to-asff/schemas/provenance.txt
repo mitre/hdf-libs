@@ -1,0 +1,30 @@
+# ASFF — no schema vendored, and why
+
+**AWS publishes no machine-readable JSON Schema for the AWS Security Finding
+Format.** Nothing is vendored here on purpose. This file exists so the next
+person looking for `hdf-to-asff/schemas/` finds the answer instead of assuming
+the directory was forgotten.
+
+Searched 2026-09-09. The converter self-declares `SchemaVersion` `2018-10-08`
+(`go/converter.go`, `typescript/converter.ts`).
+
+What exists, and why none of it is a JSON Schema:
+
+- **AWS documentation** — the ASFF reference
+  (`https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-findings-format.html`
+  and the `-syntax` page) describes the format in prose and examples. Prose is
+  not a validator input.
+- **AWS SDK service model** — `botocore`'s
+  `botocore/data/securityhub/2018-10-26/service-2.json` carries the authoritative
+  `AwsSecurityFinding` shape and IS official and machine-readable, but it is a
+  Smithy/botocore service model, not JSON Schema: its top-level keys are
+  `metadata`, `operations`, `shapes`, `documentation`, `version`, with no
+  `$schema`. Deriving a JSON Schema from it would be reconstruction, which this
+  repo's fixture-integrity rule forbids and which would manufacture false
+  confidence.
+- No `awslabs`/`aws` repository publishes a standalone ASFF schema document
+  (checked; 404).
+
+Consequence: `hdf-to-asff` cannot join the schema-validated corpus harness. Its
+tests assert against raw JSON structure instead. If AWS ever publishes a real
+JSON Schema, vendor it here following the `hdf-to-oscal-sar` pattern.
