@@ -108,15 +108,17 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 }
 
 // confinedFetch returns a FetchFunc that resolves a content URI relative to the
-// package directory, confined by SafePath. SafePath and read failures both
-// surface as errors, which VerifyChecksums classifies as an error status.
+// package directory, confined by SafePath and read through the same size-gated
+// boundary as the package itself — a referenced file is untrusted input too.
+// SafePath and read failures both surface as errors, which VerifyChecksums
+// classifies as an error status.
 func confinedFetch(pkgDir string) hdfengine.FetchFunc {
 	return func(uri string) ([]byte, error) {
 		path, err := hdfutil.SafePath(pkgDir, uri)
 		if err != nil {
 			return nil, err
 		}
-		return os.ReadFile(path) //nolint:gosec // validated by SafePath
+		return readFromFile(path, true)
 	}
 }
 
@@ -128,7 +130,7 @@ func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceCon
 	if err != nil {
 		return fmt.Errorf("invalid plan reference: %w", err)
 	}
-	planData, err := os.ReadFile(planPath) //nolint:gosec // validated by SafePath
+	planData, err := readFromFile(planPath, true)
 	if err != nil {
 		return fmt.Errorf("failed to read plan %s: %w", planRef, err)
 	}
@@ -146,7 +148,7 @@ func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceCon
 		if pathErr != nil {
 			return fmt.Errorf("invalid results URI %q: %w", c.URI, pathErr)
 		}
-		resultsData, readErr := os.ReadFile(resultsPath) //nolint:gosec // validated by SafePath
+		resultsData, readErr := readFromFile(resultsPath, true)
 		if readErr != nil {
 			continue // checksum verification already reported this
 		}

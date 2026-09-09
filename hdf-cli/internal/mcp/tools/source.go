@@ -218,6 +218,26 @@ func readLimited(confined, relPath, slot string, maxSize int64) ([]byte, *mcperr
 	return content, nil
 }
 
+// notRetainedNotice is the warning for a produced document the content cache
+// declined to keep. Its content-addressed handle can never resolve, and the
+// CACHE_MISS a later call would report ("re-author it") cannot help.
+const notRetainedNotice = "The produced document exceeds the in-memory cache budget (HDF_MCP_CACHE_BYTES) and was not retained, so the returned handle cannot be resolved by a later call — set `output` to persist the document and pass that path instead."
+
+// registerProduced puts a produced document into the content cache so its handle
+// resolves with no file on disk, and returns the notice to surface when it could
+// not be retained. A document written to disk needs no cache: its handle carries
+// the path.
+func registerProduced(ldr *loader.Loader, doc []byte, writtenPath string) string {
+	res, err := ldr.Load(doc)
+	if writtenPath != "" {
+		return ""
+	}
+	if err != nil || !res.Retained {
+		return notRetainedNotice
+	}
+	return ""
+}
+
 // notFoundNextCall is the DOCUMENT_NOT_FOUND recovery hint, naming the input slot
 // the caller actually passed (source / results / amendments / from / to) so the
 // advice never references a parameter the emitting tool lacks (jobi.4 / D3).

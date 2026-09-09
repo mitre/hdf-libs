@@ -3,10 +3,8 @@ package tools
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
-	"os"
 	"sort"
 	"strings"
 
@@ -329,12 +327,11 @@ func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Er
 		if err != nil {
 			return nil, mcperr.New(mcperr.PathDenied, "threshold path resolves outside HDF_MCP_ROOT", map[string]any{"path": t.Path})
 		}
-		b, rerr := os.ReadFile(confined) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
+		// The shared reader, like every other MCP file input: size ceiling and
+		// regular-file check before the bytes reach the YAML parser.
+		b, rerr := readFile(confined, t.Path, "threshold")
 		if rerr != nil {
-			if errors.Is(rerr, os.ErrNotExist) {
-				return nil, mcperr.New(mcperr.DocumentNotFound, "no threshold file at the given path", map[string]any{"path": t.Path})
-			}
-			return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the threshold file", t.Path, rerr)
+			return nil, rerr
 		}
 		raw = b
 	case len(t.Inline) > 0:

@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -545,4 +547,37 @@ func anyMap(m map[string]enumEntry) map[string]any {
 		out[k] = v
 	}
 	return out
+}
+
+// The enum index is immutable embedded data: build it once, not on every read.
+func TestCollectEnums_Memoised(t *testing.T) {
+	first, err := collectEnums()
+	if err != nil {
+		t.Fatalf("collectEnums: %v", err)
+	}
+	second, err := collectEnums()
+	if err != nil {
+		t.Fatalf("collectEnums: %v", err)
+	}
+	if reflect.ValueOf(first).Pointer() != reflect.ValueOf(second).Pointer() {
+		t.Error("collectEnums must memoise the index, not re-parse the eight schemas on every read")
+	}
+}
+
+// The doc-type table and its schema-type lookup are derived from the engine's
+// enumeration, so a ninth document type is picked up in one place.
+func TestDocTypes_DerivedFromEngineKnownTypes(t *testing.T) {
+	known := hdfengine.KnownTypes()
+	if len(docTypes) != len(known) {
+		t.Fatalf("docTypes has %d entries, engine knows %d", len(docTypes), len(known))
+	}
+	for i, k := range known {
+		if docTypes[i] != "hdf-"+k {
+			t.Errorf("docTypes[%d] = %q, want %q", i, docTypes[i], "hdf-"+k)
+		}
+		st, ok := schemaTypeFor("hdf-" + k)
+		if !ok || string(st) != k {
+			t.Errorf("schemaTypeFor(hdf-%s) = %q/%t, want %q/true", k, st, ok, k)
+		}
+	}
 }

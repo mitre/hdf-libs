@@ -229,13 +229,16 @@ func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dry
 	return nil
 }
 
-// appendNotice joins a write-model notice onto any existing (e.g. truncation)
-// notice without clobbering it.
+// appendNotice joins a notice onto any existing one without clobbering it.
 func appendNotice(existing, add string) string {
-	if existing == "" {
+	switch {
+	case add == "":
+		return existing
+	case existing == "":
 		return add
+	default:
+		return existing + " " + add
 	}
-	return existing + " " + add
 }
 
 // changeRow projections. Concise carries the identifying + state fields; full

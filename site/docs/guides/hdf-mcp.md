@@ -84,6 +84,13 @@ or
 `{path}` straight to `hdf_inspect`, `hdf_query`, or any read tool. Its
 value is minting a handle you then reuse across a multi-step workflow.
 
+A document a write tool produces is held in the same cache, so its handle
+resolves on the next call. A document larger than `HDF_MCP_CACHE_BYTES` cannot
+be, and rather than return a handle that will fail later, `hdf_convert`,
+`hdf_author` and `hdf_apply_amendment` attach a `notice` saying so and telling
+you to set `output` and pass that path instead. In batch conversion the notice
+is per entry, since one oversized file does not affect the rest.
+
 Agents pass **handles** back to tools, never document bodies. Responses
 are summaries plus handles precisely so a large results file never has to
 travel through the model's context to be operated on again.

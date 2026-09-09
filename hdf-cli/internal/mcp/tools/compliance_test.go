@@ -815,3 +815,21 @@ func TestHdfCompliance_TypoedThresholdIsRejectedThroughSDK(t *testing.T) {
 		}
 	}
 }
+
+// The threshold path is an agent-supplied file input like any other: the shared
+// reader's size ceiling and file-type check apply before the YAML parser sees it.
+func TestResolveThreshold_PathGoesThroughTheSharedReader(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	t.Setenv("HDF_MCP_MAX_SIZE", "16")
+	if err := os.WriteFile(filepath.Join(root, "threshold.yaml"), []byte("compliance:\n  min: 90\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, terr := resolveThreshold(&thresholdInput{Path: "threshold.yaml"})
+	if terr == nil {
+		t.Fatalf("a threshold file over HDF_MCP_MAX_SIZE must be refused, got cfg %+v", cfg)
+	}
+	if terr.Code != mcperr.TooLarge {
+		t.Errorf("code = %s, want %s", terr.Code, mcperr.TooLarge)
+	}
+}

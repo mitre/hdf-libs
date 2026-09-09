@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -305,5 +306,81 @@ func TestLoadByHash_RoundTrip(t *testing.T) {
 	}
 	if _, _, ok := l.LoadByHash("not-hex"); ok {
 		t.Error("a non-hex sha must miss, not panic")
+	}
+}
+
+// The cache must memoise the whole verdict, not just the engine parse: a hit
+// that re-ran validation and the line-map would cost about what a miss costs.
+func TestLoad_CacheEntryMemoisesVerdict(t *testing.T) {
+	l := New(0, 0, 0)
+	data := []byte(invalidResults)
+	if _, err := l.Load(data); err != nil {
+		t.Fatalf("degraded read must not hard-fail: %v", err)
+	}
+	el, ok := l.cache[hashKey(data)]
+	if !ok {
+		t.Fatal("document was not cached")
+	}
+	ent := el.Value.(*cacheEntry)
+	if ent.verdict == nil {
+		t.Fatal("cache entry must memoise the computed verdict")
+	}
+	if ent.verdict.Valid || len(ent.verdict.Errors) == 0 {
+		t.Fatalf("memoised verdict must carry the degraded envelope, got %+v", ent.verdict)
+	}
+	if ent.verdict.CacheHit {
+		t.Error("the memoised verdict must not carry a per-call CacheHit flag")
+	}
+}
+
+// CacheHit is the only field a hit may differ in.
+func TestLoad_CacheHitMatchesMiss(t *testing.T) {
+	for name, data := range map[string][]byte{"system": validSystem(t), "invalid": []byte(invalidResults)} {
+		l := New(0, 0, 0)
+		miss, err := l.Load(data)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		hit, err := l.Load(data)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if !hit.CacheHit || miss.CacheHit {
+			t.Fatalf("%s: expected miss then hit, got %t/%t", name, miss.CacheHit, hit.CacheHit)
+		}
+		a, b := *miss, *hit
+		a.CacheHit, b.CacheHit = false, false
+		if !reflect.DeepEqual(a, b) {
+			t.Errorf("%s: cache hit differs from miss:\n miss %+v\n hit  %+v", name, a, b)
+		}
+	}
+}
+
+// A document too large for the cache budget is loaded uncached — the caller must
+// be told, because a content-addressed handle for it can never resolve.
+func TestLoad_ReportsRetention(t *testing.T) {
+	small := New(0, 0, 8) // 8-byte budget: every real document bypasses the cache
+	res, err := small.Load(validResults())
+	if err != nil {
+		t.Fatalf("oversize-for-cache document must still load: %v", err)
+	}
+	if res.Retained {
+		t.Error("a document that bypassed the cache must report Retained=false")
+	}
+
+	l := New(0, 0, 0)
+	res, err = l.Load(validResults())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Retained {
+		t.Error("a cached document must report Retained=true")
+	}
+	hit, err := l.Load(validResults())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hit.Retained {
+		t.Error("a cache hit must report Retained=true")
 	}
 }

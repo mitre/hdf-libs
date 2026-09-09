@@ -12,6 +12,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -356,4 +357,21 @@ func indexOf(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+// The docType lookup is derived from the engine's enumeration, so hdf_validate
+// accepts every type the engine can detect, with or without the hdf- prefix.
+func TestSchemaTypeForDoc_CoversEngineKnownTypes(t *testing.T) {
+	known := hdfengine.KnownTypes()
+	if len(validShortTypes) != len(known) {
+		t.Fatalf("validShortTypes has %d entries, engine knows %d", len(validShortTypes), len(known))
+	}
+	for _, k := range known {
+		for _, in := range []string{k, "hdf-" + k} {
+			st, ok := schemaTypeForDoc(in)
+			if !ok || string(st) != k {
+				t.Errorf("schemaTypeForDoc(%q) = %q/%t, want %q/true", in, st, ok, k)
+			}
+		}
+	}
 }

@@ -70,10 +70,13 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
 
-		// Never overwrite the results input, in ANY mode: refuse an output that
-		// resolves to the same file up front (the write model would otherwise
-		// happily clobber it on an enabled write).
+		// Never overwrite either input, in ANY mode: refuse an output that resolves
+		// to the same file up front (the write model would otherwise happily
+		// clobber it on an enabled write).
 		if werr := refuseOverwritingInput(in.Output, results.Handle.Path); werr != nil {
+			return toolError(werr), applyAmendmentOutput{}, nil
+		}
+		if werr := refuseOverwritingInput(in.Output, amendments.Handle.Path); werr != nil {
 			return toolError(werr), applyAmendmentOutput{}, nil
 		}
 
@@ -108,7 +111,7 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 		// against the ACTUAL written path — empty when nothing was written, which
 		// routes resolution to the in-memory cache so apply's output chains into
 		// compliance/inspect with writes disabled (jobi.1 / D1).
-		_, _ = ldr.Load(merged)
+		out.Notice = appendNotice(out.Notice, registerProduced(ldr, merged, writtenPath))
 		encoded, herr := handle.Encode(handle.Compute(writtenPath, merged, "results", hdfengine.Version()))
 		if herr != nil {
 			return nil, applyAmendmentOutput{}, fmt.Errorf("encoding handle: %w", herr)

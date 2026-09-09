@@ -286,16 +286,16 @@ func lineNumberedErrors(vr validators.ValidationResult, content []byte) []valida
 	return out
 }
 
-var validShortTypes = map[string]validators.SchemaType{
-	"results":                  validators.TypeResults,
-	"baseline":                 validators.TypeBaseline,
-	"system":                   validators.TypeSystem,
-	"plan":                     validators.TypePlan,
-	"amendments":               validators.TypeAmendments,
-	"evidence-package":         validators.TypeEvidencePackage,
-	"comparison":               validators.TypeComparison,
-	"requirement-change-event": validators.TypeRequirementChangeEvent,
-}
+// validShortTypes is the docType→schema lookup, derived from the engine's
+// enumeration so a new document type lands in one place.
+var validShortTypes = func() map[string]validators.SchemaType {
+	known := hdfengine.KnownTypes()
+	m := make(map[string]validators.SchemaType, len(known))
+	for _, k := range known {
+		m[k] = validators.SchemaType(k)
+	}
+	return m
+}()
 
 func schemaTypeForDoc(s string) (validators.SchemaType, bool) {
 	st, ok := validShortTypes[strings.TrimPrefix(s, "hdf-")]
