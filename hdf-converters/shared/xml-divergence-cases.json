@@ -1,0 +1,68 @@
+{
+  "$comment": "The hdf-to-xml Go/TypeScript divergences that are documented and deliberately NOT fixed. Both languages read this table, so neither can change its behaviour silently and the divergence cannot widen unnoticed. Each case gives the <tags> child sequence as [element, text] pairs for each language. All of them share one cause: JavaScript's JSON.parse discards information before the serializer runs. Go reaches its own column perfectly well -- it is the TypeScript column that cannot be moved to match, because by the time either builder runs the data Go still has is already gone on that side. Closing any of them means parsing untrusted input with a parser that preserves order, duplicates and the original number token. That was weighed and declined: parseHdf has seven production callers and hdf-to-xml is the only one sensitive to any of this, so the change would tax six converters that cannot benefit, and it puts hand-written or third-party parsing on the untrusted-input path. If a case ever stops diverging, delete the row rather than loosening it.",
+  "cases": [
+    {
+      "name": "duplicate-key",
+      "tags": "{\"k\":\"first\",\"k\":\"second\"}",
+      "go": [
+        [
+          "k",
+          "first"
+        ],
+        [
+          "k",
+          "second"
+        ]
+      ],
+      "ts": [
+        [
+          "k",
+          "second"
+        ]
+      ],
+      "why": "RFC 8259 permits duplicate names and calls the result unpredictable. Go decodes into an ordered map whose members are an append-only slice, so both survive; JSON.parse keeps the last. Last-wins is what mainstream JSON consumers do, so the peer is not obviously the side to converge on."
+    },
+    {
+      "name": "integer-like-key",
+      "tags": "{\"zz\":\"b\",\"1\":\"a\"}",
+      "go": [
+        [
+          "zz",
+          "b"
+        ],
+        [
+          "_1",
+          "a"
+        ]
+      ],
+      "ts": [
+        [
+          "_1",
+          "a"
+        ],
+        [
+          "zz",
+          "b"
+        ]
+      ],
+      "why": "ECMAScript enumerates integer-index keys before string keys, so JSON.parse has already reordered the object. No content is lost and no fixture in the repo carries an integer-like tag key."
+    },
+    {
+      "name": "overflow-literal",
+      "tags": "{\"n\":1e400}",
+      "go": [
+        [
+          "n",
+          "1e400"
+        ]
+      ],
+      "ts": [
+        [
+          "n",
+          "Infinity"
+        ]
+      ],
+      "why": "A JSON number too large for a double. Go's ParseFloat fails and scalarText falls back to the original token text; JSON.parse yields Infinity, which has no token text left to recover. JSON has no Infinity literal, but JSON.parse manufactures one from any overflow literal, so this is reachable input rather than a theoretical case."
+    }
+  ]
+}

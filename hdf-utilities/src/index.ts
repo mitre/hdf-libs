@@ -4,7 +4,7 @@
  */
 
 // JSON utilities
-export { parseJSON, stringifyJSON, isValidJSON, findJsonValues, canonicalJson, canonicalChecksum, type StringifyOptions } from './json/index.js';
+export { parseJSON, stringifyJSON, isValidJSON, findJsonValues, canonicalJson, canonicalChecksum, formatJsonNumber, type StringifyOptions } from './json/index.js';
 
 // Hash utilities
 export {

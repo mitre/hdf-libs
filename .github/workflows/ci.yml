@@ -384,10 +384,14 @@ jobs:
           MODULES=$(go work edit -json | jq -r '.Use[].DiskPath' | tr '\n' ' ')
           [ -n "$MODULES" ] || { echo "::error::go.work lists no modules"; exit 1; }
           echo "GO_MODULES=$MODULES" >> "$GITHUB_ENV"
-      # gosec runs via golangci-lint using each package's own .golangci.yml —
-      # there is no standalone gosec step (its former workflow-level excludes
-      # G304/G104 live in hdf-cli/.golangci.yml; G115/G706 were verified
-      # unnecessary and are now enforced).
+      # gosec runs via golangci-lint, not as a standalone step. golangci-lint
+      # searches the module directory and then each parent, so the root
+      # .golangci.yml covers every module in go.work and a new one inherits it
+      # with no second edit; hdf-cli overrides it with its own. The step below
+      # asserts that, because an unconfigured module silently falls back to
+      # defaults, which do not include gosec. (The former workflow-level
+      # excludes G304/G104 live in those configs; G115/G706 were verified
+      # unnecessary and are now enforced.)
       #
       # Exit 1 is golangci-lint's documented findings exit, and findings are
       # the gate's call — so 1 is tolerated here and anything else is a tool
@@ -409,6 +413,11 @@ jobs:
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
       # That makes any nonzero exit a tool failure, which the step's own
       # `bash -e` already fails on.
+      - name: Every go.work module is scanned by gosec
+        run: |
+          bash scripts/check-gosec-coverage.test.sh
+          bash scripts/check-gosec-coverage.sh
+
       - name: Published Go modules depend only on tagged modules
         # Static check, not a consumer build: it asserts nothing consumer-
         # reachable depends on an in-repo module a release never tags. A local
