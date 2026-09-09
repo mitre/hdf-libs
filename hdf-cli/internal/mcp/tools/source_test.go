@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 )
 
@@ -42,5 +44,44 @@ func TestResolveSource_ReadFailureRedactsAbsolutePath(t *testing.T) {
 	}
 	if tr := toolResultPayload(t, errRes); tr.Details["path"] != "scan.json" {
 		t.Errorf("client payload path = %v, want the relative scan.json", tr.Details["path"])
+	}
+}
+
+// A symlink inside the root to a regular file is still a regular file once
+// followed, so the non-regular-file guard must not reject it.
+func TestReadFile_SymlinkToRegularFileStillReads(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating a symlink needs a privilege on Windows; the guard is OS-agnostic and covered on unix")
+	}
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	if err := os.WriteFile(filepath.Join(root, "real.json"), fixtures.Results.Minimal, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("real.json", filepath.Join(root, "link.json")); err != nil {
+		t.Fatal(err)
+	}
+	errRes, out := callOpen(t, openInput{Source: handle.Source{Path: "link.json"}})
+	if errRes != nil && errRes.IsError {
+		t.Fatalf("a symlink to a regular file inside the root must read: %s", payloadText(t, errRes))
+	}
+	if out.DocType != "results" {
+		t.Errorf("docType = %q, want results", out.DocType)
+	}
+}
+
+// The read itself is bounded, independently of the Stat-based guard, so a file
+// that delivers more bytes than the ceiling is refused rather than buffered.
+func TestReadLimited_RejectsBytesBeyondTheCeiling(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "big.json")
+	if err := os.WriteFile(p, bytes.Repeat([]byte("x"), 64), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, terr := readLimited(p, "big.json", "source", 32); terr == nil || terr.Code != mcperr.TooLarge {
+		t.Fatalf("64 bytes over a 32-byte ceiling must be TOO_LARGE, got %+v", terr)
+	}
+	content, terr := readLimited(p, "big.json", "source", 64)
+	if terr != nil || len(content) != 64 {
+		t.Fatalf("64 bytes within a 64-byte ceiling must read whole, got %d bytes / %+v", len(content), terr)
 	}
 }

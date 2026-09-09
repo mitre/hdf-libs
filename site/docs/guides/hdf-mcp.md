@@ -50,7 +50,7 @@ requirements, and `hdf_query` only accepts results and baseline documents.
 
 | Tool | Purpose |
 |------|---------|
-| `hdf_convert` | Convert source security-tool output (Nessus, SARIF, gosec, VEX, …) into an HDF document. Auto-detects the source format; returns a summary and a handle. |
+| `hdf_convert` | Convert source security-tool output (Nessus, SARIF, gosec, VEX, …) into an HDF document. Auto-detects the source format; returns a summary and a handle. Enforces the same requirement-count fidelity check as `hdf convert` (see [Conversion Count Fidelity](./conversion-fidelity.md)): a conversion that lost findings is refused with `SCHEMA_INVALID`. |
 | `hdf_author` | Author an HDF document from model-supplied structured content: `system` (components), `plan` (assessments), `evidence` (contents), or `amendments` (overrides). For amendments the server holds field authority (see below). |
 | `hdf_apply_amendment` | Apply an `hdf-amendments` document to an `hdf-results` document, producing a **new** results file with `effectiveStatus`/`effectiveImpact`/`disposition` computed and the before/after compliance delta reported. It never overwrites its results input. |
 

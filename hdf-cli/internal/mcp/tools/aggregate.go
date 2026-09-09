@@ -8,6 +8,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -133,8 +134,13 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 			results := toResults(resolved.Load)
 			matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 				Status: in.Status, Severity: in.Severity, NIST: in.NIST,
-				Count: true, StatusOf: effectiveStatus,
+				Count: true, StatusOf: shared.RequirementEffectiveStatus,
 			})
+			// Filter returns a partial match set on a cancelled ctx; summing it
+			// into the aggregate would silently understate the totals.
+			if err := ctx.Err(); err != nil {
+				return nil, errorAggregateOutput(), err
+			}
 			filtered := filterResultsToMatches(results, matches)
 			counts := countByEffectiveStatus(filtered)
 			perSource = append(perSource, aggregateSourceRollup{

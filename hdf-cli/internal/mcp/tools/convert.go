@@ -2,8 +2,6 @@ package tools
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -431,6 +429,12 @@ func convertAndPostProcess(conv convreg.Converter, data []byte, labels map[strin
 		return nil, mcperr.New(mcperr.SchemaInvalid, "conversion failed: "+err.Error(), nil).
 			WithNextCall("verify the input is valid output from the source tool")
 	}
+	// Count fidelity: a converter that declares how many requirements its input
+	// must yield is held to it, the same refusal the CLI makes.
+	if _, err := convreg.CheckRequirementFidelity(conv, data, hdfBytes); err != nil {
+		return nil, mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+			WithNextCall("this indicates a converter defect; do not rely on the output")
+	}
 	if hdfBytes, err = hdfdoc.ApplyLabels(hdfBytes, labels); err != nil {
 		return nil, mcperr.New(mcperr.SchemaInvalid, "applying labels failed: "+err.Error(), nil)
 	}
@@ -520,12 +524,12 @@ func convertSummary(hdfBytes []byte) convertOutput {
 	for i := range results.Baselines {
 		reqCount += len(results.Baselines[i].Requirements)
 	}
-	sum := sha256.Sum256(hdfBytes)
+
 	return convertOutput{
 		DocType:          "results",
 		BaselineCount:    len(results.Baselines),
 		RequirementCount: reqCount,
-		Sha256:           hex.EncodeToString(sum[:]),
+		Sha256:           hdfutil.SHA256Hex(hdfBytes),
 		Valid:            true,
 	}
 }

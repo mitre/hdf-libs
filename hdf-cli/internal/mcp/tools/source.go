@@ -8,6 +8,7 @@ package tools
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strconv"
@@ -68,8 +69,9 @@ func redactFileErr(code mcperr.Code, message, relPath string, cause error) *mcpe
 
 // guardFileSize rejects a file larger than maxSize before it is read into
 // memory, so an over-large document returns TOO_LARGE without the allocation
-// spike. The loader's post-read size guard remains the backstop. relPath is the
-// caller-supplied path used in the (redacted) client-facing error.
+// spike, and rejects anything that is not a regular file. The loader's
+// post-read size guard remains the backstop. relPath is the caller-supplied
+// path used in the (redacted) client-facing error.
 func guardFileSize(confined, relPath, slot string, maxSize int64) *mcperr.Error {
 	fi, err := os.Stat(confined)
 	if err != nil {
@@ -77,6 +79,11 @@ func guardFileSize(confined, relPath, slot string, maxSize int64) *mcperr.Error 
 			return mcperr.New(mcperr.DocumentNotFound, "no document at the given path", map[string]any{"path": relPath}).WithNextCall(notFoundNextCall(slot))
 		}
 		return redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err).WithNextCall(notFoundNextCall(slot))
+	}
+	// A FIFO or character device stats as zero bytes and passes the size guard,
+	// then blocks the handler forever or streams without bound.
+	if !fi.Mode().IsRegular() {
+		return mcperr.New(mcperr.DocumentNotFound, "the path is not a regular file", map[string]any{"path": relPath}).WithNextCall(notFoundNextCall(slot))
 	}
 	if fi.Size() > maxSize {
 		return mcperr.New(mcperr.TooLarge, fmt.Sprintf("document is %d bytes, over the %d-byte limit", fi.Size(), maxSize), map[string]any{"path": relPath})
@@ -183,15 +190,30 @@ func resolveCachedHandle(h handle.Handle, ldr *loader.Loader) (*Resolved, *mcper
 // the caller passed (source / results / amendments / from / to), so the recovery
 // hint names a parameter the emitting tool actually has (jobi.4 / D3).
 func readFile(confined, relPath, slot string) ([]byte, *mcperr.Error) {
-	if terr := guardFileSize(confined, relPath, slot, mcpMaxInputSize()); terr != nil {
+	return readLimited(confined, relPath, slot, mcpMaxInputSize())
+}
+
+// readLimited applies the pre-read guards and then reads through a LimitReader,
+// so the ceiling holds on the bytes actually delivered rather than on the size
+// the file claimed when it was stat'd.
+func readLimited(confined, relPath, slot string, maxSize int64) ([]byte, *mcperr.Error) {
+	if terr := guardFileSize(confined, relPath, slot, maxSize); terr != nil {
 		return nil, terr
 	}
-	content, err := os.ReadFile(confined) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
+	f, err := os.Open(confined) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, mcperr.New(mcperr.DocumentNotFound, "no document at the given path", map[string]any{"path": relPath}).WithNextCall(notFoundNextCall(slot))
 		}
 		return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err).WithNextCall(notFoundNextCall(slot))
+	}
+	defer func() { _ = f.Close() }()
+	content, err := io.ReadAll(io.LimitReader(f, maxSize+1))
+	if err != nil {
+		return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the document", relPath, err).WithNextCall(notFoundNextCall(slot))
+	}
+	if int64(len(content)) > maxSize {
+		return nil, mcperr.New(mcperr.TooLarge, fmt.Sprintf("document exceeds the %d-byte limit", maxSize), map[string]any{"path": relPath})
 	}
 	return content, nil
 }
