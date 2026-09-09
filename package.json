@@ -35,9 +35,9 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
-    "@types/node": "^26.4.0",
-    "@typescript-eslint/eslint-plugin": "^8.68.0",
-    "@typescript-eslint/parser": "^8.68.0",
+    "@types/node": "^26.4.1",
+    "@typescript-eslint/eslint-plugin": "^8.69.0",
+    "@typescript-eslint/parser": "^8.69.0",
     "@vitest/coverage-v8": "^4.1.11",
     "cpy-cli": "^7.0.0",
     "eslint": "^10.9.1",
