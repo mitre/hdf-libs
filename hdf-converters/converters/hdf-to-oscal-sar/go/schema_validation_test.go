@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
+	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -303,10 +304,10 @@ var corpusExemptions = map[string]string{
 	"requirement-missing-id": "converts into output carrying an empty target-id, which fails the OSCAL token pattern",
 }
 
-func corpusMinusExemptions(t *testing.T) []shared.CorpusCase {
+func corpusMinusExemptions(t *testing.T) []corpus.CorpusCase {
 	t.Helper()
-	all := shared.ResultsCorpus()
-	kept := make([]shared.CorpusCase, 0, len(all))
+	all := corpus.ResultsCorpus()
+	kept := make([]corpus.CorpusCase, 0, len(all))
 	for _, c := range all {
 		if reason, skipped := corpusExemptions[c.Name]; skipped {
 			t.Logf("corpus case %q exempted — %s", c.Name, reason)
@@ -324,7 +325,7 @@ func TestConvertHDFToOSCALSAR_AdversarialCorpus(t *testing.T) {
 	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
 
-	shared.RunSchemaCorpus(t, v, corpusMinusExemptions(t), func(in []byte) ([]byte, error) {
+	corpus.RunSchemaCorpus(t, v, corpusMinusExemptions(t), func(in []byte) ([]byte, error) {
 		return ConvertHDFToOSCALSAR(in, "1.0.0")
 	})
 }

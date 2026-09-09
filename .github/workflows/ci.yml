@@ -405,6 +405,13 @@ jobs:
       # downstream policy decides (.github/hdf-thresholds/govulncheck.yaml).
       # That makes any nonzero exit a tool failure, which the step's own
       # `bash -e` already fails on.
+      - name: Published Go modules depend only on tagged modules
+        # Static check, not a consumer build: it asserts nothing consumer-
+        # reachable depends on an in-repo module a release never tags. A local
+        # `go build ./...` cannot catch that — the replace directives make it
+        # pass here and fail for everyone else. A real external build is only
+        # possible after a tag exists.
+        run: pnpm run lint:go-consumers
       - name: govulncheck (SARIF; findings gate via HDF)
         run: |
           go install "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION"

@@ -15,7 +15,7 @@
     "build:go": "pnpm --filter hdf-cli run build",
     "pretest": "pnpm run build:ts",
     "test": "pnpm run test:ts && pnpm run test:go",
-    "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run lint:generated-html && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
+    "check": "pnpm run build:ts && pnpm run lint && pnpm run lint:go && pnpm run lint:timestamps && pnpm run lint:generated-html && pnpm run lint:go-consumers && pnpm run typecheck && pnpm run test:coverage && pnpm run security",
     "test:ts": "pnpm -r run test:ts",
     "test:go": "pnpm -r run test:go",
     "test:coverage": "pnpm -r run test:coverage",
@@ -29,7 +29,8 @@
     "lint:generated-html": "node scripts/check-generated-html.mjs",
     "lint:fix": "eslint . --fix",
     "clean": "pnpm -r run clean",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint:go-consumers": "bash scripts/check-go-module-consumers.test.sh && bash scripts/check-go-module-consumers.sh"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/vex"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -193,12 +194,12 @@ func requireConditionalTextIsUsable(t *testing.T, out []byte) {
 // canonicalization (same document, different key order), so feeding the raw
 // bytes would compare two digests of two spellings rather than two converters.
 func TestCorpusGoldenParity(t *testing.T) {
-	for _, c := range shared.AmendmentsCorpus() {
-		if c.Contract != shared.MustConvert {
+	for _, c := range corpus.AmendmentsCorpus() {
+		if c.Contract != corpus.MustConvert {
 			continue // anything else may be rejected, so there is no output to freeze
 		}
 		t.Run(c.Name, func(t *testing.T) {
-			canonical, err := shared.CanonicalJSON(c.Input)
+			canonical, err := corpus.CanonicalJSON(c.Input)
 			require.NoError(t, err)
 			out, err := ConvertHDFToOpenVEX(canonical, "1.0.0")
 			require.NoError(t, err)
@@ -252,7 +253,7 @@ func TestConvertHDFToOpenVEX_OmitsProductsWhenNoneIdentified(t *testing.T) {
 func TestConvertHDFToOpenVEX_AdversarialCorpus(t *testing.T) {
 	v := openvexValidator(t)
 
-	shared.RunSchemaCorpus(t, v, shared.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
+	corpus.RunSchemaCorpus(t, v, corpus.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
 		return ConvertHDFToOpenVEX(in, "1.0.0")
 	})
 }

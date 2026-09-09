@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/xsdvalidate"
 	"github.com/stretchr/testify/assert"
@@ -201,7 +202,7 @@ func TestConvertHDFToXCCDF_AdversarialCorpus(t *testing.T) {
 	v := xsdvalidate.New(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-xccdf", "schemas", "xccdf_1.2.xsd"))
 
-	shared.RunSchemaCorpus(t, v, shared.ResultsCorpus(), func(in []byte) ([]byte, error) {
+	corpus.RunSchemaCorpus(t, v, corpus.ResultsCorpus(), func(in []byte) ([]byte, error) {
 		return ConvertHDFToXCCDF(in, "1.0.0")
 	})
 }
@@ -223,8 +224,8 @@ const corpusRejected = "REJECTED"
 // TypeScript only verifies, so neither side can quietly redefine parity to match
 // itself.
 func TestConvertHDFToXCCDF_CorpusOutputGolden(t *testing.T) {
-	outputs := make(map[string]string, len(shared.ResultsCorpus()))
-	for _, c := range shared.ResultsCorpus() {
+	outputs := make(map[string]string, len(corpus.ResultsCorpus()))
+	for _, c := range corpus.ResultsCorpus() {
 		out, err := ConvertHDFToXCCDF(c.Input, "1.0.0")
 		if err != nil {
 			outputs[c.Name] = corpusRejected
