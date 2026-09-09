@@ -41,6 +41,9 @@ env:
   # syft for the per-commit dependency SBOM (scan-deps). The release job's
   # download-syft action is SHA-pinned; this pins the syft release it fetches.
   SYFT_VERSION: 'v1.51.1'
+  # The real pin is the hash closure in .github/semgrep-requirements.txt; this
+  # stays the one place a bump is declared, and the scan step refuses to run if
+  # the two disagree. Regeneration instructions are in that file's header.
   SEMGREP_VERSION: '1.176.1'
   # semgrep-rules commit the scan uses. Bumping it is how the ruleset
   # updates; re-measure .github/hdf-thresholds/semgrep.yaml in the same PR.
@@ -290,7 +293,12 @@ jobs:
       # reading their input files, which is the product.
       - name: semgrep (JSON; findings gate via HDF)
         run: |
-          pip install --quiet "semgrep==$SEMGREP_VERSION"
+          # Hash-pinned: semgrep is the only findings-producing scanner here
+          # that comes from a package index rather than a checksum database, so
+          # an unpinned transitive tree could move the findings the gate judges.
+          grep -qxF "semgrep==$SEMGREP_VERSION \\" .github/semgrep-requirements.txt \
+            || { echo "::error::semgrep-requirements.txt does not pin semgrep==$SEMGREP_VERSION — regenerate it"; exit 1; }
+          pip install --quiet --require-hashes -r .github/semgrep-requirements.txt
           mkdir -p scan-artifacts
           rc=0
           semgrep scan --metrics off --error \
@@ -848,11 +856,15 @@ jobs:
           done
 
       - name: publint each tarball
+        # `pnpm exec` (not dlx): publint is a root devDependency so the verdict
+        # comes from the lockfile-pinned version. dlx would resolve whatever is
+        # current on npm at run time and bypass the workspace's release-age
+        # cooldown — the same reasoning as the attw step below.
         run: |
           FAIL=0
           for tb in /tmp/tarballs/*.tgz; do
             echo "::group::publint $(basename "$tb")"
-            pnpm dlx publint "$tb" || FAIL=1
+            pnpm exec publint "$tb" || FAIL=1
             echo "::endgroup::"
           done
           exit $FAIL
