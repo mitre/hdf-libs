@@ -83,6 +83,7 @@ Minor release. The document schemas are structurally unchanged from v3.5.x, so t
 
 ### Fixes
 
+- **`hdf-to-csv` names a zero-impact requirement `informational` rather than `low`.** The exporter carried its own severity ladder with no band for zero, so a requirement with no impact was indistinguishable in the CSV from a genuinely low-risk one. It now reports what the shared mapper names, which is the vocabulary every other surface already uses. Seven rows across the committed CSV goldens change accordingly; a consumer filtering the severity column on `low` will see those rows move.
 - **`hdf-to-xccdf` and the OSCAL impact mapper report `low` rather than `info` for an impact between 0 and 0.1.** Both carried their own severity ladder with a threshold the shared mapper does not use, so the same impact could be named two ways depending on which exporter you asked. They now share one mapper, folding `critical` into `high` and zero into `info` only where the target vocabulary genuinely lacks the band. No committed golden changes; a document whose impacts all sit at or above 0.1 is unaffected.
 - **Every converter derives a default override expiry the same way.** Nine sites computed it in six different ways, mixing a calendar year with a fixed 365-day span, so two converters could disagree on the same input across a leap year. One shared helper now computes a calendar year in UTC. One of those sites used local time, which made the derived `expiresAt` depend on the timezone of whichever machine ran the conversion.
 

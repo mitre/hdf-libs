@@ -294,11 +294,7 @@ function getSeverity(requirement: EvaluatedRequirement): string {
     }
   }
 
-  // Derive from impact via the shared mapper so the critical band is not
-  // reported as high. Zero impact keeps the historical 'low' floor: the CSV has
-  // no separate no-severity column.
-  const derived = impactToSeverity(requirement.impact);
-  return derived === 'informational' ? 'low' : derived;
+  return impactToSeverity(requirement.impact);
 }
 
 /**

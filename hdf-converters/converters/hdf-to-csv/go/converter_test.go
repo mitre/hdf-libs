@@ -310,9 +310,9 @@ func TestGetSeverity_ArrayPath(t *testing.T) {
 		assert.Equal(t, "critical", getSeverity(req))
 	})
 
-	t.Run("impact 0.0 keeps the low floor (CSV has no no-severity column)", func(t *testing.T) {
+	t.Run("impact 0.0 is informational, as the shared mapper names it", func(t *testing.T) {
 		req := &hdf.EvaluatedRequirement{Impact: 0.0}
-		assert.Equal(t, "low", getSeverity(req))
+		assert.Equal(t, "informational", getSeverity(req))
 	})
 }
 
