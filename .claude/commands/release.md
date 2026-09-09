@@ -195,7 +195,7 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 | `hdf-schema/package.json` | Same |
 | `hdf-engine/go/engine.go` — the `Version()` constant | `return "OLD"` → `return "NEW"`. TestVersion asserts this equals `hdf-engine/package.json`, so a missed bump fails CI (bead 4908.19). It is NOT an ldflags stamp — the engine is consumed as a library where no linker flags are set. |
 | `hdf-schema/src/schemas/*.schema.json` (7 root schemas) | `"$id"` URLs ending in `/vOLD` → `/vNEW`. Also any `$ref` URLs in primitives that quote a version path. |
-| Cross-module `go.mod` requires (`hdf-converters/go.mod`, `hdf-cli/go.mod`, `hdf-diff/go/go.mod`, `hdf-engine/go/go.mod`, `hdf-parsers/go/go.mod`, `hdf-generators/go/go.mod`) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g` |
+| Cross-module `go.mod` requires — **discover them, never enumerate**: `grep -rlE 'github.com/mitre/hdf-libs/[^ ]+ v[0-9]' --include=go.mod . \| grep -v node_modules` (nine files at the time of writing, including `hdf-extension-graph/go/go.mod`, `hdf-fixtures/go.mod` and `hdf-schema/testhdf/go/go.mod`, which a hand-kept list has missed twice) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g`. Then the hard gate: `grep -rE 'hdf-libs/[^ ]+ vOLD' --include=go.mod .` must return nothing. |
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 
@@ -281,6 +281,7 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
 
 ### Phase 7 — Stage and propose the commit
 
+0. **Branch first.** If the current branch is `main`, create `release/vNEW-prep` before staging anything: a release commit on the default branch has had to be moved to a branch after the fact, and the `main` ruleset now requires the gate checks on a pull request anyway.
 1. **Exclude `go.work.sum`** from the staged set. It collects speculative checksums from the Go toolchain during builds; it's environmental churn, not the release.
 2. Explicit `git add` of every file you intended to change (per global rule: no `git add .` / `git add -A`).
 3. Run `git status --short` and verify only the intended files are staged.
@@ -342,7 +343,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] Phase 1.6 suppression review: pnpm overrides re-validated against current advisory floors; `ignoreGhsas` checked for now-available fixes; dependabot `ignore` rules checked against their still-blocking conditions; retirements filed as their own commits
 - [ ] *(minor/major)* Phase 1.7 vendored external-schema freshness: each `converters/*/schemas/**` (and sibling fixture schema) re-fetched and SHA-256-compared against its `PROVENANCE.md`; drift refreshed + revalidated, or confirmed no-op
 - [ ] 10 `package.json` files at NEW
-- [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
+- [ ] Every `go.mod` with a cross-module require (discovered by grep, not a fixed count) at `hdf-libs/<x>/v3 vNEW`; the post-sweep grep for `vOLD` returns nothing
 - [ ] *(minor/major)* 7 schema `$id` URLs at NEW
 - [ ] *(minor/major)* 7 new archive files staged: `site/public/schemas/<name>/vNEW/index.json` (one per main schema). `cd site && pnpm generate` writes them; `git add 'site/public/schemas/*/vNEW/'` stages them. See Phase 2.5.
 - [ ] *(minor/major)* Root `README.md` current-version claims updated
