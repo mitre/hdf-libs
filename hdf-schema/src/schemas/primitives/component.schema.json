@@ -223,9 +223,9 @@
           }
         }
       ],
+      "$comment": "Examples, in order: 1) Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix; 2) Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
       "examples": [
         {
-          "$comment": "Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix.",
           "type": "host",
           "name": "web-server-prod-01",
           "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
@@ -241,7 +241,6 @@
           }
         },
         {
-          "$comment": "Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
           "type": "host",
           "name": "kiosk-lab-07",
           "hostname": "kiosk-lab-07",

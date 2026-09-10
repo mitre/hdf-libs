@@ -64,7 +64,7 @@
           ]
         }
       ],
-      "$comment": "Only `version` is required; every metric/score field is optional because a single Cvss instance may represent vendor-supplied Base data (on a finding's cvss[]), consumer-supplied enrichment (on a riskAdjustment override — Environmental/Threat/Supplemental deltas with NO base, since base is the finding's scan-specific vendor data), or a fully-resolved effectiveCvss. The Base/Threat/Environmental/Supplemental groups do not partition cleanly into vendor-vs-consumer (Threat straddles: vendor temporal data and consumer exploit-maturity both live here), so a single permissive type is more honest than separate vendor/consumer types. The anyOf guardrail rejects a content-free object (e.g. {version} alone) by requiring at least one substantive metric or score. baseVector remains optional even when baseScore is present: some vendor tools (Twistlock/Prisma Cloud) emit a final score without the vector that derived it — that score is captured structurally rather than lost.",
+      "$comment": "Only `version` is required; every metric/score field is optional because a single Cvss instance may represent vendor-supplied Base data (on a finding's cvss[]), consumer-supplied enrichment (on a riskAdjustment override — Environmental/Threat/Supplemental deltas with NO base, since base is the finding's scan-specific vendor data), or a fully-resolved effectiveCvss. The Base/Threat/Environmental/Supplemental groups do not partition cleanly into vendor-vs-consumer (Threat straddles: vendor temporal data and consumer exploit-maturity both live here), so a single permissive type is more honest than separate vendor/consumer types. The anyOf guardrail rejects a content-free object (e.g. {version} alone) by requiring at least one substantive metric or score. baseVector remains optional even when baseScore is present: some vendor tools (Twistlock/Prisma Cloud) emit a final score without the vector that derived it — that score is captured structurally rather than lost. Examples, in order: 1) Base-only: vendor-supplied CVSS 3.1 data exactly as a scanner (e.g., Nessus, Grype) would emit it. No consumer enrichment yet; 2) Base + Threat: consumer added Exploit Maturity ('E:U' = Unproven) and Remediation Level ('RL:O' = Official Fix) to a HTTP/2 'Rapid Reset' DoS finding. Threat score drops from base 7.5 to 5.5; 3) Base + Environmental: consumer asserts the affected system is high-criticality (CR:H, IR:H, AR:H) AND network-reachable in their environment (MAV:N). Environmental score reflects deployment risk for the xz-utils backdoor; 4) Full CVSS 4.0: vendor base + consumer threat (E:A = Attacked, exploits seen in the wild) + environmental (high CIA requirements) + supplemental context (S:P = present safety impact, AU:N = no autonomous spread, RE:M = moderate response effort) for the Fortinet FortiOS pre-auth RCE. computedScore reflects post-mitigation final risk; 5) CVSS 2.0 legacy: Heartbleed (CVE-2014-0160) as still reported by older scanner output and legacy NVD data. CVSS 2.0 vectors have no 'CVSS:2.0/' prefix.",
       "properties": {
         "version": {
           "type": "string",
@@ -144,7 +144,6 @@
       },
       "examples": [
         {
-          "$comment": "Base-only: vendor-supplied CVSS 3.1 data exactly as a scanner (e.g., Nessus, Grype) would emit it. No consumer enrichment yet.",
           "version": "3.1",
           "source": "CVE-2024-12345",
           "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
@@ -152,7 +151,6 @@
           "baseSeverity": "critical"
         },
         {
-          "$comment": "Base + Threat: consumer added Exploit Maturity ('E:U' = Unproven) and Remediation Level ('RL:O' = Official Fix) to a HTTP/2 'Rapid Reset' DoS finding. Threat score drops from base 7.5 to 5.5.",
           "version": "3.1",
           "source": "CVE-2023-44487",
           "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
@@ -162,7 +160,6 @@
           "threatScore": 5.5
         },
         {
-          "$comment": "Base + Environmental: consumer asserts the affected system is high-criticality (CR:H, IR:H, AR:H) AND network-reachable in their environment (MAV:N). Environmental score reflects deployment risk for the xz-utils backdoor.",
           "version": "3.1",
           "source": "CVE-2024-3094",
           "baseVector": "CVSS:3.1/AV:L/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H",
@@ -174,7 +171,6 @@
           "computedSeverity": "critical"
         },
         {
-          "$comment": "Full CVSS 4.0: vendor base + consumer threat (E:A = Attacked, exploits seen in the wild) + environmental (high CIA requirements) + supplemental context (S:P = present safety impact, AU:N = no autonomous spread, RE:M = moderate response effort) for the Fortinet FortiOS pre-auth RCE. computedScore reflects post-mitigation final risk.",
           "version": "4.0",
           "source": "CVE-2024-21762",
           "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
@@ -189,7 +185,6 @@
           "computedSeverity": "medium"
         },
         {
-          "$comment": "CVSS 2.0 legacy: Heartbleed (CVE-2014-0160) as still reported by older scanner output and legacy NVD data. CVSS 2.0 vectors have no 'CVSS:2.0/' prefix.",
           "version": "2.0",
           "source": "CVE-2014-0160",
           "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:N",

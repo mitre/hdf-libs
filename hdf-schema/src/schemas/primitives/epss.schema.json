@@ -32,21 +32,19 @@
           "description": "ISO 8601 date (YYYY-MM-DD) on which FIRST.org published this EPSS score."
         }
       },
+      "$comment": "Examples, in order: 1) High exploit probability and high percentile, characteristic of a widely-exploited vulnerability like Log4Shell (CVE-2021-44228) shortly after disclosure; 2) Low score but moderate percentile, the common case for CVEs that have some observed exploitation evidence but are not under active mass exploitation; 3) Very low score, typical of a CVE with no known exploitation activity or proof-of-concept availability.",
       "examples": [
         {
-          "$comment": "High exploit probability and high percentile, characteristic of a widely-exploited vulnerability like Log4Shell (CVE-2021-44228) shortly after disclosure.",
           "score": 0.97532,
           "percentile": 0.99987,
           "date": "2026-05-26"
         },
         {
-          "$comment": "Low score but moderate percentile, the common case for CVEs that have some observed exploitation evidence but are not under active mass exploitation.",
           "score": 0.04521,
           "percentile": 0.78432,
           "date": "2026-05-26"
         },
         {
-          "$comment": "Very low score, typical of a CVE with no known exploitation activity or proof-of-concept availability.",
           "score": 0.00042,
           "percentile": 0.10215,
           "date": "2026-05-26"

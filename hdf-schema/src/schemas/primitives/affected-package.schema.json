@@ -66,9 +66,9 @@
           "description": "Optional version string identifying the first release that contains the fix for the vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes 'openssl@1.1.1k'."
         }
       },
+      "$comment": "Examples, in order: 1) RPM ecosystem with full CPE + PURL — typical Grype/Trivy output for a RHEL host scan; 2) NPM ecosystem with PURL only — the JavaScript world rarely emits CPEs; PURL is the canonical identifier; 3) Minimal valid AffectedPackage — only the three required fields. Use when the scanner reports a package by name+version without emitting CPE or PURL strings; 4) Maven ecosystem with full identifiers + fixedInVersion — log4j Log4Shell-style finding showing the patch path from vulnerable to fixed; 5) purl-only — VEX import path where the source format gives a purl and we choose not to decompose it. Valid because purl encodes name/version/ecosystem implicitly; 6) cpe-only — NIST-flavored scopes where the consumer carries a CPE 2.3 string and no purl. Valid because cpe encodes vendor/product/version.",
       "examples": [
         {
-          "$comment": "RPM ecosystem with full CPE + PURL — typical Grype/Trivy output for a RHEL host scan.",
           "name": "openssl",
           "version": "1.1.1k-7.el8_4",
           "ecosystem": "rpm",
@@ -77,7 +77,6 @@
           "fixedInVersion": "1.1.1l"
         },
         {
-          "$comment": "NPM ecosystem with PURL only — the JavaScript world rarely emits CPEs; PURL is the canonical identifier.",
           "name": "lodash",
           "version": "4.17.20",
           "ecosystem": "npm",
@@ -85,13 +84,11 @@
           "fixedInVersion": "4.17.21"
         },
         {
-          "$comment": "Minimal valid AffectedPackage — only the three required fields. Use when the scanner reports a package by name+version without emitting CPE or PURL strings.",
           "name": "requests",
           "version": "2.28.1",
           "ecosystem": "pypi"
         },
         {
-          "$comment": "Maven ecosystem with full identifiers + fixedInVersion — log4j Log4Shell-style finding showing the patch path from vulnerable to fixed.",
           "name": "org.apache.logging.log4j:log4j-core",
           "version": "2.14.1",
           "ecosystem": "maven",
@@ -100,11 +97,9 @@
           "fixedInVersion": "2.17.1"
         },
         {
-          "$comment": "purl-only — VEX import path where the source format gives a purl and we choose not to decompose it. Valid because purl encodes name/version/ecosystem implicitly.",
           "purl": "pkg:npm/lodash@4.17.20"
         },
         {
-          "$comment": "cpe-only — NIST-flavored scopes where the consumer carries a CPE 2.3 string and no purl. Valid because cpe encodes vendor/product/version.",
           "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
         }
       ],

@@ -107,9 +107,9 @@
       "description": "The full requirement as evaluated after the change — required and non-null for every state except absent (null there: the requirement left the assessment scope). Full content is load-bearing twice over: reassembly parity (applyChangeEvents cannot reproduce changed result content from a projection) and triage (the failing results[] ARE the 'why' a responder opens the event for)."
     }
   },
+  "$comment": "Examples, in order: 1) fixed — the common remediation event: a failing SSH FIPS-cipher control was fixed and rescanned. priorChecksum is the effectiveChecksum of the prior failed posture; after carries the full passing requirement including its new effectiveChecksum (the next chain link); 2) regressed via overrideExpired — the waiver that held this control at passed lapsed, so effective posture regressed to failed with NO new scan finding. A different triage than resultChanged: renew or remediate. priorChecksum is the waived posture's checksum; the expired override remains in statusOverrides as the audit record; 3) new — a requirement entered assessment scope (chain start for this key): before is null, priorChecksum is null. The full after payload is what makes the new key materializable by applyChangeEvents; 4) absent — the requirement left assessment scope (component decommissioned or benchmark rule retired): after is null by definition; the thin before preserves the last observed posture for downstream views; 5) updated via impactChanged — a riskAdjustment override lowered effective impact while the control stayed failed: status unchanged, so neither fixed nor regressed. after carries the override and the recomputed effectiveChecksum over the adjusted posture.",
   "examples": [
     {
-      "$comment": "fixed — the common remediation event: a failing SSH FIPS-cipher control was fixed and rescanned. priorChecksum is the effectiveChecksum of the prior failed posture; after carries the full passing requirement including its new effectiveChecksum (the next chain link).",
       "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
       "source": "inspec://web01/rhel9-stig",
       "sequence": 412,
@@ -160,7 +160,6 @@
       }
     },
     {
-      "$comment": "regressed via overrideExpired — the waiver that held this control at passed lapsed, so effective posture regressed to failed with NO new scan finding. A different triage than resultChanged: renew or remediate. priorChecksum is the waived posture's checksum; the expired override remains in statusOverrides as the audit record.",
       "eventId": "0190f6f2-3b6c-7f5e-c2d9-5a3f7b9c1e23",
       "source": "reconciler://apptier/override-sweep",
       "sequence": 97,
@@ -225,7 +224,6 @@
       }
     },
     {
-      "$comment": "new — a requirement entered assessment scope (chain start for this key): before is null, priorChecksum is null. The full after payload is what makes the new key materializable by applyChangeEvents.",
       "eventId": "0190f6f2-4c7d-8a6f-d3ea-6b4a8c0d2f34",
       "source": "inspec://web01/rhel9-stig",
       "sequence": 1,
@@ -267,7 +265,6 @@
       }
     },
     {
-      "$comment": "absent — the requirement left assessment scope (component decommissioned or benchmark rule retired): after is null by definition; the thin before preserves the last observed posture for downstream views.",
       "eventId": "0190f6f2-5d8e-9b7a-e4fb-7c5b9d1e3a45",
       "source": "inspec://web01/rhel9-stig",
       "sequence": 413,
@@ -288,7 +285,6 @@
       "after": null
     },
     {
-      "$comment": "updated via impactChanged — a riskAdjustment override lowered effective impact while the control stayed failed: status unchanged, so neither fixed nor regressed. after carries the override and the recomputed effectiveChecksum over the adjusted posture.",
       "eventId": "0190f6f2-6e9f-0c8b-f5ac-8d6c0e2f4b56",
       "source": "reconciler://apptier/amend-apply",
       "sequence": 414,

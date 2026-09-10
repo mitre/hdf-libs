@@ -200,14 +200,13 @@ Valid:            1
 Expired:          0
 Invalid:          0
 Chain:            not established
-Results link:     not recorded
 
 All checks passed.
 ```
 
 **Verify exits non-zero when any check fails.** An expired amendment is a failure, not a warning, and no flag makes one pass — an amendment that has outlived its review date is a suppression with no end date, and the remedy is to review the finding and issue a new one. Wiring `hdf amend verify` over your governance directory in CI therefore gives you a step that genuinely gates, rather than one that reports and passes.
 
-The three counts are separate because their remedies are: `Expired` means renew the review, `Invalid` means the document does not satisfy the hdf-amendments schema, and a broken `Chain` means an amendment was edited after it was written. With a results file supplied, verify adds two more checks: that every `requirementId` exists in those results, and that any recorded link to the results document matches.
+The three counts are separate because their remedies are: `Expired` means renew the review, `Invalid` means the document does not satisfy the hdf-amendments schema, and a broken `Chain` means an amendment was edited after it was written. With a results file supplied, verify adds one more check: that every `requirementId` exists in those results. It reports nothing about a results hash stored on the amendments document — one amendments document may be applied to many results files, so it cannot carry a single results hash. The record of what a results document was amended from lives on that results document, as the root `preAmendmentChecksum` written by `hdf amend apply`.
 
 **`hdf amend apply` refuses a document that does not verify** — expired, structurally invalid, or chain-broken — rather than merging it and leaving the read side to compensate. The same gate applies to the `hdf_apply_amendment` MCP tool, so an agent cannot apply what the CLI refuses. Read-side enforcement is still there as defence in depth: compliance rollups and threshold checks recompute effective status and ignore expired overrides.
 
