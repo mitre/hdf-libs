@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +46,7 @@ func TestConvertHDFToXMLNumberTextMatchesSharedTable(t *testing.T) {
 
 			out, err := ConvertHDFToXML(input)
 			require.NoError(t, err)
-			assert.True(t, strings.Contains(string(out), "<n>"+c.Text+"</n>"), c.Why)
+			assert.Contains(t, string(out), "<n>"+c.Text+"</n>", c.Why)
 		})
 	}
 }
