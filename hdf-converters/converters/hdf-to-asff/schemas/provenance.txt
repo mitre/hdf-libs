@@ -1,9 +1,12 @@
 # ASFF — no schema vendored, and why
 
 **AWS publishes no machine-readable JSON Schema for the AWS Security Finding
-Format.** Nothing is vendored here on purpose. This file exists so the next
-person looking for `hdf-to-asff/schemas/` finds the answer instead of assuming
-the directory was forgotten.
+Format.** No schema is vendored here, and none can be. What IS vendored is
+`asff-required-members.json`: the `required[]` arrays of the ASFF shapes this
+converter emits, extracted verbatim from AWS's official Security Hub service
+model and recorded in `provenance.json` with the upstream hash and the command
+to re-derive them. That is an extract of an authoritative model, not a schema
+and not a reconstruction.
 
 Searched 2026-09-09. The converter self-declares `SchemaVersion` `2018-10-08`
 (`go/converter.go`, `typescript/converter.ts`).
@@ -25,6 +28,7 @@ What exists, and why none of it is a JSON Schema:
 - No `awslabs`/`aws` repository publishes a standalone ASFF schema document
   (checked; 404).
 
-Consequence: `hdf-to-asff` cannot join the schema-validated corpus harness. Its
-tests assert against raw JSON structure instead. If AWS ever publishes a real
-JSON Schema, vendor it here following the `hdf-to-oscal-sar` pattern.
+Consequence: `hdf-to-asff` cannot be validated against a target schema, but it
+DOES join the adversarial corpus, with AWS's required-member lists standing in
+for the schema it does not publish. If AWS ever publishes a real JSON Schema,
+vendor it here following the `hdf-to-oscal-sar` pattern and retire the extract.
