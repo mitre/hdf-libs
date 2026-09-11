@@ -34,6 +34,12 @@ func (ecsNDJSONValidator) Validate(doc []byte) error {
 		if err := json.Unmarshal([]byte(line), &obj); err != nil {
 			return fmt.Errorf("line %d is not a JSON object: %w", i+1, err)
 		}
+		// Unmarshalling the literal null into a map SUCCEEDS and leaves obj nil,
+		// so without this a null line passes here while the TypeScript peer
+		// rejects it — the two would disagree about the same output.
+		if obj == nil {
+			return fmt.Errorf("line %d is null, not a JSON object", i+1)
+		}
 	}
 	return nil
 }

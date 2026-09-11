@@ -35,7 +35,7 @@ func (cklbRoundTripValidator) Validate(doc []byte) error {
 // below so the exemption cannot outlive it.
 var corpusExemptions = map[string]string{
 	"zero-baselines":              "baselines has no minItems, so an assessment that evaluated nothing is legal HDF a checklist cannot represent — rejected deliberately, matching hdf-to-ckl and hdf-to-oscal-sar",
-	"baseline-empty-requirements": "DEFECT hdf-libs-5gri.10: an empty requirements list yields \"rules\": null rather than an empty array. Exempted so the rest of the corpus can run, and pinned by TestConvertHDFToCKLB_RulesNullDefectStillReproduces",
+	"baseline-empty-requirements": "DEFECT, tracked on the exporter-conformance board: an empty requirements list yields \"rules\": null rather than an empty array. Exempted so the rest of the corpus can run, and pinned by TestConvertHDFToCKLB_RulesNullDefectStillReproduces",
 }
 
 func corpusMinusExemptions(t *testing.T) []corpus.CorpusCase {
@@ -60,7 +60,7 @@ func TestConvertHDFToCKLB_AdversarialCorpus(t *testing.T) {
 }
 
 // The exemption above is for a live defect, not a permanent property, so it is
-// pinned: this fails the moment hdf-libs-5gri.10 is fixed, forcing the exemption
+// pinned: this fails the moment the defect is fixed, forcing the exemption
 // to be removed with it rather than silently outliving the bug.
 func TestConvertHDFToCKLB_RulesNullDefectStillReproduces(t *testing.T) {
 	_, exempted := corpusExemptions["baseline-empty-requirements"]
@@ -70,10 +70,10 @@ func TestConvertHDFToCKLB_RulesNullDefectStillReproduces(t *testing.T) {
 		`"generator":{"name":"x","version":"1"},"timestamp":"2020-01-01T00:00:00Z"}`)
 
 	out, err := ConvertHDFToCKLB(input)
-	require.NoError(t, err, "hdf-libs-5gri.10 fixed? The converter now rejects empty requirements — "+
+	require.NoError(t, err, "Defect fixed? The converter now rejects empty requirements — "+
 		"delete the baseline-empty-requirements exemption and this test")
 	require.Contains(t, string(out), `"rules": null`,
-		"hdf-libs-5gri.10 fixed? rules is no longer null — "+
+		"Defect fixed? rules is no longer null — "+
 			"delete the baseline-empty-requirements exemption and this test")
 }
 

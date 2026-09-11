@@ -132,6 +132,19 @@ func (v asffRequiredMembersValidator) Validate(doc []byte) error {
 				return fmt.Errorf("finding %d: required member %q is an empty string", i, k)
 			}
 		}
+		resources, _ := f["Resources"].([]interface{})
+		for j, raw := range resources {
+			entry, _ := raw.(map[string]interface{})
+			for _, k := range v.required["Resource"] {
+				val, ok := entry[k]
+				if !ok {
+					return fmt.Errorf("finding %d resource %d: required member %q absent", i, j, k)
+				}
+				if str, isStr := val.(string); isStr && str == "" {
+					return fmt.Errorf("finding %d resource %d: required member %q is empty", i, j, k)
+				}
+			}
+		}
 		vulns, _ := f["Vulnerabilities"].([]interface{})
 		for j, raw := range vulns {
 			entry, _ := raw.(map[string]interface{})

@@ -42,7 +42,7 @@ func (cklRoundTripValidator) Validate(doc []byte) error {
 // live defect and is pinned below so the exemption cannot outlive it.
 var corpusExemptions = map[string]string{
 	"zero-baselines":              "baselines has no minItems, so an assessment that evaluated nothing is legal HDF that a checklist cannot represent — this converter rejects it deliberately, matching hdf-to-oscal-sar",
-	"baseline-empty-requirements": "DEFECT hdf-libs-5gri.11: the converter emits an <iSTIG> with no <VULN>, which its own ParseCKL rejects. Exempted so the rest of the corpus can run, and pinned by TestConvertHDFToCKL_EmptyRequirementsDefectStillReproduces so removing the defect fails the pin",
+	"baseline-empty-requirements": "DEFECT, tracked on the exporter-conformance board: the converter emits an <iSTIG> with no <VULN>, which its own ParseCKL rejects. Exempted so the rest of the corpus can run, and pinned by TestConvertHDFToCKL_EmptyRequirementsDefectStillReproduces so removing the defect fails the pin",
 }
 
 func corpusMinusExemptions(t *testing.T) []corpus.CorpusCase {
@@ -68,7 +68,7 @@ func TestConvertHDFToCKL_AdversarialCorpus(t *testing.T) {
 }
 
 // The exemption above is for a live defect, not a permanent property, so it is
-// pinned: this test fails the moment hdf-libs-5gri.11 is fixed, which forces the
+// pinned: this test fails the moment the defect is fixed, which forces the
 // exemption to be removed with it rather than silently outliving the bug.
 func TestConvertHDFToCKL_EmptyRequirementsDefectStillReproduces(t *testing.T) {
 	_, exempted := corpusExemptions["baseline-empty-requirements"]
@@ -78,10 +78,10 @@ func TestConvertHDFToCKL_EmptyRequirementsDefectStillReproduces(t *testing.T) {
 		`"generator":{"name":"x","version":"1"},"timestamp":"2020-01-01T00:00:00Z"}`)
 
 	out, err := ConvertHDFToCKL(input)
-	require.NoError(t, err, "hdf-libs-5gri.11 fixed? The converter now rejects empty requirements — "+
+	require.NoError(t, err, "Defect fixed? The converter now rejects empty requirements — "+
 		"delete the baseline-empty-requirements exemption and this test")
 	require.Error(t, cklRoundTripValidator{}.Validate(out),
-		"hdf-libs-5gri.11 fixed? Output now re-imports cleanly — "+
+		"Defect fixed? Output now re-imports cleanly — "+
 			"delete the baseline-empty-requirements exemption and this test")
 }
 

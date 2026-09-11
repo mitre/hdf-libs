@@ -36,7 +36,7 @@ func classSchemas(t *testing.T) map[float64]*gojsonschema.Schema {
 }
 
 // knownViolations is the EXACT set of schema violations this converter still
-// produces, tracked as hdf-libs-5gri.42. It is pinned rather than tolerated: a
+// produces, tracked on the exporter-conformance board. It is pinned rather than tolerated: a
 // new violation fails this test, and fixing one fails it too, so the list cannot
 // drift in either direction without someone noticing.
 //
@@ -112,7 +112,7 @@ func TestConvertHDFToOCSF_SchemaValid(t *testing.T) {
 	}
 	assert.Equal(t, sortedKeys(knownViolations), sortedKeys(all),
 		"OCSF violation set changed. A NEW entry is a regression; a MISSING one means "+
-			"hdf-libs-5gri.42 was fixed and this pin should be reduced to plain validation.")
+			"the converter became conformant and this pin should be reduced to plain validation.")
 }
 
 // pinnedSchemaValidator accepts a document only if every schema violation it
@@ -133,7 +133,7 @@ func (v pinnedSchemaValidator) Validate(doc []byte) error {
 	}
 	for k := range seen {
 		if !knownViolations[k] {
-			return fmt.Errorf("new schema violation not in the carded set: %s", k)
+			return fmt.Errorf("new schema violation not in the recorded set: %s", k)
 		}
 	}
 	return nil

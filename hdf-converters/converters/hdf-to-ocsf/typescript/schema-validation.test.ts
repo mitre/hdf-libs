@@ -18,7 +18,7 @@ const validators: Record<number, ReturnType<typeof loadSchemaValidator>> = {
 };
 
 // The EXACT set of schema violations this converter still produces, tracked as
-// hdf-libs-5gri.42 and mirrored one-for-one by the Go peer. Pinned rather than
+// the exporter-conformance board and mirrored one-for-one by the Go peer. Pinned rather than
 // tolerated: a new violation fails, and so does fixing one, so it cannot drift
 // either way.
 //
@@ -71,7 +71,7 @@ describe('hdf-to-ocsf output against the vendored OCSF schemas', () => {
     expect(
       [...all].sort(),
       'OCSF violation set changed. A NEW entry is a regression; a MISSING one means ' +
-        'hdf-libs-5gri.42 was fixed and this pin should be reduced to plain validation.',
+        'the converter became conformant and this pin should be reduced to plain validation.',
     ).toEqual(KNOWN_VIOLATIONS);
   });
 });

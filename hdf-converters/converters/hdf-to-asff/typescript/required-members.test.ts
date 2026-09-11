@@ -47,6 +47,20 @@ describe('hdf-to-asff required members', () => {
     }
   });
 
+  // The table also declares Resource.Type and Resource.Id required; a converter
+  // regression emitting a resource without either would otherwise pass.
+  it.each(['compliance.json', 'cve.json'])('%s emits every required Resource member', (name) => {
+    expect(REQUIRED.Resource?.length, 'the table must declare Resource members').toBeGreaterThan(0);
+    for (const [i, f] of findings(fixture(name)).entries()) {
+      for (const [j, r] of ((f.Resources as Record<string, unknown>[] | undefined) ?? []).entries()) {
+        for (const k of REQUIRED.Resource as string[]) {
+          expect(r, `${name} finding ${i} resource ${j}: ${k}`).toHaveProperty(k);
+          expect(r[k], `${name} finding ${i} resource ${j}: ${k} is empty`).not.toBe('');
+        }
+      }
+    }
+  });
+
   it('never emits a Vulnerability without its required Id', () => {
     expect(REQUIRED.Vulnerability, 'the table must say Id is required or this asserts nothing').toContain('Id');
     const input =
