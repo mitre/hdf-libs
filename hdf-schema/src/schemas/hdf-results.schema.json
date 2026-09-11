@@ -54,6 +54,17 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
     },
+    "preAmendmentChecksum": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
+      "description": "Hash of this results document as it stood immediately before the most recent amendment application. Written by `hdf amend apply` when it applies at least one override; an apply that matches nothing leaves the document untouched. The hash covers the results file's RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical original — reformatting or re-serializing the source changes the value. Only the most recent pre-application state is recorded: applying amendments to an already-amended document REPLACES this value, so it is a single link back one step, not a growing chain. Distinct from the `previousChecksum` inside an override, which chains amendments to each other and is computed over a canonical JSON form.",
+      "$comment": "Example 1: the real SHA-256 of hdf-converters/converters/nessus-to-hdf/fixtures/expected/sample.nessus.hdf.json, reproducible with `shasum -a 256` on that file — chosen over a synthetic digest so a reader can verify the hash basis is the raw file bytes.",
+      "examples": [
+        {
+          "algorithm": "sha256",
+          "value": "9599ce7889e99b70ef5d0f3efa4215e35059c10a7e89b9314cbf4ded8fdbad38"
+        }
+      ]
+    },
     "runner": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.5.0#/$defs/Runner",
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
@@ -358,9 +369,9 @@
           "description": "Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see components[] on hdf-system for component-level package inventories. One entry per matched package signature (scanners often report multiple CPE variations per CVE)."
         }
       },
+      "$comment": "Examples, in order: 1) Passing requirement — no overrides, no disposition; 2) Waiver — AO accepted risk, status overridden to passed; 3) False positive (compliance scan) — STIG check was wrong, requirement actually passes; 4) False positive (CVE scan) — vulnerability does not apply to this build; 5) Risk adjustment — impact lowered, pass/fail unchanged; 6) Operational requirement — cannot remediate, remains open risk; 7) POAM — remediation tracked, status unchanged.",
       "examples": [
         {
-          "$comment": "Passing requirement — no overrides, no disposition",
           "id": "SV-230222",
           "title": "RHEL 9 must use SSH protocol version 2",
           "impact": 0.7,
@@ -385,7 +396,6 @@
           "effectiveStatus": "passed"
         },
         {
-          "$comment": "Waiver — AO accepted risk, status overridden to passed",
           "id": "SV-230300",
           "title": "RHEL 9 must enforce password complexity",
           "impact": 0.5,
@@ -429,7 +439,6 @@
           }
         },
         {
-          "$comment": "False positive (compliance scan) — STIG check was wrong, requirement actually passes",
           "id": "SV-230410",
           "title": "RHEL 9 must have sshd PermitRootLogin disabled",
           "impact": 0.7,
@@ -469,7 +478,6 @@
           "disposition": "falsePositive"
         },
         {
-          "$comment": "False positive (CVE scan) — vulnerability does not apply to this build",
           "id": "CVE-2026-12345",
           "title": "libxml2 buffer overflow in xmlParseEntityDecl",
           "impact": 0.9,
@@ -509,7 +517,6 @@
           "disposition": "falsePositive"
         },
         {
-          "$comment": "Risk adjustment — impact lowered, pass/fail unchanged",
           "id": "CVE-2026-67890",
           "title": "OpenSSL timing side-channel in RSA decryption",
           "impact": 0.7,
@@ -552,7 +559,6 @@
           "disposition": "riskAdjustment"
         },
         {
-          "$comment": "Operational requirement — cannot remediate, remains open risk",
           "id": "SV-230500",
           "title": "RHEL 9 must disable USB mass storage",
           "impact": 0.5,
@@ -592,7 +598,6 @@
           "disposition": "operationalRequirement"
         },
         {
-          "$comment": "POAM — remediation tracked, status unchanged",
           "id": "SV-230350",
           "title": "RHEL 9 must be patched within 30 days of release",
           "impact": 0.7,

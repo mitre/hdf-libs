@@ -171,9 +171,14 @@ recomputed wholesale. A document with one amendment, or with no previousChecksum
 at all, is reported as "not established" and gets no protection. Signatures, not
 the chain, are what make an amendment non-repudiable.
 
-If a results file is also provided, two further checks run:
-- The document-level previousChecksum matches the SHA-256 of that results file
+If a results file is also provided, one further check runs:
 - Every requirementId references a requirement that exists in those results
+
+Verify reports nothing about a results hash stored on the amendments document.
+One amendments document may be applied to many results files, so it cannot
+carry a single results hash; the application chain is recorded on the RESULTS
+document instead, as the root preAmendmentChecksum that "hdf amend apply"
+writes.
 
 Examples:
   hdf amend verify waivers.json                      # Structure, expiry, chain
@@ -393,19 +398,6 @@ func runAmendVerifyChain(amendData []byte, resultsPath string) error {
 
 	printVerifySummary(exp)
 
-	// Named for the results document, not the amendment chain above it: this is
-	// the link between the amendments file and the results it was authored
-	// against. An absent link gets no tick — a check that did not run must not
-	// read as a check that passed.
-	switch {
-	case !result.ChainEstablished:
-		fmt.Printf("Results link:     not recorded\n")
-	case result.ChainValid:
-		fmt.Printf("Results link:     \u2713 %s\n", sanitizeOutput(result.ChainMessage))
-	default:
-		fmt.Printf("Results link:     \u2717 %s\n", sanitizeOutput(result.ChainMessage))
-	}
-
 	if len(result.MissingReqIDs) > 0 {
 		fmt.Printf("Missing requirements: %s\n", sanitizeOutput(strings.Join(result.MissingReqIDs, ", ")))
 	}
@@ -422,13 +414,10 @@ func runAmendVerifyChain(amendData []byte, resultsPath string) error {
 // naming every failing dimension.
 func chainVerdict(result *amend.ChainVerifyResult) error {
 	exp := result.ExpirationResult
-	if result.ChainValid && !exp.HasErrors && len(result.MissingReqIDs) == 0 {
+	if !exp.HasErrors && len(result.MissingReqIDs) == 0 {
 		return nil
 	}
 	reasons := exp.FailureSummary()
-	if !result.ChainValid {
-		reasons = joinReason(reasons, "results link does not match")
-	}
 	if len(result.MissingReqIDs) > 0 {
 		reasons = joinReason(reasons, fmt.Sprintf("%d requirementId(s) missing from the results", len(result.MissingReqIDs)))
 	}

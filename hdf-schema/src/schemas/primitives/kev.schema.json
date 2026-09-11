@@ -39,23 +39,21 @@
           "description": "CISA's notes describing the vulnerability, observed exploitation, or remediation guidance."
         }
       },
+      "$comment": "Examples, in order: 1) High-urgency case: recently added KEV entry with a short federal patching deadline; 2) Older KEV entry whose due date has already passed — useful for reporting overdue remediation; 3) Vulnerability evaluated against the KEV catalog and confirmed not present — dateAdded/dueDate are not required when inKev is false.",
       "examples": [
         {
-          "$comment": "High-urgency case: recently added KEV entry with a short federal patching deadline.",
           "inKev": true,
           "dateAdded": "2026-03-15",
           "dueDate": "2026-04-05",
           "notes": "Active ransomware exploitation observed; apply vendor patch immediately."
         },
         {
-          "$comment": "Older KEV entry whose due date has already passed — useful for reporting overdue remediation.",
           "inKev": true,
           "dateAdded": "2023-11-07",
           "dueDate": "2023-11-28",
           "notes": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."
         },
         {
-          "$comment": "Vulnerability evaluated against the KEV catalog and confirmed not present — dateAdded/dueDate are not required when inKev is false.",
           "inKev": false
         }
       ],

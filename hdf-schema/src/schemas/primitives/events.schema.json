@@ -63,9 +63,9 @@
           "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture.\n\nNull at chain start (no prior state, e.g. a new entity or the first event after a seed).\n\nThe chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
         }
       },
+      "$comment": "Examples, in order: 1) Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key; 2) Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
       "examples": [
         {
-          "$comment": "Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key.",
           "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
           "source": "inspec://web01/rhel9-stig",
           "sequence": 412,
@@ -79,7 +79,6 @@
           }
         },
         {
-          "$comment": "Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
           "eventId": "0190f6f2-2a5b-7e4d-b1c8-4f2e6a8b0d12",
           "source": "inspec://web01/rhel9-stig",
           "sequence": 1,
@@ -137,14 +136,13 @@
           "description": "The resolved effective impact score (0.0–1.0) at this point in the chain."
         }
       },
+      "$comment": "Examples, in order: 1) Prior posture of a failing SSH-cipher control before remediation; 2) Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
       "examples": [
         {
-          "$comment": "Prior posture of a failing SSH-cipher control before remediation.",
           "effectiveStatus": "failed",
           "effectiveImpact": 0.5
         },
         {
-          "$comment": "Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
           "effectiveStatus": "passed",
           "effectiveImpact": 0.5
         }
@@ -205,9 +203,9 @@
           "description": "The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of PROV's generatedAtTime."
         }
       },
+      "$comment": "Examples, in order: 1) A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
       "examples": [
         {
-          "$comment": "A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
           "seed": {
             "uri": "apptier-seed-scan.hdf.json",
             "checksum": {

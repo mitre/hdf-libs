@@ -173,9 +173,9 @@
           ]
         }
       ],
+      "$comment": "Examples, in order: 1) Passthrough SBOM by external reference — the universal escape hatch, available to every bomType; 2) Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships; 3) Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base; 4) Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
       "examples": [
         {
-          "$comment": "Passthrough SBOM by external reference — the universal escape hatch, available to every bomType.",
           "bomType": "sbom",
           "format": "cyclonedx",
           "ref": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
@@ -187,7 +187,6 @@
           ]
         },
         {
-          "$comment": "Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships.",
           "bomType": "cbom",
           "format": "cyclonedx",
           "document": {
@@ -196,7 +195,6 @@
           }
         },
         {
-          "$comment": "Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base.",
           "bomType": "ai-model",
           "format": "cyclonedx-ml",
           "model": {
@@ -236,7 +234,6 @@
           }
         },
         {
-          "$comment": "Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
           "bomType": "dataset",
           "format": "croissant",
           "dataset": {

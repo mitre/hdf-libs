@@ -47,10 +47,11 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 		return json.MarshalIndent(doc, "", "  ")
 	}
 
-	// Compute previousChecksum from the original results before any modification.
+	// Hash the results exactly as they were read, before any modification.
 	checksum := computeSHA256(results)
 
 	// Apply each override to matching requirements.
+	applied := 0
 	for _, ovRaw := range overrides {
 		ov, ok := ovRaw.(map[string]interface{})
 		if !ok {
@@ -61,7 +62,17 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 			continue
 		}
 		baselineRef, _ := ov["baselineRef"].(string)
-		applyOverrideToDoc(doc, ov, reqID, baselineRef)
+		if applyOverrideToDoc(doc, ov, reqID, baselineRef) {
+			applied++
+		}
+	}
+
+	// Nothing matched: return the document as it came in. Re-stamping checksums
+	// or recording a pre-amendment hash here would rewrite a document that was
+	// never amended — one amendments file may cover a fleet and be applied to a
+	// host it does not mention.
+	if applied == 0 {
+		return json.MarshalIndent(doc, "", "  ")
 	}
 
 	// Re-stamp per-requirement effective checksums: overrides change the
@@ -72,8 +83,9 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to stamp effective checksums: %w", err)
 	}
 
-	// Set previousChecksum on the merged output.
-	doc["previousChecksum"] = map[string]interface{}{
+	// Record what this document was amended from. Named to stay distinct from
+	// the override-level previousChecksum, which chains amendments to each other.
+	doc["preAmendmentChecksum"] = map[string]interface{}{
 		"algorithm": "sha256",
 		"value":     checksum,
 	}
@@ -83,16 +95,21 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 
 // applyOverrideToDoc finds the matching requirement across all baselines and
 // applies the override.
-func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef string) {
+// applyOverrideToDoc reports whether it found a requirement to apply to. The
+// caller needs that answer: an amendments document may legitimately cover a
+// fleet and be applied per host, so "matched nothing here" is normal, but it
+// must leave the document alone rather than half-stamping it.
+func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef string) bool {
 	baselinesRaw, ok := doc["baselines"]
 	if !ok {
-		return
+		return false
 	}
 	baselines, ok := baselinesRaw.([]interface{})
 	if !ok {
-		return
+		return false
 	}
 
+	matched := false
 	for _, bRaw := range baselines {
 		baseline, ok := bRaw.(map[string]interface{})
 		if !ok {
@@ -127,8 +144,10 @@ func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef
 			}
 
 			applyOverrideToReq(req, override)
+			matched = true
 		}
 	}
+	return matched
 }
 
 // applyOverrideToReq applies a single override to a matched requirement.
@@ -247,19 +266,21 @@ func ListOverrides(amendments []byte) (name, systemRef string, overrides []Parse
 }
 
 // ChainVerifyResult holds the result of verifying an amendments document
-// against the results it claims to amend. ChainValid refers to the document's
-// own previousChecksum link to that results file, which is a separate signal
-// from VerifyResult.Chain (the links between the amendments themselves).
+// against the results it claims to amend: the document's own checks, plus
+// whether every override names a requirement those results contain.
+//
+// It deliberately carries no verdict on a results hash recorded by the
+// amendments document. One amendments document may be applied to many results
+// files, so it cannot hold a single results hash; the application chain lives
+// on the results document instead, as its root preAmendmentChecksum.
 type ChainVerifyResult struct {
 	ExpirationResult *VerifyResult `json:"expiration"`
-	ChainEstablished bool          `json:"chainEstablished"`
-	ChainValid       bool          `json:"chainValid"`
-	ChainMessage     string        `json:"chainMessage,omitempty"`
 	MissingReqIDs    []string      `json:"missingRequirementIds,omitempty"`
 }
 
-// VerifyChain performs full amendment verification including expiration,
-// previousChecksum chain, and requirementId existence.
+// VerifyChain performs full amendment verification: the document's own
+// structure, expiry and amendment-to-amendment chain, plus requirementId
+// existence in the supplied results.
 func VerifyChain(resultsData, amendmentsData []byte) (*ChainVerifyResult, error) {
 	// Step 1: Expiration check
 	expResult, err := VerifyAmendments(amendmentsData)
@@ -267,36 +288,9 @@ func VerifyChain(resultsData, amendmentsData []byte) (*ChainVerifyResult, error)
 		return nil, err
 	}
 
-	result := &ChainVerifyResult{
-		ExpirationResult: expResult,
-		ChainValid:       true,
-	}
+	result := &ChainVerifyResult{ExpirationResult: expResult}
 
-	// Step 2: Check previousChecksum chain
-	var amendDoc map[string]interface{}
-	if err := json.Unmarshal(amendmentsData, &amendDoc); err != nil {
-		return nil, fmt.Errorf("failed to parse amendments: %w", err)
-	}
-
-	if prevChecksum, ok := amendDoc["previousChecksum"].(map[string]interface{}); ok {
-		expectedValue, _ := prevChecksum["value"].(string)
-		if expectedValue != "" {
-			result.ChainEstablished = true
-			hash := sha256.Sum256(resultsData)
-			actualValue := fmt.Sprintf("%x", hash)
-			if actualValue != expectedValue {
-				result.ChainValid = false
-				result.ChainMessage = fmt.Sprintf("previousChecksum mismatch: expected %s, got %s", expectedValue, actualValue)
-			} else {
-				result.ChainMessage = "previousChecksum matches the results document"
-			}
-		}
-	}
-	if !result.ChainEstablished {
-		result.ChainMessage = "this document records no checksum of the results it amends"
-	}
-
-	// Step 3: Check requirementIds exist in results
+	// Check requirementIds exist in results
 	var resultsDoc map[string]interface{}
 	if err := json.Unmarshal(resultsData, &resultsDoc); err != nil {
 		return nil, fmt.Errorf("failed to parse results: %w", err)
@@ -319,6 +313,11 @@ func VerifyChain(resultsData, amendmentsData []byte) (*ChainVerifyResult, error)
 				reqIDs[id] = true
 			}
 		}
+	}
+
+	var amendDoc map[string]interface{}
+	if err := json.Unmarshal(amendmentsData, &amendDoc); err != nil {
+		return nil, fmt.Errorf("failed to parse amendments: %w", err)
 	}
 
 	overrides, _ := amendDoc["overrides"].([]interface{})

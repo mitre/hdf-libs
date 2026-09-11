@@ -97,7 +97,8 @@ func TestAmendApplyCommand(t *testing.T) {
 		stdout, _, err := executeCommand("amend", "apply", "--results", resultsPath, "--amendments", amendmentsPath)
 		require.NoError(t, err)
 		assert.Contains(t, stdout, "effectiveStatus")
-		assert.Contains(t, stdout, "previousChecksum")
+		// The root application-chain field, not the override-level chain link.
+		assert.Contains(t, stdout, "preAmendmentChecksum")
 	})
 
 	t.Run("missing results flag returns error", func(t *testing.T) {
@@ -795,10 +796,11 @@ func TestAmendApplyRefusesUnverified(t *testing.T) {
 	})
 }
 
-// The two-argument path reports on the amendments document's own link to the
-// results it was authored against. A check that did not run must not render as
-// a check that passed, so an absent link gets no tick.
-func TestAmendVerifyResultsLink(t *testing.T) {
+// The amendments-side results link was retired: nothing wrote the field, and
+// one amendments document may be applied to many results files, so it cannot
+// hold a single results hash. What remains is the assertion that its presence
+// changes nothing.
+func TestAmendVerifyIgnoresAmendmentsSideResultsLink(t *testing.T) {
 	writeResults := func(t *testing.T, dir string) string {
 		t.Helper()
 		p := filepath.Join(dir, "results.json")
@@ -806,31 +808,11 @@ func TestAmendVerifyResultsLink(t *testing.T) {
 		return p
 	}
 
-	t.Run("an absent link reads as not recorded, not as a pass", func(t *testing.T) {
-		dir := t.TempDir()
-		resultsPath := writeResults(t, dir)
-		amendPath := filepath.Join(dir, "amend.json")
-		doc := `{
-			"name": "no-link",
-			"overrides": [{
-				"type": "waiver",
-				"requirementId": "AC-1",
-				"status": "passed",
-				"reason": "risk accepted",
-				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
-				"appliedAt": "2026-03-01T00:00:00Z",
-				"expiresAt": "2099-12-31T00:00:00Z"
-			}]
-		}`
-		require.NoError(t, os.WriteFile(amendPath, []byte(doc), 0o600))
-
-		stdout, _, err := executeCommand("amend", "verify", amendPath, resultsPath)
-		require.NoError(t, err)
-		assert.Contains(t, stdout, "Results link:     not recorded")
-		assert.NotContains(t, stdout, "Results link:     ✓")
-	})
-
-	t.Run("a matching link renders as verified", func(t *testing.T) {
+	// The amendments-side results link is retired: one amendments document may
+	// be applied to many results files, so it cannot carry a single results
+	// hash, and nothing ever wrote the field. Verify must not report a verdict
+	// on it either way.
+	t.Run("no results-link verdict is reported, even when the field is present", func(t *testing.T) {
 		dir := t.TempDir()
 		resultsPath := writeResults(t, dir)
 		sum := sha256.Sum256([]byte(testResults))
@@ -853,60 +835,9 @@ func TestAmendVerifyResultsLink(t *testing.T) {
 
 		stdout, _, err := executeCommand("amend", "verify", amendPath, resultsPath)
 		require.NoError(t, err)
-		assert.Contains(t, stdout, "Results link:     \u2713")
-		assert.Contains(t, stdout, "matches the results document")
-	})
-
-	t.Run("a mismatched link fails and is reported", func(t *testing.T) {
-		dir := t.TempDir()
-		resultsPath := writeResults(t, dir)
-		amendPath := filepath.Join(dir, "amend.json")
-		doc := `{
-			"name": "bad-link",
-			"previousChecksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"},
-			"overrides": [{
-				"type": "waiver",
-				"requirementId": "AC-1",
-				"status": "passed",
-				"reason": "risk accepted",
-				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
-				"appliedAt": "2026-03-01T00:00:00Z",
-				"expiresAt": "2099-12-31T00:00:00Z"
-			}]
-		}`
-		require.NoError(t, os.WriteFile(amendPath, []byte(doc), 0o600))
-
-		stdout, _, err := executeCommand("amend", "verify", amendPath, resultsPath)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "results link does not match")
-		assert.Contains(t, stdout, "✗")
-	})
-
-	// A mismatched link on an otherwise-clean document must still exit non-zero
-	// under --json, and joins any other failing dimension in the message.
-	t.Run("a mismatched link and an expiry are both named", func(t *testing.T) {
-		dir := t.TempDir()
-		resultsPath := writeResults(t, dir)
-		amendPath := filepath.Join(dir, "amend.json")
-		doc := `{
-			"name": "bad-link-expired",
-			"previousChecksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"},
-			"overrides": [{
-				"type": "waiver",
-				"requirementId": "AC-1",
-				"status": "passed",
-				"reason": "lapsed",
-				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
-				"appliedAt": "2020-01-01T00:00:00Z",
-				"expiresAt": "2020-06-30T00:00:00Z"
-			}]
-		}`
-		require.NoError(t, os.WriteFile(amendPath, []byte(doc), 0o600))
-
-		_, _, err := executeCommand("amend", "verify", "--json", amendPath, resultsPath)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "1 expired")
-		assert.Contains(t, err.Error(), "results link does not match")
+		// Assert the command actually ran, so the absence below is meaningful.
+		assert.Contains(t, stdout, "All checks passed.")
+		assert.NotContains(t, stdout, "Results link")
 	})
 }
 
@@ -990,35 +921,6 @@ func TestAmendUntrustedTextIsSanitized(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, stdout, "Invalid type", "the schema error must still be reported")
 		assert.Contains(t, stdout, "RED", "the offending key is still named, just defanged")
-		assert.NotContains(t, stdout, "\x1b")
-	})
-
-	// The results-link line embeds the document's own recorded checksum value.
-	t.Run("the results link message is stripped", func(t *testing.T) {
-		dir := t.TempDir()
-		resultsPath := filepath.Join(dir, "results.json")
-		require.NoError(t, os.WriteFile(resultsPath, []byte(testResults), 0o600))
-
-		path := filepath.Join(dir, "link.json")
-		doc := map[string]interface{}{
-			"name": "link",
-			"previousChecksum": map[string]interface{}{
-				"algorithm": "sha256", "value": "dead" + esc + "beef",
-			},
-			"overrides": []interface{}{map[string]interface{}{
-				"type": "waiver", "requirementId": "AC-1", "status": "passed", "reason": "r",
-				"appliedBy": map[string]interface{}{"type": "email", "identifier": "a@b.c"},
-				"appliedAt": "2026-03-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
-			}},
-		}
-		raw, marshalErr := json.Marshal(doc)
-		require.NoError(t, marshalErr)
-		require.NoError(t, os.WriteFile(path, raw, 0o600))
-
-		stdout, _, err := executeCommand("amend", "verify", path, resultsPath)
-		require.Error(t, err)
-		assert.Contains(t, stdout, "Results link:")
-		assert.Contains(t, stdout, "mismatch")
 		assert.NotContains(t, stdout, "\x1b")
 	})
 

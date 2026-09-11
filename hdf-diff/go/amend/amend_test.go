@@ -198,8 +198,8 @@ func TestMergeAmendments(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(merged, &doc))
 
-		// No previousChecksum should be set when no overrides were applied.
-		_, hasPrev := doc["previousChecksum"]
+		// No preAmendmentChecksum should be set when no overrides were applied.
+		_, hasPrev := doc["preAmendmentChecksum"]
 		assert.False(t, hasPrev)
 	})
 
@@ -230,8 +230,8 @@ func TestMergeAmendments(t *testing.T) {
 		var doc map[string]interface{}
 		require.NoError(t, json.Unmarshal(merged, &doc))
 
-		prevRaw, ok := doc["previousChecksum"]
-		require.True(t, ok, "previousChecksum should be set")
+		prevRaw, ok := doc["preAmendmentChecksum"]
+		require.True(t, ok, "preAmendmentChecksum should be set")
 
 		prev := prevRaw.(map[string]interface{})
 		assert.Equal(t, "sha256", prev["algorithm"])
@@ -1219,47 +1219,91 @@ func TestVerifyResult_FailureSummary(t *testing.T) {
 	})
 }
 
+// The application chain lives on the RESULTS document and accumulates: a second
+// application records the once-amended state, not the original. This is the
+// concept the results schema now declares, as distinct from the retired
+// amendments-side "results link".
+func TestMergeAmendments_ApplicationChainAccumulates(t *testing.T) {
+	first, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))
+	require.NoError(t, err)
+
+	var firstDoc map[string]interface{}
+	require.NoError(t, json.Unmarshal(first, &firstDoc))
+	firstLink, ok := firstDoc["preAmendmentChecksum"].(map[string]interface{})
+	require.True(t, ok, "apply must stamp a root preAmendmentChecksum")
+	assert.Equal(t, computeSHA256([]byte(minimalResults)), firstLink["value"],
+		"the first application records the ORIGINAL document")
+
+	second, err := MergeAmendments(first, []byte(minimalAmendments))
+	require.NoError(t, err)
+
+	var secondDoc map[string]interface{}
+	require.NoError(t, json.Unmarshal(second, &secondDoc))
+	secondLink, ok := secondDoc["preAmendmentChecksum"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, computeSHA256(first), secondLink["value"],
+		"the second application records the ONCE-AMENDED document, not the original")
+	assert.NotEqual(t, firstLink["value"], secondLink["value"],
+		"a second application must not leave the original hash in place")
+}
+
+// The schema contract says an apply that matches nothing leaves the document
+// untouched. It did not: overrides that matched no requirement still stamped
+// preAmendmentChecksum and re-stamped every effective checksum, so a fleet-wide
+// amendments file applied to a host it does not cover silently rewrote that
+// host's results. This is the same shape as the no-op reported in issue #248.
+func TestMergeAmendments_NoMatchLeavesTheDocumentUntouched(t *testing.T) {
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(minimalAmendments), &doc))
+	overrides := doc["overrides"].([]interface{})
+	overrides[0].(map[string]interface{})["requirementId"] = "NO-SUCH-REQUIREMENT"
+	unmatched, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	out, err := MergeAmendments([]byte(minimalResults), unmatched)
+	require.NoError(t, err)
+
+	var before, after map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(minimalResults), &before))
+	require.NoError(t, json.Unmarshal(out, &after))
+
+	_, stamped := after["preAmendmentChecksum"]
+	assert.False(t, stamped, "nothing matched, so nothing was amended to record")
+	assert.Equal(t, before, after, "a no-match apply must not rewrite the document")
+}
+
+// The amendments-side results link is retired: one amendments document may be
+// applied to many results files, so it cannot carry a single results hash.
+// Nothing ever wrote the field, so the check could never fire.
+func TestVerifyChain_IgnoresAnAmendmentsSideResultsLink(t *testing.T) {
+	sum := computeSHA256([]byte(minimalResults))
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(minimalAmendments), &doc))
+	doc["previousChecksum"] = map[string]interface{}{"algorithm": "sha256", "value": sum}
+	linked, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	matching, err := VerifyChain([]byte(minimalResults), linked)
+	require.NoError(t, err)
+
+	doc["previousChecksum"] = map[string]interface{}{
+		"algorithm": "sha256",
+		"value":     "0000000000000000000000000000000000000000000000000000000000000000",
+	}
+	mismatched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	notMatching, err := VerifyChain([]byte(minimalResults), mismatched)
+	require.NoError(t, err)
+
+	// A field nothing writes must not change the verdict at all — not merely
+	// agree on one sub-check. Deep equality is what makes this non-vacuous:
+	// before the retirement these two documents produced different results.
+	assert.Equal(t, matching, notMatching,
+		"an amendments-side previousChecksum must not affect verification")
+	assert.Empty(t, matching.MissingReqIDs)
+}
+
 func TestVerifyChain(t *testing.T) {
-	t.Run("no recorded results link is reported as not established", func(t *testing.T) {
-		result, err := VerifyChain([]byte(minimalResults), []byte(minimalAmendments))
-		require.NoError(t, err)
-		assert.False(t, result.ChainEstablished)
-		assert.Contains(t, result.ChainMessage, "records no checksum")
-		assert.Empty(t, result.MissingReqIDs)
-		assert.NotNil(t, result.ExpirationResult)
-	})
-
-	t.Run("a matching results link verifies", func(t *testing.T) {
-		sum := computeSHA256([]byte(minimalResults))
-		var doc map[string]interface{}
-		require.NoError(t, json.Unmarshal([]byte(minimalAmendments), &doc))
-		doc["previousChecksum"] = map[string]interface{}{"algorithm": "sha256", "value": sum}
-		linked, err := json.Marshal(doc)
-		require.NoError(t, err)
-
-		result, err := VerifyChain([]byte(minimalResults), linked)
-		require.NoError(t, err)
-		assert.True(t, result.ChainEstablished)
-		assert.True(t, result.ChainValid)
-	})
-
-	t.Run("a mismatched results link fails", func(t *testing.T) {
-		var doc map[string]interface{}
-		require.NoError(t, json.Unmarshal([]byte(minimalAmendments), &doc))
-		doc["previousChecksum"] = map[string]interface{}{
-			"algorithm": "sha256",
-			"value":     "0000000000000000000000000000000000000000000000000000000000000000",
-		}
-		linked, err := json.Marshal(doc)
-		require.NoError(t, err)
-
-		result, err := VerifyChain([]byte(minimalResults), linked)
-		require.NoError(t, err)
-		assert.True(t, result.ChainEstablished)
-		assert.False(t, result.ChainValid)
-		assert.Contains(t, result.ChainMessage, "mismatch")
-	})
-
 	// One amendments document may cover a fleet and be applied per host, so an
 	// override naming an absent requirement is reported, not treated as fatal
 	// by apply. Verify still surfaces it.

@@ -91,6 +91,7 @@ A Results document is the primary output of HDF converters. It captures what was
 | generator | Generator | no | Tool that produced this HDF file |
 | runner | Runner | no | Execution environment (distinct from components) |
 | integrity | Integrity | no | Cryptographic integrity metadata |
+| preAmendmentChecksum | Checksum | no | Hash of this document as it stood immediately before the most recent amendment application, written by `hdf amend apply`. Covers the results file's raw bytes as read, not a canonical form. Records only the most recent step: re-applying replaces it rather than accumulating. Distinct from the override-level `previousChecksum`, which chains amendments to each other over a canonical form *(v3.6.0)* |
 | systemRef | URI-reference | no | Link to System document |
 | planRef | URI-reference | no | Link to Plan document |
 | extensions | object | no | Tool-specific metadata |

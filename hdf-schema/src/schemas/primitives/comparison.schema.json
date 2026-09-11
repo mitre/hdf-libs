@@ -609,9 +609,9 @@
           "description": "License identifiers for this package."
         }
       },
+      "$comment": "Examples, in order: 1) Software package diff keyed by purl (the SBOM case); 2) AI-model node diff keyed by identifier when no purl applies.",
       "examples": [
         {
-          "$comment": "Software package diff keyed by purl (the SBOM case).",
           "purl": "pkg:npm/express@4.18.2",
           "name": "express",
           "state": "updated",
@@ -619,7 +619,6 @@
           "newVersion": "4.18.2"
         },
         {
-          "$comment": "AI-model node diff keyed by identifier when no purl applies.",
           "identifier": "acme/llama-2-7b-chat-support",
           "name": "Llama-2-7b-chat (finetuned)",
           "state": "added",

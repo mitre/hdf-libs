@@ -224,11 +224,15 @@ describe('hdf-requirement-change-event.schema.json', () => {
       }
     });
 
-    it('every example carries a documenting $comment', () => {
+    // The commentary lives on the schema, not inside the example objects: an
+    // example is data, so a $comment key inside one is an undeclared property
+    // that fails validation wherever unevaluatedProperties is false.
+    it('documents its examples on the schema, not inside them', () => {
       const schema = loadSchema('hdf-requirement-change-event.schema.json');
+      expect(typeof schema.$comment).toBe('string');
       const examples = (schema.examples ?? []) as Record<string, unknown>[];
       for (const [idx, example] of examples.entries()) {
-        expect(typeof example.$comment, `example ${idx} missing $comment`).toBe('string');
+        expect(example.$comment, `example ${idx} carries an inline $comment`).toBeUndefined();
       }
     });
 
