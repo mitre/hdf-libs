@@ -253,12 +253,32 @@ func registerHDFBaselineConverter(source, displayName, errPrefix string, fn HDFB
 	RegisterConverter(source, "hdf", withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o))
 }
 
+// registerHDFBaselineConverterMulti registers an HDF Baseline converter under
+// multiple source format names, sharing a single converter instance.
+func registerHDFBaselineConverterMulti(sources []string, displayName, errPrefix string, fn HDFBaselineConvertFn, opts ...ConverterOption) {
+	o := applyConverterOptions(opts)
+	c := withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o)
+	for _, src := range sources {
+		RegisterConverter(src, "hdf", c)
+	}
+}
+
 // registerHDFPlanConverter registers an HDF Plan converter under one source
 // format name. The dest is always "hdf". Optional ConverterOption values tune
 // its behavior.
 func registerHDFPlanConverter(source, displayName, errPrefix string, fn HDFPlanConvertFn, opts ...ConverterOption) {
 	o := applyConverterOptions(opts)
 	RegisterConverter(source, "hdf", withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o))
+}
+
+// registerHDFPlanConverterMulti registers an HDF Plan converter under multiple
+// source format names, sharing a single converter instance.
+func registerHDFPlanConverterMulti(sources []string, displayName, errPrefix string, fn HDFPlanConvertFn, opts ...ConverterOption) {
+	o := applyConverterOptions(opts)
+	c := withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o)
+	for _, src := range sources {
+		RegisterConverter(src, "hdf", c)
+	}
 }
 
 // registerHDFAmendmentsConverter registers an HDF Amendments converter under
