@@ -82,7 +82,14 @@ jobs:
             hdf-diff
             hdf-extension-graph
             hdf-engine
-            hdf-fixtures
+            # hdf-fixtures — TEMPORARY, remove this comment and restore the entry
+            # immediately after 3.6.0 ships (hdf-libs-8zh9e). The package was
+            # bootstrapped by hand with npm, because npm cannot publish a name's
+            # first version through trusted publishing. npm does not copy the
+            # workspace's root LICENSE.md into the tarball and pnpm does, so the
+            # published 3.6.0 differs from what this job builds by exactly that
+            # one file — and the idempotency check below would fail the release
+            # on it. Publishing resumes at 3.6.1, with provenance.
           )
 
           # Pre-release tags publish with npm dist-tag `next` instead of `latest`.
