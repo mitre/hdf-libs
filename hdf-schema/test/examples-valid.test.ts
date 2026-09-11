@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { createAjvWithPrimitives } from './setup';
+
+// Derived rather than relying on __dirname: these run as ES modules, and the
+// neighbouring suites (setup.ts, bundle-schemas-noid.test.ts) do the same.
+const here = dirname(fileURLToPath(import.meta.url));
 
 // Every `examples` entry must validate against the definition it illustrates.
 // The bundler ships examples into dist, where IDE tooltips offer them to
@@ -28,7 +33,7 @@ function sourceSchemas(): string[] {
       else if (entry.name.endsWith('.schema.json')) found.push(path);
     }
   };
-  walk(join(__dirname, '..', 'src', 'schemas'));
+  walk(join(here, '..', 'src', 'schemas'));
   return found.sort();
 }
 

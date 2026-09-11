@@ -51,6 +51,7 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 	checksum := computeSHA256(results)
 
 	// Apply each override to matching requirements.
+	applied := 0
 	for _, ovRaw := range overrides {
 		ov, ok := ovRaw.(map[string]interface{})
 		if !ok {
@@ -61,7 +62,17 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 			continue
 		}
 		baselineRef, _ := ov["baselineRef"].(string)
-		applyOverrideToDoc(doc, ov, reqID, baselineRef)
+		if applyOverrideToDoc(doc, ov, reqID, baselineRef) {
+			applied++
+		}
+	}
+
+	// Nothing matched: return the document as it came in. Re-stamping checksums
+	// or recording a pre-amendment hash here would rewrite a document that was
+	// never amended — one amendments file may cover a fleet and be applied to a
+	// host it does not mention.
+	if applied == 0 {
+		return json.MarshalIndent(doc, "", "  ")
 	}
 
 	// Re-stamp per-requirement effective checksums: overrides change the
@@ -84,16 +95,21 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 
 // applyOverrideToDoc finds the matching requirement across all baselines and
 // applies the override.
-func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef string) {
+// applyOverrideToDoc reports whether it found a requirement to apply to. The
+// caller needs that answer: an amendments document may legitimately cover a
+// fleet and be applied per host, so "matched nothing here" is normal, but it
+// must leave the document alone rather than half-stamping it.
+func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef string) bool {
 	baselinesRaw, ok := doc["baselines"]
 	if !ok {
-		return
+		return false
 	}
 	baselines, ok := baselinesRaw.([]interface{})
 	if !ok {
-		return
+		return false
 	}
 
+	matched := false
 	for _, bRaw := range baselines {
 		baseline, ok := bRaw.(map[string]interface{})
 		if !ok {
@@ -128,8 +144,10 @@ func applyOverrideToDoc(doc, override map[string]interface{}, reqID, baselineRef
 			}
 
 			applyOverrideToReq(req, override)
+			matched = true
 		}
 	}
+	return matched
 }
 
 // applyOverrideToReq applies a single override to a matched requirement.

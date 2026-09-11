@@ -1247,6 +1247,31 @@ func TestMergeAmendments_ApplicationChainAccumulates(t *testing.T) {
 		"a second application must not leave the original hash in place")
 }
 
+// The schema contract says an apply that matches nothing leaves the document
+// untouched. It did not: overrides that matched no requirement still stamped
+// preAmendmentChecksum and re-stamped every effective checksum, so a fleet-wide
+// amendments file applied to a host it does not cover silently rewrote that
+// host's results. This is the same shape as the no-op reported in issue #248.
+func TestMergeAmendments_NoMatchLeavesTheDocumentUntouched(t *testing.T) {
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(minimalAmendments), &doc))
+	overrides := doc["overrides"].([]interface{})
+	overrides[0].(map[string]interface{})["requirementId"] = "NO-SUCH-REQUIREMENT"
+	unmatched, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	out, err := MergeAmendments([]byte(minimalResults), unmatched)
+	require.NoError(t, err)
+
+	var before, after map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(minimalResults), &before))
+	require.NoError(t, json.Unmarshal(out, &after))
+
+	_, stamped := after["preAmendmentChecksum"]
+	assert.False(t, stamped, "nothing matched, so nothing was amended to record")
+	assert.Equal(t, before, after, "a no-match apply must not rewrite the document")
+}
+
 // The amendments-side results link is retired: one amendments document may be
 // applied to many results files, so it cannot carry a single results hash.
 // Nothing ever wrote the field, so the check could never fire.
