@@ -6,7 +6,7 @@ require (
 	github.com/dlclark/regexp2 v1.12.0
 	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.6.0
-	github.com/mitre/hdf-libs/hdf-schema/testhdf/go v0.0.0-00010101000000-000000000000
+	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.6.0
 	github.com/stretchr/testify v1.11.1
@@ -25,7 +25,7 @@ replace github.com/mitre/hdf-libs/hdf-validators/go/v3 => ../../hdf-validators/g
 
 replace github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 => ../../hdf-schema/dist/go
 
-replace github.com/mitre/hdf-libs/hdf-schema/testhdf/go => ../../hdf-schema/testhdf/go
+replace github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 => ../../hdf-schema/testhdf/go
 
 replace github.com/mitre/hdf-libs/hdf-utilities/go/v3 => ../../hdf-utilities/go
 

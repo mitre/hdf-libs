@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 // A real HDF System document (validated by the schema but NOT struct-parsed by

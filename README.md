@@ -39,7 +39,7 @@ All libraries are available for both TypeScript (npm) and Go. See [Installation]
 | [`hdf-engine`](./hdf-engine/README.md) | Schema-typed read-side engines — document detection, query/filtering, compliance rollups |
 | [`hdf-extension-graph`](./hdf-extension-graph/README.md) | InSpec overlay/extension chain resolution |
 | [`hdf-cli`](./hdf-cli/README.md) | Command-line tool wrapping all of the above — convert, validate, query, diff, amend |
-| [`hdf-fixtures`](./hdf-fixtures/README.md) | Shared real-world HDF test data (internal; not published — used by cross-package tests in this monorepo) |
+| [`hdf-fixtures`](./hdf-fixtures/README.md) | Shared real-world HDF test data, used by cross-package tests here and published so consumers can test against the same corpus |
 
 ## Schema Types
 

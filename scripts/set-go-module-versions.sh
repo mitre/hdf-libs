@@ -54,8 +54,6 @@ cd "$root"
 # exactly the local-only view this script exists to look past.
 export GOWORK=off
 
-# Modules no release tags cannot be rewritten to a release version: doing so
-# would replace one unresolvable pin with another. They are reported instead.
 intra_repo_requires() {
   go mod edit -json "$1" | python3 -c '
 import json, sys
@@ -76,7 +74,6 @@ if [ "${#gomods[@]}" -eq 0 ]; then
 fi
 
 rewritten=0
-untagged=()
 
 for gomod in "${gomods[@]}"; do
   while read -r path version; do
@@ -84,11 +81,6 @@ for gomod in "${gomods[@]}"; do
       "$MODULE_PREFIX"*) ;;
       *) continue ;;
     esac
-    # A zero pseudo-version means no release tags this module; see hdf-libs-gqw5k.
-    if [[ "$version" == v0.0.0-00010101000000-* ]]; then
-      untagged+=("$path")
-      continue
-    fi
     [ "$version" = "$VERSION" ] && continue
     go mod edit -require="${path}@${VERSION}" "$gomod"
     rewritten=$((rewritten + 1))
@@ -96,7 +88,7 @@ for gomod in "${gomods[@]}"; do
 done
 
 # Prove it, rather than trusting the loop above: re-read every file and fail on
-# any intra-repo require that is neither the target nor a known-untagged module.
+# any intra-repo require that does not name the target version.
 stragglers=0
 for gomod in "${gomods[@]}"; do
   while read -r path version; do
@@ -105,7 +97,6 @@ for gomod in "${gomods[@]}"; do
       *) continue ;;
     esac
     [ "$version" = "$VERSION" ] && continue
-    [[ "$version" == v0.0.0-00010101000000-* ]] && continue
     echo "FAIL $gomod: $path is still at $version, wanted $VERSION" >&2
     stragglers=$((stragglers + 1))
   done < <(intra_repo_requires "$gomod")
@@ -117,9 +108,3 @@ if [ "$stragglers" -ne 0 ]; then
 fi
 
 echo "rewrote $rewritten intra-repo require(s) to $VERSION across ${#gomods[@]} go.mod files"
-
-if [ "${#untagged[@]}" -ne 0 ]; then
-  printf '%s\n' "${untagged[@]}" | sort -u | while read -r path; do
-    echo "note: $path stays at its zero pseudo-version — no release tags it (hdf-libs-gqw5k)"
-  done
-fi

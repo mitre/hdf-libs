@@ -1,4 +1,4 @@
-module github.com/mitre/hdf-libs/hdf-fixtures
+module github.com/mitre/hdf-libs/hdf-fixtures/v3
 
 go 1.26.6
 

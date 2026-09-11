@@ -82,6 +82,7 @@ jobs:
             hdf-diff
             hdf-extension-graph
             hdf-engine
+            hdf-fixtures
           )
 
           # Pre-release tags publish with npm dist-tag `next` instead of `latest`.
@@ -403,6 +404,8 @@ jobs:
             "hdf-extension-graph/go"
             "hdf-engine/go"
             "hdf-cli"
+            "hdf-fixtures"
+            "hdf-schema/testhdf/go"
           )
 
           for mod in "${GO_MODULES[@]}"; do

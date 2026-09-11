@@ -10,7 +10,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 // A non-notexist read failure (here: permission-denied) must surface only the

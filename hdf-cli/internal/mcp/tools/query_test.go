@@ -11,7 +11,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

@@ -862,7 +862,7 @@ jobs:
           PACKAGES=(
             hdf-schema hdf-utilities hdf-mappings hdf-validators
             hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph hdf-engine
+            hdf-extension-graph hdf-engine hdf-fixtures
           )
           for pkg in "${PACKAGES[@]}"; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)

@@ -11,7 +11,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 // A FIFO under HDF_MCP_ROOT stats as a zero-byte file, so the size guard alone
