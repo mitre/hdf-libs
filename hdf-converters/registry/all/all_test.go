@@ -4,9 +4,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,6 +43,42 @@ func TestAllFingerprintsRegistered(t *testing.T) {
 func TestIngestFingerprintsCount(t *testing.T) {
 	fps := registry.GetIngestFingerprints()
 	assert.GreaterOrEqual(t, len(fps), 35, "expected at least 35 ingest fingerprints")
+}
+
+// derivedSourceName reproduces how hdf convert turns a detected fingerprint ID
+// into the source-format name it resolves against the convert registry
+// (autoDetectFormat in hdf-cli/cmd/hdf/cmd/convert.go).
+func derivedSourceName(fingerprintID string) string {
+	if idx := strings.Index(fingerprintID, "-to-"); idx > 0 {
+		return fingerprintID[:idx]
+	}
+	return fingerprintID
+}
+
+// fingerprintsNotResolvedByName are the fingerprints whose derived name is
+// deliberately not a registered converter name.
+var fingerprintsNotResolvedByName = map[string]string{
+	// Native HDF input needs no conversion; convert normalizes this detection to
+	// the "hdf" source name when resolving an export converter.
+	"hdf-passthrough": "normalized to the \"hdf\" source name by convert",
+}
+
+// TestFingerprintDerivedNameResolves keeps auto-detect and the convert registry
+// in agreement: a format that detects but whose derived name nothing registers
+// is undetectable in practice — detection reports high confidence and the
+// conversion then fails with "no converter found". Counting fingerprints cannot
+// catch that, which is how oscal-component and oscal-sap regressed.
+func TestFingerprintDerivedNameResolves(t *testing.T) {
+	for _, fp := range registry.GetIngestFingerprints() {
+		name := derivedSourceName(fp.ID)
+		if reason, exempt := fingerprintsNotResolvedByName[fp.ID]; exempt {
+			_, err := convreg.GetConverter(name, "hdf")
+			require.Error(t, err, "%s is exempt (%s) but now resolves — drop the exemption", fp.ID, reason)
+			continue
+		}
+		_, err := convreg.GetConverter(name, "hdf")
+		assert.NoError(t, err, "fingerprint %q detects but its derived source name %q is not a registered converter, so `hdf convert` without --from cannot convert this format", fp.ID, name)
+	}
 }
 
 // Integration: detect real fixtures

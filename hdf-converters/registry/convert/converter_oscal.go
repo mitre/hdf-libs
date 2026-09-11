@@ -17,9 +17,11 @@ func init() {
 		WithExpectedRequirementCount(oscal.ExpectedCatalogRequirementCount),
 	)
 
-	// oscal-component-definition — Convert component definition to baseline
-	registerHDFBaselineConverter(
-		"oscal-component-definition",
+	// oscal-component-definition / oscal-component — Convert component definition
+	// to baseline. The second name is what auto-detect derives from the
+	// oscal-component-to-hdf fingerprint.
+	registerHDFBaselineConverterMulti(
+		[]string{"oscal-component-definition", "oscal-component"},
 		"OSCAL Component Definition to HDF Baseline", "oscal-component-definition",
 		oscal.ConvertComponentDefinitionToHDF,
 		WithExpectedRequirementCount(oscal.ExpectedComponentDefinitionRequirementCount),
@@ -35,9 +37,11 @@ func init() {
 	// oscal-profile — Resolve profile against catalog, produce baseline
 	RegisterConverter("oscal-profile", "hdf", &oscalProfileConverter{})
 
-	// oscal-assessment-plan — Convert assessment plan to HDF plan
-	registerHDFPlanConverter(
-		"oscal-assessment-plan",
+	// oscal-assessment-plan / oscal-sap — Convert assessment plan to HDF plan.
+	// The second name is what auto-detect derives from the oscal-sap-to-hdf
+	// fingerprint.
+	registerHDFPlanConverterMulti(
+		[]string{"oscal-assessment-plan", "oscal-sap"},
 		"OSCAL Assessment Plan to HDF Plan", "oscal-assessment-plan",
 		oscal.ConvertAssessmentPlanToHDF,
 		WithExpectedRequirementCount(oscal.ExpectedAssessmentPlanRequirementCount),
