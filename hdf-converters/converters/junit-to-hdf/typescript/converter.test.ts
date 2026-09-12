@@ -632,4 +632,30 @@ describe('testsuite-less JUnit (node --test)', () => {
     expect(reqs[0]!.id).toBe('junit-no-findings');
     expect(reqs[0]!.results[0]!.status).toBe(ResultStatus.Passed);
   });
+
+  // node-test-nested.xml is real `node --test --test-reporter=junit` output whose
+  // describe() blocks nest three suites deep, with testcases at every level.
+  it('converts testcases at every nesting depth', async () => {
+    const hdf = await parseHdf('node-test-nested.xml');
+    const reqs = hdf.baselines[0]!.requirements;
+
+    expect(reqs.map((r) => r.title)).toEqual([
+      'outer direct case',
+      'inner passing case',
+      'inner failing case',
+      'deep case',
+    ]);
+
+    // The nested failing case keeps its failed status, so depth does not flatten
+    // a red run into a green document.
+    const byTitle = new Map(reqs.map((r) => [r.title, r]));
+    expect(byTitle.get('inner failing case')!.results[0]!.status).toBe(ResultStatus.Failed);
+    expect(byTitle.get('deep case')!.results[0]!.status).toBe(ResultStatus.Passed);
+  });
+
+  it('dedupes host components across nesting depths', async () => {
+    const hdf = await parseHdf('node-test-nested.xml');
+    const hosts = (hdf.components ?? []).filter((c) => c.type === 'host').map((c) => c.name);
+    expect(hosts).toEqual(['test-runner-01']);
+  });
 });

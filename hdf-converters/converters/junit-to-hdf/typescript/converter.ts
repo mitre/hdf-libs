@@ -40,6 +40,11 @@ interface JUnitTestSuite {
   '@_timestamp'?: string;
   '@_hostname'?: string;
   testcase?: JUnitTestCase[];
+  // Runners that model grouped or parameterised tests (node --test, and any
+  // reporter mapping nested describe blocks) emit a <testsuite> inside a
+  // <testsuite>. Without this the inner suites are never read and their
+  // testcases never convert, so a red run at depth can look green.
+  testsuite?: JUnitTestSuite[];
 }
 
 interface JUnitTestCase {
@@ -178,6 +183,20 @@ function resolveScanTime(suites: JUnitTestSuite[]): Date {
   return new Date();
 }
 
+// Walks nested suites depth-first, returning every suite in document order (a
+// parent immediately before its children). Flattening at the parse boundary is
+// what keeps the conversion, the count relation, host components and the scan
+// time all reading the same set of suites. Mirrors Go's flattenSuites.
+function flattenSuites(suites: JUnitTestSuite[]): JUnitTestSuite[] {
+  const out: JUnitTestSuite[] = [];
+  for (const suite of suites) {
+    const { testsuite: nested, ...rest } = suite;
+    out.push(rest);
+    if (nested) out.push(...flattenSuites(nested));
+  }
+  return out;
+}
+
 function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string } {
   // Attributes are prefixed so they cannot collide with same-named child
   // elements. Node's runner emits BOTH a failure= attribute and a <failure>
@@ -189,7 +208,7 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
 
   // <testsuites> root
   if (parsed.testsuites) {
-    const suites = [...(parsed.testsuites.testsuite ?? [])];
+    const suites = flattenSuites(parsed.testsuites.testsuite ?? []);
     const name = parsed.testsuites['@_name'] ? decodeXmlEntities(parsed.testsuites['@_name']) : 'JUnit Test Results';
     // Testcases sitting directly under <testsuites> become an implicit suite so they
     // convert exactly like wrapped ones. Appended after any explicit suites, so a
@@ -207,10 +226,10 @@ function parseJUnitXML(input: string): { suites: JUnitTestSuite[]; name: string 
     const suite = parsed.testsuite;
     // When testsuite is root, parseXmlWithArrays may return it directly
     // (not wrapped in an array since ARRAY_TAGS only forces arrays for child elements)
-    const suites = Array.isArray(suite) ? (suite as JUnitTestSuite[]) : [suite];
-    const suiteName = suites[0]?.['@_name'];
+    const rootSuites = Array.isArray(suite) ? (suite as JUnitTestSuite[]) : [suite];
+    const suiteName = rootSuites[0]?.['@_name'];
     const name = suiteName ? decodeXmlEntities(suiteName) : 'JUnit Test Results';
-    return { suites, name };
+    return { suites: flattenSuites(rootSuites), name };
   }
 
   throw new Error('Input is not a JUnit XML document: expected <testsuites> or <testsuite> root element');
