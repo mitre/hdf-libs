@@ -1,10 +1,14 @@
 package hdftockl
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/checklist"
 	"github.com/stretchr/testify/require"
 )
@@ -38,11 +42,10 @@ func (cklRoundTripValidator) Validate(doc []byte) error {
 }
 
 // corpusExemptions are the cases this converter does not satisfy, each for a
-// stated reason. zero-baselines is permanent; baseline-empty-requirements is a
-// live defect and is pinned below so the exemption cannot outlive it.
+// stated reason. Only zero-baselines remains, and it is permanent: a checklist
+// cannot represent an assessment that evaluated nothing. It is pinned below.
 var corpusExemptions = map[string]string{
-	"zero-baselines":              "baselines has no minItems, so an assessment that evaluated nothing is legal HDF that a checklist cannot represent — this converter rejects it deliberately, matching hdf-to-oscal-sar",
-	"baseline-empty-requirements": "DEFECT, tracked on the exporter-conformance board: the converter emits an <iSTIG> with no <VULN>, which its own ParseCKL rejects. Exempted so the rest of the corpus can run, and pinned by TestConvertHDFToCKL_EmptyRequirementsDefectStillReproduces so removing the defect fails the pin",
+	"zero-baselines": "baselines has no minItems, so an assessment that evaluated nothing is legal HDF that a checklist cannot represent — this converter rejects it deliberately, matching hdf-to-oscal-sar",
 }
 
 func corpusMinusExemptions(t *testing.T) []corpus.CorpusCase {
@@ -67,24 +70,6 @@ func TestConvertHDFToCKL_AdversarialCorpus(t *testing.T) {
 	corpus.RunSchemaCorpus(t, cklRoundTripValidator{}, corpusMinusExemptions(t), ConvertHDFToCKL)
 }
 
-// The exemption above is for a live defect, not a permanent property, so it is
-// pinned: this test fails the moment the defect is fixed, which forces the
-// exemption to be removed with it rather than silently outliving the bug.
-func TestConvertHDFToCKL_EmptyRequirementsDefectStillReproduces(t *testing.T) {
-	_, exempted := corpusExemptions["baseline-empty-requirements"]
-	require.True(t, exempted, "this pin only means something while the case is exempted")
-
-	input := []byte(`{"baselines":[{"name":"b","requirements":[]}],` +
-		`"generator":{"name":"x","version":"1"},"timestamp":"2020-01-01T00:00:00Z"}`)
-
-	out, err := ConvertHDFToCKL(input)
-	require.NoError(t, err, "Defect fixed? The converter now rejects empty requirements — "+
-		"delete the baseline-empty-requirements exemption and this test")
-	require.Error(t, cklRoundTripValidator{}.Validate(out),
-		"Defect fixed? Output now re-imports cleanly — "+
-			"delete the baseline-empty-requirements exemption and this test")
-}
-
 // The zero-baselines exemption above claims a deliberate rejection. hdf-to-oscal-sar
 // backs its identical exemption with a pin; without one here the exemption could
 // silently become a real hole, so this asserts the rejection actually happens.
@@ -95,4 +80,39 @@ func TestConvertHDFToCKL_RejectsZeroBaselines(t *testing.T) {
 	_, err := ConvertHDFToCKL([]byte(`{"baselines":[],"generator":{"name":"x","version":"1"},` +
 		`"timestamp":"2020-01-01T00:00:00Z"}`))
 	require.Error(t, err, "zero baselines must be rejected, not converted into an empty checklist")
+}
+
+// corpusRejected marks a corpus case the converter refuses; the two languages
+// must agree on rejection as well as on output.
+const corpusRejected = "REJECTED"
+
+// Pins what this converter emits for every corpus input so the two languages are
+// compared against one another rather than each against its own expectations.
+// Go owns regeneration (go test ./converters/hdf-to-ckl/go/ -update); TypeScript only
+// verifies. This is what makes the byte-identical claim an assertion.
+func TestConvertHDFToCKL_CorpusOutputGolden(t *testing.T) {
+	outputs := make(map[string]string, len(corpus.ResultsCorpus()))
+	for _, c := range corpus.ResultsCorpus() {
+		out, err := corpus.ConvertNoPanic(ConvertHDFToCKL, c.Input)
+		if err != nil {
+			outputs[c.Name] = corpusRejected
+			continue
+		}
+		outputs[c.Name] = string(out)
+	}
+
+	actual, err := json.MarshalIndent(outputs, "", "  ")
+	require.NoError(t, err)
+	actual = append(actual, '\n')
+
+	path := filepath.Join("..", "fixtures", "expected", "corpus-outputs.json")
+	if shared.UpdateSnapshots() {
+		require.NoError(t, os.WriteFile(path, actual, 0o600))
+		t.Logf("updated %s", path)
+		return
+	}
+	expected, err := os.ReadFile(path) // #nosec G304 -- repo-relative golden
+	require.NoError(t, err, "missing corpus output golden; regenerate with -update")
+	require.JSONEq(t, string(expected), string(actual),
+		"corpus output changed; if intentional regenerate with: go test ./converters/hdf-to-ckl/go/ -update")
 }
