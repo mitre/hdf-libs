@@ -14,7 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // NIST OSCAL v1.1.2 Assessment Results schema. The converter self-declares
 // "oscal-version": "1.1.2", so its output must validate against exactly that
-// schema. See ../schemas/PROVENANCE.md. Loaded once for all cases.
+// schema. See ../schemas/provenance.txt. Loaded once for all cases.
 const arSchema = JSON.parse(
   readFileSync(join(__dirname, '..', 'schemas', 'oscal_assessment-results_schema-v1.1.2.json'), 'utf-8'),
 ) as object;

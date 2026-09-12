@@ -1,0 +1,15 @@
+# CycloneDX schema — provenance
+
+Used to validate `hdf-to-cyclonedx-vex` output (specVersion 1.4) in its tests.
+
+| file | source | $id | draft | SHA-256 |
+|---|---|---|---|---|
+| `bom-1.4.schema.json` | CycloneDX/specification @1.6 `schema/bom-1.4.schema.json` | http://cyclonedx.org/schema/bom-1.4.schema.json | draft-07 | `b7b401542328161df46cbce740933ed27401ed2fc391704722fad6a981ba2860` |
+| `spdx.schema.json` | CycloneDX/specification @1.6 `schema/spdx.schema.json` | http://cyclonedx.org/schema/spdx.schema.json | draft-07 | `baa9d3bd1ed57b6751b0887edead6b5063ff53ff7429cf85d476c6c94af0166e` |
+| `jsf-0.82.schema.json` | CycloneDX/specification @1.6 `schema/jsf-0.82.schema.json` | http://cyclonedx.org/schema/jsf-0.82.schema.json | draft-07 | `8bae002c25e723db7ee1f26afde680ae1a2b1a8f6b4b4b0fd65dc3becb090aae` |
+
+Source: https://github.com/CycloneDX/specification/tree/1.6/schema — retrieved
+2026-07-30. Byte-identity re-verified against the upstream tag on 2026-09-09 by
+re-download and SHA-256 comparison; all three matched. `bom-1.4` `$ref`s `spdx.schema.json` and
+`jsf-0.82.schema.json` by relative name; both are registered as companions under
+their `$id`s so the schema compiles offline.

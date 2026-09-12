@@ -1,0 +1,27 @@
+{
+  "$comment": "Required members of the ASFF shapes this converter emits, extracted verbatim from AWS's official Security Hub service model. AWS publishes NO JSON Schema for ASFF (see provenance.txt), so this is the authoritative machine-readable statement of what is required. It is a DERIVED extract, not the upstream file: re-derive it with the command in provenance.json and compare, rather than editing it by hand.",
+  "apiVersion": "2018-10-26",
+  "required": {
+    "AwsSecurityFinding": [
+      "SchemaVersion",
+      "Id",
+      "ProductArn",
+      "GeneratorId",
+      "AwsAccountId",
+      "CreatedAt",
+      "UpdatedAt",
+      "Title",
+      "Description",
+      "Resources"
+    ],
+    "Vulnerability": [
+      "Id"
+    ],
+    "Resource": [
+      "Type",
+      "Id"
+    ],
+    "Severity": [],
+    "Compliance": []
+  }
+}

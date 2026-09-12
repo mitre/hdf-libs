@@ -18,7 +18,7 @@ import (
 // TestConvertHDFToXCCDF_SchemaValid gates the converter output on the NIST
 // XCCDF 1.2 XSD. The XSD imports xml.xsd and the CPE 2.3 schemas; all are
 // vendored alongside it with local schemaLocations so it compiles offline.
-// See ../schemas/PROVENANCE.md.
+// See ../schemas/provenance.txt.
 func TestConvertHDFToXCCDF_SchemaValid(t *testing.T) {
 	v := xsdvalidate.New(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-xccdf", "schemas", "xccdf_1.2.xsd"))

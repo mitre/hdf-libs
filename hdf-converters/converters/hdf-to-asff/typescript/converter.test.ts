@@ -29,15 +29,12 @@ describe('hdf-to-asff converter', () => {
     expect(() => convertHdfToAsff('{"foo":1}')).toThrow();
   });
 
-  it('emits the required ASFF top-level attributes', () => {
+  // The hand-kept required-key list that used to live here is gone: it named
+  // Types, Severity and Compliance as required when AWS's own model does not,
+  // and it could not tell an absent member from an empty one.
+  // required-members.test.ts drives the same property from AWS's service model.
+  it('pins the schema version and at least one Resource', () => {
     for (const f of convert('compliance.json')) {
-      for (const k of [
-        'SchemaVersion', 'Id', 'ProductArn', 'GeneratorId', 'AwsAccountId',
-        'CreatedAt', 'UpdatedAt', 'Title', 'Description', 'Types', 'Severity',
-        'Resources', 'Compliance',
-      ]) {
-        expect(f, `required attribute ${k}`).toHaveProperty(k);
-      }
       expect(f.SchemaVersion).toBe('2018-10-08');
       expect((f.Resources as unknown[]).length).toBeGreaterThan(0);
     }

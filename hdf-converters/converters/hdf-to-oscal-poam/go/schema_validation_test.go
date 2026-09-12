@@ -20,7 +20,7 @@ import (
 // TestConvertHDFToOSCALPOAM_SchemaValid gates the converter output on the NIST
 // OSCAL v1.1.2 POA&M schema. The converter self-declares "oscal-version":
 // "1.1.2", so its output must validate against exactly that schema. See
-// ../schemas/PROVENANCE.md.
+// ../schemas/provenance.txt.
 func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
 	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))

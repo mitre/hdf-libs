@@ -37,6 +37,38 @@ describe('hdf-results.schema.json (refactored)', () => {
       expect(validate.errors).toBeNull();
     });
 
+    // hdf amend apply stamps a root preAmendmentChecksum recording the results as
+    // they stood before the application. The schema never declared it, and
+    // unevaluatedProperties: false therefore rejects every amended document —
+    // invisible in production only because the shipped validators are draft-07
+    // and ignore that keyword.
+    it('should accept a root preAmendmentChecksum, which amend apply stamps', () => {
+      const doc = createMinimalResultsDoc();
+      doc.preAmendmentChecksum = {
+        algorithm: 'sha256',
+        value: '3f9a1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8',
+      };
+      expect(validate(doc), JSON.stringify(validate.errors)).toBe(true);
+    });
+
+    // Each case pins a different part of the Checksum ref. Without the
+    // structural ones a bare {"type":"object"} would pass this test, so the
+    // string case alone would not prove the ref is what constrains the field.
+    it('should reject a root preAmendmentChecksum that is not a Checksum', () => {
+      const cases: Array<[string, unknown]> = [
+        ['a string', 'not-an-object'],
+        ['an empty object', {}],
+        ['a missing value', { algorithm: 'sha256' }],
+        ['an unknown algorithm', { algorithm: 'rot13', value: 'abc' }],
+        ['an extra property', { algorithm: 'sha256', value: 'abc', extra: 1 }],
+      ];
+      for (const [label, value] of cases) {
+        const doc = createMinimalResultsDoc();
+        doc.preAmendmentChecksum = value;
+        expect(validate(doc), label).toBe(false);
+      }
+    });
+
     it('should reject document missing required fields', () => {
       const invalidDoc = { platform: { name: 'ubuntu', release: '20.04' } };
       expect(validate(invalidDoc)).toBe(false);
@@ -1700,13 +1732,14 @@ describe('hdf-results.schema.json (refactored)', () => {
       const validateDef = ajv.compile({ $ref: `${eventsSchema.$id}#/$defs/Derivation` });
       const examples = eventsSchema.$defs.Derivation.examples ?? [];
       expect(examples.length).toBeGreaterThanOrEqual(1);
+      // Commentary lives on the definition, not inside the example objects,
+      // so each example validates as-is with nothing stripped first.
+      expect(
+        typeof (eventsSchema.$defs.Derivation as Record<string, unknown>).$comment,
+      ).toBe('string');
       for (const example of examples) {
-        const data = { ...example };
-        delete data.$comment;
-        const ok = validateDef(data);
-        if (!ok) console.error('Derivation example errors:', validateDef.errors);
-        expect(ok).toBe(true);
-        expect(typeof example.$comment).toBe('string');
+        expect(validateDef(example), JSON.stringify(validateDef.errors)).toBe(true);
+        expect(example.$comment, 'example carries an inline $comment').toBeUndefined();
       }
     });
   });

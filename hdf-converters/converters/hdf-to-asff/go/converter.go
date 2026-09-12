@@ -145,7 +145,10 @@ func recoverAccountID(doc map[string]interface{}) string {
 
 // buildFinding maps one Evaluated_Requirement to a single ASFF finding.
 func buildFinding(req map[string]interface{}, ctx findingContext) map[string]interface{} {
-	controlID := exportmap.GetStr(req, "id")
+	// GeneratorId is required by AWS and rejected when empty. Falling back to
+	// the title keeps it identifying, and to the converter name when the
+	// requirement carries neither.
+	controlID := shared.FirstNonEmpty(exportmap.GetStr(req, "id"), exportmap.GetStr(req, "title"), converterName)
 	st := exportmap.StatusOf(req)
 
 	title := exportmap.GetStr(req, "title")
@@ -157,8 +160,11 @@ func buildFinding(req map[string]interface{}, ctx findingContext) map[string]int
 		desc = title
 	}
 
-	cvssList, hasCVSS := exportmap.AsSlice(req["cvss"])
-	hasCVSS = hasCVSS && len(cvssList) > 0
+	// Built here rather than further down because Types describes what the
+	// finding carries: a CVSS entry with no CVE id is dropped below, and a
+	// finding with no Vulnerabilities[] must not claim the CVE taxonomy. That
+	// makes the emitted list, not the raw cvss[], the thing Types keys off.
+	vulns := vulnerabilities(req)
 
 	ts := canonicalTime(exportmap.FirstResultStartTime(req, ctx.docTimestamp))
 	id := findingID(ctx.accountID, ctx.baselineName, controlID)
@@ -173,7 +179,7 @@ func buildFinding(req map[string]interface{}, ctx findingContext) map[string]int
 		"UpdatedAt":     ts,
 		"Title":         truncate(title, maxTitle),
 		"Description":   truncate(desc, maxDescription),
-		"Types":         asffTypes(hasCVSS),
+		"Types":         asffTypes(len(vulns) > 0),
 		"Severity":      severity(req),
 		"Resources":     resources(ctx.component, id),
 		"RecordState":   "ACTIVE",
@@ -194,7 +200,6 @@ func buildFinding(req map[string]interface{}, ctx findingContext) map[string]int
 	// reference URLs) so asff-to-hdf reconstructs requirement.cvss[], the CVE, and
 	// the full refs[]. Extra refs ride the first vuln's ReferenceUrls; when a
 	// requirement carries refs but no CVSS, the first ref falls back to SourceUrl.
-	vulns := vulnerabilities(req)
 	if refs := allRefURLs(req); len(refs) > 0 {
 		if len(vulns) > 0 {
 			vulns[0]["ReferenceUrls"] = refs
@@ -301,8 +306,15 @@ func vulnerabilities(req map[string]interface{}) []map[string]interface{} {
 		}
 		exportmap.SetIf(cvssEntry, "BaseVector", exportmap.GetStr(c, "baseVector"))
 		exportmap.SetIf(cvssEntry, "Source", exportmap.GetStr(c, "source"))
-		vuln := map[string]interface{}{"Cvss": []interface{}{cvssEntry}}
-		exportmap.SetIf(vuln, "Id", exportmap.GetStr(c, "source"))
+		// Id is required by AWS and is what asff-to-hdf reads the CVE back out
+		// of, so an entry without one is invalid, not merely thin. Nothing else
+		// on the requirement can stand in: requirement.id is a control id, and
+		// putting it here would make the round-trip read it as a CVE.
+		id := exportmap.GetStr(c, "source")
+		if id == "" {
+			continue
+		}
+		vuln := map[string]interface{}{"Cvss": []interface{}{cvssEntry}, "Id": id}
 		out = append(out, vuln)
 	}
 	return out

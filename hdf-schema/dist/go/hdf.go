@@ -141,6 +141,16 @@ type HDFResults struct {
 	// Reference to an hdf-plan document describing the assessment plan that produced these                            
 	// results. May be a relative path, absolute URI, or fragment identifier.                                          
 	PlanRef                                                                                     *string                `json:"planRef,omitempty"`
+	// Hash of this results document as it stood immediately before the most recent amendment                          
+	// application. Written by `hdf amend apply` when it applies at least one override; an apply                       
+	// that matches nothing leaves the document untouched. The hash covers the results file's                          
+	// RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical                          
+	// original — reformatting or re-serializing the source changes the value. Only the most                           
+	// recent pre-application state is recorded: applying amendments to an already-amended                             
+	// document REPLACES this value, so it is a single link back one step, not a growing chain.                        
+	// Distinct from the `previousChecksum` inside an override, which chains amendments to each                        
+	// other and is computed over a canonical JSON form.                                                               
+	PreAmendmentChecksum                                                                        *Checksum              `json:"preAmendmentChecksum,omitempty"`
 	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                             
 	// scripts, etc.) for fixing failing requirements found in this assessment.                                        
 	Remediation                                                                                 *Remediation           `json:"remediation,omitempty"`

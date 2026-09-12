@@ -3755,10 +3755,15 @@ describe('Primitive Schema Validation', () => {
           });
         });
 
-        it('every example should have a $comment field documenting it', () => {
+        // The commentary lives on the DEFINITION, not inside the example
+        // objects: an example is data, so a $comment key inside one is an
+        // undeclared property that fails validation wherever
+        // unevaluatedProperties is false.
+        it('documents its examples on the definition, not inside them', () => {
+          const cvssDef = (cvssSchema as { $defs: { Cvss: Record<string, unknown> } }).$defs.Cvss;
+          expect(typeof cvssDef.$comment).toBe('string');
           (examples as Record<string, unknown>[]).forEach((ex, idx) => {
-            expect(ex.$comment, `example ${idx} missing $comment`).toBeDefined();
-            expect(typeof ex.$comment).toBe('string');
+            expect(ex.$comment, `example ${idx} carries an inline $comment`).toBeUndefined();
           });
         });
       });

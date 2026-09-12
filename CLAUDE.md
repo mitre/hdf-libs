@@ -95,9 +95,9 @@ Hosted at: `https://mitre.github.io/hdf-libs/schemas/`
 ### Schema examples convention
 When adding or modifying a `$defs` type in the schema source files, always add or update the `examples` array on the definition. Examples should:
 - Use realistic data (real STIG IDs, plausible CVEs, genuine tool output patterns)
-- Include a `$comment` field explaining what the example demonstrates
 - Cover the key usage patterns and edge cases (e.g., both compliance-scan and CVE-scan false positives)
 - Be valid against the schema — the bundler includes them in dist, and consumers see them in IDE tooltips
+- Explain what the examples demonstrate in a `$comment` on the **definition**, as `"Examples, in order: 1) …; 2) …"`, never inside the example objects themselves. An example is data, not a schema, so a `$comment` key inside one is an undeclared property that fails validation on any definition with `unevaluatedProperties: false` — and it hands a consumer who copies the example a document their validator rejects. `scripts`-free guard: `hdf-schema/test/examples-valid.test.ts` validates every example against its own definition and fails the build otherwise.
 
 See `Evaluated_Requirement` in `hdf-results.schema.json` for the model to follow.
 

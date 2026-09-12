@@ -48,11 +48,12 @@ func TestConvert_EmptyAndInvalid(t *testing.T) {
 	assert.Error(t, err, "missing baselines must error")
 }
 
-func TestConvert_RequiredAttributes(t *testing.T) {
+// The hand-kept required-key list that used to live here is gone: it named
+// Types, Severity and Compliance as required when AWS's own model does not, and
+// it could not tell an absent member from an empty one. required_members_test.go
+// drives the same property from AWS's service model instead.
+func TestConvert_SchemaVersionAndResources(t *testing.T) {
 	for _, f := range convert(t, "compliance.json") {
-		for _, k := range []string{"SchemaVersion", "Id", "ProductArn", "GeneratorId", "AwsAccountId", "CreatedAt", "UpdatedAt", "Title", "Description", "Types", "Severity", "Resources", "Compliance"} {
-			assert.Contains(t, f, k, "required ASFF attribute %q", k)
-		}
 		assert.Equal(t, "2018-10-08", f["SchemaVersion"])
 		res := f["Resources"].([]interface{})
 		assert.NotEmpty(t, res, "ASFF requires at least one Resource")

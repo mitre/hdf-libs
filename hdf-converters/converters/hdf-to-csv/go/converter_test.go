@@ -404,10 +404,17 @@ func TestConvertHDFToCSV_MissingBaselinesMessage(t *testing.T) {
 	assert.EqualError(t, err, "hdf-to-csv: invalid HDF structure: missing baselines field")
 }
 
-// csvStructureValidator is this converter's stand-in for a target schema: CSV
-// has no published schema, but a document that does not parse, or whose rows
-// disagree on column count, is malformed in the way a schema would catch. A
-// no-op validator would make every MustConvert contract pass vacuously.
+// csvStructureValidator is this converter's stand-in for a target schema.
+//
+// NO SCHEMA EXISTS, and none can: CSV is defined by RFC 4180 as a serialization
+// format, not a document format, so there is nothing to validate a particular
+// CSV's content against. The column set here is this converter's own choice, not
+// an external contract. Re-checked 2026-09-11; RFC 4180 remains the only
+// specification and it constrains syntax alone.
+//
+// A document that does not parse, or whose rows disagree on column count, is
+// still malformed in the way a schema would catch. A no-op validator would make
+// every MustConvert contract pass vacuously.
 type csvStructureValidator struct{}
 
 func (csvStructureValidator) Validate(doc []byte) error {

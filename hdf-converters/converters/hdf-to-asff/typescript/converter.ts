@@ -13,7 +13,7 @@ import {
   canonicalize,
   stringifyLine,
 } from '../../../shared/typescript/exportmap.js';
-import {validateInputSize, parseHdf} from '../../../shared/typescript/converterutil.js';
+import {validateInputSize, parseHdf, firstNonEmpty} from '../../../shared/typescript/converterutil.js';
 import {impactToSeverity, parseTimestamp} from '@mitre/hdf-utilities';
 
 /**
@@ -34,6 +34,7 @@ import {impactToSeverity, parseTimestamp} from '@mitre/hdf-utilities';
  */
 
 const ASFF_SCHEMA_VERSION = '2018-10-08';
+const CONVERTER_NAME = 'hdf-to-asff';
 const PLACEHOLDER_REGION = 'us-east-1';
 const PLACEHOLDER_ACCOUNT_ID = '000000000000';
 // Matches the arn:aws:... ProductArn; the push path overrides it (with Region)
@@ -44,7 +45,7 @@ const MAX_DESCRIPTION = 1024;
 const EPOCH_SENTINEL = '1970-01-01T00:00:00Z';
 
 export function convertHdfToAsff(input: string, converterVersion = '0.1.0'): string {
-  const name = 'hdf-to-asff';
+  const name = CONVERTER_NAME;
   validateInputSize(input, name);
   const doc = parseHdf<Obj>(input);
 
@@ -113,14 +114,20 @@ function recoverAccountID(doc: Obj): string {
 }
 
 function buildFinding(req: Obj, ctx: FindingContext): Obj {
-  const controlID = getStr(req, 'id');
+  // GeneratorId is required by AWS and rejected when empty. Falling back to the
+  // title keeps it identifying, and to the converter name when the requirement
+  // carries neither.
+  const controlID = firstNonEmpty(getStr(req, 'id'), getStr(req, 'title'), CONVERTER_NAME);
   const st = statusOf(req);
 
   const title = getStr(req, 'title') || controlID;
   const desc = defaultDescription(req) || title;
 
-  const cvssList = asArr(req.cvss);
-  const hasCVSS = cvssList !== undefined && cvssList.length > 0;
+  // Built here rather than further down because Types describes what the finding
+  // carries: a CVSS entry with no CVE id is dropped, and a finding with no
+  // Vulnerabilities[] must not claim the CVE taxonomy. That makes the emitted
+  // list, not the raw cvss[], the thing Types keys off. Mirrors the Go peer.
+  const vulns = vulnerabilities(req);
 
   const ts = canonicalTime(firstResultStartTime(req, ctx.docTimestamp));
   const id = findingID(ctx.accountID, ctx.baselineName, controlID);
@@ -135,7 +142,7 @@ function buildFinding(req: Obj, ctx: FindingContext): Obj {
     UpdatedAt: ts,
     Title: truncate(title, MAX_TITLE),
     Description: truncate(desc, MAX_DESCRIPTION),
-    Types: asffTypes(hasCVSS),
+    Types: asffTypes(vulns.length > 0),
     Severity: severity(req),
     Resources: resources(ctx.component, id),
     RecordState: 'ACTIVE',
@@ -156,7 +163,6 @@ function buildFinding(req: Obj, ctx: FindingContext): Obj {
   // reference URLs) so asff-to-hdf reconstructs requirement.cvss[], the CVE, and
   // the full refs[]. Extra refs ride the first vuln's ReferenceUrls; when a
   // requirement carries refs but no CVSS, the first ref falls back to SourceUrl.
-  const vulns = vulnerabilities(req);
   const refs = allRefURLs(req);
   if (refs.length > 0) {
     if (vulns.length > 0) {
@@ -244,9 +250,13 @@ function vulnerabilities(req: Obj): Obj[] {
     if (c.baseScore !== undefined && c.baseScore !== null) cvssEntry.BaseScore = c.baseScore;
     setIf(cvssEntry, 'BaseVector', getStr(c, 'baseVector'));
     setIf(cvssEntry, 'Source', getStr(c, 'source'));
-    const vuln: Obj = {Cvss: [cvssEntry]};
-    setIf(vuln, 'Id', getStr(c, 'source'));
-    out.push(vuln);
+    // Id is required by AWS and is what asff-to-hdf reads the CVE back out of,
+    // so an entry without one is invalid, not merely thin. Nothing else on the
+    // requirement can stand in: requirement.id is a control id, and putting it
+    // here would make the round-trip read it as a CVE.
+    const id = getStr(c, 'source');
+    if (id === '') continue;
+    out.push({Cvss: [cvssEntry], Id: id});
   }
   return out;
 }

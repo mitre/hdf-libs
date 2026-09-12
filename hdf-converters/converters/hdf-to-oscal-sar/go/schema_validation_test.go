@@ -21,7 +21,7 @@ import (
 
 // arSchema loads the vendored NIST OSCAL v1.1.2 Assessment Results JSON Schema.
 // The converter self-declares "oscal-version": "1.1.2", so its output must
-// validate against exactly that schema. See ../schemas/PROVENANCE.md.
+// validate against exactly that schema. See ../schemas/provenance.txt.
 //
 // The schema is read as bytes rather than via a file:// reference loader: a
 // Windows absolute path ("D:\...") produces a malformed file:// URI and fails

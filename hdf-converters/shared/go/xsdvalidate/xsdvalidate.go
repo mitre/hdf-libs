@@ -37,7 +37,7 @@ type Validator struct {
 
 // New compiles an XSD from a file path. Any companion XSDs it <xsd:import>s must
 // sit alongside it with schemaLocations pointing to local relative paths, so the
-// schema compiles offline (see the vendored XCCDF chain + its PROVENANCE.md).
+// schema compiles offline (see the vendored XCCDF chain + its provenance.txt).
 func New(t *testing.T, xsdPath string) *Validator {
 	t.Helper()
 	initOnce.Do(func() { errInit = xsd.Init() })

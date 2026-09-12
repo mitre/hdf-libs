@@ -1,0 +1,23 @@
+# OSCAL complete schema — provenance
+
+`oscal_complete_schema.json` is the official NIST OSCAL **v1.2.1** complete JSON
+Schema. It is the source `typescript/types.ts` is generated from (see the
+regeneration command in that file's header), and it covers every OSCAL model
+rather than a single one.
+
+- **Source:** https://github.com/usnistgov/OSCAL/releases/download/v1.2.1/oscal_complete_schema.json
+- **Release:** usnistgov/OSCAL `v1.2.1`
+- **`$id`:** `http://csrc.nist.gov/ns/oscal/1.0/1.2.1/oscal-complete-schema.json`
+- **JSON Schema draft:** draft-07
+- **Self-contained:** yes — no external `$ref`s
+- **SHA-256:** `f53c67f5f64cc49c9b3512834d2baa2f8da841cf2cc0c361e6d77ecce0f3d077`
+- **Retrieved:** 2026-09-09
+
+Verified byte-identical to the upstream release asset on 2026-09-09 by
+re-downloading and comparing SHA-256. Do not edit; re-fetch from the pinned
+release URL to update, and regenerate `typescript/types.ts` in the same change.
+
+Note this is a different OSCAL version from the sibling exporters, which vendor
+v1.1.2 because they self-declare `"oscal-version": "1.1.2"`. This file is an
+import-side type source, not an output conformance target, so the versions are
+independent.

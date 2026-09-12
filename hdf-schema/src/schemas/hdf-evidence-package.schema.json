@@ -265,7 +265,6 @@
       },
       "examples": [
         {
-          "$comment": "ECS log corpus carried by reference (NDJSON) — HDF never parses it; the hash pins integrity.",
           "uri": "https://evidence.agency.gov/logs/portal-2026-q1.ndjson",
           "format": "ecs",
           "formatVersion": "9.4.0",
@@ -284,22 +283,20 @@
           }
         },
         {
-          "$comment": "OCSF telemetry landed as Parquet in a security data lake.",
           "uri": "s3://agency-security-lake/ocsf/portal/2026/q1/",
           "format": "ocsf",
           "formatVersion": "1.8.0",
           "mediaType": "application/vnd.apache.parquet",
-          "collector": "aws-security-lake"
+          "metadata": { "collector": "aws-security-lake" }
         },
         {
-          "$comment": "A Splunk export carried as an opaque x- custom format — CIM/ASIM are query-time models, so reference the EXPORT, not the model.",
           "uri": "siem/auth-events-2026-q1.json",
           "format": "x-splunk-export",
           "mediaType": "application/json"
         }
       ],
       "description": "A reference to external native-format evidence (log/telemetry corpus or other artifact) carried by URI + integrity hash + format discriminator. Reference-only: the artifact is never embedded (corpora can be huge) or transcoded (that would be lossy) — it stays canonical in its native format and HDF acts as the structured index.",
-      "$comment": "Deliberately distinct from two look-alike primitives — the shared DRY is the common Checksum type, not the container. Bom (boms[] on components/system) models component COMPOSITION and is richer: also embeddable (document) and normalizable into HDF's queryable shape (packages/model/dataset). Content_Reference (contents[]) references HDF-ECOSYSTEM documents and BOMs by Content_Type. External_Evidence_Reference is reference-only and OPAQUE (HDF never inspects it), for NATIVE non-HDF log/telemetry corpora indexed as accreditation evidence; it carries log-specific metadata (recordCount/timeRange/collector) the other two do not. Do not merge these — collapsing them would mix incompatible discriminator axes and lose Bom's normalization.",
+      "$comment": "Deliberately distinct from two look-alike primitives — the shared DRY is the common Checksum type, not the container. Bom (boms[] on components/system) models component COMPOSITION and is richer: also embeddable (document) and normalizable into HDF's queryable shape (packages/model/dataset). Content_Reference (contents[]) references HDF-ECOSYSTEM documents and BOMs by Content_Type. External_Evidence_Reference is reference-only and OPAQUE (HDF never inspects it), for NATIVE non-HDF log/telemetry corpora indexed as accreditation evidence; it carries log-specific metadata (recordCount/timeRange/collector) the other two do not. Do not merge these — collapsing them would mix incompatible discriminator axes and lose Bom's normalization. Examples, in order: 1) ECS log corpus carried by reference (NDJSON) — HDF never parses it; the hash pins integrity; 2) OCSF telemetry landed as Parquet in a security data lake; 3) A Splunk export carried as an opaque x- custom format — CIM/ASIM are query-time models, so reference the EXPORT, not the model.",
       "title": "External Evidence Reference"
     },
     "SBOM_Coverage": {

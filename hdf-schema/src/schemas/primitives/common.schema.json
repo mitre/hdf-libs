@@ -80,22 +80,20 @@
         }
       },
       "unevaluatedProperties": false,
+      "$comment": "Examples, in order: 1) By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228; 2) By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL; 3) By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution; 4) Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
       "examples": [
         {
-          "$comment": "By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228.",
           "sourceName": "cve",
           "externalId": "CVE-2021-44228",
           "rel": "definition"
         },
         {
-          "$comment": "By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL.",
           "sourceName": "mitre-att&ck",
           "externalId": "T1059",
           "href": "https://attack.mitre.org/techniques/T1059/",
           "rel": "canonical"
         },
         {
-          "$comment": "By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution.",
           "sourceName": "stix",
           "href": "https://cti.example.org/bundles/log4shell.json",
           "rel": "investigate",
@@ -111,7 +109,6 @@
           "addedAt": "2026-07-26T00:00:00Z"
         },
         {
-          "$comment": "Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
           "sourceName": "stix",
           "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
           "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
@@ -930,9 +927,9 @@
           "description": "Whether the requirement is mandatory within its baseline.\n\nDistinct from severity (risk weight) and status (lifecycle state).\n\nMaps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).\n\nOptional: when omitted, consumers should treat the requirement as 'required' by convention."
         }
       },
+      "$comment": "Examples, in order: 1) v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.5.0 (backward compatibility); 2) v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline; 3) v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement; 4) v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
       "examples": [
         {
-          "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.5.0 (backward compatibility).",
           "id": "SV-238196",
           "title": "The Ubuntu operating system must enforce password complexity",
           "impact": 0.5,
@@ -962,7 +959,6 @@
           ]
         },
         {
-          "$comment": "v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline.",
           "id": "AC-3",
           "title": "Access Enforcement",
           "impact": 0.7,
@@ -984,7 +980,6 @@
           "applicability": "required"
         },
         {
-          "$comment": "v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement.",
           "id": "KSI-CNA-01",
           "title": "Cyber Security Plan documents the system",
           "impact": 0.5,
@@ -1004,7 +999,6 @@
           "applicability": "required"
         },
         {
-          "$comment": "v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
           "id": "SV-999999",
           "title": "Example STIG rule pending automation",
           "impact": 0.3,
