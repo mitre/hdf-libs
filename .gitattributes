@@ -6,6 +6,12 @@
 # Windows (core.autocrlf=true) and *nix.  This is the industry-standard
 # approach (Prettier, Hugo, ESLint, etc.).
 hdf-converters/**/fixtures/** eol=lf
+# Vendored upstream schemas are byte-exact artifacts whose SHA-256 is recorded
+# in provenance.json, so they must check out verbatim on every platform.
+# -text, not eol=lf: some upstreams ship CRLF (NIST's cpe-naming_2.3.xsd does),
+# and forcing LF would make our copy differ from the bytes we recorded a hash
+# for -- the same corruption as a CRLF checkout, in the other direction.
+hdf-converters/**/schemas/** -text
 hdf-cli/cmd/hdf/cmd/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.jsonl eol=lf

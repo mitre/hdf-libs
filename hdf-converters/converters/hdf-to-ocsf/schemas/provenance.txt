@@ -1,0 +1,50 @@
+# OCSF Finding schemas — provenance
+
+`ocsf-vulnerability_finding-2002.schema.json` and
+`ocsf-compliance_finding-2003.schema.json` are the official OCSF JSON Schema
+exports for the two event classes this converter emits — Vulnerability Finding
+(`class_uid` 2002) and Compliance Finding (`class_uid` 2003), both under the
+Findings category (2).
+
+- **Source:** `https://schema.ocsf.io/schema/classes/vulnerability_finding` and
+  `https://schema.ocsf.io/schema/classes/compliance_finding`, requested with
+  `Accept: application/json`
+- **OCSF version:** **1.9.0** (`https://schema.ocsf.io/api/version` → `{"version":"1.9.0"}`)
+- **`$id`:** `https://schema.ocsf.io/schema/classes/{vulnerability,compliance}_finding`
+- **JSON Schema draft:** draft-07
+- **Self-contained:** yes — no external `$ref`s. 2002 resolves 123 unique local
+  refs against 123 `$defs`; 2003 resolves 141 against 141 `$defs`.
+- **SHA-256:**
+  - `8029415ae1440899f5aaeba85a74c3494cef8b0f9a4f9614578fe5f32554ea01` (2002)
+  - `2f6e79a02e08e9e394584ec684c50304e61b15e7579abe853f0f9ac725f09c67` (2003)
+- **Retrieved:** 2026-09-09
+
+## Why 1.9.0 when the converter declares 1.8.0
+
+`schema.ocsf.io` exports JSON Schema for the **current** version only. The
+version-prefixed route serves the browsable HTML schema, not the JSON Schema
+export: `/1.8.0/schema/classes/vulnerability_finding` returns `406 "Not
+Acceptable"` for `Accept: application/json`, for `application/schema+json`, and
+with `?format=json` / `?_format=json`; with `Accept: */*` it returns the HTML
+page. The version-pinned **metaschema** API (`/1.8.0/api/classes/...`) does
+work, but that is OCSF's own attribute-description format, not JSON Schema, and
+no JSON Schema validator can load it.
+
+Vendoring 1.9.0 is sound for validating 1.8.0-declared output, measured against
+the version-pinned metaschema for both classes on 2026-09-09:
+
+- Attributes added in 1.9.0: `attestation_list`, `notes` — both **optional**.
+- Attributes removed in 1.9.0: **none**.
+- Attributes whose `requirement` changed: **none**.
+- The schema sets `additionalProperties: false`, so it cannot pass a document by
+  ignoring an unknown field.
+- `metadata.version` is an unconstrained `string`, so a document declaring
+  `1.8.0` is not rejected on the version itself.
+
+A 1.8.0 document is therefore a strict subset of what this schema accepts, and
+the two optional additions cannot change any verdict. This deviates from the
+"vendor the self-declared version" rule deliberately and with the maintainer's
+sign-off; the alternative was no ground truth for this converter at all.
+
+Do not edit; re-fetch from the source URLs to update, and re-measure the delta
+above if the converter's declared version or the served version moves.

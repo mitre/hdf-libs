@@ -1,0 +1,24 @@
+# CKLB — no schema vendored, and why
+
+**DISA publishes no machine-readable JSON Schema for the `.cklb` checklist
+format.** Nothing is vendored here on purpose. This file exists so the next
+person looking for `hdf-to-cklb/schemas/` finds the answer instead of assuming
+the directory was forgotten.
+
+Searched 2026-09-09. The converter emits `cklb_version` `1.0`
+(`shared/go/checklist/cklb.go`).
+
+What exists, and why none of it is a JSON Schema:
+
+- **STIG Viewer 3.x User Guide** (DISA, V1R5, 11 February 2025, published as PDF
+  on `dl.dod.cyber.mil`) documents the format for operators. A PDF user guide is
+  not a validator input.
+- The format is defined in practice by what STIG Viewer 3 reads and writes.
+  Third-party projects have reverse-engineered it, but a community
+  reconstruction is not an authoritative schema, and vendoring one would give
+  this converter a ground truth DISA never published.
+
+Consequence: `hdf-to-cklb` cannot join the schema-validated corpus harness. Its
+tests assert against raw JSON structure instead — which is the path the card
+anticipated for exactly this case. If DISA publishes a schema, vendor it here
+following the `hdf-to-oscal-sar` pattern.

@@ -1,0 +1,16 @@
+{
+  "schemas": [
+    {
+      "file": "ocsf-vulnerability_finding-2002.schema.json",
+      "source": "https://schema.ocsf.io/schema/classes/vulnerability_finding",
+      "sha256": "8029415ae1440899f5aaeba85a74c3494cef8b0f9a4f9614578fe5f32554ea01",
+      "retrieved": "2026-09-09"
+    },
+    {
+      "file": "ocsf-compliance_finding-2003.schema.json",
+      "source": "https://schema.ocsf.io/schema/classes/compliance_finding",
+      "sha256": "2f6e79a02e08e9e394584ec684c50304e61b15e7579abe853f0f9ac725f09c67",
+      "retrieved": "2026-09-09"
+    }
+  ]
+}

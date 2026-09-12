@@ -1,0 +1,12 @@
+{
+  "schemas": [
+    {
+      "file": "asff-required-members.json",
+      "source": "https://raw.githubusercontent.com/boto/botocore/develop/botocore/data/securityhub/2018-10-26/service-2.json",
+      "sha256": "f317b98b7d5e71153f3a6b30d767ca2300d2a6256525596d1d4496930ab62c3b",
+      "retrieved": "2026-09-09",
+      "modified": "DERIVED, not the upstream file: the required[] arrays of the AwsSecurityFinding, Vulnerability, Resource, Severity and Compliance shapes, extracted verbatim from AWS's Security Hub service model. AWS publishes no JSON Schema for ASFF, so this model is the authoritative machine-readable statement of what is required. Re-derive with: python3 -c \"import json,urllib.request as u; m=json.load(u.urlopen(SOURCE))['shapes']; print({k: m[k].get('required', []) for k in ('AwsSecurityFinding','Vulnerability','Resource','Severity','Compliance')})\"",
+      "upstream_sha256": "3fbcf642575d973100f8531de9ba6e8f2da28a696d24cd4c4027f3323a36bcfe"
+    }
+  ]
+}
