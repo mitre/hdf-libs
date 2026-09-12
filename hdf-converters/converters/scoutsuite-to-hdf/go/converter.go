@@ -144,10 +144,22 @@ func stripJSPrefix(input string) string {
 	return input
 }
 
-// collapseFindings extracts all findings from all services into a flat list of (ruleID, finding) pairs.
-func collapseFindings(report *ScoutSuiteReport) ([]string, map[string]Finding) {
-	findings := make(map[string]Finding)
-	var order []string
+// serviceFinding pairs a finding with the service that reported it. Carrying the
+// service alongside the rule key is what keeps two services reporting the same
+// key distinct: keying findings by rule alone let the second service's finding
+// overwrite the first while both still emitted a requirement, so one finding was
+// lost and the other appeared twice.
+type serviceFinding struct {
+	service string
+	ruleID  string
+	finding Finding
+}
+
+// collapseFindings flattens every service's findings into one ordered list,
+// services then rule keys sorted for deterministic output. Each entry stands
+// alone, so no finding can be overwritten by another service's.
+func collapseFindings(report *ScoutSuiteReport) []serviceFinding {
+	var found []serviceFinding
 
 	// Sort service names for deterministic output
 	serviceNames := make([]string, 0, len(report.Services))
@@ -174,17 +186,44 @@ func collapseFindings(report *ScoutSuiteReport) ([]string, map[string]Finding) {
 		sort.Strings(ruleNames)
 
 		for _, ruleName := range ruleNames {
-			finding := svc.Findings[ruleName]
-			order = append(order, ruleName)
-			findings[ruleName] = finding
+			found = append(found, serviceFinding{
+				service: serviceName,
+				ruleID:  ruleName,
+				finding: svc.Findings[ruleName],
+			})
 		}
 	}
 
-	return order, findings
+	return found
+}
+
+// assignRequirementIDs returns the HDF requirement ID for each finding. A rule
+// key is the ID on its own, which is what every ScoutSuite report produces: a
+// key names one rule file, whose path binds it to a single service. Should a key
+// arrive under two services anyway, both are qualified with their service so the
+// IDs stay unique — qualifying only on collision keeps ordinary output unchanged
+// rather than renaming every requirement for a case that does not occur.
+func assignRequirementIDs(found []serviceFinding) []string {
+	occurrences := make(map[string]int, len(found))
+	for _, sf := range found {
+		occurrences[sf.ruleID]++
+	}
+
+	ids := make([]string, len(found))
+	for i, sf := range found {
+		ids[i] = sf.ruleID
+		if occurrences[sf.ruleID] > 1 {
+			ids[i] = sf.service + ":" + sf.ruleID
+		}
+	}
+	return ids
 }
 
 // buildRequirement converts a single ScoutSuite finding into an EvaluatedRequirement.
-func buildRequirement(ruleID string, finding Finding, startTime string) hdf.EvaluatedRequirement {
+// buildRequirement converts a single ScoutSuite finding into an EvaluatedRequirement.
+// id is the emitted requirement ID, which may be service-qualified; ruleID is
+// always the bare rule key, since that is what the NIST mapping is keyed on.
+func buildRequirement(id, ruleID string, finding Finding, startTime string) hdf.EvaluatedRequirement {
 	// Look up NIST controls from the ScoutSuite mapping
 	nist := scoutsuite.NISTControls(ruleID)
 	if nist == nil {
@@ -246,7 +285,7 @@ func buildRequirement(ruleID string, finding Finding, startTime string) hdf.Eval
 
 	title := finding.Description
 	req := hdf.EvaluatedRequirement{
-		ID:                 ruleID,
+		ID:                 id,
 		Title:              &title,
 		Impact:             getImpact(finding.Level),
 		Tags:               tags,
@@ -288,13 +327,14 @@ func ConvertScoutsuiteToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	// Collapse all service findings into a flat list
-	order, findings := collapseFindings(&report)
+	found := collapseFindings(&report)
 
-	order = shared.LimitSliceWithWarning(order, 0, "finding")
+	found = shared.LimitSliceWithWarning(found, 0, "finding")
+	ids := assignRequirementIDs(found)
 
-	requirements := make([]hdf.EvaluatedRequirement, len(order))
-	for i, ruleID := range order {
-		requirements[i] = buildRequirement(ruleID, findings[ruleID], report.LastRun.Time)
+	requirements := make([]hdf.EvaluatedRequirement, len(found))
+	for i, sf := range found {
+		requirements[i] = buildRequirement(ids[i], sf.ruleID, sf.finding, report.LastRun.Time)
 	}
 
 	targetName := fmt.Sprintf("%s ruleset:%s:%s",
