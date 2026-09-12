@@ -701,3 +701,59 @@ func TestConvertJUnitToHDF_EmptyDocumentStillReportsNoFindings(t *testing.T) {
 	assert.Equal(t, "junit-no-findings", reqs[0].ID)
 	assert.Equal(t, hdf.Passed, reqs[0].Results[0].Status)
 }
+
+// --- Nested suites ---
+
+// node-test-nested.xml is real `node --test --test-reporter=junit` output whose
+// describe() blocks nest three suites deep, with testcases at every level.
+func TestConvertJUnitToHDF_NestedTestsuites(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-nested.xml"), converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 4, "one requirement per testcase at every nesting depth")
+
+	titles := make([]string, 0, len(reqs))
+	for _, r := range reqs {
+		require.NotNil(t, r.Title)
+		titles = append(titles, *r.Title)
+	}
+	assert.Equal(t, []string{
+		"outer direct case",  // depth 1
+		"inner passing case", // depth 2
+		"inner failing case", // depth 2
+		"deep case",          // depth 3
+	}, titles)
+
+	// The nested failing case keeps its failed status, so depth does not flatten
+	// a red run into a green document.
+	byTitle := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range reqs {
+		byTitle[*r.Title] = r
+	}
+	assert.Equal(t, hdf.Failed, byTitle["inner failing case"].Results[0].Status)
+	assert.Equal(t, hdf.Passed, byTitle["deep case"].Results[0].Status)
+}
+
+func TestExpectedRequirementCount_NestedTestsuites(t *testing.T) {
+	n, unit, err := ExpectedRequirementCount(loadFixture(t, "node-test-nested.xml"))
+	require.NoError(t, err)
+	assert.Equal(t, 4, n)
+	assert.Equal(t, "JUnit testcases at every nesting depth", unit)
+}
+
+// A suite carrying a hostname contributes one host component even when it holds
+// only nested suites, and repeats across depths collapse to one.
+func TestNestedTestsuites_HostComponentsDeduped(t *testing.T) {
+	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-nested.xml"), converterVersion)
+	require.NoError(t, err)
+
+	hosts := []string{}
+	for _, c := range result.Components {
+		if c.Type == hdf.Host {
+			hosts = append(hosts, c.Name)
+		}
+	}
+	assert.Equal(t, []string{"test-runner-01"}, hosts)
+}
