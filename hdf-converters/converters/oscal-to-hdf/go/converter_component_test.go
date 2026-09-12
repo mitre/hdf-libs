@@ -149,6 +149,32 @@ func TestConvertComponentDefinitionToHDF_RoundTrip(t *testing.T) {
 	assert.Equal(t, len(baseline.Requirements), len(roundtrip.Requirements))
 }
 
+func TestConvertComponentDefinitionToHDF_AllComponentsConverted(t *testing.T) {
+	// component-definition-multi.json holds two components (comp_aa, comp_ab)
+	// with two implemented requirements each; every one must convert, in
+	// document order.
+	input, err := os.ReadFile("../fixtures/input/component-definition-multi.json")
+	require.NoError(t, err)
+
+	baseline, err := ConvertComponentDefinitionToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+
+	require.Len(t, baseline.Requirements, 4)
+	ids := make([]string, 0, len(baseline.Requirements))
+	for _, req := range baseline.Requirements {
+		ids = append(ids, req.ID)
+	}
+	assert.Equal(t, []string{"AC-1", "AC-3", "AC-1", "AT-1"}, ids)
+
+	// Each requirement carries its own component's prose: ac-1 appears in both
+	// components, distinguished by content.
+	assert.Contains(t, baseline.Requirements[0].Descriptions[0].Data, "from comp aa")
+	assert.Contains(t, baseline.Requirements[3].Descriptions[0].Data, "from comp ab")
+
+	// A multi-component definition is named for the definition, not component #1.
+	assert.Equal(t, "comp-def-a", baseline.Name)
+}
+
 func TestComponentBaselineName(t *testing.T) {
 	tests := []struct {
 		compTitle string

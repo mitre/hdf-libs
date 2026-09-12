@@ -361,6 +361,12 @@
       "acceptsEmpty": false
     },
     {
+      "source": "oscal-component",
+      "dest": "hdf",
+      "name": "OSCAL Component Definition to HDF Baseline",
+      "acceptsEmpty": false
+    },
+    {
       "source": "oscal-component-definition",
       "dest": "hdf",
       "name": "OSCAL Component Definition to HDF Baseline",
@@ -376,6 +382,12 @@
       "source": "oscal-profile",
       "dest": "hdf",
       "name": "OSCAL Profile to HDF Baseline",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "oscal-sap",
+      "dest": "hdf",
+      "name": "OSCAL Assessment Plan to HDF Plan",
       "acceptsEmpty": false
     },
     {

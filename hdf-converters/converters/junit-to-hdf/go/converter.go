@@ -35,6 +35,11 @@ type junitTestSuite struct {
 	Timestamp string          `xml:"timestamp,attr"`
 	Hostname  string          `xml:"hostname,attr"`
 	TestCases []junitTestCase `xml:"testcase"`
+	// Runners that model grouped or parameterised tests (node --test, and any
+	// reporter mapping nested describe blocks) emit a <testsuite> inside a
+	// <testsuite>. Without this the inner suites decode as nothing and their
+	// testcases never convert, so a red run at depth can look green.
+	TestSuites []junitTestSuite `xml:"testsuite"`
 }
 
 type junitTestCase struct {
@@ -168,7 +173,7 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 		// they convert exactly like wrapped ones. Appended after any explicit
 		// suites, so a document carrying both keeps all of its cases in a
 		// deterministic order rather than silently dropping the loose ones.
-		parsed := suites.TestSuites
+		parsed := flattenSuites(suites.TestSuites)
 		if len(suites.TestCases) > 0 {
 			parsed = append(parsed, junitTestSuite{Name: name, TestCases: suites.TestCases})
 		}
@@ -181,10 +186,25 @@ func parseJUnitXML(input []byte) ([]junitTestSuite, string, error) {
 		if name == "" {
 			name = "JUnit Test Results"
 		}
-		return []junitTestSuite{suite}, name, nil
+		return flattenSuites([]junitTestSuite{suite}), name, nil
 	}
 
 	return nil, "", fmt.Errorf("not a JUnit XML document: expected <testsuites> or <testsuite> root element")
+}
+
+// flattenSuites walks nested suites depth-first, returning every suite in
+// document order (a parent immediately before its children). Flattening at the
+// parse boundary is what keeps the conversion, the count relation, host
+// components and the scan time all reading the same set of suites.
+func flattenSuites(suites []junitTestSuite) []junitTestSuite {
+	var out []junitTestSuite
+	for _, s := range suites {
+		nested := s.TestSuites
+		s.TestSuites = nil
+		out = append(out, s)
+		out = append(out, flattenSuites(nested)...)
+	}
+	return out
 }
 
 func noFindingsTarget(baselineName string, suites []junitTestSuite) string {
@@ -362,13 +382,12 @@ func parseInput(input []byte) ([]junitTestSuite, string, error) {
 }
 
 // ExpectedRequirementCount states how many requirements the input must convert
-// to: one per testcase across every suite, within the same size limits the
-// conversion applies, or one no-findings requirement when there are none.
-// Suites nested inside a suite are not walked, by either path: the relation
-// shares parseInput with the conversion, so the two agree on that shape and
-// must change together when nested suites are supported.
+// to: one per testcase across every suite at every nesting depth, within the
+// same size limits the conversion applies, or one no-findings requirement when
+// there are none. The relation shares parseInput with the conversion, which
+// flattens nested suites, so both walk the same set.
 func ExpectedRequirementCount(input []byte) (int, string, error) {
-	const unit = "JUnit testcases"
+	const unit = "JUnit testcases at every nesting depth"
 	suites, _, err := parseInput(input)
 	if err != nil {
 		return 0, unit, err

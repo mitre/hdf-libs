@@ -4,7 +4,29 @@ import (
 	"bytes"
 	"encoding/json"
 	"sort"
+	"strings"
 )
+
+// SourceNameFromFingerprintID derives the source-format name a detected
+// fingerprint converts under, by truncating the conventional "<source>-to-<dest>"
+// ID at the first "-to-". An ID not in that shape is its own source name.
+//
+// This is the single definition of that mapping: the CLI resolves an
+// auto-detected format through it, and the registry's conformance test asserts
+// every ingest fingerprint's result is registered. Keeping one definition is the
+// point — a detected format whose derived name nothing registers reports full
+// confidence and then fails to convert, which is exactly how oscal-component and
+// oscal-sap became unreachable.
+//
+// It is a pure name mapping. Callers that additionally rewrite a name for
+// semantic reasons (native-HDF passthrough normalizing to "hdf", which is only
+// valid alongside an explicit target) layer that on top.
+func SourceNameFromFingerprintID(id string) string {
+	if idx := strings.Index(id, "-to-"); idx > 0 {
+		return id[:idx]
+	}
+	return id
+}
 
 // DetectionResult holds a matched fingerprint and its confidence score.
 type DetectionResult struct {

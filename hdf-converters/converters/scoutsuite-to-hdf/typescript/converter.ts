@@ -160,10 +160,22 @@ function getNistControls(ruleID: string): string[] {
 }
 
 /**
- * Collapses all service findings into a flat list of (ruleID, finding) pairs.
+ * Pairs a finding with the service that reported it, so two services reporting
+ * the same rule key stay distinct. Mirrors Go's serviceFinding.
  */
-function collapseFindings(report: ScoutSuiteReport): Array<[string, ScoutSuiteFinding]> {
-  const result: Array<[string, ScoutSuiteFinding]> = [];
+interface ServiceFinding {
+  service: string;
+  ruleID: string;
+  finding: ScoutSuiteFinding;
+}
+
+/**
+ * Flattens every service's findings into one ordered list, services then rule
+ * keys sorted for deterministic output. Each entry stands alone, so no finding
+ * can be displaced by another service's.
+ */
+function collapseFindings(report: ScoutSuiteReport): ServiceFinding[] {
+  const result: ServiceFinding[] = [];
 
   const serviceNames = Object.keys(report.services).sort();
   for (const serviceName of serviceNames) {
@@ -179,7 +191,7 @@ function collapseFindings(report: ScoutSuiteReport): Array<[string, ScoutSuiteFi
     for (const ruleName of ruleNames) {
       const finding = svc.findings[ruleName];
       if (finding) {
-        result.push([ruleName, finding]);
+        result.push({ service: serviceName, ruleID: ruleName, finding });
       }
     }
   }
@@ -188,9 +200,29 @@ function collapseFindings(report: ScoutSuiteReport): Array<[string, ScoutSuiteFi
 }
 
 /**
+ * Returns the HDF requirement ID for each finding. A rule key is the ID on its
+ * own, which is what every ScoutSuite report produces: a key names one rule file,
+ * whose path binds it to a single service. Should a key arrive under two services
+ * anyway, both are qualified with their service so the IDs stay unique —
+ * qualifying only on collision keeps ordinary output unchanged rather than
+ * renaming every requirement for a case that does not occur. Mirrors Go's
+ * assignRequirementIDs.
+ */
+function assignRequirementIDs(found: ServiceFinding[]): string[] {
+  const occurrences = new Map<string, number>();
+  for (const sf of found) {
+    occurrences.set(sf.ruleID, (occurrences.get(sf.ruleID) ?? 0) + 1);
+  }
+  return found.map((sf) =>
+    (occurrences.get(sf.ruleID) ?? 0) > 1 ? `${sf.service}:${sf.ruleID}` : sf.ruleID,
+  );
+}
+
+/**
  * Builds a single EvaluatedRequirement from a ScoutSuite finding.
  */
 function buildRequirement(
+  id: string,
   ruleID: string,
   finding: ScoutSuiteFinding,
   startTime: string,
@@ -229,7 +261,7 @@ function buildRequirement(
   });
 
   const req = createRequirement(
-    ruleID,
+    id,
     finding.description,
     descriptions,
     getImpact(finding.level),
@@ -285,9 +317,10 @@ export async function convertScoutsuiteToHdf(input: string, converterVersion = '
   // Collapse all service findings
   const findingPairs = collapseFindings(report);
   const limitedPairs = limitArrayWithWarning(findingPairs, 'finding');
+  const ids = assignRequirementIDs(limitedPairs);
 
-  const requirements: EvaluatedRequirement[] = limitedPairs.map(
-    ([ruleID, finding]) => buildRequirement(ruleID, finding, report.last_run.time),
+  const requirements: EvaluatedRequirement[] = limitedPairs.map((sf, i) =>
+    buildRequirement(ids[i]!, sf.ruleID, sf.finding, report.last_run.time),
   );
 
   const targetName = `${report.last_run.ruleset_name} ruleset:${report.provider_name}:${report.account_id}`;

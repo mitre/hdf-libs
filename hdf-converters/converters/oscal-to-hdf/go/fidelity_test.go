@@ -36,7 +36,7 @@ func TestExpectedRequirementCount_MatchesConversionForEveryFixture(t *testing.T)
 			}
 			return len(b.Requirements), nil
 		}},
-		"component-definition": {"OSCAL implemented-requirements of the first component", ExpectedComponentDefinitionRequirementCount, func(in []byte) (int, error) {
+		"component-definition": {"OSCAL implemented-requirements across all components", ExpectedComponentDefinitionRequirementCount, func(in []byte) (int, error) {
 			b, err := ConvertComponentDefinitionToHDF(in, "test")
 			if err != nil {
 				return 0, err
@@ -95,6 +95,7 @@ func TestExpectedRequirementCount_Vectors(t *testing.T) {
 	}{
 		{"catalog-800-53-rev5.json", ExpectedCatalogRequirementCount, 1196},
 		{"component-example.json", ExpectedComponentDefinitionRequirementCount, 2},
+		{"component-definition-multi.json", ExpectedComponentDefinitionRequirementCount, 4},
 		{"sap-fedramp.json", ExpectedAssessmentPlanRequirementCount, 1},
 		{"poam-fedramp.json", ExpectedPOAMRequirementCount, 2},
 		{"sar-fedramp.json", ExpectedAssessmentResultsRequirementCount, 6},

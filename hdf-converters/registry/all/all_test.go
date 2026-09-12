@@ -6,7 +6,9 @@ import (
 	"runtime"
 	"testing"
 
+	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
+	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,6 +43,38 @@ func TestAllFingerprintsRegistered(t *testing.T) {
 func TestIngestFingerprintsCount(t *testing.T) {
 	fps := registry.GetIngestFingerprints()
 	assert.GreaterOrEqual(t, len(fps), 35, "expected at least 35 ingest fingerprints")
+}
+
+// fingerprintsNotResolvedByName are the fingerprints whose derived name is
+// deliberately not a registered converter name. Keyed by the exported ID
+// constant, not a string literal, so renaming the constant cannot silently turn
+// an exemption into a dead entry.
+var fingerprintsNotResolvedByName = map[string]string{
+	// Native HDF input needs no conversion; convert normalizes this detection to
+	// the "hdf" source name, but only alongside an explicit --to (otherwise it is
+	// an "already HDF" error), so the rewrite lives in the CLI rather than in
+	// SourceNameFromFingerprintID.
+	hdfpassthrough.FingerprintID: "normalized to the \"hdf\" source name by convert",
+}
+
+// TestFingerprintDerivedNameResolves keeps auto-detect and the convert registry
+// in agreement: a format that detects but whose derived name nothing registers
+// is undetectable in practice — detection reports high confidence and the
+// conversion then fails with "no converter found". Counting fingerprints cannot
+// catch that, which is how oscal-component and oscal-sap regressed.
+//
+// It derives names through the same registry.SourceNameFromFingerprintID the CLI
+// resolves through, so the guard cannot pass against a stale copy of that rule.
+func TestFingerprintDerivedNameResolves(t *testing.T) {
+	for _, fp := range registry.GetIngestFingerprints() {
+		name := registry.SourceNameFromFingerprintID(fp.ID)
+		_, err := convreg.GetConverter(name, "hdf")
+		if reason, exempt := fingerprintsNotResolvedByName[fp.ID]; exempt {
+			assert.Error(t, err, "%s is exempt (%s) but now resolves — drop the exemption", fp.ID, reason)
+			continue
+		}
+		assert.NoError(t, err, "fingerprint %q detects but its derived source name %q is not a registered converter, so `hdf convert` without --from cannot convert this format", fp.ID, name)
+	}
 }
 
 // Integration: detect real fixtures

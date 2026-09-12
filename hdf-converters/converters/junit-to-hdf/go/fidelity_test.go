@@ -24,7 +24,7 @@ func TestExpectedRequirementCount_MatchesConversionForEveryFixture(t *testing.T)
 		if convErr != nil {
 			continue
 		}
-		require.Equal(t, "JUnit testcases", unit)
+		require.Equal(t, "JUnit testcases at every nesting depth", unit)
 		n := 0
 		for _, b := range result.Baselines {
 			n += len(b.Requirements)

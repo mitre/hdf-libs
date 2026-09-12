@@ -260,11 +260,20 @@ func (c *hdfBaselineConverter) Convert(input []byte) ([]byte, error) {
 // source format name. The dest is always "hdf". Optional ConverterOption
 // values (e.g. WithExpectedRequirementCount) tune its behavior.
 func registerHDFBaselineConverter(source, displayName, errPrefix string, fn HDFBaselineConvertFn, opts ...ConverterOption) {
-	RegisterConverter(source, "hdf", withTypedExpectation(&hdfBaselineConverter{
+	registerHDFBaselineConverterMulti([]string{source}, displayName, errPrefix, fn, opts...)
+}
+
+// registerHDFBaselineConverterMulti registers an HDF Baseline converter under
+// multiple source format names, sharing a single converter instance.
+func registerHDFBaselineConverterMulti(sources []string, displayName, errPrefix string, fn HDFBaselineConvertFn, opts ...ConverterOption) {
+	c := withTypedExpectation(&hdfBaselineConverter{
 		displayName: displayName,
 		errPrefix:   errPrefix,
 		convertFn:   fn,
-	}, applyConverterOptions(opts)))
+	}, applyConverterOptions(opts))
+	for _, src := range sources {
+		RegisterConverter(src, "hdf", c)
+	}
 }
 
 // RawConvertFn is the signature for converters that handle their own JSON
@@ -334,11 +343,20 @@ func (c *hdfPlanConverter) Convert(input []byte) ([]byte, error) {
 // format name. The dest is always "hdf". Optional ConverterOption values tune
 // its behavior.
 func registerHDFPlanConverter(source, displayName, errPrefix string, fn HDFPlanConvertFn, opts ...ConverterOption) {
-	RegisterConverter(source, "hdf", withTypedExpectation(&hdfPlanConverter{
+	registerHDFPlanConverterMulti([]string{source}, displayName, errPrefix, fn, opts...)
+}
+
+// registerHDFPlanConverterMulti registers an HDF Plan converter under multiple
+// source format names, sharing a single converter instance.
+func registerHDFPlanConverterMulti(sources []string, displayName, errPrefix string, fn HDFPlanConvertFn, opts ...ConverterOption) {
+	c := withTypedExpectation(&hdfPlanConverter{
 		displayName: displayName,
 		errPrefix:   errPrefix,
 		convertFn:   fn,
-	}, applyConverterOptions(opts)))
+	}, applyConverterOptions(opts))
+	for _, src := range sources {
+		RegisterConverter(src, "hdf", c)
+	}
 }
 
 // HDFAmendmentsConvertFn is the signature for converters that produce HDF Amendments.
