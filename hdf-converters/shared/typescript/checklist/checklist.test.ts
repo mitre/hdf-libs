@@ -418,7 +418,9 @@ describe('checklist shared model', () => {
     expect(mk(0.7)).toBe('high');
     expect(mk(0.5)).toBe('medium');
     expect(mk(0.3)).toBe('low');
-    expect(mk(0)).toBe('');
+    // Was '' — blank is outside CKL's high/medium/low vocabulary and re-imports
+    // through the unknown -> 0.5 default, turning an impact of 0 into 0.5.
+    expect(mk(0)).toBe('low');
   });
 
   it('stashes all asset extras + STIG metadata in extensions and round-trips them', () => {
@@ -602,4 +604,76 @@ describe('severity enum sanitization', () => {
     expect(off.tags?.['severity']).toBe('wibble');
     expect(ok.severity).toBe('high');
   });
+});
+
+// The Go peer's emptyrequirements_test.go asserts these; without them the
+// TypeScript export guard is untested and deleting it would leave this suite
+// green. A baseline with no requirements is schema-invalid HDF (requirements has
+// minItems 1) and produces a stig this package's own importers refuse, so both
+// languages reject it rather than emitting a file the repo cannot read back.
+describe('hdfToChecklist empty-requirements guard', () => {
+  const emptyReq = JSON.stringify({
+    baselines: [{ name: 'b', requirements: [] }],
+    generator: { name: 'x', version: '1' },
+    timestamp: '2020-01-01T00:00:00Z',
+  });
+  const oneReq = JSON.stringify({
+    baselines: [
+      {
+        name: 'b',
+        requirements: [
+          {
+            id: 'V-1',
+            title: 't',
+            impact: 0.5,
+            descriptions: [{ label: 'default', data: 'd' }],
+            results: [{ status: 'failed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+          },
+        ],
+      },
+    ],
+    generator: { name: 'x', version: '1' },
+    timestamp: '2020-01-01T00:00:00Z',
+  });
+
+  // baselines: [null] must reach the same domain error as Go rather than a raw
+  // TypeError from dereferencing null.
+  it('rejects a null baseline with the same error as an empty one', () => {
+    const nullBaseline = JSON.stringify({
+      baselines: [null],
+      generator: { name: 'x', version: '1' },
+      timestamp: '2020-01-01T00:00:00Z',
+    });
+    expect(() => hdfToChecklist(nullBaseline)).toThrow(/baseline 1 has no requirements/);
+  });
+
+  it('rejects a baseline with no requirements, naming which one', () => {
+    expect(() => hdfToChecklist(emptyReq)).toThrow(/baseline 1 has no requirements/);
+  });
+
+  // Round trip is the assertion that would have caught the original defect, and
+  // the Go peer asserts the same for both formats.
+  it('round-trips a populated baseline through its own importers', () => {
+    const cl = hdfToChecklist(oneReq);
+
+    const back = parseCkl(serializeCkl(cl));
+    expect(back.stigs.length, 'the CKL exporter produced output parseCkl refuses').toBeGreaterThan(0);
+    expect(back.stigs[0]?.vulns.length, 'round trip lost the rules').toBeGreaterThan(0);
+
+    const backB = parseCklb(serializeCklb(cl));
+    expect(backB.stigs.length, 'the CKLB exporter produced output parseCklb refuses').toBeGreaterThan(0);
+    expect(backB.stigs[0]?.vulns.length, 'round trip lost the rules').toBeGreaterThan(0);
+  });
+
+  // Matches the Go peer's band sweep rather than a single expectation, so the two
+  // languages are held to the same bar.
+  it.each([0, 0.01, 0.39, 0.4, 0.69, 0.7, 0.95, 1.0])(
+    'impact %s derives a severity inside CKL\'s vocabulary',
+    (impact) => {
+      const doc = JSON.parse(oneReq) as { baselines: { requirements: { impact: number }[] }[] };
+      doc.baselines[0]!.requirements[0]!.impact = impact;
+      const sev = hdfToChecklist(JSON.stringify(doc)).stigs[0]?.vulns[0]?.severity;
+      expect(['high', 'medium', 'low']).toContain(sev);
+    },
+  );
 });

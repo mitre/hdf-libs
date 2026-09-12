@@ -1,10 +1,14 @@
 package hdftocklb
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/checklist"
 	"github.com/stretchr/testify/require"
 )
@@ -30,12 +34,10 @@ func (cklbRoundTripValidator) Validate(doc []byte) error {
 	return nil
 }
 
-// corpusExemptions mirrors hdf-to-ckl's: zero-baselines is a deliberate,
-// permanent rejection; baseline-empty-requirements is a live defect, pinned
-// below so the exemption cannot outlive it.
+// corpusExemptions mirrors hdf-to-ckl's: only zero-baselines remains, and it is
+// a deliberate, permanent rejection. It is pinned below.
 var corpusExemptions = map[string]string{
-	"zero-baselines":              "baselines has no minItems, so an assessment that evaluated nothing is legal HDF a checklist cannot represent — rejected deliberately, matching hdf-to-ckl and hdf-to-oscal-sar",
-	"baseline-empty-requirements": "DEFECT, tracked on the exporter-conformance board: an empty requirements list yields \"rules\": null rather than an empty array. Exempted so the rest of the corpus can run, and pinned by TestConvertHDFToCKLB_RulesNullDefectStillReproduces",
+	"zero-baselines": "baselines has no minItems, so an assessment that evaluated nothing is legal HDF a checklist cannot represent — rejected deliberately, matching hdf-to-ckl and hdf-to-oscal-sar",
 }
 
 func corpusMinusExemptions(t *testing.T) []corpus.CorpusCase {
@@ -59,24 +61,6 @@ func TestConvertHDFToCKLB_AdversarialCorpus(t *testing.T) {
 	corpus.RunSchemaCorpus(t, cklbRoundTripValidator{}, corpusMinusExemptions(t), ConvertHDFToCKLB)
 }
 
-// The exemption above is for a live defect, not a permanent property, so it is
-// pinned: this fails the moment the defect is fixed, forcing the exemption
-// to be removed with it rather than silently outliving the bug.
-func TestConvertHDFToCKLB_RulesNullDefectStillReproduces(t *testing.T) {
-	_, exempted := corpusExemptions["baseline-empty-requirements"]
-	require.True(t, exempted, "this pin only means something while the case is exempted")
-
-	input := []byte(`{"baselines":[{"name":"b","requirements":[]}],` +
-		`"generator":{"name":"x","version":"1"},"timestamp":"2020-01-01T00:00:00Z"}`)
-
-	out, err := ConvertHDFToCKLB(input)
-	require.NoError(t, err, "Defect fixed? The converter now rejects empty requirements — "+
-		"delete the baseline-empty-requirements exemption and this test")
-	require.Contains(t, string(out), `"rules": null`,
-		"Defect fixed? rules is no longer null — "+
-			"delete the baseline-empty-requirements exemption and this test")
-}
-
 // The zero-baselines exemption above claims a deliberate rejection. hdf-to-oscal-sar
 // backs its identical exemption with a pin; without one here the exemption could
 // silently become a real hole, so this asserts the rejection actually happens.
@@ -87,4 +71,39 @@ func TestConvertHDFToCKLB_RejectsZeroBaselines(t *testing.T) {
 	_, err := ConvertHDFToCKLB([]byte(`{"baselines":[],"generator":{"name":"x","version":"1"},` +
 		`"timestamp":"2020-01-01T00:00:00Z"}`))
 	require.Error(t, err, "zero baselines must be rejected, not converted into an empty checklist")
+}
+
+// corpusRejected marks a corpus case the converter refuses; the two languages
+// must agree on rejection as well as on output.
+const corpusRejected = "REJECTED"
+
+// Pins what this converter emits for every corpus input so the two languages are
+// compared against one another rather than each against its own expectations.
+// Go owns regeneration (go test ./converters/hdf-to-cklb/go/ -update); TypeScript only
+// verifies. This is what makes the byte-identical claim an assertion.
+func TestConvertHDFToCKLB_CorpusOutputGolden(t *testing.T) {
+	outputs := make(map[string]string, len(corpus.ResultsCorpus()))
+	for _, c := range corpus.ResultsCorpus() {
+		out, err := corpus.ConvertNoPanic(ConvertHDFToCKLB, c.Input)
+		if err != nil {
+			outputs[c.Name] = corpusRejected
+			continue
+		}
+		outputs[c.Name] = string(out)
+	}
+
+	actual, err := json.MarshalIndent(outputs, "", "  ")
+	require.NoError(t, err)
+	actual = append(actual, '\n')
+
+	path := filepath.Join("..", "fixtures", "expected", "corpus-outputs.json")
+	if shared.UpdateSnapshots() {
+		require.NoError(t, os.WriteFile(path, actual, 0o600))
+		t.Logf("updated %s", path)
+		return
+	}
+	expected, err := os.ReadFile(path) // #nosec G304 -- repo-relative golden
+	require.NoError(t, err, "missing corpus output golden; regenerate with -update")
+	require.JSONEq(t, string(expected), string(actual),
+		"corpus output changed; if intentional regenerate with: go test ./converters/hdf-to-cklb/go/ -update")
 }

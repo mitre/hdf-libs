@@ -243,8 +243,16 @@ func SerializeCKLB(cl *Checklist) ([]byte, error) {
 				SrgID:           v.Extra["SRG_ID"],
 			})
 		}
+		// Both are declared without omitempty, so a nil slice marshals as null
+		// where a .cklb consumer expects an array. Guarded here rather than at
+		// the callers because Checklist is public and is also built by ParseCKL,
+		// ParseCKLB and callers of this package, none of which owe this
+		// serializer a non-nil slice. ccis is already guarded above;
+		// legacy_ids carries omitempty and needs no guard.
+		cs.Rules = shared.OrEmpty(cs.Rules)
 		doc.Stigs = append(doc.Stigs, cs)
 	}
+	doc.Stigs = shared.OrEmpty(doc.Stigs)
 
 	out, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {

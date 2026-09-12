@@ -27,6 +27,16 @@ func HDFToChecklist(input []byte) (*Checklist, error) {
 	if len(results.Baselines) == 0 {
 		return nil, fmt.Errorf("hdf to checklist: HDF has no baselines")
 	}
+	// A baseline with no requirements is schema-invalid HDF (requirements has
+	// minItems 1) and produces a stig this package's own importers refuse:
+	// ParseCKL rejects an <iSTIG> with no <VULN>, ParseCKLB a stig with no
+	// rules[]. Rejecting here makes the same document fail on the way out as on
+	// the way in, rather than becoming a file this repo cannot read back.
+	for i := range results.Baselines {
+		if len(results.Baselines[i].Requirements) == 0 {
+			return nil, fmt.Errorf("hdf to checklist: baseline %d has no requirements", i+1)
+		}
+	}
 
 	cl := &Checklist{}
 	applyRootExtensions(cl, results.Extensions)
@@ -257,16 +267,13 @@ func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{})
 	if req.Severity != nil && *req.Severity != "" {
 		return strings.ToLower(string(*req.Severity))
 	}
-	switch {
-	case req.Impact >= 0.7:
-		return "high"
-	case req.Impact >= 0.4:
-		return "medium"
-	case req.Impact > 0:
-		return "low"
-	default:
-		return ""
-	}
+	// Delegates rather than forking the ladder: overrideSeverity already uses
+	// qualSeverityFromImpact, and the copy here differed in one place — it
+	// returned "" at impact 0. Severity is always emitted, and blank is outside
+	// CKL's high/medium/low vocabulary, so it re-imports through the unknown
+	// -> 0.5 default and turns an impact of 0 into 0.5. "low" is CKL's floor and
+	// the closest it can express; the format has no way to say "no severity".
+	return qualSeverityFromImpact(req.Impact)
 }
 
 // resolveCCIs prefers explicit tags.cci, else reverses tags.nist via NISTToCCI.

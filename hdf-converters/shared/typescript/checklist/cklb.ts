@@ -183,7 +183,10 @@ export function serializeCklb(cl: Checklist): string {
       uuid: s.uuid ?? '',
       ...(s.referenceIdentifier ? { reference_identifier: s.referenceIdentifier } : {}),
       rules: s.vulns.map((v) => ({
-        group_id: v.groupID || v.vulnNum,
+        // ?? '' rather than a bare fallback: when both are undefined, the key
+        // would be OMITTED by JSON.stringify, while the Go peer's zero value
+        // emits "". Same field, different presence — the two diverge.
+        group_id: v.groupID || v.vulnNum || '',
         group_title: v.groupTitle ?? '',
         rule_id: v.ruleID ?? '',
         rule_version: v.ruleVer ?? '',

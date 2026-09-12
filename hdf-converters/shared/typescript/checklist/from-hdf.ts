@@ -24,6 +24,20 @@ export function hdfToChecklist(input: string): Checklist {
   if (!hdf || !Array.isArray(hdf.baselines) || hdf.baselines.length === 0) {
     throw new Error('hdf to checklist: HDF has no baselines');
   }
+  // A baseline with no requirements is schema-invalid HDF (requirements has
+  // minItems 1) and produces a stig this package's own importers refuse:
+  // parseCkl rejects an <iSTIG> with no <VULN>, parseCklb a stig with no rules[].
+  // Rejecting here makes the same document fail on the way out as on the way in,
+  // rather than becoming a file this repo cannot read back. Mirrors the Go peer.
+  hdf.baselines.forEach((bl, i) => {
+    // bl itself may be null: `baselines: [null]` is a shape a non-schema-validating
+    // producer can emit. Without this the dereference throws a raw TypeError,
+    // while the Go peer decodes null into a zero-value struct and reports the
+    // domain error — the two would disagree on the same input.
+    if (!bl || !Array.isArray(bl.requirements) || bl.requirements.length === 0) {
+      throw new Error(`hdf to checklist: baseline ${i + 1} has no requirements`);
+    }
+  });
 
   const ext = (hdf.extensions ?? {}) as Record<string, unknown>;
   const format = strVal(ext, 'checklistFormat') || 'ckl';
@@ -200,11 +214,12 @@ function resolveSeverity(req: EvaluatedRequirement, tags: Record<string, unknown
   const tagSev = strVal(tags, 'severity');
   if (tagSev) return tagSev;
   if (req.severity) return String(req.severity).toLowerCase();
-  const i = req.impact ?? 0;
-  if (i >= 0.7) return 'high';
-  if (i >= 0.4) return 'medium';
-  if (i > 0) return 'low';
-  return '';
+  // Delegates rather than forking the ladder, mirroring the Go peer: the copy
+  // here differed in one place — it returned '' at impact 0. Severity is always
+  // emitted, and blank is outside CKL's high/medium/low vocabulary, so it
+  // re-imports through the unknown -> 0.5 default and turns an impact of 0 into
+  // 0.5. 'low' is CKL's floor and the closest it can express.
+  return qualSeverityFromImpact(req.impact ?? 0);
 }
 
 function resolveCcis(tags: Record<string, unknown>): string[] {
