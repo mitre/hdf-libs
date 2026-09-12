@@ -6,6 +6,7 @@ import {
   formatTimestamp,
   formatTimestampSeconds,
   trimUtcFraction,
+  encodeBase64Utf8,
 } from '../src/string/index.js';
 
 describe('stripHtml', () => {
@@ -243,5 +244,27 @@ describe('formatTimestampSeconds', () => {
 
   it('normalizes an offset-bearing instant to whole-second UTC', () => {
     expect(formatTimestampSeconds(new Date('2026-02-22T15:57:06.5-05:00'))).toBe('2026-02-22T20:57:06Z');
+  });
+});
+
+describe('encodeBase64Utf8', () => {
+  it('encodes ASCII', () => {
+    expect(encodeBase64Utf8('hello')).toBe('aGVsbG8=');
+    expect(encodeBase64Utf8('')).toBe('');
+  });
+
+  it('encodes the UTF-8 bytes of non-ASCII text, not UTF-16 code units', () => {
+    // 'é' is 0xC3 0xA9 in UTF-8; btoa over the raw string would throw on it.
+    expect(encodeBase64Utf8('é')).toBe('w6k=');
+    expect(encodeBase64Utf8('control ‘SV-1’ € \u{1F600}')).toBe(
+      Buffer.from('control ‘SV-1’ € \u{1F600}', 'utf-8').toString('base64'),
+    );
+  });
+
+  it('round-trips input larger than one encoding chunk', () => {
+    const text = 'ünïcödé line\n'.repeat(20_000);
+    const encoded = encodeBase64Utf8(text);
+    expect(encoded).toBe(Buffer.from(text, 'utf-8').toString('base64'));
+    expect(Buffer.from(encoded, 'base64').toString('utf-8')).toBe(text);
   });
 });

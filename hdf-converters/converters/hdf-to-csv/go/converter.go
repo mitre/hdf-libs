@@ -366,15 +366,7 @@ func getSeverity(requirement *hdf.EvaluatedRequirement) string {
 		}
 	}
 
-	// Derive from impact
-	impact := requirement.Impact
-	if impact >= 0.7 {
-		return "high"
-	}
-	if impact >= 0.4 {
-		return "medium"
-	}
-	return "low"
+	return hdfutil.ImpactToSeverity(requirement.Impact)
 }
 
 // extractArrayFromTags extracts array values from tags and joins with semicolons

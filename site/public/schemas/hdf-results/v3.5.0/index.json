@@ -54,17 +54,6 @@
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.5.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this file."
     },
-    "preAmendmentChecksum": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-      "description": "Hash of this results document as it stood immediately before the most recent amendment application. Written by `hdf amend apply` when it applies at least one override; an apply that matches nothing leaves the document untouched. The hash covers the results file's RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical original — reformatting or re-serializing the source changes the value. Only the most recent pre-application state is recorded: applying amendments to an already-amended document REPLACES this value, so it is a single link back one step, not a growing chain. Distinct from the `previousChecksum` inside an override, which chains amendments to each other and is computed over a canonical JSON form.",
-      "$comment": "Example 1: the real SHA-256 of hdf-converters/converters/nessus-to-hdf/fixtures/expected/sample.nessus.hdf.json, reproducible with `shasum -a 256` on that file — chosen over a synthetic digest so a reader can verify the hash basis is the raw file bytes.",
-      "examples": [
-        {
-          "algorithm": "sha256",
-          "value": "9599ce7889e99b70ef5d0f3efa4215e35059c10a7e89b9314cbf4ded8fdbad38"
-        }
-      ]
-    },
     "runner": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.5.0#/$defs/Runner",
       "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
@@ -329,7 +318,7 @@
         },
         "effectiveChecksum": {
           "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring.\n\nsha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp.\n\nFlips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags).\n\nOptional; stamped by tooling (hdf convert, hdf amend apply)."
+          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring. sha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp. Flips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags). Optional; stamped by tooling (hdf convert, hdf amend apply)."
         },
         "evidence": {
           "type": "array",
@@ -369,9 +358,9 @@
           "description": "Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see components[] on hdf-system for component-level package inventories. One entry per matched package signature (scanners often report multiple CPE variations per CVE)."
         }
       },
-      "$comment": "Examples, in order: 1) Passing requirement — no overrides, no disposition; 2) Waiver — AO accepted risk, status overridden to passed; 3) False positive (compliance scan) — STIG check was wrong, requirement actually passes; 4) False positive (CVE scan) — vulnerability does not apply to this build; 5) Risk adjustment — impact lowered, pass/fail unchanged; 6) Operational requirement — cannot remediate, remains open risk; 7) POAM — remediation tracked, status unchanged.",
       "examples": [
         {
+          "$comment": "Passing requirement — no overrides, no disposition",
           "id": "SV-230222",
           "title": "RHEL 9 must use SSH protocol version 2",
           "impact": 0.7,
@@ -396,6 +385,7 @@
           "effectiveStatus": "passed"
         },
         {
+          "$comment": "Waiver — AO accepted risk, status overridden to passed",
           "id": "SV-230300",
           "title": "RHEL 9 must enforce password complexity",
           "impact": 0.5,
@@ -439,6 +429,7 @@
           }
         },
         {
+          "$comment": "False positive (compliance scan) — STIG check was wrong, requirement actually passes",
           "id": "SV-230410",
           "title": "RHEL 9 must have sshd PermitRootLogin disabled",
           "impact": 0.7,
@@ -478,6 +469,7 @@
           "disposition": "falsePositive"
         },
         {
+          "$comment": "False positive (CVE scan) — vulnerability does not apply to this build",
           "id": "CVE-2026-12345",
           "title": "libxml2 buffer overflow in xmlParseEntityDecl",
           "impact": 0.9,
@@ -517,6 +509,7 @@
           "disposition": "falsePositive"
         },
         {
+          "$comment": "Risk adjustment — impact lowered, pass/fail unchanged",
           "id": "CVE-2026-67890",
           "title": "OpenSSL timing side-channel in RSA decryption",
           "impact": 0.7,
@@ -559,6 +552,7 @@
           "disposition": "riskAdjustment"
         },
         {
+          "$comment": "Operational requirement — cannot remediate, remains open risk",
           "id": "SV-230500",
           "title": "RHEL 9 must disable USB mass storage",
           "impact": 0.5,
@@ -598,6 +592,7 @@
           "disposition": "operationalRequirement"
         },
         {
+          "$comment": "POAM — remediation tracked, status unchanged",
           "id": "SV-230350",
           "title": "RHEL 9 must be patched within 30 days of release",
           "impact": 0.7,
@@ -660,7 +655,7 @@
         "External_Reference": {
           "type": "object",
           "title": "External Reference",
-          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property.\n\nPurpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category.\n\n`sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible.\n\nA reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category. `sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible. A reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
           "required": [
             "sourceName"
           ],
@@ -724,29 +719,31 @@
             "kind": {
               "type": "string",
               "minLength": 1,
-              "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope.\n\nDeliberately open (like `sourceName`/`rel`), not a closed enum.\n\nDocumented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory).\n\nUse the `x-` prefix for custom kinds."
+              "description": "Open token classifying the referenced/embedded payload, turning a bare reference into an enrichment envelope. Deliberately open (like `sourceName`/`rel`), not a closed enum. Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory' (vendor/security advisory). Use the `x-` prefix for custom kinds."
             },
             "document": {
               "type": "object",
               "additionalProperties": true,
-              "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim.\n\nComposes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed.\n\nHDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+              "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim. Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed. HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
             }
           },
           "unevaluatedProperties": false,
-          "$comment": "Examples, in order: 1) By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228; 2) By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL; 3) By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution; 4) Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
           "examples": [
             {
+              "$comment": "By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228.",
               "sourceName": "cve",
               "externalId": "CVE-2021-44228",
               "rel": "definition"
             },
             {
+              "$comment": "By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL.",
               "sourceName": "mitre-att&ck",
               "externalId": "T1059",
               "href": "https://attack.mitre.org/techniques/T1059/",
               "rel": "canonical"
             },
             {
+              "$comment": "By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution.",
               "sourceName": "stix",
               "href": "https://cti.example.org/bundles/log4shell.json",
               "rel": "investigate",
@@ -762,6 +759,7 @@
               "addedAt": "2026-07-26T00:00:00Z"
             },
             {
+              "$comment": "Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
               "sourceName": "stix",
               "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
               "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
@@ -1055,7 +1053,7 @@
                 "simple",
                 "other"
               ],
-              "description": "The type of identifier.\n\nUse 'email' for email addresses, 'username' for user accounts, 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
+              "description": "The type of identifier. Use 'email' for email addresses, 'username' for user accounts, 'system' for deterministic non-interactive automation (CI jobs, cron, scanners), 'agent' for an AI/LLM agent acting with autonomy — kept distinct from 'system' so auditors can apply AI-specific scrutiny (e.g. 'an LLM proposed this' vs a deterministic job) and satisfy AI-source disclosure under frameworks like the EU AI Act and NIST AI RMF, 'simple' for basic string identifiers without additional classification, or 'other' for custom identity systems."
             },
             "description": {
               "type": "string",
@@ -1563,11 +1561,11 @@
                 "management",
                 "operational"
               ],
-              "description": "Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A categories.\n\n'policy' = an authored governance statement; 'procedure' = a documented process; 'technical' = an enforced technical configuration; 'management' = a programmatic/management activity; 'operational' = a recurring operational activity (e.g. AT, IR, MA families).\n\nOptional: when omitted, consumers may infer heuristically from family/id but should not assume a default."
+              "description": "Classification of the control's nature, aligning with NIST SP 800-53 / SP 800-53A categories. 'policy' = an authored governance statement; 'procedure' = a documented process; 'technical' = an enforced technical configuration; 'management' = a programmatic/management activity; 'operational' = a recurring operational activity (e.g. AT, IR, MA families). Optional: when omitted, consumers may infer heuristically from family/id but should not assume a default."
             },
             "verificationMethod": {
               "$ref": "#/$defs/Verification_Method_Enum",
-              "description": "How this requirement is intended to be verified.\n\nDisambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix).\n\n'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual.\n\nOptional: when omitted, consumers should not infer a default."
+              "description": "How this requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Optional: when omitted, consumers should not infer a default."
             },
             "applicability": {
               "type": "string",
@@ -1577,12 +1575,12 @@
                 "optional",
                 "advisory"
               ],
-              "description": "Whether the requirement is mandatory within its baseline.\n\nDistinct from severity (risk weight) and status (lifecycle state).\n\nMaps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).\n\nOptional: when omitted, consumers should treat the requirement as 'required' by convention."
+              "description": "Whether the requirement is mandatory within its baseline. Distinct from severity (risk weight) and status (lifecycle state). Maps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}). Optional: when omitted, consumers should treat the requirement as 'required' by convention."
             }
           },
-          "$comment": "Examples, in order: 1) v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.5.0 (backward compatibility); 2) v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline; 3) v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement; 4) v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
           "examples": [
             {
+              "$comment": "v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.5.0 (backward compatibility).",
               "id": "SV-238196",
               "title": "The Ubuntu operating system must enforce password complexity",
               "impact": 0.5,
@@ -1612,6 +1610,7 @@
               ]
             },
             {
+              "$comment": "v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline.",
               "id": "AC-3",
               "title": "Access Enforcement",
               "impact": 0.7,
@@ -1633,6 +1632,7 @@
               "applicability": "required"
             },
             {
+              "$comment": "v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement.",
               "id": "KSI-CNA-01",
               "title": "Cyber Security Plan documents the system",
               "impact": 0.5,
@@ -1652,6 +1652,7 @@
               "applicability": "required"
             },
             {
+              "$comment": "v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
               "id": "SV-999999",
               "title": "Example STIG rule pending automation",
               "impact": 0.3,
@@ -1683,7 +1684,7 @@
             "manual-pending-automation",
             "hybrid"
           ],
-          "description": "How a requirement is intended to be verified.\n\nDisambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix).\n\n'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual.\n\nNamed '_Enum' to disambiguate from the unrelated Verification_Method DID-context struct.",
+          "description": "How a requirement is intended to be verified. Disambiguates the two cases that null 'code' overloads: 'manual-by-design' (the requirement is statement-form and not amenable to automation, e.g. FedRAMP 20x KSIs); 'manual-pending-automation' (automation could exist but does not yet, e.g. a STIG rule lacking a fix). 'automated' = a check exists and runs without operator action; 'hybrid' = part automated, part manual. Named '_Enum' to disambiguate from the unrelated Verification_Method DID-context struct.",
           "title": "Verification Method Enum"
         },
         "Severity": {
@@ -1793,7 +1794,7 @@
               "items": {
                 "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum"
               },
-              "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes.\n\nAn array supports multi-file/sharded artifacts.\n\nThis is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields).\n\nDistinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
+              "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes. An array supports multi-file/sharded artifacts. This is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields). Distinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
             },
             "baselineRefs": {
               "type": "array",
@@ -1941,9 +1942,9 @@
               }
             }
           ],
-          "$comment": "Examples, in order: 1) Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix; 2) Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
           "examples": [
             {
+              "$comment": "Domain-joined host carrying all three identity fields separately: short hostname, FQDN, and the (distinct) directory domain. HOST_NAME and HOST_FQDN from a STIG checklist map here; note the AD domain differs from the FQDN's DNS suffix.",
               "type": "host",
               "name": "web-server-prod-01",
               "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
@@ -1959,6 +1960,7 @@
               }
             },
             {
+              "$comment": "Standalone/workgroup host: has a short hostname but no directory domain — 'domain' is omitted rather than fabricated from the FQDN suffix.",
               "type": "host",
               "name": "kiosk-lab-07",
               "hostname": "kiosk-lab-07",
@@ -2435,7 +2437,7 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.5.0",
       "title": "HDF BOM Primitives",
-      "description": "Generalized Bill-of-Materials / manifest representation.\n\nOne extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape).\n\nSubject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it.\n\nSee ADR-0001.",
+      "description": "Generalized Bill-of-Materials / manifest representation. One extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape). Subject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it. See ADR-0001.",
       "$defs": {
         "Bom_Type": {
           "type": "string",
@@ -2458,7 +2460,7 @@
               "pattern": "^x-[a-z0-9]+(-[a-z0-9]+)*$"
             }
           ],
-          "description": "Discriminator for the manifest kind.\n\nReserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes).\n\nNormalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest.\n\nCustom or experimental kinds MUST use an 'x-' prefix (e.g. 'x-threat-model') so they cannot collide with a value later promoted into the reserved set; a non-'x-' value outside the reserved set is invalid.\n\nAdding a reserved value is a schema version bump.\n\nVEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
+          "description": "Discriminator for the manifest kind. Reserved, CycloneDX-aligned set: sbom (software), ai-model, dataset, hbom (hardware), cbom (cryptography), saasbom (services), obom (operations), mbom (manufacturing), kbom (Kubernetes). Normalized now: sbom, ai-model, dataset; reserved + passthrough-capable now, normalized in later releases: the rest. Custom or experimental kinds MUST use an 'x-' prefix (e.g. 'x-threat-model') so they cannot collide with a value later promoted into the reserved set; a non-'x-' value outside the reserved set is invalid. Adding a reserved value is a schema version bump. VEX/VDR/SecurityProfile are vulnerability assertions, not BOMs, and are intentionally excluded."
         },
         "Bom": {
           "type": "object",
@@ -2606,9 +2608,9 @@
               ]
             }
           ],
-          "$comment": "Examples, in order: 1) Passthrough SBOM by external reference — the universal escape hatch, available to every bomType; 2) Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships; 3) Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base; 4) Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
           "examples": [
             {
+              "$comment": "Passthrough SBOM by external reference — the universal escape hatch, available to every bomType.",
               "bomType": "sbom",
               "format": "cyclonedx",
               "ref": "https://artifacts.agency.gov/sbom/webtier.cdx.json",
@@ -2620,6 +2622,7 @@
               ]
             },
             {
+              "$comment": "Passthrough for a reserved-but-not-yet-normalized type (cbom) — carried opaquely until a normalized extension ships.",
               "bomType": "cbom",
               "format": "cyclonedx",
               "document": {
@@ -2628,6 +2631,7 @@
               }
             },
             {
+              "$comment": "Normalized ai-model BOM: CISA/G7-aligned fields live in the model extension, never at the component root or shared base.",
               "bomType": "ai-model",
               "format": "cyclonedx-ml",
               "model": {
@@ -2667,6 +2671,7 @@
               }
             },
             {
+              "$comment": "Normalized dataset BOM with lineage — a filtered derivative of a base dataset, referenced by an ai-model via datasetRefs.",
               "bomType": "dataset",
               "format": "croissant",
               "dataset": {
@@ -3186,7 +3191,7 @@
             },
             "previousChecksum": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-              "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
+              "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             },
             "cvss": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",
@@ -3198,7 +3203,6 @@
               "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
-          "$comment": "Example 3: Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
           "examples": [
             {
               "type": "waiver",
@@ -3225,6 +3229,7 @@
               "expiresAt": "2026-10-14T00:00:00Z"
             },
             {
+              "$comment": "Inline riskAdjustment carrying the STIX source that motivated it via externalReferences (the enrichment envelope, with the raw sighting embedded losslessly in document). This is the shape the enrich pass writes onto Evaluated_Requirement.overrides[] for the E:A recompute.",
               "type": "riskAdjustment",
               "impact": {
                 "value": 0.9
@@ -3363,7 +3368,7 @@
             },
             "previousChecksum": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-              "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
+              "description": "SHA-256 checksum of the previous amendment in chronological order. Creates a tamper-evident chain of amendments (similar to blockchain). Null for the first amendment on a requirement."
             }
           },
           "examples": [
@@ -3495,7 +3500,7 @@
             },
             "format": {
               "type": "string",
-              "description": "The named format of the source data, when it follows a recognized format specification with its own identity: an interchange format emitted by many tools ('SARIF', 'XCCDF', 'OSCAL') or one of several named output formats a single tool produces ('FVDL', 'exec-json', 'FPF').\n\nNever a serialization structure — 'JSON', 'XML', and 'CSV' are encodings, not formats.\n\nOmit for a tool's native output: an absent format means the tool's own shape, and data arriving as a named format is converted by that format's converter, which sets this field alongside the producing tool's name.",
+              "description": "The named format of the source data, when it follows a recognized format specification with its own identity: an interchange format emitted by many tools ('SARIF', 'XCCDF', 'OSCAL') or one of several named output formats a single tool produces ('FVDL', 'exec-json', 'FPF'). Never a serialization structure — 'JSON', 'XML', and 'CSV' are encodings, not formats. Omit for a tool's native output: an absent format means the tool's own shape, and data arriving as a named format is converted by that format's converter, which sets this field alongside the producing tool's name.",
               "$comment": "Format-not-serialization rule decided 2026-08-01; bare JSON/XML/CSV labels were swept from the converters at the same time."
             }
           },
@@ -3565,7 +3570,7 @@
             "riskAdjustment",
             "operationalRequirement"
           ],
-          "description": "The type of amendment, aligned with FedRAMP deviation request categories.\n\n- 'waiver': risk accepted by Authorizing Official.\n- 'attestation': manually verified by assessor.\n- 'poam': remediation tracked (no status change).\n- 'inherited': control provided by another component or system.\n- 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings.\n- 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field.\n- 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk.\n\nMigration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
+          "description": "The type of amendment, aligned with FedRAMP deviation request categories. 'waiver': risk accepted by Authorizing Official. 'attestation': manually verified by assessor. 'poam': remediation tracked (no status change). 'inherited': control provided by another component or system. 'falsePositive': scanner incorrectly identified a finding — for compliance scans (STIG, CIS), the check actually passes, so status is typically set to 'passed'; for vulnerability scans (CVE, SCA), the flagged vulnerability does not apply to this system, so status is typically set to 'notApplicable'. The disposition field on the requirement distinguishes false positives from genuinely not-applicable findings. 'riskAdjustment': impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field. 'operationalRequirement': deviation required by operational constraints (FedRAMP Operational Requirement); the finding cannot be remediated because the system requires the affected functionality. Remains an open risk. Migration note: 'exception' was removed in v3.1.0 — use 'waiver' with status 'notApplicable' instead.",
           "title": "Override Type"
         },
         "Justification": {
@@ -3583,7 +3588,7 @@
             "protected_at_runtime",
             "protected_at_perimeter"
           ],
-          "description": "Structured controlled-vocabulary reason for an override, complementing the free-text 'reason' field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries the machine-readable category enabling filtering, aggregation, and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it. Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is not self-explanatory to an auditor.\n\nThe vocabulary is drawn from the VEX ecosystem: the first five values are common across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration / requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code path is unreachable in the deployed configuration.\n\nThe enum is extended additively across schema versions as other ecosystems' controlled vocabularies are integrated; documents using values added in a newer schema version will fail validation against an older schema. Consumers SHOULD validate against the schema version declared by the document ($schema) rather than assume a fixed vocabulary.",
+          "description": "Structured controlled-vocabulary reason for an override, complementing the free-text 'reason' field. 'reason' carries the human-readable rationale an auditor reads; 'justification' carries the machine-readable category enabling filtering, aggregation, and lossless round-trip with structured ecosystems (VEX, OSCAL, FedRAMP DR). Both fields may be present simultaneously and are NOT redundant: 'reason' explains the specific circumstance; 'justification' classifies it. Authors SHOULD populate both when a controlled-vocabulary value applies — the enum value alone is not self-explanatory to an auditor. The vocabulary is drawn from the VEX ecosystem: the first five values are common across OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six (requires_configuration / requires_dependency / requires_environment / protected_by_compiler / protected_at_runtime / protected_at_perimeter) are CycloneDX-specific and describe why the vulnerable code path is unreachable in the deployed configuration. The enum is extended additively across schema versions as other ecosystems' controlled vocabularies are integrated; documents using values added in a newer schema version will fail validation against an older schema. Consumers SHOULD validate against the schema version declared by the document ($schema) rather than assume a fixed vocabulary.",
           "title": "Justification"
         },
         "Impact_Override": {
@@ -3605,7 +3610,7 @@
         },
         "Standalone_Override": {
           "type": "object",
-          "description": "A standalone override to a requirement's compliance status or risk impact.\n\nValidation has two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the override records accepted risk without changing the finding (documentation-only). For all other types, at least one of 'status' or 'impact' must be set.\n\nThis rule aligns with:\n- OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/)\n- FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/)\n- NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
+          "description": "A standalone override to a requirement's compliance status or risk impact. Validation has two branches gated on 'type': when type is 'operationalRequirement', neither 'status' nor 'impact' may be set — the override records accepted risk without changing the finding (documentation-only). For all other types, at least one of 'status' or 'impact' must be set. This rule aligns with: (1) OSCAL Assessment Results — finding.target.status and finding.associated-risk[].facet[] are separate axes (https://pages.nist.gov/OSCAL/learn/concepts/layer/assessment/assessment-results/); (2) FedRAMP deviation request types — Risk Adjustment changes impact only, Operational Requirement documents acceptance only, False Positive changes status (https://www.ignyteplatform.com/blog/fedramp/fedramp-deviation-requests-submit/); (3) NIST SP 800-37 RMF — risk response (accept/mitigate/transfer) is a separate step from control assessment status (https://csrc.nist.gov/pubs/sp/800/37/r2/final).",
           "unevaluatedProperties": false,
           "required": [
             "type",
@@ -3716,7 +3721,7 @@
             },
             "previousChecksum": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.5.0#/$defs/Checksum",
-              "description": "SHA-256 checksum of the prior amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment."
+              "description": "Checksum of the prior amendment in the chain. Creates a tamper-evident linked list. Null for the first amendment."
             },
             "cvss": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.5.0#/$defs/Cvss",
@@ -3749,10 +3754,9 @@
               "items": {
                 "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.5.0#/$defs/Affected_Package"
               },
-              "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID).\n\nUse when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments.\n\nSymmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary.\n\nWhen omitted, the amendment applies system-wide (or only to componentRef when that is set)."
+              "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID). Use when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments. Symmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary. When omitted, the amendment applies system-wide (or only to componentRef when that is set)."
             }
           },
-          "$comment": "Example 7: VEX-style import — falsePositive scoped to specific packages by purl. The affectedPackages array carries structured product identity instead of squeezing 'Products: …' into the reason free-text field.",
           "examples": [
             {
               "type": "waiver",
@@ -3854,6 +3858,7 @@
               "expiresAt": "2026-09-26T00:00:00Z"
             },
             {
+              "$comment": "VEX-style import — falsePositive scoped to specific packages by purl. The affectedPackages array carries structured product identity instead of squeezing 'Products: …' into the reason free-text field.",
               "type": "falsePositive",
               "requirementId": "CVE-2026-12345",
               "status": "notApplicable",
@@ -4079,7 +4084,7 @@
               ]
             }
           ],
-          "$comment": "Only `version` is required; every metric/score field is optional because a single Cvss instance may represent vendor-supplied Base data (on a finding's cvss[]), consumer-supplied enrichment (on a riskAdjustment override — Environmental/Threat/Supplemental deltas with NO base, since base is the finding's scan-specific vendor data), or a fully-resolved effectiveCvss. The Base/Threat/Environmental/Supplemental groups do not partition cleanly into vendor-vs-consumer (Threat straddles: vendor temporal data and consumer exploit-maturity both live here), so a single permissive type is more honest than separate vendor/consumer types. The anyOf guardrail rejects a content-free object (e.g. {version} alone) by requiring at least one substantive metric or score. baseVector remains optional even when baseScore is present: some vendor tools (Twistlock/Prisma Cloud) emit a final score without the vector that derived it — that score is captured structurally rather than lost. Examples, in order: 1) Base-only: vendor-supplied CVSS 3.1 data exactly as a scanner (e.g., Nessus, Grype) would emit it. No consumer enrichment yet; 2) Base + Threat: consumer added Exploit Maturity ('E:U' = Unproven) and Remediation Level ('RL:O' = Official Fix) to a HTTP/2 'Rapid Reset' DoS finding. Threat score drops from base 7.5 to 5.5; 3) Base + Environmental: consumer asserts the affected system is high-criticality (CR:H, IR:H, AR:H) AND network-reachable in their environment (MAV:N). Environmental score reflects deployment risk for the xz-utils backdoor; 4) Full CVSS 4.0: vendor base + consumer threat (E:A = Attacked, exploits seen in the wild) + environmental (high CIA requirements) + supplemental context (S:P = present safety impact, AU:N = no autonomous spread, RE:M = moderate response effort) for the Fortinet FortiOS pre-auth RCE. computedScore reflects post-mitigation final risk; 5) CVSS 2.0 legacy: Heartbleed (CVE-2014-0160) as still reported by older scanner output and legacy NVD data. CVSS 2.0 vectors have no 'CVSS:2.0/' prefix.",
+          "$comment": "Only `version` is required; every metric/score field is optional because a single Cvss instance may represent vendor-supplied Base data (on a finding's cvss[]), consumer-supplied enrichment (on a riskAdjustment override — Environmental/Threat/Supplemental deltas with NO base, since base is the finding's scan-specific vendor data), or a fully-resolved effectiveCvss. The Base/Threat/Environmental/Supplemental groups do not partition cleanly into vendor-vs-consumer (Threat straddles: vendor temporal data and consumer exploit-maturity both live here), so a single permissive type is more honest than separate vendor/consumer types. The anyOf guardrail rejects a content-free object (e.g. {version} alone) by requiring at least one substantive metric or score. baseVector remains optional even when baseScore is present: some vendor tools (Twistlock/Prisma Cloud) emit a final score without the vector that derived it — that score is captured structurally rather than lost.",
           "properties": {
             "version": {
               "type": "string",
@@ -4104,7 +4109,7 @@
               "type": "string",
               "$comment": "Optional. Permissive umbrella pattern accepting any FIRST CVSS vector shape — version prefix is optional (CVSS 2.0 has no prefix), metric tokens are alphanumeric uppercase pairs separated by '/'. Strict per-version semantic validation belongs in a separate utility (hdf-utilities `validateCvssVector`), not in the schema. See https://www.first.org/cvss/v4.0/specification-document for the v4 grammar and earlier-version documents for v2/v3.",
               "pattern": "^(CVSS:[234]\\.[01]/)?[A-Za-z]+:[A-Za-z]+(/[A-Za-z]+:[A-Za-z]+)*$",
-              "description": "Optional Base metric group vector string as emitted by the source (e.g., 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H').\n\nFor CVSS 2.0 the version prefix is omitted.\n\nSome vendor tools emit a final baseScore without the vector — in that case this field is absent and the score cannot be recomputed or decomposed.\n\nThe pattern accepts any version-prefixed or prefix-less metric token sequence; semantic validity of individual metrics is checked by hdf-utilities, not by the schema."
+              "description": "Optional Base metric group vector string as emitted by the source (e.g., 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'). For CVSS 2.0 the version prefix is omitted. Some vendor tools emit a final baseScore without the vector — in that case this field is absent and the score cannot be recomputed or decomposed. The pattern accepts any version-prefixed or prefix-less metric token sequence; semantic validity of individual metrics is checked by hdf-utilities, not by the schema."
             },
             "baseScore": {
               "type": "number",
@@ -4159,6 +4164,7 @@
           },
           "examples": [
             {
+              "$comment": "Base-only: vendor-supplied CVSS 3.1 data exactly as a scanner (e.g., Nessus, Grype) would emit it. No consumer enrichment yet.",
               "version": "3.1",
               "source": "CVE-2024-12345",
               "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
@@ -4166,6 +4172,7 @@
               "baseSeverity": "critical"
             },
             {
+              "$comment": "Base + Threat: consumer added Exploit Maturity ('E:U' = Unproven) and Remediation Level ('RL:O' = Official Fix) to a HTTP/2 'Rapid Reset' DoS finding. Threat score drops from base 7.5 to 5.5.",
               "version": "3.1",
               "source": "CVE-2023-44487",
               "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
@@ -4175,6 +4182,7 @@
               "threatScore": 5.5
             },
             {
+              "$comment": "Base + Environmental: consumer asserts the affected system is high-criticality (CR:H, IR:H, AR:H) AND network-reachable in their environment (MAV:N). Environmental score reflects deployment risk for the xz-utils backdoor.",
               "version": "3.1",
               "source": "CVE-2024-3094",
               "baseVector": "CVSS:3.1/AV:L/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H",
@@ -4186,6 +4194,7 @@
               "computedSeverity": "critical"
             },
             {
+              "$comment": "Full CVSS 4.0: vendor base + consumer threat (E:A = Attacked, exploits seen in the wild) + environmental (high CIA requirements) + supplemental context (S:P = present safety impact, AU:N = no autonomous spread, RE:M = moderate response effort) for the Fortinet FortiOS pre-auth RCE. computedScore reflects post-mitigation final risk.",
               "version": "4.0",
               "source": "CVE-2024-21762",
               "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
@@ -4200,6 +4209,7 @@
               "computedSeverity": "medium"
             },
             {
+              "$comment": "CVSS 2.0 legacy: Heartbleed (CVE-2014-0160) as still reported by older scanner output and legacy NVD data. CVSS 2.0 vectors have no 'CVSS:2.0/' prefix.",
               "version": "2.0",
               "source": "CVE-2014-0160",
               "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:N",
@@ -4207,7 +4217,7 @@
               "baseSeverity": "medium"
             }
           ],
-          "description": "A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding.\n\nCaptures the vendor-supplied Base metric group and optional consumer-supplied Threat, Environmental, and Supplemental metric groups.\n\nSupports all four CVSS major versions (2.0, 3.0, 3.1, 4.0).\n\nVector strings are validated against a permissive umbrella grammar; semantic validation (correct metrics per version, correct values per metric) is performed by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.",
+          "description": "A CVSS (Common Vulnerability Scoring System) score record for a vulnerability finding. Captures the vendor-supplied Base metric group and optional consumer-supplied Threat, Environmental, and Supplemental metric groups. Supports all four CVSS major versions (2.0, 3.0, 3.1, 4.0). Vector strings are validated against a permissive umbrella grammar; semantic validation (correct metrics per version, correct values per metric) is performed by the hdf-utilities `validateCvssVector` helper rather than at the schema layer.",
           "title": "CVSS"
         }
       }
@@ -4268,21 +4278,21 @@
             "cpe": {
               "type": "string",
               "pattern": "^cpe:2\\.3:[aho]:.*",
-              "description": "Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing. Example: `cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*`."
+              "description": "Optional CPE 2.3 URI identifying the affected product. Validated leniently: only the 'cpe:2.3:' prefix and the part-type letter ('a' application, 'h' hardware, 'o' operating system) are enforced here. Use `hdf-utilities.parseCpe` for full-grammar parsing. Example: 'cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*'."
             },
             "purl": {
               "type": "string",
               "pattern": "^pkg:[A-Za-z0-9.+-]+/.+",
-              "description": "Optional Package URL (PURL) identifying the affected package.\n\nValidated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior.\n\nUse `parsePurl` for full PURL parsing.\n\nExample: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
+              "description": "Optional Package URL (PURL) identifying the affected package. Validated leniently: only the 'pkg:TYPE/' scheme prefix is enforced here, where TYPE follows the PURL grammar (a letter followed by letters, digits, '.', '+', or '-') and is matched case-insensitively to mirror `hdf-utilities.parsePurl`'s accept-and-warn behavior. Use `parsePurl` for full PURL parsing. Example: 'pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64'."
             },
             "fixedInVersion": {
               "type": "string",
               "description": "Optional version string identifying the first release that contains the fix for the vulnerability. Use the same version syntax as `version`. Example: '1.1.1l' fixes 'openssl@1.1.1k'."
             }
           },
-          "$comment": "Examples, in order: 1) RPM ecosystem with full CPE + PURL — typical Grype/Trivy output for a RHEL host scan; 2) NPM ecosystem with PURL only — the JavaScript world rarely emits CPEs; PURL is the canonical identifier; 3) Minimal valid AffectedPackage — only the three required fields. Use when the scanner reports a package by name+version without emitting CPE or PURL strings; 4) Maven ecosystem with full identifiers + fixedInVersion — log4j Log4Shell-style finding showing the patch path from vulnerable to fixed; 5) purl-only — VEX import path where the source format gives a purl and we choose not to decompose it. Valid because purl encodes name/version/ecosystem implicitly; 6) cpe-only — NIST-flavored scopes where the consumer carries a CPE 2.3 string and no purl. Valid because cpe encodes vendor/product/version.",
           "examples": [
             {
+              "$comment": "RPM ecosystem with full CPE + PURL — typical Grype/Trivy output for a RHEL host scan.",
               "name": "openssl",
               "version": "1.1.1k-7.el8_4",
               "ecosystem": "rpm",
@@ -4291,6 +4301,7 @@
               "fixedInVersion": "1.1.1l"
             },
             {
+              "$comment": "NPM ecosystem with PURL only — the JavaScript world rarely emits CPEs; PURL is the canonical identifier.",
               "name": "lodash",
               "version": "4.17.20",
               "ecosystem": "npm",
@@ -4298,11 +4309,13 @@
               "fixedInVersion": "4.17.21"
             },
             {
+              "$comment": "Minimal valid AffectedPackage — only the three required fields. Use when the scanner reports a package by name+version without emitting CPE or PURL strings.",
               "name": "requests",
               "version": "2.28.1",
               "ecosystem": "pypi"
             },
             {
+              "$comment": "Maven ecosystem with full identifiers + fixedInVersion — log4j Log4Shell-style finding showing the patch path from vulnerable to fixed.",
               "name": "org.apache.logging.log4j:log4j-core",
               "version": "2.14.1",
               "ecosystem": "maven",
@@ -4311,13 +4324,15 @@
               "fixedInVersion": "2.17.1"
             },
             {
+              "$comment": "purl-only — VEX import path where the source format gives a purl and we choose not to decompose it. Valid because purl encodes name/version/ecosystem implicitly.",
               "purl": "pkg:npm/lodash@4.17.20"
             },
             {
+              "$comment": "cpe-only — NIST-flavored scopes where the consumer carries a CPE 2.3 string and no purl. Valid because cpe encodes vendor/product/version.",
               "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
             }
           ],
-          "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope.\n\nOn Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments).\n\nNOT a system-level component identifier — see `components[]` on hdf-system for those.\n\nValidity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone.\n\npurl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
+          "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope. On Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments). NOT a system-level component identifier — see `components[]` on hdf-system for those. Validity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone. purl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
           "title": "Affected Package"
         }
       }
@@ -4479,12 +4494,12 @@
                   "type": "null"
                 }
               ],
-              "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture.\n\nNull at chain start (no prior state, e.g. a new entity or the first event after a seed).\n\nThe chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
+              "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture. Null at chain start (no prior state, e.g. a new entity or the first event after a seed). The chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
             }
           },
-          "$comment": "Examples, in order: 1) Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key; 2) Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
           "examples": [
             {
+              "$comment": "Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key.",
               "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
               "source": "inspec://web01/rhel9-stig",
               "sequence": 412,
@@ -4498,6 +4513,7 @@
               }
             },
             {
+              "$comment": "Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
               "eventId": "0190f6f2-2a5b-7e4d-b1c8-4f2e6a8b0d12",
               "source": "inspec://web01/rhel9-stig",
               "sequence": 1,
@@ -4555,13 +4571,14 @@
               "description": "The resolved effective impact score (0.0–1.0) at this point in the chain."
             }
           },
-          "$comment": "Examples, in order: 1) Prior posture of a failing SSH-cipher control before remediation; 2) Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
           "examples": [
             {
+              "$comment": "Prior posture of a failing SSH-cipher control before remediation.",
               "effectiveStatus": "failed",
               "effectiveImpact": 0.5
             },
             {
+              "$comment": "Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
               "effectiveStatus": "passed",
               "effectiveImpact": 0.5
             }
@@ -4622,9 +4639,9 @@
               "description": "The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of PROV's generatedAtTime."
             }
           },
-          "$comment": "Examples, in order: 1) A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
           "examples": [
             {
+              "$comment": "A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
               "seed": {
                 "uri": "apptier-seed-scan.hdf.json",
                 "checksum": {
@@ -4810,19 +4827,21 @@
               "description": "ISO 8601 date (YYYY-MM-DD) on which FIRST.org published this EPSS score."
             }
           },
-          "$comment": "Examples, in order: 1) High exploit probability and high percentile, characteristic of a widely-exploited vulnerability like Log4Shell (CVE-2021-44228) shortly after disclosure; 2) Low score but moderate percentile, the common case for CVEs that have some observed exploitation evidence but are not under active mass exploitation; 3) Very low score, typical of a CVE with no known exploitation activity or proof-of-concept availability.",
           "examples": [
             {
+              "$comment": "High exploit probability and high percentile, characteristic of a widely-exploited vulnerability like Log4Shell (CVE-2021-44228) shortly after disclosure.",
               "score": 0.97532,
               "percentile": 0.99987,
               "date": "2026-05-26"
             },
             {
+              "$comment": "Low score but moderate percentile, the common case for CVEs that have some observed exploitation evidence but are not under active mass exploitation.",
               "score": 0.04521,
               "percentile": 0.78432,
               "date": "2026-05-26"
             },
             {
+              "$comment": "Very low score, typical of a CVE with no known exploitation activity or proof-of-concept availability.",
               "score": 0.00042,
               "percentile": 0.10215,
               "date": "2026-05-26"
@@ -4881,21 +4900,23 @@
               "description": "CISA's notes describing the vulnerability, observed exploitation, or remediation guidance."
             }
           },
-          "$comment": "Examples, in order: 1) High-urgency case: recently added KEV entry with a short federal patching deadline; 2) Older KEV entry whose due date has already passed — useful for reporting overdue remediation; 3) Vulnerability evaluated against the KEV catalog and confirmed not present — dateAdded/dueDate are not required when inKev is false.",
           "examples": [
             {
+              "$comment": "High-urgency case: recently added KEV entry with a short federal patching deadline.",
               "inKev": true,
               "dateAdded": "2026-03-15",
               "dueDate": "2026-04-05",
               "notes": "Active ransomware exploitation observed; apply vendor patch immediately."
             },
             {
+              "$comment": "Older KEV entry whose due date has already passed — useful for reporting overdue remediation.",
               "inKev": true,
               "dateAdded": "2023-11-07",
               "dueDate": "2023-11-28",
               "notes": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."
             },
             {
+              "$comment": "Vulnerability evaluated against the KEV catalog and confirmed not present — dateAdded/dueDate are not required when inKev is false.",
               "inKev": false
             }
           ],

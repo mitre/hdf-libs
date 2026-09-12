@@ -661,6 +661,42 @@ break","Has newline"`;
 // skip the work and \s to decide, so exotic whitespace slipped through. The
 // class is now Go's unicode.IsSpace spelled out; these cases cover the members
 // the two languages once disagreed on, in both directions.
+describe('buildCsvArray quoting matches Go encoding/csv', () => {
+  const cell = (value: string): string => buildCsvArray([[value]]).replace(/\n$/, '');
+
+  it.each([
+    ['leading space', ' x', '" x"'],
+    ['leading tab', '\tx', '"\tx"'],
+    ['leading non-breaking space U+00A0', '\u00a0x', '"\u00a0x"'],
+    ['leading NEL U+0085', '\u0085x', '"\u0085x"'],
+    ['leading ideographic space U+3000', '\u3000x', '"\u3000x"'],
+    ['the literal backslash-dot', '\\.', '"\\."'],
+  ])('quotes %s, as buildCsv does', (_label, value, want) => {
+    expect(cell(value)).toBe(want);
+  });
+
+  it.each([
+    ['trailing whitespace only', 'x ', 'x '],
+    ['leading BOM U+FEFF', '\ufeffx', '\ufeffx'],
+  ])('leaves %s unquoted, as Go does', (_label, value, want) => {
+    expect(cell(value)).toBe(want);
+  });
+
+  it('still handles the d3-dsv triggers exactly once', () => {
+    expect(cell('a,b')).toBe('"a,b"');
+    expect(cell('a"b')).toBe('"a""b"');
+    expect(cell(' a"b')).toBe('" a""b"');
+  });
+
+  // The two public builders are the same writer with different row sources, so
+  // a field must come out identically whichever one produced it.
+  it('agrees with buildCsv field for field', () => {
+    const values = [' x', '\u00a0x', 'x ', 'a,b', 'a"b', 'a\nb', ' a,b', '\\.'];
+    const rows = buildCsv(values.map((v) => ({ a: v })), { header: false });
+    expect(buildCsvArray(values.map((v) => [v]))).toBe(rows);
+  });
+});
+
 describe('buildCsv quoting matches Go encoding/csv', () => {
   // Everything after the header, minus the final terminator — split('\n') would
   // cut a value that legitimately contains a newline.

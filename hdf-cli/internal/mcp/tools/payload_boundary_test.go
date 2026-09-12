@@ -5,20 +5,21 @@ import (
 	"testing"
 )
 
-// TestReadToolsStateThePayloadBoundary pins a deliberate product decision
-// (hdf-libs-uqhe.13): conversion RETAINS the original scanner finding verbatim in
-// each requirement's `code`, but no read tool projects it, and that boundary is
-// permanent until revisited.
+// TestReadToolsStateThePayloadBoundary pins a deliberate product decision:
+// conversion RETAINS the original scanner finding verbatim in each requirement's
+// `code`, and no read tool projects `code` at any verbosity.
 //
-// The boundary is cheap to state and expensive to discover. Measured on a real
-// grype scan: one `code` blob is ~1,607 tokens (median) against a ~295-token
-// bounded query response, and all 89 blobs total ~149,735 tokens — within 4% of
-// the entire raw file. Projecting them would erase the token-bounding guarantee
-// that is the whole point of this surface.
+// The per-response token budgets are structural (the response paginates to fit
+// regardless of field size), so projecting `code` would not breach a bound — it
+// would cost page yield: one `code` blob is ~1,607 tokens (median) against a
+// ~295-token bounded query response, so a payload-per-row page fits ~6
+// requirements instead of ~24, and all 89 blobs total ~149,735 tokens (within 4%
+// of the entire raw file). The boundary is specific to `code`; full verbosity
+// still projects descriptions[] verbatim.
 //
-// So an agent must be TOLD, in the tool descriptions it already reads, that a
-// tool-specific field means falling back to the source file. Discovering it by
-// getting an incomplete answer is the failure this test exists to prevent.
+// So an agent must be TOLD, in the tool descriptions it already reads, that the
+// `code` payload lives only in the source file. Discovering it by getting an
+// incomplete answer is the failure this test exists to prevent.
 func TestReadToolsStateThePayloadBoundary(t *testing.T) {
 	for _, tc := range []struct {
 		tool string

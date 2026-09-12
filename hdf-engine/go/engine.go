@@ -14,5 +14,5 @@ package hdfengine
 // flags are set. TestVersion enforces the match against package.json, so a
 // workspace bump that forgets this constant fails CI instead of drifting.
 func Version() string {
-	return "3.5.0"
+	return "3.6.0"
 }

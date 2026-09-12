@@ -16,7 +16,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildAffectedPackage, buildNistCciTags, ecosystemFromPurlType, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults} from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss, cvssVersionFromString} from '../../../shared/typescript/cvss.js';
 
 // Input types for Grype JSON
@@ -306,22 +306,19 @@ function buildCvssEntries(vuln: GrypeVulnerability): Cvss[] | undefined {
 }
 
 // mapGrypeTypeToEcosystem translates Grype artifact.type to schema Ecosystem.
-// Anything outside the schema's published enum (apk, binary, future types)
-// falls back to "generic".
+// Only the Grype spellings that differ from the PURL type vocabulary are listed;
+// the rest defer to the shared resolver, which falls back to "generic" for
+// anything outside the schema's enum (apk, binary, future types).
 export function mapGrypeTypeToEcosystem(grypeType?: string): Ecosystem {
   switch ((grypeType ?? '').toLowerCase()) {
-    case 'rpm': return Ecosystem.RPM;
-    case 'deb': return Ecosystem.Deb;
-    case 'npm': return Ecosystem.Npm;
     case 'python': return Ecosystem.Pypi;
-    case 'gem': return Ecosystem.Gem;
     case 'go-module': return Ecosystem.Go;
     case 'java-archive':
     case 'jenkins-plugin':
       return Ecosystem.Maven;
     case 'dotnet': return Ecosystem.Nuget;
     case 'rust-crate': return Ecosystem.Cargo;
-    default: return Ecosystem.Generic;
+    default: return ecosystemFromPurlType(grypeType);
   }
 }
 
@@ -330,22 +327,16 @@ export function mapGrypeTypeToEcosystem(grypeType?: string): Ecosystem {
 // first matches the package's canonical vendor:product identity).
 function buildAffectedPackages(match: GrypeMatch): AffectedPackage[] {
   const artifact = match.artifact;
-  const pkg: AffectedPackage = {
+  const fix = match.vulnerability.fix;
+  const pkg = buildAffectedPackage({
     name: artifact.name,
     version: artifact.version,
     ecosystem: mapGrypeTypeToEcosystem(artifact.type),
-  };
-  if (artifact.cpes && artifact.cpes.length > 0 && artifact.cpes[0]) {
-    pkg.cpe = artifact.cpes[0];
-  }
-  if (artifact.purl) {
-    pkg.purl = artifact.purl;
-  }
-  const fix = match.vulnerability.fix;
-  if (fix && fix.state === 'fixed' && fix.versions && fix.versions.length > 0 && fix.versions[0]) {
-    pkg.fixedInVersion = fix.versions[0];
-  }
-  return [pkg];
+    cpe: artifact.cpes?.[0],
+    purl: artifact.purl,
+    fixedInVersion: fix?.state === 'fixed' ? fix.versions?.[0] : undefined,
+  });
+  return pkg ? [pkg] : [];
 }
 
 // Valid canonical CWE-N identifier (MITRE catalog convention: no leading zeros).

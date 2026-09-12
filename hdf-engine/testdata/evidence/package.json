@@ -1,0 +1,10 @@
+{
+  "name": "parity-package",
+  "planRef": "plan.json",
+  "contents": [
+    {"type": "hdf-plan", "uri": "plan.json"},
+    {"type": "hdf-results", "uri": "rhel-results.json"},
+    {"type": "hdf-results", "uri": "agent-results.json"},
+    {"type": "hdf-results", "uri": "absent-results.json"}
+  ]
+}

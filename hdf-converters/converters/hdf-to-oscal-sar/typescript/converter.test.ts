@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { results } from '@mitre/hdf-fixtures';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToOscalSar } from './converter.js';
@@ -39,6 +39,24 @@ function minimalHDFResults(status: string): string {
 }
 
 describe('convertHdfToOscalSar', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  // The package's runtime path must not depend on Node globals: browser
+  // bundles have no Buffer, and the code resource is the only base64 emitter.
+  it('embeds the code resource without the Node Buffer global', async () => {
+    vi.stubGlobal('Buffer', undefined);
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{ id: 'SV-1', impact: 0.7, tags: { nist: ['AC-2'] }, code: "control 'SV-1' do\n  # \u00e9\nend" }],
+      }],
+    });
+    const doc = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'];
+    expect(doc['back-matter'].resources[0].base64.value).toBe('Y29udHJvbCAnU1YtMScgZG8KICAjIMOpCmVuZA==');
+  });
+
   it('should reject empty input', async () => {
     await expect(convertHdfToOscalSar('')).rejects.toThrow('empty input');
   });

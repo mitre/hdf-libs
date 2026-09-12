@@ -27,6 +27,7 @@ import {
   inputIntegrity,
   validateInputSize,
   chainOverrides,
+  defaultOverrideExpiry,
 } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageFromIdentifier,
@@ -36,7 +37,6 @@ import {
   VexStatus,
 } from '../../../shared/typescript/vex/mapping.js';
 
-const DEFAULT_EXPIRY_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
 
 interface CsafPublisher {
   category?: string;
@@ -233,7 +233,7 @@ function buildOverride(
   const target = importTargetFor(canonical);
   if (!target) return undefined;
 
-  const expiresAt = new Date(docTime.getTime() + DEFAULT_EXPIRY_HORIZON_MS);
+  const expiresAt = defaultOverrideExpiry(docTime);
   const override: StandaloneOverride = {
     type: target.overrideType,
     requirementId: vuln.cve!,

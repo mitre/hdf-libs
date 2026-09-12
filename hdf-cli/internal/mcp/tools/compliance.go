@@ -3,13 +3,10 @@ package tools
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
-	"os"
 	"sort"
 	"strings"
-	"time"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
@@ -150,7 +147,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 				return toolError(therr), errorComplianceOutput(), nil
 			}
 			if cfg != nil {
-				controlMap := hdfengine.MapControlIDsByStatus(results, effectiveStatus)
+				controlMap := hdfengine.MapControlIDsByStatus(results, shared.RequirementEffectiveStatus)
 				failures := hdfengine.ValidateThresholds(cfg, counts, out.Compliance, controlMap)
 				out.ThresholdVerdict = &thresholdVerdict{Pass: len(failures) == 0, Failures: failures}
 			}
@@ -200,8 +197,7 @@ func countsToNestedInt(c *hdfengine.StatusCounts) map[string]map[string]int {
 }
 
 // effectiveStatusExcludingAgent resolves a requirement's effective status after
-// dropping its agent-attributed overrides, reusing the shared status computation
-// (composed, not forked — the same primitive effectiveStatus uses).
+// dropping its agent-attributed overrides, through the shared resolver.
 func effectiveStatusExcludingAgent(control hdf.EvaluatedRequirement) string {
 	kept := make([]hdf.StatusOverride, 0, len(control.StatusOverrides))
 	for _, o := range control.StatusOverrides {
@@ -210,7 +206,7 @@ func effectiveStatusExcludingAgent(control hdf.EvaluatedRequirement) string {
 		}
 	}
 	control.StatusOverrides = kept
-	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(control), time.Time{})
+	return shared.RequirementEffectiveStatus(control)
 }
 
 // groupedRollups partitions the result set by the requested mode and scores each
@@ -289,7 +285,7 @@ func groupSeverity(req hdf.EvaluatedRequirement) string {
 // (e.g. AC-2 and AC-6 → "AC"); requirements with no NIST tag group under
 // "unmapped".
 func nistFamilies(req hdf.EvaluatedRequirement) []string {
-	controls := tagStrings(req.Tags, "nist")
+	controls := hdfutil.TagStrings(req.Tags, "nist")
 	if len(controls) == 0 {
 		return []string{"unmapped"}
 	}
@@ -312,30 +308,6 @@ func nistFamilies(req hdf.EvaluatedRequirement) []string {
 	return families
 }
 
-// tagStrings extracts a tag's values as a string slice, tolerating the string /
-// []string / []any shapes HDF tags take.
-func tagStrings(tags map[string]any, key string) []string {
-	if tags == nil {
-		return nil
-	}
-	switch v := tags[key].(type) {
-	case string:
-		return []string{v}
-	case []string:
-		return v
-	case []any:
-		out := make([]string, 0, len(v))
-		for _, item := range v {
-			if s, ok := item.(string); ok {
-				out = append(out, s)
-			}
-		}
-		return out
-	default:
-		return nil
-	}
-}
-
 // resolveThreshold turns the {path|inline} threshold union into a parsed engine
 // config. YAML parsing covers JSON too (JSON is a subset), so a .json or .yaml
 // path and an inline object all funnel through one decoder.
@@ -355,12 +327,11 @@ func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Er
 		if err != nil {
 			return nil, mcperr.New(mcperr.PathDenied, "threshold path resolves outside HDF_MCP_ROOT", map[string]any{"path": t.Path})
 		}
-		b, rerr := os.ReadFile(confined) //nolint:gosec // confined to HDF_MCP_ROOT by SafePath
+		// The shared reader, like every other MCP file input: size ceiling and
+		// regular-file check before the bytes reach the YAML parser.
+		b, rerr := readFile(confined, t.Path, "threshold")
 		if rerr != nil {
-			if errors.Is(rerr, os.ErrNotExist) {
-				return nil, mcperr.New(mcperr.DocumentNotFound, "no threshold file at the given path", map[string]any{"path": t.Path})
-			}
-			return nil, redactFileErr(mcperr.DocumentNotFound, "could not read the threshold file", t.Path, rerr)
+			return nil, rerr
 		}
 		raw = b
 	case len(t.Inline) > 0:

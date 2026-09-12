@@ -11,7 +11,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/vex"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

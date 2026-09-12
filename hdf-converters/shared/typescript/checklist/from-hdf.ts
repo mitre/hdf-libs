@@ -1,4 +1,4 @@
-import { parseHdf, hdfTime } from '../converterutil.js';
+import { hdfTime, requireHdfResults } from '../converterutil.js';
 import { requirementEffectiveStatus } from '../status.js';
 import type {
   HDFResults,
@@ -9,7 +9,7 @@ import type {
   StatusOverride,
 } from '@mitre/hdf-schema';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { formatTimestamp } from '@mitre/hdf-utilities';
+import { formatTimestamp, impactToSeverity } from '@mitre/hdf-utilities';
 import { Asset, Checklist, Stig, Vuln } from './model.js';
 import { statusFromHdf } from './status.js';
 
@@ -20,8 +20,8 @@ import { statusFromHdf } from './status.js';
  * fields are synthesized best-effort so any HDF yields a valid checklist.
  */
 export function hdfToChecklist(input: string): Checklist {
-  const hdf = parseHdf<HDFResults>(input);
-  if (!hdf || !Array.isArray(hdf.baselines) || hdf.baselines.length === 0) {
+  const hdf = requireHdfResults(input, 'hdf to checklist').doc as unknown as HDFResults;
+  if (hdf.baselines.length === 0) {
     throw new Error('hdf to checklist: HDF has no baselines');
   }
 
@@ -184,27 +184,38 @@ function formatOverride(o: StatusOverride): string {
 function overrideSeverity(req: EvaluatedRequirement): { severity: string; justification: string } {
   for (const o of req.statusOverrides ?? []) {
     if (o.impact) {
-      return { severity: qualSeverityFromImpact(o.impact.value), justification: o.reason ?? '' };
+      // An override that zeroes impact still has to name a CAT level; low is
+      // the checklist's floor.
+      const severity = cklSeverityFromImpact(o.impact.value) || 'low';
+      return { severity, justification: o.reason ?? '' };
     }
   }
   return { severity: '', justification: '' };
 }
 
-function qualSeverityFromImpact(impact: number): string {
-  if (impact >= 0.7) return 'high';
-  if (impact >= 0.4) return 'medium';
-  return 'low';
+// Maps an impact score to STIG's qualitative severity bucket via the shared band
+// mapper. The checklist vocabulary is CAT I/II/III only, so critical folds into
+// high and the informational band has no bucket at all — callers decide what an
+// absent bucket means.
+function cklSeverityFromImpact(impact: number): string {
+  switch (impactToSeverity(impact)) {
+    case 'critical':
+    case 'high':
+      return 'high';
+    case 'medium':
+      return 'medium';
+    case 'low':
+      return 'low';
+    default:
+      return '';
+  }
 }
 
 function resolveSeverity(req: EvaluatedRequirement, tags: Record<string, unknown>): string {
   const tagSev = strVal(tags, 'severity');
   if (tagSev) return tagSev;
   if (req.severity) return String(req.severity).toLowerCase();
-  const i = req.impact ?? 0;
-  if (i >= 0.7) return 'high';
-  if (i >= 0.4) return 'medium';
-  if (i > 0) return 'low';
-  return '';
+  return cklSeverityFromImpact(req.impact ?? 0);
 }
 
 function resolveCcis(tags: Record<string, unknown>): string[] {

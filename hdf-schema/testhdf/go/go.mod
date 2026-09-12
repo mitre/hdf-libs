@@ -1,10 +1,10 @@
-module github.com/mitre/hdf-libs/hdf-schema/testhdf/go
+module github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3
 
 go 1.26.6
 
 require (
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.5.0
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.6.0
 	github.com/stretchr/testify v1.12.1
 )
 

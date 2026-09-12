@@ -6,20 +6,15 @@
 
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import { chainOverrides, inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
-import type {
-  HDFAmendments,
-  StandaloneOverride,
-  Milestone as HdfMilestone,
-} from '@mitre/hdf-schema';
 import {
+  IdentityType,
+  MilestoneStatus,
   OverrideType,
+  ResultStatus,
+  type HDFAmendments,
+  type StandaloneOverride,
+  type Milestone as HdfMilestone,
 } from '@mitre/hdf-schema';
-
-// The hdf-amendments schema defines its own ResultStatus, AppliedByType, and
-// milestone Status enums that conflict with hdf-results enums of the same name.
-// They aren't re-exported from the @mitre/hdf-schema barrel to avoid collisions.
-// We use string literals with type casts for these fields.
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
   Oscal,
   PlanOfActionAndMilestonesPOAM,
@@ -115,7 +110,7 @@ function poamItemToOverride(
     appliedBy: poamItemAppliedBy(poam),
     appliedAt: poamItemAppliedAt(poam, requirementId),
     expiresAt: poamItemExpiresAt(item, riskMap, requirementId),
-    milestones: extractMilestones(item, riskMap) as any,
+    milestones: extractMilestones(item, riskMap),
   };
 }
 
@@ -156,21 +151,21 @@ function poamItemReason(item: POAMItem): string {
 function poamItemStatus(
   item: POAMItem,
   riskMap: Map<string, IdentifiedRisk>,
-): any {
+): ResultStatus {
   for (const rr of item['related-risks'] ?? []) {
     const riskUuid = rr['risk-uuid'];
     if (riskUuid) {
       const risk = riskMap.get(riskUuid);
       if (risk) {
         const status = oscalStatusToHdf(risk.status);
-        if (status === 'passed') return 'passed' as any;
-        if (status === 'failed') return 'failed' as any;
+        if (status === 'passed') return ResultStatus.Passed;
+        if (status === 'failed') return ResultStatus.Failed;
       }
     }
   }
 
   // Default: POA&M items typically represent open/failed findings
-  return 'failed' as any;
+  return ResultStatus.Failed;
 }
 
 function poamItemAppliedBy(
@@ -182,7 +177,7 @@ function poamItemAppliedBy(
     for (const rp of rps) {
       if (rp['role-id'] === 'prepared-by' && rp['party-uuids'].length > 0) {
         return {
-          type: 'simple' as any,
+          type: IdentityType.Simple,
           identifier: rp['party-uuids'][0]!,
         };
       }
@@ -191,14 +186,14 @@ function poamItemAppliedBy(
     // Fall back to any responsible party
     if (rps.length > 0 && rps[0]!['party-uuids'].length > 0) {
       return {
-        type: 'simple' as any,
+        type: IdentityType.Simple,
         identifier: rps[0]!['party-uuids'][0]!,
       };
     }
   }
 
   return {
-    type: 'system' as any,
+    type: IdentityType.System,
     identifier: 'oscal-poam-converter',
   };
 }
@@ -260,7 +255,7 @@ function extractMilestones(
         milestones.push({
           description: task.description ? `${task.title}: ${task.description}` : task.title,
           estimatedCompletion,
-          status: 'pending' as any,
+          status: MilestoneStatus.Pending,
         });
       }
     }
@@ -277,7 +272,7 @@ function extractAppliedBy(
     for (const rp of rps) {
       if (rp['role-id'] === 'prepared-by' && rp['party-uuids'].length > 0) {
         return {
-          type: 'simple' as any,
+          type: IdentityType.Simple,
           identifier: rp['party-uuids'][0]!,
         };
       }

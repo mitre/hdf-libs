@@ -3,10 +3,10 @@ module github.com/mitre/hdf-libs/hdf-diff/go/v3
 go 1.26.6
 
 require (
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.5.1
-	github.com/mitre/hdf-libs/hdf-schema/testhdf/go v0.0.0-00010101000000-000000000000
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.5.1
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.5.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.6.0
 	github.com/protobom/protobom v0.6.1
 	github.com/stretchr/testify v1.12.1
 )
@@ -42,7 +42,7 @@ require (
 
 replace github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 => ../../hdf-schema/dist/go
 
-replace github.com/mitre/hdf-libs/hdf-schema/testhdf/go => ../../hdf-schema/testhdf/go
+replace github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 => ../../hdf-schema/testhdf/go
 
 replace github.com/mitre/hdf-libs/hdf-validators/go/v3 => ../../hdf-validators/go
 

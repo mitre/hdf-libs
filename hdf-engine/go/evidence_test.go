@@ -126,3 +126,54 @@ func TestCompleteness(t *testing.T) {
 		t.Fatalf("should be complete, got %+v", full)
 	}
 }
+
+// Only hdf-results entries with a URI are consulted; a fetch failure or an
+// unparseable document is skipped rather than failing the aggregation.
+func TestPackageAggregators_SkipNonResultsUnreadableAndUnparseable(t *testing.T) {
+	agent := []byte(`{"baselines":[{"name":"A","requirements":[{"statusOverrides":[{"appliedBy":{"type":"agent"}}]}]}]}`)
+	files := map[string][]byte{"a.json": agent, "b.json": []byte("not json"), "base.json": agent}
+	contents := []EvidenceContent{
+		{URI: "a.json", Type: "hdf-results"},
+		{URI: "b.json", Type: "hdf-results"},
+		{URI: "missing.json", Type: "hdf-results"},
+		{URI: "", Type: "hdf-results"},
+		{URI: "base.json", Type: "hdf-baseline"},
+	}
+	fetch := memFetch(files)
+	covered := CoveredBaselinesInPackage(contents, fetch)
+	if len(covered) != 1 || covered[0] != "A" {
+		t.Fatalf("covered = %v, want [A]", covered)
+	}
+	if got := AgentOverridesInPackage(contents, fetch); got != 1 {
+		t.Fatalf("agent overrides = %d, want 1", got)
+	}
+	if got := CoveredBaselinesInPackage(nil, fetch); got != nil {
+		t.Fatalf("empty package must yield no covered names, got %v", got)
+	}
+}
+
+// Real InSpec-derived HDF carries zone-less result timestamps, which a typed
+// decode rejects outright — so a package referencing one must still be counted,
+// not silently skipped as unparseable.
+func TestAgentOverridesInPackage_CountsZonelessTimestamps(t *testing.T) {
+	zoneless := []byte(`{"baselines":[{"name":"A","requirements":[{"statusOverrides":[{"appliedBy":{"type":"agent"}}],` +
+		`"results":[{"status":"passed","startTime":"2024-01-01T00:00:00"}]}]}]}`)
+	contents := []EvidenceContent{{URI: "z.json", Type: "hdf-results"}}
+	fetch := memFetch(map[string][]byte{"z.json": zoneless})
+	if got := AgentOverridesInPackage(contents, fetch); got != 1 {
+		t.Fatalf("agent overrides = %d, want 1 — a zone-less startTime must not drop the document", got)
+	}
+}
+
+// The count deliberately does not require a schema-valid document: an agent's
+// judgment is worth reporting even where validation would reject the file. This
+// pins that choice, which is otherwise only stated in a comment.
+func TestAgentOverridesInPackage_CountsSchemaInvalidDocuments(t *testing.T) {
+	// No baseline name and no results: rejected by the schema, decodable as JSON.
+	invalid := []byte(`{"baselines":[{"requirements":[{"statusOverrides":[{"appliedBy":{"type":"agent"}}]}]}]}`)
+	contents := []EvidenceContent{{URI: "bad.json", Type: "hdf-results"}}
+	fetch := memFetch(map[string][]byte{"bad.json": invalid})
+	if got := AgentOverridesInPackage(contents, fetch); got != 1 {
+		t.Fatalf("agent overrides = %d, want 1 — schema validity is deliberately not required", got)
+	}
+}

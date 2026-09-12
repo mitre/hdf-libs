@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -8,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 // A non-notexist read failure (here: permission-denied) must surface only the
@@ -42,5 +44,21 @@ func TestResolveSource_ReadFailureRedactsAbsolutePath(t *testing.T) {
 	}
 	if tr := toolResultPayload(t, errRes); tr.Details["path"] != "scan.json" {
 		t.Errorf("client payload path = %v, want the relative scan.json", tr.Details["path"])
+	}
+}
+
+// The read itself is bounded, independently of the Stat-based guard, so a file
+// that delivers more bytes than the ceiling is refused rather than buffered.
+func TestReadLimited_RejectsBytesBeyondTheCeiling(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "big.json")
+	if err := os.WriteFile(p, bytes.Repeat([]byte("x"), 64), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, terr := readLimited(p, "big.json", "source", 32); terr == nil || terr.Code != mcperr.TooLarge {
+		t.Fatalf("64 bytes over a 32-byte ceiling must be TOO_LARGE, got %+v", terr)
+	}
+	content, terr := readLimited(p, "big.json", "source", 64)
+	if terr != nil || len(content) != 64 {
+		t.Fatalf("64 bytes within a 64-byte ceiling must read whole, got %d bytes / %+v", len(content), terr)
 	}
 }

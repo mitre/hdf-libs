@@ -82,6 +82,14 @@ jobs:
             hdf-diff
             hdf-extension-graph
             hdf-engine
+            # hdf-fixtures — TEMPORARY, remove this comment and restore the entry
+            # immediately after 3.6.0 ships (hdf-libs-8zh9e). The package was
+            # bootstrapped by hand with npm, because npm cannot publish a name's
+            # first version through trusted publishing. npm does not copy the
+            # workspace's root LICENSE.md into the tarball and pnpm does, so the
+            # published 3.6.0 differs from what this job builds by exactly that
+            # one file — and the idempotency check below would fail the release
+            # on it. Publishing resumes at 3.6.1, with provenance.
           )
 
           # Pre-release tags publish with npm dist-tag `next` instead of `latest`.
@@ -339,7 +347,7 @@ jobs:
           ```bash
           # TypeScript/Node.js — install the packages you need
           npm install @mitre/hdf-converters@next   # converters + schema + parsers + utilities + mappings
-          # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @v3, or an exact version)
+          # (bare `latest` on @mitre/hdf-converters belongs to the heimdall2 v2 line — use @next, @rc, or an exact version)
           npm install @mitre/hdf-validators    # schema validation
           npm install @mitre/hdf-diff          # structural diff engine
           npm install @mitre/hdf-engine        # detection, query, compliance rollups
@@ -403,6 +411,8 @@ jobs:
             "hdf-extension-graph/go"
             "hdf-engine/go"
             "hdf-cli"
+            "hdf-fixtures"
+            "hdf-schema/testhdf/go"
           )
 
           for mod in "${GO_MODULES[@]}"; do

@@ -936,7 +936,7 @@ func buildSuppressionOverride(result SarifResult, timestamp time.Time) (hdf.Stat
 		Reason:    acceptedSuppressionReason(result.Suppressions),
 		AppliedBy: hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "sarif suppression"},
 		AppliedAt: timestamp,
-		ExpiresAt: timestamp.AddDate(1, 0, 0),
+		ExpiresAt: shared.DefaultOverrideExpiry(timestamp),
 	}
 	return override, effective, true
 }

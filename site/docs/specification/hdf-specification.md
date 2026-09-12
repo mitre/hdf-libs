@@ -1,6 +1,6 @@
-# Heimdall Data Format (HDF) v3.5.0 Specification
+# Heimdall Data Format (HDF) v3.6.0 Specification
 
-**Version**: 3.5.0
+**Version**: 3.6.0
 **Schema**: JSON Schema draft 2020-12
 **License**: Apache-2.0 | The MITRE Corporation
 
@@ -75,7 +75,7 @@ Reference helper implementations: `shared.BuildNoFindingsRequirement` (Go) and `
 
 Assessment findings from running security checks against target systems.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.6.0`
 
 ### Top-Level Fields
 
@@ -98,6 +98,7 @@ A Results document is the primary output of HDF converters. It captures what was
 | id | UUID | no | Unique assessment run identifier |
 | remediation | Remediation | no | Reference to automated fix resources |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts (CTI/STIX, BOMs, advisories, runbooks) relevant to the assessment as a whole *(v3.5.0)* |
+| derivation | Derivation | no | Lineage of a reconciled result set reassembled from a seed snapshot plus change events (see Section 8); absent on documents produced directly by a scan *(v3.5.0)* |
 
 ### Evaluated_Baseline
 
@@ -121,11 +122,12 @@ An evaluated baseline represents the results of a set of security tests that hav
 | inputs | Input[] | no | Typed parameters for execution |
 | depends | Dependency[] | no | Baseline dependencies |
 | supports | SupportedPlatform[] | no | Supported platform targets |
-| checksum | Checksum | no | Baseline integrity hash |
+| integrity | Integrity | no | Cryptographic integrity metadata for this baseline |
 | originalChecksum | Checksum | no | Immutable baseline definition hash |
 | resultsChecksum | Checksum | no | Raw results hash (before amendments) |
 | parentBaseline | string | no | Parent baseline name (overlay/wrapper) |
 | labels | {string: string} | no | Key-value grouping metadata |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the baseline definition (CTI/STIX, advisories, source catalogs) *(v3.5.0)* |
 | extensions | object | no | Tool-specific metadata |
 
 ### Evaluated_Requirement
@@ -159,6 +161,7 @@ A single security requirement with test results. Each requirement maps to one te
 | kev | Kev | no | CISA Known Exploited Vulnerabilities catalog status *(v3.3.0)* |
 | cwe | string[] | no | CWE classification IDs (e.g. `CWE-79`). Replaces free-form `tags.cwe` *(v3.3.0)* |
 | affectedPackages | Affected_Package[] | no | Affected-package identifiers (ecosystem + name + version) for vulnerability findings *(v3.3.0)* |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to this requirement (CTI/STIX correlation, advisories, control/definition sources) *(v3.5.0)* |
 
 ### RequirementResult
 
@@ -178,7 +181,7 @@ A single test execution within a requirement. Each result records what was teste
 
 ### Component
 
-The system element that was assessed. Components are polymorphic — each has a `type` discriminator that determines which additional fields are available. All components share `name`, `type`, and optional fields for identity (`componentId`), external cross-references (`externalIds`), labels, BOM attachment (`boms[]` — SBOM, AI-model, or dataset), artifact integrity (`integrity[]`), and baseline references. Components in Results are typically populated with minimal fields by converters; components in System documents carry the full set including `componentId` for cross-document correlation.
+The system element that was assessed. Components are polymorphic — each has a `type` discriminator that determines which additional fields are available. All components share `name`, `type`, and optional fields for identity (`componentId`), ownership (`owner`), external cross-references (`externalIds`), labels, BOM attachment (`boms[]` — SBOM, AI-model, or dataset), artifact integrity (`integrity[]`), baseline references, per-system input overrides, and a target selector. Components in Results are typically populated with minimal fields by converters; components in System documents carry the full set including `componentId` for cross-document correlation.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -186,11 +189,14 @@ The system element that was assessed. Components are polymorphic — each has a 
 | type | ComponentType | **yes** | Discriminator (see types below) |
 | componentId | UUID | no | Stable identity for cross-document correlation |
 | description | string | no | Component role or purpose |
+| owner | Identity | no | Team or individual responsible for this component |
 | externalIds | {string: string} | no | External ID map (aws, azure, cmdb, emass) |
 | labels | {string: string} | no | Key-value grouping metadata |
 | boms | BillOfMaterials[] | no | Component-scoped BOMs (SBOM, `ai-model`, `dataset`, or reserved `bomType`), by passthrough or normalized. Replaces the former `sbom`/`sbomRef`/`sbomFormat` trio *(v3.4.0)* |
 | integrity | Checksum[] | no | Cryptographic integrity of the component's artifact (model weights/shards, dataset archive, image, package bytes). Generic home replacing per-type `digest`/`checksum` *(v3.4.0)* |
 | baselineRefs | string[] | no | Names of baselines that apply |
+| inputOverrides | InputOverride[] | no | System-specific overrides for baseline input values |
+| targetSelector | TargetSelector | no | Label selector matching targets that belong to this component |
 
 **Type-specific fields:**
 
@@ -216,9 +222,9 @@ The system element that was assessed. Components are polymorphic — each has a 
 
 Security requirements without results (before assessment).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.6.0`
 
-Shares most fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`.
+Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`. The evaluation-only fields of Evaluated_Baseline (`description`, `statusMessage`, `parentBaseline`, `originalChecksum`, `resultsChecksum`, `extensions`) are not defined on a Baseline document.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -227,25 +233,24 @@ Shares most fields with Evaluated_Baseline but uses `Baseline_Requirement` (no r
 | groups | RequirementGroup[] | no | Logical groupings of requirements |
 | inputs | Input[] | no | Typed parameters for execution |
 | depends | Dependency[] | no | Baseline dependencies |
-| checksum | Checksum | no | Baseline integrity hash |
+| integrity | Integrity | no | Cryptographic integrity metadata for this baseline |
 | remediation | Remediation | no | Reference to automated fix resources |
 | generator | Generator | no | Tool that produced this file |
 | title | string | no | Human-readable title |
 | version | string | no | Baseline version |
-| description | string | no | Detailed description |
 | maintainer | string | no | Maintainer name/contact |
 | summary | string | no | e.g. STIG header |
 | copyright | string | no | Copyright holder(s) |
 | copyrightEmail | string | no | Copyright contact email |
 | license | string | no | e.g. "Apache-2.0" |
 | status | string | no | e.g. "loaded" |
-| statusMessage | string | no | Explanation of status |
 | supports | SupportedPlatform[] | no | Supported platform targets |
 | labels | {string: string} | no | Key-value grouping metadata |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the baseline definition (CTI/STIX, advisories, source catalogs) *(v3.5.0)* |
 
 ### Baseline_Requirement
 
-A security requirement before assessment. Structurally identical to Evaluated_Requirement but without results, effectiveStatus, statusOverrides, poams, or evidence. Used to represent standalone baselines (STIG profiles, CIS benchmarks) and in OSCAL catalog/profile conversions where no assessment has occurred yet.
+A security requirement before assessment. Shares `Requirement_Core` with Evaluated_Requirement but carries none of the evaluation-side fields: no results, effectiveStatus, effectiveImpact, effectiveChecksum, disposition, statusOverrides, poams, or evidence, and none of the vulnerability-finding fields (`cvss`, `epss`, `kev`, `cwe`, `affectedPackages`), which exist only on Evaluated_Requirement. Used to represent standalone baselines (STIG profiles, CIS benchmarks) and in OSCAL catalog/profile conversions where no assessment has occurred yet.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -261,11 +266,7 @@ A security requirement before assessment. Structurally identical to Evaluated_Re
 | controlType | ControlType | no | NIST SP 800-53 / SP 800-53A categorization: `policy` \| `procedure` \| `technical` \| `management` \| `operational` *(v3.2.0)* |
 | verificationMethod | VerificationMethod | no | How this requirement is verified: `automated` \| `manual-by-design` \| `manual-pending-automation` \| `hybrid` *(v3.2.0)* |
 | applicability | Applicability | no | Within-baseline applicability: `required` \| `optional` \| `advisory` *(v3.2.0)* |
-| cvss | CVSS[] | no | Typed CVSS scoring; all four major versions supported *(v3.3.0)* |
-| epss | EPSS | no | EPSS exploit-probability data *(v3.3.0)* |
-| kev | Kev | no | CISA Known Exploited Vulnerabilities catalog status *(v3.3.0)* |
-| cwe | string[] | no | CWE classification IDs *(v3.3.0)* |
-| affectedPackages | Affected_Package[] | no | Affected-package identifiers for vulnerability findings *(v3.3.0)* |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to this requirement (CTI/STIX correlation, advisories, control/definition sources) *(v3.5.0)* |
 
 ---
 
@@ -273,12 +274,14 @@ A security requirement before assessment. Structurally identical to Evaluated_Re
 
 Describes a system under assessment. A system document defines the authorization boundary, including what components make up the system, its security categorization (FIPS 199), and its authorization status (ATO). This corresponds to a FedRAMP system or an OSCAL SSP's system characteristics. Results and amendments reference the system via `systemRef` to establish which system the assessment applies to.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.6.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | name | string | **yes** | System name |
 | components | Component[] | **yes** | System components |
+| systemId | UUID | no | Stable identity for cross-document correlation independent of file location; expected in production documents |
+| owner | Identity | no | Team or individual responsible for the system's authorization and compliance (OSCAL `system-owner` responsible-party) |
 | identifier | string | no | System identifier (e.g. FedRAMP ID) |
 | identifierScheme | string | no | Identifier scheme (e.g. "fedramp") |
 | description | string | no | System description |
@@ -288,10 +291,12 @@ Describes a system under assessment. A system document defines the authorization
 | boundaryDescription | string | no | System boundary narrative |
 | controlDesignations | ControlDesignation[] | no | Control inheritance declarations |
 | dataFlows | DataFlow[] | no | Data flows between components or external endpoints |
+| boms | BillOfMaterials[] | no | System-scoped BOMs whose subject is the authorization boundary rather than one component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM); component-scoped BOMs attach on the component *(v3.4.0)* |
 | labels | {string: string} | no | Key-value grouping metadata |
-| checksum | Checksum | no | Document integrity hash |
+| integrity | Integrity | no | Cryptographic integrity metadata for this document |
 | version | string | no | Document version |
 | generator | Generator | no | Tool that produced this file |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts describing the system's threat environment or context (CTI/STIX, BOMs, advisories) *(v3.5.0)* |
 
 ### System Component
 
@@ -299,17 +304,17 @@ System components use the same polymorphic Component type as Results (see Sectio
 
 ### Data Flow
 
-Describes a data flow between components within the system or to external endpoints. Used for authorization boundary diagrams and data flow documentation.
+Describes a data flow between components within the system or to external endpoints. Used for authorization boundary diagrams and data flow documentation. The `to` endpoint is one of: a local `componentId` (UUID), a `Cross_System_Reference` (`{systemRef, componentId}` naming a component in another system document), or an `External_Endpoint` (`{external: true, description}` for an endpoint outside all modeled systems).
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | from | UUID | **yes** | Source componentId |
-| to | UUID or External_Endpoint | **yes** | Destination (local component or external) |
-| protocol | string | no | Protocol (e.g. "HTTPS", "TCP") |
+| to | UUID \| CrossSystemReference \| ExternalEndpoint | **yes** | Destination (local component, component in another system, or external endpoint) |
+| protocol | string | no | Protocol (e.g. "https", "grpc", "jdbc") |
 | port | integer | no | Port number (1–65535) |
-| direction | Direction | no | inbound, outbound, or bidirectional |
+| direction | Direction | no | `unidirectional` (from→to only) or `bidirectional` (e.g. request/response) |
 | description | string | no | Flow description |
-| labels | {string: string} | no | Key-value metadata |
+| authentication | string | no | Authentication mechanism for the connection (e.g. "mTLS", "OAuth2", "Kerberos") |
 
 ### Control Designation
 
@@ -330,20 +335,22 @@ Declares a control's designation within the system — whether it is common (pro
 
 Assessment plan defining what to assess and how. A plan document describes the scope, methodology, and schedule for an upcoming security assessment. It references the system under test via `systemRef` and lists the individual assessments to be performed. This corresponds to an OSCAL SAP (Security Assessment Plan) or a FedRAMP test plan.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.6.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | name | string | **yes** | Plan name |
 | assessments | Assessment[] | **yes** | Planned assessment activities |
+| planId | UUID | no | Stable identity for this plan; expected in production documents |
 | type | PlanType | no | Assessment methodology |
 | description | string | no | Plan description |
 | systemRef | URI-reference | no | Link to System document |
 | schedule | Schedule | no | Assessment schedule |
 | labels | {string: string} | no | Key-value grouping metadata |
-| checksum | Checksum | no | Document integrity hash |
+| integrity | Integrity | no | Cryptographic integrity metadata for this document |
 | version | string | no | Document version |
 | generator | Generator | no | Tool that produced this file |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the plan (CTI/STIX, advisories, methodology documents) *(v3.5.0)* |
 
 ### Assessment
 
@@ -364,18 +371,19 @@ A single assessment within a plan — defines which baseline to run against whic
 
 Status overrides applied after assessment (waivers, attestations, POAMs).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.6.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | name | string | **yes** | Amendment set name |
 | overrides | Override[] | **yes** | Status overrides |
+| amendmentId | UUID | no | Stable identity for this amendments document; distinguishes several amendment documents targeting the same results |
 | description | string | no | Description of this amendment set |
 | systemRef | URI-reference | no | Link to System document |
 | appliedBy | Identity | no | Who applied the overrides |
 | approvedBy | Identity | no | Who approved the overrides |
 | labels | {string: string} | no | Key-value grouping metadata |
-| checksum | Checksum | no | Document integrity hash |
+| integrity | Integrity | no | Cryptographic integrity metadata for this document |
 | signature | Signature | no | Digital signature |
 | version | string | no | Document version |
 | generator | Generator | no | Tool that produced this file |
@@ -402,7 +410,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 | signature | Signature | no | Digital signature for non-repudiation |
 | previousChecksum | Checksum | no | Checksum of the prior amendment; detects an in-place edit of any amendment that has a later one chained to it |
 | cvss | CVSS | no | Structured CVSS scoring backing this override; on `riskAdjustment`, `impact.value` should be approximately `cvss.computedScore / 10.0` *(v3.3.0)* |
-| justification | Justification | no | Structured controlled-vocabulary classification (VEX-aligned: `component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`, `vulnerable_code_cannot_be_controlled_by_adversary`, `inline_mitigations_already_exist`). Complements (does not replace) `reason` *(v3.3.0)* |
+| justification | Justification | no | Structured controlled-vocabulary classification (VEX-aligned; see the Justification enumeration). Complements (does not replace) `reason` *(v3.3.0)* |
 | milestones | Milestone[] | no | Remediation milestones (primarily for `poam` type) |
 | externalReferences | External_Reference[] | no | Inert references to the external artifacts behind this override (e.g. the STIX bundle/object motivating an E:H riskAdjustment); distinct from `evidence` *(v3.5.0)* |
 
@@ -412,7 +420,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 
 Diff between two or more assessment documents. A comparison captures how compliance posture changed between scans, across environments, or between baseline versions. The `comparisonMode` indicates the type of analysis (temporal drift, fleet comparison, baseline evolution, etc.). Each requirement diff records whether a control is new, absent, fixed, regressed, or unchanged. Comparisons are produced by `hdf diff` and consumed by dashboards to show trend data.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.6.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -432,6 +440,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 | annotations | Annotation[] | no | Human/tool annotations on diffs |
 | integrity | Integrity | no | Cryptographic integrity metadata |
 | extensions | object | no | Tool-specific metadata |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the comparison (CTI/STIX, advisories) *(v3.5.0)* |
 
 ---
 
@@ -439,34 +448,52 @@ Diff between two or more assessment documents. A comparison captures how complia
 
 Bundles references to assessment artifacts for audit and compliance submission. An evidence package collects results, baselines, amendments, system descriptions, and supporting materials (screenshots, logs, SBOMs) into a single auditable unit. This corresponds to a FedRAMP security package or an OSCAL POA&M submission bundle. The `completenessCheck` field validates that all expected artifacts are present.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.6.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | name | string | **yes** | Package name |
-| contents | ContentReference[] | **yes** | References to bundled artifacts |
+| contents | ContentReference[] | **yes** | References to bundled artifacts; minItems: 1 |
+| packageId | UUID | no | Stable identity for this package; expected in production ATO submissions |
 | description | string | no | Package description |
 | systemRef | URI-reference | no | Link to System document |
+| planRef | URI-reference | no | Link to the Plan document that drove the assessment; used for completeness verification |
 | preparedBy | Identity | no | Who prepared this package |
 | preparedAt | date-time | no | When package was prepared |
+| externalEvidence | ExternalEvidenceReference[] | no | References to external native-format evidence (log/telemetry corpora) by URI + hash + format, never transcoded into HDF *(v3.4.0)* |
 | completenessCheck | CompletenessCheck | no | Validation of package contents |
 | signature | Signature | no | Digital signature |
 | labels | {string: string} | no | Key-value grouping metadata |
-| checksum | Checksum | no | Document integrity hash |
+| integrity | Integrity | no | Cryptographic integrity metadata for this document |
 | version | string | no | Document version |
 | generator | Generator | no | Tool that produced this file |
+| externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the package beyond the document references it already carries *(v3.5.0)* |
 
 ### Content Reference
 
-A reference to an HDF document or SBOM included in the evidence package.
+A reference to an HDF document or BOM/manifest document included in the evidence package.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| type | ContentType | **yes** | Document type |
+| type | ContentType | **yes** | Document type; `bom` covers any Bill-of-Materials/manifest document, whose specific kind is carried by the referenced document's `bomType` |
 | uri | URI-reference | **yes** | Document location |
 | checksum | Checksum | no | Document integrity hash |
 | description | string | no | Entry description |
 | componentRef | UUID | no | componentId this content relates to |
+
+### External Evidence Reference *(v3.4.0)*
+
+A reference to external native-format evidence (a log or telemetry corpus, or another artifact) carried by URI, integrity hash, and a format discriminator. Reference-only: the artifact is never embedded (corpora can be huge) or transcoded (that would be lossy); it stays canonical in its native format and HDF acts as the structured index. Reserved `format` values are open, serialized standards; custom or vendor-specific kinds use an `x-` prefix (e.g. `x-splunk-export`) so they cannot collide with a value later promoted into the reserved set.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| uri | URI-reference | **yes** | Location of the native-format artifact |
+| format | ExternalEvidenceFormat | **yes** | Native format discriminator: `ecs` \| `ocsf` \| `cyclonedx` \| `spdx` \| `raw-log`, or an `x-` prefixed custom value |
+| checksum | Checksum | no | Integrity hash of the referenced artifact |
+| mediaType | string | no | IANA media type of the on-disk serialization (e.g. `application/x-ndjson`), orthogonal to `format` |
+| formatVersion | string | no | Producer-declared format version (e.g. ECS `9.4.0`); free text, not validated against a registry |
+| description | string | no | Entry description |
+| metadata | ExternalEvidenceMetadata | no | Descriptive metadata: `recordCount` (integer), `timeRange` (`{start, end}` date-times), `collector` (string). Does not affect integrity |
 
 ---
 
@@ -474,7 +501,7 @@ A reference to an HDF document or SBOM included in the evidence package.
 
 A single continuous-monitoring event describing how one requirement's posture changed between two same-target results scans. Producers (`hdf events derive`) emit an NDJSON stream of these events; a batch replays onto a seed results document to reassemble a reconciled state (`hdf events apply`) or folds into a `systemDrift` comparison (`hdf events fold`). The unit is the *requirement*, keyed by `(systemRef, componentId, requirementId)` with a per-key integer `sequence` as the sole ordering authority. Design: ADR-0005; the [SIEM export guide](../guides/siem-export.md) documents the change-event projections to OCSF and SARIF.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.5.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0`
 
 Envelope (CloudEvents-grounded dedup + ordering):
 
@@ -498,6 +525,18 @@ Event body:
 | before | Effective_Projection \| null | **yes** | Thin prior posture (`effectiveStatus`, `effectiveImpact`); null for `new` |
 | after | Evaluated_Requirement | **yes** | Full after-state (absent except for a tombstone `absent` event) |
 | changeReasons | Change_Reason[] | no | Why the posture changed (same vocabulary as the comparison diff) |
+
+### Derivation *(v3.5.0)*
+
+Lineage stamped on a reconciled Results document (one produced by `hdf events apply` rather than by a scanner) so it can never masquerade as primary scan evidence. Records exactly which seed snapshot and event horizon the document represents; conceptually a PROV qualified derivation. Carried as `derivation` on the Results root; documents produced directly by a scan omit it.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| seed | object | **yes** | The seed snapshot: `{uri, checksum}` (URI-reference plus Checksum of the seed document) |
+| source | URI-reference | **yes** | Event-stream producer context whose events were applied (matches the events' envelope `source`) |
+| throughSequence | integer (≥0) | **yes** | Event watermark: the highest per-key sequence applied. A full-scan document supersedes the reconciled view as of its scan time; between scans, the reconciled document with the highest watermark is current |
+| eventsApplied | integer (≥0) | **yes** | Number of change events applied to the seed |
+| asOf | date-time | **yes** | Posture-as-of time of the reconciled view (the analog of PROV `generatedAtTime`) |
 
 ---
 
@@ -542,13 +581,27 @@ Impact is a float 0.0 to 1.0. Conventional mapping to severity:
 `host` | `containerImage` | `containerInstance` | `containerPlatform` | `cloudAccount` | `cloudResource` | `repository` | `application` | `artifact` | `network` | `database` | `aiModel` | `dataset`
 
 ### Direction (data flow)
-`inbound` | `outbound` | `bidirectional`
+`unidirectional` | `bidirectional`
 
 ### ControlDesignationType
 `common` | `system-specific` | `hybrid`
 
 ### HashAlgorithm
 `sha256` | `sha384` | `sha512` | `blake3`
+
+### Justification (override)
+VEX-aligned controlled vocabulary. The first five values are common to OpenVEX, CSAF VEX, and CycloneDX VEX; the remaining six are CycloneDX-specific and describe why the vulnerable code path is unreachable in the deployed configuration. The enum is extended additively across schema versions, so consumers should validate against the schema version the document declares.
+
+`component_not_present` | `vulnerable_code_not_present` | `vulnerable_code_not_in_execute_path` | `vulnerable_code_cannot_be_controlled_by_adversary` | `inline_mitigations_already_exist` | `requires_configuration` | `requires_dependency` | `requires_environment` | `protected_by_compiler` | `protected_at_runtime` | `protected_at_perimeter`
+
+### ContentType (evidence package)
+`hdf-system` | `hdf-baseline` | `hdf-plan` | `hdf-results` | `hdf-amendments` | `hdf-comparison` | `bom`
+
+### ExternalEvidenceFormat (evidence package)
+`ecs` | `ocsf` | `cyclonedx` | `spdx` | `raw-log` | `x-<custom>`
+
+### BomType
+Reserved, CycloneDX-aligned set: `sbom` | `ai-model` | `dataset` | `hbom` | `cbom` | `saasbom` | `obom` | `mbom` | `kbom`, or an `x-` prefixed custom value. `sbom`, `ai-model`, and `dataset` have normalized extensions; the rest are carried by passthrough only.
 
 ---
 
@@ -615,6 +668,41 @@ Comparison operators: `eq` | `ne` | `lt` | `le` | `gt` | `ge` | `contains` | `ma
 { "platformName": "ubuntu", "platformFamily": "debian", "release": "22.04" }
 ```
 
+### Integrity
+Document-level tamper evidence, available on every document root (and on evaluated baselines). `algorithm` and `checksum` are dependent: if one is present the other is required.
+```json
+{ "algorithm": "sha256", "checksum": "abc123...", "signature": "...", "signedBy": "compliance@agency.gov" }
+```
+
+### InputOverride
+System-specific override of a baseline input value, carried on a component's `inputOverrides[]`. `inputName` and `value` are required; `baselineRef` scopes the override to one baseline (omit to apply to every baseline defining that input).
+```json
+{ "baselineRef": "rhel9-stig", "inputName": "max_sessions", "value": 5, "justification": "Kiosk hosts", "approvedBy": { "type": "email", "identifier": "issm@agency.gov" } }
+```
+
+### TargetSelector
+Label selector matching targets by label key-value pairs; all listed labels must match (AND). Used on components (`targetSelector`) and plan assessments.
+```json
+{ "labels.component": "WebTier" }
+```
+
+### BillOfMaterials *(v3.4.0)*
+
+One extensible `Bom` shape, discriminated by `bomType`, carries any manifest kind either by passthrough (`ref` or `document`, the native manifest untouched) or normalized into a queryable extension. Subject identity (name, version, componentId) is inherited from the host component or system; the BOM never re-owns it. A BOM must carry at least one of `ref`, `document`, `packages`, `model`, or `dataset`, and each normalized extension is permitted only on its matching `bomType`. Attached via `boms[]` on components and on the System root.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| bomType | BomType | **yes** | Manifest kind (see the BomType enumeration) |
+| format | string | **yes** | Source manifest format, free-form (e.g. `cyclonedx`, `cyclonedx-ml`, `spdx`, `spdx-ai`, `huggingface`, `croissant`) |
+| ref | URI-reference | no | Passthrough by reference to the native manifest document |
+| document | object | no | Passthrough by embedding: the native manifest carried opaquely |
+| hashes | Checksum[] | no | Integrity of the BOM document itself (not of its subject artifact, which is the component's `integrity[]`) |
+| uniqueId | string | no | Stable identifier of the BOM document (CycloneDX `serialNumber`, SPDX `documentNamespace`) |
+| license | string \| null | no | License of the BOM document as a whole (SPDX expression) |
+| packages | SBOMPackage[] | no | Normalized `sbom` extension: flattened package inventory; each entry `{name (required), version, purl, licenses[]}` |
+| model | AIModelExtension | no | Normalized `ai-model` extension: `modelArchitecture`, `parameterCount`, `serializationFormat`, `adaptationType` (`finetune` \| `adapter` \| `quantized` \| `merge`), `baseModelRef`, `datasetRefs[]`, `intendedUse`, `learningApproach`, `task`, `performanceMetrics[]`, `hyperparameters[]`, `inputOutput` |
+| dataset | DatasetExtension | no | Normalized `dataset` extension: `recordCount`, `datasetFormat`, `dataClassification`, `intendedUse`, `modality`, `provenance`, `statisticalProperties`, `baseDatasetRefs[]`, `derivation` (`filtered` \| `augmented` \| `merged` \| `sampled`) |
+
 ### External_Reference *(v3.5.0)*
 
 A generalized, purpose-agnostic reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property. Cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`), so the by-identity and by-location forms stay interconvertible. A reference is **inert context** — it overrides nothing and carries only lightweight optional attribution. An embedded `document` turns a bare reference into a lossless enrichment envelope (the shape `hdf enrich` writes). Wired onto the results root, `Status_Override`, and other document types.
@@ -642,14 +730,14 @@ HDF supports 4 trust levels for tamper detection:
 | Level | Mechanism | Fields |
 |-------|-----------|--------|
 | 0 | None | *(default)* |
-| 1 | Checksums | `originalChecksum`, `resultsChecksum` on baselines |
+| 1 | Checksums | `integrity` on every document root; `originalChecksum`, `resultsChecksum` on evaluated baselines |
 | 2 | Amendment chain | `previousChecksum` on overrides |
 | 3 | Digital signatures | `signature` on amendments, evidence packages |
 
 ### Checksum Flow
 1. **originalChecksum**: SHA-256 of the baseline definition file (immutable)
 2. **resultsChecksum**: SHA-256 of raw results before amendments
-3. **previousChecksum**: Links each override to the previous override (chain)
+3. **previousChecksum**: Links each override to the previous override (chain). Each amendment's checksum is recorded by the next one, so an in-place edit is detectable only for an amendment that has a later one chained to it; the final amendment, the document envelope, deleted trailing amendments, and a wholesale recompute of the chain are outside what it can detect. Use `signature` for non-repudiation. Omitted on the first amendment
 
 ---
 
@@ -667,7 +755,9 @@ Amendments - systemRef --------> System
 Amendments - componentRef -----> Component (by UUID)
 Amendments - inheritedFrom ----> Component (by UUID)
 Evidence Package - systemRef --> System
+Evidence Package - planRef ----> Plan
 Evidence Package - componentRef -> Component (by UUID, on Content_Reference)
+Results - derivation.seed.uri -> Results (the seed snapshot of a reconciled document)
 System - dataFlows[].from/to --> Component (by UUID)
 System - controlDesignations --> Component (by UUID, providedBy/inheritedBy)
 ```

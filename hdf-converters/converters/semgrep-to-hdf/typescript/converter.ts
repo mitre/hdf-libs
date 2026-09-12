@@ -9,6 +9,7 @@ import {
   buildNistCciTags,
   buildNoFindingsRequirement,
   deriveControlTypeFromTags,
+  extractCWEIDs,
   inputChecksum,
   markUnratedSeverity,
   validateInputSize,
@@ -155,12 +156,12 @@ function lineOf(position: SemgrepPosition | undefined): number | undefined {
 
 /**
  * Semgrep emits CWEs in prose form -- 'CWE-89: Improper Neutralization of ...'
- * -- while the mapping keys on the bare number.
+ * -- while the mapping keys on the bare number. Read entry by entry so source
+ * order is kept, matching the Go twin.
  */
 function extractCweIds(metadata: SemgrepMetadata): number[] {
   return normalizeToArray(metadata.cwe)
-    .map((entry) => /CWE-(\d+)/i.exec(entry)?.[1])
-    .filter((id): id is string => id !== undefined)
+    .flatMap((entry) => extractCWEIDs(entry))
     .map((id) => Number.parseInt(id, 10))
     .filter((id) => Number.isFinite(id));
 }

@@ -2,8 +2,6 @@ package tools
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -69,6 +67,7 @@ type fileConvertSummary struct {
 	Valid            bool   `json:"valid"`
 	Error            string `json:"error,omitempty"`
 	Code             string `json:"code,omitempty"`
+	Notice           string `json:"notice,omitempty"`
 }
 
 // toMap renders a batch entry as the wire map the response carries. omitempty is
@@ -99,6 +98,9 @@ func (s fileConvertSummary) toMap() map[string]any {
 	}
 	if s.Code != "" {
 		m["code"] = s.Code
+	}
+	if s.Notice != "" {
+		m["notice"] = s.Notice
 	}
 	return m
 }
@@ -135,9 +137,9 @@ func RegisterConvert(s *sdkmcp.Server, ldr *loader.Loader) {
 }
 
 func hdfConvert(ldr *loader.Loader) sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
-	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
+	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
 		if len(in.Sources) > 0 || in.Directory != "" {
-			return hdfConvertBatch(ldr, in)
+			return hdfConvertBatch(ctx, ldr, in)
 		}
 		data, terr := rawInput(in.Source, in.Content)
 		if terr != nil {
@@ -182,7 +184,7 @@ func hdfConvert(ldr *loader.Loader) sdkmcp.ToolHandlerFor[convertInput, convertO
 		// against the ACTUAL written path — empty when nothing was written, which
 		// routes resolution to the in-memory cache so the handle is consumable
 		// even with writes disabled (jobi.1 / D1).
-		_, _ = ldr.Load(hdfBytes)
+		out.Notice = appendNotice(out.Notice, registerProduced(ldr, hdfBytes, writtenPath))
 		encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version()))
 		if herr != nil {
 			return nil, convertOutput{}, fmt.Errorf("encoding handle: %w", herr)
@@ -198,7 +200,7 @@ func hdfConvert(ldr *loader.Loader) sdkmcp.ToolHandlerFor[convertInput, convertO
 // per-file summary array — never a document body. Continue-past-failure is the
 // default; failFast aborts on the first failed file. The whole batch carries a
 // single write notice (dry-run / writes-disabled), not one per file.
-func hdfConvertBatch(ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
+func hdfConvertBatch(ctx context.Context, ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
 	if in.Content != "" || (in.Source != nil && (in.Source.Path != "" || in.Source.Handle != "")) {
 		return toolError(mcperr.Arg(
 			"batch inputs (sources/directory) cannot be combined with single-file source/content",
@@ -220,6 +222,11 @@ func hdfConvertBatch(ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResul
 
 	var out convertOutput
 	for _, rel := range paths {
+		// A batch is the most expensive tool call: let a client stop it between
+		// files, returning what has been converted so far.
+		if err := ctx.Err(); err != nil {
+			return nil, out, err
+		}
 		entry := convertOneFile(ldr, rel, in, shouldWrite)
 		out.Batch = append(out.Batch, entry.toMap())
 		if in.FailFast && entry.Code != "" {
@@ -350,9 +357,6 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 	entry.Sha256 = sum.Sha256
 	entry.Valid = true
 
-	// Register in the content cache so the handle resolves even with no write.
-	_, _ = ldr.Load(hdfBytes)
-
 	writtenPath := ""
 	if shouldWrite {
 		wp, _, werr := writeArtifact(batchOutputPath(in.OutputDir, rel), false, in.Overwrite, hdfBytes)
@@ -364,6 +368,8 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 			entry.OutputPath = wp
 		}
 	}
+	// Register in the content cache so the handle resolves even with no write.
+	entry.Notice = registerProduced(ldr, hdfBytes, writtenPath)
 	if encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version())); herr == nil {
 		entry.Handle = encoded
 	}
@@ -431,6 +437,12 @@ func convertAndPostProcess(conv convreg.Converter, data []byte, labels map[strin
 		return nil, mcperr.New(mcperr.SchemaInvalid, "conversion failed: "+err.Error(), nil).
 			WithNextCall("verify the input is valid output from the source tool")
 	}
+	// Count fidelity: a converter that declares how many requirements its input
+	// must yield is held to it, the same refusal the CLI makes.
+	if _, err := convreg.CheckRequirementFidelity(conv, data, hdfBytes); err != nil {
+		return nil, mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+			WithNextCall("this indicates a converter defect; do not rely on the output")
+	}
 	if hdfBytes, err = hdfdoc.ApplyLabels(hdfBytes, labels); err != nil {
 		return nil, mcperr.New(mcperr.SchemaInvalid, "applying labels failed: "+err.Error(), nil)
 	}
@@ -449,6 +461,10 @@ func rawInput(src *handle.Source, content string) ([]byte, *mcperr.Error) {
 	case hasContent && hasSource:
 		return nil, mcperr.Arg("pass either source or content, not both", "pass exactly one of source or content")
 	case hasContent:
+		if err := hdfutil.ValidateInputSize([]byte(content), mcpMaxInputSizeInt()); err != nil {
+			return nil, mcperr.New(mcperr.TooLarge, err.Error(), nil).
+				WithNextCall("write the tool output to a file under HDF_MCP_ROOT and pass source.path instead")
+		}
 		return []byte(content), nil
 	case hasSource:
 		if src.Handle != "" {
@@ -520,12 +536,12 @@ func convertSummary(hdfBytes []byte) convertOutput {
 	for i := range results.Baselines {
 		reqCount += len(results.Baselines[i].Requirements)
 	}
-	sum := sha256.Sum256(hdfBytes)
+
 	return convertOutput{
 		DocType:          "results",
 		BaselineCount:    len(results.Baselines),
 		RequirementCount: reqCount,
-		Sha256:           hex.EncodeToString(sum[:]),
+		Sha256:           hdfutil.SHA256Hex(hdfBytes),
 		Valid:            true,
 	}
 }

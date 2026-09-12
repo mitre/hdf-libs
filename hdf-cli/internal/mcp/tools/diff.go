@@ -2,8 +2,6 @@ package tools
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -17,6 +15,8 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // diffNarrowParam names the response controls a truncation notice recommends.
@@ -213,8 +213,7 @@ func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dry
 	// Validate and hash the comparison regardless of whether it is written, so a
 	// dry-run/writes-disabled preview still reports what would land on disk.
 	out.Valid = validators.Validate(docBytes, validators.TypeComparison).Valid
-	sum := sha256.Sum256(docBytes)
-	out.Sha256 = hex.EncodeToString(sum[:])
+	out.Sha256 = hdfutil.SHA256Hex(docBytes)
 
 	// The write itself goes through the one shared write model (gate + dry_run +
 	// confinement) — no direct filesystem write in the tool.
@@ -230,13 +229,16 @@ func emitComparison(out *diffOutput, comp diff.HdfComparison, output string, dry
 	return nil
 }
 
-// appendNotice joins a write-model notice onto any existing (e.g. truncation)
-// notice without clobbering it.
+// appendNotice joins a notice onto any existing one without clobbering it.
 func appendNotice(existing, add string) string {
-	if existing == "" {
+	switch {
+	case add == "":
+		return existing
+	case existing == "":
 		return add
+	default:
+		return existing + " " + add
 	}
-	return existing + " " + add
 }
 
 // changeRow projections. Concise carries the identifying + state fields; full

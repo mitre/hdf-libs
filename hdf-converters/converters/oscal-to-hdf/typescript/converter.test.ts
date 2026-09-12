@@ -905,7 +905,7 @@ describe('OSCAL shared helpers', () => {
 
     it('maps 0.0 to info', () => {
       expect(impactToSeverity(0.0)).toBe('info');
-      expect(impactToSeverity(0.09)).toBe('info');
+      expect(impactToSeverity(0.09)).toBe('low');
     });
   });
 

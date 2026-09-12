@@ -88,7 +88,7 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 	// engine performs no IO and classifies match/mismatch/skipped/error.
 	fetch := confinedFetch(pkgDir)
 	results, counts := toVerifyResults(hdfengine.VerifyChecksums(contents, fetch))
-	renderVerifyOutput(doc, results, counts, aggregateAgentOverrides(fetch, contents))
+	renderVerifyOutput(doc, results, counts, hdfengine.AgentOverridesInPackage(contents, fetch))
 
 	if counts.mismatch > 0 || counts.errors > 0 {
 		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
@@ -108,15 +108,17 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 }
 
 // confinedFetch returns a FetchFunc that resolves a content URI relative to the
-// package directory, confined by SafePath. SafePath and read failures both
-// surface as errors, which VerifyChecksums classifies as an error status.
+// package directory, confined by SafePath and read through the same size-gated
+// boundary as the package itself — a referenced file is untrusted input too.
+// SafePath and read failures both surface as errors, which VerifyChecksums
+// classifies as an error status.
 func confinedFetch(pkgDir string) hdfengine.FetchFunc {
 	return func(uri string) ([]byte, error) {
 		path, err := hdfutil.SafePath(pkgDir, uri)
 		if err != nil {
 			return nil, err
 		}
-		return os.ReadFile(path) //nolint:gosec // validated by SafePath
+		return readFromFile(path, true)
 	}
 }
 
@@ -128,7 +130,7 @@ func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceCon
 	if err != nil {
 		return fmt.Errorf("invalid plan reference: %w", err)
 	}
-	planData, err := os.ReadFile(planPath) //nolint:gosec // validated by SafePath
+	planData, err := readFromFile(planPath, true)
 	if err != nil {
 		return fmt.Errorf("failed to read plan %s: %w", planRef, err)
 	}
@@ -146,7 +148,7 @@ func verifyCompleteness(pkgDir, planRef string, contents []hdfengine.EvidenceCon
 		if pathErr != nil {
 			return fmt.Errorf("invalid results URI %q: %w", c.URI, pathErr)
 		}
-		resultsData, readErr := os.ReadFile(resultsPath) //nolint:gosec // validated by SafePath
+		resultsData, readErr := readFromFile(resultsPath, true)
 		if readErr != nil {
 			continue // checksum verification already reported this
 		}
@@ -205,30 +207,6 @@ func toVerifyResults(checksums []hdfengine.ChecksumResult) ([]evidenceVerifyResu
 		}
 	}
 	return results, counts
-}
-
-// aggregateAgentOverrides sums the agent-attributed override count across the
-// hdf-results documents the evidence package references, reusing the shared
-// engine count. Unreadable or non-results entries are skipped (checksum
-// verification already reports read failures); the read is the same SafePath-
-// confined fetch used for checksums.
-func aggregateAgentOverrides(fetch hdfengine.FetchFunc, contents []hdfengine.EvidenceContent) int {
-	total := 0
-	for _, c := range contents {
-		if c.Type != "hdf-results" || c.URI == "" {
-			continue
-		}
-		data, err := fetch(c.URI)
-		if err != nil {
-			continue
-		}
-		results, err := parseHDFResults(data)
-		if err != nil {
-			continue
-		}
-		total += hdfengine.AgentOverrideCount(results)
-	}
-	return total
 }
 
 func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResult, counts verifyCounts, agentOverrides int) {

@@ -27,7 +27,7 @@ type ParseResult struct {
 	Success bool        `json:"success"`
 	Data    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
-	Type    string      `json:"type,omitempty"` // "results" or "baseline"
+	Type    string      `json:"type,omitempty"` // "results", "baseline", "system", "plan", "evidencePackage", or "comparison"
 }
 
 // ResultsParseResult is a specialized parse result for HDF Results

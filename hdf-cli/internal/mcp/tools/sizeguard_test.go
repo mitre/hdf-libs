@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -38,6 +39,24 @@ func TestMcpMaxInputSize_Env(t *testing.T) {
 	t.Setenv("HDF_MCP_MAX_SIZE", "")
 	if got := mcpMaxInputSize(); got != int64(hdfutil.DefaultMaxInputSize) {
 		t.Fatalf("unset env must use the default, got %d", got)
+	}
+}
+
+// HDF_MCP_MAX_SIZE parses as int64 but several callers need an int. Narrowing
+// must be bounded, or a value past int32 wraps on a 32-bit build and yields a
+// ceiling smaller than the caller asked for — or a negative one.
+func TestMCPMaxInputSizeInt_ClampsToABoundedInt(t *testing.T) {
+	t.Setenv("HDF_MCP_MAX_SIZE", "9223372036854775807")
+	if got := mcpMaxInputSizeInt(); got != math.MaxInt32 {
+		t.Fatalf("a value past int32 must clamp to the documented ceiling, got %d", got)
+	}
+	t.Setenv("HDF_MCP_MAX_SIZE", "1234")
+	if got := mcpMaxInputSizeInt(); got != 1234 {
+		t.Fatalf("a value that fits must pass through, got %d", got)
+	}
+	t.Setenv("HDF_MCP_MAX_SIZE", "0")
+	if got := mcpMaxInputSizeInt(); got != hdfutil.DefaultMaxInputSize {
+		t.Fatalf("a rejected value must fall back to the default, got %d", got)
 	}
 }
 

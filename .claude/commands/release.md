@@ -50,7 +50,8 @@ These are the traps this skill exists to prevent. Real failure modes from the 3.
 5. **`go.work.sum` churn appears mid-release.** The Go toolchain speculatively adds checksum entries (`golang.org/x/sys`, AWS SDK, etc.) during builds. These are NOT part of the release — exclude them from the commit.
 6. **Historical CHANGELOG entries are NOT version-string substitutions.** Lines like `## [3.1.0]` or `Schema version bumped from v3.0.0 to v3.1.0` are factual history. Touching them rewrites the past.
 7. **Cross-library duplication slips in via agent-swarm work.** New code re-implements a function that already exists in a shared package instead of importing it (the architecture's single most common violation). Phase 1's DRY review exists to catch this before it ships.
-8. **READMEs drift silently from the CLI/API they document.** `hdf-cli/README.md` documented removed `info`/`stats` commands and the old `hdf list <what> <file>` syntax long after the CLI folded those into `hdf list <file> --detail`; `hdf-diff/README.md` documented a non-existent `--mode baseline` flag. This drift is **not diff-scoped** — it predates the release window and survives any review that only looks at `BASE..HEAD`. Phase 1's docs-accuracy dimension checks each README against the *actual* current command/flag surface, not just what changed.
+8. **A pre-release tag published Go modules nobody could build.** Go reads a module's `go.mod` from the tagged commit and ignores its `replace` directives, so tagging `hdf-converters/v3.6.0-rc.4` on a tree whose requires name `v3.6.0` produced a module requiring siblings at a version no tag provides. `go get` still succeeded, so it looked fine; `go build` failed on first import. Every pre-release from rc.1 to rc.4 shipped that way and nobody noticed, because local builds pass through the replaces. The fix is Phase 7.5's prepare-release commit; the lesson is that a pre-release must name **itself** in every intra-repo require, not the stable version it is a candidate for.
+9. **READMEs drift silently from the CLI/API they document.** `hdf-cli/README.md` documented removed `info`/`stats` commands and the old `hdf list <what> <file>` syntax long after the CLI folded those into `hdf list <file> --detail`; `hdf-diff/README.md` documented a non-existent `--mode baseline` flag. This drift is **not diff-scoped** — it predates the release window and survives any review that only looks at `BASE..HEAD`. Phase 1's docs-accuracy dimension checks each README against the *actual* current command/flag surface, not just what changed.
 
 ## Execution
 
@@ -203,8 +204,9 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 | Workspace `package.json` (10 files: `hdf-cli`, `hdf-converters`, `hdf-diff`, `hdf-engine`, `hdf-extension-graph`, `hdf-generators`, `hdf-mappings`, `hdf-parsers`, `hdf-utilities`, `hdf-validators`) | `"version": "OLD"` → `"version": "NEW"` |
 | `hdf-schema/package.json` | Same |
 | `hdf-engine/go/engine.go` — the `Version()` constant | `return "OLD"` → `return "NEW"`. TestVersion asserts this equals `hdf-engine/package.json`, so a missed bump fails CI (bead 4908.19). It is NOT an ldflags stamp — the engine is consumed as a library where no linker flags are set. |
+| `hdf-engine/src/index.ts` — the `engineVersion` constant | `'OLD'` → `'NEW'`. The TypeScript twin of the above, asserted against `hdf-engine/package.json` by `hdf-engine/test/index.test.ts`. Missing it is what left hdf-engine a release behind the workspace at 3.6.0. |
 | `hdf-schema/src/schemas/*.schema.json` (7 root schemas) | `"$id"` URLs ending in `/vOLD` → `/vNEW`. Also any `$ref` URLs in primitives that quote a version path. |
-| Cross-module `go.mod` requires (`hdf-converters/go.mod`, `hdf-cli/go.mod`, `hdf-diff/go/go.mod`, `hdf-engine/go/go.mod`, `hdf-parsers/go/go.mod`, `hdf-generators/go/go.mod`) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g` |
+| Cross-module `go.mod` requires — **discover them, never enumerate**: `grep -rlE 'github.com/mitre/hdf-libs/[^ ]+ v[0-9]' --include=go.mod . \| grep -v node_modules` (nine files at the time of writing, including `hdf-extension-graph/go/go.mod`, `hdf-fixtures/go.mod` and `hdf-schema/testhdf/go/go.mod`, which a hand-kept list has missed twice) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g`. Then the hard gate: `grep -rE 'hdf-libs/[^ ]+ vOLD' --include=go.mod .` must return nothing. Use `scripts/set-go-module-versions.sh vNEW` rather than editing by hand — it rewrites with `go mod edit` (a regex misses a require carrying a trailing comment) and then re-reads every file to prove none was left behind. **The version it writes must be the exact version the commit will be tagged with**, so a pre-release writes its own `-rc.N` suffix; see Phase 7.5. |
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
 
@@ -290,6 +292,7 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
 
 ### Phase 7 — Stage and propose the commit
 
+0. **Branch first.** If the current branch is `main`, create `release/vNEW-prep` before staging anything: a release commit on the default branch has had to be moved to a branch after the fact, and the `main` ruleset now requires the gate checks on a pull request anyway.
 1. **Exclude `go.work.sum`** from the staged set. It collects speculative checksums from the Go toolchain during builds; it's environmental churn, not the release.
 2. Explicit `git add` of every file you intended to change (per global rule: no `git add .` / `git add -A`).
 3. Run `git status --short` and verify only the intended files are staged.
@@ -297,10 +300,62 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
    - **Subject:** `chore(release): bump workspace from OLD to NEW`
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
-6. **Never tag.** Tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag` manually.
+6. **Never tag a stable release manually.** Stable tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag vNEW` for the stable. The one sanctioned manual tag is the **`vNEW-rc.N` prerelease tag** that triggers Phase 7.5's dry-run — pushing that tag drives the workflow's prerelease path; it is not a manual publish.
 7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` plus a per-major tag (`v3`, …) and rc's under `rc` — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other 8 packages keep the default `latest` behavior — do not "harmonize" them onto `next`.
 
-### Phase 8 — Post-merge verification (after the user pushes and merges)
+### Phase 7.5 — Prerelease (RC) publish dry-run *(only when the publishing pipeline changed)*
+
+**Gate condition — run this phase ONLY if the publishing pipeline itself changed since the last release.** Check:
+
+```bash
+git diff --name-only "$BASE..HEAD" -- .github/workflows/release.yml .github/workflows/*publish* .goreleaser.yaml .goreleaser.yml
+```
+
+Non-empty (or any change to how packages are published — OIDC, dist-tag logic, goreleaser config, SBOM/signing/provenance steps) → run the dry-run. Empty → **skip** to Phase 8; the pipeline is unchanged, so a stable publish carries no new pipeline risk. (This is deliberately conditional: an RC round-trip is cheap insurance against a *broken pipeline*, not something every release needs. When in doubt, run it.)
+
+**Why:** the publishing workflow is the one part of a release you cannot dry-run by reading the diff — it only proves itself by running. When it changed, validate it on a throwaway RC **before** the stable, so a broken publish surfaces on `rc` and never on `latest`.
+
+**Steps (after the release PR is merged to `main`):**
+
+0. **Prepare-release commit — REQUIRED before the tag, and the step this phase most often skips.** Rewrite every intra-repo `go.mod` require to the exact prerelease version, then commit that:
+
+   ```bash
+   scripts/set-go-module-versions.sh vNEW-rc.1
+   git commit -s -am "chore(release): prepare vNEW-rc.1"
+   ```
+
+   Without it the tag publishes Go modules that resolve for nobody: Go reads each module's `go.mod` from the tagged commit and ignores its `replace` directives, so requires naming the stable `vNEW` point at a version no tag provides. `go get` still succeeds and only `go build` fails, which is why rc.1 through rc.4 of 3.6.0 all shipped broken. This mirrors etcd's `release_mod.sh` and opentelemetry-go's `multimod prerelease`; both commit the rewrite before tagging.
+
+   The workflow deliberately does NOT do this for you. It runs on the tag, so any commit it made would come too late.
+
+   Two modules stay at their zero pseudo-version because no release tags them (`hdf-fixtures`, `hdf-schema/testhdf/go`) — the script names them. Until `hdf-libs-gqw5k` is fixed they keep `go list -m all` and `go mod tidy` broken for consumers, at stable as much as at a prerelease, so do not read a green `go build` as proof the module graph is sound.
+
+   After the prerelease, the stable cut needs the same rewrite at the stable version — Phase 2 covers it, but re-run the script if a prerelease moved the requires in between.
+
+1. Push the prerelease tag: `git push origin vNEW-rc.1` (the sanctioned manual tag from Phase 7 note 6). This triggers `release.yml` in prerelease mode — it is NOT a manual `npm publish`/`pnpm publish`.
+2. Watch the workflow run to green (`gh run watch`, or the Actions UI). A failed prerelease run is the whole point — diagnose and fix the pipeline, then cut `-rc.2`, etc.
+3. Verify the publish landed correctly — the same checks as Phase 8, but against the RC:
+   - all per-module tags appear at `vNEW-rc.1` in lockstep;
+   - **npm dist-tags:** `@mitre/hdf-converters` got `rc` and **`latest` is UNTOUCHED** (still the 2.x heimdall2 line) — `npm view @mitre/hdf-converters dist-tags`. An RC that moves `latest` is an incident (restore per Phase 8).
+   - the other 8 packages published under a prerelease tag (`rc`/`next`), **not** `latest`;
+   - the supply-chain artifacts are actually attached to the GitHub prerelease: syft SBOM, cosign signature, SLSA build provenance (whichever the pipeline change added);
+   - **the Go modules actually build for a consumer** — this is the check that catches a bad prepare-release commit, and the one whose absence let four prereleases ship unbuildable. Do it outside the repo so no `replace` or workspace can mask it:
+
+     ```bash
+     d=$(mktemp -d) && cd "$d" && printf 'module example.com/c\n\ngo 1.26.6\n' > go.mod
+     GOWORK=off GOFLAGS=-mod=mod go get github.com/mitre/hdf-libs/hdf-converters/v3@vNEW-rc.1
+     cat > main.go <<'GO'
+     package main
+     import ("fmt"; shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go")
+     func main() { fmt.Println(shared.DefaultMaxJSONSize) }
+     GO
+     GOWORK=off GOFLAGS=-mod=mod go build ./...
+     ```
+
+     A passing `go get` proves nothing on its own: resolution of the named module succeeds while its requires are still unresolvable. The build is the assertion.
+4. **Gate:** cut the stable `vNEW` (Phase 8) ONLY after a clean RC run. If the RC needed fixes, they land as their own commits/PR and the RC is re-cut before stable.
+
+### Phase 8 — Post-stable verification (after the user pushes and merges the stable)
 
 Once the release PR is merged to `main`, the user runs the release workflow. Confirm with the user that:
 - All per-module Git tags appear at the same version
@@ -327,7 +382,7 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] Phase 1.6 suppression review: pnpm overrides re-validated against current advisory floors; `ignoreGhsas` checked for now-available fixes; dependabot `ignore` rules checked against their still-blocking conditions; retirements filed as their own commits
 - [ ] *(minor/major)* Phase 1.7 vendored external-schema freshness: `HDF_PROVENANCE_NETWORK=1 go test ./shared/... -run SchemaLoadProvenanceSourcesStillResolve` passes (it re-fetches every recorded source and SHA-256-compares); drift refreshed + revalidated, or confirmed no-op
 - [ ] 10 `package.json` files at NEW
-- [ ] 5 `go.mod` files: every `hdf-libs/<x>/v3 vNEW` (no stragglers)
+- [ ] Every `go.mod` with a cross-module require (discovered by grep, not a fixed count) at `hdf-libs/<x>/v3 vNEW`; the post-sweep grep for `vOLD` returns nothing
 - [ ] *(minor/major)* 7 schema `$id` URLs at NEW
 - [ ] *(minor/major)* 7 new archive files staged: `site/public/schemas/<name>/vNEW/index.json` (one per main schema). `cd site && pnpm generate` writes them; `git add 'site/public/schemas/*/vNEW/'` stages them. See Phase 2.5.
 - [ ] *(minor/major)* Root `README.md` current-version claims updated
@@ -339,7 +394,9 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] `CHANGELOG.md` has a new `## [NEW] - YYYY-MM-DD` entry; historical entries untouched
 - [ ] `pnpm check` (build + lint + test + security) all green
 - [ ] `git status` shows no `go.work.sum`, `node_modules/`, `dist/`, or unrelated files staged
-- [ ] No `git tag` run manually
+- [ ] No stable `git tag` run manually (the `vNEW-rc.N` prerelease tag for Phase 7.5 is the one sanctioned manual tag)
+- [ ] *(when cutting any prerelease tag)* Phase 7.5 step 0 prepare-release commit: `scripts/set-go-module-versions.sh vNEW-rc.N` run and committed BEFORE the tag, and a consumer `go build` against the published prerelease passes outside the repo
+- [ ] *(only if `.github/workflows/release.yml` / publishing config changed since BASE)* Phase 7.5 RC dry-run: `vNEW-rc.1` pushed, workflow ran green, dist-tags correct (`rc`; `latest` untouched on 2.x), SBOM/cosign/provenance artifacts present — stable cut only after a clean RC
 - [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next`/`v<major>` (or `rc`) at NEW; no manual publishes or dist-tag moves to `latest`
 - [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers
 - [ ] Phase 9: CI scan-gate CLI pin bumped post-publish (`HDF_CLI_VERSION`/`HDF_CLI_SHA256` in ci.yml, sha from the release's checksums.txt) as its own commit; parked breaking-change cards waiting on the new CLI unblocked

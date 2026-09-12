@@ -4,6 +4,8 @@
  * Mirrors the Go helpers in converters/oscal-to-hdf/go/shared.go.
  */
 
+import { impactToSeverity as sharedImpactToSeverity, severityToImpactWithAliases } from '@mitre/hdf-utilities';
+import { oscalSeverityFromHdf } from '../../../shared/typescript/converterutil.js';
 import type { Property, Part, Characterization, DocumentMetadata, Oscal } from './types.js';
 
 const controlEnhancementRe = /^([a-z]{2}-\d+)\.(\d+)$/;
@@ -146,6 +148,14 @@ export function flattenPartsByName(
   return pieces.join('\n').trim();
 }
 
+/** The one OSCAL spelling the standard severity map does not know; every other
+ *  facet value is standard vocabulary. */
+const RISK_FACET_SEVERITY_ALIASES: Record<string, number> = { moderate: 0.5 };
+
+/** Sentinel for "this facet's value is not a severity" — impact is 0.0-1.0, so
+ *  a negative can never be a real reading. */
+const UNRECOGNIZED_FACET_IMPACT = -1;
+
 /**
  * Extracts impact/severity from risk characterization facets.
  * Returns a normalized 0.0-1.0 impact value. Falls back to defaultImpact.
@@ -158,23 +168,9 @@ export function extractRiskSeverity(
   for (const c of characterizations) {
     if (!c.facets) continue;
     for (const f of c.facets) {
-      if (f.name === 'impact' || f.name === 'risk' || f.name === 'likelihood') {
-        switch (f.value.toLowerCase()) {
-          case 'critical':
-            return 0.9;
-          case 'high':
-            return 0.7;
-          case 'moderate':
-          case 'medium':
-            return 0.5;
-          case 'low':
-            return 0.3;
-          case 'info':
-          case 'informational':
-          case 'none':
-            return 0.0;
-        }
-      }
+      if (f.name !== 'impact' && f.name !== 'risk' && f.name !== 'likelihood') continue;
+      const impact = severityToImpactWithAliases(f.value, RISK_FACET_SEVERITY_ALIASES, UNRECOGNIZED_FACET_IMPACT);
+      if (impact >= 0) return impact;
     }
   }
   return defaultImpact;
@@ -219,11 +215,7 @@ export function nistTagToControlId(tag: string): string {
  * This is the reverse of extractRiskSeverity.
  */
 export function impactToSeverity(impact: number): string {
-  if (impact >= 0.9) return 'critical';
-  if (impact >= 0.7) return 'high';
-  if (impact >= 0.4) return 'moderate';
-  if (impact >= 0.1) return 'low';
-  return 'info';
+  return oscalSeverityFromHdf(sharedImpactToSeverity(impact));
 }
 
 /**

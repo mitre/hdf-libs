@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 // legacyhdfFixturePath returns the path to a legacyhdf test fixture.

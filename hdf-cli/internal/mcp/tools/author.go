@@ -2,8 +2,6 @@ package tools
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -95,8 +93,7 @@ func hdfAuthor(ldr *loader.Loader) sdkmcp.ToolHandlerFor[authorInput, authorOutp
 				fmt.Sprintf("the authored %s document does not validate: %s", in.DocType, vr.Error()), nil).
 				WithNextCall("fix the content; consult the hdf://schema/hdf-" + resourceSlug(in.DocType) + "/{def} slice resources for the required per-item shape")), authorOutput{}, nil
 		}
-		sum := sha256.Sum256(docBytes)
-		out.Sha256 = hex.EncodeToString(sum[:])
+		out.Sha256 = hdfutil.SHA256Hex(docBytes)
 
 		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, docBytes)
 		if werr != nil {
@@ -112,7 +109,7 @@ func hdfAuthor(ldr *loader.Loader) sdkmcp.ToolHandlerFor[authorInput, authorOutp
 		// against the ACTUAL written path — empty when nothing was written, which
 		// routes resolution to the in-memory cache so author→apply→compliance
 		// composes with writes disabled (jobi.1 / D1).
-		_, _ = ldr.Load(docBytes)
+		out.Notice = appendNotice(out.Notice, registerProduced(ldr, docBytes, writtenPath))
 		encoded, herr := handle.Encode(handle.Compute(writtenPath, docBytes, string(st), hdfengine.Version()))
 		if herr != nil {
 			return nil, authorOutput{}, fmt.Errorf("encoding handle: %w", herr)

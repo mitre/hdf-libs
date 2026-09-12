@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"time"
-
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // determineControlStatus derives a display status string from a requirement
@@ -13,6 +10,5 @@ import (
 // governing override, stored effectiveStatus, worst-wins rollup — see
 // status-determination.md). Used by list, diff, and query commands.
 func determineControlStatus(control hdf.EvaluatedRequirement) string {
-	status := hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(control), time.Time{})
-	return SchemaStatusToDisplay(hdf.ResultStatus(status))
+	return SchemaStatusToDisplay(hdf.ResultStatus(shared.RequirementEffectiveStatus(control)))
 }

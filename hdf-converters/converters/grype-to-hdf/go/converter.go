@@ -371,23 +371,15 @@ func buildCvssEntries(vuln GrypeVulnerability) []hdf.Cvss {
 	return out
 }
 
-// mapGrypeTypeToEcosystem translates Grype's artifact.type (apk, deb, rpm,
-// npm, python, gem, go-module, java-archive, dotnet, rust-crate, binary, ...)
-// to the corresponding schema Ecosystem enum. Anything that doesn't fit the
-// schema's published enum (apk, binary, future types) falls back to "generic"
-// per the schema's documented convention.
+// mapGrypeTypeToEcosystem translates Grype's artifact.type to the schema
+// Ecosystem enum. Only the Grype spellings that differ from the PURL type
+// vocabulary are listed; the rest defer to the shared resolver, which falls
+// back to "generic" for anything outside the schema's enum (apk, binary,
+// future types) per the schema's documented convention.
 func mapGrypeTypeToEcosystem(grypeType string) hdf.Ecosystem {
 	switch strings.ToLower(grypeType) {
-	case "rpm":
-		return hdf.RPM
-	case "deb":
-		return hdf.Deb
-	case "npm":
-		return hdf.Npm
 	case "python":
 		return hdf.Pypi
-	case "gem":
-		return hdf.Gem
 	case "go-module":
 		return hdf.Go
 	case "java-archive", "jenkins-plugin":
@@ -397,7 +389,7 @@ func mapGrypeTypeToEcosystem(grypeType string) hdf.Ecosystem {
 	case "rust-crate":
 		return hdf.Cargo
 	default:
-		return hdf.Generic
+		return shared.EcosystemFromPurlType(grypeType)
 	}
 }
 
@@ -408,29 +400,23 @@ func mapGrypeTypeToEcosystem(grypeType string) hdf.Ecosystem {
 // matching the package's primary vendor:product identity).
 func buildAffectedPackages(match GrypeMatch) []hdf.AffectedPackage {
 	artifact := match.Artifact
-	name := artifact.Name
-	version := artifact.Version
-	ecosystem := mapGrypeTypeToEcosystem(artifact.Type)
-	pkg := hdf.AffectedPackage{
-		Name:      &name,
-		Version:   &version,
-		Ecosystem: &ecosystem,
+	opts := shared.AffectedPackageOptions{
+		Name:      artifact.Name,
+		Version:   artifact.Version,
+		Ecosystem: mapGrypeTypeToEcosystem(artifact.Type),
+		Purl:      artifact.PURL,
 	}
-	if len(artifact.CPEs) > 0 && artifact.CPEs[0] != "" {
-		cpe := artifact.CPEs[0]
-		pkg.Cpe = &cpe
-	}
-	if artifact.PURL != "" {
-		purl := artifact.PURL
-		pkg.Purl = &purl
+	if len(artifact.CPEs) > 0 {
+		opts.CPE = artifact.CPEs[0]
 	}
 	if match.Vulnerability.Fix != nil && match.Vulnerability.Fix.State == "fixed" && len(match.Vulnerability.Fix.Versions) > 0 {
-		fixed := match.Vulnerability.Fix.Versions[0]
-		if fixed != "" {
-			pkg.FixedInVersion = &fixed
-		}
+		opts.FixedInVersion = match.Vulnerability.Fix.Versions[0]
 	}
-	return []hdf.AffectedPackage{pkg}
+	pkg := shared.BuildAffectedPackage(opts)
+	if pkg == nil {
+		return nil
+	}
+	return []hdf.AffectedPackage{*pkg}
 }
 
 // cweIDPattern matches valid CWE-N identifiers per the MITRE catalog. N is a

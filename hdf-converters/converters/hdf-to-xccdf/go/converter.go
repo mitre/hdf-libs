@@ -152,17 +152,17 @@ type XCCDFRuleResult struct {
 
 // --- Mapping functions ---
 
-// impactToSeverity maps HDF impact (0.0-1.0) to XCCDF severity.
+// impactToSeverity maps HDF impact (0.0-1.0) to XCCDF severity via the shared
+// band mapper. The XCCDF vocabulary has no critical band, so critical folds
+// into high, and its zero band is spelled "info".
 func impactToSeverity(impact float64) string {
-	switch {
-	case impact >= 0.7:
+	switch sev := hdfutil.ImpactToSeverity(impact); sev {
+	case "critical":
 		return "high"
-	case impact >= 0.4:
-		return "medium"
-	case impact >= 0.1:
-		return "low"
-	default:
+	case "informational":
 		return "info"
+	default:
+		return sev
 	}
 }
 

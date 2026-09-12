@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -145,12 +146,15 @@ func GetConverter(source, dest string) (Converter, error) {
 	return nil, fmt.Errorf("%w: %s to %s", ErrConverterNotFound, source, dest)
 }
 
-// ListConverters returns all registered format pairs.
+// ListConverters returns all registered format pairs, sorted. The order is
+// stable here rather than in each caller because one of them joins the result
+// straight into user-facing error text.
 func ListConverters() []FormatPair {
 	pairs := make([]FormatPair, 0, len(converterRegistry))
 	for pair := range converterRegistry {
 		pairs = append(pairs, pair)
 	}
+	slices.SortFunc(pairs, func(a, b FormatPair) int { return strings.Compare(a.String(), b.String()) })
 	return pairs
 }
 
@@ -163,27 +167,41 @@ func normalizeFormat(f string) string {
 // Most converters in the monorepo share this signature.
 type HDFResultsConvertFn func(input []byte, converterVersion string) (*hdf.HDFResults, error)
 
-// hdfResultsConverter wraps a standard HDFResultsConvertFn, handling JSON
-// serialization and error wrapping. This eliminates ~30 lines of boilerplate
-// per converter that previously required a dedicated struct and file.
-type hdfResultsConverter struct {
+// HDFBaselineConvertFn is the signature for converters that produce HDF Baseline.
+type HDFBaselineConvertFn func(input []byte, converterVersion string) (*hdf.HDFBaseline, error)
+
+// HDFPlanConvertFn is the signature for converters that produce HDF Plan.
+type HDFPlanConvertFn func(input []byte, converterVersion string) (*hdf.HDFPlan, error)
+
+// HDFAmendmentsConvertFn is the signature for converters that produce HDF Amendments.
+type HDFAmendmentsConvertFn func(input []byte, converterVersion string) (*hdf.HDFAmendments, error)
+
+// RawConvertFn is the signature for converters that handle their own JSON
+// serialization (e.g., auto-detect converters where the output type varies).
+type RawConvertFn func(input []byte, converterVersion string) ([]byte, error)
+
+// typedConverter wraps a convert function returning a typed HDF document,
+// handling JSON serialization and error wrapping. One generic wrapper serves
+// every output type — the per-type wrappers it replaces differed only in T,
+// which meant four places to get the error wording wrong.
+type typedConverter[T any] struct {
 	displayName  string
 	errPrefix    string
-	convertFn    HDFResultsConvertFn
+	convertFn    func(input []byte, converterVersion string) (*T, error)
 	acceptsEmpty bool
 }
 
-func (c *hdfResultsConverter) Name() string {
+func (c *typedConverter[T]) Name() string {
 	return c.displayName
 }
 
 // AcceptsEmptyInput reports whether this converter treats empty input as a valid
 // zero-findings signal. Implements EmptyInputAccepting.
-func (c *hdfResultsConverter) AcceptsEmptyInput() bool {
+func (c *typedConverter[T]) AcceptsEmptyInput() bool {
 	return c.acceptsEmpty
 }
 
-func (c *hdfResultsConverter) Convert(input []byte) ([]byte, error) {
+func (c *typedConverter[T]) Convert(input []byte) ([]byte, error) {
 	result, err := c.convertFn(input, version)
 	if err != nil {
 		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
@@ -195,6 +213,16 @@ func (c *hdfResultsConverter) Convert(input []byte) ([]byte, error) {
 	}
 
 	return output, nil
+}
+
+// newTypedConverter builds the wrapper every register helper below shares.
+func newTypedConverter[T any](displayName, errPrefix string, fn func([]byte, string) (*T, error), o converterOptions) *typedConverter[T] {
+	return &typedConverter[T]{
+		displayName:  displayName,
+		errPrefix:    errPrefix,
+		convertFn:    fn,
+		acceptsEmpty: o.acceptsEmpty,
+	}
 }
 
 // registerHDFConverter registers a standard HDF Results converter under one
@@ -203,12 +231,7 @@ func (c *hdfResultsConverter) Convert(input []byte) ([]byte, error) {
 // Optional ConverterOption values (e.g. WithEmptyInputOK) tune its behavior.
 func registerHDFConverter(source, displayName, errPrefix string, fn HDFResultsConvertFn, opts ...ConverterOption) {
 	o := applyConverterOptions(opts)
-	RegisterConverter(source, "hdf", withExpectation(&hdfResultsConverter{
-		displayName:  displayName,
-		errPrefix:    errPrefix,
-		convertFn:    fn,
-		acceptsEmpty: o.acceptsEmpty,
-	}, o))
+	RegisterConverter(source, "hdf", withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o))
 }
 
 // registerHDFConverterMulti registers a standard HDF Results converter under
@@ -216,70 +239,54 @@ func registerHDFConverter(source, displayName, errPrefix string, fn HDFResultsCo
 // The dest is always "hdf". Optional ConverterOption values tune its behavior.
 func registerHDFConverterMulti(sources []string, displayName, errPrefix string, fn HDFResultsConvertFn, opts ...ConverterOption) {
 	o := applyConverterOptions(opts)
-	c := withExpectation(&hdfResultsConverter{
-		displayName:  displayName,
-		errPrefix:    errPrefix,
-		convertFn:    fn,
-		acceptsEmpty: o.acceptsEmpty,
-	}, o)
+	c := withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o)
 	for _, src := range sources {
 		RegisterConverter(src, "hdf", c)
 	}
-}
-
-// HDFBaselineConvertFn is the signature for converters that produce HDF Baseline.
-type HDFBaselineConvertFn func(input []byte, converterVersion string) (*hdf.HDFBaseline, error)
-
-// hdfBaselineConverter wraps a HDFBaselineConvertFn, handling JSON
-// serialization and error wrapping.
-type hdfBaselineConverter struct {
-	displayName string
-	errPrefix   string
-	convertFn   HDFBaselineConvertFn
-}
-
-func (c *hdfBaselineConverter) Name() string {
-	return c.displayName
-}
-
-func (c *hdfBaselineConverter) Convert(input []byte) ([]byte, error) {
-	result, err := c.convertFn(input, version)
-	if err != nil {
-		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
-	}
-
-	output, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
-	}
-
-	return output, nil
 }
 
 // registerHDFBaselineConverter registers an HDF Baseline converter under one
 // source format name. The dest is always "hdf". Optional ConverterOption
 // values (e.g. WithExpectedRequirementCount) tune its behavior.
 func registerHDFBaselineConverter(source, displayName, errPrefix string, fn HDFBaselineConvertFn, opts ...ConverterOption) {
-	RegisterConverter(source, "hdf", withTypedExpectation(&hdfBaselineConverter{
-		displayName: displayName,
-		errPrefix:   errPrefix,
-		convertFn:   fn,
-	}, applyConverterOptions(opts)))
+	o := applyConverterOptions(opts)
+	RegisterConverter(source, "hdf", withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o))
 }
 
-// RawConvertFn is the signature for converters that handle their own JSON
-// serialization (e.g., auto-detect converters where the output type varies).
-type RawConvertFn func(input []byte, converterVersion string) ([]byte, error)
+// registerHDFPlanConverter registers an HDF Plan converter under one source
+// format name. The dest is always "hdf". Optional ConverterOption values tune
+// its behavior.
+func registerHDFPlanConverter(source, displayName, errPrefix string, fn HDFPlanConvertFn, opts ...ConverterOption) {
+	o := applyConverterOptions(opts)
+	RegisterConverter(source, "hdf", withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o))
+}
 
-// rawConverter wraps a RawConvertFn, handling error wrapping.
+// registerHDFAmendmentsConverter registers an HDF Amendments converter under
+// one source format name. The dest is always "hdf". Optional ConverterOption
+// values tune its behavior.
+func registerHDFAmendmentsConverter(source, displayName, errPrefix string, fn HDFAmendmentsConvertFn, opts ...ConverterOption) {
+	o := applyConverterOptions(opts)
+	RegisterConverter(source, "hdf", withExpectation(newTypedConverter(displayName, errPrefix, fn, o), o))
+}
+
+// rawConverter wraps a RawConvertFn, handling error wrapping. It stays separate
+// from typedConverter because it emits its own bytes rather than a document to
+// serialize.
 type rawConverter struct {
-	displayName string
-	errPrefix   string
-	convertFn   RawConvertFn
+	displayName  string
+	errPrefix    string
+	convertFn    RawConvertFn
+	acceptsEmpty bool
 }
 
 func (c *rawConverter) Name() string {
 	return c.displayName
+}
+
+// AcceptsEmptyInput reports whether this converter treats empty input as a valid
+// zero-findings signal. Implements EmptyInputAccepting.
+func (c *rawConverter) AcceptsEmptyInput() bool {
+	return c.acceptsEmpty
 }
 
 func (c *rawConverter) Convert(input []byte) ([]byte, error) {
@@ -294,91 +301,12 @@ func (c *rawConverter) Convert(input []byte) ([]byte, error) {
 // serialization) under one source format name. The dest is always "hdf".
 func registerRawConverter(source, displayName, errPrefix string, fn RawConvertFn, opts ...ConverterOption) {
 	o := applyConverterOptions(opts)
-	RegisterConverter(source, "hdf", withTypedExpectation(&rawConverter{
-		displayName: displayName,
-		errPrefix:   errPrefix,
-		convertFn:   fn,
+	RegisterConverter(source, "hdf", withExpectation(&rawConverter{
+		displayName:  displayName,
+		errPrefix:    errPrefix,
+		convertFn:    fn,
+		acceptsEmpty: o.acceptsEmpty,
 	}, o))
-}
-
-// HDFPlanConvertFn is the signature for converters that produce HDF Plan.
-type HDFPlanConvertFn func(input []byte, converterVersion string) (*hdf.HDFPlan, error)
-
-// hdfPlanConverter wraps a HDFPlanConvertFn, handling JSON serialization
-// and error wrapping.
-type hdfPlanConverter struct {
-	displayName string
-	errPrefix   string
-	convertFn   HDFPlanConvertFn
-}
-
-func (c *hdfPlanConverter) Name() string {
-	return c.displayName
-}
-
-func (c *hdfPlanConverter) Convert(input []byte) ([]byte, error) {
-	result, err := c.convertFn(input, version)
-	if err != nil {
-		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
-	}
-
-	output, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
-	}
-
-	return output, nil
-}
-
-// registerHDFPlanConverter registers an HDF Plan converter under one source
-// format name. The dest is always "hdf". Optional ConverterOption values tune
-// its behavior.
-func registerHDFPlanConverter(source, displayName, errPrefix string, fn HDFPlanConvertFn, opts ...ConverterOption) {
-	RegisterConverter(source, "hdf", withTypedExpectation(&hdfPlanConverter{
-		displayName: displayName,
-		errPrefix:   errPrefix,
-		convertFn:   fn,
-	}, applyConverterOptions(opts)))
-}
-
-// HDFAmendmentsConvertFn is the signature for converters that produce HDF Amendments.
-type HDFAmendmentsConvertFn func(input []byte, converterVersion string) (*hdf.HDFAmendments, error)
-
-// hdfAmendmentsConverter wraps a HDFAmendmentsConvertFn, handling JSON
-// serialization and error wrapping.
-type hdfAmendmentsConverter struct {
-	displayName string
-	errPrefix   string
-	convertFn   HDFAmendmentsConvertFn
-}
-
-func (c *hdfAmendmentsConverter) Name() string {
-	return c.displayName
-}
-
-func (c *hdfAmendmentsConverter) Convert(input []byte) ([]byte, error) {
-	result, err := c.convertFn(input, version)
-	if err != nil {
-		return nil, fmt.Errorf("%s conversion failed: %w", c.errPrefix, err)
-	}
-
-	output, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize HDF output: %w", err)
-	}
-
-	return output, nil
-}
-
-// registerHDFAmendmentsConverter registers an HDF Amendments converter under
-// one source format name. The dest is always "hdf". Optional ConverterOption
-// values tune its behavior.
-func registerHDFAmendmentsConverter(source, displayName, errPrefix string, fn HDFAmendmentsConvertFn, opts ...ConverterOption) {
-	RegisterConverter(source, "hdf", withTypedExpectation(&hdfAmendmentsConverter{
-		displayName: displayName,
-		errPrefix:   errPrefix,
-		convertFn:   fn,
-	}, applyConverterOptions(opts)))
 }
 
 // oscalCatalogPath is the filesystem path to the OSCAL catalog used to resolve

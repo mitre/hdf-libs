@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

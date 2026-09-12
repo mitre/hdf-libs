@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
@@ -14,7 +13,6 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -170,11 +168,11 @@ var queryDispatch = map[string]func(*loader.Result) hdf.HDFResults{
 // conversion keeps each scanner finding verbatim in the requirement's `code`,
 // but no read tool projects it. Saying so costs a sentence; discovering it costs
 // the agent a wrong or incomplete answer.
-const queryToolDescription = "Filter requirements in an HDF results or baseline document. The only path to a " +
+const queryToolDescription = "Filter requirements in an HDF results or baseline document — the only path to a " +
 	"requirement collection; for other document types call hdf_inspect. " +
-	"Returns normalized fields only: the scanner's original finding is preserved verbatim in each " +
-	"requirement's `code`, but no read tool projects it, so a question about a tool-specific field " +
-	"(a matcher, match provenance, a vendor extension) cannot be answered from this surface — read the source file instead."
+	"verbosity=concise (default) returns normalized fields; verbosity=full also returns descriptions[] " +
+	"verbatim, where a converter may have placed scanner detail. Each requirement's raw scanner finding " +
+	"in `code` is projected by no verbosity — read the source file for the `code` payload itself."
 
 func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
@@ -224,8 +222,13 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
 			Search: in.Search, Baseline: in.Baseline,
 			Count:    true, // return every match; the tool applies limit + token paging
-			StatusOf: effectiveStatus,
+			StatusOf: shared.RequirementEffectiveStatus,
 		})
+		// Filter returns the partial match set it had when ctx was cancelled;
+		// reporting it as a complete universe would be confidently wrong.
+		if err := ctx.Err(); err != nil {
+			return nil, errorQueryOutput(), err
+		}
 
 		out := queryOutput{Handle: encoded, DocType: resolved.Load.DocType, EngineSchemaVersion: resolved.Handle.EngineSchemaVersion}
 		buildQueryResponse(&out, results, matches, in.Verbosity, in.Limit, in.Page, in.Fields)
@@ -244,14 +247,6 @@ func wrongDocTypeForQuery(docType string) *mcperr.Error {
 		WithNextCall("call hdf_inspect to view this document's structure (hdf_query is results/baseline only)")
 }
 
-// effectiveStatus resolves a requirement's status via the canonical ladder in
-// status-determination.md (governing override → error roll-up → impact-0
-// notApplicable → worst-wins roll-up). It returns the schema (effectiveStatus)
-// vocabulary — the same vocabulary hdf_open's summary reports.
-func effectiveStatus(control hdf.EvaluatedRequirement) string {
-	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(control), time.Time{})
-}
-
 // countByEffectiveStatus counts a result set's requirements by their canonical
 // effective status (the ladder in status-determination.md) — the single
 // status convention every status-reporting MCP tool uses, so hdf_open,
@@ -260,7 +255,7 @@ func effectiveStatus(control hdf.EvaluatedRequirement) string {
 // deliberately NOT used by the MCP tools (it drives CLI threshold gating, whose
 // separate correction is tracked apart from the read tools).
 func countByEffectiveStatus(results hdf.HDFResults) *hdfengine.StatusCounts {
-	return hdfengine.CountControlsByStatus(results, effectiveStatus)
+	return hdfengine.CountControlsByStatus(results, shared.RequirementEffectiveStatus)
 }
 
 // baselineAsResults projects a baseline document's requirements onto the

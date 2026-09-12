@@ -9,6 +9,7 @@ import (
 
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -784,4 +785,95 @@ func TestFirstNonEmpty_MatchesSharedTable(t *testing.T) {
 func TestFirstNonEmpty_DoesNotOmit(t *testing.T) {
 	require.Equal(t, "", FirstNonEmpty("", " "),
 		"all-empty input yields empty, so the caller can still choose to omit")
+}
+
+// --- Severity vocabulary --------------------------------------------------------
+
+func TestParseSeverity(t *testing.T) {
+	cases := []struct {
+		in   string
+		want hdf.Severity
+		ok   bool
+	}{
+		{"critical", hdf.SeverityCritical, true},
+		{"High", hdf.SeverityHigh, true},
+		{"MEDIUM", hdf.SeverityMedium, true},
+		{"low", hdf.SeverityLow, true},
+		{"informational", hdf.Informational, true},
+		{"wibble", "", false},
+		{"", "", false},
+		// Callers own whitespace handling; the parser matches the token as given.
+		{" high", "", false},
+		// XCCDF/scanner vocabulary that is not an HDF severity stays rejected.
+		{"info", "", false},
+		{"unknown", "", false},
+	}
+	for _, c := range cases {
+		t.Run(c.in, func(t *testing.T) {
+			got, ok := ParseSeverity(c.in)
+			assert.Equal(t, c.ok, ok)
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+// The map path must agree with the typed path (and the TypeScript peer) that an
+// amendments document with an empty overrides array is not convertible.
+func TestRequireHDFAmendments_MapPathRejectsEmptyOverrides(t *testing.T) {
+	_, _, err := RequireHDFAmendments([]byte(`{"name":"a","overrides":[]}`), "test-conv")
+	require.Error(t, err)
+	assert.Equal(t, "test-conv: invalid HDF structure: missing overrides field", err.Error())
+}
+
+// ValidateJSONSize is the converter-prefixed face of hdfutil.ValidateInputSize;
+// the limit and the wording after the prefix are defined once, in hdfutil.
+func TestValidateJSONSize_IsHdfutilWithPrefix(t *testing.T) {
+	assert.Equal(t, hdfutil.DefaultMaxInputSize, DefaultMaxJSONSize)
+	big := []byte("0123456789")
+	err := ValidateJSONSize(big, "probe", 4)
+	require.Error(t, err)
+	assert.Equal(t, "probe: "+hdfutil.ValidateInputSize(big, 4).Error(), err.Error())
+	assert.NoError(t, ValidateJSONSize(big, "probe", 0))
+	assert.NoError(t, ValidateJSONSize(big, "probe", 10))
+}
+
+func TestDefaultOverrideExpiry(t *testing.T) {
+	tests := []struct {
+		name      string
+		appliedAt time.Time
+		want      string
+	}{
+		{
+			name:      "calendar year, not 365 days, across a leap day",
+			appliedAt: time.Date(2027, 3, 1, 12, 0, 0, 0, time.UTC),
+			want:      "2028-03-01T12:00:00Z",
+		},
+		{
+			name:      "non-UTC input is normalized before the year is added",
+			appliedAt: time.Date(2026, 1, 1, 20, 0, 0, 0, time.FixedZone("UTC-8", -8*3600)),
+			want:      "2027-01-02T04:00:00Z",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DefaultOverrideExpiry(tt.appliedAt)
+			require.Equal(t, tt.want, got.Format(time.RFC3339))
+			require.Equal(t, time.UTC, got.Location())
+		})
+	}
+}
+
+func TestOSCALSeverityFromHDF(t *testing.T) {
+	cases := map[string]string{
+		"critical":      "critical",
+		"high":          "high",
+		"medium":        "moderate",
+		"low":           "low",
+		"informational": "info",
+		"":              "",
+		"bogus":         "",
+	}
+	for in, want := range cases {
+		assert.Equal(t, want, OSCALSeverityFromHDF(in), "OSCALSeverityFromHDF(%q)", in)
+	}
 }

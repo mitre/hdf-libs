@@ -384,6 +384,22 @@ describe('hdfcsv Converter', () => {
       expect(result).toContain('low'); // impact 0.2 → low severity
     });
 
+    it('should handle impact >= 0.9 as critical severity', () => {
+      const input = JSON.stringify({
+        baselines: [{
+          name: 'B1',
+          requirements: [{
+            id: 'R1',
+            descriptions: [{ label: 'default', data: 'desc' }],
+            impact: 0.9,
+            tags: {},
+            results: [{ status: 'failed', codeDesc: 'Test', startTime: '2025-01-01T00:00:00Z' }]
+          }]
+        }],
+      });
+      expect(convertHdfToCsv(input)).toContain('critical');
+    });
+
     it('should handle impact >= 0.7 as high severity', () => {
       const input = JSON.stringify({
         baselines: [{

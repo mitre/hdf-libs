@@ -69,7 +69,7 @@ profile := generators.GenerateInSpecProfile(baseline, &generators.GeneratorOptio
         License:    "Apache-2.0",
     },
 })
-// profile.InspecYml — string
+// profile.InSpecYml — string
 // profile.Controls  — map[string]string
 ```
 

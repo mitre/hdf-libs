@@ -169,6 +169,24 @@ export function formatTimestampSeconds(d: Date): string {
   return d.toISOString().replace(/\.\d+Z$/, 'Z');
 }
 
+// btoa takes a "binary string" (one char per byte); building it in bounded
+// chunks keeps String.fromCharCode's argument list small on multi-MB input.
+const BASE64_CHUNK_BYTES = 0x8000;
+
+/**
+ * Base64-encode the UTF-8 bytes of a string. Runtime-agnostic (TextEncoder +
+ * btoa) so library code stays usable from browser bundles, where Node's
+ * `Buffer` does not exist. Equivalent to `Buffer.from(text, 'utf-8').toString('base64')`.
+ */
+export function encodeBase64Utf8(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += BASE64_CHUNK_BYTES) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_BYTES));
+  }
+  return btoa(binary);
+}
+
 /** A JSON string whose entire value is an ISO-8601 date-time with no zone designator. */
 const BARE_ISO_IN_JSON = /"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)"/g;
 

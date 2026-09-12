@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, markUnratedSeverity, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { parseBom, buildBom, BOMType, type BuildBomParts } from '../../../shared/typescript/bom/index.js';
 import { canonicalize } from '../../../shared/typescript/exportmap.js';
 import {
@@ -561,9 +561,7 @@ function analysisOverride(
       return undefined;
   }
   const appliedAt = analysisAppliedAt(vuln, fallback);
-  const expiresAt = new Date();
-  expiresAt.setTime(appliedAt.getTime());
-  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+  const expiresAt = defaultOverrideExpiry(appliedAt);
   const override: StatusOverride = {
     type: disposition,
     status: effectiveStatus,

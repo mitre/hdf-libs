@@ -216,6 +216,20 @@ describe('defectdojo-to-hdf converter', () => {
     expect(flagOnly.statusOverrides).toBeUndefined();
   });
 
+  it('defaults the waiver expiry in UTC, not the host timezone', async () => {
+    // 2026-03-09T06:30Z is inside US Eastern DST but 2027-03-09T06:30Z is not,
+    // so a local-time year rollover lands an hour late west of UTC.
+    const tz = process.env.TZ;
+    process.env.TZ = 'America/New_York';
+    try {
+      const utc = await convertOne({risk_accepted: true, accepted_risks: [{created: '2026-03-09T06:30:00Z'}]});
+      expect(String(utc.statusOverrides![0].expiresAt)).toBe('2027-03-09T06:30:00Z');
+    } finally {
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
+  });
+
   it('resolves false-positive reviewer identity, reason, and appliedAt by precedence', async () => {
     const fp = (extra: Record<string, unknown>): Record<string, unknown> => ({false_p: true, ...extra});
 

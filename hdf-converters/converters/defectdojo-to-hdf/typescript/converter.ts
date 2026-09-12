@@ -17,7 +17,7 @@ import {
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
 import {severityToImpact, parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
-import {inputChecksum, buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults, mapCWEToNIST} from '../../../shared/typescript/converterutil.js';
+import {inputChecksum, buildNistCciTags, defaultOverrideExpiry, buildNoFindingsRequirement, deriveControlTypeFromTags, validateInputSize, buildHdfResults, mapCWEToNIST} from '../../../shared/typescript/converterutil.js';
 import {buildCvss as buildSharedCvss} from '../../../shared/typescript/cvss.js';
 
 // DefectDojo /api/v2/findings/ input model (subset). The live fetcher produces
@@ -126,9 +126,7 @@ function buildWaiverOverride(ar: DDAcceptedRisk): StatusOverride {
   const appliedAt = (ar.created ? parseTimestamp(ar.created) : null) ?? new Date();
   // expiresAt is REQUIRED; DefectDojo acceptances usually carry an expiration.
   // Default to one year out when absent so the waiver is reviewed, not permanent.
-  const oneYearOut = new Date();
-  oneYearOut.setTime(appliedAt.getTime());
-  oneYearOut.setFullYear(oneYearOut.getFullYear() + 1);
+  const oneYearOut = defaultOverrideExpiry(appliedAt);
   const parsedExpiry = ar.expiration_date ? parseTimestamp(ar.expiration_date) : null;
   const expiresAt = parsedExpiry ?? oneYearOut;
   return {
@@ -165,10 +163,8 @@ function buildFalsePositiveOverride(f: DDFinding): StatusOverride {
   const appliedAt = (f.mitigated ? parseTimestamp(f.mitigated) : null) ?? parseFindingDate(f.date) ?? new Date();
   // expiresAt is REQUIRED; DefectDojo carries no expiry for a false positive, so
   // default to one year out (the same "reviewed rather than permanent" convention
-  // as the waiver path). setTime avoids the eslint new Date(value) ban.
-  const oneYearOut = new Date();
-  oneYearOut.setTime(appliedAt.getTime());
-  oneYearOut.setUTCFullYear(oneYearOut.getUTCFullYear() + 1);
+  // as the waiver path).
+  const oneYearOut = defaultOverrideExpiry(appliedAt);
   return {
     type: OverrideType.FalsePositive,
     status: ResultStatus.NotApplicable,

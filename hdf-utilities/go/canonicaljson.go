@@ -49,8 +49,14 @@ func ChecksumJSON(value any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256(canonical)
-	return hex.EncodeToString(sum[:]), nil
+	return SHA256Hex(canonical), nil
+}
+
+// SHA256Hex returns the lowercase hex-encoded SHA-256 digest of b — the form
+// every HDF checksum, integrity and content-address field carries.
+func SHA256Hex(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
 }
 
 // withoutNullValues returns a copy of a decoded JSON value with every

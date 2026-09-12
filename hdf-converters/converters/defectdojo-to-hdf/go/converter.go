@@ -195,7 +195,7 @@ func buildWaiverOverride(ar ddAcceptedRisk) hdf.StatusOverride {
 	// expiresAt is REQUIRED by the schema. DefectDojo acceptances usually carry
 	// an expiration; when absent, default to one year out so the waiver is
 	// reviewed rather than treated as permanent.
-	expiresAt := appliedAt.AddDate(1, 0, 0)
+	expiresAt := shared.DefaultOverrideExpiry(appliedAt)
 	if ar.ExpirationDate != nil {
 		if parsed := hdfutil.ParseTimestamp(*ar.ExpirationDate); !parsed.IsZero() {
 			expiresAt = parsed
@@ -255,7 +255,7 @@ func buildFalsePositiveOverride(f ddFinding) hdf.StatusOverride {
 	// expiresAt is REQUIRED; DefectDojo carries no expiry for a false positive, so
 	// default to one year out (the same "reviewed rather than permanent" convention
 	// as the waiver path).
-	expiresAt := appliedAt.AddDate(1, 0, 0)
+	expiresAt := shared.DefaultOverrideExpiry(appliedAt)
 	return hdf.StatusOverride{
 		Type:      hdf.FalsePositive,
 		Status:    &notApplicable,

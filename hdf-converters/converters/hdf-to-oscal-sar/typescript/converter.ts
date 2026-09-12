@@ -5,9 +5,9 @@
  * Results JSON and produces an OSCAL 1.1.2 assessment-results JSON document.
  */
 
-import { formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
-import { hdfTime, requireHdfResults } from '../../../shared/typescript/converterutil.js';
+import { hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -444,7 +444,7 @@ function requirementToFindingSet(
       uuid: resourceUuid,
       title: `Check source code for ${req.id}`,
       base64: {
-        value: Buffer.from(req.code, 'utf-8').toString('base64'),
+        value: encodeBase64Utf8(req.code),
         'media-type': 'text/plain',
       },
     };
@@ -645,20 +645,7 @@ function sourceLocationText(loc: NonNullable<EvaluatedRequirement['sourceLocatio
 
 /** Maps an explicit HDF severity to the OSCAL risk facet value vocabulary. */
 function severityToFacetValue(s: string): string {
-  switch (s) {
-    case 'critical':
-      return 'critical';
-    case 'high':
-      return 'high';
-    case 'medium':
-      return 'moderate';
-    case 'low':
-      return 'low';
-    case 'informational':
-      return 'info';
-    default:
-      return '';
-  }
+  return oscalSeverityFromHdf(s);
 }
 
 /**

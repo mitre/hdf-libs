@@ -463,6 +463,10 @@ describe('twistlock to HDF converter', async () => {
       expect(parseCwes('cwe-79')).toEqual(['CWE-79']);
       expect(parseCwes('CWE-79 and CWE-89')).toEqual(['CWE-79', 'CWE-89']);
       expect(parseCwes('CWE-79, CWE-79')).toEqual(['CWE-79']);
+      // The shared CWE vocabulary accepts spaced and bare spellings; source order is kept.
+      expect(parseCwes('CWE 79')).toEqual(['CWE-79']);
+      expect(parseCwes('cwe79')).toEqual(['CWE-79']);
+      expect(parseCwes('CWE-89 then CWE-79')).toEqual(['CWE-89', 'CWE-79']);
     });
 
     it('resolveEcosystem matrix', () => {
