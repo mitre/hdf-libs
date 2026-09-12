@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -756,4 +757,26 @@ func TestNestedTestsuites_HostComponentsDeduped(t *testing.T) {
 		}
 	}
 	assert.Equal(t, []string{"test-runner-01"}, hosts)
+}
+
+// Flattening makes a nested suite's timestamp a scan-time candidate. Pin that:
+// an outer suite with no timestamp must fall through to the inner suite's rather
+// than to conversion time.
+func TestResolveScanTime_UsesNestedSuiteTimestamp(t *testing.T) {
+	input := []byte(`<testsuites>
+  <testsuite name="outer">
+    <testsuite name="inner" timestamp="2024-11-15T10:30:00">
+      <testcase name="deep" classname="pkg"/>
+    </testsuite>
+  </testsuite>
+</testsuites>`)
+
+	result, err := ConvertJUnitToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.NotNil(t, result.Timestamp)
+
+	want := time.Date(2024, 11, 15, 10, 30, 0, 0, time.UTC)
+	assert.Equal(t, want, result.Timestamp.UTC())
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	assert.Equal(t, want, result.Baselines[0].Requirements[0].Results[0].StartTime.UTC())
 }
