@@ -383,3 +383,26 @@ func TestDetectConverter_VersionPassthrough(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, "2.1.0", result.Version)
 }
+
+func TestSourceNameFromFingerprintID(t *testing.T) {
+	cases := []struct {
+		id, want string
+	}{
+		{"nessus-to-hdf", "nessus"},
+		{"oscal-component-to-hdf", "oscal-component"},
+		{"oscal-sap-to-hdf", "oscal-sap"},
+		// No "-to-" segment: the ID is already the source name.
+		{"hdf-passthrough", "hdf-passthrough"},
+		{"", ""},
+		// Truncation is at the FIRST "-to-", so a source whose own name contains
+		// the separator keeps everything before it rather than the last segment.
+		{"a-to-b-to-hdf", "a"},
+		// A leading "-to-" is not a separator (idx > 0), so nothing is stripped.
+		{"-to-hdf", "-to-hdf"},
+	}
+	for _, c := range cases {
+		if got := SourceNameFromFingerprintID(c.id); got != c.want {
+			t.Errorf("SourceNameFromFingerprintID(%q) = %q, want %q", c.id, got, c.want)
+		}
+	}
+}
