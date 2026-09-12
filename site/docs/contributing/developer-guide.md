@@ -340,8 +340,8 @@ add a field to a schema, before release confirm it reaches the whole pipeline:
 ### $ref URI Pattern
 
 ```
-https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v3.5.0#/$defs/<Type>
-https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.5.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v3.6.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.6.0#/$defs/<Type>
 ```
 
 ---

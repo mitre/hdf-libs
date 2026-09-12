@@ -1,655 +1,584 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.6.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
+  "title": "HDF Requirement Change Event",
+  "description": "A single continuous-monitoring wire event: one requirement's effective posture changed on one system component.\n\nThe streaming increment of a systemDrift hdf-comparison — events fold into comparisons and reassemble into hdf-results, they never mutate documents in place.\n\nOne event per wire document (NDJSON-friendly).\n\nThe envelope (identity, ordering, hash chain) is the shared Change_Event_Envelope primitive; the payload carries the producer-computable change state, a thin before projection, and the full after requirement (the evidence a responder opens the event for).\n\nDesign: ADR-0005.",
   "type": "object",
   "unevaluatedProperties": false,
-  "required": [
-    "baselines"
-  ],
-  "properties": {
-    "externalReferences": {
-      "type": "array",
-      "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/External_Reference"
-      },
-      "description": "Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any URI-addressable artifact) relevant to this assessment as a whole. Inert context; see External_Reference."
-    },
-    "id": {
-      "type": "string",
-      "format": "uuid",
-      "description": "Unique identifier for this assessment run."
-    },
-    "timestamp": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When this assessment was executed."
-    },
-    "components": {
-      "type": "array",
-      "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.6.0#/$defs/Component"
-      },
-      "description": "The components that were assessed. Each component describes a system element (host, container, cloud resource, application, etc.) with optional identity, SBOM, and external references."
-    },
-    "baselines": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/Evaluated_Baseline"
-      },
-      "description": "Information on the baselines that were evaluated, including findings."
-    },
-    "statistics": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.6.0#/$defs/Statistics",
-      "description": "Statistics for the assessment run, including duration and result counts."
-    },
-    "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Generator",
-      "description": "Information about the tool that generated this file."
-    },
-    "tool": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Tool",
-      "description": "The security tool that produced the assessment data in this file."
-    },
-    "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Integrity",
-      "description": "Cryptographic integrity information for verifying this file."
-    },
-    "preAmendmentChecksum": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
-      "description": "Hash of this results document as it stood immediately before the most recent amendment application. Written by `hdf amend apply` when it applies at least one override; an apply that matches nothing leaves the document untouched. The hash covers the results file's RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical original — reformatting or re-serializing the source changes the value. Only the most recent pre-application state is recorded: applying amendments to an already-amended document REPLACES this value, so it is a single link back one step, not a growing chain. Distinct from the `previousChecksum` inside an override, which chains amendments to each other and is computed over a canonical JSON form.",
-      "$comment": "Example 1: the real SHA-256 of hdf-converters/converters/nessus-to-hdf/fixtures/expected/sample.nessus.hdf.json, reproducible with `shasum -a 256` on that file — chosen over a synthetic digest so a reader can verify the hash basis is the raw file bytes.",
-      "examples": [
-        {
-          "algorithm": "sha256",
-          "value": "9599ce7889e99b70ef5d0f3efa4215e35059c10a7e89b9314cbf4ded8fdbad38"
-        }
-      ]
-    },
-    "runner": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.6.0#/$defs/Runner",
-      "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
-    },
-    "remediation": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Remediation",
-      "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
-    },
-    "systemRef": {
-      "type": "string",
-      "format": "uri-reference",
-      "description": "Reference to an hdf-system document describing the system under assessment. May be a relative path, absolute URI, or fragment identifier."
-    },
-    "planRef": {
-      "type": "string",
-      "format": "uri-reference",
-      "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
-    },
-    "derivation": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0#/$defs/Derivation",
-      "description": "Present ONLY on reconciled result sets: lineage recording the seed snapshot and event watermark this document was reassembled from (ADR-0005). Documents produced directly by a scan omit this field. When present, generator names the reconciling tool."
-    },
-    "extensions": {
-      "type": "object",
-      "additionalProperties": true,
-      "description": "Reserved for tool-specific data not defined in the HDF standard. Use this to preserve original tool output, auxiliary data, or custom metadata."
-    }
-  },
-  "examples": [
+  "allOf": [
     {
-      "baselines": [
-        {
-          "name": "web-server-hardening",
-          "title": "Web Server Security Baseline",
-          "version": "1.0.0",
-          "summary": "Security hardening checks for Apache HTTP Server",
-          "requirements": [
-            {
-              "id": "SV-100001",
-              "title": "Web server must use TLS 1.2 or higher",
-              "impact": 0.7,
-              "tags": {
-                "nist": [
-                  "SC-8",
-                  "SC-23"
-                ]
-              },
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "The web server must be configured to use TLS 1.2 or higher for all encrypted connections."
-                }
-              ],
-              "results": [
-                {
-                  "status": "passed",
-                  "codeDesc": "SSL configuration is expected to include TLSv1.2",
-                  "startTime": "2025-06-15T14:30:00Z",
-                  "runTime": 0.042
-                }
-              ]
-            },
-            {
-              "id": "SV-100002",
-              "title": "Web server must have X-Frame-Options header set",
-              "impact": 0.5,
-              "tags": {
-                "nist": [
-                  "SA-11",
-                  "RA-5"
-                ]
-              },
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "The anti-clickjacking X-Frame-Options header must be present on all responses."
-                }
-              ],
-              "results": [
-                {
-                  "status": "failed",
-                  "codeDesc": "HTTP response headers are expected to include X-Frame-Options",
-                  "startTime": "2025-06-15T14:30:01Z",
-                  "message": "X-Frame-Options header not found in response"
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "components": [
-        {
-          "type": "application",
-          "name": "Apache HTTP Server 2.4"
-        }
-      ],
-      "generator": {
-        "name": "nikto-to-hdf",
-        "version": "1.0.0"
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0#/$defs/Change_Event_Envelope"
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "absent"
+          }
+        },
+        "required": [
+          "state"
+        ]
       },
-      "tool": {
-        "name": "Nikto"
+      "then": {
+        "properties": {
+          "after": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "after": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.6.0#/$defs/Evaluated_Requirement"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "new"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "before": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "before": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0#/$defs/Effective_Projection"
+          }
+        }
       }
     }
   ],
-  "description": "The top level value containing all assessment results.",
-  "title": "HDF Results",
-  "$defs": {
-    "Evaluated_Baseline": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "name",
-        "requirements"
-      ],
-      "allOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Baseline_Metadata"
-        }
-      ],
-      "properties": {
-        "depends": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Dependency"
-          },
-          "description": "The set of dependencies this baseline depends on."
-        },
-        "parentBaseline": {
-          "type": "string",
-          "description": "The name of the parent baseline if this is a dependency of another."
-        },
-        "description": {
-          "type": "string",
-          "description": "The description - should be more detailed than the summary."
-        },
-        "integrity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Integrity",
-          "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
-        },
-        "originalChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
-          "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
-        },
-        "resultsChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
-          "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
-        },
-        "statusMessage": {
-          "type": "string",
-          "description": "An explanation of the baseline status. Example: why it was skipped, failed to load, or any other status details."
-        },
-        "requirements": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Evaluated_Requirement"
-          },
-          "minItems": 1,
-          "description": "The set of requirements including any findings. A baseline must have at least one requirement."
-        },
-        "groups": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Requirement_Group"
-          },
-          "description": "A set of descriptions for the requirement groups."
-        },
-        "inputs": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.6.0#/$defs/Input"
-          },
-          "description": "Typed inputs used to parameterize this baseline at execution time. See the Input primitive for the full schema."
-        },
-        "extensions": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Reserved for tool-specific baseline metadata not defined in the HDF standard."
-        }
-      },
-      "description": "Information on a baseline that was evaluated, including any findings.",
-      "title": "Evaluated Baseline"
+  "required": [
+    "requirementId",
+    "state",
+    "before",
+    "after"
+  ],
+  "properties": {
+    "requirementId": {
+      "type": "string",
+      "description": "Canonical requirement identifier — the same identity as Requirement_Diff.id and the requirement's id in hdf-results. Together with the envelope's (systemRef, componentId) this forms the durable entity key. A requirement renumbering is emitted as absent + new under the two keys, never an in-place key change; batch comparison reconciles renames via its oldId/newId matching."
     },
-    "Evaluated_Requirement": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "id",
-        "impact",
-        "tags",
-        "results",
-        "descriptions"
-      ],
-      "allOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Requirement_Core"
-        }
-      ],
-      "properties": {
-        "descriptions": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Requirement_Description"
-          },
-          "contains": {
-            "type": "object",
-            "required": [
-              "label"
-            ],
-            "properties": {
-              "label": {
-                "const": "default"
-              }
-            }
-          },
-          "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
-        },
-        "severity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Severity",
-          "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
-        },
-        "sourceLocation": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Source_Location",
-          "description": "The explicit location of the requirement within the source code."
-        },
-        "results": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Requirement_Result"
-          },
-          "description": "The set of all tests within the requirement and their results."
-        },
-        "statusOverrides": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Status_Override"
-          },
-          "description": "Chronological history of all overrides applied to this requirement. Overrides are intentional changes to the compliance status and/or impact score (waivers, attestations, false positives, risk adjustments). Most recent override should be first in array. Preserves full audit trail."
-        },
-        "poams": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/POAM"
-          },
-          "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
-        },
-        "effectiveStatus": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Result_Status",
-          "description": "The current effective compliance status of this requirement after applying the most recent non-expired override with a status field, or computed from results (worst-wins) if no status-bearing overrides exist."
-        },
-        "effectiveImpact": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "The current effective impact score (0.0–1.0) after applying the most recent non-expired override with an impact field. Absent when no impact overrides apply; consumers should use the requirement's impact field in that case."
-        },
-        "disposition": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.6.0#/$defs/Override_Type",
-          "description": "The type of the most recent non-expired override or POAM governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or POAMs apply."
-        },
-        "effectiveChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
-          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring.\n\nsha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp.\n\nFlips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags).\n\nOptional; stamped by tooling (hdf convert, hdf amend apply)."
-        },
-        "evidence": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Evidence"
-          },
-          "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
-        },
-        "cvss": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0#/$defs/Cvss"
-          },
-          "description": "Structured CVSS scoring data for vulnerability findings. One entry per CVE — a finding may match multiple CVEs (common in vulnerability scanners). Captures vendor-supplied Base metrics plus optional consumer-owned Threat / Environmental / Supplemental groups for risk adjustment. See cvss.schema.json."
-        },
-        "epss": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.6.0#/$defs/Epss",
-          "description": "FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used alongside CVSS for prioritization — captures the probability the vulnerability will be exploited."
-        },
-        "kev": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.6.0#/$defs/Kev",
-          "description": "CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and dueDate carry the federal patching deadline."
-        },
-        "cwe": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^CWE-[1-9]\\d*$"
-          },
-          "description": "Common Weakness Enumeration IDs associated with this finding. Use CWE-N format with no leading zeros (matches the MITRE catalog convention). For NIST control mappings derived from CWE, see tags.nist."
-        },
-        "affectedPackages": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.6.0#/$defs/Affected_Package"
-          },
-          "description": "Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see components[] on hdf-system for component-level package inventories. One entry per matched package signature (scanners often report multiple CPE variations per CVE)."
-        }
+    "state": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0#/$defs/Event_Requirement_State",
+      "description": "The producer-computable subset of Requirement_State: new | absent | updated | fixed | regressed. fixed and regressed carry the direction SARIF's baselineState lacks; project down to SARIF's closed 4 values for external interop."
+    },
+    "changeReasons": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0#/$defs/Event_Change_Reason"
       },
-      "$comment": "Examples, in order: 1) Passing requirement — no overrides, no disposition; 2) Waiver — AO accepted risk, status overridden to passed; 3) False positive (compliance scan) — STIG check was wrong, requirement actually passes; 4) False positive (CVE scan) — vulnerability does not apply to this build; 5) Risk adjustment — impact lowered, pass/fail unchanged; 6) Operational requirement — cannot remediate, remains open risk; 7) POAM — remediation tracked, status unchanged.",
-      "examples": [
+      "description": "Why the state changed. An overrideExpired flip is a different triage than resultChanged: the control did not get worse, a waiver lapsed."
+    },
+    "before": {
+      "oneOf": [
         {
-          "id": "SV-230222",
-          "title": "RHEL 9 must use SSH protocol version 2",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "SC-8"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "SSH must use protocol version 2."
-            }
-          ],
-          "results": [
-            {
-              "status": "passed",
-              "codeDesc": "sshd_config Protocol is expected to eq 2",
-              "startTime": "2026-01-15T10:00:00Z"
-            }
-          ],
-          "effectiveStatus": "passed"
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0#/$defs/Effective_Projection"
         },
         {
-          "id": "SV-230300",
-          "title": "RHEL 9 must enforce password complexity",
-          "impact": 0.5,
-          "tags": {
-            "nist": [
-              "IA-5 (1)"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Passwords must meet complexity requirements."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "pwquality.conf minlen is expected to be >= 15",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "expected 8 to be >= 15"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "waiver",
-              "status": "passed",
-              "reason": "Compensating control: PIV/CAC smart card authentication enforced for all users, password login disabled",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "ao@agency.gov"
-              },
-              "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2099-12-31T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "passed",
-          "disposition": "waiver",
-          "effectiveChecksum": {
-            "algorithm": "sha256",
-            "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
+          "type": "null"
+        }
+      ],
+      "description": "Thin projection of the prior effective posture, for at-a-glance alerting without a state-store lookup. Null exactly when state is new (no prior posture exists). The full prior state is recoverable from the consumer's materialized state; the envelope's priorChecksum covers the integrity of that recovery."
+    },
+    "after": {
+      "oneOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.6.0#/$defs/Evaluated_Requirement"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The full requirement as evaluated after the change — required and non-null for every state except absent (null there: the requirement left the assessment scope). Full content is load-bearing twice over: reassembly parity (applyChangeEvents cannot reproduce changed result content from a projection) and triage (the failing results[] ARE the 'why' a responder opens the event for)."
+    }
+  },
+  "$comment": "Examples, in order: 1) fixed — the common remediation event: a failing SSH FIPS-cipher control was fixed and rescanned. priorChecksum is the effectiveChecksum of the prior failed posture; after carries the full passing requirement including its new effectiveChecksum (the next chain link); 2) regressed via overrideExpired — the waiver that held this control at passed lapsed, so effective posture regressed to failed with NO new scan finding. A different triage than resultChanged: renew or remediate. priorChecksum is the waived posture's checksum; the expired override remains in statusOverrides as the audit record; 3) new — a requirement entered assessment scope (chain start for this key): before is null, priorChecksum is null. The full after payload is what makes the new key materializable by applyChangeEvents; 4) absent — the requirement left assessment scope (component decommissioned or benchmark rule retired): after is null by definition; the thin before preserves the last observed posture for downstream views; 5) updated via impactChanged — a riskAdjustment override lowered effective impact while the control stayed failed: status unchanged, so neither fixed nor regressed. after carries the override and the recomputed effectiveChecksum over the adjusted posture.",
+  "examples": [
+    {
+      "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 412,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-22T14:03:11Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "fixed",
+      "changeReasons": [
+        "resultChanged"
+      ],
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "RHEL-09-255065",
+        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "AC-17 (2)"
+          ]
+        },
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
           }
+        ],
+        "results": [
+          {
+            "status": "passed",
+            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+            "startTime": "2026-07-22T14:03:11Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "73908440a3b44d76de559753babfea36987a618b80ee9d26adcf29cb5c7a5217"
+        }
+      }
+    },
+    {
+      "eventId": "0190f6f2-3b6c-7f5e-c2d9-5a3f7b9c1e23",
+      "source": "reconciler://apptier/override-sweep",
+      "sequence": 97,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-21T00:00:05Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
+      },
+      "requirementId": "SV-230365",
+      "state": "regressed",
+      "changeReasons": [
+        "overrideExpired"
+      ],
+      "before": {
+        "effectiveStatus": "passed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "SV-230365",
+        "title": "RHEL 9 passwords must have a minimum of 15 characters",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "IA-5 (1) (a)"
+          ]
         },
-        {
-          "id": "SV-230410",
-          "title": "RHEL 9 must have sshd PermitRootLogin disabled",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "AC-6"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Direct root login via SSH must be disabled."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "sshd_config PermitRootLogin is expected to eq 'no'",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "expected 'prohibit-password' to eq 'no'"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "falsePositive",
-              "status": "passed",
-              "reason": "Scanner requires literal 'no' but 'prohibit-password' is equally restrictive (disables password-based root login). Manual review confirms root cannot authenticate via SSH.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "assessor@agency.gov"
-              },
-              "appliedAt": "2026-01-16T14:00:00Z",
-              "expiresAt": "2026-07-16T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "passed",
-          "disposition": "falsePositive"
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify pwquality.conf minlen is 15 or greater."
+          }
+        ],
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "pwquality.conf minlen is expected to be >= 15",
+            "startTime": "2026-07-20T02:00:00Z",
+            "message": "expected 8 to be >= 15"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Compensating control: PIV/CAC smart card authentication enforced, password login disabled",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-20T10:00:00Z",
+            "expiresAt": "2026-07-20T00:00:00Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+        }
+      }
+    },
+    {
+      "eventId": "0190f6f2-4c7d-8a6f-d3ea-6b4a8c0d2f34",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 1,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-22T14:03:12Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
+      "priorChecksum": null,
+      "requirementId": "RHEL-09-671010",
+      "state": "new",
+      "before": null,
+      "after": {
+        "id": "RHEL-09-671010",
+        "title": "RHEL 9 must implement DoD-approved encryption in the OpenSSL package",
+        "impact": 0.7,
+        "tags": {
+          "severity": "high",
+          "nist": [
+            "SC-13"
+          ]
         },
-        {
-          "id": "CVE-2026-12345",
-          "title": "libxml2 buffer overflow in xmlParseEntityDecl",
-          "impact": 0.9,
-          "tags": {
-            "nist": [
-              "SI-2",
-              "RA-5"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Buffer overflow in libxml2 entity parsing allows remote code execution."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "libxml2 >= 2.9.0 is expected to be patched for CVE-2026-12345",
-              "startTime": "2026-01-15T10:00:00Z"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "falsePositive",
-              "status": "notApplicable",
-              "reason": "CVE scanner matched libxml2 version signature, but the vulnerable entity parsing module is compiled out of our build (--without-legacy flag). The affected code path does not exist in the binary.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "dev@org.gov"
-              },
-              "appliedAt": "2026-01-16T09:00:00Z",
-              "expiresAt": "2026-07-16T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "notApplicable",
-          "disposition": "falsePositive"
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the system-wide crypto policy is FIPS."
+          }
+        ],
+        "results": [
+          {
+            "status": "passed",
+            "codeDesc": "update-crypto-policies --show is expected to eq FIPS",
+            "startTime": "2026-07-22T14:03:12Z"
+          }
+        ],
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "4171cbc81dd74dedba74d3d51bf854602c1bd870d386dad1f830df9272d95557"
+        }
+      }
+    },
+    {
+      "eventId": "0190f6f2-5d8e-9b7a-e4fb-7c5b9d1e3a45",
+      "source": "inspec://web01/rhel9-stig",
+      "sequence": 413,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-23T08:00:00Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "absent",
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": null
+    },
+    {
+      "eventId": "0190f6f2-6e9f-0c8b-f5ac-8d6c0e2f4b56",
+      "source": "reconciler://apptier/amend-apply",
+      "sequence": 414,
+      "systemRef": "apptier.hdf-system.json",
+      "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+      "timestamp": "2026-07-24T10:15:00Z",
+      "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
+      "priorChecksum": {
+        "algorithm": "sha256",
+        "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+      },
+      "requirementId": "RHEL-09-255065",
+      "state": "updated",
+      "changeReasons": [
+        "overrideAdded",
+        "impactChanged"
+      ],
+      "before": {
+        "effectiveStatus": "failed",
+        "effectiveImpact": 0.5
+      },
+      "after": {
+        "id": "RHEL-09-255065",
+        "title": "RHEL 9 SSH server must use FIPS-validated ciphers",
+        "impact": 0.5,
+        "tags": {
+          "severity": "medium",
+          "nist": [
+            "AC-17 (2)"
+          ]
         },
-        {
-          "id": "CVE-2026-67890",
-          "title": "OpenSSL timing side-channel in RSA decryption",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "SI-2",
-              "RA-5"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Timing side-channel may allow RSA private key recovery."
-            }
+        "descriptions": [
+          {
+            "label": "default",
+            "data": "Verify the sshd Ciphers configuration lists only FIPS-validated algorithms."
+          }
+        ],
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "sshd config Ciphers is expected to match FIPS-validated cipher list",
+            "startTime": "2026-07-22T14:03:11Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "riskAdjustment",
+            "impact": {
+              "value": 0.2
+            },
+            "reason": "Network segmentation limits exposure; management interface not internet-reachable",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "isso@agency.gov"
+            },
+            "appliedAt": "2026-07-24T10:15:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ],
+        "effectiveImpact": 0.2,
+        "disposition": "riskAdjustment",
+        "effectiveChecksum": {
+          "algorithm": "sha256",
+          "value": "872635e1dd14903c660ae7e863c599d31f55bfa60be19394a629c63f851841c4"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0",
+      "title": "HDF Change Event Primitives",
+      "description": "Shared building blocks for HDF change-event wire documents. The envelope is entity-agnostic: hdf-requirement-change-event composes it today, and any future sibling event type (e.g. component change events — hdf-comparison already models componentDiffs alongside requirementDiffs) reuses it verbatim.",
+      "$defs": {
+        "Change_Event_Envelope": {
+          "type": "object",
+          "required": [
+            "eventId",
+            "source",
+            "sequence",
+            "systemRef",
+            "componentId",
+            "timestamp",
+            "priorChecksum"
           ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "openssl >= 3.1.0 is expected to be patched for CVE-2026-67890",
-              "startTime": "2026-01-15T10:00:00Z"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "riskAdjustment",
-              "impact": {
-                "value": 0.3
-              },
-              "reason": "The RSA key exchange path is unreachable in our deployment — all TLS connections use ECDHE. Attack requires local network access to the TLS terminator, which is in an isolated VLAN.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "security-architect@org.gov"
-              },
-              "appliedAt": "2026-01-17T10:00:00Z",
-              "expiresAt": "2026-07-17T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "failed",
-          "effectiveImpact": 0.3,
-          "disposition": "riskAdjustment"
-        },
-        {
-          "id": "SV-230500",
-          "title": "RHEL 9 must disable USB mass storage",
-          "impact": 0.5,
-          "tags": {
-            "nist": [
-              "MP-7"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "USB mass storage kernel module must be disabled."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "Kernel module 'usb-storage' is expected to be disabled",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "usb-storage module is loaded"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "operationalRequirement",
-              "status": "failed",
-              "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "system-owner@agency.gov"
-              },
-              "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2026-07-20T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "failed",
-          "disposition": "operationalRequirement"
-        },
-        {
-          "id": "SV-230350",
-          "title": "RHEL 9 must be patched within 30 days of release",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "SI-2"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Security patches must be applied within 30 days."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "Package updates are expected to be current within 30 days",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "15 packages have patches older than 30 days"
-            }
-          ],
-          "poams": [
-            {
-              "type": "remediation",
-              "explanation": "Patch deployment blocked by vendor compatibility testing. Vendor confirmed fix for Q2 2026.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "ops@agency.gov"
-              },
-              "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2099-12-31T00:00:00Z",
-              "milestones": [
+          "properties": {
+            "eventId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identity of this event occurrence, unique per source. (source, eventId) is the deduplication key: consumers may treat events with identical source and eventId as duplicates. UUIDv7 (time-ordered) is recommended but not required."
+            },
+            "source": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI identifying the producer context that emitted this event (for example, a scanner instance and profile). eventId uniqueness and sequence numbering are scoped per source."
+            },
+            "sequence": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Monotonically increasing sequence number per entity key. The ONLY ordering authority for folding: consumers keep the greatest sequence per key regardless of arrival order or timestamp. Deliberately per-entity-key (event-sourcing aggregate-version practice) rather than per-source."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI to the hdf-system document (authorization boundary) this event applies to. Resolves to the latest version of the evolving system document."
+            },
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of the system component this event concerns."
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Occurrence time of the observed change (RFC 3339, trimmed UTC). Display and audit metadata only — NEVER an ordering key; ordering is sequence's job."
+            },
+            "schemaRef": {
+              "type": "string",
+              "format": "uri",
+              "description": "The versioned schema $id this event validates against, so events self-describe on heterogeneous streams. Recommended on every wire event."
+            },
+            "priorChecksum": {
+              "oneOf": [
                 {
-                  "description": "Vendor releases compatible patch",
-                  "estimatedCompletion": "2026-04-01T00:00:00Z",
-                  "status": "pending"
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum"
                 },
                 {
-                  "description": "Deploy to production",
-                  "estimatedCompletion": "2026-04-15T00:00:00Z",
-                  "status": "pending"
+                  "type": "null"
                 }
-              ]
+              ],
+              "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture.\n\nNull at chain start (no prior state, e.g. a new entity or the first event after a seed).\n\nThe chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
+            }
+          },
+          "$comment": "Examples, in order: 1) Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key; 2) Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
+          "examples": [
+            {
+              "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
+              "source": "inspec://web01/rhel9-stig",
+              "sequence": 412,
+              "systemRef": "apptier.hdf-system.json",
+              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+              "timestamp": "2026-07-22T14:03:11Z",
+              "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
+              "priorChecksum": {
+                "algorithm": "sha256",
+                "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
+              }
+            },
+            {
+              "eventId": "0190f6f2-2a5b-7e4d-b1c8-4f2e6a8b0d12",
+              "source": "inspec://web01/rhel9-stig",
+              "sequence": 1,
+              "systemRef": "apptier.hdf-system.json",
+              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
+              "timestamp": "2026-07-22T09:00:00Z",
+              "priorChecksum": null
             }
           ],
-          "effectiveStatus": "failed",
-          "disposition": "poam"
+          "description": "Entity-agnostic transport identity for a change event: dedup ((source, eventId)), ordering (per-key sequence), system anchor (systemRef + componentId), occurrence time, schema self-description, and the prior-state hash-chain link. Composed into each concrete event type via allOf; entity-specific keys and payload live on the event type.",
+          "title": "Change Event Envelope"
+        },
+        "Event_Requirement_State": {
+          "type": "string",
+          "enum": [
+            "new",
+            "absent",
+            "updated",
+            "fixed",
+            "regressed"
+          ],
+          "description": "The producer-computable subset of the comparison vocabulary's Requirement_State. Kept value-identical with the parent enum (test-enforced): the batch-only states (moved, split, merged) are outputs of cross-document identity resolution a per-key producer cannot compute. Declared as a distinct named type (rather than a $ref intersection) so generated Go/TS types keep stable, distinct enum names.",
+          "title": "Event Requirement State"
+        },
+        "Event_Change_Reason": {
+          "type": "string",
+          "enum": [
+            "resultChanged",
+            "overrideAdded",
+            "overrideExpired",
+            "overrideRemoved",
+            "overrideModified",
+            "impactChanged",
+            "configChanged"
+          ],
+          "description": "The producer-computable subset of the comparison vocabulary's Change_Reason, value-identical with the parent enum (test-enforced). Batch-only reasons (baselineUpgraded, controlMapped, scannerChanged, targetChanged, metadataChanged) require cross-corpus context and are excluded.",
+          "title": "Event Change Reason"
+        },
+        "Effective_Projection": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "effectiveStatus",
+            "effectiveImpact"
+          ],
+          "properties": {
+            "effectiveStatus": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Result_Status",
+              "description": "The resolved effective compliance status at this point in the chain."
+            },
+            "effectiveImpact": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "The resolved effective impact score (0.0–1.0) at this point in the chain."
+            }
+          },
+          "$comment": "Examples, in order: 1) Prior posture of a failing SSH-cipher control before remediation; 2) Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
+          "examples": [
+            {
+              "effectiveStatus": "failed",
+              "effectiveImpact": 0.5
+            },
+            {
+              "effectiveStatus": "passed",
+              "effectiveImpact": 0.5
+            }
+          ],
+          "description": "The minimal resolved-posture projection — the same field set the per-requirement effectiveChecksum hashes (status and impact; the governing disposition is carried by the full requirement payload).",
+          "title": "Effective Projection"
+        },
+        "Derivation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "seed",
+            "source",
+            "throughSequence",
+            "eventsApplied",
+            "asOf"
+          ],
+          "properties": {
+            "seed": {
+              "type": "object",
+              "unevaluatedProperties": false,
+              "required": [
+                "uri",
+                "checksum"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "format": "uri-reference",
+                  "description": "URI to the seed snapshot document (relative path or absolute URL)."
+                },
+                "checksum": {
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+                  "description": "Checksum of the seed snapshot, REQUIRED: the derivation pins an immutable snapshot by content, not just location."
+                }
+              },
+              "$comment": "Location + expected-hash reference (the SRI/OCI/SPDX pattern). Shares its core shape with hdf-evidence-package's Content_Reference and ADR-0006's proposed External_Reference; consolidation onto one reference primitive is tracked by bead hdf-libs-avp2.",
+              "description": "The authoritative snapshot this document was reassembled from, pinned by content."
+            },
+            "source": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "URI of the event-stream producer context whose events were applied (matches the events' envelope source)."
+            },
+            "throughSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The event watermark: the highest per-key sequence number applied. Downstream precedence rule: a full-scan document supersedes the reconciled view as of its scan time; between scans, the reconciled document with the highest throughSequence is the current posture."
+            },
+            "eventsApplied": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of change events applied to the seed to produce this document."
+            },
+            "asOf": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of PROV's generatedAtTime."
+            }
+          },
+          "$comment": "Examples, in order: 1) A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
+          "examples": [
+            {
+              "seed": {
+                "uri": "apptier-seed-scan.hdf.json",
+                "checksum": {
+                  "algorithm": "sha256",
+                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+              },
+              "source": "inspec://web01/rhel9-stig",
+              "throughSequence": 414,
+              "eventsApplied": 3,
+              "asOf": "2026-07-24T10:15:00Z"
+            }
+          ],
+          "description": "Derived-document lineage for a reconciled result set (an hdf-results produced by applyChangeEvents rather than a scanner). Records exactly which seed and event horizon the document represents so it can never masquerade as primary scan evidence. Conceptually PROV qualified derivation: derived entity, used entity (seed), activity (event application), generation time (asOf).",
+          "title": "Derivation"
         }
-      ],
-      "description": "A requirement that has been evaluated, including any findings.",
-      "title": "Evaluated Requirement"
+      }
     },
     "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1713,6 +1642,794 @@
           ],
           "description": "Cloud service provider identifier.",
           "title": "Cloud Provider"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0",
+      "title": "HDF Result Primitives",
+      "description": "Types for representing assessment results and statuses.",
+      "$defs": {
+        "Result_Status": {
+          "type": "string",
+          "enum": [
+            "passed",
+            "failed",
+            "notApplicable",
+            "notReviewed",
+            "error"
+          ],
+          "description": "The status of an individual test result. 'notApplicable' indicates the requirement does not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
+          "title": "Result Status"
+        },
+        "Requirement_Result": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "status",
+            "codeDesc",
+            "startTime"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/Result_Status",
+              "description": "The status of this test within the requirement. Example: 'failed'."
+            },
+            "codeDesc": {
+              "type": "string",
+              "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
+            },
+            "runTime": {
+              "type": "number",
+              "minimum": 0,
+              "description": "The execution time in seconds for the test."
+            },
+            "startTime": {
+              "type": "string",
+              "format": "date-time",
+              "description": "The time at which the test started."
+            },
+            "resource": {
+              "type": "string",
+              "description": "The resource used in the test. Example: 'file', 'command', 'service'."
+            },
+            "resourceId": {
+              "type": "string",
+              "description": "The unique identifier of the resource. Example: '/etc/passwd'."
+            },
+            "message": {
+              "type": "string",
+              "description": "An explanation of the test result. Typically provided for failed tests, errors, or to explain why a test was not applicable or not reviewed."
+            },
+            "exception": {
+              "type": "string",
+              "description": "The type of exception if an exception was thrown."
+            },
+            "backtrace": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The stacktrace/backtrace of the exception if one occurred."
+            }
+          },
+          "examples": [
+            {
+              "status": "passed",
+              "codeDesc": "File /etc/ssh/sshd_config content is expected to match /Protocol\\s+2/",
+              "startTime": "2025-06-15T10:30:00Z",
+              "runTime": 0.015
+            },
+            {
+              "status": "failed",
+              "codeDesc": "Service 'telnet' is expected not to be enabled",
+              "startTime": "2025-06-15T10:30:01Z",
+              "runTime": 0.008,
+              "message": "expected that 'Service telnet' is not enabled"
+            },
+            {
+              "status": "error",
+              "codeDesc": "File /etc/audit/auditd.conf content is expected to include 'max_log_file'",
+              "startTime": "2025-06-15T10:30:02Z",
+              "exception": "Errno::ENOENT",
+              "backtrace": [
+                "/opt/inspec/lib/resources/file.rb:42:in 'read'",
+                "/opt/inspec/lib/resources/file.rb:15:in 'content'"
+              ]
+            }
+          ],
+          "description": "A test within a requirement and its results and findings such as how long it took to run.",
+          "title": "Requirement Result"
+        },
+        "Requirement_Description": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "label",
+            "data"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "description": "The type of description. Examples: 'fix', 'check', 'rationale'."
+            },
+            "data": {
+              "type": "string",
+              "description": "The text of the description."
+            }
+          },
+          "examples": [
+            {
+              "label": "default",
+              "data": "Verify the SSH daemon is configured to only use FIPS-validated key exchange algorithms."
+            },
+            {
+              "label": "check",
+              "data": "Run 'sshd -T | grep kexalgorithms' and verify only FIPS-compliant algorithms are listed."
+            },
+            {
+              "label": "fix",
+              "data": "Add 'KexAlgorithms ecdh-sha2-nistp256,ecdh-sha2-nistp384' to /etc/ssh/sshd_config and restart sshd."
+            }
+          ],
+          "description": "A labeled description for a requirement, such as fix text or check instructions.",
+          "title": "Requirement Description"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.6.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.6.0",
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "baselines"
+      ],
+      "properties": {
+        "externalReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/External_Reference"
+          },
+          "description": "Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any URI-addressable artifact) relevant to this assessment as a whole. Inert context; see External_Reference."
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this assessment run."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this assessment was executed."
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.6.0#/$defs/Component"
+          },
+          "description": "The components that were assessed. Each component describes a system element (host, container, cloud resource, application, etc.) with optional identity, SBOM, and external references."
+        },
+        "baselines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evaluated_Baseline"
+          },
+          "description": "Information on the baselines that were evaluated, including findings."
+        },
+        "statistics": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.6.0#/$defs/Statistics",
+          "description": "Statistics for the assessment run, including duration and result counts."
+        },
+        "generator": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Generator",
+          "description": "Information about the tool that generated this file."
+        },
+        "tool": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Tool",
+          "description": "The security tool that produced the assessment data in this file."
+        },
+        "integrity": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Integrity",
+          "description": "Cryptographic integrity information for verifying this file."
+        },
+        "preAmendmentChecksum": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+          "description": "Hash of this results document as it stood immediately before the most recent amendment application. Written by `hdf amend apply` when it applies at least one override; an apply that matches nothing leaves the document untouched. The hash covers the results file's RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical original — reformatting or re-serializing the source changes the value. Only the most recent pre-application state is recorded: applying amendments to an already-amended document REPLACES this value, so it is a single link back one step, not a growing chain. Distinct from the `previousChecksum` inside an override, which chains amendments to each other and is computed over a canonical JSON form.",
+          "$comment": "Example 1: the real SHA-256 of hdf-converters/converters/nessus-to-hdf/fixtures/expected/sample.nessus.hdf.json, reproducible with `shasum -a 256` on that file — chosen over a synthetic digest so a reader can verify the hash basis is the raw file bytes.",
+          "examples": [
+            {
+              "algorithm": "sha256",
+              "value": "9599ce7889e99b70ef5d0f3efa4215e35059c10a7e89b9314cbf4ded8fdbad38"
+            }
+          ]
+        },
+        "runner": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.6.0#/$defs/Runner",
+          "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
+        },
+        "remediation": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Remediation",
+          "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
+        },
+        "systemRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "Reference to an hdf-system document describing the system under assessment. May be a relative path, absolute URI, or fragment identifier."
+        },
+        "planRef": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
+        },
+        "derivation": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0#/$defs/Derivation",
+          "description": "Present ONLY on reconciled result sets: lineage recording the seed snapshot and event watermark this document was reassembled from (ADR-0005). Documents produced directly by a scan omit this field. When present, generator names the reconciling tool."
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Reserved for tool-specific data not defined in the HDF standard. Use this to preserve original tool output, auxiliary data, or custom metadata."
+        }
+      },
+      "examples": [
+        {
+          "baselines": [
+            {
+              "name": "web-server-hardening",
+              "title": "Web Server Security Baseline",
+              "version": "1.0.0",
+              "summary": "Security hardening checks for Apache HTTP Server",
+              "requirements": [
+                {
+                  "id": "SV-100001",
+                  "title": "Web server must use TLS 1.2 or higher",
+                  "impact": 0.7,
+                  "tags": {
+                    "nist": [
+                      "SC-8",
+                      "SC-23"
+                    ]
+                  },
+                  "descriptions": [
+                    {
+                      "label": "default",
+                      "data": "The web server must be configured to use TLS 1.2 or higher for all encrypted connections."
+                    }
+                  ],
+                  "results": [
+                    {
+                      "status": "passed",
+                      "codeDesc": "SSL configuration is expected to include TLSv1.2",
+                      "startTime": "2025-06-15T14:30:00Z",
+                      "runTime": 0.042
+                    }
+                  ]
+                },
+                {
+                  "id": "SV-100002",
+                  "title": "Web server must have X-Frame-Options header set",
+                  "impact": 0.5,
+                  "tags": {
+                    "nist": [
+                      "SA-11",
+                      "RA-5"
+                    ]
+                  },
+                  "descriptions": [
+                    {
+                      "label": "default",
+                      "data": "The anti-clickjacking X-Frame-Options header must be present on all responses."
+                    }
+                  ],
+                  "results": [
+                    {
+                      "status": "failed",
+                      "codeDesc": "HTTP response headers are expected to include X-Frame-Options",
+                      "startTime": "2025-06-15T14:30:01Z",
+                      "message": "X-Frame-Options header not found in response"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "components": [
+            {
+              "type": "application",
+              "name": "Apache HTTP Server 2.4"
+            }
+          ],
+          "generator": {
+            "name": "nikto-to-hdf",
+            "version": "1.0.0"
+          },
+          "tool": {
+            "name": "Nikto"
+          }
+        }
+      ],
+      "description": "The top level value containing all assessment results.",
+      "title": "HDF Results",
+      "$defs": {
+        "Evaluated_Baseline": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "name",
+            "requirements"
+          ],
+          "allOf": [
+            {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Baseline_Metadata"
+            }
+          ],
+          "properties": {
+            "depends": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Dependency"
+              },
+              "description": "The set of dependencies this baseline depends on."
+            },
+            "parentBaseline": {
+              "type": "string",
+              "description": "The name of the parent baseline if this is a dependency of another."
+            },
+            "description": {
+              "type": "string",
+              "description": "The description - should be more detailed than the summary."
+            },
+            "integrity": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Integrity",
+              "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
+            },
+            "originalChecksum": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+              "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
+            },
+            "resultsChecksum": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+              "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
+            },
+            "statusMessage": {
+              "type": "string",
+              "description": "An explanation of the baseline status. Example: why it was skipped, failed to load, or any other status details."
+            },
+            "requirements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Evaluated_Requirement"
+              },
+              "minItems": 1,
+              "description": "The set of requirements including any findings. A baseline must have at least one requirement."
+            },
+            "groups": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Requirement_Group"
+              },
+              "description": "A set of descriptions for the requirement groups."
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.6.0#/$defs/Input"
+              },
+              "description": "Typed inputs used to parameterize this baseline at execution time. See the Input primitive for the full schema."
+            },
+            "extensions": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Reserved for tool-specific baseline metadata not defined in the HDF standard."
+            }
+          },
+          "description": "Information on a baseline that was evaluated, including any findings.",
+          "title": "Evaluated Baseline"
+        },
+        "Evaluated_Requirement": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "id",
+            "impact",
+            "tags",
+            "results",
+            "descriptions"
+          ],
+          "allOf": [
+            {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Requirement_Core"
+            }
+          ],
+          "properties": {
+            "descriptions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Requirement_Description"
+              },
+              "contains": {
+                "type": "object",
+                "required": [
+                  "label"
+                ],
+                "properties": {
+                  "label": {
+                    "const": "default"
+                  }
+                }
+              },
+              "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
+            },
+            "severity": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Severity",
+              "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
+            },
+            "sourceLocation": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Source_Location",
+              "description": "The explicit location of the requirement within the source code."
+            },
+            "results": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Requirement_Result"
+              },
+              "description": "The set of all tests within the requirement and their results."
+            },
+            "statusOverrides": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Status_Override"
+              },
+              "description": "Chronological history of all overrides applied to this requirement. Overrides are intentional changes to the compliance status and/or impact score (waivers, attestations, false positives, risk adjustments). Most recent override should be first in array. Preserves full audit trail."
+            },
+            "poams": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/POAM"
+              },
+              "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
+            },
+            "effectiveStatus": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Result_Status",
+              "description": "The current effective compliance status of this requirement after applying the most recent non-expired override with a status field, or computed from results (worst-wins) if no status-bearing overrides exist."
+            },
+            "effectiveImpact": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "The current effective impact score (0.0–1.0) after applying the most recent non-expired override with an impact field. Absent when no impact overrides apply; consumers should use the requirement's impact field in that case."
+            },
+            "disposition": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.6.0#/$defs/Override_Type",
+              "description": "The type of the most recent non-expired override or POAM governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or POAMs apply."
+            },
+            "effectiveChecksum": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+              "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring.\n\nsha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp.\n\nFlips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags).\n\nOptional; stamped by tooling (hdf convert, hdf amend apply)."
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Evidence"
+              },
+              "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
+            },
+            "cvss": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0#/$defs/Cvss"
+              },
+              "description": "Structured CVSS scoring data for vulnerability findings. One entry per CVE — a finding may match multiple CVEs (common in vulnerability scanners). Captures vendor-supplied Base metrics plus optional consumer-owned Threat / Environmental / Supplemental groups for risk adjustment. See cvss.schema.json."
+            },
+            "epss": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.6.0#/$defs/Epss",
+              "description": "FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used alongside CVSS for prioritization — captures the probability the vulnerability will be exploited."
+            },
+            "kev": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.6.0#/$defs/Kev",
+              "description": "CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and dueDate carry the federal patching deadline."
+            },
+            "cwe": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^CWE-[1-9]\\d*$"
+              },
+              "description": "Common Weakness Enumeration IDs associated with this finding. Use CWE-N format with no leading zeros (matches the MITRE catalog convention). For NIST control mappings derived from CWE, see tags.nist."
+            },
+            "affectedPackages": {
+              "type": "array",
+              "items": {
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.6.0#/$defs/Affected_Package"
+              },
+              "description": "Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see components[] on hdf-system for component-level package inventories. One entry per matched package signature (scanners often report multiple CPE variations per CVE)."
+            }
+          },
+          "$comment": "Examples, in order: 1) Passing requirement — no overrides, no disposition; 2) Waiver — AO accepted risk, status overridden to passed; 3) False positive (compliance scan) — STIG check was wrong, requirement actually passes; 4) False positive (CVE scan) — vulnerability does not apply to this build; 5) Risk adjustment — impact lowered, pass/fail unchanged; 6) Operational requirement — cannot remediate, remains open risk; 7) POAM — remediation tracked, status unchanged.",
+          "examples": [
+            {
+              "id": "SV-230222",
+              "title": "RHEL 9 must use SSH protocol version 2",
+              "impact": 0.7,
+              "tags": {
+                "nist": [
+                  "SC-8"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "SSH must use protocol version 2."
+                }
+              ],
+              "results": [
+                {
+                  "status": "passed",
+                  "codeDesc": "sshd_config Protocol is expected to eq 2",
+                  "startTime": "2026-01-15T10:00:00Z"
+                }
+              ],
+              "effectiveStatus": "passed"
+            },
+            {
+              "id": "SV-230300",
+              "title": "RHEL 9 must enforce password complexity",
+              "impact": 0.5,
+              "tags": {
+                "nist": [
+                  "IA-5 (1)"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Passwords must meet complexity requirements."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "pwquality.conf minlen is expected to be >= 15",
+                  "startTime": "2026-01-15T10:00:00Z",
+                  "message": "expected 8 to be >= 15"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "waiver",
+                  "status": "passed",
+                  "reason": "Compensating control: PIV/CAC smart card authentication enforced for all users, password login disabled",
+                  "appliedBy": {
+                    "type": "email",
+                    "identifier": "ao@agency.gov"
+                  },
+                  "appliedAt": "2026-01-20T10:00:00Z",
+                  "expiresAt": "2099-12-31T00:00:00Z"
+                }
+              ],
+              "effectiveStatus": "passed",
+              "disposition": "waiver",
+              "effectiveChecksum": {
+                "algorithm": "sha256",
+                "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
+              }
+            },
+            {
+              "id": "SV-230410",
+              "title": "RHEL 9 must have sshd PermitRootLogin disabled",
+              "impact": 0.7,
+              "tags": {
+                "nist": [
+                  "AC-6"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Direct root login via SSH must be disabled."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "sshd_config PermitRootLogin is expected to eq 'no'",
+                  "startTime": "2026-01-15T10:00:00Z",
+                  "message": "expected 'prohibit-password' to eq 'no'"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "falsePositive",
+                  "status": "passed",
+                  "reason": "Scanner requires literal 'no' but 'prohibit-password' is equally restrictive (disables password-based root login). Manual review confirms root cannot authenticate via SSH.",
+                  "appliedBy": {
+                    "type": "email",
+                    "identifier": "assessor@agency.gov"
+                  },
+                  "appliedAt": "2026-01-16T14:00:00Z",
+                  "expiresAt": "2026-07-16T00:00:00Z"
+                }
+              ],
+              "effectiveStatus": "passed",
+              "disposition": "falsePositive"
+            },
+            {
+              "id": "CVE-2026-12345",
+              "title": "libxml2 buffer overflow in xmlParseEntityDecl",
+              "impact": 0.9,
+              "tags": {
+                "nist": [
+                  "SI-2",
+                  "RA-5"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Buffer overflow in libxml2 entity parsing allows remote code execution."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "libxml2 >= 2.9.0 is expected to be patched for CVE-2026-12345",
+                  "startTime": "2026-01-15T10:00:00Z"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "falsePositive",
+                  "status": "notApplicable",
+                  "reason": "CVE scanner matched libxml2 version signature, but the vulnerable entity parsing module is compiled out of our build (--without-legacy flag). The affected code path does not exist in the binary.",
+                  "appliedBy": {
+                    "type": "email",
+                    "identifier": "dev@org.gov"
+                  },
+                  "appliedAt": "2026-01-16T09:00:00Z",
+                  "expiresAt": "2026-07-16T00:00:00Z"
+                }
+              ],
+              "effectiveStatus": "notApplicable",
+              "disposition": "falsePositive"
+            },
+            {
+              "id": "CVE-2026-67890",
+              "title": "OpenSSL timing side-channel in RSA decryption",
+              "impact": 0.7,
+              "tags": {
+                "nist": [
+                  "SI-2",
+                  "RA-5"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Timing side-channel may allow RSA private key recovery."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "openssl >= 3.1.0 is expected to be patched for CVE-2026-67890",
+                  "startTime": "2026-01-15T10:00:00Z"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "riskAdjustment",
+                  "impact": {
+                    "value": 0.3
+                  },
+                  "reason": "The RSA key exchange path is unreachable in our deployment — all TLS connections use ECDHE. Attack requires local network access to the TLS terminator, which is in an isolated VLAN.",
+                  "appliedBy": {
+                    "type": "email",
+                    "identifier": "security-architect@org.gov"
+                  },
+                  "appliedAt": "2026-01-17T10:00:00Z",
+                  "expiresAt": "2026-07-17T00:00:00Z"
+                }
+              ],
+              "effectiveStatus": "failed",
+              "effectiveImpact": 0.3,
+              "disposition": "riskAdjustment"
+            },
+            {
+              "id": "SV-230500",
+              "title": "RHEL 9 must disable USB mass storage",
+              "impact": 0.5,
+              "tags": {
+                "nist": [
+                  "MP-7"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "USB mass storage kernel module must be disabled."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "Kernel module 'usb-storage' is expected to be disabled",
+                  "startTime": "2026-01-15T10:00:00Z",
+                  "message": "usb-storage module is loaded"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "operationalRequirement",
+                  "status": "failed",
+                  "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
+                  "appliedBy": {
+                    "type": "email",
+                    "identifier": "system-owner@agency.gov"
+                  },
+                  "appliedAt": "2026-01-20T10:00:00Z",
+                  "expiresAt": "2026-07-20T00:00:00Z"
+                }
+              ],
+              "effectiveStatus": "failed",
+              "disposition": "operationalRequirement"
+            },
+            {
+              "id": "SV-230350",
+              "title": "RHEL 9 must be patched within 30 days of release",
+              "impact": 0.7,
+              "tags": {
+                "nist": [
+                  "SI-2"
+                ]
+              },
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "Security patches must be applied within 30 days."
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "Package updates are expected to be current within 30 days",
+                  "startTime": "2026-01-15T10:00:00Z",
+                  "message": "15 packages have patches older than 30 days"
+                }
+              ],
+              "poams": [
+                {
+                  "type": "remediation",
+                  "explanation": "Patch deployment blocked by vendor compatibility testing. Vendor confirmed fix for Q2 2026.",
+                  "appliedBy": {
+                    "type": "email",
+                    "identifier": "ops@agency.gov"
+                  },
+                  "appliedAt": "2026-01-20T10:00:00Z",
+                  "expiresAt": "2099-12-31T00:00:00Z",
+                  "milestones": [
+                    {
+                      "description": "Vendor releases compatible patch",
+                      "estimatedCompletion": "2026-04-01T00:00:00Z",
+                      "status": "pending"
+                    },
+                    {
+                      "description": "Deploy to production",
+                      "estimatedCompletion": "2026-04-15T00:00:00Z",
+                      "status": "pending"
+                    }
+                  ]
+                }
+              ],
+              "effectiveStatus": "failed",
+              "disposition": "poam"
+            }
+          ],
+          "description": "A requirement that has been evaluated, including any findings.",
+          "title": "Evaluated Requirement"
         }
       }
     },
@@ -3880,139 +4597,6 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0",
-      "title": "HDF Result Primitives",
-      "description": "Types for representing assessment results and statuses.",
-      "$defs": {
-        "Result_Status": {
-          "type": "string",
-          "enum": [
-            "passed",
-            "failed",
-            "notApplicable",
-            "notReviewed",
-            "error"
-          ],
-          "description": "The status of an individual test result. 'notApplicable' indicates the requirement does not apply to the target. 'notReviewed' indicates the requirement was not assessed (e.g., requires manual verification).",
-          "title": "Result Status"
-        },
-        "Requirement_Result": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "status",
-            "codeDesc",
-            "startTime"
-          ],
-          "properties": {
-            "status": {
-              "$ref": "#/$defs/Result_Status",
-              "description": "The status of this test within the requirement. Example: 'failed'."
-            },
-            "codeDesc": {
-              "type": "string",
-              "description": "A description of this test. Example: 'limits.conf * is expected to include [\"hard\", \"maxlogins\", \"10\"]'."
-            },
-            "runTime": {
-              "type": "number",
-              "minimum": 0,
-              "description": "The execution time in seconds for the test."
-            },
-            "startTime": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The time at which the test started."
-            },
-            "resource": {
-              "type": "string",
-              "description": "The resource used in the test. Example: 'file', 'command', 'service'."
-            },
-            "resourceId": {
-              "type": "string",
-              "description": "The unique identifier of the resource. Example: '/etc/passwd'."
-            },
-            "message": {
-              "type": "string",
-              "description": "An explanation of the test result. Typically provided for failed tests, errors, or to explain why a test was not applicable or not reviewed."
-            },
-            "exception": {
-              "type": "string",
-              "description": "The type of exception if an exception was thrown."
-            },
-            "backtrace": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "The stacktrace/backtrace of the exception if one occurred."
-            }
-          },
-          "examples": [
-            {
-              "status": "passed",
-              "codeDesc": "File /etc/ssh/sshd_config content is expected to match /Protocol\\s+2/",
-              "startTime": "2025-06-15T10:30:00Z",
-              "runTime": 0.015
-            },
-            {
-              "status": "failed",
-              "codeDesc": "Service 'telnet' is expected not to be enabled",
-              "startTime": "2025-06-15T10:30:01Z",
-              "runTime": 0.008,
-              "message": "expected that 'Service telnet' is not enabled"
-            },
-            {
-              "status": "error",
-              "codeDesc": "File /etc/audit/auditd.conf content is expected to include 'max_log_file'",
-              "startTime": "2025-06-15T10:30:02Z",
-              "exception": "Errno::ENOENT",
-              "backtrace": [
-                "/opt/inspec/lib/resources/file.rb:42:in 'read'",
-                "/opt/inspec/lib/resources/file.rb:15:in 'content'"
-              ]
-            }
-          ],
-          "description": "A test within a requirement and its results and findings such as how long it took to run.",
-          "title": "Requirement Result"
-        },
-        "Requirement_Description": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "label",
-            "data"
-          ],
-          "properties": {
-            "label": {
-              "type": "string",
-              "description": "The type of description. Examples: 'fix', 'check', 'rationale'."
-            },
-            "data": {
-              "type": "string",
-              "description": "The text of the description."
-            }
-          },
-          "examples": [
-            {
-              "label": "default",
-              "data": "Verify the SSH daemon is configured to only use FIPS-validated key exchange algorithms."
-            },
-            {
-              "label": "check",
-              "data": "Run 'sshd -T | grep kexalgorithms' and verify only FIPS-compliant algorithms are listed."
-            },
-            {
-              "label": "fix",
-              "data": "Add 'KexAlgorithms ecdh-sha2-nistp256,ecdh-sha2-nistp384' to /etc/ssh/sshd_config and restart sshd."
-            }
-          ],
-          "description": "A labeled description for a requirement, such as fix text or check instructions.",
-          "title": "Requirement Description"
-        }
-      }
-    },
     "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0",
@@ -4414,232 +4998,6 @@
           ],
           "description": "Information about the test execution environment. This is distinct from the target being scanned - the runner is where the security tool executes, while targets are what is being assessed.",
           "title": "Runner"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.6.0",
-      "title": "HDF Change Event Primitives",
-      "description": "Shared building blocks for HDF change-event wire documents. The envelope is entity-agnostic: hdf-requirement-change-event composes it today, and any future sibling event type (e.g. component change events — hdf-comparison already models componentDiffs alongside requirementDiffs) reuses it verbatim.",
-      "$defs": {
-        "Change_Event_Envelope": {
-          "type": "object",
-          "required": [
-            "eventId",
-            "source",
-            "sequence",
-            "systemRef",
-            "componentId",
-            "timestamp",
-            "priorChecksum"
-          ],
-          "properties": {
-            "eventId": {
-              "type": "string",
-              "format": "uuid",
-              "description": "Identity of this event occurrence, unique per source. (source, eventId) is the deduplication key: consumers may treat events with identical source and eventId as duplicates. UUIDv7 (time-ordered) is recommended but not required."
-            },
-            "source": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "URI identifying the producer context that emitted this event (for example, a scanner instance and profile). eventId uniqueness and sequence numbering are scoped per source."
-            },
-            "sequence": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Monotonically increasing sequence number per entity key. The ONLY ordering authority for folding: consumers keep the greatest sequence per key regardless of arrival order or timestamp. Deliberately per-entity-key (event-sourcing aggregate-version practice) rather than per-source."
-            },
-            "systemRef": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "URI to the hdf-system document (authorization boundary) this event applies to. Resolves to the latest version of the evolving system document."
-            },
-            "componentId": {
-              "type": "string",
-              "format": "uuid",
-              "description": "componentId of the system component this event concerns."
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Occurrence time of the observed change (RFC 3339, trimmed UTC). Display and audit metadata only — NEVER an ordering key; ordering is sequence's job."
-            },
-            "schemaRef": {
-              "type": "string",
-              "format": "uri",
-              "description": "The versioned schema $id this event validates against, so events self-describe on heterogeneous streams. Recommended on every wire event."
-            },
-            "priorChecksum": {
-              "oneOf": [
-                {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture.\n\nNull at chain start (no prior state, e.g. a new entity or the first event after a seed).\n\nThe chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
-            }
-          },
-          "$comment": "Examples, in order: 1) Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key; 2) Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
-          "examples": [
-            {
-              "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
-              "source": "inspec://web01/rhel9-stig",
-              "sequence": 412,
-              "systemRef": "apptier.hdf-system.json",
-              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
-              "timestamp": "2026-07-22T14:03:11Z",
-              "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0",
-              "priorChecksum": {
-                "algorithm": "sha256",
-                "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
-              }
-            },
-            {
-              "eventId": "0190f6f2-2a5b-7e4d-b1c8-4f2e6a8b0d12",
-              "source": "inspec://web01/rhel9-stig",
-              "sequence": 1,
-              "systemRef": "apptier.hdf-system.json",
-              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
-              "timestamp": "2026-07-22T09:00:00Z",
-              "priorChecksum": null
-            }
-          ],
-          "description": "Entity-agnostic transport identity for a change event: dedup ((source, eventId)), ordering (per-key sequence), system anchor (systemRef + componentId), occurrence time, schema self-description, and the prior-state hash-chain link. Composed into each concrete event type via allOf; entity-specific keys and payload live on the event type.",
-          "title": "Change Event Envelope"
-        },
-        "Event_Requirement_State": {
-          "type": "string",
-          "enum": [
-            "new",
-            "absent",
-            "updated",
-            "fixed",
-            "regressed"
-          ],
-          "description": "The producer-computable subset of the comparison vocabulary's Requirement_State. Kept value-identical with the parent enum (test-enforced): the batch-only states (moved, split, merged) are outputs of cross-document identity resolution a per-key producer cannot compute. Declared as a distinct named type (rather than a $ref intersection) so generated Go/TS types keep stable, distinct enum names.",
-          "title": "Event Requirement State"
-        },
-        "Event_Change_Reason": {
-          "type": "string",
-          "enum": [
-            "resultChanged",
-            "overrideAdded",
-            "overrideExpired",
-            "overrideRemoved",
-            "overrideModified",
-            "impactChanged",
-            "configChanged"
-          ],
-          "description": "The producer-computable subset of the comparison vocabulary's Change_Reason, value-identical with the parent enum (test-enforced). Batch-only reasons (baselineUpgraded, controlMapped, scannerChanged, targetChanged, metadataChanged) require cross-corpus context and are excluded.",
-          "title": "Event Change Reason"
-        },
-        "Effective_Projection": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "effectiveStatus",
-            "effectiveImpact"
-          ],
-          "properties": {
-            "effectiveStatus": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Result_Status",
-              "description": "The resolved effective compliance status at this point in the chain."
-            },
-            "effectiveImpact": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "The resolved effective impact score (0.0–1.0) at this point in the chain."
-            }
-          },
-          "$comment": "Examples, in order: 1) Prior posture of a failing SSH-cipher control before remediation; 2) Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
-          "examples": [
-            {
-              "effectiveStatus": "failed",
-              "effectiveImpact": 0.5
-            },
-            {
-              "effectiveStatus": "passed",
-              "effectiveImpact": 0.5
-            }
-          ],
-          "description": "The minimal resolved-posture projection — the same field set the per-requirement effectiveChecksum hashes (status and impact; the governing disposition is carried by the full requirement payload).",
-          "title": "Effective Projection"
-        },
-        "Derivation": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "seed",
-            "source",
-            "throughSequence",
-            "eventsApplied",
-            "asOf"
-          ],
-          "properties": {
-            "seed": {
-              "type": "object",
-              "unevaluatedProperties": false,
-              "required": [
-                "uri",
-                "checksum"
-              ],
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "format": "uri-reference",
-                  "description": "URI to the seed snapshot document (relative path or absolute URL)."
-                },
-                "checksum": {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
-                  "description": "Checksum of the seed snapshot, REQUIRED: the derivation pins an immutable snapshot by content, not just location."
-                }
-              },
-              "$comment": "Location + expected-hash reference (the SRI/OCI/SPDX pattern). Shares its core shape with hdf-evidence-package's Content_Reference and ADR-0006's proposed External_Reference; consolidation onto one reference primitive is tracked by bead hdf-libs-avp2.",
-              "description": "The authoritative snapshot this document was reassembled from, pinned by content."
-            },
-            "source": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "URI of the event-stream producer context whose events were applied (matches the events' envelope source)."
-            },
-            "throughSequence": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "The event watermark: the highest per-key sequence number applied. Downstream precedence rule: a full-scan document supersedes the reconciled view as of its scan time; between scans, the reconciled document with the highest throughSequence is the current posture."
-            },
-            "eventsApplied": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Number of change events applied to the seed to produce this document."
-            },
-            "asOf": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of PROV's generatedAtTime."
-            }
-          },
-          "$comment": "Examples, in order: 1) A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
-          "examples": [
-            {
-              "seed": {
-                "uri": "apptier-seed-scan.hdf.json",
-                "checksum": {
-                  "algorithm": "sha256",
-                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                }
-              },
-              "source": "inspec://web01/rhel9-stig",
-              "throughSequence": 414,
-              "eventsApplied": 3,
-              "asOf": "2026-07-24T10:15:00Z"
-            }
-          ],
-          "description": "Derived-document lineage for a reconciled result set (an hdf-results produced by applyChangeEvents rather than a scanner). Records exactly which seed and event horizon the document represents so it can never masquerade as primary scan evidence. Conceptually PROV qualified derivation: derived entity, used entity (seed), activity (event application), generation time (asOf).",
-          "title": "Derivation"
         }
       }
     },

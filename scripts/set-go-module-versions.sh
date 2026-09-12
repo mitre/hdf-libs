@@ -54,13 +54,39 @@ cd "$root"
 # exactly the local-only view this script exists to look past.
 export GOWORK=off
 
+# Emits "path version" per require. Runs as a plain command substitution, never
+# inside a process substitution: a failure there is invisible to `set -e`, which
+# is how an earlier version of this script printed success over a traceback and
+# exited 0 with a pin left unrewritten.
 intra_repo_requires() {
-  go mod edit -json "$1" | python3 -c '
+  local json
+  if ! json=$(go mod edit -json "$1" 2>&1); then
+    echo "ERROR: cannot parse $1 — go mod edit said: $json" >&2
+    return 1
+  fi
+  printf '%s' "$json" | python3 -c '
 import json, sys
 doc = json.load(sys.stdin)
 for req in (doc.get("Require") or []):
     print(req["Path"], req["Version"])
-'
+' || { echo "ERROR: could not read requires from $1" >&2; return 1; }
+}
+
+# Go derives a module path's major version from its /vN suffix, so a pin whose
+# major disagrees with the path is one Go itself refuses. Rewriting into that
+# shape would swap one unresolvable pin for another.
+major_matches_path() {
+  local path="$1" version="$2" major suffix
+  major="${version%%.*}"            # v3.6.0-rc.5 -> v3
+  case "$path" in
+    */v[0-9]|*/v[0-9][0-9]) suffix="/${path##*/}" ;;
+    *) suffix="" ;;
+  esac
+  if [ -n "$suffix" ]; then
+    [ "$suffix" = "/$major" ]
+  else
+    [ "$major" = "v0" ] || [ "$major" = "v1" ]
+  fi
 }
 
 # Read into an array without mapfile: macOS ships bash 3.2, where it does not exist.
@@ -76,22 +102,33 @@ fi
 rewritten=0
 
 for gomod in "${gomods[@]}"; do
+  requires=$(intra_repo_requires "$gomod") || exit 1
   while read -r path version; do
+    [ -n "$path" ] || continue
     case "$path" in
       "$MODULE_PREFIX"*) ;;
       *) continue ;;
     esac
     [ "$version" = "$VERSION" ] && continue
+    if ! major_matches_path "$path" "$VERSION"; then
+      echo "ERROR: $gomod requires $path, whose path cannot carry $VERSION." >&2
+      echo "       Give the module the major-version suffix its tag implies, or tag it on its own line." >&2
+      exit 1
+    fi
     go mod edit -require="${path}@${VERSION}" "$gomod"
     rewritten=$((rewritten + 1))
-  done < <(intra_repo_requires "$gomod")
+  done <<EOF
+$requires
+EOF
 done
 
 # Prove it, rather than trusting the loop above: re-read every file and fail on
 # any intra-repo require that does not name the target version.
 stragglers=0
 for gomod in "${gomods[@]}"; do
+  requires=$(intra_repo_requires "$gomod") || exit 1
   while read -r path version; do
+    [ -n "$path" ] || continue
     case "$path" in
       "$MODULE_PREFIX"*) ;;
       *) continue ;;
@@ -99,7 +136,9 @@ for gomod in "${gomods[@]}"; do
     [ "$version" = "$VERSION" ] && continue
     echo "FAIL $gomod: $path is still at $version, wanted $VERSION" >&2
     stragglers=$((stragglers + 1))
-  done < <(intra_repo_requires "$gomod")
+  done <<EOF
+$requires
+EOF
 done
 
 if [ "$stragglers" -ne 0 ]; then

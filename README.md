@@ -80,7 +80,7 @@ Differential analysis between HDF documents (results, baselines, or systems). Pr
 ### HDF Requirement Change Event
 A continuous-monitoring stream of per-requirement change events (`new`, `absent`, `updated`, `fixed`, `regressed`) derived between two results scans. Each event carries the full after-state and a thin before-state, chained by per-key sequence so a reconciled results document can be replayed from a seed. Produced by `hdf events derive` and the hdf-diff kernel.
 
-All schemas are at v3.5.0.
+All schemas are at v3.6.0.
 
 ## Installation
 

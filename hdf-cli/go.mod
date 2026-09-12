@@ -7,16 +7,16 @@ require (
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v1.0.0
 	github.com/google/uuid v1.6.0
-	github.com/mitre/hdf-libs/hdf-converters/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.6.0-rc.5
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.6.0-rc.5
+	github.com/mitre/hdf-libs/hdf-converters/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.6.0
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.6.0
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
