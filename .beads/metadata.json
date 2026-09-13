@@ -2,6 +2,5 @@
   "database": "dolt",
   "backend": "dolt",
   "dolt_mode": "embedded",
-  "dolt_database": "hdf_libs",
-  "project_id": "5fe8269f-cdc5-4dd0-906e-038816324e49"
+  "dolt_database": "beads"
 }
