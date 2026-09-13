@@ -139,7 +139,7 @@ func buildTriageOverride(alert mdeAlert, startTime time.Time) (hdf.StatusOverrid
 		Reason:    triageReason(alert),
 		AppliedBy: triageIdentity(alert.AssignedTo),
 		AppliedAt: appliedAt,
-		ExpiresAt: appliedAt.AddDate(1, 0, 0),
+		ExpiresAt: shared.DefaultOverrideExpiry(appliedAt),
 	}
 	return override, effective, oType, true
 }

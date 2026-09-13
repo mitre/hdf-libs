@@ -862,18 +862,22 @@ jobs:
           PACKAGES=(
             hdf-schema hdf-utilities hdf-mappings hdf-validators
             hdf-parsers hdf-converters hdf-generators hdf-diff
-            hdf-extension-graph hdf-engine
+            hdf-extension-graph hdf-engine hdf-fixtures
           )
           for pkg in "${PACKAGES[@]}"; do
             (cd "$pkg" && pnpm pack --pack-destination /tmp/tarballs)
           done
 
       - name: publint each tarball
+        # `pnpm exec` (not dlx): publint is a root devDependency so the verdict
+        # comes from the lockfile-pinned version. dlx would resolve whatever is
+        # current on npm at run time and bypass the workspace's release-age
+        # cooldown — the same reasoning as the attw step below.
         run: |
           FAIL=0
           for tb in /tmp/tarballs/*.tgz; do
             echo "::group::publint $(basename "$tb")"
-            pnpm dlx publint "$tb" || FAIL=1
+            pnpm exec publint "$tb" || FAIL=1
             echo "::endgroup::"
           done
           exit $FAIL

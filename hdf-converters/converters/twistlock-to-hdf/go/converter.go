@@ -151,19 +151,14 @@ func buildCvss(vuln TwistlockVuln) *hdf.Cvss {
 	return &cv
 }
 
-// cwePattern matches a CWE identifier (case-insensitive prefix, capturing the
-// numeric portion). Used to normalize various Twistlock spellings ("CWE-79",
-// "cwe-79", "79") to the canonical "CWE-79" form.
-var cwePattern = regexp.MustCompile(`(?i)cwe[-_]?(\d+)`)
-
 // parseCwes extracts CWE identifiers from a free-form string and returns them
-// in canonical "CWE-N" format. Empty input yields a nil slice (omitted from
-// JSON output).
+// in canonical "CWE-N" format, deduplicated in source order. Empty input yields
+// a nil slice (omitted from JSON output).
 func parseCwes(raw string) []string {
 	if raw == "" {
 		return nil
 	}
-	matches := cwePattern.FindAllStringSubmatch(raw, -1)
+	matches := hdfutil.CWEPattern.FindAllStringSubmatch(raw, -1)
 	if len(matches) == 0 {
 		return nil
 	}
@@ -205,7 +200,9 @@ func debEcosystem(distro string) bool {
 }
 
 // resolveEcosystem maps a Twistlock package type plus the result's distro to a
-// schema Ecosystem value. Defaults to "generic" when the type is unknown.
+// schema Ecosystem value. Only the Twistlock spellings that differ from the
+// PURL type vocabulary are listed; the rest defer to the shared resolver, which
+// falls back to "generic" for unknown types.
 func resolveEcosystem(packageType, distro string) hdf.Ecosystem {
 	switch strings.ToLower(packageType) {
 	case "os":
@@ -217,26 +214,14 @@ func resolveEcosystem(packageType, distro string) hdf.Ecosystem {
 		default:
 			return hdf.Generic
 		}
-	case "rpm":
-		return hdf.RPM
-	case "deb":
-		return hdf.Deb
-	case "jar", "maven":
+	case "jar":
 		return hdf.Maven
-	case "python", "pypi":
+	case "python":
 		return hdf.Pypi
-	case "nodejs", "npm":
+	case "nodejs":
 		return hdf.Npm
-	case "gem":
-		return hdf.Gem
-	case "nuget":
-		return hdf.Nuget
-	case "go":
-		return hdf.Go
-	case "cargo":
-		return hdf.Cargo
 	default:
-		return hdf.Generic
+		return shared.EcosystemFromPurlType(packageType)
 	}
 }
 
@@ -261,28 +246,20 @@ func extractFixedInVersion(vuln TwistlockVuln) string {
 }
 
 // buildAffectedPackage constructs an AffectedPackage from the per-vulnerability
-// fields plus a lookup of result-level package types. Returns nil when there is
-// no package name + version pair (the two required AffectedPackage fields).
+// fields plus a lookup of result-level package types. Twistlock carries no purl
+// or cpe, so the shared builder returns nil unless the name + version + ecosystem
+// triple is complete.
 func buildAffectedPackage(vuln TwistlockVuln, packageTypes map[string]string, distro string) *hdf.AffectedPackage {
-	if vuln.PackageName == "" || vuln.PackageVersion == "" {
-		return nil
-	}
 	pkgType := vuln.PackageType
 	if pkgType == "" {
 		pkgType = packageTypes[vuln.PackageName]
 	}
-	name := vuln.PackageName
-	version := vuln.PackageVersion
-	ecosystem := resolveEcosystem(pkgType, distro)
-	pkg := hdf.AffectedPackage{
-		Name:      &name,
-		Version:   &version,
-		Ecosystem: &ecosystem,
-	}
-	if fixed := extractFixedInVersion(vuln); fixed != "" {
-		pkg.FixedInVersion = &fixed
-	}
-	return &pkg
+	return shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+		Name:           vuln.PackageName,
+		Version:        vuln.PackageVersion,
+		Ecosystem:      resolveEcosystem(pkgType, distro),
+		FixedInVersion: extractFixedInVersion(vuln),
+	})
 }
 
 // buildPackageTypeIndex collects package name → type mappings from the

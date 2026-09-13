@@ -1,6 +1,8 @@
 package shared
 
 import (
+	"time"
+
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -30,4 +32,11 @@ func RequirementStatusInput(r hdf.EvaluatedRequirement) hdfutil.EffectiveStatusI
 		input.ResultStatuses = append(input.ResultStatuses, string(res.Status))
 	}
 	return input
+}
+
+// RequirementEffectiveStatus is the requirement's canonical effective status
+// via the shared ladder, judged against the clock (twin of
+// requirementEffectiveStatus in status.ts).
+func RequirementEffectiveStatus(r hdf.EvaluatedRequirement) string {
+	return hdfutil.ComputeEffectiveStatus(RequirementStatusInput(r), time.Time{})
 }

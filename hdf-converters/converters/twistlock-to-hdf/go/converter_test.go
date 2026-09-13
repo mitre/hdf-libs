@@ -666,6 +666,10 @@ func TestConvertTwistlock_ParseCwes(t *testing.T) {
 		{"cwe-79", []string{"CWE-79"}},
 		{"CWE-79 and CWE-89", []string{"CWE-79", "CWE-89"}},
 		{"CWE-79, CWE-79", []string{"CWE-79"}},
+		// The shared CWE vocabulary accepts spaced and bare spellings; source order is kept.
+		{"CWE 79", []string{"CWE-79"}},
+		{"cwe79", []string{"CWE-79"}},
+		{"CWE-89 then CWE-79", []string{"CWE-89", "CWE-79"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.in, func(t *testing.T) {

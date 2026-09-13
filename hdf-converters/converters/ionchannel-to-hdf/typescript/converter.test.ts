@@ -68,6 +68,35 @@ describe('ionchannel-to-hdf ground-truth anchor', () => {
   );
 });
 
+// The Go converter asserts this exact order for this exact input: a
+// dependency reachable from several parents lists them in first-seen order.
+describe('ionchannel parent order parity', () => {
+  it('lists multiple parents in first-seen order', async () => {
+    const leaf = { org: 'o', name: 'shared', type: 'npm', package: 'npm', version: '1.0.0', dependencies: [] };
+    const parents = ['alpha', 'bravo', 'charlie', 'delta', 'echo'];
+    const input = JSON.stringify({
+      analysis_id: 'a',
+      team_id: 't',
+      scan_summaries: [{
+        id: 's',
+        name: 'dependency',
+        summary: 'Dependency scan completed',
+        results: {
+          type: 'dependency',
+          data: {
+            dependencies: parents.map((p) => ({
+              org: 'o', name: p, type: 'npm', package: 'npm', version: '1.0.0', dependencies: [leaf],
+            })),
+          },
+        },
+      }],
+    });
+    const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'dependency-o/shared');
+    expect(req?.tags?.parentDependencies).toEqual(['o/alpha', 'o/bravo', 'o/charlie', 'o/delta', 'o/echo']);
+  });
+});
+
 describe('ionchannel to HDF converter', async () => {
   describe('input validation', async () => {
     it('should throw on oversized input', async () => {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // decimalFloat is the shared impact-filter operand grammar: a plain decimal —
@@ -314,58 +315,18 @@ func compareImpact(impact float64, op string, val float64) bool {
 }
 
 func tagContains(tags map[string]any, key, value string) bool {
-	if tags == nil {
-		return false
-	}
-	tagVal, ok := tags[key]
-	if !ok {
-		return false
-	}
-	switch v := tagVal.(type) {
-	case string:
-		return strings.EqualFold(v, value)
-	case []any:
-		for _, item := range v {
-			if str, ok := item.(string); ok {
-				if strings.EqualFold(str, value) {
-					return true
-				}
-			}
-		}
-	case []string:
-		for _, str := range v {
-			if strings.EqualFold(str, value) {
-				return true
-			}
+	for _, s := range hdfutil.TagStrings(tags, key) {
+		if strings.EqualFold(s, value) {
+			return true
 		}
 	}
 	return false
 }
 
 func tagMatchesGlob(tags map[string]any, key, pattern string) bool {
-	if tags == nil {
-		return false
-	}
-	tagVal, ok := tags[key]
-	if !ok {
-		return false
-	}
-	switch v := tagVal.(type) {
-	case string:
-		return safeGlobMatch(v, pattern)
-	case []any:
-		for _, item := range v {
-			if str, ok := item.(string); ok {
-				if safeGlobMatch(str, pattern) {
-					return true
-				}
-			}
-		}
-	case []string:
-		for _, str := range v {
-			if safeGlobMatch(str, pattern) {
-				return true
-			}
+	for _, s := range hdfutil.TagStrings(tags, key) {
+		if safeGlobMatch(s, pattern) {
+			return true
 		}
 	}
 	return false

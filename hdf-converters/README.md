@@ -33,6 +33,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Ion Channel | `convertIonchannelToHdf` | JSON |
 | JFrog Xray | `convertJfrogXrayToHdf` | JSON |
 | JUnit | `convertJunitToHdf` | XML |
+| KICS | `convertKicsToHdf` | JSON |
 | MSFT Defender for Cloud | `convertMsftDefenderCloudToHdf` | JSON |
 | MSFT Defender for DevOps | `convertMsftDefenderDevopsToHdf` | JSON |
 | MSFT Defender for Endpoint | `convertMsftDefenderEndpointToHdf` | JSON |
@@ -157,8 +158,11 @@ Go converters live under `converters/<name>/go/` and follow the same function si
 ```go
 import grype "github.com/mitre/hdf-libs/hdf-converters/v3/converters/grype-to-hdf/go"
 
-results, err := grype.ConvertGrypeToHdf(input, "grype-report.json")
+// converterVersion is the value stamped as generator.version in the output.
+results, err := grype.ConvertGrypeToHDF(input, converterVersion)
 ```
+
+The first argument is the raw tool output (`[]byte`); the second is the converter version string, not the source filename.
 
 For CLI usage, install the `hdf` binary from [hdf-cli](https://github.com/mitre/hdf-libs/tree/main/hdf-cli):
 
@@ -204,8 +208,8 @@ Summary:
 1. Add real tool output fixtures in `converters/<name>/fixtures/input/`
 2. Write tests first (TDD) in both TypeScript and Go
 3. Implement the converter in `converters/<name>/typescript/` and `converters/<name>/go/`
-4. Register a fingerprint for auto-detection
-5. Add a CLI wrapper in `hdf-cli/cmd/hdf/cmd/`
+4. Register a fingerprint for auto-detection and add its blank-import to `registry/all/all.go`
+5. Register the converter in `registry/convert/converter_<name>.go` with an `init()` that calls `registerHDFConverter`, `registerHDFBaselineConverter`, `registerHDFPlanConverter`, or `registerHDFAmendmentsConverter` for its output type; the CLI and the MCP server share this registry, so only the integration test lives in `hdf-cli/cmd/hdf/cmd/converter_<name>_test.go`
 
 ## License
 

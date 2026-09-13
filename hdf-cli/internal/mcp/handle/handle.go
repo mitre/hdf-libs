@@ -10,12 +10,12 @@
 package handle
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // ErrHandleStale is returned when a handle's contentSha256 no longer matches the
@@ -91,6 +91,5 @@ type Source struct {
 }
 
 func sha256Hex(content []byte) string {
-	sum := sha256.Sum256(content)
-	return hex.EncodeToString(sum[:])
+	return hdfutil.SHA256Hex(content)
 }

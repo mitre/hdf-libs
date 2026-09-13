@@ -27,6 +27,7 @@ import {
   inputIntegrity,
   validateInputSize,
   chainOverrides,
+  defaultOverrideExpiry,
 } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackagesFromIdentifiers,
@@ -39,7 +40,6 @@ import {
 /** One year in milliseconds. VEX statements are re-evaluated as new info
  *  arrives; one year is a defensive default consistent with the
  *  no-permanent-amendment rule on Standalone_Override. */
-const DEFAULT_EXPIRY_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
 
 interface OpenVexVulnerability {
   '@id'?: string;
@@ -136,7 +136,7 @@ function statementToOverride(
   const stmtTime = (stmt.timestamp ? parseTimestamp(stmt.timestamp) : null) ?? docTime;
   const author = stmt.author ?? doc.author ?? '';
 
-  const expiresAt = new Date(stmtTime.getTime() + DEFAULT_EXPIRY_HORIZON_MS);
+  const expiresAt = defaultOverrideExpiry(stmtTime);
 
   const override: StandaloneOverride = {
     type: target.overrideType,

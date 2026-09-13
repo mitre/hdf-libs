@@ -124,8 +124,8 @@ export function createCvss(
 ): Cvss;
 
 export function severityToImpact(severity: null): null;
-export function severityToImpact(severity: string): number;
-export function severityToImpact(severity: string | null): number | null;
+export function severityToImpact(severity: string | undefined): number;
+export function severityToImpact(severity: string | null | undefined): number | null;
 
 export function impactToSeverity(impact: null): null;
 export function impactToSeverity(impact: number): string;

@@ -6,8 +6,6 @@
 package shared
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -26,10 +24,9 @@ import (
 // it as an hdf.Checksum. Used by every input-to-HDF converter for the
 // EvaluatedBaseline.ResultsChecksum field.
 func InputChecksum(input []byte) *hdf.Checksum {
-	hash := sha256.Sum256(input)
 	return &hdf.Checksum{
 		Algorithm: hdf.Sha256,
-		Value:     hex.EncodeToString(hash[:]),
+		Value:     hdfutil.SHA256Hex(input),
 	}
 }
 
@@ -66,9 +63,8 @@ func DigestToChecksums(digest string) []hdf.Checksum {
 // it as an hdf.Integrity. Used for root-level integrity fields on document
 // types (HDFBaseline, HDFSystem, HDFPlan, HDFAmendments, HDFEvidencePackage).
 func InputIntegrity(input []byte) *hdf.Integrity {
-	hash := sha256.Sum256(input)
 	alg := hdf.Sha256
-	val := hex.EncodeToString(hash[:])
+	val := hdfutil.SHA256Hex(input)
 	return &hdf.Integrity{
 		Algorithm: &alg,
 		Checksum:  &val,
@@ -347,33 +343,13 @@ func DeriveControlTypeFromTags(tags []string) *hdf.ControlType {
 //
 //	req.ControlType = shared.DeriveControlTypeFromTags(shared.NISTTagsFromMap(tags))
 func NISTTagsFromMap(tags map[string]interface{}) []string {
-	raw, present := tags["nist"]
-	if !present {
+	// tags.nist is a schema array, so a bare string is a wrong-shaped value
+	// rather than a one-element list — unlike hdfutil.TagStrings, which is
+	// deliberately tolerant for query/filter callers reading arbitrary tags.
+	if _, bare := tags["nist"].(string); bare {
 		return nil
 	}
-	switch v := raw.(type) {
-	case []string:
-		if len(v) == 0 {
-			return nil
-		}
-		return v
-	case []interface{}:
-		if len(v) == 0 {
-			return nil
-		}
-		out := make([]string, 0, len(v))
-		for _, item := range v {
-			if s, ok := item.(string); ok {
-				out = append(out, s)
-			}
-		}
-		if len(out) == 0 {
-			return nil
-		}
-		return out
-	default:
-		return nil
-	}
+	return hdfutil.TagStrings(tags, "nist")
 }
 
 // BuildNoFindingsRequirement synthesizes a passed placeholder for tools that
@@ -411,6 +387,32 @@ func DeriveVerificationMethod(code *string) *hdf.VerificationMethodEnum {
 	}
 	automated := hdf.VerificationMethodEnumAutomated
 	return &automated
+}
+
+// oscalSeverityByHDFBand renames the HDF severity bands into the OSCAL risk
+// characterization facet vocabulary (medium is "moderate" there, informational
+// is "info").
+var oscalSeverityByHDFBand = map[string]string{
+	"critical":      "critical",
+	"high":          "high",
+	"medium":        "moderate",
+	"low":           "low",
+	"informational": "info",
+}
+
+// OSCALSeverityFromHDF maps an HDF severity band to the OSCAL risk-facet
+// severity vocabulary. Returns "" for anything outside the HDF vocabulary so
+// callers omit the facet rather than emit a value OSCAL does not define.
+func OSCALSeverityFromHDF(severity string) string {
+	return oscalSeverityByHDFBand[strings.ToLower(severity)]
+}
+
+// DefaultOverrideExpiry returns the expiresAt an override takes when the source
+// tool records no expiration: one calendar year after appliedAt, in UTC. A
+// calendar year (not 365 days) keeps the date on the same month/day across leap
+// years, and normalizing to UTC first keeps the result off the host timezone.
+func DefaultOverrideExpiry(appliedAt time.Time) time.Time {
+	return appliedAt.UTC().AddDate(1, 0, 0)
 }
 
 // LimitSliceWithWarning returns at most maxItems elements from items and logs
@@ -554,19 +556,16 @@ func BuildAffectedPackage(opts AffectedPackageOptions) *hdf.AffectedPackage {
 	return pkg
 }
 
-// DefaultMaxJSONSize is the maximum allowed JSON input size (50 MB).
-// This provides defense against memory exhaustion when converters are used
-// as libraries outside the CLI (which has its own 50 MB input limit).
-const DefaultMaxJSONSize = 50 * 1024 * 1024
+// DefaultMaxJSONSize is the maximum allowed JSON input size (50 MB) — the one
+// limit hdfutil defines, so converters used as libraries outside the CLI
+// (which has its own 50 MB input limit) share it with the engine loader.
+const DefaultMaxJSONSize = hdfutil.DefaultMaxInputSize
 
-// ValidateJSONSize checks that JSON input doesn't exceed the maximum allowed size.
-// If maxSize <= 0, DefaultMaxJSONSize is used.
+// ValidateJSONSize is hdfutil.ValidateInputSize with the converter name
+// prefixed onto the error. If maxSize <= 0, DefaultMaxJSONSize is used.
 func ValidateJSONSize(input []byte, converterName string, maxSize int) error {
-	if maxSize <= 0 {
-		maxSize = DefaultMaxJSONSize
-	}
-	if len(input) > maxSize {
-		return fmt.Errorf("%s: input exceeds maximum allowed size of %d bytes (%d bytes provided)", converterName, maxSize, len(input))
+	if err := hdfutil.ValidateInputSize(input, maxSize); err != nil {
+		return fmt.Errorf("%s: %w", converterName, err)
 	}
 	return nil
 }
@@ -603,11 +602,8 @@ func RequireHDFAmendments(input []byte, converterName string) (map[string]interf
 // nil map (json.Unmarshal is a no-op on null), so it falls through to the
 // missing-field error rather than a panic — the behavior the TS peer mirrors.
 func requireHDFStructure(input []byte, converterName, field string) (map[string]interface{}, []interface{}, error) {
-	if len(input) == 0 {
-		return nil, nil, fmt.Errorf("%s: empty input", converterName)
-	}
-	if err := ValidateJSONSize(input, converterName, 0); err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", converterName, err)
+	if err := guardHDFInput(input, converterName); err != nil {
+		return nil, nil, err
 	}
 	var doc map[string]interface{}
 	if err := DecodeHDF(input, &doc); err != nil {
@@ -615,7 +611,12 @@ func requireHDFStructure(input []byte, converterName, field string) (map[string]
 	}
 	items, ok := doc[field].([]interface{})
 	if !ok {
-		return nil, nil, fmt.Errorf("%s: invalid HDF structure: missing %s field", converterName, field)
+		return nil, nil, missingFieldError(converterName, field)
+	}
+	// overrides carries minItems 1 (see RequireHDFAmendmentsTyped); the map path
+	// must reject the same document the typed path and the TypeScript peer do.
+	if field == "overrides" && len(items) == 0 {
+		return nil, nil, missingFieldError(converterName, field)
 	}
 	// Decoding into a map cannot fail on a wrongly-typed field the way a typed
 	// decode does, so without this the map guard is laxer than the typed one and
@@ -705,6 +706,24 @@ const (
 	UnratedSeverityValue = "unrated"
 )
 
+// hdfSeverities is the schema's Severity enum keyed by its lowercase token.
+var hdfSeverities = map[string]hdf.Severity{
+	"critical":      hdf.SeverityCritical,
+	"high":          hdf.SeverityHigh,
+	"medium":        hdf.SeverityMedium,
+	"low":           hdf.SeverityLow,
+	"informational": hdf.Informational,
+}
+
+// ParseSeverity maps a raw severity token onto the schema's Severity enum,
+// case-insensitively. It is the one place the enum vocabulary is spelled out
+// for converters that must not cast an off-vocabulary source value into the
+// typed field. Whitespace is not trimmed; callers own that normalization.
+func ParseSeverity(s string) (hdf.Severity, bool) {
+	sev, ok := hdfSeverities[strings.ToLower(s)]
+	return sev, ok
+}
+
 // MarkUnratedSeverity sets the shared unrated-severity marker tag when the
 // source severity carries no rating. No-op for rated severities or a nil map.
 func MarkUnratedSeverity(tags map[string]interface{}, severity string) {
@@ -742,9 +761,9 @@ func missingFieldError(converterName, field string) error {
 	return fmt.Errorf("%s: invalid HDF structure: missing %s field", converterName, field)
 }
 
-// RequireHDFResults decodes input into v after checking the document's top-level
-// shape: non-empty, within the size limit, parseable, and carrying a baselines
-// array.
+// RequireHDFResultsTyped decodes input into v after checking the document's
+// top-level shape: non-empty, within the size limit, parseable, and carrying a
+// baselines array.
 //
 // Without this check a typed decode silently zero-fills — an arbitrary JSON
 // object becomes an HDFResults with no baselines, and the converter emits a
@@ -774,8 +793,8 @@ func RequireHDFResultsTyped(input []byte, converterName string, v *hdf.HDFResult
 	return nil
 }
 
-// RequireHDFAmendments is RequireHDFResults for HDF Amendments documents, keyed
-// on the overrides array.
+// RequireHDFAmendmentsTyped is RequireHDFResultsTyped for HDF Amendments
+// documents, keyed on the overrides array.
 //
 // Unlike baselines, an empty overrides array is rejected. The asymmetry is the
 // schemas': baselines carries no minItems, so an assessment that evaluated

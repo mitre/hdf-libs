@@ -2,12 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // The compliance/threshold types and status-key constants now live in the shared
@@ -31,26 +28,17 @@ const (
 	thresholdNoImpact = hdfengine.ThresholdNoImpact
 )
 
-// effectiveStatus resolves a requirement's canonical effective status via the
-// ladder in status-determination.md (governing override → error roll-up →
-// impact-0 notApplicable → worst-wins roll-up). Threshold gating counts by
-// this — the same rule HDF's read tools use — so a CLI gate agrees with
-// hdf_compliance and never keeps Not Applicable controls (impact==0) in the
-// compliance denominator.
-func effectiveStatus(req hdf.EvaluatedRequirement) string {
-	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(req), time.Time{})
-}
-
 // countControlsByStatusSeverity parses HDF results JSON and counts requirements
 // by their effective status and severity, delegating to the shared hdf-engine
-// library via the effective-status resolver. Input parsing stays here (the CLI's
-// gated pipeline).
+// library via the shared effective-status resolver so a CLI gate agrees with
+// hdf_compliance and never keeps Not Applicable controls (impact==0) in the
+// compliance denominator. Input parsing stays here (the CLI's gated pipeline).
 func countControlsByStatusSeverity(data []byte) (*hdfengine.StatusCounts, error) {
 	results, err := parseHDFResults(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HDF results: %w", err)
 	}
-	return hdfengine.CountControlsByStatus(results, effectiveStatus), nil
+	return hdfengine.CountControlsByStatus(results, shared.RequirementEffectiveStatus), nil
 }
 
 // mapControlIDs builds control ID → effective-status/severity mappings from HDF
@@ -62,5 +50,5 @@ func mapControlIDs(data []byte) ([]hdfengine.ControlIDMapping, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HDF results: %w", err)
 	}
-	return hdfengine.MapControlIDsByStatus(results, effectiveStatus), nil
+	return hdfengine.MapControlIDsByStatus(results, shared.RequirementEffectiveStatus), nil
 }

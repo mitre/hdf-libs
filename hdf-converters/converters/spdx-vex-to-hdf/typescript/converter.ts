@@ -35,7 +35,9 @@ import {
   inputIntegrity,
   validateInputSize,
   chainOverrides,
+  defaultOverrideExpiry,
 } from '../../../shared/typescript/converterutil.js';
+import { cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import {
   affectedPackagesFromIdentifiers,
   importTargetFor,
@@ -43,9 +45,6 @@ import {
   supplierEvidence,
   VexStatus,
 } from '../../../shared/typescript/vex/mapping.js';
-
-/** One year in milliseconds — the override expiresAt horizon. */
-const DEFAULT_EXPIRY_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
 
 /** Fallback system identity when no supplier agent resolves. */
 const DEFAULT_APPLIED_BY = 'spdx-vex-import';
@@ -199,7 +198,7 @@ function relationshipToOverride(
 
   const appliedAt =
     createdAt(rel.creationInfo, idx) ?? createdAt(vuln?.creationInfo, idx) ?? new Date();
-  const expiresAt = new Date(appliedAt.getTime() + DEFAULT_EXPIRY_HORIZON_MS);
+  const expiresAt = defaultOverrideExpiry(appliedAt);
 
   const override: StandaloneOverride = {
     type: target.overrideType,
@@ -311,22 +310,12 @@ export function buildCvss(rel: GraphElement, cve: string): Cvss {
 }
 
 export function cvssVersion(relType: string | undefined, vector: string | undefined): Version {
-  if (vector?.startsWith('CVSS:')) {
-    const rest = vector.slice('CVSS:'.length);
-    const slash = rest.indexOf('/');
-    if (slash > 0) {
-      switch (rest.slice(0, slash)) {
-        case '2.0':
-          return Version.The20;
-        case '3.0':
-          return Version.The30;
-        case '3.1':
-          return Version.The31;
-        case '4.0':
-          return Version.The40;
-      }
-    }
-  }
+  return cvssVersionFromVector(vector, cvssVersionFromRelType(relType));
+}
+
+/** Fallback when the vector carries no recognized prefix: the relationship
+ *  subtype names the CVSS generation. */
+function cvssVersionFromRelType(relType: string | undefined): Version {
   if ((relType ?? '').includes('CvssV2')) return Version.The20;
   if ((relType ?? '').includes('CvssV4')) return Version.The40;
   return Version.The31;

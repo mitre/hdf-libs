@@ -8,7 +8,7 @@ import (
 	"time"
 
 	csafvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/csaf-vex-to-hdf/go"
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

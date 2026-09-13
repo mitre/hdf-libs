@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -9,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
@@ -439,5 +442,39 @@ func TestHdfConvert_Batch_Truncation(t *testing.T) {
 	}
 	if out.Notice == "" {
 		t.Error("a truncated batch must state how many were dropped")
+	}
+}
+
+// The most expensive tool must be stoppable: a cancelled request context aborts
+// the per-file loop instead of grinding through the whole directory.
+func TestHdfConvertBatch_HonorsContextCancellation(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	stageMixedBatch(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, _, err := hdfConvert(loader.New(0, 0, 0))(ctx, nil, convertInput{Directory: "in"})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("cancelled batch must return the context error, got %v", err)
+	}
+}
+
+// A batch entry whose document was neither written nor retained carries the same
+// warning as the single-file path: its handle cannot be resolved later.
+func TestHdfConvertBatch_UnretainedEntryCarriesNotice(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	stageMixedBatch(t)
+
+	_, out, err := hdfConvert(loader.New(0, 0, 16))(context.Background(), nil, convertInput{Directory: "in"})
+	if err != nil {
+		t.Fatalf("hdfConvert returned a Go error: %v", err)
+	}
+	for _, e := range asEntries(t, out.Batch) {
+		if !e.Valid {
+			t.Fatalf("entry %s failed: %s", e.InputPath, e.Error)
+		}
+		if !strings.Contains(e.Notice, "output") {
+			t.Errorf("entry %s: expected a persist-the-document notice, got %q", e.InputPath, e.Notice)
+		}
 	}
 }

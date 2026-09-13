@@ -1,0 +1,28 @@
+{
+  "baselines": [
+    {
+      "name": "PostgreSQL-STIG",
+      "requirements": [
+        {
+          "id": "V-259872",
+          "statusOverrides": [
+            {"type": "waiver", "status": "passed", "appliedBy": {"type": "agent", "identifier": "hdf-mcp-agent"}, "appliedAt": "2025-02-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"},
+            {"type": "falsePositive", "status": "notApplicable", "appliedBy": {"type": "system", "identifier": "hdf from_vex"}, "appliedAt": "2025-02-01T00:00:00Z"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RHEL9-STIG",
+      "requirements": [
+        {
+          "id": "V-257777",
+          "statusOverrides": [
+            {"type": "waiver", "status": "passed", "appliedBy": {"type": "username", "identifier": "isso"}, "appliedAt": "2025-02-01T00:00:00Z"},
+            {"type": "waiver", "status": "passed", "appliedBy": {"type": "agent", "identifier": "hdf-mcp-agent"}, "appliedAt": "2025-02-01T00:00:00Z"}
+          ]
+        }
+      ]
+    }
+  ]
+}

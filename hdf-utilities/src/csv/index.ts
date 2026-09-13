@@ -251,10 +251,13 @@ export function buildCsv<T = Record<string, unknown>>(
  * produced, so it cannot fail on unbalanced quotes.
  */
 function quoteLeadingWhitespace(csv: string, dsv: DSV, delimiter: string): string {
-  return dsv
-    .parseRows(csv)
-    .map((row) => row.map((field) => requote(field, dsv)).join(delimiter))
-    .join('\n');
+  return formatRowsGoCompatible(dsv.parseRows(csv), dsv, delimiter);
+}
+
+/** The one writer both public builders go through, so a field cannot come out
+ * quoted from one and bare from the other. */
+function formatRowsGoCompatible(rows: string[][], dsv: DSV, delimiter: string): string {
+  return rows.map((row) => row.map((field) => requote(field, dsv)).join(delimiter)).join('\n');
 }
 
 /**
@@ -316,8 +319,9 @@ export function buildCsvArray(
     processedData = data.map((row) => sanitizeCsvArray(row));
   }
 
-  const dsv = dsvFormat(opts.delimiter ?? ',');
-  let result = terminateFinalRecord(dsv.formatRows(processedData));
+  const delimiter = opts.delimiter ?? ',';
+  const dsv = dsvFormat(delimiter);
+  let result = terminateFinalRecord(formatRowsGoCompatible(processedData, dsv, delimiter));
 
   if (opts.newline && opts.newline !== '\n') {
     result = result.replace(/\n/g, opts.newline);

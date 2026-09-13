@@ -15,41 +15,41 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // populate the fingerprint registry via init()
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// docTypes is the eight-document HDF ecosystem, in a stable order.
-var docTypes = []string{
-	"hdf-results",
-	"hdf-baseline",
-	"hdf-system",
-	"hdf-plan",
-	"hdf-amendments",
-	"hdf-evidence-package",
-	"hdf-comparison",
-	"hdf-requirement-change-event",
-}
+// docTypes is the HDF document ecosystem in schema-id order, derived from the
+// engine's enumeration so a new document type lands in one place.
+var docTypes = func() []string {
+	known := hdfengine.KnownTypes()
+	out := make([]string, 0, len(known))
+	for _, k := range known {
+		out = append(out, "hdf-"+k)
+	}
+	return out
+}()
 
 // schemaTypeByDocType maps a resource {docType} to its validators.SchemaType.
-var schemaTypeByDocType = map[string]validators.SchemaType{
-	"hdf-results":                  validators.TypeResults,
-	"hdf-baseline":                 validators.TypeBaseline,
-	"hdf-system":                   validators.TypeSystem,
-	"hdf-plan":                     validators.TypePlan,
-	"hdf-amendments":               validators.TypeAmendments,
-	"hdf-evidence-package":         validators.TypeEvidencePackage,
-	"hdf-comparison":               validators.TypeComparison,
-	"hdf-requirement-change-event": validators.TypeRequirementChangeEvent,
-}
+var schemaTypeByDocType = func() map[string]validators.SchemaType {
+	known := hdfengine.KnownTypes()
+	m := make(map[string]validators.SchemaType, len(known))
+	for _, k := range known {
+		m["hdf-"+k] = validators.SchemaType(k)
+	}
+	return m
+}()
 
 func schemaTypeFor(docType string) (validators.SchemaType, bool) {
 	st, ok := schemaTypeByDocType[docType]
@@ -286,10 +286,24 @@ type enumEntry struct {
 	Description string   `json:"description,omitempty"`
 }
 
-// collectEnums gathers every string enumeration defined across the eight
-// schemas, deduped by name (first occurrence in doc-type order wins). Enum value
-// order is preserved from the schema.
+// collectEnums returns the enum index, building it once: the bundled schemas are
+// immutable embedded data, and an enum read would otherwise re-parse all eight
+// (100-260 KB each) every time.
 func collectEnums() (map[string]enumEntry, error) {
+	enumOnce.Do(func() { enumIndex, errEnumIndex = buildEnumIndex() })
+	return enumIndex, errEnumIndex
+}
+
+var (
+	enumOnce     sync.Once
+	enumIndex    map[string]enumEntry
+	errEnumIndex error
+)
+
+// buildEnumIndex gathers every string enumeration defined across the schemas,
+// deduped by name (first occurrence in doc-type order wins). Enum value order is
+// preserved from the schema.
+func buildEnumIndex() (map[string]enumEntry, error) {
 	out := map[string]enumEntry{}
 	for _, dt := range docTypes {
 		st, ok := schemaTypeFor(dt)
@@ -380,16 +394,20 @@ func RegisterAll(s *sdkmcp.Server) {
 		MIMEType:    "application/json",
 		Description: "A single HDF enumeration served whole: its allowed values and description. E.g. hdf://enum/Result_Status.",
 	}, handleEnum)
-	if idx, err := collectEnums(); err == nil {
-		for _, name := range sortedEnumKeys(idx) {
-			s.AddResource(&sdkmcp.Resource{
-				Name:        "hdf-enum-" + name,
-				Title:       "HDF enum: " + name,
-				URI:         "hdf://enum/" + name,
-				MIMEType:    "application/json",
-				Description: enumDescription(idx[name]),
-			}, handleEnum)
-		}
+	idx, err := collectEnums()
+	if err != nil {
+		// Without the index the enum template still answers, but every read is a
+		// not-found with an empty `available` list — say so rather than start mute.
+		slog.Error("enum index unavailable; no concrete hdf://enum resources registered", "cause", err)
+	}
+	for _, name := range sortedEnumKeys(idx) {
+		s.AddResource(&sdkmcp.Resource{
+			Name:        "hdf-enum-" + name,
+			Title:       "HDF enum: " + name,
+			URI:         "hdf://enum/" + name,
+			MIMEType:    "application/json",
+			Description: enumDescription(idx[name]),
+		}, handleEnum)
 	}
 
 	// Per-session tool-call transcript (middleware recorder + read-only resource).

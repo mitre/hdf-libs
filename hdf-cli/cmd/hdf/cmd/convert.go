@@ -364,10 +364,8 @@ func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersio
 	// Count fidelity: a converter that declares how many requirements its input
 	// must yield is held to it on the document it produced, before a version
 	// downgrade or anything else reshapes it.
-	if ex, ok := converter.(RequirementCountExpecter); ok {
-		if err := checkRequirementFidelity(ex, data, output, inputPath); err != nil {
-			return nil, err
-		}
+	if err := checkRequirementFidelity(converter, data, output, inputPath); err != nil {
+		return nil, err
 	}
 
 	// Post-process: downgrade HDF version if --to hdf@N was specified

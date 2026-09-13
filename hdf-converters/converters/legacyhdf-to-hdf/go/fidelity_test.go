@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	fixtures "github.com/mitre/hdf-libs/hdf-fixtures"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 func countRequirements(t *testing.T, data []byte) (int, error) {

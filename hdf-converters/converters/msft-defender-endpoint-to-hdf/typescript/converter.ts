@@ -1,5 +1,5 @@
 import { parseJSON, parseTimestamp, severityToImpact } from '@mitre/hdf-utilities';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -166,9 +166,7 @@ function buildTriageOverride(alert: MdeAlert, startTime: Date): TriageOverride |
     (alert.resolvedDateTime ? parseTimestamp(alert.resolvedDateTime) : null) ??
     (alert.lastUpdateDateTime ? parseTimestamp(alert.lastUpdateDateTime) : null) ??
     startTime;
-  const expiresAt = new Date();
-  expiresAt.setTime(appliedAt.getTime());
-  expiresAt.setUTCFullYear(expiresAt.getUTCFullYear() + 1);
+  const expiresAt = defaultOverrideExpiry(appliedAt);
 
   const override: StatusOverride = {
     type: disposition,

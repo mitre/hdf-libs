@@ -27,6 +27,7 @@ import {
   inputIntegrity,
   validateInputSize,
   chainOverrides,
+  defaultOverrideExpiry,
 } from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageFromIdentifier,
@@ -36,7 +37,6 @@ import {
   supplierEvidence,
 } from '../../../shared/typescript/vex/mapping.js';
 
-const DEFAULT_EXPIRY_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
 
 interface Source {
   name?: string;
@@ -168,7 +168,7 @@ function vulnerabilityToOverride(
   if (!target) return undefined;
 
   const affectedPackages = affectedPackagesForVuln(v, productLookup);
-  const expiresAt = new Date(docTime.getTime() + DEFAULT_EXPIRY_HORIZON_MS);
+  const expiresAt = defaultOverrideExpiry(docTime);
 
   // componentRef is UUID-constrained on the HDF schema (it identifies an
   // HDF component by id, not a foreign-format identifier). Multi-product

@@ -18,7 +18,7 @@ import {
   computeEffectiveStatus as canonicalEffectiveStatus,
   governingStatusOverrideIndex,
 } from '@mitre/hdf-utilities';
-import { deriveControlTypeFromTags, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { deriveControlTypeFromTags, parseSeverity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
 // ===== V1.0 Type Definitions =====
 
@@ -253,17 +253,13 @@ export interface HDFV2Results {
 
 // ===== Severity Helpers =====
 
-/** Valid severity values per HDF v2.0 schema (matches the Go converter). */
-const VALID_SEVERITIES = new Set(['critical', 'high', 'medium', 'low', 'informational']);
-
 /**
  * Convert tags.severity string to a valid severity value.
  * Returns null if the value is not a recognized severity.
  */
 function tagSeverityToSeverity(tagSeverity: unknown): string | null {
   if (typeof tagSeverity !== 'string') return null;
-  const normalized = tagSeverity.toLowerCase().trim();
-  return VALID_SEVERITIES.has(normalized) ? normalized : null;
+  return parseSeverity(tagSeverity.trim()) ?? null;
 }
 
 // Severity is derived from numeric impact via the canonical

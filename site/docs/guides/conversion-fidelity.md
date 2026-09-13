@@ -27,6 +27,10 @@ Every import converter in the catalogue declares a relation except `scoutsuite`,
 
 A converter that groups many findings into one requirement, as `sarif` does with 72 eslint results under 5 rules, declares the grouped count. A count of raw findings would be wrong for it and right for a one-to-one converter such as `junit`; the declaration belongs to the converter for exactly that reason.
 
+## The MCP tool enforces the same check
+
+`hdf_convert` on the HDF MCP server runs the identical check through the same shared implementation, for a single file and for every member of a batch call. A conversion whose count disagrees with the converter's declaration is refused with a `SCHEMA_INVALID` error carrying the same message the CLI prints, and no document, handle or output file is produced for it; in a batch the other files still convert and the refused file's entry carries the error. A matching count is not reported on the MCP surface, since the response already states the requirement count.
+
 ## Where it runs in a pipeline
 
 The check happens inside `hdf convert`, before anything else touches the document. In a pipeline that applies committed amendments after conversion, that ordering matters: a waived finding is still present in the document with its raw status, so it is never mistaken for a lost one. See the amendment step in this repository's `.github/workflows/ci.yml` for the shape.

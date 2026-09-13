@@ -90,7 +90,7 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", uri, pathErr)
 			continue
 		}
-		refData, readErr := os.ReadFile(refPath) //nolint:gosec // validated by safePath
+		refData, readErr := readFromFile(refPath, true)
 		if readErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: could not read %s: %v\n", uri, readErr)
 			continue

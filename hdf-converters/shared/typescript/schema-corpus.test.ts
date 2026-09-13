@@ -116,6 +116,12 @@ describe('adversarial corpus', () => {
 
   // Each of these diverged between the two languages before being normalized, so
   // a regression would silently break the parity guarantee the golden rests on.
+  it('canonicalization orders keys by code point, as Go orders map keys', () => {
+    // U+FF5E sorts after U+1F600's lead surrogate under UTF-16 but before the
+    // code point itself under UTF-8, which is the order Go's encoder emits.
+    expect(canonicalJSON('{"\u{1F600}":3,"\uFF5E":2,"a":1}')).toBe('{"a":1,"\uFF5E":2,"\u{1F600}":3}');
+  });
+
   it('canonicalization normalizes the values that diverged across languages', () => {
     // Go preserves -0 on a float64; JSON.stringify renders it 0.
     expect(canonicalJSON('{"n":-0}')).toBe('{"n":0}');

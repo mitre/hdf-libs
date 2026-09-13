@@ -124,15 +124,6 @@ func convertResult(v1 LegacyResult) hdf.RequirementResult {
 	return v2
 }
 
-// validSeverities maps lowercase severity strings to hdf.Severity values.
-var validSeverities = map[string]hdf.Severity{
-	"critical":      hdf.SeverityCritical,
-	"high":          hdf.SeverityHigh,
-	"medium":        hdf.SeverityMedium,
-	"low":           hdf.SeverityLow,
-	"informational": hdf.Informational,
-}
-
 // tagSeverityToSeverity extracts a valid severity from a tags map value.
 // Returns nil if the value is not a recognized severity string.
 func tagSeverityToSeverity(raw interface{}) *hdf.Severity {
@@ -140,16 +131,7 @@ func tagSeverityToSeverity(raw interface{}) *hdf.Severity {
 	if !ok {
 		return nil
 	}
-	// strings.ToLower is already imported indirectly; use inline lowercase
-	lower := ""
-	for _, c := range s {
-		if c >= 'A' && c <= 'Z' {
-			lower += string(c + 32)
-		} else {
-			lower += string(c)
-		}
-	}
-	if sev, found := validSeverities[lower]; found {
+	if sev, found := shared.ParseSeverity(s); found {
 		return &sev
 	}
 	return nil

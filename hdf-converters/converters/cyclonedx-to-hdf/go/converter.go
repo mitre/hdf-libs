@@ -311,7 +311,7 @@ func analysisOverride(vuln CDXVulnerability, fallback time.Time) (*hdf.StatusOve
 		Reason:    analysisReason(vuln.Analysis),
 		AppliedBy: hdf.Identity{Type: hdf.IdentityTypeOther, Identifier: "cyclonedx analysis"},
 		AppliedAt: appliedAt,
-		ExpiresAt: appliedAt.AddDate(1, 0, 0),
+		ExpiresAt: shared.DefaultOverrideExpiry(appliedAt),
 	}
 	if j := vexJustification(vuln.Analysis.Justification); j != nil {
 		override.Justification = j

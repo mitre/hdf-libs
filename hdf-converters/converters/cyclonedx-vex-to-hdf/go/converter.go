@@ -24,8 +24,6 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-const defaultExpiryHorizon = 365 * 24 * time.Hour
-
 // BOM is the CycloneDX top-level document.
 type BOM struct {
 	BOMFormat       string          `json:"bomFormat"`
@@ -238,7 +236,7 @@ func vulnerabilityToOverride(v *Vulnerability, productLookup map[string]Componen
 		Status:           target.Status,
 		RequirementID:    v.ID,
 		AppliedAt:        docTime,
-		ExpiresAt:        docTime.Add(defaultExpiryHorizon),
+		ExpiresAt:        shared.DefaultOverrideExpiry(docTime),
 		AppliedBy:        *publisherIdentityOrDefault(bom),
 		Reason:           buildReason(v),
 		AffectedPackages: affectedPackages,
@@ -272,7 +270,7 @@ func vulnerabilityToOverride(v *Vulnerability, productLookup map[string]Componen
 		override.Milestones = []hdf.Milestone{{
 			Description:         desc,
 			Status:              hdf.Pending,
-			EstimatedCompletion: docTime.Add(defaultExpiryHorizon),
+			EstimatedCompletion: shared.DefaultOverrideExpiry(docTime),
 		}}
 	}
 

@@ -21,8 +21,8 @@ import (
 // any HDF yields a valid checklist.
 func HDFToChecklist(input []byte) (*Checklist, error) {
 	var results hdf.HDFResults
-	if err := shared.DecodeHDF(input, &results); err != nil {
-		return nil, fmt.Errorf("hdf to checklist: parse HDF: %w", err)
+	if err := shared.RequireHDFResultsTyped(input, "hdf to checklist", &results); err != nil {
+		return nil, err
 	}
 	if len(results.Baselines) == 0 {
 		return nil, fmt.Errorf("hdf to checklist: HDF has no baselines")
@@ -239,27 +239,43 @@ func overrideSeverity(req *hdf.EvaluatedRequirement) (severity, justification st
 	for i := range req.StatusOverrides {
 		o := &req.StatusOverrides[i]
 		if o.Impact != nil {
-			return qualSeverityFromImpact(o.Impact.Value), o.Reason
+			return cklSeverityOrFloor(o.Impact.Value), o.Reason
 		}
 	}
 	return "", ""
 }
 
-// qualSeverityFromImpact maps an impact score to STIG's qualitative severity
-// bucket, inverse of the standard SeverityToImpact mapping.
-func qualSeverityFromImpact(impact float64) string {
-	switch {
-	case impact >= 0.7:
+// cklSeverityFromImpact maps an impact score to STIG's qualitative severity
+// bucket via the shared band mapper. The checklist vocabulary is CAT I/II/III
+// only, so critical folds into high and the informational band has no bucket at
+// all; cklSeverityOrFloor decides what an absent bucket means.
+func cklSeverityFromImpact(impact float64) string {
+	switch hdfutil.ImpactToSeverity(impact) {
+	case "critical", "high":
 		return "high"
-	case impact >= 0.4:
+	case "medium":
 		return "medium"
-	default:
+	case "low":
 		return "low"
+	default:
+		return ""
 	}
 }
 
+// cklSeverityOrFloor is cklSeverityFromImpact with the checklist's floor
+// applied. Severity is always emitted and blank is outside CKL's
+// high/medium/low vocabulary, so a blank re-imports through the unknown -> 0.5
+// default and silently turns an impact of 0 into 0.5. "low" is the closest the
+// format can come to saying "no severity".
+func cklSeverityOrFloor(impact float64) string {
+	if s := cklSeverityFromImpact(impact); s != "" {
+		return s
+	}
+	return "low"
+}
+
 // resolveSeverity prefers the round-tripped tags.severity, else derives from
-// impact thresholds (the inverse of SeverityToImpact's standard mapping).
+// the impact bands.
 func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{}) string {
 	if s := tagStr(tags, "severity"); s != "" {
 		return s
@@ -267,13 +283,7 @@ func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{})
 	if req.Severity != nil && *req.Severity != "" {
 		return strings.ToLower(string(*req.Severity))
 	}
-	// Delegates rather than forking the ladder: overrideSeverity already uses
-	// qualSeverityFromImpact, and the copy here differed in one place — it
-	// returned "" at impact 0. Severity is always emitted, and blank is outside
-	// CKL's high/medium/low vocabulary, so it re-imports through the unknown
-	// -> 0.5 default and turns an impact of 0 into 0.5. "low" is CKL's floor and
-	// the closest it can express; the format has no way to say "no severity".
-	return qualSeverityFromImpact(req.Impact)
+	return cklSeverityOrFloor(req.Impact)
 }
 
 // resolveCCIs prefers explicit tags.cci, else reverses tags.nist via NISTToCCI.

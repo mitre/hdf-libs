@@ -1,6 +1,6 @@
 import { buildXml, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
 import { requirementStatusInput } from '../../../shared/typescript/status.js';
-import { computeEffectiveStatus, worstStatus } from '@mitre/hdf-utilities';
+import { computeEffectiveStatus, impactToSeverity as sharedImpactToSeverity, worstStatus } from '@mitre/hdf-utilities';
 import type {
   ResultStatus,
   HDFResults,
@@ -58,12 +58,14 @@ function wrap(
   return { '#text': value };
 }
 
-/** Map HDF impact (0.0-1.0) to XCCDF severity string. */
+/** Map HDF impact (0.0-1.0) to XCCDF severity via the shared band mapper. The
+ *  XCCDF vocabulary has no critical band, so critical folds into high, and its
+ *  zero band is spelled 'info'. */
 function impactToSeverity(impact: number): string {
-  if (impact >= 0.7) return 'high';
-  if (impact >= 0.4) return 'medium';
-  if (impact >= 0.1) return 'low';
-  return 'info';
+  const sev = sharedImpactToSeverity(impact);
+  if (sev === 'critical') return 'high';
+  if (sev === 'informational') return 'info';
+  return sev;
 }
 
 /** Map HDF result status to XCCDF result value. */

@@ -2,6 +2,7 @@ package hdftoxccdf
 
 import (
 	"encoding/xml"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,11 +164,12 @@ func TestImpactToSeverity(t *testing.T) {
 		{0.4, "medium"},
 		{0.3, "low"},
 		{0.1, "low"},
+		{0.05, "low"},
 		{0.0, "info"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.severity, func(t *testing.T) {
+		t.Run(fmt.Sprintf("%v", tt.impact), func(t *testing.T) {
 			assert.Equal(t, tt.severity, impactToSeverity(tt.impact))
 		})
 	}

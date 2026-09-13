@@ -50,7 +50,7 @@ export {
 export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 
 // String utilities
-export { stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps } from './string/index.js';
+export { stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8 } from './string/index.js';
 
 // Severity/impact mapping
 export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact } from './severity/index.js';

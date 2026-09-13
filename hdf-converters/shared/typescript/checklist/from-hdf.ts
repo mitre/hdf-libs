@@ -1,4 +1,4 @@
-import { parseHdf, hdfTime } from '../converterutil.js';
+import { hdfTime, requireHdfResults } from '../converterutil.js';
 import { requirementEffectiveStatus } from '../status.js';
 import type {
   HDFResults,
@@ -9,7 +9,7 @@ import type {
   StatusOverride,
 } from '@mitre/hdf-schema';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { formatTimestamp } from '@mitre/hdf-utilities';
+import { formatTimestamp, impactToSeverity } from '@mitre/hdf-utilities';
 import { Asset, Checklist, Stig, Vuln } from './model.js';
 import { statusFromHdf } from './status.js';
 
@@ -20,8 +20,8 @@ import { statusFromHdf } from './status.js';
  * fields are synthesized best-effort so any HDF yields a valid checklist.
  */
 export function hdfToChecklist(input: string): Checklist {
-  const hdf = parseHdf<HDFResults>(input);
-  if (!hdf || !Array.isArray(hdf.baselines) || hdf.baselines.length === 0) {
+  const hdf = requireHdfResults(input, 'hdf to checklist').doc as unknown as HDFResults;
+  if (hdf.baselines.length === 0) {
     throw new Error('hdf to checklist: HDF has no baselines');
   }
   // A baseline with no requirements is schema-invalid HDF (requirements has
@@ -198,28 +198,43 @@ function formatOverride(o: StatusOverride): string {
 function overrideSeverity(req: EvaluatedRequirement): { severity: string; justification: string } {
   for (const o of req.statusOverrides ?? []) {
     if (o.impact) {
-      return { severity: qualSeverityFromImpact(o.impact.value), justification: o.reason ?? '' };
+      return { severity: cklSeverityOrFloor(o.impact.value), justification: o.reason ?? '' };
     }
   }
   return { severity: '', justification: '' };
 }
 
-function qualSeverityFromImpact(impact: number): string {
-  if (impact >= 0.7) return 'high';
-  if (impact >= 0.4) return 'medium';
-  return 'low';
+// Maps an impact score to STIG's qualitative severity bucket via the shared band
+// mapper. The checklist vocabulary is CAT I/II/III only, so critical folds into
+// high and the informational band has no bucket at all; cklSeverityOrFloor
+// decides what an absent bucket means.
+function cklSeverityFromImpact(impact: number): string {
+  switch (impactToSeverity(impact)) {
+    case 'critical':
+    case 'high':
+      return 'high';
+    case 'medium':
+      return 'medium';
+    case 'low':
+      return 'low';
+    default:
+      return '';
+  }
+}
+
+// cklSeverityFromImpact with the checklist's floor applied. Severity is always
+// emitted and blank is outside CKL's high/medium/low vocabulary, so a blank
+// re-imports through the unknown -> 0.5 default and silently turns an impact of
+// 0 into 0.5. 'low' is the closest the format can come to saying "no severity".
+function cklSeverityOrFloor(impact: number): string {
+  return cklSeverityFromImpact(impact) || 'low';
 }
 
 function resolveSeverity(req: EvaluatedRequirement, tags: Record<string, unknown>): string {
   const tagSev = strVal(tags, 'severity');
   if (tagSev) return tagSev;
   if (req.severity) return String(req.severity).toLowerCase();
-  // Delegates rather than forking the ladder, mirroring the Go peer: the copy
-  // here differed in one place — it returned '' at impact 0. Severity is always
-  // emitted, and blank is outside CKL's high/medium/low vocabulary, so it
-  // re-imports through the unknown -> 0.5 default and turns an impact of 0 into
-  // 0.5. 'low' is CKL's floor and the closest it can express.
-  return qualSeverityFromImpact(req.impact ?? 0);
+  return cklSeverityOrFloor(req.impact ?? 0);
 }
 
 function resolveCcis(tags: Record<string, unknown>): string[] {

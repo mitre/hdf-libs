@@ -565,6 +565,9 @@ func TestNistFamilies(t *testing.T) {
 		{"multi + sub-control", map[string]any{"nist": []any{"AC-2", "AC-6(1)", "CM-6"}}, []string{"AC", "CM"}},
 		{"no nist tag", map[string]any{"cci": []any{"CCI-1"}}, []string{"unmapped"}},
 		{"nil tags", nil, []string{"unmapped"}},
+		{"bare string tag", map[string]any{"nist": "AC-2"}, []string{"AC"}},
+		{"string slice tag", map[string]any{"nist": []string{"AC-2", "CM-6"}}, []string{"AC", "CM"}},
+		{"non-string tag value", map[string]any{"nist": 42}, []string{"unmapped"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -573,24 +576,6 @@ func TestNistFamilies(t *testing.T) {
 				t.Errorf("families = %v, want %v", got, c.want)
 			}
 		})
-	}
-}
-
-func TestTagStrings_Shapes(t *testing.T) {
-	if got := tagStrings(map[string]any{"nist": "AC-2"}, "nist"); len(got) != 1 || got[0] != "AC-2" {
-		t.Errorf("string shape = %v", got)
-	}
-	if got := tagStrings(map[string]any{"nist": []string{"AC-2", "CM-6"}}, "nist"); len(got) != 2 {
-		t.Errorf("[]string shape = %v", got)
-	}
-	if got := tagStrings(map[string]any{"nist": []any{"AC-2", 42}}, "nist"); len(got) != 1 {
-		t.Errorf("[]any shape must skip non-strings, got %v", got)
-	}
-	if got := tagStrings(nil, "nist"); got != nil {
-		t.Errorf("nil tags = %v, want nil", got)
-	}
-	if got := tagStrings(map[string]any{"nist": 42}, "nist"); got != nil {
-		t.Errorf("non-string tag value = %v, want nil", got)
 	}
 }
 
@@ -828,5 +813,23 @@ func TestHdfCompliance_TypoedThresholdIsRejectedThroughSDK(t *testing.T) {
 		if _, hasVerdict := sc["thresholdVerdict"]; hasVerdict {
 			t.Errorf("rejected spec still produced a threshold verdict: %v", sc["thresholdVerdict"])
 		}
+	}
+}
+
+// The threshold path is an agent-supplied file input like any other: the shared
+// reader's size ceiling and file-type check apply before the YAML parser sees it.
+func TestResolveThreshold_PathGoesThroughTheSharedReader(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+	t.Setenv("HDF_MCP_MAX_SIZE", "16")
+	if err := os.WriteFile(filepath.Join(root, "threshold.yaml"), []byte("compliance:\n  min: 90\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, terr := resolveThreshold(&thresholdInput{Path: "threshold.yaml"})
+	if terr == nil {
+		t.Fatalf("a threshold file over HDF_MCP_MAX_SIZE must be refused, got cfg %+v", cfg)
+	}
+	if terr.Code != mcperr.TooLarge {
+		t.Errorf("code = %s, want %s", terr.Code, mcperr.TooLarge)
 	}
 }

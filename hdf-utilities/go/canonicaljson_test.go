@@ -83,3 +83,16 @@ func TestCanonicalJSON(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestSHA256Hex(t *testing.T) {
+	assert.Equal(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", SHA256Hex(nil))
+	assert.Equal(t, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9", SHA256Hex([]byte("hello world")))
+
+	// ChecksumJSON is SHA256Hex over the canonical bytes, not a second digest path.
+	value := map[string]any{"b": 1, "a": "x"}
+	canonical, err := CanonicalJSON(value)
+	require.NoError(t, err)
+	sum, err := ChecksumJSON(value)
+	require.NoError(t, err)
+	assert.Equal(t, SHA256Hex(canonical), sum)
+}

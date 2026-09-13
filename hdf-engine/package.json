@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-engine",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "Shared schema-typed read-side engines for HDF documents — detection, query/filtering, and compliance rollups",
   "publishConfig": {
     "access": "public"

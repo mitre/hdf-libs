@@ -11,6 +11,7 @@ import (
 )
 
 const agentOverrideFixture = "testdata/agent-overrides/applied-results.json"
+const agentOverrideZonelessFixture = "testdata/agent-overrides/applied-results-zoneless.json"
 const cleanResultsFixture = "testdata/evidence-verify/rhel9-results.json"
 
 // TestReadout_CountsAgentOverrides is the card's designated first-failing test:
@@ -44,6 +45,18 @@ func TestReadout_CountsAgentOverrides(t *testing.T) {
 		stdout, stderr, _ := executeCommand("evidence", "verify", pkg)
 		if !strings.Contains(stdout+stderr, "Agent-attributed overrides: 1") {
 			t.Fatalf("evidence verify readout missing agent-override count:\n%s%s", stdout, stderr)
+		}
+	})
+
+	// The same package, with the zone-less result timestamps real InSpec-derived
+	// HDF carries. A typed decode rejects those outright, so a path that skips
+	// normalization drops the whole document and reports 0 with no error. The
+	// engine unit test pins the helper; this pins the wiring the reader sees.
+	t.Run("evidence verify with zone-less timestamps", func(t *testing.T) {
+		pkg := buildEvidencePackage(t, agentOverrideZonelessFixture)
+		stdout, stderr, _ := executeCommand("evidence", "verify", pkg)
+		if !strings.Contains(stdout+stderr, "Agent-attributed overrides: 1") {
+			t.Fatalf("zone-less timestamps must not drop the document:\n%s%s", stdout, stderr)
 		}
 	})
 }

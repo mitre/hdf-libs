@@ -2,6 +2,7 @@ package convert
 
 import (
 	"errors"
+	"slices"
 	"testing"
 )
 
@@ -124,6 +125,34 @@ func TestListConverters(t *testing.T) {
 	}
 	if !foundCD {
 		t.Error("ListConverters() missing c->d pair")
+	}
+}
+
+// TestListConverters_Ordering pins the stable order: a caller joins the result
+// straight into user-facing error text, so map order would reshuffle it on
+// every run.
+func TestListConverters_Ordering(t *testing.T) {
+	orig := converterRegistry
+	defer func() { converterRegistry = orig }()
+
+	for range 20 {
+		converterRegistry = make(map[FormatPair]Converter)
+		for _, src := range []string{"zeta", "alpha", "mike", "bravo", "yankee"} {
+			RegisterConverter(src, "hdf", &mockConverter{name: src})
+		}
+		RegisterConverter("hdf", "csv", &mockConverter{name: "csv"})
+
+		var got []string
+		for _, pair := range ListConverters() {
+			got = append(got, pair.String())
+		}
+		want := []string{
+			"alpha -> hdf", "bravo -> hdf", "hdf -> csv",
+			"mike -> hdf", "yankee -> hdf", "zeta -> hdf",
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("ListConverters() order = %v, want %v", got, want)
+		}
 	}
 }
 

@@ -30,7 +30,7 @@ pnpm workspace with 11 packages + a VitePress schema documentation site:
 | `hdf-diff` | Structural diff engine for assessments | TS + Go |
 | `hdf-engine` | Schema-typed read-side engines: document detection, query/filtering, compliance rollups | TS + Go |
 | `hdf-extension-graph` | InSpec overlay/extension chain resolution | TS + Go |
-| `hdf-fixtures` | Shared real-world HDF test data corpus (private; cross-package tests only) | TS + Go |
+| `hdf-fixtures` | Shared real-world HDF test data corpus (published; cross-package tests here, and available to consumers) | TS + Go |
 | `hdf-cli` | Go CLI wrapping all of the above | Go |
 | `site/` | VitePress schema reference site for GitHub Pages | TS |
 

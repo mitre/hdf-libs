@@ -502,3 +502,23 @@ func TestApplyAmendment_RefusesBrokenChain(t *testing.T) {
 		t.Fatalf("the refusal must name the chain: %s", payloadText(t, res))
 	}
 }
+
+// A produced document is never written in place over its own input — the
+// amendments input is as much an input as the results one.
+func TestHdfApplyAmendment_RefusesOverwritingAmendmentsInput(t *testing.T) {
+	_, resultsRel, amendRel := applyEnv(t)
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+
+	res, _ := callApply(t, applyAmendmentInput{
+		Results:    handle.Source{Path: resultsRel},
+		Amendments: handle.Source{Path: amendRel},
+		Output:     amendRel,
+		Overwrite:  true,
+	})
+	if res == nil || !res.IsError {
+		t.Fatal("writing the merged results over the amendments input must be refused")
+	}
+	if payload := payloadText(t, res); !strings.Contains(payload, "PATH_DENIED") {
+		t.Errorf("expected PATH_DENIED, got %s", payload)
+	}
+}

@@ -682,20 +682,7 @@ func sourceLocationText(loc *hdf.SourceLocation) string {
 // severityToFacetValue maps an explicit HDF severity to the OSCAL risk facet
 // value vocabulary the reverse importer recognizes.
 func severityToFacetValue(s hdf.Severity) string {
-	switch s {
-	case hdf.SeverityCritical:
-		return "critical"
-	case hdf.SeverityHigh:
-		return "high"
-	case hdf.SeverityMedium:
-		return "moderate"
-	case hdf.SeverityLow:
-		return "low"
-	case hdf.Informational:
-		return "info"
-	default:
-		return ""
-	}
+	return shared.OSCALSeverityFromHDF(string(s))
 }
 
 // buildRemediations turns the requirement's fix description and any governing

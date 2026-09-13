@@ -2,7 +2,6 @@ package tools
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,7 +14,6 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
-	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -179,7 +177,7 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 			out.Errors = append(out.Errors, validateError{Path: r.URI, Message: "cannot verify checksum: " + r.Error})
 		}
 	}
-	out.AgentOverrideCount = aggregateAgentOverrides(contents, fetch)
+	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)
 }
 
 // validateCompleteness fills the verdict for completeness mode: every planned
@@ -191,7 +189,7 @@ func validateCompleteness(out *validateOutput, content []byte, baseDir string, l
 	}
 	planRef, _, _ := hdfengine.ParseEvidencePackage(content)
 	fetch := confinedFetchAt(baseDir)
-	out.AgentOverrideCount = aggregateAgentOverrides(contents, fetch)
+	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)
 
 	if planRef == "" {
 		out.Errors = []validateError{{Message: "evidence package has no planRef; cannot check completeness"}}
@@ -207,18 +205,7 @@ func validateCompleteness(out *validateOutput, content []byte, baseDir string, l
 		out.Errors = []validateError{{Path: planRef, Message: "cannot parse plan: " + perr.Error()}}
 		return
 	}
-	var covered []string
-	for _, c := range contents {
-		if c.Type != "hdf-results" || c.URI == "" {
-			continue
-		}
-		if data, rerr := fetch(c.URI); rerr == nil {
-			if names, nerr := hdfengine.CoveredBaselineNames(data); nerr == nil {
-				covered = append(covered, names...)
-			}
-		}
-	}
-	comp := hdfengine.Completeness(planned, covered)
+	comp := hdfengine.Completeness(planned, hdfengine.CoveredBaselinesInPackage(contents, fetch))
 	out.Valid = comp.Complete
 	for _, m := range comp.Missing {
 		out.Errors = append(out.Errors, validateError{Path: planRef, Message: "missing results for baseline " + m})
@@ -240,28 +227,6 @@ func requireEvidencePackage(out *validateOutput, content []byte, load *loader.Re
 		return nil, false
 	}
 	return contents, true
-}
-
-// aggregateAgentOverrides sums the agent-attributed override count across every
-// hdf-results document referenced by the package (the §3 detective surface at
-// the evidence-package level). Unreadable or unparseable results are skipped.
-func aggregateAgentOverrides(contents []hdfengine.EvidenceContent, fetch hdfengine.FetchFunc) int {
-	total := 0
-	for _, c := range contents {
-		if c.Type != "hdf-results" || c.URI == "" {
-			continue
-		}
-		data, err := fetch(c.URI)
-		if err != nil {
-			continue
-		}
-		var r hdf.HDFResults
-		if json.Unmarshal(data, &r) != nil {
-			continue
-		}
-		total += hdfengine.AgentOverrideCount(r)
-	}
-	return total
 }
 
 // confinedFetchAt resolves a referenced URI relative to base, confined by
@@ -321,16 +286,16 @@ func lineNumberedErrors(vr validators.ValidationResult, content []byte) []valida
 	return out
 }
 
-var validShortTypes = map[string]validators.SchemaType{
-	"results":                  validators.TypeResults,
-	"baseline":                 validators.TypeBaseline,
-	"system":                   validators.TypeSystem,
-	"plan":                     validators.TypePlan,
-	"amendments":               validators.TypeAmendments,
-	"evidence-package":         validators.TypeEvidencePackage,
-	"comparison":               validators.TypeComparison,
-	"requirement-change-event": validators.TypeRequirementChangeEvent,
-}
+// validShortTypes is the docType→schema lookup, derived from the engine's
+// enumeration so a new document type lands in one place.
+var validShortTypes = func() map[string]validators.SchemaType {
+	known := hdfengine.KnownTypes()
+	m := make(map[string]validators.SchemaType, len(known))
+	for _, k := range known {
+		m[k] = validators.SchemaType(k)
+	}
+	return m
+}()
 
 func schemaTypeForDoc(s string) (validators.SchemaType, bool) {
 	st, ok := validShortTypes[strings.TrimPrefix(s, "hdf-")]

@@ -26,8 +26,6 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-const defaultExpiryHorizon = 365 * 24 * time.Hour
-
 // Document is the CSAF VEX top-level envelope.
 type Document struct {
 	Document        DocumentMeta    `json:"document"`
@@ -320,7 +318,7 @@ func buildOverride(vuln *Vulnerability, doc *Document, docTime time.Time, target
 		Status:           target.Status,
 		RequirementID:    vuln.CVE,
 		AppliedAt:        docTime,
-		ExpiresAt:        docTime.Add(defaultExpiryHorizon),
+		ExpiresAt:        shared.DefaultOverrideExpiry(docTime),
 		AppliedBy:        *identityFor(doc.Document.Publisher),
 		Reason:           buildReason(vuln, products),
 		AffectedPackages: resolveAffectedPackages(products, productLookup),
@@ -353,7 +351,7 @@ func buildOverride(vuln *Vulnerability, doc *Document, docTime time.Time, target
 		override.Milestones = []hdf.Milestone{{
 			Description:         desc,
 			Status:              hdf.Pending,
-			EstimatedCompletion: docTime.Add(defaultExpiryHorizon),
+			EstimatedCompletion: shared.DefaultOverrideExpiry(docTime),
 		}}
 	}
 

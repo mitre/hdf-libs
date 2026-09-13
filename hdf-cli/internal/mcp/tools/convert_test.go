@@ -313,3 +313,33 @@ func payloadTextOrEmpty(res *sdkmcp.CallToolResult) string {
 	}
 	return ""
 }
+
+// The deployer's size ceiling applies to inline content too, not just to path
+// sources — hdf_validate already gates inline input, hdf_convert must match.
+func TestHdfConvert_InlineContentOverCeiling(t *testing.T) {
+	t.Setenv("HDF_MCP_MAX_SIZE", "64")
+	res, _ := callConvert(t, convertInput{Content: string(gosecFixture(t)), From: "gosec"})
+	if res == nil || !res.IsError {
+		t.Fatal("inline content over HDF_MCP_MAX_SIZE must be refused")
+	}
+	if payload := payloadText(t, res); !strings.Contains(payload, "TOO_LARGE") {
+		t.Errorf("expected TOO_LARGE, got %s", payload)
+	}
+}
+
+// A produced document too large to retain in the content cache yields a handle
+// that can never resolve; the caller is told to persist it instead of being
+// pointed at a re-author that cannot help.
+func TestHdfConvert_UnretainedDocumentCarriesNotice(t *testing.T) {
+	res, out, err := hdfConvert(loader.New(0, 0, 16))(context.Background(), nil,
+		convertInput{Content: string(gosecFixture(t)), From: "gosec"})
+	if err != nil {
+		t.Fatalf("hdfConvert returned a Go error: %v", err)
+	}
+	if res != nil {
+		t.Fatalf("a successful conversion must not error: %s", payloadText(t, res))
+	}
+	if !strings.Contains(out.Notice, "output") {
+		t.Errorf("expected a notice telling the caller to persist the document, got %q", out.Notice)
+	}
+}

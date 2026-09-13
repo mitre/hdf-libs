@@ -25,5 +25,6 @@ type MappingEntry struct {
 //
 // Until a query appears here the converter falls back to its CWE, then to the
 // static-analysis defaults, recording which tier answered in the nistMapping
-// tag. See #239 for the adjudication process and the candidate set.
+// tag. The adjudication process and candidate set live on the KICS mapping card
+// in the tracker.
 var KicsMappingData = map[string]MappingEntry{}

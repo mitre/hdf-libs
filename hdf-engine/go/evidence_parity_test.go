@@ -64,3 +64,33 @@ func TestEvidence_CrossLanguageParity(t *testing.T) {
 		}
 	}
 }
+
+// The package-level aggregators walk the same shared package fixture in both
+// languages: every hdf-results entry is fetched and parsed, an unreadable one
+// is skipped, and the per-document results are concatenated in entry order.
+func TestEvidence_PackageAggregation_CrossLanguageParity(t *testing.T) {
+	dir := filepath.Join("..", "testdata", "evidence")
+	pkg, err := os.ReadFile(filepath.Join(dir, "package.json"))
+	if err != nil {
+		t.Fatalf("read package.json: %v", err)
+	}
+	fetch := func(uri string) ([]byte, error) { return os.ReadFile(filepath.Join(dir, uri)) }
+	_, contents, err := ParseEvidencePackage(pkg)
+	if err != nil {
+		t.Fatalf("ParseEvidencePackage: %v", err)
+	}
+
+	covered := CoveredBaselinesInPackage(contents, fetch)
+	want := []string{"RHEL9-STIG", "PostgreSQL-STIG", "RHEL9-STIG"}
+	if len(covered) != len(want) {
+		t.Fatalf("covered = %v, want %v", covered, want)
+	}
+	for i := range want {
+		if covered[i] != want[i] {
+			t.Fatalf("covered = %v, want %v", covered, want)
+		}
+	}
+	if got := AgentOverridesInPackage(contents, fetch); got != 2 {
+		t.Fatalf("agent overrides = %d, want 2 (system and username overrides excluded)", got)
+	}
+}

@@ -21,11 +21,7 @@ The two languages do not export the same modules, and that is deliberate. This
 package holds cross-language **policy** — decisions both implementations must
 agree on — while each language uses its own serializer.
 
-`hash` and `json` have no Go counterpart because Go's standard library already
-provides them: `crypto/sha256`, `encoding/json`. Wrapping those in Go would add a
-layer with no decision in it. The TypeScript side needs wrappers because
-JavaScript ships no equivalent, and the wrapper is where safe defaults get
-centralised.
+The plumbing in `hash` and `json` has no Go counterpart because Go's standard library already provides it: `crypto/sha256`, `encoding/json`. Wrapping `parseJSON`, `stringifyJSON` or `generateHash` in Go would add a layer with no decision in it. The TypeScript side needs those wrappers because JavaScript ships no equivalent, and the wrapper is where safe defaults get centralised. The policy in those modules does exist in both: Go's `CanonicalJSON`, `ChecksumJSON` and `SHA256Hex` are the twins of TypeScript's `canonicalJson` and `canonicalChecksum`. The canonical byte form a checksum is taken over (sorted keys, `<`, `>` and `&` escaped, null-valued keys dropped) is a decision both implementations must agree on, so it is pinned against shared vectors rather than left to each serializer.
 
 `csv` exists in both, but the two surfaces are deliberately different sizes: the
 TypeScript module parses and builds CSV, while the Go one carries only the

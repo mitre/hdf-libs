@@ -282,7 +282,6 @@ describe('helpers', () => {
  */
 describe('convertSpdxVexToHdf — fallback branch coverage', () => {
   const CPE = 'cpe:2.3:a:v:libx:1.0:*:*:*:*:*:*:*';
-  const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
   function pkg(spdxId: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
     return {
@@ -329,7 +328,10 @@ describe('convertSpdxVexToHdf — fallback branch coverage', () => {
     const appliedAt = new Date(o.appliedAt).getTime();
     expect(appliedAt).toBeGreaterThanOrEqual(before - 1000);
     expect(appliedAt).toBeLessThanOrEqual(Date.now() + 1000);
-    expect(new Date(o.expiresAt).getTime() - appliedAt).toBe(YEAR_MS);
+    const expected = new Date();
+    expected.setTime(appliedAt);
+    expected.setUTCFullYear(expected.getUTCFullYear() + 1);
+    expect(new Date(o.expiresAt).getTime()).toBe(expected.getTime());
   });
 
   it('falls back from a dangling relationship ref to the vulnerability creationInfo', async () => {

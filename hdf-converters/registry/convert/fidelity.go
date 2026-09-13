@@ -31,11 +31,19 @@ func WithExpectedRequirementCount(fn ExpectedCountFn) ConverterOption {
 	return func(o *converterOptions) { o.expect = fn }
 }
 
-// expectingConverter adds the declaration to a standard results converter.
-// Embedding keeps every other optional behaviour (AcceptsEmptyInput) intact,
-// and only converters that declared a relation ever satisfy the interface.
+// emptyAwareConverter is what the expecting wrapper embeds: the Converter
+// interface plus the optional empty-input signal, so adding a fidelity
+// declaration never hides AcceptsEmptyInput behind the wrapper.
+type emptyAwareConverter interface {
+	Converter
+	EmptyInputAccepting
+}
+
+// expectingConverter adds the declaration to a registered converter. Embedding
+// keeps every other optional behaviour intact, and only converters that
+// declared a relation ever satisfy RequirementCountExpecter.
 type expectingConverter struct {
-	*hdfResultsConverter
+	emptyAwareConverter
 	expect ExpectedCountFn
 }
 
@@ -44,30 +52,9 @@ func (c *expectingConverter) ExpectedRequirementCount(input []byte) (int, string
 }
 
 // withExpectation wraps c when a relation was declared, else returns c as is.
-func withExpectation(c *hdfResultsConverter, o converterOptions) Converter {
+func withExpectation(c emptyAwareConverter, o converterOptions) Converter {
 	if o.expect == nil {
 		return c
 	}
-	return &expectingConverter{hdfResultsConverter: c, expect: o.expect}
-}
-
-// expectingTypedConverter adds the declaration to a baseline, plan or
-// amendments converter. Those wrappers carry no other optional behaviour, so
-// one wrapper over the Converter interface serves all three; the results
-// wrapper stays separate to keep AcceptsEmptyInput reachable.
-type expectingTypedConverter struct {
-	Converter
-	expect ExpectedCountFn
-}
-
-func (c *expectingTypedConverter) ExpectedRequirementCount(input []byte) (int, string, error) {
-	return c.expect(input)
-}
-
-// withTypedExpectation wraps c when a relation was declared, else returns c as is.
-func withTypedExpectation(c Converter, o converterOptions) Converter {
-	if o.expect == nil {
-		return c
-	}
-	return &expectingTypedConverter{Converter: c, expect: o.expect}
+	return &expectingConverter{emptyAwareConverter: c, expect: o.expect}
 }

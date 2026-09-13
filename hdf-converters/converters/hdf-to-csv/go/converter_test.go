@@ -13,7 +13,7 @@ import (
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go"
+	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -306,9 +306,14 @@ func TestGetSeverity_ArrayPath(t *testing.T) {
 		assert.Equal(t, "low", getSeverity(req))
 	})
 
-	t.Run("impact 0.0 returns low (below medium threshold)", func(t *testing.T) {
+	t.Run("impact 0.9 returns critical", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{Impact: 0.9}
+		assert.Equal(t, "critical", getSeverity(req))
+	})
+
+	t.Run("impact 0.0 is informational, as the shared mapper names it", func(t *testing.T) {
 		req := &hdf.EvaluatedRequirement{Impact: 0.0}
-		assert.Equal(t, "low", getSeverity(req))
+		assert.Equal(t, "informational", getSeverity(req))
 	})
 }
 

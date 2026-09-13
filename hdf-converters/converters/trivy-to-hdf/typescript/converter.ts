@@ -8,7 +8,6 @@ import {
   type EvaluatedBaseline,
   type EvaluatedRequirement,
   type Reference,
-  type RequirementResult,
   ResultStatus,
   type SourceLocation,
   TargetType,
@@ -17,13 +16,16 @@ import {
   createMinimalBaseline,
 } from '@mitre/hdf-schema';
 import {nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS} from '@mitre/hdf-mappings';
-import {parseJSON, parseTimestamp} from '@mitre/hdf-utilities';
+import {parseJSON, parseTimestamp, severityToImpactWithAliases} from '@mitre/hdf-utilities';
 import {
   inputChecksum,
   buildNistCciTags,
   buildNoFindingsRequirement,
+  buildAffectedPackage,
   deriveControlTypeFromTags,
   digestToChecksums,
+  ecosystemFromPurlType,
+  firstNonEmpty,
   markUnratedSeverity,
   validateInputSize,
   buildHdfResults,
@@ -38,19 +40,9 @@ const BASELINE_NAME = 'Trivy Scan';
 const STATIC_CCI = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
 const CWE_ID_PATTERN = /^CWE-[1-9]\d*$/;
 
-// Mirrors the Go peer's SeverityToImpactWithAliases({critical:0.9}, 0.5).
-const IMPACT_MAP: Record<string, number> = {
-  critical: 0.9,
-  high: 0.7,
-  medium: 0.5,
-  low: 0.3,
-  unknown: 0.5,
-  none: 0.0,
-  info: 0.0,
-};
-function severityToImpact(severity: string): number {
-  return IMPACT_MAP[(severity || '').toLowerCase()] ?? 0.5;
-}
+// Trivy severity is UPPERCASE; critical maps to 0.9 (the rest fall through to
+// the shared standard map). Mirrors the Go peer's severityAliases.
+const SEVERITY_ALIASES: Record<string, number> = {critical: 0.9};
 
 // --- native model -----------------------------------------------------------
 
@@ -218,7 +210,7 @@ async function convertNative(input: string, converterVersion: string): Promise<s
 
 function convertVuln(v: TrivyVuln, res: TrivyResult, startTime: Date): EvaluatedRequirement {
   const descriptions: Description[] = [
-    {label: 'default', data: firstNonEmpty(v.Description, v.Title, v.VulnerabilityID)},
+    {label: 'default', data: firstNonEmpty(v.Description ?? '', v.Title ?? '', v.VulnerabilityID ?? '')},
   ];
   if (v.FixedVersion) descriptions.push({label: 'fix', data: `Fixed in version ${v.FixedVersion}.`});
 
@@ -235,7 +227,7 @@ function convertVuln(v: TrivyVuln, res: TrivyResult, startTime: Date): Evaluated
     id: `Trivy/${v.VulnerabilityID ?? ''}`,
     title: `Trivy found ${v.VulnerabilityID ?? ''} in ${pkgLabel(v.PkgName, v.InstalledVersion)}`,
     descriptions,
-    impact: severityToImpact(v.Severity ?? ''),
+    impact: severityToImpactWithAliases(v.Severity, SEVERITY_ALIASES, 0.5),
     tags,
     cwe: filterCwes(v.CweIDs),
     cvss: buildCvssEntries(v.CVSS),
@@ -248,33 +240,29 @@ function convertVuln(v: TrivyVuln, res: TrivyResult, startTime: Date): Evaluated
         status: ResultStatus.Failed,
         codeDesc: buildVulnCodeDesc(v, res),
         startTime,
-        message: `Severity: ${firstNonEmpty(v.Severity, 'UNKNOWN')}`,
-      } as RequirementResult,
+        message: `Severity: ${firstNonEmpty(v.Severity ?? '', 'UNKNOWN')}`,
+      },
     ],
   };
-  // Emit affectedPackages only when it satisfies the schema anyOf. Package
-  // identity comes from the PURL (which also yields the ecosystem); a
-  // name/version without a PURL lacks the required ecosystem and would be
-  // schema-invalid, so gate on the PURL.
-  const ap = buildAffectedPackage(v);
-  if (ap.purl) req.affectedPackages = [ap];
-  if (v.PkgPath) req.sourceLocation = {ref: v.PkgPath} as SourceLocation;
+  const ap = buildTrivyAffectedPackage(v);
+  if (ap) req.affectedPackages = [ap];
+  if (v.PkgPath) req.sourceLocation = {ref: v.PkgPath};
   return req;
 }
 
 function convertMisconf(m: TrivyMisconf, res: TrivyResult, startTime: Date): EvaluatedRequirement {
   const descriptions: Description[] = [
-    {label: 'default', data: firstNonEmpty(m.Description, m.Message, m.Title)},
+    {label: 'default', data: firstNonEmpty(m.Description ?? '', m.Message ?? '', m.Title ?? '')},
   ];
   if (m.Resolution) descriptions.push({label: 'fix', data: m.Resolution});
 
   const tags = buildTags({class: res.Class, ...(m.Type ? {misconfig_type: m.Type} : {})});
   markUnratedSeverity(tags, m.Severity);
   const req: EvaluatedRequirement = {
-    id: `Trivy/${firstNonEmpty(m.ID, m.AVDID)}`,
+    id: `Trivy/${firstNonEmpty(m.ID ?? '', m.AVDID ?? '')}`,
     title: m.Title,
     descriptions,
-    impact: severityToImpact(m.Severity ?? ''),
+    impact: severityToImpactWithAliases(m.Severity, SEVERITY_ALIASES, 0.5),
     tags,
     refs: buildRefs([m.PrimaryURL, ...(m.References ?? [])]),
     code: JSON.stringify(m, null, 2),
@@ -283,9 +271,9 @@ function convertMisconf(m: TrivyMisconf, res: TrivyResult, startTime: Date): Eva
     results: [
       {
         status: misconfStatus(m.Status),
-        codeDesc: firstNonEmpty(m.Message, m.Title),
+        codeDesc: firstNonEmpty(m.Message ?? '', m.Title ?? ''),
         startTime,
-      } as RequirementResult,
+      },
     ],
   };
   if (res.Target) {
@@ -305,15 +293,15 @@ function convertSecret(s: TrivySecret, res: TrivyResult, startTime: Date): Evalu
     descriptions: [
       {
         label: 'default',
-        data: `${firstNonEmpty(s.Title, s.RuleID)} detected in ${res.Target ?? ''} (value redacted by Trivy).`,
+        data: `${firstNonEmpty(s.Title ?? '', s.RuleID ?? '')} detected in ${res.Target ?? ''} (value redacted by Trivy).`,
       },
     ],
-    impact: severityToImpact(s.Severity ?? ''),
+    impact: severityToImpactWithAliases(s.Severity, SEVERITY_ALIASES, 0.5),
     tags,
     code: JSON.stringify(s, null, 2),
     controlType: deriveControlTypeFromTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS),
     verificationMethod: VerificationMethodEnum.Automated,
-    results: [{status: ResultStatus.Failed, codeDesc: s.Match ?? '', startTime} as RequirementResult],
+    results: [{status: ResultStatus.Failed, codeDesc: s.Match ?? '', startTime}],
   };
   if (res.Target) {
     const sl: SourceLocation = {ref: res.Target};
@@ -339,17 +327,17 @@ function convertLicense(l: TrivyLicense, res: TrivyResult, startTime: Date): Eva
     descriptions: [
       {label: 'default', data: `Package ${l.PkgName ?? ''} uses the ${l.Name ?? ''} license (category: ${l.Category ?? ''}).`},
     ],
-    impact: severityToImpact(l.Severity ?? ''),
+    impact: severityToImpactWithAliases(l.Severity, SEVERITY_ALIASES, 0.5),
     tags,
     refs: buildRefs([l.Link]),
     code: JSON.stringify(l, null, 2),
     controlType: deriveControlTypeFromTags(DEFAULT_STATIC_ANALYSIS_NIST_TAGS),
     verificationMethod: VerificationMethodEnum.Automated,
     results: [
-      {status: ResultStatus.Failed, codeDesc: `${l.PkgName ?? ''}: ${l.Name ?? ''} license`, startTime} as RequirementResult,
+      {status: ResultStatus.Failed, codeDesc: `${l.PkgName ?? ''}: ${l.Name ?? ''} license`, startTime},
     ],
   };
-  if (l.FilePath) req.sourceLocation = {ref: l.FilePath} as SourceLocation;
+  if (l.FilePath) req.sourceLocation = {ref: l.FilePath};
   return req;
 }
 
@@ -358,9 +346,9 @@ function convertLicense(l: TrivyLicense, res: TrivyResult, startTime: Date): Eva
 function buildComponent(report: TrivyReport): Component | undefined {
   if (!report.ArtifactName) return undefined;
   if (report.ArtifactType !== 'container_image') {
-    return {name: report.ArtifactName, type: TargetType.Artifact} as Component;
+    return {name: report.ArtifactName, type: TargetType.Artifact};
   }
-  const c: Component = {name: report.ArtifactName, type: TargetType.ContainerImage} as Component;
+  const c: Component = {name: report.ArtifactName, type: TargetType.ContainerImage};
   const md = report.Metadata;
   if (!md) return c;
   if (md.ImageID) c.imageId = md.ImageID;
@@ -420,36 +408,28 @@ function buildCvssEntries(m?: Record<string, TrivyCvss>): Cvss[] | undefined {
   return entries.length > 0 ? entries : undefined;
 }
 
-const PURL_ECOSYSTEMS: Record<string, Ecosystem> = {
-  deb: Ecosystem.Deb,
-  rpm: Ecosystem.RPM,
-  maven: Ecosystem.Maven,
-  npm: Ecosystem.Npm,
-  pypi: Ecosystem.Pypi,
-  gem: Ecosystem.Gem,
-  cargo: Ecosystem.Cargo,
-  golang: Ecosystem.Go,
-  nuget: Ecosystem.Nuget,
-};
-
-function buildAffectedPackage(v: TrivyVuln): AffectedPackage {
-  const ap: AffectedPackage = {};
-  if (v.PkgName) ap.name = v.PkgName;
-  if (v.InstalledVersion) ap.version = v.InstalledVersion;
-  if (v.FixedVersion) ap.fixedInVersion = v.FixedVersion;
+// Returns undefined when the identifiers don't satisfy the schema's anyOf —
+// Trivy's package identity comes from the PURL, so a name/version without one
+// lacks the required ecosystem.
+function buildTrivyAffectedPackage(v: TrivyVuln): AffectedPackage | undefined {
   const purl = v.PkgIdentifier?.PURL;
-  if (purl) {
-    ap.purl = purl;
-    const eco = ecosystemFromPurl(purl);
-    if (eco) ap.ecosystem = eco;
-  }
-  return ap;
+  return buildAffectedPackage({
+    name: v.PkgName,
+    version: v.InstalledVersion,
+    fixedInVersion: v.FixedVersion,
+    purl,
+    ecosystem: purl ? ecosystemFromPurl(purl) : undefined,
+  });
 }
 
+// The shared helper returns Ecosystem.Generic for a purl type it doesn't know;
+// this converter omits the ecosystem in that case rather than emit a synthetic
+// "generic" the schema triple didn't previously carry.
 function ecosystemFromPurl(purl: string): Ecosystem | undefined {
   const rest = purl.replace(/^pkg:/, '');
-  const type = (rest.split(/[/@?]/)[0] ?? '').toLowerCase();
-  return PURL_ECOSYSTEMS[type];
+  const type = rest.split(/[/@?]/)[0] ?? '';
+  const eco = ecosystemFromPurlType(type);
+  return eco === Ecosystem.Generic ? undefined : eco;
 }
 
 function buildRefs(urls: (string | undefined)[]): Reference[] | undefined {
@@ -482,11 +462,6 @@ function pkgLabel(name?: string, version?: string): string {
 function digestPart(ref: string): string {
   const at = ref.lastIndexOf('@');
   return at >= 0 ? ref.slice(at + 1) : ref;
-}
-
-function firstNonEmpty(...vals: (string | undefined)[]): string {
-  for (const v of vals) if (v) return v;
-  return '';
 }
 
 function putIf(m: Record<string, unknown>, key: string, val?: string): void {

@@ -11,8 +11,10 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -40,9 +42,9 @@ type inspectOutput struct {
 // inspectToolDescription — see queryToolDescription for why the payload boundary
 // is stated here rather than left to be discovered (hdf-libs-uqhe.13).
 const inspectToolDescription = "Inspect an HDF document's structure and metadata for any of the eight document types " +
-	"(counts, inventories, envelopes) — never a requirement collection. To list requirements, use hdf_query. " +
-	"Structure only: the scanner's original finding is retained in each requirement's `code` but is not " +
-	"projected by this or any read tool, so a tool-specific field must be read from the source file."
+	"(counts, inventories, envelopes) — never a requirement collection. To list requirements use hdf_query " +
+	"(verbosity=full for descriptions[]). The raw scanner finding retained in each requirement's `code` is " +
+	"projected by no read tool — read the source file for the `code` payload."
 
 func RegisterInspect(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
@@ -193,84 +195,85 @@ func genericStructure(content []byte, shape func(map[string]any) map[string]any)
 }
 
 func systemShape(doc map[string]any) map[string]any {
-	comps := asArray(doc["components"])
+	comps, _ := exportmap.AsSlice(doc["components"])
+	flows, _ := exportmap.AsSlice(doc["dataFlows"])
+	controls, _ := exportmap.AsSlice(doc["controlDesignations"])
 	byType := map[string]int{}
 	for _, c := range comps {
 		if m, ok := c.(map[string]any); ok {
-			byType[asString(m["type"])]++
+			byType[hdfutil.SafeString(m["type"])]++
 		}
 	}
 	return map[string]any{
 		"components": map[string]any{"count": len(comps), "byType": byType},
-		"dataflows":  map[string]any{"count": len(asArray(doc["dataFlows"]))},
-		"controls":   map[string]any{"count": len(asArray(doc["controlDesignations"]))},
-		"metadata":   map[string]any{"name": asString(doc["name"]), "systemID": asString(doc["systemId"]), "authorizationStatus": asString(doc["authorizationStatus"])},
+		"dataflows":  map[string]any{"count": len(flows)},
+		"controls":   map[string]any{"count": len(controls)},
+		"metadata":   map[string]any{"name": hdfutil.SafeString(doc["name"]), "systemID": hdfutil.SafeString(doc["systemId"]), "authorizationStatus": hdfutil.SafeString(doc["authorizationStatus"])},
 	}
 }
 
 func planShape(doc map[string]any) map[string]any {
-	assessments := asArray(doc["assessments"])
+	assessments, _ := exportmap.AsSlice(doc["assessments"])
 	return map[string]any{
 		"assessments": map[string]any{"count": len(assessments)},
 		"schedule":    doc["schedule"],
-		"metadata":    map[string]any{"name": asString(doc["name"]), "planID": asString(doc["planId"]), "systemRef": asString(doc["systemRef"])},
+		"metadata":    map[string]any{"name": hdfutil.SafeString(doc["name"]), "planID": hdfutil.SafeString(doc["planId"]), "systemRef": hdfutil.SafeString(doc["systemRef"])},
 	}
 }
 
 func amendmentsShape(doc map[string]any) map[string]any {
-	overrides := asArray(doc["overrides"])
+	overrides, _ := exportmap.AsSlice(doc["overrides"])
 	byType := map[string]int{}
 	for _, o := range overrides {
 		if m, ok := o.(map[string]any); ok {
-			byType[asString(m["type"])]++
+			byType[hdfutil.SafeString(m["type"])]++
 		}
 	}
 	return map[string]any{
 		"overrides": map[string]any{"count": len(overrides), "byType": byType},
-		"metadata":  map[string]any{"name": asString(doc["name"]), "amendmentID": asString(doc["amendmentId"]), "systemRef": asString(doc["systemRef"])},
+		"metadata":  map[string]any{"name": hdfutil.SafeString(doc["name"]), "amendmentID": hdfutil.SafeString(doc["amendmentId"]), "systemRef": hdfutil.SafeString(doc["systemRef"])},
 	}
 }
 
 func evidenceShape(doc map[string]any) map[string]any {
-	contents := asArray(doc["contents"])
+	contents, _ := exportmap.AsSlice(doc["contents"])
 	items := make([]map[string]any, 0, len(contents))
 	for _, c := range contents {
 		if m, ok := c.(map[string]any); ok {
-			items = append(items, map[string]any{"type": asString(m["type"]), "uri": asString(m["uri"])})
+			items = append(items, map[string]any{"type": hdfutil.SafeString(m["type"]), "uri": hdfutil.SafeString(m["uri"])})
 		}
 	}
 	return map[string]any{
 		"contents":     items,
 		"completeness": doc["completenessCheck"],
-		"metadata":     map[string]any{"name": asString(doc["name"]), "packageID": asString(doc["packageId"])},
+		"metadata":     map[string]any{"name": hdfutil.SafeString(doc["name"]), "packageID": hdfutil.SafeString(doc["packageId"])},
 	}
 }
 
 func comparisonShape(doc map[string]any) map[string]any {
+	diffs := map[string]any{}
+	for _, k := range []string{"baselineDiffs", "componentDiffs", "requirementDiffs", "drift", "packageDiffs"} {
+		items, _ := exportmap.AsSlice(doc[k])
+		diffs[k] = len(items)
+	}
 	return map[string]any{
-		"summary": doc["summary"],
-		"diffs": map[string]any{
-			"baselineDiffs":    len(asArray(doc["baselineDiffs"])),
-			"componentDiffs":   len(asArray(doc["componentDiffs"])),
-			"requirementDiffs": len(asArray(doc["requirementDiffs"])),
-			"drift":            len(asArray(doc["drift"])),
-			"packageDiffs":     len(asArray(doc["packageDiffs"])),
-		},
-		"metadata": map[string]any{"comparisonMode": asString(doc["comparisonMode"]), "systemRef": asString(doc["systemRef"])},
+		"summary":  doc["summary"],
+		"diffs":    diffs,
+		"metadata": map[string]any{"comparisonMode": hdfutil.SafeString(doc["comparisonMode"]), "systemRef": hdfutil.SafeString(doc["systemRef"])},
 	}
 }
 
 func changeEventShape(doc map[string]any) map[string]any {
 	return map[string]any{
 		"envelope": map[string]any{
-			"eventId": asString(doc["eventId"]), "source": asString(doc["source"]),
-			"sequence": doc["sequence"], "schemaRef": asString(doc["schemaRef"]),
-			"priorChecksum": doc["priorChecksum"], "timestamp": asString(doc["timestamp"]),
-			"systemRef": asString(doc["systemRef"]),
+			"eventId": hdfutil.SafeString(doc["eventId"]), "source": hdfutil.SafeString(doc["source"]),
+			"sequence": doc["sequence"], "schemaRef": hdfutil.SafeString(doc["schemaRef"]),
+			"priorChecksum": doc["priorChecksum"], "timestamp": hdfutil.SafeString(doc["timestamp"]),
+			"systemRef": hdfutil.SafeString(doc["systemRef"]),
 		},
 		"change": map[string]any{
-			"requirementId": asString(doc["requirementId"]), "state": asString(doc["state"]),
-			"componentId": asString(doc["componentId"]), "changeReasons": doc["changeReasons"],
+			"requirementId": hdfutil.SafeString(doc["requirementId"]), "state": hdfutil.SafeString(doc["state"]),
+			"componentId": hdfutil.SafeString(doc["componentId"]), "changeReasons": doc["changeReasons"],
 		},
 	}
 }
@@ -363,20 +366,6 @@ func verbosityLabel(v string) string {
 
 func docMetadata(id, systemRef, planRef *string) map[string]any {
 	return map[string]any{"id": strPtrOrEmpty(id), "systemRef": strPtrOrEmpty(systemRef), "planRef": strPtrOrEmpty(planRef)}
-}
-
-func asArray(v any) []any {
-	if a, ok := v.([]any); ok {
-		return a
-	}
-	return nil
-}
-
-func asString(v any) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
 }
 
 func strPtrOrEmpty(s *string) string {

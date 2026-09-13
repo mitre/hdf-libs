@@ -55,6 +55,10 @@ type Result struct {
 	Errors     []ValidationError
 	ErrorsMore bool // true when more validation errors existed than were returned
 	CacheHit   bool
+	// Retained reports whether the document is resident in the content cache, so
+	// a content-addressed (empty-path) handle for it will resolve on a later
+	// call. A document larger than the whole cache budget bypasses the cache.
+	Retained bool
 }
 
 // Loader wraps the engine core with a byte-bounded LRU cache. It is safe for
@@ -71,10 +75,10 @@ type Loader struct {
 }
 
 type cacheEntry struct {
-	key    string
-	size   int64
-	result *hdfengine.LoadResult
-	bytes  []byte // the raw document, retained so a content-addressed handle resolves
+	key     string
+	size    int64
+	verdict *Result // the memoised verdict; the per-call flags are set on a copy
+	bytes   []byte  // the raw document, retained so a content-addressed handle resolves
 }
 
 // New builds a Loader. cacheBytes <= 0 uses HDF_MCP_CACHE_BYTES, then
@@ -134,7 +138,7 @@ func (l *Loader) Load(data []byte) (*Result, error) {
 	size := int64(len(data))
 
 	if cached, ok := l.get(key); ok {
-		return l.buildResult(cached, data, true), nil
+		return cachedResult(cached, true), nil
 	}
 
 	engineRes, err := hdfengine.Load(data, l.maxSize)
@@ -142,8 +146,19 @@ func (l *Loader) Load(data []byte) (*Result, error) {
 		return nil, err // e.g. size guard — a real load failure, not a degraded doc
 	}
 
-	l.put(key, size, engineRes, data)
-	return l.buildResult(engineRes, data, false), nil
+	verdict := l.buildResult(engineRes, data)
+	res := *verdict
+	res.Retained = l.put(key, size, verdict, data)
+	return &res, nil
+}
+
+// cachedResult copies a memoised verdict and stamps the per-call flags, so the
+// stored verdict is never mutated by a reader.
+func cachedResult(ent *cacheEntry, hit bool) *Result {
+	res := *ent.verdict
+	res.CacheHit = hit
+	res.Retained = true
+	return &res
 }
 
 // LoadByHash returns the cached raw bytes and parsed result for a document whose
@@ -166,23 +181,21 @@ func (l *Loader) LoadByHash(contentSha256Hex string) (data []byte, res *Result, 
 	}
 	l.lru.MoveToFront(el)
 	ent := el.Value.(*cacheEntry)
-	engineRes, bytes := ent.result, ent.bytes
 	l.mu.Unlock()
 
-	return bytes, l.buildResult(engineRes, bytes, true), true
+	return ent.bytes, cachedResult(ent, true), true
 }
 
-// buildResult assembles the MCP Result and determines validity for ALL detected
+// buildResult computes the MCP verdict and determines validity for ALL detected
 // document types. The engine core only struct-parses (and thus validates)
 // results and baseline; for every other detected type this wrapper validates
 // against the schema so a valid system/plan/amendments/etc. is reported valid
 // rather than mistaken for a degraded read. Invalid documents get the degraded
 // envelope (line-numbered errors); a valid document never does.
-func (l *Loader) buildResult(engineRes *hdfengine.LoadResult, data []byte, cacheHit bool) *Result {
+func (l *Loader) buildResult(engineRes *hdfengine.LoadResult, data []byte) *Result {
 	r := &Result{
-		Engine:   engineRes,
-		DocType:  engineRes.DocType,
-		CacheHit: cacheHit,
+		Engine:  engineRes,
+		DocType: engineRes.DocType,
 	}
 
 	// Results/baseline the engine parsed cleanly are valid.
@@ -236,7 +249,7 @@ func (l *Loader) degradedErrors(vr validators.ValidationResult, data []byte) ([]
 
 // --- byte-bounded LRU cache ---
 
-func (l *Loader) get(key string) (*hdfengine.LoadResult, bool) {
+func (l *Loader) get(key string) (*cacheEntry, bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	el, ok := l.cache[key]
@@ -244,21 +257,23 @@ func (l *Loader) get(key string) (*hdfengine.LoadResult, bool) {
 		return nil, false
 	}
 	l.lru.MoveToFront(el)
-	return el.Value.(*cacheEntry).result, true
+	return el.Value.(*cacheEntry), true
 }
 
 // put inserts an entry, evicting least-recently-used entries until the budget is
-// satisfied. A single document larger than the whole budget bypasses the cache
-// (loaded uncached) rather than thrashing every other entry out.
-func (l *Loader) put(key string, size int64, result *hdfengine.LoadResult, data []byte) {
+// satisfied, and reports whether the document is now resident. A single document
+// larger than the whole budget bypasses the cache (loaded uncached) rather than
+// thrashing every other entry out — the caller must know, because no
+// content-addressed handle for it can resolve.
+func (l *Loader) put(key string, size int64, verdict *Result, data []byte) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	if _, exists := l.cache[key]; exists {
-		return
+		return true
 	}
 	if size > l.cacheBytes {
-		return // oversize single document: bypass the cache
+		return false // oversize single document: bypass the cache
 	}
 
 	for l.curSize+size > l.cacheBytes && l.lru.Len() > 0 {
@@ -269,9 +284,10 @@ func (l *Loader) put(key string, size int64, result *hdfengine.LoadResult, data 
 	// slice cannot corrupt a content-addressed resolution.
 	buf := make([]byte, len(data))
 	copy(buf, data)
-	el := l.lru.PushFront(&cacheEntry{key: key, size: size, result: result, bytes: buf})
+	el := l.lru.PushFront(&cacheEntry{key: key, size: size, verdict: verdict, bytes: buf})
 	l.cache[key] = el
 	l.curSize += size
+	return true
 }
 
 // evictOldest removes the least-recently-used entry. Caller holds l.mu.

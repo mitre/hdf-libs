@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -742,5 +743,27 @@ func TestConvertIonChannel_DependencyAnchor(t *testing.T) {
 		require.NoError(t, err)
 		shared.AssertRequirementCount(t, result, countEmittedRequirements(t, input),
 			name+": one requirement per distinct flattened dependency plus one per non-dependency scan")
+	}
+}
+
+// A dependency reachable from several parents lists them in the order the
+// parents were first seen — the same order the TypeScript converter emits —
+// rather than in Go map-iteration order.
+func TestConvert_ParentDependenciesOrderIsDeterministic(t *testing.T) {
+	leaf := `{"org":"o","name":"shared","type":"npm","package":"npm","version":"1.0.0","dependencies":[]}`
+	parents := []string{"alpha", "bravo", "charlie", "delta", "echo"}
+	deps := make([]string, 0, len(parents))
+	for _, p := range parents {
+		deps = append(deps, `{"org":"o","name":"`+p+`","type":"npm","package":"npm","version":"1.0.0","dependencies":[`+leaf+`]}`)
+	}
+	input := []byte(`{"analysis_id":"a","team_id":"t","scan_summaries":[{"id":"s","name":"dependency","summary":"Dependency scan completed",
+		"results":{"type":"dependency","data":{"dependencies":[` + strings.Join(deps, ",") + `]}}}]}`)
+
+	want := []string{"o/alpha", "o/bravo", "o/charlie", "o/delta", "o/echo"}
+	for i := 0; i < 32; i++ {
+		result, err := ConvertIonChannelToHDF(input, testVersion)
+		require.NoError(t, err)
+		req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "dependency-o/shared")
+		assert.Equal(t, want, req.Tags["parentDependencies"], "run %d", i)
 	}
 }
