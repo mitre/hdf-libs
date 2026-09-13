@@ -227,7 +227,7 @@ bd dep add <issue> <depends-on>     # Add a dependency
 ### Rules
 
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists.
-- **Never edit `.beads/issues.jsonl` directly** — it is the auto-export. Always go through `bd`.
+- **Never hand-edit beads state files.** Always go through `bd`. JSONL export is now opt-in (`export.auto` in `.beads/config.yaml`) rather than a standing artifact, so `.beads/issues.jsonl` is absent unless an integration asks for it.
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files.
 
 ### Dolt sync on reserve/complete
@@ -244,14 +244,14 @@ Same pattern for creating + immediately reserving a new card. This is the Dolt i
 
 If bd errors with "Database out of sync", run `bd dolt pull` first.
 
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
+**Architecture in one line:** issues live in a local Dolt DB and sync between clones over a Dolt remote; JSONL export is an optional interchange format, not the sync mechanism. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
 **Git policy:** the user owns every commit and push in this repo. The bd-tool's default session-completion workflow (which prescribes a mandatory `git push`) does not apply here — the "Git Policy" section above is the authoritative rule. `bd dolt push` / `bd dolt pull` (issue-tracker sync) is a separate concept; follow the dolt-sync rule above for those.
 <!-- END BEADS INTEGRATION -->
 
 ### Card hygiene: no machine-local details
 
-Beads cards are shared across clones and exported to `.beads/issues.jsonl`. Keep them portable and free of any contributor's local environment:
+Beads cards are shared across clones through the Dolt remote. Keep them portable and free of any contributor's local environment:
 
 - **No absolute/home filepaths.** Reference files by repo-relative path (`hdf-converters/converters/.../converter.go:277`), never `/Users/<name>/...` or `~/...`.
 - **No local infrastructure names or stack descriptions.** Don't name a contributor's VMs, containers, container engine, cluster/namespace, ports, or hostnames. Describe the *capability* generically instead (e.g. "a SonarQube instance in MQR mode", not how or where it happens to run locally).
