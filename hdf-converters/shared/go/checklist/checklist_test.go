@@ -485,7 +485,9 @@ func TestResolveSeverityFromImpact(t *testing.T) {
 	assert.Equal(t, "high", resolveSeverity(mk(0.7), map[string]interface{}{}))
 	assert.Equal(t, "medium", resolveSeverity(mk(0.5), map[string]interface{}{}))
 	assert.Equal(t, "low", resolveSeverity(mk(0.3), map[string]interface{}{}))
-	assert.Equal(t, "", resolveSeverity(mk(0.0), map[string]interface{}{}))
+	// Was "" — blank is outside CKL's high/medium/low vocabulary and re-imports
+	// through the unknown -> 0.5 default, turning an impact of 0 into 0.5.
+	assert.Equal(t, "low", resolveSeverity(mk(0.0), map[string]interface{}{}))
 	// explicit tag wins
 	assert.Equal(t, "high", resolveSeverity(mk(0.0), map[string]interface{}{"severity": "high"}))
 }

@@ -24,6 +24,20 @@ export function hdfToChecklist(input: string): Checklist {
   if (hdf.baselines.length === 0) {
     throw new Error('hdf to checklist: HDF has no baselines');
   }
+  // A baseline with no requirements is schema-invalid HDF (requirements has
+  // minItems 1) and produces a stig this package's own importers refuse:
+  // parseCkl rejects an <iSTIG> with no <VULN>, parseCklb a stig with no rules[].
+  // Rejecting here makes the same document fail on the way out as on the way in,
+  // rather than becoming a file this repo cannot read back. Mirrors the Go peer.
+  hdf.baselines.forEach((bl, i) => {
+    // bl itself may be null: `baselines: [null]` is a shape a non-schema-validating
+    // producer can emit. Without this the dereference throws a raw TypeError,
+    // while the Go peer decodes null into a zero-value struct and reports the
+    // domain error — the two would disagree on the same input.
+    if (!bl || !Array.isArray(bl.requirements) || bl.requirements.length === 0) {
+      throw new Error(`hdf to checklist: baseline ${i + 1} has no requirements`);
+    }
+  });
 
   const ext = (hdf.extensions ?? {}) as Record<string, unknown>;
   const format = strVal(ext, 'checklistFormat') || 'ckl';
@@ -184,10 +198,7 @@ function formatOverride(o: StatusOverride): string {
 function overrideSeverity(req: EvaluatedRequirement): { severity: string; justification: string } {
   for (const o of req.statusOverrides ?? []) {
     if (o.impact) {
-      // An override that zeroes impact still has to name a CAT level; low is
-      // the checklist's floor.
-      const severity = cklSeverityFromImpact(o.impact.value) || 'low';
-      return { severity, justification: o.reason ?? '' };
+      return { severity: cklSeverityOrFloor(o.impact.value), justification: o.reason ?? '' };
     }
   }
   return { severity: '', justification: '' };
@@ -195,8 +206,8 @@ function overrideSeverity(req: EvaluatedRequirement): { severity: string; justif
 
 // Maps an impact score to STIG's qualitative severity bucket via the shared band
 // mapper. The checklist vocabulary is CAT I/II/III only, so critical folds into
-// high and the informational band has no bucket at all — callers decide what an
-// absent bucket means.
+// high and the informational band has no bucket at all; cklSeverityOrFloor
+// decides what an absent bucket means.
 function cklSeverityFromImpact(impact: number): string {
   switch (impactToSeverity(impact)) {
     case 'critical':
@@ -211,11 +222,19 @@ function cklSeverityFromImpact(impact: number): string {
   }
 }
 
+// cklSeverityFromImpact with the checklist's floor applied. Severity is always
+// emitted and blank is outside CKL's high/medium/low vocabulary, so a blank
+// re-imports through the unknown -> 0.5 default and silently turns an impact of
+// 0 into 0.5. 'low' is the closest the format can come to saying "no severity".
+function cklSeverityOrFloor(impact: number): string {
+  return cklSeverityFromImpact(impact) || 'low';
+}
+
 function resolveSeverity(req: EvaluatedRequirement, tags: Record<string, unknown>): string {
   const tagSev = strVal(tags, 'severity');
   if (tagSev) return tagSev;
   if (req.severity) return String(req.severity).toLowerCase();
-  return cklSeverityFromImpact(req.impact ?? 0);
+  return cklSeverityOrFloor(req.impact ?? 0);
 }
 
 function resolveCcis(tags: Record<string, unknown>): string[] {

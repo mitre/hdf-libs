@@ -27,6 +27,16 @@ func HDFToChecklist(input []byte) (*Checklist, error) {
 	if len(results.Baselines) == 0 {
 		return nil, fmt.Errorf("hdf to checklist: HDF has no baselines")
 	}
+	// A baseline with no requirements is schema-invalid HDF (requirements has
+	// minItems 1) and produces a stig this package's own importers refuse:
+	// ParseCKL rejects an <iSTIG> with no <VULN>, ParseCKLB a stig with no
+	// rules[]. Rejecting here makes the same document fail on the way out as on
+	// the way in, rather than becoming a file this repo cannot read back.
+	for i := range results.Baselines {
+		if len(results.Baselines[i].Requirements) == 0 {
+			return nil, fmt.Errorf("hdf to checklist: baseline %d has no requirements", i+1)
+		}
+	}
 
 	cl := &Checklist{}
 	applyRootExtensions(cl, results.Extensions)
@@ -229,13 +239,7 @@ func overrideSeverity(req *hdf.EvaluatedRequirement) (severity, justification st
 	for i := range req.StatusOverrides {
 		o := &req.StatusOverrides[i]
 		if o.Impact != nil {
-			sev := cklSeverityFromImpact(o.Impact.Value)
-			if sev == "" {
-				// An override that zeroes impact still has to name a CAT level;
-				// low is the checklist's floor.
-				sev = "low"
-			}
-			return sev, o.Reason
+			return cklSeverityOrFloor(o.Impact.Value), o.Reason
 		}
 	}
 	return "", ""
@@ -244,7 +248,7 @@ func overrideSeverity(req *hdf.EvaluatedRequirement) (severity, justification st
 // cklSeverityFromImpact maps an impact score to STIG's qualitative severity
 // bucket via the shared band mapper. The checklist vocabulary is CAT I/II/III
 // only, so critical folds into high and the informational band has no bucket at
-// all — callers decide what an absent bucket means.
+// all; cklSeverityOrFloor decides what an absent bucket means.
 func cklSeverityFromImpact(impact float64) string {
 	switch hdfutil.ImpactToSeverity(impact) {
 	case "critical", "high":
@@ -258,6 +262,18 @@ func cklSeverityFromImpact(impact float64) string {
 	}
 }
 
+// cklSeverityOrFloor is cklSeverityFromImpact with the checklist's floor
+// applied. Severity is always emitted and blank is outside CKL's
+// high/medium/low vocabulary, so a blank re-imports through the unknown -> 0.5
+// default and silently turns an impact of 0 into 0.5. "low" is the closest the
+// format can come to saying "no severity".
+func cklSeverityOrFloor(impact float64) string {
+	if s := cklSeverityFromImpact(impact); s != "" {
+		return s
+	}
+	return "low"
+}
+
 // resolveSeverity prefers the round-tripped tags.severity, else derives from
 // the impact bands.
 func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{}) string {
@@ -267,7 +283,7 @@ func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{})
 	if req.Severity != nil && *req.Severity != "" {
 		return strings.ToLower(string(*req.Severity))
 	}
-	return cklSeverityFromImpact(req.Impact)
+	return cklSeverityOrFloor(req.Impact)
 }
 
 // resolveCCIs prefers explicit tags.cci, else reverses tags.nist via NISTToCCI.
