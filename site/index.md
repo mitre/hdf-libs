@@ -22,7 +22,7 @@ features:
   - title: 33+ Tool Converters
     details: Convert output from Nessus, Grype, OSCAL, XCCDF, SARIF, CycloneDX, and many more into a unified format.
   - title: Multi-Language Support
-    details: TypeScript, Go, and Python type definitions generated from the schemas. Use HDF in any stack.
+    details: TypeScript and Go type definitions generated from the schemas, so both stacks stay in lockstep with the spec.
   - title: Self-Contained Schemas
     details: Each bundled schema embeds all referenced types. No external fetches needed for validation.
 ---

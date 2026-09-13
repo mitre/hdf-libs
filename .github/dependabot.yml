@@ -44,6 +44,14 @@ updates:
   # requirements.in holds the intent (semgrep==X); semgrep.txt is the
   # fully-resolved, hash-pinned output. Regenerate with
   #   uv pip compile requirements.in --generate-hashes --universal --python-version 3.11
+  #
+  # Only semgrep is allowed, because semgrep.txt is a solved resolution and
+  # Dependabot edits one line at a time with no solver: bumping a transitive
+  # pin contradicts a constraint semgrep already fixed and dies with
+  # ResolutionImpossible. dependency-type "direct" would not narrow this —
+  # a compiled requirements file pins everything explicitly, so every entry
+  # reads as direct. Security updates ignore `allow` and still reach
+  # transitives; routine drift is picked up by regenerating from the .in.
   - package-ecosystem: "pip"
     directory: "/.github/requirements"
     schedule:
@@ -51,6 +59,8 @@ updates:
       day: "monday"
     cooldown:
       default-days: 7
+    allow:
+      - dependency-name: "semgrep"
     open-pull-requests-limit: 5
 
   # Go modules — each go.mod is a separate ecosystem entry

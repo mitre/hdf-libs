@@ -20,7 +20,7 @@ pnpm workspace with 11 packages + a VitePress schema documentation site:
 
 | Package | Purpose | Language |
 |---------|---------|----------|
-| `hdf-schema` | 7 JSON schemas + TS/Go/Python type generation | TS |
+| `hdf-schema` | 7 JSON schemas + TS/Go type generation | TS |
 | `hdf-utilities` | XML, CSV, hash, string helpers | TS |
 | `hdf-mappings` | CCI, NIST, CWE, OWASP control mappings | TS + Go |
 | `hdf-validators` | Schema validation with embedded schemas | TS + Go |
