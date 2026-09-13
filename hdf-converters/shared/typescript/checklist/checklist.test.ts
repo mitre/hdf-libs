@@ -366,7 +366,13 @@ describe('checklist shared model', () => {
   });
 
   it('serializeCklb emits has_path and snake_case scaffolding', () => {
-    const out = serializeCklb({ format: 'cklb', asset: {}, stigs: [{ vulns: [] }] });
+    // A rule is required only because the serializer now refuses a stig with
+    // none; every assertion below is about document-level scaffolding.
+    const out = serializeCklb({
+      format: 'cklb',
+      asset: {},
+      stigs: [{ vulns: [{ vulnNum: 'V-1', status: CheckStatus.Open }] }],
+    });
     const doc = JSON.parse(out);
     expect(doc.has_path).toBe(false);
     expect(doc.active).toBe(false);

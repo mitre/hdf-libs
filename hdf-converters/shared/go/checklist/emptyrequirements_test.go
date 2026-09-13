@@ -76,31 +76,48 @@ func TestSerializeCKLBNeverMarshalsANullSlice(t *testing.T) {
 		"rules must marshal as an array")
 }
 
-// The export guard makes a nil Rules unreachable FROM HDF, but Checklist is a
-// public type that ParseCKL/ParseCKLB and callers also build, so the serializer
-// must not depend on its input having come through that guard. Audit of cklb.go's
-// non-omitempty slice fields: stigs and rules were unguarded, ccis was already
-// guarded by OrEmpty, legacy_ids carries omitempty. These cover the two that were
-// not.
-func TestSerializeCKLBGuardsEveryNonOmitemptySlice(t *testing.T) {
-	for _, tc := range []struct {
-		name  string
-		cl    *Checklist
-		field string
-	}{
-		{"a stig with no rules", &Checklist{Stigs: []Stig{{StigID: "s", Title: "t"}}}, "rules"},
-		{"a checklist with no stigs", &Checklist{}, "stigs"},
+// A serializer must not emit a document its own parser refuses. ParseCKL rejects
+// an <iSTIG> with no <VULN> and ParseCKLB a stig with no rules[], so both
+// serializers now reject those shapes rather than marshalling them prettily.
+// Checklist is public and is also built by the parsers and by callers, so the
+// builder's guard alone does not cover every path here.
+func TestSerializersRejectDocumentsTheirOwnParsersRefuse(t *testing.T) {
+	for _, tc := range []struct{ name, want string }{
+		{"ckl", "serialize ckl"},
+		{"cklb", "serialize cklb"},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			out, err := SerializeCKLB(tc.cl)
-			require.NoError(t, err)
-			// Raw bytes: unmarshalling cannot tell null from [].
-			assert.NotContains(t, string(out), `"`+tc.field+`": null`,
-				"%s must marshal as [], not null — a consumer expecting an array gets nothing it can iterate", tc.field)
-			assert.Contains(t, string(out), `"`+tc.field+`": [`,
-				"%s must be present as an array", tc.field)
+		serialize := SerializeCKL
+		if tc.name == "cklb" {
+			serialize = SerializeCKLB
+		}
+		t.Run(tc.name+"/stig with no rules", func(t *testing.T) {
+			_, err := serialize(&Checklist{Stigs: []Stig{{StigID: "s", Title: "t"}}})
+			require.Error(t, err, "a stig with no rules must be rejected, not marshalled")
+			assert.Contains(t, err.Error(), "has no rules")
+		})
+		t.Run(tc.name+"/checklist with no stigs", func(t *testing.T) {
+			_, err := serialize(&Checklist{})
+			require.Error(t, err, "a checklist with no stigs must be rejected, not marshalled")
+			assert.Contains(t, err.Error(), "has no stigs")
 		})
 	}
+}
+
+// The no-null guarantee still needs asserting, on the slice that can legitimately
+// be empty in a VALID document. Audit of cklb.go's non-omitempty slice fields:
+// stigs and rules (now unreachable-when-empty, guarded by OrEmpty as defence
+// against a future relaxation), ccis — exercised here — and legacy_ids, which
+// carries omitempty. Asserted on raw bytes: unmarshalling cannot tell null from [].
+func TestSerializeCKLBEmptySliceMarshalsAsArrayNotNull(t *testing.T) {
+	out, err := SerializeCKLB(&Checklist{Stigs: []Stig{{
+		StigID: "s", Title: "t",
+		Vulns: []Vuln{{VulnNum: "V-1", Status: StatusOpen}}, // no CCIs
+	}}})
+	require.NoError(t, err)
+	assert.NotContains(t, string(out), `"ccis": null`,
+		"a consumer expecting an array gets nothing it can iterate")
+	assert.Contains(t, string(out), `"ccis": []`)
+	assert.NotContains(t, string(out), ": null", "no field may marshal as null")
 }
 
 // Severity is always emitted and CKL's vocabulary is high/medium/low, so blank

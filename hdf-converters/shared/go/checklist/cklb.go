@@ -184,6 +184,19 @@ func ParseCKLB(input []byte) (*Checklist, error) {
 
 // SerializeCKLB renders the Checklist model as CKLB JSON bytes.
 func SerializeCKLB(cl *Checklist) ([]byte, error) {
+	// ParseCKLB refuses a document with no stigs[], and a stig with no rules[].
+	// Emitting either would produce a file this package cannot read back — the
+	// same defect on the export side that the import side already guards, and the
+	// reason HDFToChecklist rejects a baseline with no requirements. Checklist is
+	// public, so the builder's guard alone does not cover callers who assemble one.
+	if len(cl.Stigs) == 0 {
+		return nil, fmt.Errorf("serialize cklb: checklist has no stigs")
+	}
+	for i := range cl.Stigs {
+		if len(cl.Stigs[i].Vulns) == 0 {
+			return nil, fmt.Errorf("serialize cklb: stig %d has no rules", i+1)
+		}
+	}
 	doc := cklbDoc{
 		Title:       cklbTitle(cl),
 		CklbVersion: orDefault(cl.CKLBVersion, "1.0"),

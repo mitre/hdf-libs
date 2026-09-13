@@ -156,6 +156,18 @@ function cklVulnToModel(v: VulnEl): Vuln {
 
 /** Serialize the Checklist model to CKL XML (with declaration). */
 export function serializeCkl(cl: Checklist): string {
+  // parseCkl refuses a document with no <iSTIG>, and an <iSTIG> with no <VULN>.
+  // Emitting either would produce a file this package cannot read back. Mirrors
+  // the Go peer, and covers callers who build a Checklist directly rather than
+  // through hdfToChecklist.
+  if (cl.stigs.length === 0) {
+    throw new Error('serialize ckl: checklist has no stigs');
+  }
+  cl.stigs.forEach((s, i) => {
+    if (s.vulns.length === 0) {
+      throw new Error(`serialize ckl: stig ${i + 1} has no rules`);
+    }
+  });
   const xmlObj = {
     CHECKLIST: {
       ASSET: {

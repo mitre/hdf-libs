@@ -150,6 +150,18 @@ function cklbRuleToModel(r: CklbRule): Vuln {
 
 /** Serialize the Checklist model to CKLB JSON. */
 export function serializeCklb(cl: Checklist): string {
+  // parseCklb refuses a document with no stigs[], and a stig with no rules[].
+  // Emitting either would produce a file this package cannot read back. Mirrors
+  // the Go peer, and covers callers who build a Checklist directly rather than
+  // through hdfToChecklist.
+  if (cl.stigs.length === 0) {
+    throw new Error('serialize cklb: checklist has no stigs');
+  }
+  cl.stigs.forEach((s, i) => {
+    if (s.vulns.length === 0) {
+      throw new Error(`serialize cklb: stig ${i + 1} has no rules`);
+    }
+  });
   const doc: CklbDoc & { active: boolean; has_path: boolean } = {
     title: cklbTitle(cl),
     cklb_version: cl.cklbVersion || '1.0',
