@@ -48,11 +48,10 @@ env:
   SEMGREP_RULES_SHA: '40b8c63f75dc7c22c8a77482d73bfb864b146f7e'
   ZIZMOR_VERSION: '1.30.0'
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
-  # The gate's CLI is built from main by the gate-cli job — see the comment
-  # there for why, and for how to switch back to a pinned release. The pin
-  # this replaces was:
-  #   HDF_CLI_VERSION: '3.5.1'
-  #   HDF_CLI_SHA256: '482bc0e3a92a508d141e9285eba9985965c0d6bc67e922903359d70e06c3ae7a'
+  # The released hdf CLI the gates run. Bumped post-publish by the release
+  # skill (Phase 9) from the linux_amd64 line of that release's checksums.txt.
+  HDF_CLI_VERSION: '3.6.0'
+  HDF_CLI_SHA256: 'bd4132a72876fd9c509d78b9acc1698117b0a1138c2f41e5b568f5728c95508d'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
@@ -440,30 +439,25 @@ jobs:
           retention-days: 7
 
   # ── The CLI the gates run ────────────────────────────────────────────────
-  # BOOTSTRAP: built from main's tip, not from a published release, because no
-  # release yet carries the effective-status threshold engine the gates depend
-  # on — under the last release the gate wrongly fails scans whose findings are
-  # sanctioned in-source suppressions. Building from `main` rather than from
-  # the commit under test keeps the property the pin existed for: a PR cannot
-  # alter the CLI that judges it. TIGHTEN once a release ships that engine —
-  # delete this job and replace it with a checksummed download of that
-  # release (the pin values are kept in the env block above).
+  # A pinned, checksum-verified release. Bump HDF_CLI_VERSION and
+  # HDF_CLI_SHA256 together after each publish; the release skill's Phase 9
+  # does it from that release's checksums.txt.
   gate-cli:
-    name: Build the gate CLI (from main)
+    name: Fetch the gate CLI (pinned release)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          # Deliberately main, NOT the PR head.
-          ref: main
-      - uses: $/.github/actions/setup
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          go: 'true'
-      - name: Build hdf
-        run: cd hdf-cli && go build -o "$RUNNER_TEMP/hdf" ./cmd/hdf
+      # A released binary, never one built from the commit under test: a CLI
+      # bug in a PR must not be able to judge its own gate.
+      - name: Download and verify
+        run: |
+          url="https://github.com/${{ github.repository }}/releases/download/v${HDF_CLI_VERSION}/hdf_${HDF_CLI_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/hdf-cli.tar.gz" "$url"
+          echo "${HDF_CLI_SHA256}  $RUNNER_TEMP/hdf-cli.tar.gz" | sha256sum -c -
+          tar xzf "$RUNNER_TEMP/hdf-cli.tar.gz" -C "$RUNNER_TEMP" hdf
+          "$RUNNER_TEMP/hdf" version
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gate-cli
