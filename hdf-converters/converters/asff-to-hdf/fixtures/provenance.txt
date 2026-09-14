@@ -1,8 +1,9 @@
 # asff-to-hdf fixtures — provenance
 
-Recorded 2026-09-14. Correspondence was checked by content hash against
-mitre/heimdall2 at 68d88f3c5 (2026-06-16). That is the ONLY upstream this check covered;
-a fixture with no counterpart there may still have come from somewhere else.
+Recorded 2026-09-14. Correspondence was established by content hash against
+mitre/heimdall2 at 68d88f3c5 (2026-06-16) and mitre/saf at 8037c390 (2026-06-29).
+Those are the only upstreams checked; a fixture matching neither may still
+have come from somewhere else.
 
 ## `input/`
 
@@ -14,38 +15,40 @@ exercise the nothing-to-convert path. Not sourced from anywhere.
 Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/asff_mapper/sample_input_report/rhel7_V-71931_asff.json`.
 
 ### `minimal.json`
-No counterpart in heimdall2 at the commit above. Introduced by this
-repository in `Feat/asff to hdf (#147)`; no upstream source is
-recorded, so it was most likely authored here for that change.
+No counterpart in either upstream. Introduced by this repository in
+`Feat/asff to hdf (#147)`; no upstream source is recorded, so it was
+most likely authored here for that change.
+SAF does carry samples for this tool under `test/sample_data/asff`, none matching.
 
 ### `prowler_sample.json`
 Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/asff_mapper/sample_input_report/prowler_sample.json`.
 
 ### `prowler_sample.ndjson`
-No counterpart in heimdall2 at the commit above. Introduced by this
-repository in `Feat/asff to hdf (#147)`; no upstream source is
-recorded, so it was most likely authored here for that change.
+Byte-identical to SAF CLI `test/sample_data/prowler/sample_input_report/prowler-sample.asff-json`.
 
 ### `securityhub_sample.json`
 Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/asff_mapper/sample_input_report/asff_sample.json`.
 
 ### `trivy_config_secret_sample.json`
-No counterpart in heimdall2 at the commit above. Introduced by this
-repository in `Fix/1ckd trivy misconfig secret (#160)`; no upstream source is
-recorded, so it was most likely authored here for that change.
+No counterpart in either upstream. Introduced by this repository in
+`Fix/1ckd trivy misconfig secret (#160)`; no upstream source is recorded, so it was
+most likely authored here for that change.
+SAF does carry samples for this tool under `test/sample_data/asff`, none matching.
 
 ### `trivy_cve_current_sample.json`
-No counterpart in heimdall2 at the commit above. Introduced by this
-repository in `Fix/1ckd trivy misconfig secret (#160)`; no upstream source is
-recorded, so it was most likely authored here for that change.
+No counterpart in either upstream. Introduced by this repository in
+`Fix/1ckd trivy misconfig secret (#160)`; no upstream source is recorded, so it was
+most likely authored here for that change.
+SAF does carry samples for this tool under `test/sample_data/asff`, none matching.
 
 ### `trivy_sample.json`
 Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/asff_mapper/sample_input_report/trivy-image_golang-1.12-alpine_sample.json`.
 
 ### `unknown-producer.json`
-No counterpart in heimdall2 at the commit above. Introduced by this
-repository in `Feat/asff to hdf (#147)`; no upstream source is
-recorded, so it was most likely authored here for that change.
+No counterpart in either upstream. Introduced by this repository in
+`Feat/asff to hdf (#147)`; no upstream source is recorded, so it was
+most likely authored here for that change.
+SAF does carry samples for this tool under `test/sample_data/asff`, none matching.
 
 ## `expected/`
 

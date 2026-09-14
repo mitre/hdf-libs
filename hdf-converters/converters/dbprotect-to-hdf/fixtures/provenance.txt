@@ -1,20 +1,23 @@
 # dbprotect-to-hdf fixtures — provenance
 
-Recorded 2026-09-14. Correspondence was checked by content hash against
-mitre/heimdall2 at 68d88f3c5 (2026-06-16). That is the ONLY upstream this check covered;
-a fixture with no counterpart there may still have come from somewhere else.
+Recorded 2026-09-14. Correspondence was established by content hash against
+mitre/heimdall2 at 68d88f3c5 (2026-06-16) and mitre/saf at 8037c390 (2026-06-29).
+Those are the only upstreams checked; a fixture matching neither may still
+have come from somewhere else.
 
 ## `input/`
 
 ### `sample-check-results.xml`
-No counterpart in heimdall2 at the commit above. Introduced by this
-repository in `Development (#10)`; no upstream source is
-recorded, so it was most likely authored here for that change.
+No counterpart in either upstream. Introduced by this repository in
+`Development (#10)`; no upstream source is recorded, so it was
+most likely authored here for that change.
+SAF does carry samples for this tool under `test/sample_data/dbprotect`, none matching.
 
 ### `sample-findings-detail.xml`
-No counterpart in heimdall2 at the commit above. Introduced by this
-repository in `Development (#10)`; no upstream source is
-recorded, so it was most likely authored here for that change.
+No counterpart in either upstream. Introduced by this repository in
+`Development (#10)`; no upstream source is recorded, so it was
+most likely authored here for that change.
+SAF does carry samples for this tool under `test/sample_data/dbprotect`, none matching.
 
 ## `expected/`
 
