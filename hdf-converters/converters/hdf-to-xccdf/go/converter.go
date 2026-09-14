@@ -449,7 +449,7 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 	testResult.Score = XCCDFScore{
 		System:  "urn:xccdf:scoring:default",
 		Maximum: "100.000000",
-		Value:   fmt.Sprintf("%.6f", score),
+		Value:   hdfutil.FormatFixed(score, 6),
 	}
 
 	return testResult

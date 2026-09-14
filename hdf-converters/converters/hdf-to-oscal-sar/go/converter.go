@@ -524,7 +524,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 				facetValue = v
 			}
 		}
-		impactText := fmt.Sprintf("Impact: %.1f (%s)", req.Impact, severity)
+		impactText := fmt.Sprintf("Impact: %s (%s)", hdfutil.FormatFixed(req.Impact, 1), severity)
 		risk = &oscal.Risk{
 			UUID:  riskUUID,
 			Title: fmt.Sprintf("Risk for %s", req.ID),
