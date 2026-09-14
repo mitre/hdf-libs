@@ -1,0 +1,96 @@
+{
+  "generator": {
+    "name": "oscal-component-to-hdf",
+    "version": "1.0.0"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "aa79e828b56e88a79cd70a7a5c0cfd9dd2161994dbf8b48d99e62b46647498e9"
+  },
+  "requirements": [
+    {
+      "descriptions": [
+        {
+          "data": "imp req prose for ac-1 from comp aa",
+          "label": "default"
+        },
+        {
+          "data": "statement prose for part a. from comp aa",
+          "label": "ac-1_smt.a"
+        }
+      ],
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f70/AC-1",
+      "impact": 0.5,
+      "tags": {
+        "component": "comp_aa",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f70",
+        "nist": [
+          "AC-1"
+        ]
+      },
+      "title": "AC-1"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "imp req prose for ac-3 from comp aa",
+          "label": "default"
+        }
+      ],
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f70/AC-3",
+      "impact": 0.5,
+      "tags": {
+        "component": "comp_aa",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f70",
+        "nist": [
+          "AC-3"
+        ]
+      },
+      "title": "AC-3"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "",
+          "label": "default"
+        }
+      ],
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f71/AC-1",
+      "impact": 0.5,
+      "tags": {
+        "component": "comp_ab",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f71",
+        "nist": [
+          "AC-1"
+        ]
+      },
+      "title": "AC-1"
+    },
+    {
+      "descriptions": [
+        {
+          "data": "imp req prose for at-1 from comp ab",
+          "label": "default"
+        },
+        {
+          "data": "statement prose for part b. from comp ab",
+          "label": "at-1_smt.b"
+        }
+      ],
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f71/AT-1",
+      "impact": 0.5,
+      "tags": {
+        "component": "comp_ab",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f71",
+        "nist": [
+          "AT-1"
+        ]
+      },
+      "title": "AT-1"
+    }
+  ],
+  "name": "comp-def-a",
+  "status": "loaded",
+  "title": "comp def a",
+  "version": "0.21.0"
+}

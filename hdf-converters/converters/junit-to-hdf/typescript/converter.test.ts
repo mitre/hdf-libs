@@ -98,6 +98,21 @@ describe('junit to HDF converter', async () => {
   // --- startTime fallback ---
 
   describe('startTime fallback', async () => {
+    // The Go suite pins this; without the TypeScript twin the parity path can
+    // regress to the conversion-time fallback while these tests stay green.
+    it('uses a nested suite timestamp rather than conversion time', async () => {
+      const input = `<testsuites>
+  <testsuite name="outer">
+    <testsuite name="inner" timestamp="2024-11-15T10:30:00">
+      <testcase name="deep" classname="pkg"/>
+    </testsuite>
+  </testsuite>
+</testsuites>`;
+      const hdf = JSON.parse(await convertJunitToHdf(input)) as HDFResults;
+      expect(hdf.timestamp).toBe('2024-11-15T10:30:00Z');
+      expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    });
+
     it('uses conversion time when no testsuite carries a timestamp', async () => {
       const xml = `<?xml version="1.0"?>
 <testsuites>
@@ -634,9 +649,14 @@ describe('testsuite-less JUnit (node --test)', () => {
   // normalized out of the file= attributes and the stack trace; structure,
   // attributes, messages and node's own footer comments are exactly as emitted.
   it('produces one requirement per testcase, not one placeholder', async () => {
-    const hdf = await parseHdf('node-test-passing.xml');
+    const input = loadFixture('node-test-passing.xml');
+    const hdf = JSON.parse(await convertJunitToHdf(input)) as HDFResults;
     const reqs = hdf.baselines[0]!.requirements;
-    expect(reqs).toHaveLength(2);
+    assertRequirementCount(
+      hdf,
+      countXmlElements(input, 'testcase'),
+      'node-test-passing.xml: each direct <testcase> is a requirement',
+    );
     expect(reqs.map((r) => r.id)).not.toContain('junit-no-findings');
     for (const r of reqs) {
       expect(r.results[0]!.status).toBe(ResultStatus.Passed);
@@ -644,9 +664,14 @@ describe('testsuite-less JUnit (node --test)', () => {
   });
 
   it('carries the failure and the skip rather than discarding them', async () => {
-    const hdf = await parseHdf('node-test-mixed.xml');
+    const input = loadFixture('node-test-mixed.xml');
+    const hdf = JSON.parse(await convertJunitToHdf(input)) as HDFResults;
     const reqs = hdf.baselines[0]!.requirements;
-    expect(reqs).toHaveLength(3);
+    assertRequirementCount(
+      hdf,
+      countXmlElements(input, 'testcase'),
+      'node-test-mixed.xml: one requirement per <testcase>',
+    );
 
     const statuses = reqs.map((r) => r.results[0]!.status);
     expect(statuses.filter((s) => s === ResultStatus.Passed)).toHaveLength(1);
@@ -666,5 +691,68 @@ describe('testsuite-less JUnit (node --test)', () => {
     expect(reqs).toHaveLength(1);
     expect(reqs[0]!.id).toBe('junit-no-findings');
     expect(reqs[0]!.results[0]!.status).toBe(ResultStatus.Passed);
+  });
+
+  // node-test-hybrid.xml is real `node --test --test-reporter=junit` output from a
+  // file whose top-level test() is declared BEFORE its describe() block, so the
+  // document mixes a loose <testcase> with a <testsuite> and its document order is
+  // loose-a, wrapped-a, loose-b. The implementation appends loose cases after the
+  // explicit suites, so converting it must REORDER — which is what makes this
+  // fixture discriminating rather than incidentally agreeing with document order.
+  // Only the capture directory was normalized out of the file= attributes and the
+  // hostname replaced, matching the other node-test fixtures.
+  it('appends loose testcases after the explicit suites', async () => {
+    const input = loadFixture('node-test-hybrid.xml');
+    const hdf = JSON.parse(await convertJunitToHdf(input)) as HDFResults;
+    assertRequirementCount(
+      hdf,
+      countXmlElements(input, 'testcase'),
+      'node-test-hybrid.xml: one requirement per <testcase>',
+    );
+    expect(hdf.baselines[0]!.requirements.map((r) => r.id)).toEqual([
+      'test.wrapped-a',
+      'test.loose-a',
+      'test.loose-b',
+    ]);
+  });
+
+  // A bare <skipped/> carries no message, which is the case that separates testing
+  // the element's presence from testing its content.
+  it('treats a message-less <skipped/> as a skip', async () => {
+    const input = `<testsuites>
+  <testsuite name="s">
+    <testcase name="bare" classname="pkg"><skipped/></testcase>
+  </testsuite>
+</testsuites>`;
+    const hdf = JSON.parse(await convertJunitToHdf(input)) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs).toHaveLength(1);
+    expect(reqs[0]!.results[0]!.status).toBe(ResultStatus.NotReviewed);
+  });
+
+  // node-test-nested.xml is real `node --test --test-reporter=junit` output whose
+  // describe() blocks nest three suites deep, with testcases at every level.
+  it('converts testcases at every nesting depth', async () => {
+    const hdf = await parseHdf('node-test-nested.xml');
+    const reqs = hdf.baselines[0]!.requirements;
+
+    expect(reqs.map((r) => r.title)).toEqual([
+      'outer direct case',
+      'inner passing case',
+      'inner failing case',
+      'deep case',
+    ]);
+
+    // The nested failing case keeps its failed status, so depth does not flatten
+    // a red run into a green document.
+    const byTitle = new Map(reqs.map((r) => [r.title, r]));
+    expect(byTitle.get('inner failing case')!.results[0]!.status).toBe(ResultStatus.Failed);
+    expect(byTitle.get('deep case')!.results[0]!.status).toBe(ResultStatus.Passed);
+  });
+
+  it('dedupes host components across nesting depths', async () => {
+    const hdf = await parseHdf('node-test-nested.xml');
+    const hosts = (hdf.components ?? []).filter((c) => c.type === 'host').map((c) => c.name);
+    expect(hosts).toEqual(['test-runner-01']);
   });
 });

@@ -1,0 +1,137 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: outer direct case in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: outer direct case",
+              "runTime": 0.000232,
+              "startTime": "2026-09-11T12:38:34.02355Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.outer direct case",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "outer direct case",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: inner passing case in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: inner passing case",
+              "runTime": 0.000063,
+              "startTime": "2026-09-11T12:38:34.02355Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.inner passing case",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "inner passing case",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: inner failing case in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: inner failing case",
+              "message": "testCodeFailure: Expected values to be strictly equal:1 !== 2\nError [ERR_TEST_FAILURE]: Expected values to be strictly equal:\n\n1 !== 2\n\n    at async Promise.all (index 0) {\n  code: 'ERR_TEST_FAILURE',\n  failureType: 'testCodeFailure',\n  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  1 !== 2\n  \n      at TestContext.\u003canonymous\u003e (nested.test.js:9:47)\n      at Test.runInAsyncScope (node:async_hooks:214:14)\n      at Test.run (node:internal/test_runner/test:1047:25)\n      at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)\n      at Test.postRun (node:internal/test_runner/test:1173:19)\n      at Test.run (node:internal/test_runner/test:1101:12)\n      at async Promise.all (index 0)\n      at async Suite.run (node:internal/test_runner/test:1442:7)\n      at async Suite.processPendingSubtests (node:internal/test_runner/test:744:7) {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: 1,\n    expected: 2,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n}",
+              "runTime": 0.000392,
+              "startTime": "2026-09-11T12:38:34.02355Z",
+              "status": "failed"
+            }
+          ],
+          "id": "test.inner failing case",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "inner failing case",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: deep case in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: deep case",
+              "runTime": 0.000092,
+              "startTime": "2026-09-11T12:38:34.02355Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.deep case",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "deep case",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "2233e5e5bf0d83bdd9bc49d4fdbec027531cff08fbfa907765c7b0d886652fbd"
+      },
+      "name": "JUnit Test Results"
+    }
+  ],
+  "components": [
+    {
+      "name": "JUnit Test Results",
+      "type": "application"
+    },
+    {
+      "name": "test-runner-01",
+      "type": "host",
+      "hostname": "test-runner-01"
+    }
+  ],
+  "generator": {
+    "name": "junit-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-11T12:38:34.02355Z",
+  "tool": {
+    "name": "JUnit XML"
+  }
+}

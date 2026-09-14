@@ -9,11 +9,10 @@ import (
 )
 
 // ConvertComponentDefinitionToHDF converts an OSCAL Component Definition document
-// to an HDFBaseline. Each component's implemented-requirements become
-// BaselineRequirements. If the document contains multiple components, only the
-// first component is used for the baseline (components are grouped by name).
+// to an HDFBaseline. Every component's implemented-requirements become
+// BaselineRequirements, in document order.
 func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hdf.HDFBaseline, error) {
-	compDef, comp, err := parseComponentDefinition(input)
+	compDef, err := parseComponentDefinition(input)
 	if err != nil {
 		return nil, err
 	}
@@ -22,13 +21,15 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 	meta := ExtractMetadata(compDef.Metadata)
 
 	var requirements []hdf.BaselineRequirement
-	for _, ir := range componentImplementedRequirements(comp) {
-		requirements = append(requirements, implementedRequirementToBaselineRequirement(ir))
+	for _, cr := range definitionImplementedRequirements(compDef) {
+		requirements = append(requirements, implementedRequirementToBaselineRequirement(cr.Requirement, cr.Component))
 	}
 
-	name := comp.Title
-	if name == "" {
-		name = compDef.Metadata.Title
+	// A single-component definition is named for its component; a multi-component
+	// one for the definition itself.
+	name := compDef.Metadata.Title
+	if len(compDef.Components) == 1 && compDef.Components[0].Title != "" {
+		name = compDef.Components[0].Title
 	}
 	baselineName := ToKebabCase(name, "oscal-component-definition")
 	status := "loaded"
@@ -49,54 +50,76 @@ func ConvertComponentDefinitionToHDF(input []byte, converterVersion string) (*hd
 	return baseline, nil
 }
 
-// parseComponentDefinition applies the converter's guards and selects the
-// component the baseline is built from: the first one. ConvertComponentDefinitionToHDF
-// and ExpectedComponentDefinitionRequirementCount share it so they accept and
-// reject exactly the same inputs.
-func parseComponentDefinition(input []byte) (*ComponentDefinition, *Component, error) {
+// parseComponentDefinition applies the converter's guards.
+// ConvertComponentDefinitionToHDF and ExpectedComponentDefinitionRequirementCount
+// share it so they accept and reject exactly the same inputs.
+func parseComponentDefinition(input []byte) (*ComponentDefinition, error) {
 	doc, err := ParseOscalDocument(input, "component-definition", "oscal-component-definition")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	compDef := doc.ComponentDefinition
 	if len(compDef.Components) == 0 {
-		return nil, nil, fmt.Errorf("oscal-component-definition: document contains no components")
+		return nil, fmt.Errorf("oscal-component-definition: document contains no components")
 	}
-	return compDef, &compDef.Components[0], nil
+	return compDef, nil
 }
 
-// componentImplementedRequirements lists a component's implemented
-// requirements across its control implementations, within the per-implementation
-// cap. It is the single definition of the input-to-requirement relation: the
-// conversion builds requirements from it and
+// definitionImplementedRequirements lists every component's implemented
+// requirements across its control implementations, in document order and within
+// the per-implementation cap. It is the single definition of the
+// input-to-requirement relation: the conversion builds requirements from it and
 // ExpectedComponentDefinitionRequirementCount counts it.
-func componentImplementedRequirements(comp *Component) []*ImplementedRequirement {
-	var out []*ImplementedRequirement
-	for i := range comp.ControlImplementations {
-		limitedIR := shared.LimitSliceWithWarning(comp.ControlImplementations[i].ImplementedRequirements, 0, "implemented requirement")
-		for j := range limitedIR {
-			out = append(out, &limitedIR[j])
+// componentRequirement pairs an implemented requirement with the component that
+// declares it. Two components may implement the same control, so the component
+// is what keeps the resulting requirement IDs distinct.
+type componentRequirement struct {
+	Component   *Component
+	Requirement *ImplementedRequirement
+}
+
+func definitionImplementedRequirements(compDef *ComponentDefinition) []componentRequirement {
+	var out []componentRequirement
+	for c := range compDef.Components {
+		comp := &compDef.Components[c]
+		for i := range comp.ControlImplementations {
+			limitedIR := shared.LimitSliceWithWarning(comp.ControlImplementations[i].ImplementedRequirements, 0, "implemented requirement")
+			for j := range limitedIR {
+				out = append(out, componentRequirement{Component: comp, Requirement: &limitedIR[j]})
+			}
 		}
 	}
 	return out
 }
 
+// requirementID qualifies the control with the component's UUID. OSCAL requires
+// both a uuid and a title on every component but only guarantees the uuid is
+// unique, so a title would still collide when one product appears twice — which
+// is the duplicate-ID defect this qualification exists to prevent. The title
+// rides in a tag instead, so a reader still sees which component this is.
+func requirementID(comp *Component, nistTag string) string {
+	if comp == nil || comp.UUID == "" {
+		return nistTag
+	}
+	return comp.UUID + "/" + nistTag
+}
+
 // ExpectedComponentDefinitionRequirementCount states how many requirements a
-// component definition must convert to: one per implemented requirement of the
-// first component only, which is the component the conversion reads. Computed
-// from the input alone, through the same selection the conversion uses.
+// component definition must convert to: one per implemented requirement across
+// every component. Computed from the input alone, through the same walk the
+// conversion uses.
 func ExpectedComponentDefinitionRequirementCount(input []byte) (int, string, error) {
-	const unit = "OSCAL implemented-requirements of the first component"
-	_, comp, err := parseComponentDefinition(input)
+	const unit = "OSCAL implemented-requirements across all components"
+	compDef, err := parseComponentDefinition(input)
 	if err != nil {
 		return 0, unit, err
 	}
-	return len(componentImplementedRequirements(comp)), unit, nil
+	return len(definitionImplementedRequirements(compDef)), unit, nil
 }
 
 // implementedRequirementToBaselineRequirement converts a single OSCAL
 // ImplementedRequirement to an HDF BaselineRequirement.
-func implementedRequirementToBaselineRequirement(ir *ImplementedRequirement) hdf.BaselineRequirement {
+func implementedRequirementToBaselineRequirement(ir *ImplementedRequirement, comp *Component) hdf.BaselineRequirement {
 	nistTag := ControlIDToNistTag(ir.ControlID)
 
 	var descriptions []hdf.Description
@@ -133,9 +156,19 @@ func implementedRequirementToBaselineRequirement(ir *ImplementedRequirement) hdf
 	tags := map[string]interface{}{
 		"nist": []string{nistTag},
 	}
+	// The ID is component-qualified, so carry the component here too: the tag is
+	// what a report shows, and it saves a consumer parsing the ID.
+	if comp != nil {
+		if comp.Title != "" {
+			tags["component"] = comp.Title
+		}
+		if comp.UUID != "" {
+			tags["componentUuid"] = comp.UUID
+		}
+	}
 
 	return hdf.BaselineRequirement{
-		ID:           nistTag,
+		ID:           requirementID(comp, nistTag),
 		Title:        hdfutil.Ptr(nistTag),
 		Impact:       0.5,
 		Descriptions: descriptions,

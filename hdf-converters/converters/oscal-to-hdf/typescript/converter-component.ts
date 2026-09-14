@@ -5,10 +5,10 @@
  */
 
 import { parseJSON } from '@mitre/hdf-utilities';
-import { inputIntegrity, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { inputIntegrity, validateInputSize, limitArrayWithWarning} from '../../../shared/typescript/converterutil.js';
 import type { HDFBaseline, BaselineRequirement } from '@mitre/hdf-schema';
 import type { Description } from '@mitre/hdf-schema';
-import type { Oscal, ImplementedRequirementElement, ComponentDefinitionComponent, ComponentDefinition } from './types.js';
+import type { Oscal, ImplementedRequirementElement, ComponentDefinition, ComponentDefinitionComponent } from './types.js';
 import { controlIdToNistTag, extractMetadata, toKebabCase } from './shared.js';
 
 /**
@@ -40,18 +40,24 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
   const integrity = await inputIntegrity(input);
   const meta = extractMetadata(compDef.metadata);
 
-  // Use the first component to build the baseline
-  const comp = compDef.components[0]!;
-
+  // Every component's implemented-requirements convert, in document order.
   const requirements: BaselineRequirement[] = [];
-  for (const ci of comp['control-implementations'] ?? []) {
-    for (const ir of ci['implemented-requirements'] ?? []) {
-      requirements.push(implementedRequirementToBaselineRequirement(ir));
+  for (const comp of compDef.components) {
+    for (const ci of comp['control-implementations'] ?? []) {
+      // Note the argument order differs from the Go twin, which takes the cap
+      // before the label; passing Go's order here silently caps at zero.
+      const limited = limitArrayWithWarning(
+        ci['implemented-requirements'] ?? [],
+        'implemented requirement',
+      );
+      for (const ir of limited) {
+        requirements.push(implementedRequirementToBaselineRequirement(ir, comp));
+      }
     }
   }
 
   const baseline: HDFBaseline = {
-    name: componentBaselineName(comp, compDef),
+    name: definitionBaselineName(compDef),
     title: meta.title,
     version: meta.version,
     status: 'loaded',
@@ -67,8 +73,19 @@ export async function convertOscalComponentToHdf(input: string): Promise<string>
 }
 
 /** Converts a single ImplementedRequirement to a BaselineRequirement. */
+/**
+ * Qualifies the control with the component's uuid. OSCAL requires both a uuid
+ * and a title on every component but only guarantees the uuid is unique, so a
+ * title would still collide when one product appears twice — the duplicate-ID
+ * defect this qualification prevents. The title rides in a tag instead.
+ */
+function requirementId(comp: ComponentDefinitionComponent | undefined, nistTag: string): string {
+  return comp?.uuid ? `${comp.uuid}/${nistTag}` : nistTag;
+}
+
 function implementedRequirementToBaselineRequirement(
   ir: ImplementedRequirementElement,
+  comp?: ComponentDefinitionComponent,
 ): BaselineRequirement {
   const nistTag = controlIdToNistTag(ir['control-id']);
 
@@ -99,9 +116,13 @@ function implementedRequirementToBaselineRequirement(
   const tags: Record<string, unknown> = {
     nist: [nistTag],
   };
+  // The id is component-qualified, so carry the component here too: the tag is
+  // what a report shows, and it saves a consumer parsing the id.
+  if (comp?.title) tags.component = comp.title;
+  if (comp?.uuid) tags.componentUuid = comp.uuid;
 
   return {
-    id: nistTag,
+    id: requirementId(comp, nistTag),
     title: nistTag,
     impact: 0.5,
     descriptions,
@@ -109,11 +130,14 @@ function implementedRequirementToBaselineRequirement(
   };
 }
 
-/** Derives a baseline name from the component or component-definition metadata. */
-function componentBaselineName(
-  comp: ComponentDefinitionComponent,
-  compDef: ComponentDefinition,
-): string {
-  const name = comp.title || compDef.metadata.title;
+/**
+ * Derives the baseline name: a single-component definition is named for its
+ * component, a multi-component one for the definition itself.
+ */
+function definitionBaselineName(compDef: ComponentDefinition): string {
+  let name = compDef.metadata.title;
+  if (compDef.components?.length === 1 && compDef.components[0]!.title) {
+    name = compDef.components[0]!.title;
+  }
   return toKebabCase(name, 'oscal-component-definition');
 }

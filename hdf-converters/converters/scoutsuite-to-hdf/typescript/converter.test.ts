@@ -400,3 +400,68 @@ describe('ScoutSuite to HDF Converter', () => {
     });
   });
 });
+
+// sharedRuleKeyReport is a constructed ScoutSuite report, NOT committed sample
+// output: stock ScoutSuite cannot emit this shape, because a rule key names one
+// rule file whose `path` binds it to a single service. It exercises the
+// converter's own defence against the collision rather than claiming to be real
+// tool output. Mirrors the Go test's fixture.
+const sharedRuleKeyReport = JSON.stringify({
+  provider_code: 'aws',
+  account_id: '123456789012',
+  last_run: { time: '2024-11-15 10:30:00-0500', ruleset_name: 'custom' },
+  services: {
+    ec2: {
+      findings: {
+        'shared-rule': {
+          description: 'Shared rule as seen by EC2',
+          level: 'danger',
+          items: ['ec2.regions.us-east-1.one'],
+          flagged_items: 1,
+        },
+      },
+    },
+    iam: {
+      findings: {
+        'shared-rule': {
+          description: 'Shared rule as seen by IAM',
+          level: 'warning',
+          items: ['iam.users.two', 'iam.users.three'],
+          flagged_items: 2,
+        },
+      },
+    },
+  },
+});
+
+describe('scoutsuite shared rule key across services', () => {
+  it('emits one requirement per (service, rule) with each service own finding', async () => {
+    const hdf = JSON.parse(await convertScoutsuiteToHdf(sharedRuleKeyReport));
+    const reqs = hdf.baselines[0].requirements;
+    expect(reqs).toHaveLength(2);
+
+    // Services are walked in sorted order, so ec2 precedes iam.
+    expect(reqs.map((r: { id: string }) => r.id)).toEqual(['ec2:shared-rule', 'iam:shared-rule']);
+    expect(reqs[0].title).toBe('Shared rule as seen by EC2');
+    expect(reqs[1].title).toBe('Shared rule as seen by IAM');
+    // danger outranks warning, so the per-service level survives.
+    expect(reqs[0].impact).toBeGreaterThan(reqs[1].impact);
+  });
+
+  it('keeps requirement ids unique', async () => {
+    for (const input of [sharedRuleKeyReport, loadFixture('input/scoutsuite_sample.js')]) {
+      const hdf = JSON.parse(await convertScoutsuiteToHdf(input));
+      const ids = hdf.baselines[0].requirements.map((r: { id: string }) => r.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  // A key unique to one service keeps the bare rule key as its id: qualifying
+  // only on collision is what leaves every real ScoutSuite report unchanged.
+  it('does not service-qualify unshared rule keys', async () => {
+    const hdf = JSON.parse(await convertScoutsuiteToHdf(loadFixture('input/scoutsuite_sample.js')));
+    for (const req of hdf.baselines[0].requirements) {
+      expect(req.id).not.toContain(':');
+    }
+  });
+});

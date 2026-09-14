@@ -522,3 +522,76 @@ func TestConvertScoutsuiteToHDF_VerificationMethod(t *testing.T) {
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
 }
+
+// --- Shared rule key across services ---
+
+// sharedRuleKeyReport is a constructed ScoutSuite report, NOT committed sample
+// output: stock ScoutSuite cannot emit this shape, because a rule key names one
+// rule file whose `path` binds it to a single service. It exercises the
+// converter's own defence against the collision rather than claiming to be real
+// tool output, so the real-data path stays covered by scoutsuite_sample.js.
+const sharedRuleKeyReport = `{
+  "provider_code": "aws",
+  "account_id": "123456789012",
+  "last_run": {"time": "2024-11-15 10:30:00-0500", "ruleset_name": "custom"},
+  "services": {
+    "ec2": {"findings": {"shared-rule": {
+      "description": "Shared rule as seen by EC2",
+      "level": "danger",
+      "items": ["ec2.regions.us-east-1.one"],
+      "flagged_items": 1
+    }}},
+    "iam": {"findings": {"shared-rule": {
+      "description": "Shared rule as seen by IAM",
+      "level": "warning",
+      "items": ["iam.users.two", "iam.users.three"],
+      "flagged_items": 2
+    }}}
+  }
+}`
+
+func TestSharedRuleKeyAcrossServices(t *testing.T) {
+	result, err := ConvertScoutsuiteToHDF([]byte(sharedRuleKeyReport), testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 2, "one requirement per (service, rule) pair — neither finding is overwritten")
+
+	// Services are walked in sorted order, so ec2 precedes iam.
+	assert.Equal(t, []string{"ec2:shared-rule", "iam:shared-rule"}, []string{reqs[0].ID, reqs[1].ID})
+
+	// Each requirement carries ITS OWN service's finding, not the last one's.
+	require.NotNil(t, reqs[0].Title)
+	require.NotNil(t, reqs[1].Title)
+	assert.Equal(t, "Shared rule as seen by EC2", *reqs[0].Title)
+	assert.Equal(t, "Shared rule as seen by IAM", *reqs[1].Title)
+	assert.Greater(t, reqs[0].Impact, reqs[1].Impact, "danger outranks warning, so the per-service level survives")
+}
+
+func TestRequirementIDsAreUnique(t *testing.T) {
+	for _, tc := range []struct{ name, input string }{
+		{"shared rule key", sharedRuleKeyReport},
+		{"real sample", string(loadFixture(t, "input/scoutsuite_sample.js"))},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := ConvertScoutsuiteToHDF([]byte(tc.input), testConverterVersion)
+			require.NoError(t, err)
+			seen := map[string]bool{}
+			for _, req := range result.Baselines[0].Requirements {
+				assert.False(t, seen[req.ID], "duplicate requirement ID %q", req.ID)
+				seen[req.ID] = true
+			}
+		})
+	}
+}
+
+// A key unique to one service keeps the bare rule key as its ID: qualifying only
+// on collision is what leaves every real ScoutSuite report's IDs unchanged.
+func TestUnsharedRuleKeysAreNotServiceQualified(t *testing.T) {
+	result, err := ConvertScoutsuiteToHDF(loadFixture(t, "input/scoutsuite_sample.js"), testConverterVersion)
+	require.NoError(t, err)
+	for _, req := range result.Baselines[0].Requirements {
+		assert.NotContains(t, req.ID, ":", "unshared key must not be service-qualified")
+	}
+}

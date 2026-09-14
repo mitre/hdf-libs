@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="outer suite" time="0.001556" disabled="0" errors="0" tests="2" failures="1" skipped="0" hostname="test-runner-01">
+		<testcase name="outer direct case" time="0.000232" classname="test"/>
+		<testsuite name="inner suite" time="0.000719" disabled="0" errors="0" tests="3" failures="1" skipped="0" hostname="test-runner-01">
+			<testcase name="inner passing case" time="0.000063" classname="test"/>
+			<testcase name="inner failing case" time="0.000392" classname="test" failure="Expected values to be strictly equal:1 !== 2">
+				<failure type="testCodeFailure" message="Expected values to be strictly equal:1 !== 2">
+Error [ERR_TEST_FAILURE]: Expected values to be strictly equal:
+
+1 !== 2
+
+    at async Promise.all (index 0) {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.&lt;anonymous> (nested.test.js:9:47)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1442:7)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+}
+				</failure>
+			</testcase>
+			<testsuite name="deepest suite" time="0.000139" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="test-runner-01">
+				<testcase name="deep case" time="0.000092" classname="test"/>
+			</testsuite>
+		</testsuite>
+	</testsuite>
+	<!-- tests 4 -->
+	<!-- suites 3 -->
+	<!-- pass 3 -->
+	<!-- fail 1 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 34.673792 -->
+</testsuites>

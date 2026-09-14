@@ -15,9 +15,11 @@
           "label": "default"
         }
       ],
-      "id": "AC-2 (3)",
+      "id": "b036a6ac-6cff-4066-92bc-74ddfd9ad6fa/AC-2 (3)",
       "impact": 0.5,
       "tags": {
+        "component": "test component 1",
+        "componentUuid": "b036a6ac-6cff-4066-92bc-74ddfd9ad6fa",
         "nist": [
           "AC-2 (3)"
         ]
@@ -31,9 +33,11 @@
           "label": "default"
         }
       ],
-      "id": "AC-2 (3)",
+      "id": "b036a6ac-6cff-4066-92bc-74ddfd9ad6fa/AC-2 (3)",
       "impact": 0.5,
       "tags": {
+        "component": "test component 1",
+        "componentUuid": "b036a6ac-6cff-4066-92bc-74ddfd9ad6fa",
         "nist": [
           "AC-2 (3)"
         ]
