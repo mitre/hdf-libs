@@ -290,15 +290,22 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 	return subjects
 }
 
+// noIdentifiableControlsRemark accompanies the include-all selection of a result
+// whose baseline names no control, so the selection is not read as a claim.
+const noIdentifiableControlsRemark = "No controls were identifiable in the assessed input, so none is listed individually. OSCAL requires a control selection; include-all is emitted to satisfy it and does not assert that any control was assessed."
+
 // reviewedControls builds the OSCAL reviewed-controls object from the assessed
-// control IDs. OSCAL requires reviewed-controls on every result; when a baseline
-// carries no identifiable controls, an empty control-selection still satisfies
-// the schema (control-selection has no required members).
+// control IDs. OSCAL requires reviewed-controls on every result, and from 1.2.0
+// every control-selection must carry include-all or include-controls, so a
+// baseline with no identifiable controls (a clean scan) selects include-all with
+// a remark stating that no control was assessed. 1.1.2 accepts the same shape.
 func reviewedControls(includeControls []oscal.SelectControl) *oscal.ReviewedControls {
+	selection := oscal.ControlSelection{IncludeControls: includeControls}
+	if len(includeControls) == 0 {
+		selection = oscal.ControlSelection{IncludeAll: &oscal.IncludeAll{}, Remarks: noIdentifiableControlsRemark}
+	}
 	return &oscal.ReviewedControls{
-		ControlSelections: []oscal.ControlSelection{
-			{IncludeControls: includeControls},
-		},
+		ControlSelections: []oscal.ControlSelection{selection},
 	}
 }
 
