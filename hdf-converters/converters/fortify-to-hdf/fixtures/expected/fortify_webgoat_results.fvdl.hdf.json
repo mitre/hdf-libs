@@ -286,7 +286,7 @@
       ],
       "resultsChecksum": {
         "algorithm": "sha256",
-        "value": "a3e729d49d06c90cf206a4d478b5ec06b9b2c520aac39cecdea4cbe0416f2f78"
+        "value": "87da5de5aca769e4207aa4048b7a608cbafc561b8584f59d204ca1485ec1df04"
       },
       "name": "Fortify Scan",
       "status": "loaded",
