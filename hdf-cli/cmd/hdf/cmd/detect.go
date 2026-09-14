@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -28,6 +29,22 @@ func requireDocumentType(data []byte, allowed []string, cmdName string) (string,
 		}
 	}
 
+	// The modern detector does not recognize a legacy HDF v2 (InSpec exec-json)
+	// document, nor arbitrary non-HDF JSON — both yield "". Turn that into an
+	// actionable message rather than the opaque "a  document".
+	if actual == "" {
+		if looksLikeLegacyHDFv2(data) {
+			return actual, fmt.Errorf(
+				"%s requires %s, but this is a legacy HDF v2 (InSpec exec-json) document — convert it to the current schema first:\n  hdf convert <file> --to hdf@3",
+				cmdName, formatAllowed(allowed),
+			)
+		}
+		return actual, fmt.Errorf(
+			"%s requires %s, but this input is not a recognized HDF document",
+			cmdName, formatAllowed(allowed),
+		)
+	}
+
 	suggestion := suggestCommand(actual)
 	hint := ""
 	if suggestion != "" {
@@ -38,6 +55,20 @@ func requireDocumentType(data []byte, allowed []string, cmdName string) (string,
 		"%s requires %s, but this is %s%s",
 		cmdName, formatAllowed(allowed), articleFor(actual), hint,
 	)
+}
+
+// looksLikeLegacyHDFv2 reports whether the bytes are a legacy Heimdall / InSpec
+// exec-json document (the v2 profiles+platform shape), which the modern schema
+// detector does not recognize. Used only to turn an otherwise-opaque rejection
+// into an actionable "convert to v3 first" message.
+func looksLikeLegacyHDFv2(data []byte) bool {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return false
+	}
+	_, hasProfiles := doc["profiles"]
+	_, hasPlatform := doc["platform"]
+	return hasProfiles && hasPlatform
 }
 
 // formatAllowed joins type names with "or" for error messages.

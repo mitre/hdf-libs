@@ -17,6 +17,7 @@ import {
   formatTimestamp,
   computeEffectiveStatus as canonicalEffectiveStatus,
   governingStatusOverrideIndex,
+  canonicalJson,
 } from '@mitre/hdf-utilities';
 import { deriveControlTypeFromTags, parseSeverity, validateInputSize } from '../../../shared/typescript/converterutil.js';
 
@@ -32,7 +33,10 @@ export interface LegacyResult {
   backtrace?: unknown;
   resource_class?: string;
   resource_params?: string;
-  resource_id?: string;
+  // inspecjs types resource_id as string|null, but some resources (e.g.
+  // aws_iam_password_policy) emit their identity as a settings hash. Accept any
+  // JSON value; a non-string is normalized to canonical JSON on conversion.
+  resource_id?: unknown;
   skip_message?: string;
   [key: string]: unknown;
 }
@@ -115,6 +119,9 @@ export interface LegacyHDFResults {
   statistics: unknown;
   generator?: unknown;
   timestamp?: string;
+  // Carries v3-only data with no native v2 slot for lossless round-tripping
+  // (currently the full components[]); absent on genuine InSpec exec-json input.
+  passthrough?: {hdf_components?: unknown[]};
   [key: string]: unknown;
 }
 
@@ -357,7 +364,14 @@ function convertResult(v1Result: LegacyResult): V2Result {
   if (v1Result.exception !== undefined) v2Result.exception = v1Result.exception;
   if (v1Result.backtrace !== undefined) v2Result.backtrace = v1Result.backtrace;
   if (v1Result.resource_class !== undefined) v2Result.resource = v1Result.resource_class;
-  if (v1Result.resource_id !== undefined) v2Result.resourceId = v1Result.resource_id;
+  // A string resource_id passes through; an out-of-spec object (or any non-string)
+  // is normalized to canonical JSON — byte-identical to the Go peer's CanonicalJSON.
+  if (v1Result.resource_id !== undefined && v1Result.resource_id !== null) {
+    v2Result.resourceId =
+      typeof v1Result.resource_id === 'string'
+        ? v1Result.resource_id
+        : canonicalJson(v1Result.resource_id);
+  }
 
   return v2Result;
 }
@@ -433,11 +447,18 @@ function convertControl(v1Control: LegacyControl): V2Requirement {
     impact: v1Control.impact,
   };
 
-  // Copy simple fields. `desc` and `waiver_data` are intentionally dropped:
-  // neither is a valid v2 Requirement field (desc → descriptions; waivers are
-  // expressed via amendments/overrides in v2), matching the Go converter.
+  // Copy simple fields. `waiver_data` is intentionally dropped (expressed via
+  // amendments/overrides in v2, matching the Go converter); `desc` feeds the
+  // synthesized 'default' description below.
   if (v1Control.title !== undefined) v2Req.title = v1Control.title;
-  if (v1Control.descriptions !== undefined) v2Req.descriptions = v1Control.descriptions;
+  // descriptions is required in v3 with minItems:1 and must contain a 'default',
+  // so both null and [] are invalid. Guarantee a 'default', synthesized from the
+  // control desc when absent — symmetric with the downgrade's default→desc map.
+  const descriptions = [...(v1Control.descriptions ?? [])];
+  if (!descriptions.some((d) => d.label === 'default')) {
+    descriptions.unshift({label: 'default', data: v1Control.desc ?? ''});
+  }
+  v2Req.descriptions = descriptions;
   if (v1Control.tags !== undefined) v2Req.tags = v1Control.tags;
   if (v1Control.code !== undefined) v2Req.code = v1Control.code;
   if (Array.isArray(v1Control.refs)) {
@@ -948,6 +969,16 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
     // Mirror the Go V1Statistics: only the duration field survives to v1.
     statistics: projectV1Statistics(v2Data.statistics),
   };
+
+  // Carry the full components[] through a passthrough so a v3→v2→v3 round trip is
+  // lossless — the platform mapping above keeps only the first component's name/OS.
+  if (Array.isArray(v2Data.components) && v2Data.components.length > 0) {
+    hdf.passthrough = {hdf_components: v2Data.components};
+    warnings.push(
+      `components[]: all ${v2Data.components.length} component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform`,
+    );
+  }
+
   return {hdf, warnings};
 }
 
@@ -1020,6 +1051,13 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
     v2.components = [component];
   }
 
+  // Restore a full components[] carried through the v2 passthrough (the v3→v2→v3
+  // round trip); genuine InSpec input has no passthrough and keeps the
+  // platform-derived single component above.
+  if (Array.isArray(v1Data.passthrough?.hdf_components) && v1Data.passthrough.hdf_components.length > 0) {
+    v2.components = v1Data.passthrough.hdf_components as HDFV2Results['components'];
+  }
+
   // generator identifies the converter that produced this file; preserve an
   // input-provided one, else stamp this converter.
   v2.generator = v1Data.generator ?? { name: 'legacyhdf-to-hdf', version: converterVersion };
@@ -1031,8 +1069,11 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
     v2.timestamp = timestamp;
   }
 
-  // Preserve any extension fields not part of core schema
-  const knownV1Fields = new Set(['version', 'platform', 'profiles', 'statistics', 'generator', 'timestamp']);
+  // Preserve any extension fields not part of core schema. `passthrough` is a
+  // consumed carrier (its hdf_components restored above), NOT an unknown field —
+  // it must not leak into extensions, or a v3→v2→v3 round trip would diverge from
+  // the Go peer, which drops the carrier.
+  const knownV1Fields = new Set(['version', 'platform', 'profiles', 'statistics', 'generator', 'timestamp', 'passthrough']);
   const extensionFields: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(v1Data)) {

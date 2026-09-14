@@ -106,10 +106,13 @@ func upgradeV2ToV3(input []byte) ([]byte, []string, error) {
 //
 // Structured vulnerability fields (cwe, cvss severity) are mirrored into tags so
 // they survive and display in Heimdall; refs are carried into the v2 refs slot.
-// Lossy fields with no v2 carrier: dataSource, generator (except version), labels,
-// root amendments, checksum metadata, components beyond the first, evidence,
-// poam/operationalRequirement state, result resource_params, and the remaining
-// structured vuln data (cvss score/vector, epss, kev, affectedPackages).
+// The full components[] round-trips via the passthrough.hdf_components carrier
+// (Heimdall still renders only the first, mapped to platform).
+//
+// Lossy fields with no v2 carrier: dataSource, generator (except version), root
+// amendments, checksum metadata, evidence, poam/operationalRequirement state,
+// result resource_params, and the remaining structured vuln data (cvss
+// score/vector, epss, kev, affectedPackages).
 func downgradeV3ToV2(input []byte) ([]byte, []string, error) {
 	var modern hdf.HDFResults
 	if err := json.Unmarshal(input, &modern); err != nil {
@@ -154,6 +157,16 @@ func convertV3ToV2(v2 *hdf.HDFResults) (*legacyhdf.LegacyHDFResults, []string) {
 
 	// Map baselines → profiles
 	var warnings []string
+
+	// Carry the full components[] through a passthrough so a v3→v2→v3 round trip is
+	// lossless — the platform mapping above keeps only the first component's name/OS.
+	if len(v2.Components) > 0 {
+		v1.Passthrough = &legacyhdf.LegacyPassthrough{HDFComponents: v2.Components}
+		warnings = append(warnings, fmt.Sprintf(
+			"components[]: all %d component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform",
+			len(v2.Components)))
+	}
+
 	v1.Profiles = make([]legacyhdf.LegacyProfile, len(v2.Baselines))
 	for i, baseline := range v2.Baselines {
 		p, w := convertBaselineToV2Profile(baseline)
@@ -473,7 +486,8 @@ func convertResultToV2(r hdf.RequirementResult) legacyhdf.LegacyResult {
 		v1r.ResourceClass = r.Resource
 	}
 	if r.ResourceID != nil {
-		v1r.ResourceID = r.ResourceID
+		rid := legacyhdf.LegacyResourceID(*r.ResourceID)
+		v1r.ResourceID = &rid
 	}
 
 	return v1r

@@ -1557,6 +1557,57 @@ describe('three-layer-overlay overlay output', () => {
 // (hdf-converters/shared/go/hdfversion/hdf_version_test.go). Reads the SAME fixture
 // and asserts the same flatten, so the amendment-flattening logic cannot drift
 // between the two languages even though the CLI transform is Go-only.
+describe('object-valued resource_id (Go parity)', () => {
+  // Canonical form of { minimum_password_length: 12, require_symbols: true } —
+  // identical to the Go peer's canonicalObjectResourceID.
+  const canonicalObjectResourceId = '{"minimum_password_length":12,"require_symbols":true}';
+
+  it('normalizes an object resource_id to canonical JSON while keeping strings as-is', () => {
+    const v1 = {
+      version: '7.0.107',
+      platform: {name: 'aws', release: '1.0.0'},
+      profiles: [{
+        name: 'mixed',
+        controls: [
+          {id: 'C-string', impact: 0.5, results: [{status: 'passed', code_desc: 'ok', start_time: '2026-09-11T00:00:00Z', resource_id: '/etc/passwd'}]},
+          {id: 'C-object', impact: 0.5, results: [{status: 'passed', code_desc: 'ok', start_time: '2026-09-11T00:00:00Z', resource_id: {minimum_password_length: 12, require_symbols: true}}]},
+        ],
+        groups: [], supports: [], attributes: [],
+      }],
+      statistics: {},
+    } as unknown as LegacyHDFResults;
+
+    const v2 = convertLegacyHdf(v1);
+    const byId = Object.fromEntries(v2.baselines[0].requirements!.map((r) => [r.id, r]));
+    expect(v2.baselines[0].requirements).toHaveLength(2); // zero results dropped
+    expect(byId['C-string']!.results[0]!.resourceId).toBe('/etc/passwd');
+    expect(byId['C-object']!.results[0]!.resourceId).toBe(canonicalObjectResourceId);
+  });
+});
+
+describe('descriptions default synthesis (Go parity)', () => {
+  it('synthesizes the required default description from desc when the source has none', () => {
+    const v1 = {
+      version: '1.0.0',
+      platform: {name: 'x'},
+      profiles: [{
+        name: 'p',
+        controls: [{id: 'C-1', impact: 0.5, desc: 'control discussion text', tags: {}, results: [{status: 'passed', code_desc: 'ok', start_time: '2026-09-11T00:00:00Z'}]}],
+        groups: [], supports: [], attributes: [],
+      }],
+      statistics: {},
+    } as unknown as LegacyHDFResults;
+
+    const v2 = convertLegacyHdf(v1);
+    const descs = v2.baselines[0].requirements![0].descriptions!;
+    const def = descs.find((d) => d.label === 'default');
+    expect(def).toBeDefined();
+    expect(def!.data).toBe('control discussion text');
+    // A SAF-style control (no descriptions[]) up-pins to schema-valid v3.
+    expectValidResults(v2);
+  });
+});
+
 describe('downgradeToLegacyHdf downgrade (Go parity)', () => {
   const fixture = join(__dirname, '..', '..', '..', 'shared', 'go', 'hdfversion', 'testdata', 'modern_with_amendments.json');
 
@@ -1651,6 +1702,31 @@ describe('downgradeToLegacyHdf downgrade (Go parity)', () => {
     } as unknown as HDFV2Results;
     const {hdf} = downgradeToLegacyHdf(v2);
     expect(hdf.profiles[0]!.controls![0]!.waiver_data?.override_type).toBeUndefined();
+  });
+
+  it('round-trips the full components[] through v3→v2→v3 via passthrough', () => {
+    const v2 = {
+      baselines: [{name: 'b1', requirements: [{
+        id: 'C-1', impact: 0.5,
+        results: [{status: 'passed', codeDesc: 'ok', startTime: '2026-09-11T00:00:00Z'}],
+      }]}],
+      statistics: {},
+      components: [
+        {type: 'host', name: 'web01', osName: 'ubuntu', osVersion: '22.04'},
+        {type: 'containerImage', name: 'nginx', imageId: 'sha256:abc123', labels: {team: 'sec'}, integrity: [{algorithm: 'sha256', value: 'deadbeef'}]},
+      ],
+      generator: {name: 'g', version: '1.0.0'},
+    } as unknown as HDFV2Results;
+
+    const {hdf, warnings} = downgradeToLegacyHdf(v2);
+    expect(hdf.passthrough?.hdf_components).toHaveLength(2);
+    expect(warnings.join('\n')).toContain('components[]');
+
+    const restored = convertLegacyHdf(hdf);
+    expect(restored.components).toEqual(v2.components);
+    // The passthrough carrier is consumed, not leaked into extensions — otherwise
+    // the round trip would diverge from the Go peer, which drops the carrier.
+    expect((restored as {extensions?: {passthrough?: unknown}}).extensions?.passthrough).toBeUndefined();
   });
 
   it('produces a document that validates against the InSpec exec-json schema', () => {
