@@ -135,12 +135,12 @@ func refuseUnverifiedAmendments(amendments []byte) *mcperr.Error {
 // its error through the taxonomy (so the handler never checks a bare error and
 // returns nil in the Go-error slot).
 func applyMerge(results, amendments []byte) ([]byte, *mcperr.Error) {
-	merged, err := amend.MergeAmendments(results, amendments)
+	res, err := amend.MergeAmendments(results, amendments)
 	if err != nil {
 		return nil, mcperr.New(mcperr.SchemaInvalid, "applying the amendments failed: "+err.Error(), nil).
 			WithNextCall("verify the amendments target requirement IDs that exist in the results")
 	}
-	return merged, nil
+	return res.Output, nil
 }
 
 // resolveTyped resolves a source and enforces the expected document type.

@@ -11,6 +11,7 @@ import (
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -543,7 +544,7 @@ func TestConvertResult_AllOptionalFields(t *testing.T) {
 	exception := "Test exception"
 	backtrace := []string{"line1", "line2"}
 	resourceClass := "File"
-	resourceID := "res-123"
+	resourceID := LegacyResourceID("res-123")
 
 	v1 := LegacyResult{
 		Status:        "passed",
@@ -571,7 +572,7 @@ func TestConvertResult_AllOptionalFields(t *testing.T) {
 	require.NotNil(t, v2.Resource)
 	assert.Equal(t, resourceClass, *v2.Resource)
 	require.NotNil(t, v2.ResourceID)
-	assert.Equal(t, resourceID, *v2.ResourceID)
+	assert.Equal(t, string(resourceID), *v2.ResourceID)
 }
 
 func TestConvertDependency_AllFields(t *testing.T) {
@@ -1407,4 +1408,112 @@ func TestConvertV1ToV2_SynthesizesErroredResultFromControlStatus(t *testing.T) {
 	// No synthesis when the results already carry the error.
 	v2 = ConvertLegacyHDF(v1Control(0.5, "error", "error"), "1.0.0")
 	assert.Len(t, v2.Baselines[0].Requirements[0].Results, 1)
+}
+
+// TestUpPinSynthesizesDefaultDescription covers #248(b): the v3 results schema
+// requires descriptions (minItems:1, containing a 'default'), so null AND [] are
+// both invalid. A control with no descriptions[] must up-pin to a synthesized
+// 'default' carrying the control desc — symmetric with the downgrade's
+// default→desc mapping — and the result must pass v3 schema validation.
+func TestUpPinSynthesizesDefaultDescription(t *testing.T) {
+	desc := "control discussion text"
+	codeDesc := "ok"
+	startTime := "2026-09-11T00:00:00Z"
+	v1 := &LegacyHDFResults{
+		Version:  "1.0.0",
+		Platform: LegacyPlatform{Name: "x"},
+		Profiles: []LegacyProfile{{
+			Name: "p",
+			Controls: []LegacyControl{{
+				ID:     "C-1",
+				Impact: 0.5,
+				Desc:   &desc, // desc present, but no descriptions[] (SAF shape)
+				Tags:   map[string]interface{}{},
+				Results: []LegacyResult{{
+					Status:    "passed",
+					CodeDesc:  &codeDesc,
+					StartTime: &startTime,
+				}},
+			}},
+		}},
+	}
+	v2 := ConvertLegacyHDF(v1, "1.0.0")
+	descs := v2.Baselines[0].Requirements[0].Descriptions
+	require.GreaterOrEqual(t, len(descs), 1, "descriptions must be non-empty (schema minItems:1)")
+
+	var def *hdf.Description
+	for i := range descs {
+		if descs[i].Label == "default" {
+			def = &descs[i]
+		}
+	}
+	require.NotNil(t, def, "a 'default' description must be present (schema contains-default)")
+	assert.Equal(t, desc, def.Data, "default synthesized from the control desc")
+
+	b, err := json.Marshal(v2)
+	require.NoError(t, err)
+	assert.NotContains(t, string(b), `"descriptions":null`, "up-pin must never emit descriptions:null")
+	require.True(t, validators.Validate(b, validators.TypeResults).Valid,
+		"a SAF-style v2 control (no descriptions[]) must up-pin to schema-valid v3")
+}
+
+// convertLocalFixture reads a fixtures/input/ document and converts it, failing
+// the test if the parse itself errors (the object-valued resource_id regression).
+func convertLocalFixture(t *testing.T, name string) *hdf.HDFResults {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(getFixturesDir(), "input", name))
+	require.NoError(t, err, "read fixture %s", name)
+	var v1 LegacyHDFResults
+	require.NoError(t, json.Unmarshal(data, &v1),
+		"object-valued resource_id must not fail the whole-document parse")
+	return ConvertLegacyHDF(&v1, "1.0.0")
+}
+
+// canonicalObjectResourceID is the normalized form of the #328 settings hash
+// { "minimum_password_length": 12, "require_symbols": true }: sorted keys,
+// compact — identical in Go and TS.
+const canonicalObjectResourceID = `{"minimum_password_length":12,"require_symbols":true}`
+
+// TestObjectValuedResourceIDParses covers #328: a real cinc-auditor exec-json
+// result whose resource_id is a settings hash (out-of-spec per inspecjs, which
+// types it string|null) must not fail the whole document. The object is
+// normalized to its canonical JSON string (both v2 and v3 schemas type the
+// field as string).
+func TestObjectValuedResourceIDParses(t *testing.T) {
+	v2 := convertLocalFixture(t, "object-resource-id.json")
+	require.Len(t, v2.Baselines, 1)
+	require.Len(t, v2.Baselines[0].Requirements, 1)
+	res := v2.Baselines[0].Requirements[0].Results
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].ResourceID)
+	assert.Equal(t, canonicalObjectResourceID, *res[0].ResourceID,
+		"object resource_id normalized to canonical JSON string")
+}
+
+// TestMixedResourceIDConvertsAllResults asserts a document mixing string- and
+// object-valued resource_id converts every result (zero dropped), string ones
+// unchanged and object ones normalized.
+func TestMixedResourceIDConvertsAllResults(t *testing.T) {
+	v2 := convertLocalFixture(t, "mixed-resource-id.json")
+	require.Len(t, v2.Baselines, 1)
+	require.Len(t, v2.Baselines[0].Requirements, 2, "both controls convert; zero dropped")
+
+	byID := map[string]hdf.EvaluatedRequirement{}
+	for _, r := range v2.Baselines[0].Requirements {
+		byID[r.ID] = r
+	}
+
+	strReq, ok := byID["C-string"]
+	require.True(t, ok)
+	require.Len(t, strReq.Results, 1)
+	require.NotNil(t, strReq.Results[0].ResourceID)
+	assert.Equal(t, "/etc/passwd", *strReq.Results[0].ResourceID,
+		"string resource_id unchanged")
+
+	objReq, ok := byID["C-object"]
+	require.True(t, ok)
+	require.Len(t, objReq.Results, 1)
+	require.NotNil(t, objReq.Results[0].ResourceID)
+	assert.Equal(t, canonicalObjectResourceID, *objReq.Results[0].ResourceID,
+		"object resource_id normalized to canonical JSON string")
 }

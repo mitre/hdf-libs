@@ -796,6 +796,61 @@ func TestAmendApplyRefusesUnverified(t *testing.T) {
 	})
 }
 
+// TestAmendApplyGatesResultsInput covers #248: the RESULTS input is gated at the
+// boundary. A legacy v2 doc, non-HDF JSON, and a fingerprint-valid but
+// schema-invalid doc are all rejected with a clear error instead of silently
+// no-opping (the old bug) or emitting an invalid artifact.
+func TestAmendApplyGatesResultsInput(t *testing.T) {
+	const validAmendments = `{
+		"name": "valid",
+		"overrides": [{
+			"type": "waiver",
+			"requirementId": "AC-1",
+			"status": "passed",
+			"reason": "risk accepted",
+			"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+			"appliedAt": "2026-03-01T00:00:00Z",
+			"expiresAt": "2099-12-31T00:00:00Z"
+		}]
+	}`
+
+	run := func(t *testing.T, resultsDoc string) (string, error) {
+		t.Helper()
+		dir := t.TempDir()
+		resultsPath := filepath.Join(dir, "results.json")
+		require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
+		amendPath := filepath.Join(dir, "amend.json")
+		require.NoError(t, os.WriteFile(amendPath, []byte(validAmendments), 0o600))
+		outPath := filepath.Join(dir, "out.json")
+		err := runAmendApply(nil, resultsPath, amendPath, outPath)
+		return outPath, err
+	}
+
+	t.Run("legacy v2 results doc is rejected with a convert hint", func(t *testing.T) {
+		v2 := `{"platform":{"name":"x"},"version":"1.0.0","statistics":{},"profiles":[]}`
+		outPath, err := run(t, v2)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "hdf convert")
+		assert.Contains(t, err.Error(), "hdf@3")
+		assert.NoFileExists(t, outPath, "a rejected apply must not write output")
+	})
+
+	t.Run("non-HDF JSON is rejected as unrecognized", func(t *testing.T) {
+		outPath, err := run(t, `{"hello":"world"}`)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not a recognized HDF document")
+		assert.NoFileExists(t, outPath)
+	})
+
+	t.Run("fingerprint-valid but schema-invalid results is rejected", func(t *testing.T) {
+		// A "baselines" key fingerprints as results, but the shape violates the schema.
+		outPath, err := run(t, `{"baselines":[{}]}`)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "schema-valid")
+		assert.NoFileExists(t, outPath)
+	})
+}
+
 // The amendments-side results link was retired: nothing wrote the field, and
 // one amendments document may be applied to many results files, so it cannot
 // hold a single results hash. What remains is the assertion that its presence

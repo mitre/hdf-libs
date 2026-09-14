@@ -116,6 +116,46 @@ const resultsWithTwoRequirements = `{
   "statistics": {"duration": 0.1}
 }`
 
+// mergeBytes adapts MergeAmendments to the (bytes, error) shape most tests
+// assert on; the count-bearing MergeResult is exercised directly in
+// TestMergeAmendments_ReportsAppliedAndTotal.
+func mergeBytes(results, amendments []byte) ([]byte, error) {
+	res, err := MergeAmendments(results, amendments)
+	return res.Output, err
+}
+
+// TestMergeAmendments_ReportsAppliedAndTotal covers #248: the merge reports how
+// many overrides applied out of how many were present, so callers can surface
+// "applied N/M" instead of silently succeeding. A zero-match is NOT an error
+// (a fleet amendments file legitimately matches nothing on some hosts).
+func TestMergeAmendments_ReportsAppliedAndTotal(t *testing.T) {
+	t.Run("a matching override reports applied 1 of 1", func(t *testing.T) {
+		res, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))
+		require.NoError(t, err)
+		assert.Equal(t, 1, res.Total)
+		assert.Equal(t, 1, res.Applied)
+	})
+
+	t.Run("zero matches reports applied 0 of N without error", func(t *testing.T) {
+		amendments := `{
+			"name": "no-match",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "ZZ-999",
+				"status": "passed",
+				"reason": "No match",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		res, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		require.NoError(t, err)
+		assert.Equal(t, 1, res.Total)
+		assert.Equal(t, 0, res.Applied, "zero-match is a legitimate fleet outcome, not an error")
+	})
+}
+
 func TestMergeAmendments_RefusesDraft(t *testing.T) {
 	draft := `{
 		"_draft": true,
@@ -130,14 +170,14 @@ func TestMergeAmendments_RefusesDraft(t *testing.T) {
 			"expiresAt": "2099-12-31T00:00:00Z"
 		}]
 	}`
-	_, err := MergeAmendments([]byte(minimalResults), []byte(draft))
+	_, err := mergeBytes([]byte(minimalResults), []byte(draft))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "draft")
 }
 
 func TestMergeAmendments(t *testing.T) {
 	t.Run("merge with matching requirement sets effectiveStatus", func(t *testing.T) {
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(minimalAmendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -171,7 +211,7 @@ func TestMergeAmendments(t *testing.T) {
 				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(amendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -192,7 +232,7 @@ func TestMergeAmendments(t *testing.T) {
 
 	t.Run("merge with empty overrides returns results unchanged", func(t *testing.T) {
 		amendments := `{"name": "empty", "overrides": []}`
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(amendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -204,7 +244,7 @@ func TestMergeAmendments(t *testing.T) {
 	})
 
 	t.Run("merge with multiple overrides applies all", func(t *testing.T) {
-		merged, err := MergeAmendments([]byte(resultsWithTwoRequirements), []byte(multiOverrideAmendments))
+		merged, err := mergeBytes([]byte(resultsWithTwoRequirements), []byte(multiOverrideAmendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -224,7 +264,7 @@ func TestMergeAmendments(t *testing.T) {
 	})
 
 	t.Run("previousChecksum is set on merged output", func(t *testing.T) {
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(minimalAmendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -243,20 +283,20 @@ func TestMergeAmendments(t *testing.T) {
 	})
 
 	t.Run("invalid results JSON returns error", func(t *testing.T) {
-		_, err := MergeAmendments([]byte("not json"), []byte(minimalAmendments))
+		_, err := mergeBytes([]byte("not json"), []byte(minimalAmendments))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse results JSON")
 	})
 
 	t.Run("invalid amendments JSON returns error", func(t *testing.T) {
-		_, err := MergeAmendments([]byte(minimalResults), []byte("not json"))
+		_, err := mergeBytes([]byte(minimalResults), []byte("not json"))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse amendments JSON")
 	})
 
 	t.Run("amendments with no overrides key returns results unchanged", func(t *testing.T) {
 		amendments := `{"name": "no-overrides-key"}`
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(amendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -318,7 +358,7 @@ func TestMergeAmendments(t *testing.T) {
 			}]
 		}`
 
-		merged, err := MergeAmendments([]byte(resultsWithTwoBaselines), []byte(amendments))
+		merged, err := mergeBytes([]byte(resultsWithTwoBaselines), []byte(amendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -450,7 +490,7 @@ func TestMergeAmendments_ImpactOverride(t *testing.T) {
 				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(amendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -494,7 +534,7 @@ func TestMergeAmendments_ImpactOverride(t *testing.T) {
 				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(amendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -523,7 +563,7 @@ func TestMergeAmendments_ImpactOverride(t *testing.T) {
 				"expiresAt": "2099-12-31T00:00:00Z"
 			}]
 		}`
-		merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+		merged, err := mergeBytes([]byte(minimalResults), []byte(amendments))
 		require.NoError(t, err)
 
 		var doc map[string]interface{}
@@ -585,7 +625,7 @@ func TestMergeAmendments_InvalidStatusValues(t *testing.T) {
 					"expiresAt": "2099-12-31T00:00:00Z"
 				}]
 			}`, tc.statusJSON)
-			merged, err := MergeAmendments([]byte(minimalResults), []byte(amendments))
+			merged, err := mergeBytes([]byte(minimalResults), []byte(amendments))
 			require.NoError(t, err)
 
 			var doc map[string]interface{}
@@ -603,7 +643,7 @@ func TestMergeAmendments_InvalidStatusValues(t *testing.T) {
 }
 
 func TestMergeAmendments_StampsEffectiveChecksum(t *testing.T) {
-	merged, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))
+	merged, err := mergeBytes([]byte(minimalResults), []byte(minimalAmendments))
 	require.NoError(t, err)
 
 	var doc map[string]interface{}
@@ -1224,7 +1264,7 @@ func TestVerifyResult_FailureSummary(t *testing.T) {
 // concept the results schema now declares, as distinct from the retired
 // amendments-side "results link".
 func TestMergeAmendments_ApplicationChainAccumulates(t *testing.T) {
-	first, err := MergeAmendments([]byte(minimalResults), []byte(minimalAmendments))
+	first, err := mergeBytes([]byte(minimalResults), []byte(minimalAmendments))
 	require.NoError(t, err)
 
 	var firstDoc map[string]interface{}
@@ -1234,7 +1274,7 @@ func TestMergeAmendments_ApplicationChainAccumulates(t *testing.T) {
 	assert.Equal(t, computeSHA256([]byte(minimalResults)), firstLink["value"],
 		"the first application records the ORIGINAL document")
 
-	second, err := MergeAmendments(first, []byte(minimalAmendments))
+	second, err := mergeBytes(first, []byte(minimalAmendments))
 	require.NoError(t, err)
 
 	var secondDoc map[string]interface{}
@@ -1260,7 +1300,7 @@ func TestMergeAmendments_NoMatchLeavesTheDocumentUntouched(t *testing.T) {
 	unmatched, err := json.Marshal(doc)
 	require.NoError(t, err)
 
-	out, err := MergeAmendments([]byte(minimalResults), unmatched)
+	out, err := mergeBytes([]byte(minimalResults), unmatched)
 	require.NoError(t, err)
 
 	var before, after map[string]interface{}

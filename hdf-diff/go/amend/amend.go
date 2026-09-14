@@ -13,37 +13,54 @@ import (
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
+// MergeResult is the outcome of MergeAmendments: the merged document plus how
+// many overrides applied out of how many the amendments carried. Applied < Total
+// is a legitimate outcome — a fleet amendments file need not match every host —
+// so callers report the ratio rather than treating a shortfall as an error.
+type MergeResult struct {
+	Output  []byte
+	Applied int
+	Total   int
+}
+
 // MergeAmendments applies amendments to an HDF results document.
 // It operates on map[string]interface{} to preserve extra fields.
 // The original results bytes are not modified; the returned bytes are a new document.
-func MergeAmendments(results, amendments []byte) ([]byte, error) {
+//
+// The results input is assumed to be a schema-valid HDF v3 results document;
+// the document type and schema are gated by the caller at its boundary (the CLI
+// and MCP entry points) before this is invoked.
+func MergeAmendments(results, amendments []byte) (MergeResult, error) {
 	var doc map[string]interface{}
 	if err := json.Unmarshal(results, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse results JSON: %w", err)
+		return MergeResult{}, fmt.Errorf("failed to parse results JSON: %w", err)
 	}
 
 	var amendDoc map[string]interface{}
 	if err := json.Unmarshal(amendments, &amendDoc); err != nil {
-		return nil, fmt.Errorf("failed to parse amendments JSON: %w", err)
+		return MergeResult{}, fmt.Errorf("failed to parse amendments JSON: %w", err)
 	}
 
 	if err := refuseDraft(amendDoc); err != nil {
-		return nil, err
+		return MergeResult{}, err
 	}
 
 	overridesRaw, ok := amendDoc["overrides"]
 	if !ok {
 		// No overrides — return results unchanged.
-		return json.MarshalIndent(doc, "", "  ")
+		out, err := json.MarshalIndent(doc, "", "  ")
+		return MergeResult{Output: out}, err
 	}
 
 	overrides, ok := overridesRaw.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("amendments overrides field is not an array")
+		return MergeResult{}, fmt.Errorf("amendments overrides field is not an array")
 	}
 
-	if len(overrides) == 0 {
-		return json.MarshalIndent(doc, "", "  ")
+	total := len(overrides)
+	if total == 0 {
+		out, err := json.MarshalIndent(doc, "", "  ")
+		return MergeResult{Output: out}, err
 	}
 
 	// Hash the results exactly as they were read, before any modification.
@@ -71,7 +88,8 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 	// never amended — one amendments file may cover a fleet and be applied to a
 	// host it does not mention.
 	if applied == 0 {
-		return json.MarshalIndent(doc, "", "  ")
+		out, err := json.MarshalIndent(doc, "", "  ")
+		return MergeResult{Output: out, Total: total}, err
 	}
 
 	// Re-stamp per-requirement effective checksums: overrides change the
@@ -79,7 +97,7 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 	// document timestamp for determinism.
 	docTimestamp, _ := doc["timestamp"].(string)
 	if err := diff.StampEffectiveChecksums(doc, docTimestamp); err != nil {
-		return nil, fmt.Errorf("failed to stamp effective checksums: %w", err)
+		return MergeResult{}, fmt.Errorf("failed to stamp effective checksums: %w", err)
 	}
 
 	// Record what this document was amended from. Named to stay distinct from
@@ -89,7 +107,8 @@ func MergeAmendments(results, amendments []byte) ([]byte, error) {
 		"value":     checksum,
 	}
 
-	return json.MarshalIndent(doc, "", "  ")
+	out, err := json.MarshalIndent(doc, "", "  ")
+	return MergeResult{Output: out, Applied: applied, Total: total}, err
 }
 
 // applyOverrideToDoc finds the matching requirement across all baselines and
