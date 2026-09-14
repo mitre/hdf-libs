@@ -1,0 +1,111 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: wrapped-a in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: wrapped-a",
+              "runTime": 0.000059,
+              "startTime": "2026-09-14T01:41:10.38375Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.wrapped-a",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "wrapped-a",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: loose-a in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: loose-a",
+              "runTime": 0.000357,
+              "startTime": "2026-09-14T01:41:10.38375Z",
+              "status": "passed"
+            }
+          ],
+          "id": "test.loose-a",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "loose-a",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: loose-b in test",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "test :: loose-b",
+              "message": "Skipped: true",
+              "runTime": 0.000042,
+              "startTime": "2026-09-14T01:41:10.38375Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "test.loose-b",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "loose-b",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "7cb7e6af5bb92583ce3aef7c780b60f0440e9a294adb4faf1d810b5a0a36c532"
+      },
+      "name": "JUnit Test Results"
+    }
+  ],
+  "components": [
+    {
+      "name": "JUnit Test Results",
+      "type": "application"
+    },
+    {
+      "name": "test-runner-01",
+      "type": "host",
+      "hostname": "test-runner-01"
+    }
+  ],
+  "generator": {
+    "name": "junit-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-14T01:41:10.38375Z",
+  "tool": {
+    "name": "JUnit XML"
+  }
+}

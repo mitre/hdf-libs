@@ -651,12 +651,14 @@ func requirementIDs(reqs []hdf.EvaluatedRequirement) []string {
 }
 
 func TestConvertJUnitToHDF_TestsuiteLessProducesOneRequirementPerTestcase(t *testing.T) {
-	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-passing.xml"), converterVersion)
+	input := loadFixture(t, "node-test-passing.xml")
+	result, err := ConvertJUnitToHDF(input, converterVersion)
 	require.NoError(t, err)
 	require.Len(t, result.Baselines, 1)
 
 	reqs := result.Baselines[0].Requirements
-	assert.Len(t, reqs, 2, "each direct <testcase> is a requirement; got %v", requirementIDs(reqs))
+	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "testcase"),
+		"node-test-passing.xml: each direct <testcase> is a requirement")
 	assert.NotContains(t, requirementIDs(reqs), "junit-no-findings",
 		"a populated document must never collapse to the no-findings placeholder")
 	for _, r := range reqs {
@@ -667,12 +669,14 @@ func TestConvertJUnitToHDF_TestsuiteLessProducesOneRequirementPerTestcase(t *tes
 
 // The failure is the whole point: a red run must not convert to a green document.
 func TestConvertJUnitToHDF_TestsuiteLessCarriesFailureAndSkip(t *testing.T) {
-	result, err := ConvertJUnitToHDF(loadFixture(t, "node-test-mixed.xml"), converterVersion)
+	input := loadFixture(t, "node-test-mixed.xml")
+	result, err := ConvertJUnitToHDF(input, converterVersion)
 	require.NoError(t, err)
 	require.Len(t, result.Baselines, 1)
 
 	reqs := result.Baselines[0].Requirements
-	require.Len(t, reqs, 3, "got %v", requirementIDs(reqs))
+	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "testcase"),
+		"node-test-mixed.xml: one requirement per <testcase>")
 
 	statuses := map[hdf.ResultStatus]int{}
 	for _, r := range reqs {
@@ -701,6 +705,46 @@ func TestConvertJUnitToHDF_EmptyDocumentStillReportsNoFindings(t *testing.T) {
 	require.Len(t, reqs, 1)
 	assert.Equal(t, "junit-no-findings", reqs[0].ID)
 	assert.Equal(t, hdf.Passed, reqs[0].Results[0].Status)
+}
+
+// node-test-hybrid.xml is real `node --test --test-reporter=junit` output from a
+// file whose top-level test() is declared BEFORE its describe() block, so the
+// document mixes a loose <testcase> with a <testsuite> and its document order is
+// loose-a, wrapped-a, loose-b. The implementation appends loose cases after the
+// explicit suites, so converting it must REORDER — which is what makes this
+// fixture discriminating rather than incidentally agreeing with document order.
+// Only the capture directory was normalized out of the file= attributes and the
+// hostname replaced, matching the other node-test fixtures.
+// The behavior was already correct, so this test pins a documented promise
+// instead of driving it red-first; the mutation check in the card is what proves
+// the assertion is load-bearing.
+func TestConvertJUnitToHDF_HybridSuiteAndLooseOrdering(t *testing.T) {
+	input := loadFixture(t, "node-test-hybrid.xml")
+	result, err := ConvertJUnitToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+
+	shared.AssertRequirementCount(t, result, shared.CountXMLElements(t, input, "testcase"),
+		"node-test-hybrid.xml: one requirement per <testcase>")
+	assert.Equal(t, []string{"test.wrapped-a", "test.loose-a", "test.loose-b"},
+		requirementIDs(result.Baselines[0].Requirements),
+		"suite cases first, then loose cases appended")
+}
+
+// A bare <skipped/> carries no message, which is the case that separates testing
+// the element's presence from testing its content.
+func TestConvertJUnitToHDF_BareSkippedElement(t *testing.T) {
+	input := []byte(`<testsuites>
+  <testsuite name="s">
+    <testcase name="bare" classname="pkg"><skipped/></testcase>
+  </testsuite>
+</testsuites>`)
+
+	result, err := ConvertJUnitToHDF(input, converterVersion)
+	require.NoError(t, err)
+	reqs := result.Baselines[0].Requirements
+	require.Len(t, reqs, 1)
+	assert.Equal(t, hdf.NotReviewed, reqs[0].Results[0].Status, "a message-less skip is still a skip")
 }
 
 // --- Nested suites ---

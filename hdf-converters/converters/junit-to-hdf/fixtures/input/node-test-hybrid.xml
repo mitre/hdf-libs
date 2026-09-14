@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="loose-a" time="0.000357" classname="test" file="hybrid.test.mjs"/>
+	<testsuite name="wrapped" time="0.000163" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname="test-runner-01">
+		<testcase name="wrapped-a" time="0.000059" classname="test" file="hybrid.test.mjs"/>
+	</testsuite>
+	<testcase name="loose-b" time="0.000042" classname="test" file="hybrid.test.mjs">
+		<skipped type="skipped" message="true"/>
+	</testcase>
+	<!-- tests 3 -->
+	<!-- suites 1 -->
+	<!-- pass 2 -->
+	<!-- fail 0 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 1 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 45.767667 -->
+</testsuites>
