@@ -44,6 +44,8 @@ type applyAmendmentOutput struct {
 	Handle                  string              `json:"handle"`
 	ProjectedCompliance     projectedCompliance `json:"projectedCompliance"`
 	ChangedRequirementCount int                 `json:"changedRequirementCount"`
+	AppliedOverrides        int                 `json:"appliedOverrides"`
+	TotalOverrides          int                 `json:"totalOverrides"`
 	Sha256                  string              `json:"sha256"`
 	Valid                   bool                `json:"valid"`
 	WritesDisabled          bool                `json:"writesDisabled,omitempty"`
@@ -65,6 +67,13 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 		if terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
+		// resolveTyped enforces only the document TYPE; the loader returns a
+		// schema-invalid results doc as a degraded read (Valid:false). Gate it at
+		// the boundary so a non-schema-valid document never reaches the merge
+		// engine — mirroring the CLI's `hdf amend apply` input gate.
+		if !results.Load.Valid {
+			return toolError(invalidResultsInputError(results.Load)), applyAmendmentOutput{}, nil
+		}
 		amendments, terr := resolveTyped(in.Amendments, "amendments", ldr)
 		if terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
@@ -84,10 +93,11 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
 
-		merged, terr := applyMerge(results.Content, amendments.Content)
+		mergeRes, terr := applyMerge(results.Content, amendments.Content)
 		if terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
+		merged := mergeRes.Output
 		if terr := refuseInvalidResults(merged); terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
@@ -96,6 +106,10 @@ func hdfApplyAmendment(ldr *loader.Loader) sdkmcp.ToolHandlerFor[applyAmendmentI
 		if terr != nil {
 			return toolError(terr), applyAmendmentOutput{}, nil
 		}
+		// Report how many overrides applied out of how many were present, so MCP
+		// callers can distinguish 0/N from N/N (the CLI reports the same).
+		out.AppliedOverrides = mergeRes.Applied
+		out.TotalOverrides = mergeRes.Total
 
 		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, merged)
 		if werr != nil {
@@ -134,13 +148,28 @@ func refuseUnverifiedAmendments(amendments []byte) *mcperr.Error {
 // applyMerge runs the shared, deterministic amend.MergeAmendments and funnels
 // its error through the taxonomy (so the handler never checks a bare error and
 // returns nil in the Go-error slot).
-func applyMerge(results, amendments []byte) ([]byte, *mcperr.Error) {
+func applyMerge(results, amendments []byte) (amend.MergeResult, *mcperr.Error) {
 	res, err := amend.MergeAmendments(results, amendments)
 	if err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, "applying the amendments failed: "+err.Error(), nil).
+		return amend.MergeResult{}, mcperr.New(mcperr.SchemaInvalid, "applying the amendments failed: "+err.Error(), nil).
 			WithNextCall("verify the amendments target requirement IDs that exist in the results")
 	}
-	return res.Output, nil
+	return res, nil
+}
+
+// invalidResultsInputError renders a degraded-read results Load into a boundary
+// rejection that surfaces the first line-numbered schema error.
+func invalidResultsInputError(load *loader.Result) *mcperr.Error {
+	msg := "the results document is not schema-valid HDF and cannot be amended"
+	if len(load.Errors) > 0 {
+		e := load.Errors[0]
+		msg = fmt.Sprintf("%s: %s (field %s, line %d)", msg, e.Description, e.Field, e.Line)
+		if load.ErrorsMore {
+			msg += " (and more)"
+		}
+	}
+	return mcperr.New(mcperr.SchemaInvalid, msg, nil).
+		WithNextCall("fix the schema errors in the results document, then re-run apply")
 }
 
 // resolveTyped resolves a source and enforces the expected document type.

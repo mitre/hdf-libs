@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING (Go API):** two exported signatures changed to carry information the
+  CLI/MCP now surface. `amend.MergeAmendments` (`hdf-diff`) returns a
+  `MergeResult{Output, Applied, Total}` instead of `[]byte`, so callers can report
+  how many overrides applied out of how many were present. `legacyhdf.LegacyResult.ResourceID`
+  (`hdf-converters`) changes from `*string` to `*LegacyResourceID` so an
+  out-of-spec object-valued InSpec `resource_id` no longer fails the whole
+  document (it is normalized to canonical JSON). Both are source-incompatible for
+  external Go consumers that construct/consume these types directly; there is no
+  schema change.
+
+### Fixed
+
+- v2⇄v3 conversion fidelity: object-valued `resource_id` no longer fails the
+  parse; the full `components[]` round-trips v3→v2→v3 via a passthrough carrier;
+  the v2→v3 up-pin emits a valid `default` description instead of schema-invalid
+  `descriptions: null`.
+- `hdf amend apply` now gates its results input (document type + schema) and
+  validates its output, rejecting a legacy-v2/non-HDF/schema-invalid document with
+  an actionable message instead of silently no-opping; it reports `applied N/M`.
+
 ## [3.6.0] - 2026-09-12
 
 Minor release. The Results schema gains one optional root field, `preAmendmentChecksum`, so every schema `$id` moves to v3.6.0. Alongside it: a new MCP server and a new `@mitre/hdf-engine` library, three new converters, and a long list of places where a command, converter or exporter that used to accept bad input at exit 0 now refuses it. The entries marked BREAKING will surface on first run.

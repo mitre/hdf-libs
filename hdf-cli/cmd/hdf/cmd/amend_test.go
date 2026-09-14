@@ -796,7 +796,43 @@ func TestAmendApplyRefusesUnverified(t *testing.T) {
 	})
 }
 
-// TestAmendApplyGatesResultsInput covers #248: the RESULTS input is gated at the
+// TestAmendApplyReportsAppliedCount asserts the user-visible "Applied N of M"
+// summary on stderr — for both a matching apply and a zero-match apply (the
+// latter must report 0/N rather than silently succeeding).
+func TestAmendApplyReportsAppliedCount(t *testing.T) {
+	t.Run("a matching override reports Applied 1 of 1", func(t *testing.T) {
+		resultsPath, amendmentsPath := createAmendTestFixtures(t)
+		out := filepath.Join(t.TempDir(), "merged.json")
+		_, stderr, err := executeCommand("amend", "apply", "--results", resultsPath, "--amendments", amendmentsPath, "-o", out)
+		require.NoError(t, err)
+		assert.Contains(t, stderr, "Applied 1 of 1 override(s)")
+	})
+
+	t.Run("a zero-match apply reports Applied 0 of 1, not silent success", func(t *testing.T) {
+		resultsPath, _ := createAmendTestFixtures(t)
+		dir := t.TempDir()
+		amendPath := filepath.Join(dir, "nomatch.json")
+		nomatch := `{
+			"name": "nomatch",
+			"overrides": [{
+				"type": "waiver",
+				"requirementId": "ZZ-999",
+				"status": "passed",
+				"reason": "no match",
+				"appliedBy": {"type": "email", "identifier": "admin@example.com"},
+				"appliedAt": "2026-03-01T00:00:00Z",
+				"expiresAt": "2099-12-31T00:00:00Z"
+			}]
+		}`
+		require.NoError(t, os.WriteFile(amendPath, []byte(nomatch), 0o600))
+		out := filepath.Join(dir, "merged.json")
+		_, stderr, err := executeCommand("amend", "apply", "--results", resultsPath, "--amendments", amendPath, "-o", out)
+		require.NoError(t, err)
+		assert.Contains(t, stderr, "Applied 0 of 1 override(s)")
+	})
+}
+
+// TestAmendApplyGatesResultsInput: the RESULTS input is gated at the
 // boundary. A legacy v2 doc, non-HDF JSON, and a fingerprint-valid but
 // schema-invalid doc are all rejected with a clear error instead of silently
 // no-opping (the old bug) or emitting an invalid artifact.

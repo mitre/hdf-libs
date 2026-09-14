@@ -1557,7 +1557,7 @@ describe('three-layer-overlay overlay output', () => {
 // (hdf-converters/shared/go/hdfversion/hdf_version_test.go). Reads the SAME fixture
 // and asserts the same flatten, so the amendment-flattening logic cannot drift
 // between the two languages even though the CLI transform is Go-only.
-describe('object-valued resource_id (#328, Go parity)', () => {
+describe('object-valued resource_id (Go parity)', () => {
   // Canonical form of { minimum_password_length: 12, require_symbols: true } —
   // identical to the Go peer's canonicalObjectResourceID.
   const canonicalObjectResourceId = '{"minimum_password_length":12,"require_symbols":true}';
@@ -1585,7 +1585,7 @@ describe('object-valued resource_id (#328, Go parity)', () => {
   });
 });
 
-describe('descriptions default synthesis (#248, Go parity)', () => {
+describe('descriptions default synthesis (Go parity)', () => {
   it('synthesizes the required default description from desc when the source has none', () => {
     const v1 = {
       version: '1.0.0',
@@ -1704,7 +1704,7 @@ describe('downgradeToLegacyHdf downgrade (Go parity)', () => {
     expect(hdf.profiles[0]!.controls![0]!.waiver_data?.override_type).toBeUndefined();
   });
 
-  it('round-trips the full components[] through v3→v2→v3 via passthrough (#325)', () => {
+  it('round-trips the full components[] through v3→v2→v3 via passthrough', () => {
     const v2 = {
       baselines: [{name: 'b1', requirements: [{
         id: 'C-1', impact: 0.5,
@@ -1724,6 +1724,9 @@ describe('downgradeToLegacyHdf downgrade (Go parity)', () => {
 
     const restored = convertLegacyHdf(hdf);
     expect(restored.components).toEqual(v2.components);
+    // The passthrough carrier is consumed, not leaked into extensions — otherwise
+    // the round trip would diverge from the Go peer, which drops the carrier.
+    expect((restored as {extensions?: {passthrough?: unknown}}).extensions?.passthrough).toBeUndefined();
   });
 
   it('produces a document that validates against the InSpec exec-json schema', () => {

@@ -240,8 +240,8 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 
 	// Convert descriptions. v3 requires a non-empty descriptions array containing a
 	// 'default' (minItems:1 + contains-default), so both null and [] are invalid —
-	// SAF-produced HDF carries no descriptions[] and hit this on every requirement
-	// (#248). Guarantee a 'default', synthesized from the control desc when absent,
+	// SAF-produced HDF carries no descriptions[] and hit this on every requirement.
+	// Guarantee a 'default', synthesized from the control desc when absent,
 	// symmetric with the downgrade's default→desc mapping.
 	v2.Descriptions = make([]hdf.Description, 0, len(v1.Descriptions)+1)
 	hasDefault := false

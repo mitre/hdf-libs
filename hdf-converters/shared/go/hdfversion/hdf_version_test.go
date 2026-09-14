@@ -71,7 +71,7 @@ func TestTransformHDF_ModernToLegacy(t *testing.T) {
 	assert.NotContains(t, legacy, "components", "legacy output should not have components")
 }
 
-// TestV3ToV2ToV3PreservesComponents covers #325: on down-pin the full
+// TestV3ToV2ToV3PreservesComponents: on down-pin the full
 // components[] must be carried through a passthrough carrier (not just the
 // first-component->platform mapping) and named in a warning, and on up-pin
 // restored intact — so a v3->v2->v3 round trip preserves every component field.

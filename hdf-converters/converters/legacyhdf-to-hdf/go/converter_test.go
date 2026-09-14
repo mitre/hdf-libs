@@ -1410,7 +1410,7 @@ func TestConvertV1ToV2_SynthesizesErroredResultFromControlStatus(t *testing.T) {
 	assert.Len(t, v2.Baselines[0].Requirements[0].Results, 1)
 }
 
-// TestUpPinSynthesizesDefaultDescription covers #248(b): the v3 results schema
+// TestUpPinSynthesizesDefaultDescription: the v3 results schema
 // requires descriptions (minItems:1, containing a 'default'), so null AND [] are
 // both invalid. A control with no descriptions[] must up-pin to a synthesized
 // 'default' carrying the control desc — symmetric with the downgrade's
@@ -1469,12 +1469,12 @@ func convertLocalFixture(t *testing.T, name string) *hdf.HDFResults {
 	return ConvertLegacyHDF(&v1, "1.0.0")
 }
 
-// canonicalObjectResourceID is the normalized form of the #328 settings hash
+// canonicalObjectResourceID is the normalized form of the settings hash
 // { "minimum_password_length": 12, "require_symbols": true }: sorted keys,
 // compact — identical in Go and TS.
 const canonicalObjectResourceID = `{"minimum_password_length":12,"require_symbols":true}`
 
-// TestObjectValuedResourceIDParses covers #328: a real cinc-auditor exec-json
+// TestObjectValuedResourceIDParses: a real cinc-auditor exec-json
 // result whose resource_id is a settings hash (out-of-spec per inspecjs, which
 // types it string|null) must not fail the whole document. The object is
 // normalized to its canonical JSON string (both v2 and v3 schemas type the

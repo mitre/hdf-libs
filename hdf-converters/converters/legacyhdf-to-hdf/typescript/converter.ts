@@ -1069,8 +1069,11 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
     v2.timestamp = timestamp;
   }
 
-  // Preserve any extension fields not part of core schema
-  const knownV1Fields = new Set(['version', 'platform', 'profiles', 'statistics', 'generator', 'timestamp']);
+  // Preserve any extension fields not part of core schema. `passthrough` is a
+  // consumed carrier (its hdf_components restored above), NOT an unknown field —
+  // it must not leak into extensions, or a v3→v2→v3 round trip would diverge from
+  // the Go peer, which drops the carrier.
+  const knownV1Fields = new Set(['version', 'platform', 'profiles', 'statistics', 'generator', 'timestamp', 'passthrough']);
   const extensionFields: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(v1Data)) {

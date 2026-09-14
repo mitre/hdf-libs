@@ -124,7 +124,7 @@ func mergeBytes(results, amendments []byte) ([]byte, error) {
 	return res.Output, err
 }
 
-// TestMergeAmendments_ReportsAppliedAndTotal covers #248: the merge reports how
+// TestMergeAmendments_ReportsAppliedAndTotal: the merge reports how
 // many overrides applied out of how many were present, so callers can surface
 // "applied N/M" instead of silently succeeding. A zero-match is NOT an error
 // (a fleet amendments file legitimately matches nothing on some hosts).
@@ -1291,7 +1291,7 @@ func TestMergeAmendments_ApplicationChainAccumulates(t *testing.T) {
 // untouched. It did not: overrides that matched no requirement still stamped
 // preAmendmentChecksum and re-stamped every effective checksum, so a fleet-wide
 // amendments file applied to a host it does not cover silently rewrote that
-// host's results. This is the same shape as the no-op reported in issue #248.
+// host's results. This is the same shape as that silent-no-op bug.
 func TestMergeAmendments_NoMatchLeavesTheDocumentUntouched(t *testing.T) {
 	var doc map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(minimalAmendments), &doc))
