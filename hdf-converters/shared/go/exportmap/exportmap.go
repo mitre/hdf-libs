@@ -304,19 +304,62 @@ func EncodeLine(v interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(v); err != nil {
+	if err := enc.Encode(normalizeNegativeZero(v, 0)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// maxNormalizeDepth mirrors the threshold encoding/json itself uses before it
+// starts looking for reference cycles. Past it this walk stops descending and
+// hands the rest of the tree to the encoder, which reports a cycle as an error.
+// Without the cap a cyclic map — legal to construct, and something the encoder
+// used to reject cleanly — would recurse until the stack overflowed, turning a
+// returned error into a crash. Real HDF events nest around ten deep.
+const maxNormalizeDepth = 1000
+
+// normalizeNegativeZero rewrites IEEE negative zero to positive zero anywhere in
+// the tree, because Go's encoder keeps the sign where JSON.stringify drops it.
+// The hashing path (hdfutil.CanonicalJSON) deliberately KEEPS the sign, since a
+// checksum must reflect the bytes it was handed — do not unify the two.
+// Rebuilds containers rather than editing in place, so this never mutates its
+// caller's map.
+func normalizeNegativeZero(v interface{}, depth int) interface{} {
+	if depth > maxNormalizeDepth {
+		return v
+	}
+	switch t := v.(type) {
+	case float64:
+		if t == 0 {
+			return 0.0 // drops the sign bit on -0 and leaves +0 untouched
+		}
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(t))
+		for k, val := range t {
+			out[k] = normalizeNegativeZero(val, depth+1)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(t))
+		for i, val := range t {
+			out[i] = normalizeNegativeZero(val, depth+1)
+		}
+		return out
+	}
+	return v
 }
 
 // FloatToken renders a float as a JSON number that always bears a decimal point,
 // so a whole-number value serializes as `10.0` rather than the integer `10`.
 // Some consumers type-check strictly (OCSF's `float_t` rejects an integer-shaped
 // token); json.Number marshals verbatim, keeping this byte-identical with the
-// TypeScript RawNumber. Domain is low-precision decimals (e.g. CVSS scores),
-// where Go's shortest-decimal format and JS's String() agree.
+// TypeScript RawNumber. strconv 'f' renders positionally at every magnitude,
+// which is the contract: an exponent token carries no decimal point at all. The
+// TypeScript peer matches by going through formatJsonNumber, not String().
 func FloatToken(f float64) json.Number {
+	if f == 0 {
+		return "0.0" // matches -0 too, which strconv would otherwise render "-0.0"
+	}
 	s := strconv.FormatFloat(f, 'f', -1, 64)
 	if !strings.ContainsAny(s, ".eE") {
 		s += ".0"

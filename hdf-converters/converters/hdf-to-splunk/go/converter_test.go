@@ -211,7 +211,7 @@ func TestConvert_AugmentedHDFFields(t *testing.T) {
 
 func TestConvert_GoldenParity(t *testing.T) {
 	// The expected .ndjson files are the shared TS<->Go golden contract.
-	for _, name := range []string{"compliance", "cve", "override", "riskadjust"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust", "negzero"} {
 		out, err := ConvertHDFToSplunk(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
 		if os.Getenv("UPDATE_GOLDEN") == "1" {

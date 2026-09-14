@@ -549,10 +549,10 @@ func vulnerabilitySummary(f asffFinding) string {
 	for _, v := range f.Vulnerabilities {
 		parts := []string{v.ID}
 		if len(v.Cvss) > 0 && v.Cvss[0].BaseScore != nil {
-			parts = append(parts, fmt.Sprintf("CVSS %s %.1f", v.Cvss[0].Version, *v.Cvss[0].BaseScore))
+			parts = append(parts, fmt.Sprintf("CVSS %s %s", v.Cvss[0].Version, hdfutil.FormatFixed(*v.Cvss[0].BaseScore, 1)))
 		}
 		if v.EpssScore != nil {
-			parts = append(parts, fmt.Sprintf("EPSS %.4f", *v.EpssScore))
+			parts = append(parts, "EPSS "+hdfutil.FormatFixed(*v.EpssScore, 4))
 		}
 		if v.ExploitAvailable != "" {
 			parts = append(parts, "exploit "+strings.ToLower(v.ExploitAvailable))

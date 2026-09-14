@@ -1,0 +1,104 @@
+{
+  "$comment": "Shared table for the HDF->SIEM exporters (hdf-to-ocsf, hdf-to-splunk, hdf-to-ecs), which emit numbers straight into NDJSON. Go (EncodeLine) and TypeScript (canonicalize + stringifyLine) both read it, so neither language can drift. 'json' is the raw JSON number text as it appears in the HDF input; 'token' is the exact token the NDJSON output must carry. Measured, not assumed: Go's encoder and JSON.stringify agree on every case below EXCEPT negative zero, including both exponent thresholds, the smallest denormal and max float. That is why negative zero is handled as a special case rather than by reformatting every number -- routing all of them through a positional formatter would BREAK the exponent rows, which currently agree.",
+  "cases": [
+    {
+      "json": "-0",
+      "token": "0",
+      "why": "the defect: Go kept the sign, JSON.stringify drops it. Reachable without hand-authored input -- the shared impact rounding returns negative zero for any small negative impact in BOTH languages, so they agree on the value and parted company only at serialization. Normalized to 0 on export by decision; see $decision"
+    },
+    {
+      "json": "0",
+      "token": "0",
+      "why": "positive zero is unchanged, so the normalization cannot be a blanket sign rewrite"
+    },
+    {
+      "json": "1e21",
+      "token": "1e+21",
+      "why": "the magnitude where both languages switch to exponent notation -- they agree, and a positional reformat would break this"
+    },
+    {
+      "json": "-1e21",
+      "token": "-1e+21",
+      "why": "the same switch on the negative side"
+    },
+    {
+      "json": "1e20",
+      "token": "100000000000000000000",
+      "why": "just below the exponent threshold, where both render positionally"
+    },
+    {
+      "json": "1e-7",
+      "token": "1e-7",
+      "why": "below the small-magnitude threshold; both use exponent, and Go trims its e-07 to e-7"
+    },
+    {
+      "json": "1e-6",
+      "token": "0.000001",
+      "why": "at the small-magnitude boundary, where both still render positionally"
+    },
+    {
+      "json": "5e-324",
+      "token": "5e-324",
+      "why": "smallest positive denormal -- pins that shortest-round-trip digits agree at the extreme"
+    },
+    {
+      "json": "1.7976931348623157e308",
+      "token": "1.7976931348623157e+308",
+      "why": "max finite double, the opposite extreme"
+    },
+    {
+      "json": "-0.001",
+      "token": "-0.001",
+      "why": "an ordinary small negative -- distinguishes a real negative from negative zero"
+    },
+    {
+      "json": "0.1",
+      "token": "0.1",
+      "why": "the classic binary-fraction value, pinning shortest-round-trip rather than exact expansion"
+    }
+  ],
+  "floatTokenCases": [
+    {
+      "json": "-0",
+      "token": "0.0",
+      "why": "FloatToken/floatNumber carry the same normalization in the decimal-point convention OCSF float_t needs. TypeScript already produced 0.0; Go produced -0.0 and changed"
+    },
+    {
+      "json": "0",
+      "token": "0.0",
+      "why": "positive zero keeps the decimal point but gains no sign"
+    },
+    {
+      "json": "10",
+      "token": "10.0",
+      "why": "a whole number must carry .0 so OCSF float_t does not see an integer-shaped token"
+    },
+    {
+      "json": "7.25",
+      "token": "7.25",
+      "why": "an ordinary CVSS-shaped score already bearing a decimal point"
+    },
+    {
+      "json": "1e21",
+      "token": "1000000000000000000000.0",
+      "why": "above the magnitude where String() switches to exponent; the token must stay positional so it still bears a decimal point"
+    },
+    {
+      "json": "1e22",
+      "token": "10000000000000000000000.0",
+      "why": "further above the switch, pinning that the expansion keeps going rather than falling back to exponent"
+    },
+    {
+      "json": "1e-7",
+      "token": "0.0000001",
+      "why": "below the small-magnitude switch; positional already carries the decimal point, so no .0 suffix is added"
+    },
+    {
+      "json": "5e-324",
+      "token": "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+      "why": "smallest positive denormal, the extreme of positional expansion"
+    }
+  ],
+  "$decision": "DECISION: negative zero is NORMALIZED to positive zero on the export path, in both languages. A sign on a zero impact carries nothing a SIEM consumer can act on and it surprises anyone diffing output, so the exporters erase it rather than propagate it. JavaScript already did this for free (JSON.stringify(-0) is '0'); Go preserved the sign, so Go is the side that changed. NOTE the deliberate asymmetry with the HASHING path: hdfutil.CanonicalJSON and canonicalJson both KEEP the sign, in both languages, because a checksum must reflect the bytes it was given. Export is a presentation boundary and hashing is an identity boundary; they are allowed to differ, and this row is the reason a future reader should not 'fix' one to match the other.",
+  "$floatTokenDecision": "DECISION: the canonical form for FloatToken/floatNumber is POSITIONAL at every magnitude — Go's strconv.FormatFloat(f, 'f', -1, 64), matched in TypeScript by hdf-utilities formatJsonNumber. Decided on the function's own contract rather than on which language was easier to change: these helpers exist to guarantee a decimal point so a whole number serializes as 10.0 rather than 10, and an exponent token like 1e+21 carries no decimal point at all, so exponent notation defeats the only reason the function exists. The vendored OCSF schema does NOT decide it — it says type: number, and JSON Schema constrains a number's value, never its lexical form. TypeScript was the side that changed; Go already rendered positionally. Verified equivalent across both exponent thresholds, the smallest denormal and max float."
+}

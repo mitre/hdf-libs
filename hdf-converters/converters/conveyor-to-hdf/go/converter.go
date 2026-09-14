@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -197,6 +198,16 @@ func bodyToString(body interface{}) string {
 	return fmt.Sprintf("%v", body)
 }
 
+// conveyorNumber renders a Conveyor numeric field for a tag string. Positional
+// and lossless at every magnitude, matching the TypeScript peer's
+// formatJsonNumber: %.0f truncated a non-integral value to an integer, silently
+// changing diagnostic data, and rounding it would be just as lossy. Conveyor is
+// access-gated, so whether it can emit a non-integral depth or score cannot be
+// confirmed from here — rendering the value as given is correct either way.
+func conveyorNumber(f float64) string {
+	return strconv.FormatFloat(f, 'f', -1, 64)
+}
+
 // buildCodeDesc creates the code_desc field content from a Conveyor section.
 func buildCodeDesc(section ConveyorSection, scannerName string) string {
 	var parts []string
@@ -207,17 +218,17 @@ func buildCodeDesc(section ConveyorSection, scannerName string) string {
 		parts = append(parts, fmt.Sprintf("body:%s", bodyToString(section.Body)))
 		parts = append(parts, fmt.Sprintf("body_format:%s", section.BodyFormat))
 		parts = append(parts, fmt.Sprintf("classification:%s", section.Classification))
-		parts = append(parts, fmt.Sprintf("depth:%.0f", section.Depth))
+		parts = append(parts, "depth:"+conveyorNumber(section.Depth))
 		if section.Heuristic != nil {
 			parts = append(parts, fmt.Sprintf("heuristic_heur_id:%s", section.Heuristic.HeurID))
-			parts = append(parts, fmt.Sprintf("heuristic_score:%.0f", section.Heuristic.Score))
+			parts = append(parts, "heuristic_score:"+conveyorNumber(section.Heuristic.Score))
 			parts = append(parts, fmt.Sprintf("heuristic_name:%s", section.Heuristic.Name))
 		}
 	case "CodeQuality":
 		parts = append(parts, fmt.Sprintf("body:%s", bodyToString(section.Body)))
 		parts = append(parts, fmt.Sprintf("body_format:%s", section.BodyFormat))
 		parts = append(parts, fmt.Sprintf("classification:%s", section.Classification))
-		parts = append(parts, fmt.Sprintf("depth:%.0f", section.Depth))
+		parts = append(parts, "depth:"+conveyorNumber(section.Depth))
 		parts = append(parts, fmt.Sprintf("title_text:%s", section.TitleText))
 	default:
 		data, _ := json.Marshal(section)
