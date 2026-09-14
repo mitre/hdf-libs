@@ -4,6 +4,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
@@ -713,4 +714,124 @@ func TestValidateThreshold_RejectsNoFiles(t *testing.T) {
 
 	_, _, err := executeCommand("validate", "threshold", "-T", thresholdFile)
 	require.Error(t, err)
+}
+
+// testResultsEverySchemaSeverity carries one requirement per value of the
+// schema's severity enum (critical|high|medium|low|informational) plus one with
+// no severity at all, whose severity derives from impact. Every value the schema
+// permits must survive generate -> validate.
+const testResultsEverySchemaSeverity = `{
+	"baselines": [{
+		"name": "severity-roundtrip",
+		"requirements": [
+			{
+				"id": "SEV-CRITICAL",
+				"title": "critical",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.95,
+				"severity": "critical",
+				"tags": {},
+				"results": [{"status": "failed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SEV-HIGH",
+				"title": "high",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.7,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "failed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SEV-MEDIUM",
+				"title": "medium",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.5,
+				"severity": "medium",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SEV-LOW",
+				"title": "low",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.3,
+				"severity": "low",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SEV-INFORMATIONAL",
+				"title": "explicit informational",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.0,
+				"severity": "informational",
+				"tags": {},
+				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SEV-DERIVED",
+				"title": "no severity field; derives from impact 0",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.0,
+				"tags": {},
+				"results": [{"status": "notReviewed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			}
+		]
+	}]
+}`
+
+// A generated template must validate the document it was generated from. The
+// break this pins: generate bucketed severities through getSeverityBound while
+// validate compared the raw severity string, so an explicit "informational"
+// produced "expected no_impact/none but found no_impact/informational".
+func TestThresholdRoundTrip_EverySchemaSeverity(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := filepath.Join(dir, "results.json")
+	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
+	thresholdPath := filepath.Join(dir, "t.yaml")
+
+	_, _, err := executeCommand("generate", "threshold", resultsPath, "--include-controls", "--exact", "-o", thresholdPath)
+	require.NoError(t, err)
+
+	_, _, err = executeCommand("validate", "threshold", resultsPath, "-T", thresholdPath)
+	require.NoError(t, err, "a generated template must validate its own document")
+}
+
+// An explicitly informational requirement is reported under informational — the
+// schema's value — not folded into a bucket the schema does not define.
+func TestThresholdCounting_InformationalIsItsOwnBucket(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := filepath.Join(dir, "results.json")
+	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.informational.min: 2}")
+	require.NoError(t, err, "both the explicit and the impact-derived informational must land in informational")
+}
+
+// A severity outside the schema enum never reaches the counting layer: the
+// schema validator rejects the document at load, naming the field and the legal
+// values. Pinned because the engine's own bucketing has a catch-all for this
+// case, and it would be easy to assume the CLI exercises it.
+func TestThresholdCounting_MalformedSeverityRejectedAtLoad(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := filepath.Join(dir, "results.json")
+	malformed := strings.Replace(testResultsEverySchemaSeverity, `"severity": "low"`, `"severity": "sev-9"`, 1)
+	require.NoError(t, os.WriteFile(resultsPath, []byte(malformed), 0o644))
+
+	_, _, err := executeCommand("generate", "threshold", resultsPath, "--include-controls", "-o", filepath.Join(dir, "t.yaml"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "severity")
+	assert.Contains(t, err.Error(), "informational", "the error must name the legal values")
+}
+
+// Templates this tool generated before the fold was removed say "none". They
+// meant the controls that now count as informational, so the key keeps working.
+func TestValidateThreshold_LegacyNoneKeyIsAcceptedAsInformational(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := filepath.Join(dir, "results.json")
+	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.none.min: 2}")
+	require.NoError(t, err, "legacy none: must still resolve")
 }

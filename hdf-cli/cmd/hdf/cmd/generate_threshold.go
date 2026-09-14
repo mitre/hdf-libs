@@ -133,8 +133,8 @@ func buildSeverityThreshold(sc *SeverityCounts, exact, useMax bool) *ThresholdSe
 	if sc.Low > 0 || exact {
 		ts.Low = makeBound(sc.Low, exact, useMax)
 	}
-	if sc.None > 0 || exact {
-		ts.None = makeBound(sc.None, exact, useMax)
+	if sc.Informational > 0 || exact {
+		ts.Informational = makeBound(sc.Informational, exact, useMax)
 	}
 
 	return ts
@@ -204,11 +204,16 @@ func getSeverityBound(ts *ThresholdSeverity, severity string) *ThresholdBound {
 			ts.Low = &ThresholdBound{}
 		}
 		return ts.Low
+	case "none":
+		// The pre-3.7 spelling, still reachable from an inline path.
+		fallthrough
 	default:
-		if ts.None == nil {
-			ts.None = &ThresholdBound{}
+		// Informational, plus any severity outside the schema enum — bucketed
+		// here rather than dropped, matching the engine's addCount.
+		if ts.Informational == nil {
+			ts.Informational = &ThresholdBound{}
 		}
-		return ts.None
+		return ts.Informational
 	}
 }
 
