@@ -312,7 +312,7 @@ describe('convertOscalComponentToHdf', () => {
 
     // Requirements should have NIST-notation IDs
     for (const req of baseline.requirements) {
-      expect(req.id).toMatch(/^[A-Z]{2}-\d+/);
+      expect(req.id).toMatch(/^[0-9a-f-]{36}\/[A-Z]{2}-\d+/);
       expect(req.tags?.['nist']).toBeDefined();
     }
   });
@@ -325,7 +325,25 @@ describe('convertOscalComponentToHdf', () => {
 
     // Two components (comp_aa, comp_ab) with two implemented requirements
     // each, in document order.
-    expect(baseline.requirements.map((r) => r.id)).toEqual(['AC-1', 'AC-3', 'AC-1', 'AT-1']);
+    const ids = baseline.requirements.map((r) => r.id);
+    expect(ids).toEqual([
+      '8220b305-0271-45f9-8a21-40ab6f197f70/AC-1',
+      '8220b305-0271-45f9-8a21-40ab6f197f70/AC-3',
+      '8220b305-0271-45f9-8a21-40ab6f197f71/AC-1',
+      '8220b305-0271-45f9-8a21-40ab6f197f71/AT-1',
+    ]);
+
+    // The point of qualifying: ac-1 is implemented by both components, and the
+    // two requirements must stay distinguishable. Duplicate ids are unmatchable
+    // to hdf-diff and unaddressable by an amendment.
+    expect(new Set(ids).size).toBe(ids.length);
+
+    // The bare control stays in the nist tag, and the component is readable
+    // without parsing the id.
+    expect(baseline.requirements[0]!.tags!.nist).toEqual(['AC-1']);
+    expect(baseline.requirements[2]!.tags!.nist).toEqual(['AC-1']);
+    expect(baseline.requirements[0]!.tags!.component).toBe('comp_aa');
+    expect(baseline.requirements[2]!.tags!.component).toBe('comp_ab');
     expect(baseline.requirements[0]!.descriptions[0]!.data).toContain('from comp aa');
     expect(baseline.requirements[3]!.descriptions[0]!.data).toContain('from comp ab');
 

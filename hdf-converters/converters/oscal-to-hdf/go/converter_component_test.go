@@ -79,9 +79,10 @@ func TestConvertComponentDefinitionToHDF_RequirementIDs(t *testing.T) {
 	baseline, err := ConvertComponentDefinitionToHDF(input, "1.0.0-test")
 	require.NoError(t, err)
 
-	// Both requirements should have NIST notation ID
+	// The ID is component-qualified; the title stays the bare NIST control, so a
+	// report reads the same as it did before the qualification.
 	for _, req := range baseline.Requirements {
-		assert.Equal(t, "AC-2 (3)", req.ID)
+		assert.Equal(t, "b036a6ac-6cff-4066-92bc-74ddfd9ad6fa/AC-2 (3)", req.ID)
 		assert.NotNil(t, req.Title)
 		assert.Equal(t, "AC-2 (3)", *req.Title)
 	}
@@ -164,7 +165,30 @@ func TestConvertComponentDefinitionToHDF_AllComponentsConverted(t *testing.T) {
 	for _, req := range baseline.Requirements {
 		ids = append(ids, req.ID)
 	}
-	assert.Equal(t, []string{"AC-1", "AC-3", "AC-1", "AT-1"}, ids)
+	assert.Equal(t, []string{
+		"8220b305-0271-45f9-8a21-40ab6f197f70/AC-1",
+		"8220b305-0271-45f9-8a21-40ab6f197f70/AC-3",
+		"8220b305-0271-45f9-8a21-40ab6f197f71/AC-1",
+		"8220b305-0271-45f9-8a21-40ab6f197f71/AT-1",
+	}, ids)
+
+	// The point of qualifying: ac-1 is implemented by both components, and the
+	// two requirements must stay distinguishable. Duplicate IDs are unmatchable
+	// to hdf-diff and unaddressable by an amendment.
+	seen := map[string]bool{}
+	for _, id := range ids {
+		require.False(t, seen[id], "duplicate requirement ID %q", id)
+		seen[id] = true
+	}
+
+	// The bare control stays in the nist tag, so control-based filtering and
+	// mapping are unaffected by the qualification.
+	assert.Equal(t, []string{"AC-1"}, toStrings(baseline.Requirements[0].Tags["nist"]))
+	assert.Equal(t, []string{"AC-1"}, toStrings(baseline.Requirements[2].Tags["nist"]))
+
+	// And the component a requirement came from is readable without parsing the ID.
+	assert.Equal(t, "comp_aa", baseline.Requirements[0].Tags["component"])
+	assert.Equal(t, "comp_ab", baseline.Requirements[2].Tags["component"])
 
 	// Each requirement carries its own component's prose: ac-1 appears in both
 	// components, distinguished by content.
@@ -194,4 +218,12 @@ func TestComponentBaselineName(t *testing.T) {
 			assert.Equal(t, tt.expected, ToKebabCase(name, "oscal-component-definition"))
 		})
 	}
+}
+
+// toStrings normalizes a tag value the converter writes as []string.
+func toStrings(v interface{}) []string {
+	if ss, ok := v.([]string); ok {
+		return ss
+	}
+	return nil
 }

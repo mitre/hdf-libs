@@ -19,9 +19,11 @@
           "label": "ac-1_smt.a"
         }
       ],
-      "id": "AC-1",
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f70/AC-1",
       "impact": 0.5,
       "tags": {
+        "component": "comp_aa",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f70",
         "nist": [
           "AC-1"
         ]
@@ -35,9 +37,11 @@
           "label": "default"
         }
       ],
-      "id": "AC-3",
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f70/AC-3",
       "impact": 0.5,
       "tags": {
+        "component": "comp_aa",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f70",
         "nist": [
           "AC-3"
         ]
@@ -51,9 +55,11 @@
           "label": "default"
         }
       ],
-      "id": "AC-1",
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f71/AC-1",
       "impact": 0.5,
       "tags": {
+        "component": "comp_ab",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f71",
         "nist": [
           "AC-1"
         ]
@@ -71,9 +77,11 @@
           "label": "at-1_smt.b"
         }
       ],
-      "id": "AT-1",
+      "id": "8220b305-0271-45f9-8a21-40ab6f197f71/AT-1",
       "impact": 0.5,
       "tags": {
+        "component": "comp_ab",
+        "componentUuid": "8220b305-0271-45f9-8a21-40ab6f197f71",
         "nist": [
           "AT-1"
         ]
