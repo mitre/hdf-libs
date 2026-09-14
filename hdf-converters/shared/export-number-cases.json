@@ -77,8 +77,28 @@
       "json": "7.25",
       "token": "7.25",
       "why": "an ordinary CVSS-shaped score already bearing a decimal point"
+    },
+    {
+      "json": "1e21",
+      "token": "1000000000000000000000.0",
+      "why": "above the magnitude where String() switches to exponent; the token must stay positional so it still bears a decimal point"
+    },
+    {
+      "json": "1e22",
+      "token": "10000000000000000000000.0",
+      "why": "further above the switch, pinning that the expansion keeps going rather than falling back to exponent"
+    },
+    {
+      "json": "1e-7",
+      "token": "0.0000001",
+      "why": "below the small-magnitude switch; positional already carries the decimal point, so no .0 suffix is added"
+    },
+    {
+      "json": "5e-324",
+      "token": "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+      "why": "smallest positive denormal, the extreme of positional expansion"
     }
   ],
-  "$floatTokenComment": "floatTokenCases deliberately omits exponent-range values. FloatToken (Go, strconv 'f') and floatNumber (TypeScript, String()) diverge for every value outside the positional range -- 1e21 renders 1000000000000000000000.0 in Go and 1e+21 in TypeScript -- which is a SEPARATE defect from negative zero and is not fixed here. Its only current guard is that the domain is CVSS scores in [0,10]. Do not read this table as covering it.",
-  "$decision": "DECISION: negative zero is NORMALIZED to positive zero on the export path, in both languages. A sign on a zero impact carries nothing a SIEM consumer can act on and it surprises anyone diffing output, so the exporters erase it rather than propagate it. JavaScript already did this for free (JSON.stringify(-0) is '0'); Go preserved the sign, so Go is the side that changed. NOTE the deliberate asymmetry with the HASHING path: hdfutil.CanonicalJSON and canonicalJson both KEEP the sign, in both languages, because a checksum must reflect the bytes it was given. Export is a presentation boundary and hashing is an identity boundary; they are allowed to differ, and this row is the reason a future reader should not 'fix' one to match the other."
+  "$decision": "DECISION: negative zero is NORMALIZED to positive zero on the export path, in both languages. A sign on a zero impact carries nothing a SIEM consumer can act on and it surprises anyone diffing output, so the exporters erase it rather than propagate it. JavaScript already did this for free (JSON.stringify(-0) is '0'); Go preserved the sign, so Go is the side that changed. NOTE the deliberate asymmetry with the HASHING path: hdfutil.CanonicalJSON and canonicalJson both KEEP the sign, in both languages, because a checksum must reflect the bytes it was given. Export is a presentation boundary and hashing is an identity boundary; they are allowed to differ, and this row is the reason a future reader should not 'fix' one to match the other.",
+  "$floatTokenDecision": "DECISION: the canonical form for FloatToken/floatNumber is POSITIONAL at every magnitude — Go's strconv.FormatFloat(f, 'f', -1, 64), matched in TypeScript by hdf-utilities formatJsonNumber. Decided on the function's own contract rather than on which language was easier to change: these helpers exist to guarantee a decimal point so a whole number serializes as 10.0 rather than 10, and an exponent token like 1e+21 carries no decimal point at all, so exponent notation defeats the only reason the function exists. The vendored OCSF schema does NOT decide it — it says type: number, and JSON Schema constrains a number's value, never its lexical form. TypeScript was the side that changed; Go already rendered positionally. Verified equivalent across both exponent thresholds, the smallest denormal and max float."
 }

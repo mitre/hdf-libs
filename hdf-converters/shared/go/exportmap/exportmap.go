@@ -342,8 +342,9 @@ func normalizeNegativeZero(v interface{}) interface{} {
 // so a whole-number value serializes as `10.0` rather than the integer `10`.
 // Some consumers type-check strictly (OCSF's `float_t` rejects an integer-shaped
 // token); json.Number marshals verbatim, keeping this byte-identical with the
-// TypeScript RawNumber. Domain is low-precision decimals (e.g. CVSS scores),
-// where Go's shortest-decimal format and JS's String() agree.
+// TypeScript RawNumber. strconv 'f' renders positionally at every magnitude,
+// which is the contract: an exponent token carries no decimal point at all. The
+// TypeScript peer matches by going through formatJsonNumber, not String().
 func FloatToken(f float64) json.Number {
 	if f == 0 {
 		return "0.0" // matches -0 too, which strconv would otherwise render "-0.0"

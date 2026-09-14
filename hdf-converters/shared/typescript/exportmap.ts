@@ -12,6 +12,7 @@
 
 import {
   computeEffectiveStatus,
+  formatJsonNumber,
   governingStatusOverride,
   parseTimestamp,
   worstStatus,
@@ -238,11 +239,18 @@ export class RawNumber {
   constructor(readonly token: string) {}
 }
 
-/** Wrap a number as a RawNumber whose token always bears a decimal point. */
+/**
+ * Wrap a number as a RawNumber whose token always bears a decimal point.
+ *
+ * formatJsonNumber renders positionally at every magnitude, matching Go's
+ * strconv 'f'. String() would switch to exponent notation outside
+ * [1e-6, 1e21) and emit a token with no decimal point at all — defeating the
+ * one thing this function exists to guarantee, and diverging from the Go peer.
+ */
 export function floatNumber(f: number): RawNumber {
-  let s = String(f);
-  if (!/[.eE]/.test(s)) s += '.0';
-  return new RawNumber(s);
+  // Negative zero is normalized away on the export path; see normalizeNegativeZero.
+  const s = Object.is(f, -0) ? '0' : formatJsonNumber(f);
+  return new RawNumber(s.includes('.') ? s : s + '.0');
 }
 
 // SOH (U+0001) delimits a raw numeric token inside stringifyLine's intermediate
