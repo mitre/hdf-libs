@@ -237,6 +237,55 @@ Decision and rationale are recorded in beads memory `hdf-timestamp-canonical-utc
 
 ---
 
+## Number Formatting
+
+### The Problem
+
+Go and JavaScript disagree about numbers in two places, and neither shows up in a
+fixture unless someone goes looking for the triggering value.
+
+**Fixed precision.** `fmt.Sprintf("%.1f", v)` rounds halves to EVEN; JavaScript's
+`toFixed(1)` rounds them AWAY FROM ZERO. Any value whose exact binary expansion
+ends in a 5 at the cut point renders differently: 7.25 becomes `7.2` in Go and
+`7.3` in TypeScript. Ties are reachable at every precision the converters use,
+including six decimals, where a score has to land on an odd multiple of 1/128.
+
+**Negative zero.** Go's encoder keeps the sign on `-0`; `JSON.stringify` drops it.
+A small negative impact rounds to negative zero in both languages, so they agree
+on the value and part company only at serialization.
+
+### The Fix
+
+- Fixed precision → `hdfutil.FormatFixed(v, prec)` (Go). It uses exact rational
+  arithmetic and matches `toFixed` for every finite value below 1e21. Never reach
+  for `%.Nf` when a TypeScript peer uses `toFixed`.
+- Raw JSON numbers on the export path → already handled: `EncodeLine` normalizes
+  negative zero away, and `shared/export-number-cases.json` pins the rendering
+  contract that both languages assert.
+- Rendering a number as text anywhere else → positional at every magnitude:
+  `strconv.FormatFloat(f, 'f', -1, 64)` (Go) and `formatJsonNumber` (TypeScript),
+  which are exactly equivalent. Go's `%.0f` truncates and JavaScript's `String()`
+  switches to exponent notation, so neither is safe on its own. This is the form
+  `FloatToken`/`floatNumber` and the XML scalar renderer all use.
+
+Hashing is deliberately different. `hdfutil.CanonicalJSON` and `canonicalJson`
+both KEEP the sign on negative zero, because a checksum must reflect the bytes it
+was handed. Export is a presentation boundary; hashing is an identity boundary.
+Do not unify them.
+
+### Rule
+
+A new `%.Nf` in a converter that has a TypeScript peer is a bug, not a style
+choice. Route it through `FormatFixed` and add a case whose value is an exact tie
+at that precision — a test using a non-tie value passes with the broken code and
+proves nothing.
+
+The same applies to `%.0f` against a peer that interpolates the raw number: both
+sides must render positionally and losslessly, because truncating or rounding a
+value silently changes data the converter was only meant to carry through.
+
+---
+
 ## Schema `format` Assertion
 
 JSON Schema 2020-12 treats `format` as an annotation unless a validator opts in.

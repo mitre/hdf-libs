@@ -1,4 +1,4 @@
-import { parseJSON, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
+import { parseJSON, parseTimestamp, formatTimestamp, formatJsonNumber } from '@mitre/hdf-utilities';
 import {
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   nistToCci,
@@ -155,17 +155,17 @@ function buildCodeDesc(section: ConveyorSection, scannerName: string): string {
     parts.push(`body:${bodyToString(section.body)}`);
     parts.push(`body_format:${section.body_format ?? ''}`);
     parts.push(`classification:${section.classification ?? ''}`);
-    parts.push(`depth:${section.depth ?? 0}`);
+    parts.push(`depth:${formatJsonNumber(section.depth ?? 0)}`);
     if (section.heuristic) {
       parts.push(`heuristic_heur_id:${section.heuristic.heur_id ?? ''}`);
-      parts.push(`heuristic_score:${section.heuristic.score ?? 0}`);
+      parts.push(`heuristic_score:${formatJsonNumber(section.heuristic.score ?? 0)}`);
       parts.push(`heuristic_name:${section.heuristic.name ?? ''}`);
     }
   } else if (scannerName === 'CodeQuality') {
     parts.push(`body:${bodyToString(section.body)}`);
     parts.push(`body_format:${section.body_format ?? ''}`);
     parts.push(`classification:${section.classification ?? ''}`);
-    parts.push(`depth:${section.depth ?? 0}`);
+    parts.push(`depth:${formatJsonNumber(section.depth ?? 0)}`);
     parts.push(`title_text:${section.title_text ?? ''}`);
   } else {
     return JSON.stringify(section);
