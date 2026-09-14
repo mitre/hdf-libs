@@ -7,6 +7,16 @@
 import { registerFingerprint, getFingerprint, type ConverterFingerprint } from '../../../shared/typescript/registry.js';
 import { extractXmlRootElement } from '../../../shared/typescript/xml-utils.js';
 
+// Matches the "[SEVERITY][CHECK_ID]" prefix Checkov packs into JUnit testcase names
+// (a CKV/CKV2 check id for IaC, a CVE id for SCA). Only the prefix is keyed on, so
+// reworded check descriptions still match. Mirrors Go's checkovTestCaseName.
+const CHECKOV_TEST_CASE_NAME = /^\[[A-Z]+\]\[(?:CKV2?_[A-Z0-9_]+|CVE-\d{4}-\d+)\]/;
+
+/** Reports whether a JUnit testcase name carries Checkov's bracketed severity and check id prefix. */
+export function isCheckovTestCaseName(name: string): boolean {
+  return CHECKOV_TEST_CASE_NAME.test(name);
+}
+
 export const junitFingerprint: ConverterFingerprint = {
   id: 'junit-to-hdf',
   label: 'JUnit',

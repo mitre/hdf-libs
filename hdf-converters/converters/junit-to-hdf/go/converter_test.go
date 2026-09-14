@@ -1,9 +1,12 @@
 package junit
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -554,6 +557,48 @@ func TestConvertJUnitToHDF_EntityExpansion(t *testing.T) {
 	_, err := ConvertJUnitToHDF(input, converterVersion)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+// checkov-junit.xml is real Checkov 3.2.506 output (checkov -d . -o junitxml)
+// from a synthetic two-resource Terraform file written for this fixture.
+const checkovJUnitWarningLine = "WARNING: input looks like Checkov JUnit XML. junit-to-hdf keeps only Checkov's display strings and drops the check_id, severity and guideline that control mappings key on; re-run Checkov with -o json and convert that output with checkov-to-hdf instead."
+
+func captureLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(prev) })
+	return &buf
+}
+
+func TestConvertJUnitToHDF_CheckovJUnitWarns(t *testing.T) {
+	logs := captureLog(t)
+
+	result, err := ConvertJUnitToHDF(loadFixture(t, "checkov-junit.xml"), converterVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, strings.Count(logs.String(), checkovJUnitWarningLine), "warn exactly once per conversion")
+	assert.Equal(t, "junit-to-hdf", result.Generator.Name, "Checkov JUnit is converted as JUnit, not rerouted")
+	assert.Len(t, result.Baselines[0].Requirements, 18, "one requirement per testcase, as for any JUnit")
+}
+
+func TestConvertJUnitToHDF_GenericJUnitDoesNotWarnCheckov(t *testing.T) {
+	for _, fixture := range []string{
+		"node-test-mixed.xml",
+		"node-test-passing.xml",
+		"surefire-error.xml",
+		"surefire-failing.xml",
+		"surefire-flaky.xml",
+		"testsuites-mixed.xml",
+	} {
+		t.Run(fixture, func(t *testing.T) {
+			logs := captureLog(t)
+			_, err := ConvertJUnitToHDF(loadFixture(t, fixture), converterVersion)
+			require.NoError(t, err)
+			assert.NotContains(t, logs.String(), "checkov-to-hdf")
+		})
+	}
 }
 
 func TestSnapshots(t *testing.T) {

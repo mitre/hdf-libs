@@ -1,0 +1,487 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes) in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes)",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes)",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_93] Ensure S3 bucket policy does not lockout all but root user. (Prevent lockouts needing root account fixes)",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_260] Ensure no security groups allow ingress from 0.0.0.0:0 to port 80",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_277] Ensure no security groups allow ingress from 0.0.0.0:0 to port -1",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_25] Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_382] Ensure no security groups allow egress from 0.0.0.0:0 to port -1",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access. in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access.",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access.",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_20] S3 Bucket has an ACL defined which allows public READ access.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access. in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access.",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access.",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_57] S3 Bucket has an ACL defined which allows public WRITE access.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "passed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_19] Ensure all data stored in the S3 bucket is securely encrypted at rest",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22 in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22",
+              "message": "failure: Ensure no security groups allow ingress from 0.0.0.0:0 to port 22\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-13\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-1-port-security\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name = \"wide-open\"\n\t\t7  |   ingress {\n\t\t8  |     from_port   = 22\n\t\t9  |     to_port     = 22\n\t\t10 |     protocol    = \"tcp\"\n\t\t11 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t12 |   }\n\t\t13 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_24] Ensure no security groups allow ingress from 0.0.0.0:0 to port 22",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_23] Ensure every security group and rule has a description in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV_AWS_23] Ensure every security group and rule has a description",
+              "message": "failure: Ensure every security group and rule has a description\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-13\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-31\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name = \"wide-open\"\n\t\t7  |   ingress {\n\t\t8  |     from_port   = 22\n\t\t9  |     to_port     = 22\n\t\t10 |     protocol    = \"tcp\"\n\t\t11 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t12 |   }\n\t\t13 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV_AWS_23] Ensure every security group and rule has a description",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_23] Ensure every security group and rule has a description",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource in /main.tf.aws_security_group.wide_open",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_security_group.wide_open :: [NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource",
+              "message": "failure: Ensure that Security Groups are attached to another resource\nResource: aws_security_group.wide_open\nFile: /main.tf: 5-13\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-that-security-groups-are-attached-to-ec2-instances-or-elastic-network-interfaces-enis\n\n\t\t5  | resource \"aws_security_group\" \"wide_open\" {\n\t\t6  |   name = \"wide-open\"\n\t\t7  |   ingress {\n\t\t8  |     from_port   = 22\n\t\t9  |     to_port     = 22\n\t\t10 |     protocol    = \"tcp\"\n\t\t11 |     cidr_blocks = [\"0.0.0.0/0\"]\n\t\t12 |   }\n\t\t13 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_security_group.wide_open.[NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_5] Ensure that Security Groups are attached to another resource",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled",
+              "message": "failure: Ensure S3 buckets should have event notifications enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/bc-aws-2-62\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-bucket\"\n\t\t3 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_62] Ensure S3 buckets should have event notifications enabled",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block",
+              "message": "failure: Ensure that S3 bucket has a Public Access block\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/s3-bucket-should-have-public-access-blocks-defaults-to-false-if-the-public-access-block-is-not-attached\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-bucket\"\n\t\t3 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_6] Ensure that S3 bucket has a Public Access block",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default",
+              "message": "failure: Ensure that S3 buckets are encrypted with KMS by default\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-s3-buckets-are-encrypted-with-kms-by-default\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-bucket\"\n\t\t3 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_145] Ensure that S3 buckets are encrypted with KMS by default",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled",
+              "message": "failure: Ensure that S3 bucket has cross-region replication enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/ensure-that-s3-bucket-has-cross-region-replication-enabled\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-bucket\"\n\t\t3 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_144] Ensure that S3 bucket has cross-region replication enabled",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled",
+              "message": "failure: Ensure the S3 bucket has access logging enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/s3-policies/s3-13-enable-logging\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-bucket\"\n\t\t3 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_18] Ensure the S3 bucket has access logging enabled",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration",
+              "message": "failure: Ensure that an S3 bucket has a lifecycle configuration\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/bc-aws-2-61\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-bucket\"\n\t\t3 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV2_AWS_61] Ensure that an S3 bucket has a lifecycle configuration",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "JUnit test: [NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled in /main.tf.aws_s3_bucket.example",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "/main.tf.aws_s3_bucket.example :: [NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled",
+              "message": "failure: Ensure all data stored in the S3 bucket have versioning enabled\nResource: aws_s3_bucket.example\nFile: /main.tf: 1-3\nGuideline: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/s3-policies/s3-16-enable-versioning\n\n\t\t1 | resource \"aws_s3_bucket\" \"example\" {\n\t\t2 |   bucket = \"example-bucket\"\n\t\t3 | }",
+              "startTime": "2026-09-13T21:19:34.796732Z",
+              "status": "failed"
+            }
+          ],
+          "id": "/main.tf.aws_s3_bucket.example.[NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "controlType": "management",
+          "title": "[NONE][CKV_AWS_21] Ensure all data stored in the S3 bucket have versioning enabled",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "01c466523052cd3a4507a0c4d2cc270ac43ae2229e3473293996e488ed7e9886"
+      },
+      "name": "JUnit Test Results"
+    }
+  ],
+  "components": [
+    {
+      "name": "JUnit Test Results",
+      "type": "application"
+    }
+  ],
+  "generator": {
+    "name": "junit-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-13T21:19:34.796732Z",
+  "tool": {
+    "name": "JUnit XML"
+  }
+}

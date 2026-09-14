@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { convertJunitToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
@@ -25,6 +25,41 @@ async function parseHdf(fixture: string): Promise<HDFResults> {
 
 // Fixtures sourced from apache/maven-surefire test resources:
 // https://github.com/apache/maven-surefire/tree/master/surefire-report-parser/src/test/resources/fixture/testsuitexmlparser
+
+// checkov-junit.xml is real Checkov 3.2.506 output (checkov -d . -o junitxml)
+// from a synthetic two-resource Terraform file written for this fixture.
+const CHECKOV_JUNIT_WARNING =
+  "WARNING: input looks like Checkov JUnit XML. junit-to-hdf keeps only Checkov's display strings and drops the check_id, severity and guideline that control mappings key on; re-run Checkov with -o json and convert that output with checkov-to-hdf instead.";
+
+describe('junit-to-hdf Checkov JUnit detection', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('warns once, naming checkov-to-hdf, and still converts as JUnit', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const hdf = await parseHdf('checkov-junit.xml');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(CHECKOV_JUNIT_WARNING);
+    expect(hdf.generator.name).toBe('junit-to-hdf');
+    expect(hdf.baselines[0]!.requirements).toHaveLength(18);
+  });
+
+  it.each([
+    'node-test-mixed.xml',
+    'node-test-passing.xml',
+    'surefire-error.xml',
+    'surefire-failing.xml',
+    'surefire-flaky.xml',
+    'testsuites-mixed.xml',
+  ])('does not warn about Checkov for generic JUnit (%s)', async (fixture) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await parseHdf(fixture);
+    for (const call of warn.mock.calls) {
+      expect(String(call[0])).not.toContain('checkov-to-hdf');
+    }
+  });
+});
 
 runConverterContractTests({
   converterName: 'junit-to-hdf',

@@ -3,6 +3,7 @@ package junit
 import (
 	"encoding/xml"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -83,6 +84,7 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 	if err != nil {
 		return nil, err
 	}
+	warnIfCheckov(suites)
 
 	scanTime := resolveScanTime(suites)
 
@@ -118,6 +120,23 @@ func ConvertJUnitToHDF(input []byte, converterVersion string) (*hdf.HDFResults, 
 		Components:       components,
 		Timestamp:        &scanTime,
 	}), nil
+}
+
+// checkovJUnitWarning makes a Checkov JUnit conversion's metadata loss visible
+// without rerouting it: the generic JUnit conversion still runs.
+const checkovJUnitWarning = "input looks like Checkov JUnit XML. junit-to-hdf keeps only Checkov's display strings and drops the check_id, severity and guideline that control mappings key on; re-run Checkov with -o json and convert that output with checkov-to-hdf instead."
+
+// warnIfCheckov logs checkovJUnitWarning once when any testcase carries
+// Checkov's bracketed severity and check id prefix.
+func warnIfCheckov(suites []junitTestSuite) {
+	for _, suite := range suites {
+		for _, tc := range suite.TestCases {
+			if isCheckovTestCaseName(tc.Name) {
+				log.Printf("WARNING: %s", checkovJUnitWarning)
+				return
+			}
+		}
+	}
 }
 
 // hostComponents derives one host component per distinct testsuite @hostname

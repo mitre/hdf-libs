@@ -136,6 +136,15 @@ export { stripHtml as stripHTML } from '@mitre/hdf-utilities';
 export { chainOverrides } from './amendmentchain.js';
 
 /**
+ * Emit a non-fatal converter warning as "WARNING: <message>" on stderr, the
+ * TypeScript counterpart of Go's log.Printf("WARNING: ...").
+ */
+export function emitConverterWarning(message: string): void {
+  // eslint-disable-next-line no-console -- Intentional warning surfaced to the converter's caller
+  console.warn(`WARNING: ${message}`);
+}
+
+/**
  * Limit an array and log a warning if truncated.
  *
  * Wraps {@link limitArray} with a console.warn call when items are truncated.
@@ -152,8 +161,7 @@ export function limitArrayWithWarning<T>(
 ): T[] {
   const { items: limited, truncated } = limitArray(items, maxItems);
   if (truncated) {
-    // eslint-disable-next-line no-console -- Intentional warning for truncated input
-    console.warn(`WARNING: Input truncated at ${limited.length} ${label} items (original: ${items.length})`);
+    emitConverterWarning(`Input truncated at ${limited.length} ${label} items (original: ${items.length})`);
   }
   return limited;
 }
