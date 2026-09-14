@@ -11,6 +11,8 @@ import (
 	sarif "github.com/mitre/hdf-libs/hdf-converters/v3/converters/sarif-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
+	checkovmap "github.com/mitre/hdf-libs/hdf-mappings/go/v3/checkov"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -193,6 +195,16 @@ func checkTypesOf(checks []checkWithType) []string {
 	return out
 }
 
+// controlsFor resolves a check's NIST controls and CCIs from the Checkov
+// mapping dataset, falling back to the static-analysis controls when unmapped.
+func controlsFor(checkID string) (nist, ccis []string) {
+	if m, ok := checkovmap.Lookup(checkID); ok && len(m.NIST) > 0 {
+		return m.NIST, m.CCI
+	}
+	fallback := append([]string(nil), shared.DefaultStaticAnalysisNIST...)
+	return fallback, cci.NISTToCCI(fallback)
+}
+
 // buildRequirement converts a group of checks sharing a check_id into one EvaluatedRequirement.
 func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.EvaluatedRequirement {
 	checks := make([]CheckovCheck, len(group))
@@ -201,11 +213,12 @@ func buildRequirement(checkID string, group []checkWithType, now time.Time) hdf.
 	}
 	rep := checks[0]
 
-	nist := make([]string, len(shared.DefaultStaticAnalysisNIST))
-	copy(nist, shared.DefaultStaticAnalysisNIST)
-
+	nist, ccis := controlsFor(checkID)
 	tags := map[string]interface{}{
 		"nist": nist,
+	}
+	if len(ccis) > 0 {
+		tags["cci"] = ccis
 	}
 	// The scan scope (which framework's report produced this finding) is
 	// requirement-level data, not tool metadata.

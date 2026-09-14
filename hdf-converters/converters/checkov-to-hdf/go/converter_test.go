@@ -42,18 +42,16 @@ func TestConvertCheckovToHDF_ControlType(t *testing.T) {
 	reqs := result.Baselines[0].Requirements
 	require.NotEmpty(t, reqs)
 
-	var sawDerivation bool
+	// Every fixture check is in the mapping dataset, so each derives a
+	// controlType from its real controls rather than the omitted fallback.
 	for _, req := range reqs {
-		if req.ControlType != nil {
-			sawDerivation = true
-			switch *req.ControlType {
-			case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
-			default:
-				t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
-			}
+		require.NotNil(t, req.ControlType, "requirement %q should derive a controlType", req.ID)
+		switch *req.ControlType {
+		case hdf.Management, hdf.Operational, hdf.Technical, hdf.Policy, hdf.Procedure:
+		default:
+			t.Errorf("requirement %q has unrecognized controlType %q", req.ID, *req.ControlType)
 		}
 	}
-	assert.False(t, sawDerivation, "converter uses static-fallback NIST only; controlType must be omitted per helper gate")
 }
 
 // ---- Generator and tool metadata ----
@@ -498,16 +496,58 @@ func findDescription(descs []hdf.Description, label string) *hdf.Description {
 
 // ---- NIST tags ----
 
-func TestConvertCheckovToHDF_NISTTags(t *testing.T) {
+func TestConvertCheckovToHDF_MappedCheckTags(t *testing.T) {
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertCheckovToHDF(input, testVersion)
 	require.NoError(t, err)
 
+	req := checkovRequirement(t, result, "CKV_AWS_18")
+	assert.Equal(t, []string{"AU-2", "AU-12"}, req.Tags["nist"])
+	assert.Equal(t, []string{"CCI-000130", "CCI-000169"}, req.Tags["cci"])
+	assert.NotNil(t, req.ControlType, "a mapped check derives its controlType from its real controls")
+}
+
+func TestConvertCheckovToHDF_UnmappedCheckFallsBack(t *testing.T) {
+	input := []byte(`{
+		"check_type": "terraform",
+		"results": {
+			"passed_checks": [],
+			"failed_checks": [{
+				"check_id": "CKV_SYNTHETIC_UNMAPPED_1",
+				"check_name": "Synthetic check absent from the mapping dataset",
+				"check_result": {"result": "FAILED"},
+				"severity": null,
+				"file_path": "/main.tf",
+				"file_line_range": [1, 5],
+				"resource": "aws_s3_bucket.test",
+				"guideline": null,
+				"code_block": null,
+				"check_class": "checkov.terraform.checks.resource.Test"
+			}],
+			"skipped_checks": [],
+			"parsing_errors": []
+		},
+		"summary": {"passed": 0, "failed": 1, "skipped": 0, "parsing_errors": 0, "resource_count": 1, "checkov_version": "3.2.506"}
+	}`)
+	result, err := ConvertCheckovToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := checkovRequirement(t, result, "CKV_SYNTHETIC_UNMAPPED_1")
+	assert.Equal(t, []string{"SA-11", "RA-5"}, req.Tags["nist"])
+	assert.Equal(t, []string{"CCI-001643", "CCI-003173"}, req.Tags["cci"])
+	assert.Nil(t, req.ControlType, "the static fallback bundle must not derive a controlType")
+	assert.Equal(t, "unrated", req.Tags["severity_rating"])
+}
+
+func checkovRequirement(t *testing.T, result *hdf.HDFResults, id string) hdf.EvaluatedRequirement {
+	t.Helper()
 	for _, req := range result.Baselines[0].Requirements {
-		nist, ok := req.Tags["nist"].([]string)
-		require.True(t, ok, "nist tag should be []string for %s", req.ID)
-		assert.Equal(t, []string{"SA-11", "RA-5"}, nist, "should use default static analysis NIST tags")
+		if req.ID == id {
+			return req
+		}
 	}
+	t.Fatalf("requirement %s not found", id)
+	return hdf.EvaluatedRequirement{}
 }
 
 // ---- Multi-framework ----
