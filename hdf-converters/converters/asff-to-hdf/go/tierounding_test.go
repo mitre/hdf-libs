@@ -1,6 +1,7 @@
 package asff
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -12,19 +13,48 @@ import (
 // FROM ZERO, so any value whose exact binary expansion ends in a 5 at the cut
 // point rendered differently in the two languages. 7.25 and 0.03125 are exactly
 // representable and tie at 1 and 4 decimals, the precisions this converter uses.
-// The TypeScript peer asserts the same two strings on the same fixture.
+//
+// Derived from the committed unknown-producer fixture with only those two
+// numbers overridden, so the document keeps its real shape and no new fixture
+// claims to be sample data it is not. The TypeScript peer does the same.
+func tieRoundingInput(t *testing.T) []byte {
+	t.Helper()
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(loadFixture(t, "unknown-producer.json"), &doc))
+
+	findings, ok := doc["Findings"].([]interface{})
+	require.True(t, ok)
+	require.NotEmpty(t, findings)
+	for _, f := range findings {
+		vulns, ok := f.(map[string]interface{})["Vulnerabilities"].([]interface{})
+		if !ok || len(vulns) == 0 {
+			continue
+		}
+		v := vulns[0].(map[string]interface{})
+		v["EpssScore"] = 0.03125
+		if cvss, ok := v["Cvss"].([]interface{}); ok && len(cvss) > 0 {
+			cvss[0].(map[string]interface{})["BaseScore"] = 7.25
+		}
+		out, err := json.Marshal(doc)
+		require.NoError(t, err)
+		return out
+	}
+	t.Fatal("no finding with Vulnerabilities[] to override")
+	return nil
+}
+
 func TestVulnerabilitySummaryRendersTiesLikeToFixed(t *testing.T) {
-	results, err := ConvertAsffToHDF(loadFixture(t, "tie-rounding.json"), converterVersion)
+	results, err := ConvertAsffToHDF(tieRoundingInput(t), converterVersion)
 	require.NoError(t, err)
 	require.NotEmpty(t, results.Baselines)
-	require.NotEmpty(t, results.Baselines[0].Requirements)
 
-	// The summary is folded into the result message, not the descriptions.
 	var text strings.Builder
-	for _, r := range results.Baselines[0].Requirements[0].Results {
-		if r.Message != nil {
-			text.WriteString(*r.Message)
-			text.WriteString("\n")
+	for _, req := range results.Baselines[0].Requirements {
+		for _, r := range req.Results {
+			if r.Message != nil {
+				text.WriteString(*r.Message)
+				text.WriteString("\n")
+			}
 		}
 	}
 	out := text.String()
