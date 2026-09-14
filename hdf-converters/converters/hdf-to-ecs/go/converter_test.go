@@ -296,7 +296,7 @@ func TestConvertHDFToECS_GracefulDegradation(t *testing.T) {
 // TestGoldenParity asserts byte-for-byte output against frozen golden files.
 // The TypeScript test asserts against the SAME files, guaranteeing TS↔Go parity.
 func TestGoldenParity(t *testing.T) {
-	for _, name := range []string{"compliance", "cve", "override", "riskadjust"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust", "negzero"} {
 		out, err := ConvertHDFToECS(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
 		goldenPath := filepath.Join(shared.GetConvertersDir(), "hdf-to-ecs", "fixtures", "expected", name+".ndjson")

@@ -305,7 +305,7 @@ describe('hdf-to-ocsf converter', () => {
   });
 
   it('is byte-identical to the Go golden output (TS<->Go parity)', () => {
-    for (const name of ['compliance', 'cve', 'override', 'riskadjust', 'warnings', 'scalartag']) {
+    for (const name of ['compliance', 'cve', 'override', 'riskadjust', 'warnings', 'scalartag', 'negzero']) {
       expect(convertHdfToOcsf(input(`${name}.json`), VERSION)).toBe(golden(`${name}.ndjson`));
     }
   });

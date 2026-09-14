@@ -253,7 +253,7 @@ describe('hdf-to-ecs converter', () => {
   // Byte-for-byte equality with the SAME golden files the Go test asserts
   // against — this is the TS↔Go parity guarantee.
   it('matches golden NDJSON byte-for-byte (TS↔Go parity)', () => {
-    for (const name of ['compliance', 'cve', 'override', 'riskadjust']) {
+    for (const name of ['compliance', 'cve', 'override', 'riskadjust', 'negzero']) {
       expect(convertHdfToEcs(input(`${name}.json`), VERSION)).toBe(golden(`${name}.ndjson`));
     }
   });

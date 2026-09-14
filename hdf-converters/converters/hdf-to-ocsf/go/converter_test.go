@@ -167,7 +167,7 @@ func TestConvert_CVE(t *testing.T) {
 }
 
 func TestConvert_GoldenParity(t *testing.T) {
-	for _, name := range []string{"compliance", "cve", "override", "riskadjust", "warnings", "scalartag"} {
+	for _, name := range []string{"compliance", "cve", "override", "riskadjust", "warnings", "scalartag", "negzero"} {
 		out, err := ConvertHDFToOCSF(fixture(t, "input", name+".json"), converterVersion)
 		require.NoError(t, err)
 		if os.Getenv("UPDATE_GOLDEN") == "1" {

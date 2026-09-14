@@ -304,10 +304,38 @@ func EncodeLine(v interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(v); err != nil {
+	if err := enc.Encode(normalizeNegativeZero(v)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// normalizeNegativeZero rewrites IEEE negative zero to positive zero anywhere in
+// the tree, because Go's encoder keeps the sign where JSON.stringify drops it.
+// The hashing path (hdfutil.CanonicalJSON) deliberately KEEPS the sign, since a
+// checksum must reflect the bytes it was handed — do not unify the two.
+// Rebuilds containers rather than editing in place, so this never mutates its
+// caller's map.
+func normalizeNegativeZero(v interface{}) interface{} {
+	switch t := v.(type) {
+	case float64:
+		if t == 0 {
+			return 0.0 // drops the sign bit on -0 and leaves +0 untouched
+		}
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(t))
+		for k, val := range t {
+			out[k] = normalizeNegativeZero(val)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(t))
+		for i, val := range t {
+			out[i] = normalizeNegativeZero(val)
+		}
+		return out
+	}
+	return v
 }
 
 // FloatToken renders a float as a JSON number that always bears a decimal point,
@@ -317,6 +345,9 @@ func EncodeLine(v interface{}) ([]byte, error) {
 // TypeScript RawNumber. Domain is low-precision decimals (e.g. CVSS scores),
 // where Go's shortest-decimal format and JS's String() agree.
 func FloatToken(f float64) json.Number {
+	if f == 0 {
+		return "0.0" // matches -0 too, which strconv would otherwise render "-0.0"
+	}
 	s := strconv.FormatFloat(f, 'f', -1, 64)
 	if !strings.ContainsAny(s, ".eE") {
 		s += ".0"
