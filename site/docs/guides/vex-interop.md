@@ -232,12 +232,12 @@ unambiguously.
 ## See also
 
 - Per-converter provenance + partial-fidelity tables:
-  [openvex-to-hdf](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/openvex-to-hdf/fixtures/README.md),
-  [csaf-vex-to-hdf](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/csaf-vex-to-hdf/fixtures/README.md),
-  [cyclonedx-vex-to-hdf](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/cyclonedx-vex-to-hdf/fixtures/README.md),
-  [hdf-to-openvex](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/hdf-to-openvex/fixtures/README.md),
-  [hdf-to-csaf-vex](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/hdf-to-csaf-vex/fixtures/README.md),
-  [hdf-to-cyclonedx-vex](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/hdf-to-cyclonedx-vex/fixtures/README.md)
+  [openvex-to-hdf](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/openvex-to-hdf/fixtures/provenance.txt),
+  [csaf-vex-to-hdf](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/csaf-vex-to-hdf/fixtures/provenance.txt),
+  [cyclonedx-vex-to-hdf](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/cyclonedx-vex-to-hdf/fixtures/provenance.txt),
+  [hdf-to-openvex](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/hdf-to-openvex/fixtures/provenance.txt),
+  [hdf-to-csaf-vex](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/hdf-to-csaf-vex/fixtures/provenance.txt),
+  [hdf-to-cyclonedx-vex](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/converters/hdf-to-cyclonedx-vex/fixtures/provenance.txt)
 - Schema reference: [HDF Amendments — Standalone Override](https://mitre.github.io/hdf-libs/schemas/hdf-amendments.html)
 - Format specs: [OpenVEX](https://github.com/openvex/spec),
   [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html),
