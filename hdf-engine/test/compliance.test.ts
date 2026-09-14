@@ -97,7 +97,8 @@ describe('compliance counts + percentage — parity with go/compliance_test.go',
     expect(counts.skipped.total).toBe(1);
     expect(counts.skipped.low).toBe(1);
     expect(counts.error.total).toBe(1);
-    expect(counts.error.none).toBe(1);
+    // Was counts.error.none before the two spellings were unified.
+    expect(counts.error.informational).toBe(1);
     expect(counts.noImpact.total).toBe(1);
     expect(counts.noImpact.medium).toBe(1);
     expect(calculateCompliance(counts)).toBe(25.0);
@@ -154,13 +155,26 @@ describe('threshold verdict — parity with go/compliance_test.go TestValidateTh
       'passed.high: 1 exceeds maximum 0',
     ]);
   });
-  it('covers other status categories and severities (skipped.low, error.none min, no_impact.medium)', () => {
+  it('covers other status categories and severities (skipped.low, error.informational min, no_impact.medium)', () => {
     expect(validateThresholds({ skipped: { low: { max: 0 } } }, counts, compliance, controlMap)).toEqual([
       'skipped.low: 1 exceeds maximum 0',
     ]);
+    // The legacy `none` spelling still resolves, and reports under the name it
+    // normalizes to.
     expect(validateThresholds({ error: { none: { min: 5 } } }, counts, compliance, controlMap)).toEqual([
-      'error.none: 1 is below minimum 5',
+      'error.informational: 1 is below minimum 5',
     ]);
+    expect(validateThresholds({ error: { informational: { min: 5 } } }, counts, compliance, controlMap)).toEqual([
+      'error.informational: 1 is below minimum 5',
+    ]);
+    expect(
+      validateThresholds(
+        { error: { none: { min: 5 }, informational: { min: 5 } } },
+        counts,
+        compliance,
+        controlMap,
+      )[0],
+    ).toContain('pre-3.7 spelling');
     expect(validateThresholds({ noImpact: { medium: { max: 0 } } }, counts, compliance, controlMap)).toEqual([
       'no_impact.medium: 1 exceeds maximum 0',
     ]);
@@ -178,8 +192,9 @@ describe('deriveSeverity', () => {
   it('explicit severity wins over impact', () => {
     expect(deriveSeverity(0.5, 'high' as unknown as Severity)).toBe('high');
   });
-  it('impact-derived, informational maps to none', () => {
-    expect(deriveSeverity(0.0)).toBe('none');
+  it('impact-derived informational is the schema value, not a separate bucket', () => {
+    expect(deriveSeverity(0.0)).toBe('informational');
+    expect(deriveSeverity(0.0, 'informational' as unknown as Severity)).toBe('informational');
   });
   it('impact-derived high', () => {
     expect(deriveSeverity(0.7)).toBe('high');

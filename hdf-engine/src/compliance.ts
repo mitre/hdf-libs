@@ -18,7 +18,8 @@ export interface SeverityCounts {
   high: number;
   medium: number;
   low: number;
-  none: number;
+  /** The schema's fifth severity; also absorbs a severity that cannot be derived or is not in the enum. */
+  informational: number;
   total: number;
 }
 
@@ -47,6 +48,8 @@ export interface ThresholdSeverity {
   high?: ThresholdBound;
   medium?: ThresholdBound;
   low?: ThresholdBound;
+  informational?: ThresholdBound;
+  /** Pre-3.7 spelling of `informational`, normalized on read and never written. */
   none?: ThresholdBound;
   total?: ThresholdBound;
 }
@@ -66,7 +69,7 @@ export interface ThresholdConfig {
 }
 
 function newSeverityCounts(): SeverityCounts {
-  return { critical: 0, high: 0, medium: 0, low: 0, none: 0, total: 0 };
+  return { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 };
 }
 
 function newStatusCounts(): StatusCounts {
@@ -91,7 +94,9 @@ export function overallStatus(results: RequirementResult[]): string {
 
 /**
  * deriveSeverity determines the severity string from impact and optional explicit
- * severity, using impactToSeverity. Maps "informational" to "none".
+ * severity, using impactToSeverity. Both paths yield a value from the schema's
+ * severity enum: an explicit informational and an impact-derived one are the same
+ * thing and must not land in different buckets.
  */
 export function deriveSeverity(impact: number, severity?: Severity | null): string {
   // Presence-based, matching Go DeriveSeverity's `if severity != nil`: an explicit
@@ -101,8 +106,7 @@ export function deriveSeverity(impact: number, severity?: Severity | null): stri
   if (severity != null) {
     return String(severity);
   }
-  const sev = impactToSeverity(impact);
-  return sev === 'informational' ? 'none' : sev;
+  return impactToSeverity(impact);
 }
 
 function statusBucket(counts: StatusCounts, status: string): SeverityCounts {
@@ -139,7 +143,9 @@ function addCount(counts: StatusCounts, status: string, severity: string): void 
       sc.low++;
       break;
     default:
-      sc.none++;
+      // Informational plus anything outside the enum: an unrecognized severity
+      // is counted, never dropped, so a malformed document still gates.
+      sc.informational++;
   }
 }
 
@@ -279,6 +285,34 @@ export function calculateCompliance(counts: StatusCounts): number {
  * validateThresholds checks all threshold bounds against observed counts and
  * compliance, returning human-readable violation messages (empty when all pass).
  */
+/**
+ * normalizeLegacySeverity folds the pre-3.7 `none` key into `informational`. A
+ * spec setting both is refused rather than resolved: the two name one bucket, so
+ * silently honouring one would drop a bound the author wrote.
+ */
+function normalizeLegacySeverity(config: ThresholdConfig): string[] {
+  const violations: string[] = [];
+  const sections: [string, ThresholdSeverity | undefined][] = [
+    [THRESHOLD_PASSED, config.passed],
+    [THRESHOLD_FAILED, config.failed],
+    [THRESHOLD_SKIPPED, config.skipped],
+    [THRESHOLD_ERROR, config.error],
+    [THRESHOLD_NO_IMPACT, config.noImpact],
+  ];
+  for (const [name, ts] of sections) {
+    if (!ts?.none) continue;
+    if (ts.informational) {
+      violations.push(
+        `${name}: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket`,
+      );
+      continue;
+    }
+    ts.informational = ts.none;
+    delete ts.none;
+  }
+  return violations;
+}
+
 export function validateThresholds(
   config: ThresholdConfig,
   counts: StatusCounts,
@@ -286,6 +320,10 @@ export function validateThresholds(
   controlMap: ControlIDMapping[],
 ): string[] {
   const violations: string[] = [];
+
+  // Every construction path lands here, so the legacy spelling is resolved once
+  // rather than in each caller.
+  violations.push(...normalizeLegacySeverity(config));
 
   const actualControls = new Map<string, ControlIDMapping>();
   for (const m of controlMap) {
@@ -347,7 +385,7 @@ function checkSeverityThreshold(
   check('high', threshold.high, actual.high);
   check('medium', threshold.medium, actual.medium);
   check('low', threshold.low, actual.low);
-  check('none', threshold.none, actual.none);
+  check('informational', threshold.informational, actual.informational);
   check('total', threshold.total, actual.total);
 
   return violations;

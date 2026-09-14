@@ -24,8 +24,10 @@ type SeverityCounts struct {
 	High     int `yaml:"high,omitempty" json:"high,omitempty"`
 	Medium   int `yaml:"medium,omitempty" json:"medium,omitempty"`
 	Low      int `yaml:"low,omitempty" json:"low,omitempty"`
-	None     int `yaml:"none,omitempty" json:"none,omitempty"`
-	Total    int `yaml:"total" json:"total"`
+	// Informational is the schema's fifth severity. It also absorbs a severity
+	// that cannot be derived or is not in the enum at all.
+	Informational int `yaml:"informational,omitempty" json:"informational,omitempty"`
+	Total         int `yaml:"total" json:"total"`
 }
 
 // StatusCounts holds per-status severity breakdowns.
@@ -53,12 +55,16 @@ type ThresholdBound struct {
 
 // ThresholdSeverity holds per-severity bounds within a status category.
 type ThresholdSeverity struct {
-	Critical *ThresholdBound `yaml:"critical,omitempty" json:"critical,omitempty"`
-	High     *ThresholdBound `yaml:"high,omitempty" json:"high,omitempty"`
-	Medium   *ThresholdBound `yaml:"medium,omitempty" json:"medium,omitempty"`
-	Low      *ThresholdBound `yaml:"low,omitempty" json:"low,omitempty"`
-	None     *ThresholdBound `yaml:"none,omitempty" json:"none,omitempty"`
-	Total    *ThresholdBound `yaml:"total,omitempty" json:"total,omitempty"`
+	Critical      *ThresholdBound `yaml:"critical,omitempty" json:"critical,omitempty"`
+	High          *ThresholdBound `yaml:"high,omitempty" json:"high,omitempty"`
+	Medium        *ThresholdBound `yaml:"medium,omitempty" json:"medium,omitempty"`
+	Low           *ThresholdBound `yaml:"low,omitempty" json:"low,omitempty"`
+	Informational *ThresholdBound `yaml:"informational,omitempty" json:"informational,omitempty"`
+	// None is the pre-3.7 spelling of Informational, accepted so templates this
+	// tool generated before the two were unified still parse. Normalized into
+	// Informational by normalizeLegacySeverity; never written.
+	None  *ThresholdBound `yaml:"none,omitempty" json:"none,omitempty"`
+	Total *ThresholdBound `yaml:"total,omitempty" json:"total,omitempty"`
 }
 
 // ComplianceBound is a min/max bound on the compliance percentage.
@@ -209,16 +215,14 @@ func overallStatus(results []hdf.RequirementResult) hdf.ResultStatus {
 
 // DeriveSeverity determines the severity string from impact and optional
 // explicit severity, importing hdfutil.ImpactToSeverity for the impact-based
-// mapping. Maps "informational" to "none" for SAF CLI threshold compatibility.
+// mapping. Both paths yield a value from the schema's severity enum: an
+// explicit informational and an impact-derived one are the same thing and must
+// not land in different buckets.
 func DeriveSeverity(impact float64, severity *hdf.Severity) string {
 	if severity != nil {
 		return string(*severity)
 	}
-	sev := hdfutil.ImpactToSeverity(impact)
-	if sev == "informational" {
-		return "none"
-	}
-	return sev
+	return hdfutil.ImpactToSeverity(impact)
 }
 
 // addCount increments the appropriate severity bucket for the given status.
@@ -250,7 +254,9 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 	case string(hdf.SeverityLow):
 		sc.Low++
 	default:
-		sc.None++
+		// Informational plus anything outside the enum: an unrecognized severity
+		// is counted, never dropped, so a malformed document still gates.
+		sc.Informational++
 	}
 }
 
@@ -271,6 +277,10 @@ func CalculateCompliance(counts *StatusCounts) float64 {
 // all pass).
 func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
 	var violations []string
+
+	// Every construction path lands here, so the legacy spelling is resolved
+	// once rather than in each of the file, inline and MCP callers.
+	violations = append(violations, normalizeLegacySeverity(config)...)
 
 	actualControls := make(map[string]ControlIDMapping)
 	for _, m := range controlMap {
@@ -298,6 +308,37 @@ func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, complianc
 }
 
 // checkSeverityThreshold validates all severity bounds within a status category.
+// normalizeLegacySeverity folds the pre-3.7 "none" key into "informational".
+// A spec setting both is refused rather than resolved: the two name one bucket,
+// so silently honouring one would drop a bound the author wrote.
+func normalizeLegacySeverity(config *ThresholdConfig) []string {
+	if config == nil {
+		return nil
+	}
+	var violations []string
+	sections := map[string]*ThresholdSeverity{
+		ThresholdPassed:   config.Passed,
+		ThresholdFailed:   config.Failed,
+		ThresholdSkipped:  config.Skipped,
+		ThresholdError:    config.Error,
+		ThresholdNoImpact: config.NoImpact,
+	}
+	for _, name := range []string{ThresholdPassed, ThresholdFailed, ThresholdSkipped, ThresholdError, ThresholdNoImpact} {
+		ts := sections[name]
+		if ts == nil || ts.None == nil {
+			continue
+		}
+		if ts.Informational != nil {
+			violations = append(violations, fmt.Sprintf(
+				"%s: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket", name))
+			continue
+		}
+		ts.Informational = ts.None
+		ts.None = nil
+	}
+	return violations
+}
+
 func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping) []string {
 	if threshold == nil {
 		return nil
@@ -331,7 +372,7 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 	check("high", threshold.High, actual.High)
 	check("medium", threshold.Medium, actual.Medium)
 	check("low", threshold.Low, actual.Low)
-	check("none", threshold.None, actual.None)
+	check("informational", threshold.Informational, actual.Informational)
 	check("total", threshold.Total, actual.Total)
 
 	return violations
