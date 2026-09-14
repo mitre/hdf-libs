@@ -5,6 +5,12 @@
       "source": "https://github.com/usnistgov/OSCAL/releases/download/v1.1.2/oscal_poam_schema.json",
       "sha256": "906725163d767036c6189aec51252109b203214e121fc1acaff494b4d2dfbc04",
       "retrieved": "2026-09-09"
+    },
+    {
+      "file": "oscal_poam_schema-v1.2.3.json",
+      "source": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_poam_schema.json",
+      "sha256": "f4fd94487408a9589954b5b92d88965c984d4f79b85365cc574b860898759437",
+      "retrieved": "2026-09-14"
     }
   ]
 }
