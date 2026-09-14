@@ -304,11 +304,19 @@ func EncodeLine(v interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(normalizeNegativeZero(v)); err != nil {
+	if err := enc.Encode(normalizeNegativeZero(v, 0)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
+
+// maxNormalizeDepth mirrors the threshold encoding/json itself uses before it
+// starts looking for reference cycles. Past it this walk stops descending and
+// hands the rest of the tree to the encoder, which reports a cycle as an error.
+// Without the cap a cyclic map — legal to construct, and something the encoder
+// used to reject cleanly — would recurse until the stack overflowed, turning a
+// returned error into a crash. Real HDF events nest around ten deep.
+const maxNormalizeDepth = 1000
 
 // normalizeNegativeZero rewrites IEEE negative zero to positive zero anywhere in
 // the tree, because Go's encoder keeps the sign where JSON.stringify drops it.
@@ -316,7 +324,10 @@ func EncodeLine(v interface{}) ([]byte, error) {
 // checksum must reflect the bytes it was handed — do not unify the two.
 // Rebuilds containers rather than editing in place, so this never mutates its
 // caller's map.
-func normalizeNegativeZero(v interface{}) interface{} {
+func normalizeNegativeZero(v interface{}, depth int) interface{} {
+	if depth > maxNormalizeDepth {
+		return v
+	}
 	switch t := v.(type) {
 	case float64:
 		if t == 0 {
@@ -325,13 +336,13 @@ func normalizeNegativeZero(v interface{}) interface{} {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(t))
 		for k, val := range t {
-			out[k] = normalizeNegativeZero(val)
+			out[k] = normalizeNegativeZero(val, depth+1)
 		}
 		return out
 	case []interface{}:
 		out := make([]interface{}, len(t))
 		for i, val := range t {
-			out[i] = normalizeNegativeZero(val)
+			out[i] = normalizeNegativeZero(val, depth+1)
 		}
 		return out
 	}
