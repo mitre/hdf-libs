@@ -205,8 +205,14 @@ func getSeverityBound(ts *ThresholdSeverity, severity string) *ThresholdBound {
 		}
 		return ts.Low
 	case "none":
-		// The pre-3.7 spelling, still reachable from an inline path.
-		fallthrough
+		// The pre-3.7 spelling, reachable only from an inline path — a document
+		// severity is never "none". It must land in the legacy field rather than
+		// being folded here, so ValidateThresholds can still see a spec that
+		// names both spellings and refuse it instead of silently overwriting one.
+		if ts.None == nil {
+			ts.None = &ThresholdBound{}
+		}
+		return ts.None
 	default:
 		// Informational, plus any severity outside the schema enum — bucketed
 		// here rather than dropped, matching the engine's addCount.

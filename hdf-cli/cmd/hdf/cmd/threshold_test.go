@@ -781,10 +781,11 @@ const testResultsEverySchemaSeverity = `{
 	}]
 }`
 
-// A generated template must validate the document it was generated from. The
-// break this pins: generate bucketed severities through getSeverityBound while
-// validate compared the raw severity string, so an explicit "informational"
-// produced "expected no_impact/none but found no_impact/informational".
+// A generated template must validate the document it was generated from. This
+// pins the round-trip regression: generate bucketed severities through
+// getSeverityBound while validate compared the raw severity string, so an
+// explicit "informational" produced
+// "expected no_impact/none but found no_impact/informational".
 func TestThresholdRoundTrip_EverySchemaSeverity(t *testing.T) {
 	dir := t.TempDir()
 	resultsPath := filepath.Join(dir, "results.json")
@@ -834,4 +835,18 @@ func TestValidateThreshold_LegacyNoneKeyIsAcceptedAsInformational(t *testing.T) 
 
 	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.none.min: 2}")
 	require.NoError(t, err, "legacy none: must still resolve")
+}
+
+// The inline path must route the legacy spelling to the legacy field, not fold
+// it early — otherwise a spec naming both writes them to one pointer and the
+// second silently overwrites the first instead of being refused.
+func TestValidateThreshold_InlineBothSpellingsIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := filepath.Join(dir, "results.json")
+	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath,
+		"-I", "{no_impact.none.max: 1}, {no_impact.informational.max: 2}")
+	require.Error(t, err, "a spec naming one bucket twice must be refused, not silently resolved")
+	assert.Contains(t, err.Error(), "pre-3.7 spelling")
 }

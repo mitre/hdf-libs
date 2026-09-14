@@ -59,8 +59,11 @@ func TestSeverityToLabel(t *testing.T) {
 		{"high", "HIGH"},
 		{"medium", "MED "},
 		{"low", "LOW "},
-		{"none", "NONE"},
-		{"unknown", "NONE"},
+		// The engine only ever emits a schema severity, so informational is what
+		// reaches this label; anything else is an unknown value from a hand-built
+		// requirement and shares its bucket.
+		{"informational", "INFO"},
+		{"unknown", "INFO"},
 	}
 
 	for _, tt := range tests {
@@ -391,4 +394,43 @@ func TestQueryMultiFlag_ANDAcrossORWithin(t *testing.T) {
 		"--count", fixturePath)
 	require.NoError(t, err)
 	assert.Equal(t, "2\n", stdout)
+}
+
+// An impact-0 requirement derives "informational", so that is what selects it.
+// The severity vocabulary here has to track DeriveSeverity: when the two drift,
+// the value the --severity help advertises matches nothing at all.
+func TestQuerySeverity_InformationalSelectsImpactZero(t *testing.T) {
+	reqs := []map[string]any{
+		makeReqWithStatus("REQ-ZERO", 0.0, "notReviewed"),
+		makeReqWithStatus("REQ-MED", 0.5, "failed"),
+	}
+	fixturePath := buildQueryFixture(t, reqs)
+
+	stdout, _, err := executeCommand("query", "--severity", "informational", "--count", fixturePath)
+	require.NoError(t, err)
+	assert.Equal(t, "1\n", stdout)
+}
+
+// The pre-3.7 spelling keeps selecting the same findings, so a saved command
+// line does not quietly start matching nothing.
+func TestQuerySeverity_LegacyNoneStillSelects(t *testing.T) {
+	reqs := []map[string]any{
+		makeReqWithStatus("REQ-ZERO", 0.0, "notReviewed"),
+		makeReqWithStatus("REQ-MED", 0.5, "failed"),
+	}
+	fixturePath := buildQueryFixture(t, reqs)
+
+	stdout, _, err := executeCommand("query", "--severity", "none", "--count", fixturePath)
+	require.NoError(t, err)
+	assert.Equal(t, "1\n", stdout)
+}
+
+// The human-readable label must name the severity the row actually carries.
+func TestQuerySeverity_ImpactZeroRendersAsInfo(t *testing.T) {
+	fixturePath := buildQueryFixture(t, []map[string]any{makeReqWithStatus("REQ-ZERO", 0.0, "notReviewed")})
+
+	stdout, _, err := executeCommand("query", fixturePath)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "INFO")
+	assert.NotContains(t, stdout, "NONE")
 }

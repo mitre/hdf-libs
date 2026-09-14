@@ -307,7 +307,6 @@ func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, complianc
 	return violations
 }
 
-// checkSeverityThreshold validates all severity bounds within a status category.
 // normalizeLegacySeverity folds the pre-3.7 "none" key into "informational".
 // A spec setting both is refused rather than resolved: the two name one bucket,
 // so silently honouring one would drop a bound the author wrote.
@@ -339,6 +338,7 @@ func normalizeLegacySeverity(config *ThresholdConfig) []string {
 	return violations
 }
 
+// checkSeverityThreshold validates all severity bounds within a status category.
 func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping) []string {
 	if threshold == nil {
 		return nil

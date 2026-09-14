@@ -546,9 +546,9 @@ func TestGroupSeverity_ExplicitAndDerived(t *testing.T) {
 		t.Errorf("impact-derived, got %q want critical", g)
 	}
 	// Zero band: no explicit tag → "informational", the schema's value and the
-	// same bucket an explicitly-informational requirement lands in. Must track
-	// DeriveSeverity — the surviving-fork regression from the lj0g.5 review was
-	// this key diverging from the counts.
+	// same bucket an explicitly-informational requirement lands in. This key must
+	// track DeriveSeverity rather than calling ImpactToSeverity directly: a
+	// second derivation here would drift from the counts it labels.
 	if g := groupSeverity(hdf.EvaluatedRequirement{Impact: 0.0}); g != "informational" {
 		t.Errorf("impact-0 no tag group key = %q, want informational (must match DeriveSeverity)", g)
 	}

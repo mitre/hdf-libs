@@ -230,12 +230,12 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 			bound = ts.Total
 		} else {
 			// getSeverityBound buckets anything it does not recognize into
-			// "none", which is right when generate is placing a scan's own
-			// severity but wrong here: this segment was typed by a user, so an
-			// unrecognized name is a typo that would otherwise assert a bound
+			// "informational", which is right when generate is placing a scan's
+			// own severity but wrong here: this segment was typed by a user, so
+			// an unrecognized name is a typo that would otherwise assert a bound
 			// nobody asked for and pass silently.
 			if !isKnownSeverityField(segments[1]) {
-				return fmt.Errorf("unknown severity field %q (expected 'critical', 'high', 'medium', 'low', 'none', or 'total')", segments[1])
+				return fmt.Errorf("unknown severity field %q (expected 'critical', 'high', 'medium', 'low', 'informational', or 'total')", segments[1])
 			}
 			bound = getSeverityBound(ts, segments[1])
 		}
