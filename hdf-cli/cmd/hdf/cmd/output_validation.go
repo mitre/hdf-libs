@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -34,8 +33,8 @@ func shouldSkipValidation(cmd *cobra.Command) bool {
 // is responsible for only invoking this when the output is expected to
 // be HDF.
 func validateHDFOutput(data []byte) error {
-	docType, ok := detectHDFDocType(data)
-	if !ok {
+	docType := detectHDFDocumentType(data)
+	if docType == "" {
 		return nil
 	}
 	switch docType {
@@ -64,7 +63,7 @@ func validateHDFOutput(data []byte) error {
 		if !result.Valid {
 			return fmt.Errorf("output failed HDF Plan schema validation: %s", result.Error())
 		}
-	case "evidencePackage":
+	case "evidence-package":
 		result := validators.ValidateEvidencePackage(data)
 		if !result.Valid {
 			return fmt.Errorf("output failed HDF Evidence Package schema validation: %s", result.Error())
@@ -76,49 +75,6 @@ func validateHDFOutput(data []byte) error {
 		}
 	}
 	return nil
-}
-
-// detectHDFDocType inspects the top-level JSON shape and returns the HDF
-// document type when one of the seven root signatures matches. Probe order
-// is most-specific-first so that documents with overlapping fields (e.g.
-// `name` appears on five doc types) route to the right validator.
-//
-//	baselines        -> results
-//	overrides        -> amendments
-//	requirementDiffs -> comparison    (unique to Comparison root)
-//	assessments      -> plan
-//	contents         -> evidencePackage
-//	requirements     -> baseline
-//	components       -> system        (last; Results' `baselines` check already excluded)
-//
-// Returns ("", false) when no signature key matches.
-func detectHDFDocType(data []byte) (string, bool) {
-	var probe map[string]json.RawMessage
-	if err := json.Unmarshal(data, &probe); err != nil {
-		return "", false
-	}
-	if _, ok := probe["baselines"]; ok {
-		return "results", true
-	}
-	if _, ok := probe["overrides"]; ok {
-		return "amendments", true
-	}
-	if _, ok := probe["requirementDiffs"]; ok {
-		return "comparison", true
-	}
-	if _, ok := probe["assessments"]; ok {
-		return "plan", true
-	}
-	if _, ok := probe["contents"]; ok {
-		return "evidencePackage", true
-	}
-	if _, ok := probe["requirements"]; ok {
-		return "baseline", true
-	}
-	if _, ok := probe["components"]; ok {
-		return "system", true
-	}
-	return "", false
 }
 
 // writeValidatedHDFOutput validates HDF-shaped output before writing.

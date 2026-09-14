@@ -24,6 +24,17 @@ func Detect(data []byte) string {
 		return string(validators.TypeRequirementChangeEvent)
 	}
 
+	// This is the SINGLE HDF fingerprinter for the CLI and MCP — the former
+	// CLI-local root-key detector was removed in favor of it, so all callers
+	// share one precedence and one vocabulary (validators.Type*).
+	//
+	// Precedence is most-specific-first: a document that carries several root
+	// keys is classified by the more distinctive one. `contents` (evidence
+	// package), `overrides` (amendments) and `assessments` (plan) are each unique
+	// to one type and win over the broader `baselines`/`components`/`requirements`.
+	// Comparison is keyed on `comparisonMode` (its semantic discriminator); the
+	// schema requires both `comparisonMode` and `requirementDiffs`, so either
+	// identifies a valid comparison, and comparisonMode is the canonical choice.
 	switch {
 	case hasKeys(doc, "contents"):
 		return string(validators.TypeEvidencePackage)
