@@ -1,0 +1,11843 @@
+{
+  "$comment": [
+    "Checkov check_id -> DISA CCI + NIST SP 800-53 mapping, ported verbatim (entry order and list order preserved) from the published @mitre/hdf-converters 2.14.0 package. Do not hand-edit entries; correct a mapping upstream and re-port.",
+    "Upstream methodology, quoted from the source file header (updated 2026-04-04): \"Use `checkov --list` to get starting baseline document. Using generative AI (Opus 4.6), mapped from Checkov v3.2.506 to CIS v8 rule IDs to NIST control families to DISA CCI. Results were peer reviewed by two personnel after for completeness. Total checks mapped: 1341\"",
+    "nistRevision is 5 because the table uses SR-3, which exists only at Rev 5; lookups translate to the process-wide NIST revision.",
+    "Coverage gaps: checks added to Checkov after v3.2.506 are absent and fall back to the static-analysis controls. List the current checks with `checkov --list`, compare against these keys, map the difference with the methodology above, and publish the reviewed result before re-porting.",
+    "Re-port: `npm pack @mitre/hdf-converters@<version>`, confirm the tarball matches the registry integrity (`npm view @mitre/hdf-converters@<version> dist.integrity`), load `package/lib/src/mappings/CheckovToCciAndNistMappingData.js` with Node, and write each entry of its exported `data` object into `mappings` as {cci, nist} in source order."
+  ],
+  "source": {
+    "package": "@mitre/hdf-converters",
+    "version": "2.14.0",
+    "path": "package/lib/src/mappings/CheckovToCciAndNistMappingData.js",
+    "integrity": "sha512-owKH7EgCGc9TdNLB4ytb3CnSCvN/411CMBx2EfOkTJWVww44XFmPoW4dWq42Ro69NVfp6t4ddtCo3lyf1FedcA=="
+  },
+  "checkovVersion": "3.2.506",
+  "updated": "2026-04-04",
+  "nistRevision": 5,
+  "mappings": {
+    "CKV2_ADO_1": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV2_ANSIBLE_1": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_ANSIBLE_2": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_ANSIBLE_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_ANSIBLE_4": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV2_ANSIBLE_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_ANSIBLE_6": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_AWS_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_10": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV2_AWS_11": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AWS_12": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV2_AWS_14": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV2_AWS_15": {
+      "cci": [
+        "CCI-000557",
+        "CCI-002386"
+      ],
+      "nist": [
+        "CP-10(4)",
+        "SC-5(2)"
+      ]
+    },
+    "CKV2_AWS_16": {
+      "cci": [
+        "CCI-000557",
+        "CCI-002386"
+      ],
+      "nist": [
+        "CP-10(4)",
+        "SC-5(2)"
+      ]
+    },
+    "CKV2_AWS_18": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_19": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AWS_2": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV2_AWS_20": {
+      "cci": [
+        "CCI-002420",
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-7(4)"
+      ]
+    },
+    "CKV2_AWS_21": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV2_AWS_22": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_23": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_27": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AWS_28": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV2_AWS_29": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV2_AWS_3": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV2_AWS_30": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AWS_31": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AWS_32": {
+      "cci": [
+        "CCI-000227",
+        "CCI-001310"
+      ],
+      "nist": [
+        "IR-4(1)",
+        "IR-5(1)"
+      ]
+    },
+    "CKV2_AWS_33": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV2_AWS_34": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV2_AWS_35": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_36": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_37": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV2_AWS_38": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)",
+        "SC-20"
+      ]
+    },
+    "CKV2_AWS_39": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AWS_4": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AWS_40": {
+      "cci": [
+        "CCI-000235",
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(10)",
+        "AC-6(1)"
+      ]
+    },
+    "CKV2_AWS_41": {
+      "cci": [
+        "CCI-000016",
+        "CCI-000213"
+      ],
+      "nist": [
+        "AC-2(1)",
+        "AC-3"
+      ]
+    },
+    "CKV2_AWS_42": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_43": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_44": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AWS_45": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_46": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_47": {
+      "cci": [
+        "CCI-001109",
+        "CCI-001248"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SI-3(7)"
+      ]
+    },
+    "CKV2_AWS_48": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_49": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_AWS_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_50": {
+      "cci": [
+        "CCI-000555",
+        "CCI-000509"
+      ],
+      "nist": [
+        "CP-10(2)",
+        "CP-9"
+      ]
+    },
+    "CKV2_AWS_51": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_52": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_53": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_54": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_AWS_55": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_56": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_57": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV2_AWS_58": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_59": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_6": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV2_AWS_60": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_61": {
+      "cci": [
+        "CCI-001904",
+        "CCI-000167"
+      ],
+      "nist": [
+        "MP-6(1)",
+        "AU-11"
+      ]
+    },
+    "CKV2_AWS_62": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000229"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "IR-6(1)"
+      ]
+    },
+    "CKV2_AWS_63": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AWS_64": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AWS_65": {
+      "cci": [
+        "CCI-002166"
+      ],
+      "nist": [
+        "AC-3(4)"
+      ]
+    },
+    "CKV2_AWS_66": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV2_AWS_68": {
+      "cci": [
+        "CCI-000235",
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(10)",
+        "AC-6(1)"
+      ]
+    },
+    "CKV2_AWS_69": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_AWS_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_70": {
+      "cci": [
+        "CCI-002170",
+        "CCI-001953"
+      ],
+      "nist": [
+        "AC-3(8)",
+        "IA-2(8)"
+      ]
+    },
+    "CKV2_AWS_71": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_72": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_73": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AWS_74": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV2_AWS_75": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_76": {
+      "cci": [
+        "CCI-001109",
+        "CCI-001248"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SI-3(7)"
+      ]
+    },
+    "CKV2_AWS_77": {
+      "cci": [
+        "CCI-001109",
+        "CCI-001248"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SI-3(7)"
+      ]
+    },
+    "CKV2_AWS_78": {
+      "cci": [
+        "CCI-001109",
+        "CCI-001248"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SI-3(7)"
+      ]
+    },
+    "CKV2_AWS_8": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AWS_9": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_1": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AZURE_10": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_11": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV2_AZURE_12": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_13": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_14": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV2_AZURE_15": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AZURE_16": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AZURE_17": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AZURE_19": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV2_AZURE_2": {
+      "cci": [
+        "CCI-001645"
+      ],
+      "nist": [
+        "RA-5(2)"
+      ]
+    },
+    "CKV2_AZURE_20": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AZURE_21": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AZURE_22": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AZURE_23": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_24": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_25": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV2_AZURE_26": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_27": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_29": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_30": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_AZURE_31": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_32": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_33": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_34": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_37": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV2_AZURE_38": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_39": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV2_AZURE_4": {
+      "cci": [
+        "CCI-001644",
+        "CCI-002606"
+      ],
+      "nist": [
+        "RA-5(1)",
+        "SI-2(1)"
+      ]
+    },
+    "CKV2_AZURE_40": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_41": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_42": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_43": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_44": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_45": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_46": {
+      "cci": [
+        "CCI-001645"
+      ],
+      "nist": [
+        "RA-5(2)"
+      ]
+    },
+    "CKV2_AZURE_47": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_48": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_AZURE_49": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_50": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV2_AZURE_51": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_52": {
+      "cci": [
+        "CCI-001645"
+      ],
+      "nist": [
+        "RA-5(2)"
+      ]
+    },
+    "CKV2_AZURE_53": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_AZURE_54": {
+      "cci": [
+        "CCI-000135",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-3(1)",
+        "AU-12"
+      ]
+    },
+    "CKV2_AZURE_55": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_AZURE_56": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_57": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_AZURE_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_AZURE_8": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV2_AZURE_9": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_DOCKER_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_DOCKER_10": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV2_DOCKER_11": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV2_DOCKER_12": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_13": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_14": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_15": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV2_DOCKER_16": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_17": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_DOCKER_2": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_3": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_4": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_5": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_6": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV2_DOCKER_7": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV2_DOCKER_8": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV2_DOCKER_9": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV2_GCP_1": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV2_GCP_10": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_11": {
+      "cci": [
+        "CCI-001645"
+      ],
+      "nist": [
+        "RA-5(2)"
+      ]
+    },
+    "CKV2_GCP_12": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV2_GCP_13": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_14": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_15": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_16": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_17": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_18": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV2_GCP_19": {
+      "cci": [
+        "CCI-001521"
+      ],
+      "nist": [
+        "CM-7(2)"
+      ]
+    },
+    "CKV2_GCP_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_20": {
+      "cci": [
+        "CCI-000510"
+      ],
+      "nist": [
+        "CP-9(1)"
+      ]
+    },
+    "CKV2_GCP_21": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_22": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_23": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_24": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_25": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_26": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_27": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_28": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_29": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_GCP_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_30": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_GCP_31": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_GCP_32": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_33": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_34": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_35": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_36": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_GCP_37": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_38": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_4": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_GCP_5": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV2_GCP_6": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GCP_8": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV2_GCP_9": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV2_GHA_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_GIT_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_IBM_1": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_IBM_2": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_IBM_3": {
+      "cci": [
+        "CCI-000018",
+        "CCI-000192"
+      ],
+      "nist": [
+        "AC-2(3)",
+        "IA-5(1)"
+      ]
+    },
+    "CKV2_IBM_4": {
+      "cci": [
+        "CCI-000765",
+        "CCI-000766"
+      ],
+      "nist": [
+        "IA-2(1)",
+        "IA-2(2)"
+      ]
+    },
+    "CKV2_IBM_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_IBM_7": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV2_K8S_1": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV2_K8S_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_K8S_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_K8S_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_K8S_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_K8S_6": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV2_OCI_1": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV2_OCI_2": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV2_OCI_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV2_OCI_4": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV2_OCI_5": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV2_OCI_6": {
+      "cci": [
+        "CCI-001521",
+        "CCI-000235"
+      ],
+      "nist": [
+        "CM-7(2)",
+        "AC-6(10)"
+      ]
+    },
+    "CKV_ALI_1": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_ALI_10": {
+      "cci": [
+        "CCI-000510",
+        "CCI-000164"
+      ],
+      "nist": [
+        "CP-9(1)",
+        "AU-9(2)"
+      ]
+    },
+    "CKV_ALI_11": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_12": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_ALI_13": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_ALI_14": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_ALI_15": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_ALI_16": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_ALI_17": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_ALI_18": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_ALI_19": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_ALI_2": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_ALI_20": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_21": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_22": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_ALI_23": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_ALI_24": {
+      "cci": [
+        "CCI-000765",
+        "CCI-000766"
+      ],
+      "nist": [
+        "IA-2(1)",
+        "IA-2(2)"
+      ]
+    },
+    "CKV_ALI_25": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_26": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_27": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_ALI_28": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_ALI_29": {
+      "cci": [
+        "CCI-001104",
+        "CCI-000172"
+      ],
+      "nist": [
+        "SC-7(9)",
+        "AU-12(1)"
+      ]
+    },
+    "CKV_ALI_3": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_ALI_30": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_31": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_32": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_ALI_33": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_35": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_36": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_37": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_38": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_ALI_4": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_ALI_41": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_ALI_42": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ALI_43": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_ALI_44": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_ALI_5": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_ALI_6": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_ALI_7": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_ALI_8": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_ALI_9": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_ANSIBLE_1": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV_ANSIBLE_2": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV_ANSIBLE_3": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV_ANSIBLE_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_ANSIBLE_5": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_ANSIBLE_6": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_ARGO_1": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_ARGO_2": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AWS_1": {
+      "cci": [
+        "CCI-000235",
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(10)",
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_10": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_AWS_100": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_AWS_101": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_102": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_103": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_104": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_105": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_106": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_107": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_108": {
+      "cci": [
+        "CCI-002476",
+        "CCI-001821"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "MP-4"
+      ]
+    },
+    "CKV_AWS_109": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_11": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_110": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_111": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_112": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AWS_113": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_114": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_115": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_116": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_117": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_118": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_119": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_12": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_120": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_121": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_122": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_123": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_124": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000229"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "IR-6(1)"
+      ]
+    },
+    "CKV_AWS_126": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_127": {
+      "cci": [
+        "CCI-002420",
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-7(4)"
+      ]
+    },
+    "CKV_AWS_129": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_13": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_AWS_130": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_131": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_133": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_134": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_135": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_136": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_137": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_138": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_139": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_14": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_140": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_141": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AWS_142": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_143": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_144": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AWS_145": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_146": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_147": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_148": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_149": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_15": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_150": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_152": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_153": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_154": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_155": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_156": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_157": {
+      "cci": [
+        "CCI-000555",
+        "CCI-000509"
+      ],
+      "nist": [
+        "CP-10(2)",
+        "CP-9"
+      ]
+    },
+    "CKV_AWS_158": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_159": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_16": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_160": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_161": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_162": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_163": {
+      "cci": [
+        "CCI-001644",
+        "CCI-002606"
+      ],
+      "nist": [
+        "RA-5(1)",
+        "SI-2(1)"
+      ]
+    },
+    "CKV_AWS_164": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_165": {
+      "cci": [
+        "CCI-000510"
+      ],
+      "nist": [
+        "CP-9(1)"
+      ]
+    },
+    "CKV_AWS_166": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_167": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_168": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_169": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_17": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_170": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_171": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_172": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_173": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_174": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_175": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AWS_176": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AWS_177": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_178": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_179": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_18": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_180": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_181": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_182": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_183": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_184": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_185": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_186": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_187": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_189": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_19": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_190": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_191": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_192": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AWS_193": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_194": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_195": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_196": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_197": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_198": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_199": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_2": {
+      "cci": [
+        "CCI-002420",
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-7(4)"
+      ]
+    },
+    "CKV_AWS_20": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_200": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_201": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_202": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AWS_203": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_204": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_205": {
+      "cci": [
+        "CCI-000213"
+      ],
+      "nist": [
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_206": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)",
+        "SC-20"
+      ]
+    },
+    "CKV_AWS_207": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_208": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_209": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_21": {
+      "cci": [
+        "CCI-000510",
+        "CCI-000164"
+      ],
+      "nist": [
+        "CP-9(1)",
+        "AU-9(2)"
+      ]
+    },
+    "CKV_AWS_210": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_211": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_212": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_213": {
+      "cci": [
+        "CCI-002420",
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-7(4)"
+      ]
+    },
+    "CKV_AWS_214": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_215": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AWS_216": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_217": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_218": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_219": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_22": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_220": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_221": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_222": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AWS_223": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_224": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_225": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_226": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_227": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_228": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_229": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_23": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_230": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_231": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_232": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_233": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_234": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_235": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_236": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_237": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_238": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AWS_239": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_24": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_240": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_241": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_242": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_243": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_244": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_245": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_246": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_247": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_248": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_249": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_25": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_250": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_251": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_AWS_252": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_AWS_253": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AWS_254": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_255": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AWS_256": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_257": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_AWS_258": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_259": {
+      "cci": [
+        "CCI-000227",
+        "CCI-001310"
+      ],
+      "nist": [
+        "IR-4(1)",
+        "IR-5(1)"
+      ]
+    },
+    "CKV_AWS_26": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_260": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_261": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_262": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_263": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_264": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_265": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_266": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_267": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_268": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_269": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_27": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_270": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_271": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_272": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_273": {
+      "cci": [
+        "CCI-001957",
+        "CCI-001954"
+      ],
+      "nist": [
+        "IA-2(12)",
+        "IA-8(2)"
+      ]
+    },
+    "CKV_AWS_274": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_275": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_276": {
+      "cci": [
+        "CCI-002684",
+        "CCI-000169"
+      ],
+      "nist": [
+        "SI-4(2)",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_277": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_278": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_279": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_28": {
+      "cci": [
+        "CCI-000510"
+      ],
+      "nist": [
+        "CP-9(1)"
+      ]
+    },
+    "CKV_AWS_280": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_281": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_282": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_283": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_284": {
+      "cci": [
+        "CCI-002684",
+        "CCI-000169"
+      ],
+      "nist": [
+        "SI-4(2)",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_285": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_286": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_287": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_288": {
+      "cci": [
+        "CCI-002476",
+        "CCI-001821"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "MP-4"
+      ]
+    },
+    "CKV_AWS_289": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_29": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_290": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_291": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_292": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_293": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_294": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_295": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_296": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_297": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_298": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_3": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_30": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AWS_300": {
+      "cci": [
+        "CCI-001904",
+        "CCI-000167"
+      ],
+      "nist": [
+        "MP-6(1)",
+        "AU-11"
+      ]
+    },
+    "CKV_AWS_301": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_302": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_303": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_304": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_305": {
+      "cci": [
+        "CCI-000190",
+        "CCI-001515"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_306": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_307": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AWS_308": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_309": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_31": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AWS_310": {
+      "cci": [
+        "CCI-000555",
+        "CCI-000509"
+      ],
+      "nist": [
+        "CP-10(2)",
+        "CP-9"
+      ]
+    },
+    "CKV_AWS_311": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_312": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_313": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_314": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_315": {
+      "cci": [
+        "CCI-000557",
+        "CCI-002386"
+      ],
+      "nist": [
+        "CP-10(4)",
+        "SC-5(2)"
+      ]
+    },
+    "CKV_AWS_316": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_317": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_318": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_319": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000229"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "IR-6(1)"
+      ]
+    },
+    "CKV_AWS_32": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_320": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_321": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_322": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_323": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_324": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_325": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_326": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_327": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_328": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_329": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_33": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_331": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_332": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_333": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_334": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_335": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_336": {
+      "cci": [
+        "CCI-001515",
+        "CCI-000166"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "AU-9(4)"
+      ]
+    },
+    "CKV_AWS_337": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_338": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_339": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_34": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_340": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_341": {
+      "cci": [
+        "CCI-000227",
+        "CCI-001310"
+      ],
+      "nist": [
+        "IR-4(1)",
+        "IR-5(1)"
+      ]
+    },
+    "CKV_AWS_342": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AWS_343": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_344": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_345": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_346": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_347": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_348": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AWS_349": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_35": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_350": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_351": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_352": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_353": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_354": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_355": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_356": {
+      "cci": [
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_357": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_358": {
+      "cci": [
+        "CCI-001957",
+        "CCI-001954"
+      ],
+      "nist": [
+        "IA-2(12)",
+        "IA-8(2)"
+      ]
+    },
+    "CKV_AWS_359": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_36": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_AWS_360": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_361": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_362": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_363": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_364": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_365": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_367": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_368": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_369": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_37": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_370": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AWS_371": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_372": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_373": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_374": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_375": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_376": {
+      "cci": [
+        "CCI-002420",
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-7(4)"
+      ]
+    },
+    "CKV_AWS_377": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_378": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AWS_379": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_38": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_380": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_381": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AWS_382": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_383": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_384": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_385": {
+      "cci": [
+        "CCI-001414",
+        "CCI-000213"
+      ],
+      "nist": [
+        "AC-4(21)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_386": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_387": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_388": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_389": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_39": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_390": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_391": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_392": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_40": {
+      "cci": [
+        "CCI-000235",
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(10)",
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_41": {
+      "cci": [
+        "CCI-000190",
+        "CCI-001515"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_42": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_43": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_44": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_45": {
+      "cci": [
+        "CCI-000190",
+        "CCI-001515"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_46": {
+      "cci": [
+        "CCI-000190",
+        "CCI-001515"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_47": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_48": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_49": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_5": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_50": {
+      "cci": [
+        "CCI-002684",
+        "CCI-000169"
+      ],
+      "nist": [
+        "SI-4(2)",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_51": {
+      "cci": [
+        "CCI-001648",
+        "CCI-002700"
+      ],
+      "nist": [
+        "RA-5(5)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_AWS_53": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_54": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_55": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AWS_56": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_57": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_58": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_59": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_6": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_60": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_61": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AWS_62": {
+      "cci": [
+        "CCI-000235",
+        "CCI-000226"
+      ],
+      "nist": [
+        "AC-6(10)",
+        "AC-6(1)"
+      ]
+    },
+    "CKV_AWS_63": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_64": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_65": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_66": {
+      "cci": [
+        "CCI-000167"
+      ],
+      "nist": [
+        "AU-11"
+      ]
+    },
+    "CKV_AWS_67": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_AWS_68": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AWS_69": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_70": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_71": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_72": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_73": {
+      "cci": [
+        "CCI-002684",
+        "CCI-000169"
+      ],
+      "nist": [
+        "SI-4(2)",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_74": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_75": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_76": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_77": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_78": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_79": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_8": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AWS_80": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_81": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_82": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_83": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_84": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_85": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_86": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_87": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_88": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_89": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AWS_9": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_AWS_90": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AWS_91": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_92": {
+      "cci": [
+        "CCI-001104",
+        "CCI-000172"
+      ],
+      "nist": [
+        "SC-7(9)",
+        "AU-12(1)"
+      ]
+    },
+    "CKV_AWS_93": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AWS_94": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AWS_95": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AWS_96": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_97": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_98": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AWS_99": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZUREPIPELINES_1": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZUREPIPELINES_2": {
+      "cci": [
+        "CCI-001648",
+        "CCI-002700"
+      ],
+      "nist": [
+        "RA-5(5)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_AZUREPIPELINES_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZUREPIPELINES_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_1": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_AZURE_10": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_AZURE_100": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AZURE_101": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_102": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AZURE_103": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_104": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_105": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_106": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_107": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_108": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_109": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_AZURE_11": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_AZURE_110": {
+      "cci": [
+        "CCI-002452"
+      ],
+      "nist": [
+        "SC-12(2)"
+      ]
+    },
+    "CKV_AZURE_111": {
+      "cci": [
+        "CCI-002452"
+      ],
+      "nist": [
+        "SC-12(2)"
+      ]
+    },
+    "CKV_AZURE_112": {
+      "cci": [
+        "CCI-002452"
+      ],
+      "nist": [
+        "SC-12(2)"
+      ]
+    },
+    "CKV_AZURE_113": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_114": {
+      "cci": [
+        "CCI-002452"
+      ],
+      "nist": [
+        "SC-12(2)"
+      ]
+    },
+    "CKV_AZURE_115": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AZURE_116": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_117": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AZURE_118": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_12": {
+      "cci": [
+        "CCI-001104",
+        "CCI-000172"
+      ],
+      "nist": [
+        "SC-7(9)",
+        "AU-12(1)"
+      ]
+    },
+    "CKV_AZURE_120": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AZURE_121": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AZURE_122": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AZURE_123": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AZURE_124": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_125": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_126": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_127": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_128": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_129": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AZURE_13": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_130": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_131": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_132": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_133": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AZURE_134": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_135": {
+      "cci": [
+        "CCI-001109",
+        "CCI-002385"
+      ],
+      "nist": [
+        "SC-7(14)",
+        "SC-5(1)"
+      ]
+    },
+    "CKV_AZURE_136": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AZURE_137": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AZURE_138": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_139": {
+      "cci": [
+        "CCI-000382"
+      ],
+      "nist": [
+        "CM-7(1)"
+      ]
+    },
+    "CKV_AZURE_14": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AZURE_140": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_141": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AZURE_142": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_143": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_144": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_145": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_146": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_147": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_148": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_149": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_15": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_150": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_151": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_152": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_153": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AZURE_154": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_155": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_156": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_157": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_158": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AZURE_159": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_160": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_161": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_162": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_163": {
+      "cci": [
+        "CCI-001645"
+      ],
+      "nist": [
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_164": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_AZURE_165": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AZURE_166": {
+      "cci": [
+        "CCI-001644",
+        "CCI-002606"
+      ],
+      "nist": [
+        "RA-5(1)",
+        "SI-2(1)"
+      ]
+    },
+    "CKV_AZURE_167": {
+      "cci": [
+        "CCI-001904",
+        "CCI-000167"
+      ],
+      "nist": [
+        "MP-6(1)",
+        "AU-11"
+      ]
+    },
+    "CKV_AZURE_168": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_169": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_17": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_170": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_171": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_172": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AZURE_173": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_174": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_175": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_177": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_178": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_AZURE_179": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_18": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_180": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_182": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_183": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_184": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_185": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_186": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_187": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_188": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AZURE_189": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_19": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_190": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_192": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_193": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_195": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_196": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_197": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_198": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_199": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_2": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AZURE_20": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_200": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_201": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AZURE_203": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_204": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_205": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_206": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_208": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_209": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_21": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000229"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "IR-6(1)"
+      ]
+    },
+    "CKV_AZURE_210": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_211": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_AZURE_212": {
+      "cci": [
+        "CCI-000555",
+        "CCI-000509"
+      ],
+      "nist": [
+        "CP-10(2)",
+        "CP-9"
+      ]
+    },
+    "CKV_AZURE_213": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_214": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_215": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_216": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_217": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_218": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_219": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_22": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000229"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "IR-6(1)"
+      ]
+    },
+    "CKV_AZURE_220": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_221": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_222": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_223": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_224": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_AZURE_225": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_226": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_227": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AZURE_228": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_229": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_23": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_230": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_231": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_232": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_233": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_234": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_235": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AZURE_236": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_237": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_239": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_AZURE_24": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_240": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AZURE_241": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_242": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_243": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AZURE_244": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_245": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_246": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_247": {
+      "cci": [
+        "CCI-002476",
+        "CCI-001821"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "MP-4"
+      ]
+    },
+    "CKV_AZURE_248": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_249": {
+      "cci": [
+        "CCI-001957",
+        "CCI-001954"
+      ],
+      "nist": [
+        "IA-2(12)",
+        "IA-8(2)"
+      ]
+    },
+    "CKV_AZURE_25": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_250": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_251": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_26": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_27": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_28": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AZURE_29": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AZURE_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_30": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_31": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_32": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_33": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_34": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_35": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_36": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_37": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_AZURE_38": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_39": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_4": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_40": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_41": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_42": {
+      "cci": [
+        "CCI-002452"
+      ],
+      "nist": [
+        "SC-12(2)"
+      ]
+    },
+    "CKV_AZURE_43": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_44": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_45": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_47": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AZURE_48": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_49": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_AZURE_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_50": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_52": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_53": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_54": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_55": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_56": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_57": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_58": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_59": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_61": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_62": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_63": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_64": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_65": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_66": {
+      "cci": [
+        "CCI-002684",
+        "CCI-000169"
+      ],
+      "nist": [
+        "SI-4(2)",
+        "AU-12"
+      ]
+    },
+    "CKV_AZURE_67": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_68": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_69": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_7": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_AZURE_70": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_72": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_73": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_74": {
+      "cci": [
+        "CCI-002476"
+      ],
+      "nist": [
+        "SC-28(1)"
+      ]
+    },
+    "CKV_AZURE_75": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_76": {
+      "cci": [
+        "CCI-002452"
+      ],
+      "nist": [
+        "SC-12(2)"
+      ]
+    },
+    "CKV_AZURE_77": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_78": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_79": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_8": {
+      "cci": [
+        "CCI-001521"
+      ],
+      "nist": [
+        "CM-7(2)"
+      ]
+    },
+    "CKV_AZURE_80": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_AZURE_81": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_82": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_83": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_84": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_85": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_86": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_87": {
+      "cci": [
+        "CCI-002686",
+        "CCI-001645"
+      ],
+      "nist": [
+        "SI-4(4)",
+        "RA-5(2)"
+      ]
+    },
+    "CKV_AZURE_88": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_89": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_AZURE_9": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_AZURE_91": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_AZURE_92": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_93": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_AZURE_94": {
+      "cci": [
+        "CCI-000504",
+        "CCI-000512"
+      ],
+      "nist": [
+        "CP-6(1)",
+        "CP-9(3)"
+      ]
+    },
+    "CKV_AZURE_95": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_96": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_97": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_AZURE_98": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_AZURE_99": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_BCW_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_BITBUCKETPIPELINES_1": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_BITBUCKET_1": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_1": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_2": {
+      "cci": [
+        "CCI-001648",
+        "CCI-002700"
+      ],
+      "nist": [
+        "RA-5(5)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_CIRCLECIPIPELINES_8": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DIO_1": {
+      "cci": [
+        "CCI-000510",
+        "CCI-000164"
+      ],
+      "nist": [
+        "CP-9(1)",
+        "AU-9(2)"
+      ]
+    },
+    "CKV_DIO_2": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_DIO_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DIO_4": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_DOCKER_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_10": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_11": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_5": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_DOCKER_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_7": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_DOCKER_8": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_DOCKER_9": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_1": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_10": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_GCP_100": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_101": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_102": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_103": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_104": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_105": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_106": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_GCP_107": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GCP_108": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_109": {
+      "cci": [
+        "CCI-000135",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-3(1)",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_11": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_110": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_111": {
+      "cci": [
+        "CCI-000135",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-3(1)",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_112": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_GCP_113": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_114": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_115": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_116": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_117": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_119": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_12": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_GCP_120": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_121": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_122": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_123": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_124": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_125": {
+      "cci": [
+        "CCI-001957",
+        "CCI-001954"
+      ],
+      "nist": [
+        "IA-2(12)",
+        "IA-8(2)"
+      ]
+    },
+    "CKV_GCP_126": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_127": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_13": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002448"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-17"
+      ]
+    },
+    "CKV_GCP_14": {
+      "cci": [
+        "CCI-000510"
+      ],
+      "nist": [
+        "CP-9(1)"
+      ]
+    },
+    "CKV_GCP_15": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_16": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_17": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)",
+        "SC-20"
+      ]
+    },
+    "CKV_GCP_18": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GCP_2": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GCP_20": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_21": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_22": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_23": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_24": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_25": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_GCP_26": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_GCP_27": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_28": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_29": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_3": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GCP_30": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_GCP_31": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_GCP_32": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_GCP_33": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_34": {
+      "cci": [
+        "CCI-000385"
+      ],
+      "nist": [
+        "CM-8(1)"
+      ]
+    },
+    "CKV_GCP_35": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_36": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_37": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_38": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_39": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_4": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_40": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_41": {
+      "cci": [
+        "CCI-000016",
+        "CCI-000213"
+      ],
+      "nist": [
+        "AC-2(1)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_42": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_43": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_GCP_44": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_45": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_46": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_GCP_47": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_GCP_48": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_GCP_49": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_50": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_51": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_52": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_53": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_54": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_55": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_56": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_57": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_58": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_59": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_60": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_61": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_GCP_62": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_63": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_64": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_GCP_65": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_66": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_68": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_69": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_70": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_71": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_72": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_73": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_74": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_GCP_75": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GCP_76": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_GCP_77": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GCP_78": {
+      "cci": [
+        "CCI-000510",
+        "CCI-000164"
+      ],
+      "nist": [
+        "CP-9(1)",
+        "AU-9(2)"
+      ]
+    },
+    "CKV_GCP_79": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_8": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_GCP_80": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_81": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_82": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_GCP_83": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_84": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_85": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_86": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_87": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_88": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GCP_89": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_9": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_90": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_91": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_92": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_GCP_93": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_94": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_95": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GCP_96": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_GCP_97": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GCP_98": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GCP_99": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_GHA_1": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_GHA_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GHA_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GHA_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GHA_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GHA_6": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_GHA_7": {
+      "cci": [
+        "CCI-002002",
+        "CCI-002700"
+      ],
+      "nist": [
+        "SA-11(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_GITHUB_1": {
+      "cci": [
+        "CCI-000765",
+        "CCI-000766"
+      ],
+      "nist": [
+        "IA-2(1)",
+        "IA-2(2)"
+      ]
+    },
+    "CKV_GITHUB_10": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_11": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GITHUB_12": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GITHUB_13": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GITHUB_14": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_15": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GITHUB_16": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_17": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_18": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_19": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GITHUB_2": {
+      "cci": [
+        "CCI-001957",
+        "CCI-001954"
+      ],
+      "nist": [
+        "IA-2(12)",
+        "IA-8(2)"
+      ]
+    },
+    "CKV_GITHUB_20": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_21": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_GITHUB_22": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_23": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_26": {
+      "cci": [
+        "CCI-000019",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-2(4)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_GITHUB_27": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_28": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_4": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_GITHUB_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_8": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITHUB_9": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITLABCI_1": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_GITLABCI_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITLABCI_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GITLAB_1": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GIT_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GIT_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GIT_3": {
+      "cci": [
+        "CCI-001645"
+      ],
+      "nist": [
+        "RA-5(2)"
+      ]
+    },
+    "CKV_GIT_4": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_GIT_5": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GIT_6": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_GLB_1": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_GLB_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GLB_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_GLB_4": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_K8S_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_10": {
+      "cci": [
+        "CCI-002385",
+        "CCI-001515"
+      ],
+      "nist": [
+        "SC-5(1)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_100": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_K8S_102": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_K8S_104": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_K8S_105": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_K8S_106": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_107": {
+      "cci": [
+        "CCI-000382"
+      ],
+      "nist": [
+        "CM-7(1)"
+      ]
+    },
+    "CKV_K8S_108": {
+      "cci": [
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(5)"
+      ]
+    },
+    "CKV_K8S_11": {
+      "cci": [
+        "CCI-002385",
+        "CCI-001515"
+      ],
+      "nist": [
+        "SC-5(1)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_110": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_111": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_112": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_113": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_114": {
+      "cci": [
+        "CCI-000382"
+      ],
+      "nist": [
+        "CM-7(1)"
+      ]
+    },
+    "CKV_K8S_115": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_116": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_117": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_118": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_119": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_K8S_12": {
+      "cci": [
+        "CCI-002385",
+        "CCI-001515"
+      ],
+      "nist": [
+        "SC-5(1)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_121": {
+      "cci": [
+        "CCI-001501",
+        "CCI-001510"
+      ],
+      "nist": [
+        "CM-3(2)",
+        "CM-5(1)"
+      ]
+    },
+    "CKV_K8S_13": {
+      "cci": [
+        "CCI-002385",
+        "CCI-001515"
+      ],
+      "nist": [
+        "SC-5(1)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_138": {
+      "cci": [
+        "CCI-002169",
+        "CCI-000764"
+      ],
+      "nist": [
+        "AC-3(7)",
+        "IA-2"
+      ]
+    },
+    "CKV_K8S_139": {
+      "cci": [
+        "CCI-002169",
+        "CCI-000764"
+      ],
+      "nist": [
+        "AC-3(7)",
+        "IA-2"
+      ]
+    },
+    "CKV_K8S_14": {
+      "cci": [
+        "CCI-001648",
+        "CCI-002700"
+      ],
+      "nist": [
+        "RA-5(5)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_140": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_K8S_141": {
+      "cci": [
+        "CCI-001515",
+        "CCI-000166"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "AU-9(4)"
+      ]
+    },
+    "CKV_K8S_144": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_145": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_146": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_147": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000229"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "IR-6(1)"
+      ]
+    },
+    "CKV_K8S_148": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_K8S_149": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_15": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_151": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-13"
+      ]
+    },
+    "CKV_K8S_152": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_153": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_154": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_155": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_K8S_156": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_K8S_157": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_K8S_158": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_K8S_159": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_16": {
+      "cci": [
+        "CCI-000226",
+        "CCI-001521"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "CM-7(2)"
+      ]
+    },
+    "CKV_K8S_17": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_18": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_19": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_20": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000235"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(10)"
+      ]
+    },
+    "CKV_K8S_21": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_22": {
+      "cci": [
+        "CCI-001515",
+        "CCI-000166"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "AU-9(4)"
+      ]
+    },
+    "CKV_K8S_23": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_24": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_25": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_26": {
+      "cci": [
+        "CCI-001098",
+        "CCI-001521"
+      ],
+      "nist": [
+        "SC-7(3)",
+        "CM-7(2)"
+      ]
+    },
+    "CKV_K8S_27": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_28": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_29": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_30": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_31": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_32": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_33": {
+      "cci": [
+        "CCI-001521"
+      ],
+      "nist": [
+        "CM-7(2)"
+      ]
+    },
+    "CKV_K8S_34": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_35": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_K8S_36": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_37": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_38": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_K8S_39": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_40": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_41": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_42": {
+      "cci": [
+        "CCI-000230",
+        "CCI-001515"
+      ],
+      "nist": [
+        "AC-6(5)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_43": {
+      "cci": [
+        "CCI-001648",
+        "CCI-002700"
+      ],
+      "nist": [
+        "RA-5(5)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_44": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_45": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_49": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000230"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(5)"
+      ]
+    },
+    "CKV_K8S_5": {
+      "cci": [
+        "CCI-000226",
+        "CCI-000235"
+      ],
+      "nist": [
+        "AC-6(1)",
+        "AC-6(10)"
+      ]
+    },
+    "CKV_K8S_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_68": {
+      "cci": [
+        "CCI-002169",
+        "CCI-000764"
+      ],
+      "nist": [
+        "AC-3(7)",
+        "IA-2"
+      ]
+    },
+    "CKV_K8S_69": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_70": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_71": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_72": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_K8S_73": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_K8S_74": {
+      "cci": [
+        "CCI-002169",
+        "CCI-000764"
+      ],
+      "nist": [
+        "AC-3(7)",
+        "IA-2"
+      ]
+    },
+    "CKV_K8S_75": {
+      "cci": [
+        "CCI-002169",
+        "CCI-000764"
+      ],
+      "nist": [
+        "AC-3(7)",
+        "IA-2"
+      ]
+    },
+    "CKV_K8S_77": {
+      "cci": [
+        "CCI-002169",
+        "CCI-000764"
+      ],
+      "nist": [
+        "AC-3(7)",
+        "IA-2"
+      ]
+    },
+    "CKV_K8S_78": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_79": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_8": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000555"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "CP-10(2)"
+      ]
+    },
+    "CKV_K8S_80": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_81": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_82": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_83": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_84": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_85": {
+      "cci": [
+        "CCI-001515",
+        "CCI-002700"
+      ],
+      "nist": [
+        "CM-6(1)",
+        "SI-7(1)"
+      ]
+    },
+    "CKV_K8S_86": {
+      "cci": [
+        "CCI-002169",
+        "CCI-000764"
+      ],
+      "nist": [
+        "AC-3(7)",
+        "IA-2"
+      ]
+    },
+    "CKV_K8S_88": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_K8S_89": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_9": {
+      "cci": [
+        "CCI-002687",
+        "CCI-000555"
+      ],
+      "nist": [
+        "SI-4(5)",
+        "CP-10(2)"
+      ]
+    },
+    "CKV_K8S_90": {
+      "cci": [
+        "CCI-000382"
+      ],
+      "nist": [
+        "CM-7(1)"
+      ]
+    },
+    "CKV_K8S_91": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_K8S_92": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_K8S_93": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_K8S_94": {
+      "cci": [
+        "CCI-000172",
+        "CCI-000135"
+      ],
+      "nist": [
+        "AU-12(1)",
+        "AU-3(1)"
+      ]
+    },
+    "CKV_K8S_95": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_96": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_97": {
+      "cci": [
+        "CCI-001515"
+      ],
+      "nist": [
+        "CM-6(1)"
+      ]
+    },
+    "CKV_K8S_99": {
+      "cci": [
+        "CCI-002420",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_LIN_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_LIN_2": {
+      "cci": [
+        "CCI-000069",
+        "CCI-001941"
+      ],
+      "nist": [
+        "AC-17(2)",
+        "IA-2(6)"
+      ]
+    },
+    "CKV_LIN_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_LIN_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_LIN_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_LIN_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_NCP_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_NCP_10": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_NCP_11": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_NCP_12": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_NCP_13": {
+      "cci": [
+        "CCI-002420",
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-7(4)"
+      ]
+    },
+    "CKV_NCP_14": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_NCP_15": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_NCP_16": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_NCP_18": {
+      "cci": [
+        "CCI-000557",
+        "CCI-002386"
+      ],
+      "nist": [
+        "CP-10(4)",
+        "SC-5(2)"
+      ]
+    },
+    "CKV_NCP_19": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_NCP_2": {
+      "cci": [
+        "CCI-002166"
+      ],
+      "nist": [
+        "AC-3(4)"
+      ]
+    },
+    "CKV_NCP_20": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_NCP_22": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_NCP_23": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_NCP_24": {
+      "cci": [
+        "CCI-002420",
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-8(1)",
+        "SC-7(4)"
+      ]
+    },
+    "CKV_NCP_25": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_NCP_26": {
+      "cci": [
+        "CCI-002166"
+      ],
+      "nist": [
+        "AC-3(4)"
+      ]
+    },
+    "CKV_NCP_3": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_NCP_4": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_NCP_5": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_NCP_6": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_NCP_7": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_NCP_8": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_NCP_9": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_OCI_1": {
+      "cci": [
+        "CCI-000190",
+        "CCI-001515"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_OCI_10": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_OCI_11": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_OCI_12": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_OCI_13": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_OCI_14": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_OCI_15": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_OCI_16": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OCI_17": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OCI_18": {
+      "cci": [
+        "CCI-000192"
+      ],
+      "nist": [
+        "IA-5(1)"
+      ]
+    },
+    "CKV_OCI_19": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_OCI_2": {
+      "cci": [
+        "CCI-000510"
+      ],
+      "nist": [
+        "CP-9(1)"
+      ]
+    },
+    "CKV_OCI_20": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_OCI_21": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_OCI_22": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_OCI_23": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OCI_3": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_OCI_4": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_OCI_5": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_OCI_6": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_OCI_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OCI_8": {
+      "cci": [
+        "CCI-000510",
+        "CCI-000164"
+      ],
+      "nist": [
+        "CP-9(1)",
+        "AU-9(2)"
+      ]
+    },
+    "CKV_OCI_9": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_OPENAPI_1": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_10": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_11": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_12": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_13": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_14": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_15": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_16": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_17": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_OPENAPI_18": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_OPENAPI_19": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_20": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_21": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_7": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_OPENAPI_8": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENAPI_9": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENSTACK_1": {
+      "cci": [
+        "CCI-000190",
+        "CCI-001515"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_OPENSTACK_2": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_OPENSTACK_3": {
+      "cci": [
+        "CCI-001100"
+      ],
+      "nist": [
+        "SC-7(5)"
+      ]
+    },
+    "CKV_OPENSTACK_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_OPENSTACK_5": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_PAN_1": {
+      "cci": [
+        "CCI-000190",
+        "CCI-001515"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "CM-6(1)"
+      ]
+    },
+    "CKV_PAN_10": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_PAN_11": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_PAN_12": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_13": {
+      "cci": [
+        "CCI-002420"
+      ],
+      "nist": [
+        "SC-8(1)"
+      ]
+    },
+    "CKV_PAN_14": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_15": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_16": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_PAN_17": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_3": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_5": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_6": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_7": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_8": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_PAN_9": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_SECRET_1": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_11": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_12": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_13": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_14": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_15": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_16": {
+      "cci": [
+        "CCI-001957",
+        "CCI-001954"
+      ],
+      "nist": [
+        "IA-2(12)",
+        "IA-8(2)"
+      ]
+    },
+    "CKV_SECRET_17": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_18": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_19": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_2": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_3": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_4": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_5": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_6": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_7": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_8": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_SECRET_9": {
+      "cci": [
+        "CCI-000190",
+        "CCI-002476"
+      ],
+      "nist": [
+        "IA-5(7)",
+        "SC-28(1)"
+      ]
+    },
+    "CKV_TC_1": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_TC_10": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_TC_11": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_TC_12": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_TC_13": {
+      "cci": [
+        "CCI-002476",
+        "CCI-001821"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "MP-4"
+      ]
+    },
+    "CKV_TC_14": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_TC_2": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_TC_3": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_TC_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_TC_5": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_TC_6": {
+      "cci": [
+        "CCI-000130",
+        "CCI-000169"
+      ],
+      "nist": [
+        "AU-2",
+        "AU-12"
+      ]
+    },
+    "CKV_TC_7": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_TC_8": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_TC_9": {
+      "cci": [
+        "CCI-000213",
+        "CCI-001100"
+      ],
+      "nist": [
+        "AC-3",
+        "SC-7(5)"
+      ]
+    },
+    "CKV_TF_1": {
+      "cci": [
+        "CCI-002705",
+        "CCI-003610"
+      ],
+      "nist": [
+        "SI-7(6)",
+        "SR-3"
+      ]
+    },
+    "CKV_TF_2": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_YC_1": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_YC_10": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    },
+    "CKV_YC_11": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_YC_12": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_YC_13": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_YC_14": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_YC_15": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_YC_16": {
+      "cci": [
+        "CCI-001098"
+      ],
+      "nist": [
+        "SC-7(3)"
+      ]
+    },
+    "CKV_YC_17": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_YC_18": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_YC_19": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_YC_2": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_YC_20": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_YC_21": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_YC_22": {
+      "cci": [
+        "CCI-001099"
+      ],
+      "nist": [
+        "SC-7(4)"
+      ]
+    },
+    "CKV_YC_23": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_YC_24": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_YC_3": {
+      "cci": [
+        "CCI-002450"
+      ],
+      "nist": [
+        "SC-13"
+      ]
+    },
+    "CKV_YC_4": {
+      "cci": [
+        "CCI-000366"
+      ],
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "CKV_YC_5": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_YC_6": {
+      "cci": [
+        "CCI-001100",
+        "CCI-000213"
+      ],
+      "nist": [
+        "SC-7(5)",
+        "AC-3"
+      ]
+    },
+    "CKV_YC_7": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_YC_8": {
+      "cci": [
+        "CCI-002607"
+      ],
+      "nist": [
+        "SI-2(2)"
+      ]
+    },
+    "CKV_YC_9": {
+      "cci": [
+        "CCI-002476",
+        "CCI-002451"
+      ],
+      "nist": [
+        "SC-28(1)",
+        "SC-12(1)"
+      ]
+    }
+  }
+}

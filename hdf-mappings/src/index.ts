@@ -67,6 +67,21 @@ export {
 
 export type { CweNistMapping, CweNistMappings } from './cwe/types.js';
 
+// Checkov exports
+export {
+  getCheckovCciNistMapping,
+  checkovCheckExists,
+  getAllCheckovCheckIds,
+  getCheckovMappingProvenance,
+} from './checkov/index.js';
+
+export type {
+  CheckovCciNistMapping,
+  CheckovCciNistMappings,
+  CheckovMappingDataset,
+  CheckovMappingProvenance,
+} from './checkov/types.js';
+
 // Nessus exports
 export {
   getNessusNistControl,

@@ -1,5 +1,6 @@
 import { parseXmlWithArrays, parseTimestamp } from '@mitre/hdf-utilities';
-import { inputChecksum, limitArray, validateInputSize, buildHdfResults, buildNoFindingsRequirement, deriveControlTypeFromTags } from '../../../shared/typescript/converterutil.js';
+import { inputChecksum, limitArray, validateInputSize, buildHdfResults, buildNoFindingsRequirement, deriveControlTypeFromTags, emitConverterWarning } from '../../../shared/typescript/converterutil.js';
+import { isCheckovTestCaseName } from './fingerprint.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -109,6 +110,7 @@ export async function convertJunitToHdf(input: string, converterVersion = '1.0.0
   validateInputSize(input, 'junit');
 
   const { suites, name } = parseJUnitXML(input);
+  warnIfCheckov(suites);
   const scanTime = resolveScanTime(suites);
   const requirements = buildRequirements(suites, scanTime);
 
@@ -140,6 +142,19 @@ export async function convertJunitToHdf(input: string, converterVersion = '1.0.0
     ],
     timestamp: scanTime,
   });
+}
+
+// Makes a Checkov JUnit conversion's metadata loss visible without rerouting it:
+// the generic JUnit conversion still runs. Mirrors Go's checkovJUnitWarning.
+const CHECKOV_JUNIT_WARNING =
+  "input looks like Checkov JUnit XML. junit-to-hdf keeps only Checkov's display strings and drops the check_id, severity and guideline that control mappings key on; re-run Checkov with -o json and convert that output with checkov-to-hdf instead.";
+
+// Warns once when any testcase carries Checkov's bracketed severity and check id prefix.
+function warnIfCheckov(suites: JUnitTestSuite[]): void {
+  const found = suites.some((suite) => (suite.testcase ?? []).some((tc) => isCheckovTestCaseName(String(tc['@_name'] ?? ''))));
+  if (found) {
+    emitConverterWarning(CHECKOV_JUNIT_WARNING);
+  }
 }
 
 // Derives one host component per distinct testsuite @hostname (the machine the

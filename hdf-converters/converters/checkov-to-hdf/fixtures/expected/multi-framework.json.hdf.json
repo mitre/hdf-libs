@@ -28,16 +28,19 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_AWS_IAM_79",
+            "cci": [
+              "CCI-000366"
+            ],
             "check_type": [
               "terraform"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "CM-6"
             ],
             "severity_rating": "unrated"
           },
           "code": "100 data \"aws_iam_policy\" \"ebs_csi_policy\" {\n101   arn = \"arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy\"\n102 }",
+          "controlType": "operational",
           "title": "Disallow policies from using the AWS AdministratorAccess policy",
           "verificationMethod": "automated"
         },
@@ -67,16 +70,21 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_AWS_SECRETS_5",
+            "cci": [
+              "CCI-000190",
+              "CCI-001515"
+            ],
             "check_type": [
               "terraform"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "IA-5(7)",
+              "CM-6(1)"
             ],
             "severity_rating": "unrated"
           },
           "code": "4 provider \"aws\" {\n5   region = var.region\n6 }",
+          "controlType": "technical",
           "title": "Ensure no hard coded AWS access key and secret key exists in provider",
           "verificationMethod": "automated"
         },
@@ -111,16 +119,21 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_CROSS_1",
+            "cci": [
+              "CCI-002705",
+              "CCI-003610"
+            ],
             "check_type": [
               "terraform"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "SI-7(6)",
+              "SR-3"
             ],
             "severity_rating": "unrated"
           },
           "code": "26 module \"vpc\" {\n27   source  = \"terraform-aws-modules/vpc/aws\"\n28   version = \"5.8.1\"\n29 \n30   name = \"education-vpc\"",
+          "controlType": "technical",
           "title": "Ensure Terraform module sources use a commit hash",
           "verificationMethod": "automated"
         },
@@ -151,16 +164,21 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_AWS_S3_13",
+            "cci": [
+              "CCI-000130",
+              "CCI-000169"
+            ],
             "check_type": [
               "terraform"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "AU-2",
+              "AU-12"
             ],
             "severity_rating": "unrated"
           },
           "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
+          "controlType": "operational",
           "title": "Ensure the S3 bucket has access logging enabled",
           "verificationMethod": "automated"
         },
@@ -191,16 +209,21 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_AWS_NETWORKING_52",
+            "cci": [
+              "CCI-001100",
+              "CCI-000213"
+            ],
             "check_type": [
               "terraform"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "SC-7(5)",
+              "AC-3"
             ],
             "severity_rating": "unrated"
           },
           "code": "115 resource \"aws_s3_bucket\" \"logs\" {\n116   #checkov:skip=CKV_AWS_18:Skipping access logging for demo bucket\n117   #checkov:skip=CKV2_AWS_6:Skipping public access block for demo\n118   bucket = \"education-eks-logs\"\n119 }",
+          "controlType": "technical",
           "title": "Ensure that S3 bucket has a Public Access block",
           "verificationMethod": "automated"
         },
@@ -230,16 +253,19 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_DKR_GENERAL_9",
+            "cci": [
+              "CCI-000366"
+            ],
             "check_type": [
               "dockerfile"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "CM-6"
             ],
             "severity_rating": "unrated"
           },
           "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
+          "controlType": "operational",
           "title": "Ensure From Alias are unique for multistage builds.",
           "verificationMethod": "automated"
         },
@@ -269,16 +295,19 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_DKR_4",
+            "cci": [
+              "CCI-002607"
+            ],
             "check_type": [
               "dockerfile"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "SI-2(2)"
             ],
             "severity_rating": "unrated"
           },
           "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
+          "controlType": "technical",
           "title": "Ensure update instructions are not use alone in the Dockerfile",
           "verificationMethod": "automated"
         },
@@ -308,16 +337,19 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_DKR_7",
+            "cci": [
+              "CCI-002607"
+            ],
             "check_type": [
               "dockerfile"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "SI-2(2)"
             ],
             "severity_rating": "unrated"
           },
           "code": "22 FROM gcr.io/distroless/nodejs22-debian12",
+          "controlType": "technical",
           "title": "Ensure the base image uses a non latest version tag",
           "verificationMethod": "automated"
         },
@@ -347,16 +379,19 @@
           "impact": 0.5,
           "tags": {
             "bc_check_id": "BC_DKR_2",
+            "cci": [
+              "CCI-000366"
+            ],
             "check_type": [
               "dockerfile"
             ],
             "nist": [
-              "SA-11",
-              "RA-5"
+              "CM-6"
             ],
             "severity_rating": "unrated"
           },
           "code": "1 FROM node:22 AS installer\n2 COPY . /juice-shop\n3 WORKDIR /juice-shop\n4 RUN npm i -g typescript ts-node\n5 RUN npm install --omit=dev --unsafe-perm",
+          "controlType": "operational",
           "title": "Ensure that HEALTHCHECK instructions have been added to container images",
           "verificationMethod": "automated"
         }

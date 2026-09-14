@@ -329,10 +329,42 @@ describe('checkov to HDF converter', async () => {
       expect(checkDesc?.data).toContain('prismacloud.io');
     });
 
-    it('should use default static analysis NIST tags', async () => {
+    it('tags a mapped check with its CCI and NIST controls', async () => {
       const hdf = JSON.parse(await convertCheckovToHdf(loadFixture('minimal.json'))) as HDFResults;
-      const ckvTF1 = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_TF_1');
-      expect(ckvTF1?.tags?.['nist']).toEqual(['SA-11', 'RA-5']);
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_AWS_18');
+      expect(req?.tags?.['nist']).toEqual(['AU-2', 'AU-12']);
+      expect(req?.tags?.['cci']).toEqual(['CCI-000130', 'CCI-000169']);
+      expect(req?.controlType).toBeDefined();
+    });
+
+    it('falls back to the static analysis controls for an unmapped check', async () => {
+      const input = JSON.stringify({
+        check_type: 'terraform',
+        results: {
+          passed_checks: [],
+          failed_checks: [{
+            check_id: 'CKV_SYNTHETIC_UNMAPPED_1',
+            check_name: 'Synthetic check absent from the mapping dataset',
+            check_result: { result: 'FAILED' },
+            severity: null,
+            file_path: '/main.tf',
+            file_line_range: [1, 5],
+            resource: 'aws_s3_bucket.test',
+            guideline: null,
+            code_block: null,
+            check_class: 'checkov.terraform.checks.resource.Test',
+          }],
+          skipped_checks: [],
+          parsing_errors: [],
+        },
+        summary: { passed: 0, failed: 1, skipped: 0, parsing_errors: 0, resource_count: 1, checkov_version: '3.2.506' },
+      });
+      const hdf = JSON.parse(await convertCheckovToHdf(input)) as HDFResults;
+      const req = hdf.baselines[0]!.requirements.find(r => r.id === 'CKV_SYNTHETIC_UNMAPPED_1');
+      expect(req?.tags?.['nist']).toEqual(['SA-11', 'RA-5']);
+      expect(req?.tags?.['cci']).toEqual(['CCI-001643', 'CCI-003173']);
+      expect(req?.controlType).toBeUndefined();
+      expect(req?.tags?.['severity_rating']).toBe('unrated');
     });
 
     it('tags each requirement with its Bridgecrew bc_check_id', async () => {

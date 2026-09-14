@@ -1,9 +1,9 @@
 import { parseJSON } from '@mitre/hdf-utilities';
-import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
+import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS, getCheckovCciNistMapping, nistToCci } from '@mitre/hdf-mappings';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
 import { convertSarifToHdf } from '../../sarif-to-hdf/typescript/converter.js';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildNistCciTags, buildNoFindingsRequirement, deriveControlTypeFromTags, inputChecksum, limitArray, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
@@ -131,14 +131,26 @@ function renderCodeBlock(codeBlock: unknown): string | undefined {
 /**
  * Converts a group of checks sharing a check_id into one EvaluatedRequirement.
  */
+/**
+ * Resolves a check's NIST controls and CCIs from the Checkov mapping dataset,
+ * falling back to the static-analysis controls when unmapped. Mirrors Go's controlsFor.
+ */
+function controlsFor(checkId: string): { nist: string[]; cci: string[] } {
+  const mapping = getCheckovCciNistMapping(checkId);
+  if (mapping && mapping.nist.length > 0) {
+    return mapping;
+  }
+  const fallback = [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS];
+  return { nist: fallback, cci: nistToCci(fallback) };
+}
+
 function buildRequirement(checkId: string, group: CheckWithType[], scanTime: Date): EvaluatedRequirement {
   const checks = group.map((c) => c.check);
   const rep = checks[0]!;
   const impact = getImpact(rep.severity);
 
-  const tags: Record<string, unknown> = {
-    nist: [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS],
-  };
+  const { nist, cci } = controlsFor(checkId);
+  const tags = buildNistCciTags(nist, cci);
   // The scan scope (which framework's report produced this finding) is
   // requirement-level data, not tool metadata. Mirrors the Go converter.
   const checkTypes = [...new Set(group.map((c) => c.checkType).filter((t) => t !== ''))].sort();
@@ -178,7 +190,7 @@ function buildRequirement(checkId: string, group: CheckWithType[], scanTime: Dat
     req.sourceLocation = loc;
   }
 
-  const controlType = deriveControlTypeFromTags([...DEFAULT_STATIC_ANALYSIS_NIST_TAGS]);
+  const controlType = deriveControlTypeFromTags(nist);
   if (controlType !== undefined) {
     req.controlType = controlType;
   }
