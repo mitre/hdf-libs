@@ -30,7 +30,7 @@
         "total": 1
       },
       "no_impact": {
-        "none": 1,
+        "informational": 1,
         "total": 1
       },
       "passed": {

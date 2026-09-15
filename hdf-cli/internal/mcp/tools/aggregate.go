@@ -21,7 +21,7 @@ import (
 type aggregateInput struct {
 	Sources  []handle.Source `json:"sources" jsonschema:"documents to aggregate, each {path} or {handle}"`
 	Status   []string        `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
-	Severity []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|none (OR)"`
+	Severity []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
 	NIST     []string        `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
 	Page     int             `json:"page,omitempty" jsonschema:"0-based page when perSource is truncated"`
 }

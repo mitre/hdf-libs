@@ -68,7 +68,13 @@ func AssertionCount(config *hdfengine.ThresholdConfig) int {
 		if severity == nil {
 			continue
 		}
-		for _, bound := range []*hdfengine.ThresholdBound{severity.Critical, severity.High, severity.Medium, severity.Low, severity.None, severity.Total} {
+		// Every bound must be listed: one omitted here reports a populated spec
+		// as asserting nothing, which reads as the false green this count exists
+		// to prevent.
+		for _, bound := range []*hdfengine.ThresholdBound{
+			severity.Critical, severity.High, severity.Medium, severity.Low,
+			severity.Informational, severity.None, severity.Total,
+		} {
 			if bound == nil {
 				continue
 			}
