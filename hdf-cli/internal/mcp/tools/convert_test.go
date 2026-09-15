@@ -27,7 +27,7 @@ func callConvert(t *testing.T, in convertInput) (*sdkmcp.CallToolResult, convert
 // document (1 baseline, 3 requirements).
 func gosecFixture(t *testing.T) []byte {
 	t.Helper()
-	p := filepath.Join("..", "..", "..", "..", "hdf-converters", "converters", "gosec-to-hdf", "fixtures", "input", "grype-gosec.json")
+	p := filepath.Join("..", "..", "..", "..", "hdf-converters", "converters", "gosec-to-hdf", "fixtures", "input", "real.json")
 	b, err := os.ReadFile(p)
 	if err != nil {
 		t.Skipf("gosec fixture unavailable: %v", err)

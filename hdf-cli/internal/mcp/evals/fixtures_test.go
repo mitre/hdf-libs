@@ -35,7 +35,7 @@ const (
 	fxVexResults = "testdata/vex-results.json"
 	fxBigScan    = "../../../../hdf-fixtures/inspec/wrapper.json"
 	// A real small gosec scan (raw tool output) for the hdf_convert golden.
-	fxGosecRaw = "../../../../hdf-converters/converters/gosec-to-hdf/fixtures/input/grype-gosec.json"
+	fxGosecRaw = "../../../../hdf-converters/converters/gosec-to-hdf/fixtures/input/real.json"
 )
 
 // stageRoot makes a fresh HDF_MCP_ROOT and stages the given real fixtures into
