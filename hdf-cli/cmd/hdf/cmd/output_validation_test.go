@@ -218,6 +218,7 @@ func TestDetectHDFDocType_DetectsSystemPlanEvidenceComparison(t *testing.T) {
 		{"plan via assessments", `{"name":"p","assessments":[{"baselineRef":"x"}]}`, "plan"},
 		{"evidence via contents", `{"name":"e","contents":[{"type":"hdf-results","uri":"a","checksum":{"algorithm":"sha256","value":"abc"}}]}`, "evidence-package"},
 		{"comparison via comparisonMode", `{"formatVersion":"1.0.0","comparisonMode":"temporal","requirementDiffs":[]}`, "comparison"},
+		{"comparison via requirementDiffs alone", `{"formatVersion":"1.0.0","requirementDiffs":[]}`, "comparison"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -227,6 +228,21 @@ func TestDetectHDFDocType_DetectsSystemPlanEvidenceComparison(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// TestValidateHDFOutput_RejectsRequirementDiffsOnlyComparison guards the
+// detection change: a doc carrying requirementDiffs but missing the required
+// comparisonMode is a MALFORMED comparison. It must still be classified as a
+// comparison and fail schema validation — never fall through to "" and skip
+// validation entirely.
+func TestValidateHDFOutput_RejectsRequirementDiffsOnlyComparison(t *testing.T) {
+	t.Parallel()
+	invalid := []byte(`{"formatVersion":"1.0.0","requirementDiffs":[]}`)
+	require.Equal(t, "comparison", detectHDFDocumentType(invalid),
+		"a requirementDiffs-only doc must classify as comparison, not skip validation")
+	err := validateHDFOutput(invalid)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Comparison")
 }
 
 func TestValidateHDFOutput_AcceptsValidSystem(t *testing.T) {

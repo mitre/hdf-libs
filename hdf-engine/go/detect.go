@@ -32,9 +32,11 @@ func Detect(data []byte) string {
 	// keys is classified by the more distinctive one. `contents` (evidence
 	// package), `overrides` (amendments) and `assessments` (plan) are each unique
 	// to one type and win over the broader `baselines`/`components`/`requirements`.
-	// Comparison is keyed on `comparisonMode` (its semantic discriminator); the
-	// schema requires both `comparisonMode` and `requirementDiffs`, so either
-	// identifies a valid comparison, and comparisonMode is the canonical choice.
+	// Comparison is identified by EITHER `comparisonMode` (the canonical semantic
+	// discriminator) OR `requirementDiffs` — the schema requires both, so a doc
+	// carrying only one is a malformed comparison, and matching on either routes it
+	// to the comparison validator (which fails it loudly) instead of letting it fall
+	// through to "" and skip validation entirely.
 	switch {
 	case hasKeys(doc, "contents"):
 		return string(validators.TypeEvidencePackage)
@@ -42,7 +44,7 @@ func Detect(data []byte) string {
 		return string(validators.TypeAmendments)
 	case hasKeys(doc, "assessments"):
 		return string(validators.TypePlan)
-	case hasKeys(doc, "comparisonMode"):
+	case hasKeys(doc, "comparisonMode"), hasKeys(doc, "requirementDiffs"):
 		return string(validators.TypeComparison)
 	case hasKeys(doc, "baselines"):
 		return string(validators.TypeResults)
