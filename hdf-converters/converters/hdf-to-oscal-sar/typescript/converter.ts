@@ -7,7 +7,7 @@
 
 import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
-import { hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
+import { emitConverterWarning, hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -22,12 +22,15 @@ import type {
   Property,
   Link,
   Resource,
+  RelevantEvidence,
+  RiskResponse,
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlRef,
   oscalString,
   oscalToken,
   impactToSeverity,
+  descriptionLabelProp,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
 
@@ -385,11 +388,10 @@ function requirementToFindingSet(
   const { state, reason } = effectiveState(req);
   const findingDesc = extractDefaultDescription(descriptions);
 
-  // Build props from control mappings (nist/cci), non-default descriptions
-  // (check/fix/rationale), and v3.2 classification fields. OSCAL prop values
-  // are StringDatatype (no newlines, no edge whitespace), so prose-capable
-  // fields emit a single-line preview as the value and carry the full text in
-  // the prop's own remarks (markup-multiline).
+  // Build props from control mappings (nist/cci) and v3.2 classification
+  // fields. OSCAL prop values are StringDatatype (no newlines, no edge
+  // whitespace), so a prose-capable prop emits a single-line preview as the
+  // value and carries the full text in the prop's own remarks (markup-multiline).
   // The source requirement id. target-id carries an encoded form, because OSCAL
   // constrains it to a token and the encoding is not injective, so without this
   // the identifier the source tool reported would be unrecoverable. Trimmed
@@ -427,14 +429,6 @@ function requirementToFindingSet(
   };
   pushTagValues('nist');
   pushTagValues('cci');
-  addProseProp('check', descriptionByLabel('check'));
-  addProseProp('rationale', descriptionByLabel('rationale'));
-  // fix text's OSCAL home is risk.remediations (built below when impact > 0,
-  // the reverse importer's read path). Only an impact-0 requirement, which
-  // emits no risk, carries it as a finding prop instead.
-  if (req.impact <= 0) {
-    addProseProp('fix', descriptionByLabel('fix'));
-  }
   if (req.controlType) addProp('control-type', req.controlType);
   if (req.verificationMethod) addProp('verification-method', req.verificationMethod);
   if (req.applicability) addProp('applicability', req.applicability);
@@ -488,6 +482,7 @@ function requirementToFindingSet(
     resource = {
       uuid: resourceUuid,
       title: `Check source code for ${req.id}`,
+      props: [{ name: 'type', value: 'evidence' }],
       base64: {
         value: encodeBase64Utf8(req.code),
         'media-type': 'text/plain',
@@ -507,9 +502,12 @@ function requirementToFindingSet(
     targetStatus.remarks = remarks;
   }
 
+  // The assessor's conclusion about the objective: rationale's OSCAL home.
+  const rationale = descriptionByLabel('rationale');
   const target = {
     type: targetType,
     'target-id': targetId,
+    ...(rationale !== '' ? { description: rationale } : {}),
     status: targetStatus,
   } as unknown as TargetClass;
 
@@ -544,6 +542,8 @@ function requirementToFindingSet(
       ...(relevantEvidence.length > 0 ? { 'relevant-evidence': relevantEvidence } : {}),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
+  } else {
+    warnUncarriedProse(req);
   }
 
   // Build risk from impact
@@ -656,19 +656,20 @@ function overrideRemarks(req: EvaluatedRequirement): string {
 }
 
 /**
- * Collects the requirement's refs, evidence, and source location into OSCAL
- * observation relevant-evidence — the home the reverse SAR importer reads back
- * into HDF refs (via href) and evidence (via description).
+ * Collects the requirement's refs, evidence and source location, then its check
+ * (and impact-0 fix) prose, into OSCAL observation relevant-evidence — the home
+ * the reverse SAR importer reads back into HDF refs (via href), evidence (via
+ * description) and check/fix (via description-label).
  */
-function buildRelevantEvidence(req: EvaluatedRequirement): Array<{ href?: string; description: string }> {
-  const ev: Array<{ href?: string; description: string }> = [];
+function buildRelevantEvidence(req: EvaluatedRequirement): RelevantEvidence[] {
+  const ev: RelevantEvidence[] = [];
   for (const r of req.refs ?? []) {
     const o = r as { url?: unknown; uri?: unknown };
     if (typeof o.url === 'string' && o.url !== '') ev.push({ href: o.url, description: '' });
     else if (typeof o.uri === 'string' && o.uri !== '') ev.push({ href: o.uri, description: '' });
   }
   for (const e of req.evidence ?? []) {
-    const entry: { href?: string; description: string } = { description: e.description ?? '' };
+    const entry: RelevantEvidence = { description: e.description ?? '' };
     if (String(e.type) === 'url' && e.data) entry.href = e.data;
     if (entry.href || entry.description) ev.push(entry);
   }
@@ -676,7 +677,44 @@ function buildRelevantEvidence(req: EvaluatedRequirement): Array<{ href?: string
     const loc = sourceLocationText(req.sourceLocation);
     if (loc) ev.push({ description: 'Source location: ' + loc });
   }
+  // Labelled prose follows the entries above so their index positions are stable.
+  for (const label of observationProseLabels(req)) {
+    const text = descriptionText(req, label);
+    ev.push({ description: previewLine(text), props: [descriptionLabelProp(label)], remarks: text });
+  }
   return ev;
+}
+
+/** Data of the requirement's first description with the label, or ''. */
+function descriptionText(req: EvaluatedRequirement, label: string): string {
+  return (req.descriptions ?? []).find((d) => d.label === label)?.data ?? '';
+}
+
+/**
+ * Description labels whose text the requirement's observation carries as
+ * labelled evidence: check, and fix when impact is 0 (otherwise fix's home is
+ * the risk remediation). A description with no preview text carries nothing.
+ */
+function observationProseLabels(req: EvaluatedRequirement): string[] {
+  const candidates = req.impact <= 0 ? ['check', 'fix'] : ['check'];
+  return candidates.filter((label) => previewLine(descriptionText(req, label)) !== '');
+}
+
+/**
+ * Reports observation-scoped prose lost because a requirement with no results
+ * emits no observation.
+ */
+function warnUncarriedProse(req: EvaluatedRequirement): void {
+  const labels = observationProseLabels(req);
+  if (labels.length === 1) {
+    emitConverterWarning(
+      `hdf-to-oscal-sar: requirement ${JSON.stringify(req.id)} has no results, so no observation holds its ${labels[0]} description; it was not carried`,
+    );
+  } else if (labels.length > 1) {
+    emitConverterWarning(
+      `hdf-to-oscal-sar: requirement ${JSON.stringify(req.id)} has no results, so no observation holds its ${labels.join(' and ')} descriptions; they were not carried`,
+    );
+  }
 }
 
 /** Renders a source location as "ref:line", degrading to whichever is present. */
@@ -695,14 +733,21 @@ function severityToFacetValue(s: string): string {
 
 /**
  * Turns the requirement's fix description and any governing risk-acceptance
- * override into OSCAL risk remediations — the home the reverse importer reads
- * back as the HDF remediation description.
+ * override into OSCAL risk remediations. The reverse importer reads the
+ * labelled fix back as the HDF fix description and the rest as the remediation
+ * description.
  */
-function buildRemediations(req: EvaluatedRequirement): Array<Record<string, string>> {
-  const rems: Array<Record<string, string>> = [];
+function buildRemediations(req: EvaluatedRequirement): RiskResponse[] {
+  const rems: RiskResponse[] = [];
   const fix = (req.descriptions ?? []).find((d) => d.label === 'fix');
   if (fix && fix.data) {
-    rems.push({ uuid: crypto.randomUUID(), lifecycle: 'recommendation', title: 'Recommended fix', description: fix.data });
+    rems.push({
+      uuid: crypto.randomUUID(),
+      lifecycle: 'recommendation',
+      title: 'Recommended fix',
+      description: fix.data,
+      props: [descriptionLabelProp('fix')],
+    });
   }
   const overrides = req.statusOverrides ?? [];
   if (req.disposition && overrides.length > 0) {

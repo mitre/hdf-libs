@@ -669,9 +669,10 @@ type Observation struct {
 // resolvable URL when it points outside the document, or a document fragment
 // (e.g. "#uuid") when it references back-matter.
 type RelevantEvidence struct {
-	Href        string `json:"href,omitempty"`
-	Description string `json:"description"`
-	Remarks     string `json:"remarks,omitempty"`
+	Href        string     `json:"href,omitempty"`
+	Description string     `json:"description"`
+	Props       []Property `json:"props,omitempty"`
+	Remarks     string     `json:"remarks,omitempty"`
 }
 
 // SubjectRef references an assessment subject.

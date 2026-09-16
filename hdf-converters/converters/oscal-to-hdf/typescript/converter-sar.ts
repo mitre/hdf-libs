@@ -28,6 +28,7 @@ import type {
   Finding,
   Observation,
   IdentifiedRisk,
+  RelevantEvidence,
   RiskResponse,
 } from './types.js';
 import {
@@ -37,6 +38,7 @@ import {
   extractRiskSeverity,
   extractMetadata,
   toKebabCase,
+  descriptionLabel,
 } from './shared.js';
 
 /**
@@ -347,25 +349,17 @@ function sarBuildDescriptions(
     data: findingDescs.join('\n') || '',
   });
 
-  // Rationale from observation descriptions
-  const obsDescs: string[] = [];
-  const seen = new Set<string>();
-  for (const f of findings) {
-    for (const ref of f['related-observations'] ?? []) {
-      const obsUuid = ref['observation-uuid'];
-      if (!obsUuid || seen.has(obsUuid)) continue;
-      seen.add(obsUuid);
-      const obs = obsMap.get(obsUuid);
-      if (obs?.description) {
-        obsDescs.push(obs.description);
-      }
-    }
+  const rationales = findings.map((f) => f.target.description ?? '').filter((d) => d !== '');
+  if (rationales.length > 0) {
+    descriptions.push({ label: 'rationale', data: rationales.join('\n') });
   }
-  if (obsDescs.length > 0) {
-    descriptions.push({
-      label: 'rationale',
-      data: obsDescs.join('\n'),
-    });
+
+  const labelled = collectLabelledProse(findings, obsMap, riskMap);
+  for (const label of ['check', 'fix']) {
+    const texts = labelled.get(label);
+    if (texts) {
+      descriptions.push({ label, data: texts.join('\n') });
+    }
   }
 
   // Risk statement text from related risks.
@@ -387,6 +381,55 @@ function sarBuildDescriptions(
   }
 
   return descriptions;
+}
+
+/** The HDF description label a relevant-evidence entry carries ("check" or "fix"), or '' for foreign evidence. */
+function evidenceDescriptionLabel(ev: RelevantEvidence): string {
+  const label = descriptionLabel(ev.props);
+  return label === 'check' || label === 'fix' ? label : '';
+}
+
+/** Whether a remediation is HDF's fix prose home. */
+function isLabelledFix(rem: RiskResponse): boolean {
+  return descriptionLabel(rem.props) === 'fix';
+}
+
+/**
+ * Gathers the check and fix text HDF wrote into labelled relevant-evidence
+ * entries (full text from remarks) and labelled remediations, in finding order,
+ * reading each observation and risk once.
+ */
+function collectLabelledProse(
+  findings: Finding[],
+  obsMap: Map<string, Observation>,
+  riskMap: Map<string, IdentifiedRisk>,
+): Map<string, string[]> {
+  const texts = new Map<string, string[]>();
+  const add = (label: string, text: string): void => {
+    texts.set(label, [...(texts.get(label) ?? []), text]);
+  };
+  const seenObs = new Set<string>();
+  const seenRisk = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-observations'] ?? []) {
+      const obs = obsMap.get(ref['observation-uuid']);
+      if (!obs || seenObs.has(ref['observation-uuid'])) continue;
+      seenObs.add(ref['observation-uuid']);
+      for (const ev of obs['relevant-evidence'] ?? []) {
+        const label = evidenceDescriptionLabel(ev);
+        if (label !== '') add(label, ev.remarks || ev.description);
+      }
+    }
+    for (const ref of f['related-risks'] ?? []) {
+      const risk = riskMap.get(ref['risk-uuid']);
+      if (!risk || seenRisk.has(ref['risk-uuid'])) continue;
+      seenRisk.add(ref['risk-uuid']);
+      for (const rem of risk.remediations ?? []) {
+        if (isLabelledFix(rem)) add('fix', rem.description);
+      }
+    }
+  }
+  return texts;
 }
 
 function collectRiskStatements(
@@ -422,6 +465,7 @@ function collectRemediations(
       seen.add(riskUuid);
       const risk = riskMap.get(riskUuid);
       for (const rem of risk?.remediations ?? []) {
+        if (isLabelledFix(rem)) continue;
         const text = remediationText(rem);
         if (text) remediations.push(text);
       }
@@ -450,7 +494,7 @@ function collectEvidenceDescriptions(
       seenObs.add(obsUuid);
       const obs = obsMap.get(obsUuid);
       for (const ev of obs?.['relevant-evidence'] ?? []) {
-        if (!ev.description || seenText.has(ev.description)) continue;
+        if (!ev.description || seenText.has(ev.description) || evidenceDescriptionLabel(ev) !== '') continue;
         seenText.add(ev.description);
         descs.push(ev.description);
       }

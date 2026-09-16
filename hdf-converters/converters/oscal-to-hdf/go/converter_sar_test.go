@@ -496,6 +496,173 @@ func TestFindingStartTime_FallbackChain(t *testing.T) {
 	assert.False(t, rr.StartTime.IsZero(), "startTime must never be the zero value")
 }
 
+// sarWithProse builds a one-result SAR whose findings, observations and risks
+// are supplied as raw JSON, so each test states exactly the prose homes it reads.
+func sarWithProse(findings, observations, risks string) []byte {
+	return []byte(`{"assessment-results":{
+		"uuid":"11111111-1111-4111-8111-111111111111",
+		"metadata":{"title":"t","last-modified":"2026-01-01T00:00:00Z","version":"1","oscal-version":"1.1.2"},
+		"import-ap":{"href":"#"},
+		"results":[{"uuid":"22222222-2222-4222-8222-222222222222","title":"r","description":"d","start":"2026-01-01T00:00:00Z",
+			"reviewed-controls":{"control-selections":[{"include-all":{}}]},
+			"findings":` + findings + `,
+			"observations":` + observations + `,
+			"risks":` + risks + `}]}}`)
+}
+
+func convertSingleRequirement(t *testing.T, input []byte) *hdf.EvaluatedRequirement {
+	t.Helper()
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 1)
+	require.Len(t, results.Baselines[0].Requirements, 1)
+	return &results.Baselines[0].Requirements[0]
+}
+
+const hdfNS = "https://mitre.github.io/hdf-libs/ns/oscal"
+
+func TestDescriptionLabelConstants(t *testing.T) {
+	assert.Equal(t, hdfNS, HDFOSCALNamespace)
+	assert.Equal(t, "description-label", DescriptionLabelPropName)
+	assert.Equal(t, Property{Name: "description-label", Ns: hdfNS, Value: "check"}, DescriptionLabelProp("check"))
+
+	assert.Equal(t, "fix", DescriptionLabel([]Property{{Name: "other", Ns: hdfNS, Value: "x"}, DescriptionLabelProp("fix")}))
+	assert.Empty(t, DescriptionLabel([]Property{{Name: "description-label", Value: "fix"}}), "no ns is foreign")
+	assert.Empty(t, DescriptionLabel([]Property{{Name: "description-label", Ns: "https://example.org/ns/oscal", Value: "fix"}}))
+	assert.Empty(t, DescriptionLabel(nil))
+}
+
+// Rationale is read from finding.target.description; observation descriptions
+// are no longer read as rationale.
+func TestConvertAssessmentResultsToHDF_RationaleFromTargetDescription(t *testing.T) {
+	input := sarWithProse(`[
+		{"uuid":"f1","title":"t","description":"d1","target":{"type":"objective-id","target-id":"ac-1","description":"first\nconclusion\n","status":{"state":"satisfied"}},
+		 "related-observations":[{"observation-uuid":"o1"}]},
+		{"uuid":"f2","title":"t","description":"d2","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}}},
+		{"uuid":"f3","title":"t","description":"d3","target":{"type":"objective-id","target-id":"ac-1","description":"second","status":{"state":"satisfied"}}}
+	]`, `[{"uuid":"o1","description":"observation prose","methods":["TEST"],"collected":"2026-01-01T00:00:00Z"}]`, `[]`)
+	req := convertSingleRequirement(t, input)
+	rationale, ok := descByLabel(req, "rationale")
+	require.True(t, ok)
+	assert.Equal(t, "first\nconclusion\n\nsecond", rationale)
+}
+
+func TestConvertAssessmentResultsToHDF_NoTargetDescriptionNoRationale(t *testing.T) {
+	input := sarWithProse(`[
+		{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},
+		 "related-observations":[{"observation-uuid":"o1"}]}
+	]`, `[{"uuid":"o1","description":"observation prose","methods":["TEST"],"collected":"2026-01-01T00:00:00Z"}]`, `[]`)
+	req := convertSingleRequirement(t, input)
+	_, ok := descByLabel(req, "rationale")
+	assert.False(t, ok, "observation descriptions are not rationale")
+}
+
+// Labelled evidence entries and fix remediations are HDF's own prose homes and
+// return exactly; they are not echoed as evidence or remediation descriptions.
+func TestConvertAssessmentResultsToHDF_LabelledProseReadBack(t *testing.T) {
+	input := sarWithProse(`[
+		{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"not-satisfied"}},
+		 "related-observations":[{"observation-uuid":"o1"}],"related-risks":[{"risk-uuid":"r1"}]}
+	]`, `[{"uuid":"o1","description":"o","methods":["TEST"],"collected":"2026-01-01T00:00:00Z","relevant-evidence":[
+		{"description":"Check line","remarks":"Check line\n  full check\n","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"check"}]},
+		{"description":"plain evidence"}
+	]}]`, `[{"uuid":"r1","title":"Risk","description":"rd","statement":"rs","status":"open","remediations":[
+		{"uuid":"m1","lifecycle":"recommendation","title":"Recommended fix","description":"do\nthis","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"fix"}]},
+		{"uuid":"m2","lifecycle":"accepted","title":"waiver","description":"accepted"}
+	]}]`)
+	req := convertSingleRequirement(t, input)
+
+	check, ok := descByLabel(req, "check")
+	require.True(t, ok)
+	assert.Equal(t, "Check line\n  full check\n", check)
+	fix, ok := descByLabel(req, "fix")
+	require.True(t, ok)
+	assert.Equal(t, "do\nthis", fix)
+
+	remediation, ok := descByLabel(req, "remediation")
+	require.True(t, ok)
+	assert.Equal(t, "waiver: accepted", remediation, "only the unlabelled remediation remains a remediation")
+	evidence, ok := descByLabel(req, "evidence")
+	require.True(t, ok)
+	assert.Equal(t, "plain evidence", evidence, "only unlabelled evidence remains evidence")
+}
+
+// An impact-0 fix lives in labelled evidence; an entry without remarks yields
+// its description.
+func TestConvertAssessmentResultsToHDF_LabelledEvidenceFixWithoutRemarks(t *testing.T) {
+	input := sarWithProse(`[
+		{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},
+		 "related-observations":[{"observation-uuid":"o1"},{"observation-uuid":"o1"}]}
+	]`, `[{"uuid":"o1","description":"o","methods":["TEST"],"collected":"2026-01-01T00:00:00Z","relevant-evidence":[
+		{"description":"single-line fix","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"fix"}]}
+	]}]`, `[]`)
+	req := convertSingleRequirement(t, input)
+	fix, ok := descByLabel(req, "fix")
+	require.True(t, ok)
+	assert.Equal(t, "single-line fix", fix)
+	_, ok = descByLabel(req, "evidence")
+	assert.False(t, ok)
+	_, ok = descByLabel(req, "check")
+	assert.False(t, ok)
+}
+
+// Foreign content — no description-label, a description-label outside the HDF
+// namespace, or a label value HDF does not define — imports as it did before.
+func TestConvertAssessmentResultsToHDF_ForeignProseUnlabelled(t *testing.T) {
+	input := sarWithProse(`[
+		{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"not-satisfied"}},
+		 "related-observations":[{"observation-uuid":"o1"}],"related-risks":[{"risk-uuid":"r1"}]}
+	]`, `[{"uuid":"o1","description":"o","methods":["TEST"],"collected":"2026-01-01T00:00:00Z","relevant-evidence":[
+		{"description":"no label","remarks":"remark one"},
+		{"description":"no ns","remarks":"remark two","props":[{"name":"description-label","value":"check"}]},
+		{"description":"other ns","props":[{"name":"description-label","ns":"https://example.org/ns/oscal","value":"fix"}]},
+		{"description":"unknown value","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"rationale"}]}
+	]}]`, `[{"uuid":"r1","title":"Risk","description":"rd","statement":"rs","status":"open","remediations":[
+		{"uuid":"m1","lifecycle":"recommendation","title":"Recommended fix","description":"patch it"},
+		{"uuid":"m2","lifecycle":"recommendation","title":"Vendor","description":"upgrade","props":[{"name":"description-label","value":"fix"}]},
+		{"uuid":"m3","lifecycle":"recommendation","title":"Checker","description":"look","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"check"}]}
+	]}]`)
+	req := convertSingleRequirement(t, input)
+
+	_, ok := descByLabel(req, "check")
+	assert.False(t, ok, "unlabelled evidence is never check")
+	_, ok = descByLabel(req, "fix")
+	assert.False(t, ok, "unlabelled remediations are never fix")
+
+	remediation, ok := descByLabel(req, "remediation")
+	require.True(t, ok)
+	assert.Equal(t, "Recommended fix: patch it\n\nVendor: upgrade\n\nChecker: look", remediation)
+	evidence, ok := descByLabel(req, "evidence")
+	require.True(t, ok)
+	assert.Equal(t, "no label\nno ns\nother ns\nunknown value", evidence)
+}
+
+// Findings merged onto one requirement contribute their labelled prose in
+// finding order, each observation and risk read once.
+func TestConvertAssessmentResultsToHDF_LabelledProseAcrossFindings(t *testing.T) {
+	input := sarWithProse(`[
+		{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"not-satisfied"}},
+		 "related-observations":[{"observation-uuid":"o1"}],"related-risks":[{"risk-uuid":"r1"}]},
+		{"uuid":"f2","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"not-satisfied"}},
+		 "related-observations":[{"observation-uuid":"o2"},{"observation-uuid":"o1"},{"observation-uuid":"missing"}],"related-risks":[{"risk-uuid":"r1"},{"risk-uuid":"r2"},{"risk-uuid":"missing"}]}
+	]`, `[
+		{"uuid":"o1","description":"o","methods":["TEST"],"collected":"2026-01-01T00:00:00Z","relevant-evidence":[
+			{"description":"c1","remarks":"check one","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"check"}]}]},
+		{"uuid":"o2","description":"o","methods":["TEST"],"collected":"2026-01-01T00:00:00Z","relevant-evidence":[
+			{"description":"c2","remarks":"check two","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"check"}]},
+			{"description":"f2","remarks":"fix two","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"fix"}]}]}
+	]`, `[{"uuid":"r1","title":"Risk","description":"rd","statement":"rs","status":"open","remediations":[
+		{"uuid":"m1","lifecycle":"recommendation","title":"Recommended fix","description":"fix one","props":[{"name":"description-label","ns":"`+hdfNS+`","value":"fix"}]}
+	]},{"uuid":"r2","title":"Risk","description":"rd","statement":"rs","status":"open"}]`)
+	req := convertSingleRequirement(t, input)
+	check, ok := descByLabel(req, "check")
+	require.True(t, ok)
+	assert.Equal(t, "check one\ncheck two", check)
+	fix, ok := descByLabel(req, "fix")
+	require.True(t, ok)
+	assert.Equal(t, "fix one\nfix two", fix)
+}
+
 func TestRemediationText(t *testing.T) {
 	tests := []struct {
 		name     string

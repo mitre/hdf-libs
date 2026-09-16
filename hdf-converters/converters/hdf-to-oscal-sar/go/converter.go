@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"slices"
 	"strconv"
 	"strings"
@@ -375,11 +376,10 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	// because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded value would
 	// itself be schema-invalid.
 	//
-	// Then control mappings (nist/cci), non-default descriptions
-	// (check/fix/rationale), and v3.2 classification fields. OSCAL prop values
-	// are StringDatatype (no newlines, no edge whitespace), so prose-capable
-	// fields emit a single-line preview as the value and carry the full text in
-	// the prop's own remarks (markup-multiline).
+	// Then control mappings (nist/cci) and v3.2 classification fields. OSCAL prop
+	// values are StringDatatype (no newlines, no edge whitespace), so a
+	// prose-capable prop emits a single-line preview as the value and carries the
+	// full text in the prop's own remarks (markup-multiline).
 	props := []oscal.Property{{Name: "hdf-requirement-id", Value: oscal.OSCALString(req.ID)}}
 	// OSCAL prop values must be non-empty strings, so skip any empty value
 	// (e.g. an empty source `code`) rather than emitting a schema-invalid value: "".
@@ -412,14 +412,6 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	}
 	pushTagValues("nist")
 	pushTagValues("cci")
-	addProseProp("check", descriptionByLabel(req.Descriptions, "check"))
-	addProseProp("rationale", descriptionByLabel(req.Descriptions, "rationale"))
-	// fix text's OSCAL home is risk.remediations (built below when impact > 0,
-	// the reverse importer's read path). Only an impact-0 requirement, which
-	// emits no risk, carries it as a finding prop instead.
-	if req.Impact <= 0 {
-		addProseProp("fix", descriptionByLabel(req.Descriptions, "fix"))
-	}
 	if req.ControlType != nil {
 		addProp("control-type", string(*req.ControlType))
 	}
@@ -492,6 +484,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		codeResource = &oscal.Resource{
 			UUID:  oscal.GenerateUUID(),
 			Title: "Check source code for " + req.ID,
+			Props: []oscal.Property{{Name: "type", Value: "evidence"}},
 			Base64: &oscal.Base64{
 				Value:     base64.StdEncoding.EncodeToString([]byte(*req.Code)),
 				MediaType: "text/plain",
@@ -515,6 +508,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		Target: oscal.FindingTarget{
 			Type:     targetType,
 			TargetID: targetID,
+			// The assessor's conclusion about the objective: rationale's OSCAL home.
+			Description: descriptionByLabel(req.Descriptions, "rationale"),
 			Status: oscal.TargetStatus{
 				State:  state,
 				Reason: reason,
@@ -546,6 +541,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		finding.RelatedObservations = []oscal.RelatedRef{
 			{ObservationUUID: obsUUID},
 		}
+	} else {
+		warnUncarriedProse(req)
 	}
 
 	// Build risk from impact
@@ -666,9 +663,11 @@ func overrideRemarks(req *hdf.EvaluatedRequirement) string {
 	return strings.Join(parts, "; ")
 }
 
-// buildRelevantEvidence collects the requirement's refs, evidence, and source
-// location into OSCAL observation relevant-evidence, the home the reverse SAR
-// importer reads back into HDF refs (via href) and evidence (via description).
+// buildRelevantEvidence collects the requirement's refs, evidence and source
+// location, then its check (and impact-0 fix) prose, into OSCAL observation
+// relevant-evidence, the home the reverse SAR importer reads back into HDF
+// refs (via href), evidence (via description) and check/fix (via
+// description-label).
 func buildRelevantEvidence(req *hdf.EvaluatedRequirement) []oscal.RelevantEvidence {
 	var ev []oscal.RelevantEvidence
 	for _, r := range req.Refs {
@@ -697,7 +696,48 @@ func buildRelevantEvidence(req *hdf.EvaluatedRequirement) []oscal.RelevantEviden
 			ev = append(ev, oscal.RelevantEvidence{Description: "Source location: " + loc})
 		}
 	}
+	// Labelled prose follows the entries above so their index positions are stable.
+	for _, label := range observationProseLabels(req) {
+		text := descriptionByLabel(req.Descriptions, label)
+		ev = append(ev, oscal.RelevantEvidence{
+			Description: previewLine(text),
+			Props:       []oscal.Property{oscal.DescriptionLabelProp(label)},
+			Remarks:     text,
+		})
+	}
 	return ev
+}
+
+// observationProseLabels lists the description labels whose text the
+// requirement's observation carries as labelled evidence: check, and fix when
+// impact is 0 (otherwise fix's home is the risk remediation). A description
+// with no preview text carries nothing.
+func observationProseLabels(req *hdf.EvaluatedRequirement) []string {
+	candidates := []string{"check"}
+	if req.Impact <= 0 {
+		candidates = append(candidates, "fix")
+	}
+	var labels []string
+	for _, label := range candidates {
+		if previewLine(descriptionByLabel(req.Descriptions, label)) != "" {
+			labels = append(labels, label)
+		}
+	}
+	return labels
+}
+
+// warnUncarriedProse reports observation-scoped prose lost because a
+// requirement with no results emits no observation.
+func warnUncarriedProse(req *hdf.EvaluatedRequirement) {
+	labels := observationProseLabels(req)
+	switch len(labels) {
+	case 0:
+		return
+	case 1:
+		log.Printf("WARNING: hdf-to-oscal-sar: requirement %q has no results, so no observation holds its %s description; it was not carried", req.ID, labels[0])
+	default:
+		log.Printf("WARNING: hdf-to-oscal-sar: requirement %q has no results, so no observation holds its %s descriptions; they were not carried", req.ID, strings.Join(labels, " and "))
+	}
 }
 
 // sourceLocationText renders a source location as "ref:line", degrading to
@@ -723,8 +763,9 @@ func severityToFacetValue(s hdf.Severity) string {
 }
 
 // buildRemediations turns the requirement's fix description and any governing
-// risk-acceptance override into OSCAL risk remediations, the home the reverse
-// importer reads back as the HDF remediation description.
+// risk-acceptance override into OSCAL risk remediations. The reverse importer
+// reads the labelled fix back as the HDF fix description and the rest as the
+// remediation description.
 func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
 	var rems []oscal.Remediation
 	if fix := descriptionByLabel(req.Descriptions, "fix"); fix != "" {
@@ -733,6 +774,7 @@ func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
 			Lifecycle:   "recommendation",
 			Title:       "Recommended fix",
 			Description: fix,
+			Props:       []oscal.Property{oscal.DescriptionLabelProp("fix")},
 		})
 	}
 	if req.Disposition != nil && len(req.StatusOverrides) > 0 {

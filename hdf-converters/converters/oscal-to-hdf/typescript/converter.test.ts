@@ -27,6 +27,10 @@ import {
   hdfStatusToOscalRiskStatus,
   parseOscalDocument,
   toKebabCase,
+  HDF_OSCAL_NAMESPACE,
+  DESCRIPTION_LABEL_PROP_NAME,
+  descriptionLabelProp,
+  descriptionLabel,
 } from './shared.js';
 import {
   assertRequirementCount,
@@ -710,6 +714,146 @@ describe('convertOscalSarToHdf', () => {
     const ac1 = reqs.find(r => r.id === 'AC-1')!;
     expect(ac1.tags.nist).toEqual(['AC-1']);
     expect(ac1.tags.cci).toBeUndefined();
+  });
+});
+
+describe('convertOscalSarToHdf prose homes', () => {
+  const NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+  // Builds a one-result SAR from raw findings, observations and risks, so each
+  // test states exactly the prose homes it reads.
+  const sarWithProse = (findings: unknown[], observations: unknown[], risks: unknown[]): string =>
+    JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: [{
+          uuid: '22222222-2222-4222-8222-222222222222', title: 'r', description: 'd', start: '2026-01-01T00:00:00Z',
+          'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+          findings, observations, risks,
+        }],
+      },
+    });
+
+  const finding = (uuid: string, extra: Record<string, unknown> = {}, targetDescription?: string) => ({
+    uuid, title: 't', description: `d-${uuid}`,
+    target: {
+      type: 'objective-id', 'target-id': 'ac-1', status: { state: 'not-satisfied' },
+      ...(targetDescription !== undefined ? { description: targetDescription } : {}),
+    },
+    ...extra,
+  });
+  const observation = (uuid: string, evidence?: unknown[]) => ({
+    uuid, description: 'observation prose', methods: ['TEST'], collected: '2026-01-01T00:00:00Z',
+    ...(evidence ? { 'relevant-evidence': evidence } : {}),
+  });
+  const label = (value: string, ns: string | null = NS) => [{ name: 'description-label', value, ...(ns !== null ? { ns } : {}) }];
+
+  const onlyRequirement = async (input: string) => {
+    const hdf = JSON.parse(await convertOscalSarToHdf(input)) as HDFResults;
+    expect(hdf.baselines).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    return hdf.baselines[0]!.requirements[0]!;
+  };
+  const desc = (req: { descriptions?: Array<{ label: string; data: string }> }, l: string) =>
+    req.descriptions?.find((d) => d.label === l)?.data;
+
+  it('exports the namespace and description-label helpers', () => {
+    expect(HDF_OSCAL_NAMESPACE).toBe(NS);
+    expect(DESCRIPTION_LABEL_PROP_NAME).toBe('description-label');
+    expect(descriptionLabelProp('check')).toEqual({ name: 'description-label', ns: NS, value: 'check' });
+    expect(descriptionLabel([{ name: 'other', ns: NS, value: 'x' }, descriptionLabelProp('fix')])).toBe('fix');
+    expect(descriptionLabel(label('fix', null))).toBe('');
+    expect(descriptionLabel(label('fix', 'https://example.org/ns/oscal'))).toBe('');
+    expect(descriptionLabel(undefined)).toBe('');
+  });
+
+  it('reads rationale from finding.target.description, not observation descriptions', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }] }, 'first\nconclusion\n'),
+      finding('f2'),
+      finding('f3', {}, 'second'),
+    ], [observation('o1')], []));
+    expect(desc(req, 'rationale')).toBe('first\nconclusion\n\nsecond');
+  });
+
+  it('emits no rationale when no target carries a description', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }] }),
+    ], [observation('o1')], []));
+    expect(desc(req, 'rationale')).toBeUndefined();
+  });
+
+  it('reads labelled evidence and fix remediations back exactly', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+    ], [observation('o1', [
+      { description: 'Check line', remarks: 'Check line\n  full check\n', props: label('check') },
+      { description: 'plain evidence' },
+    ])], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [
+        { uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'do\nthis', props: label('fix') },
+        { uuid: 'm2', lifecycle: 'accepted', title: 'waiver', description: 'accepted' },
+      ],
+    }]));
+    expect(desc(req, 'check')).toBe('Check line\n  full check\n');
+    expect(desc(req, 'fix')).toBe('do\nthis');
+    expect(desc(req, 'remediation')).toBe('waiver: accepted');
+    expect(desc(req, 'evidence')).toBe('plain evidence');
+  });
+
+  it('reads a labelled evidence entry without remarks from its description', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }, { 'observation-uuid': 'o1' }] }),
+    ], [observation('o1', [{ description: 'single-line fix', props: label('fix') }])], []));
+    expect(desc(req, 'fix')).toBe('single-line fix');
+    expect(desc(req, 'evidence')).toBeUndefined();
+    expect(desc(req, 'check')).toBeUndefined();
+  });
+
+  it('imports unlabelled or foreign-labelled evidence and remediations as before', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+    ], [observation('o1', [
+      { description: 'no label', remarks: 'remark one' },
+      { description: 'no ns', remarks: 'remark two', props: label('check', null) },
+      { description: 'other ns', props: label('fix', 'https://example.org/ns/oscal') },
+      { description: 'unknown value', props: label('rationale') },
+    ])], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [
+        { uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'patch it' },
+        { uuid: 'm2', lifecycle: 'recommendation', title: 'Vendor', description: 'upgrade', props: label('fix', null) },
+        { uuid: 'm3', lifecycle: 'recommendation', title: 'Checker', description: 'look', props: label('check') },
+      ],
+    }]));
+    expect(desc(req, 'check')).toBeUndefined();
+    expect(desc(req, 'fix')).toBeUndefined();
+    expect(desc(req, 'remediation')).toBe('Recommended fix: patch it\n\nVendor: upgrade\n\nChecker: look');
+    expect(desc(req, 'evidence')).toBe('no label\nno ns\nother ns\nunknown value');
+  });
+
+  it('joins labelled prose across merged findings in finding order', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+      finding('f2', {
+        'related-observations': [{ 'observation-uuid': 'o2' }, { 'observation-uuid': 'o1' }, { 'observation-uuid': 'missing' }],
+        'related-risks': [{ 'risk-uuid': 'r1' }, { 'risk-uuid': 'r2' }, { 'risk-uuid': 'missing' }],
+      }),
+    ], [
+      observation('o1', [{ description: 'c1', remarks: 'check one', props: label('check') }]),
+      observation('o2', [
+        { description: 'c2', remarks: 'check two', props: label('check') },
+        { description: 'f2', remarks: 'fix two', props: label('fix') },
+      ]),
+    ], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [{ uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'fix one', props: label('fix') }],
+    }, { uuid: 'r2', title: 'Risk', description: 'rd', statement: 'rs', status: 'open' }]));
+    expect(desc(req, 'check')).toBe('check one\ncheck two');
+    expect(desc(req, 'fix')).toBe('fix one\nfix two');
   });
 });
 

@@ -260,6 +260,28 @@ export function hdfStatusToOscalRiskStatus(status: string): string {
 /** OSCAL specification version used in reverse converter output documents. */
 export const OSCAL_VERSION = '1.1.2';
 
+/** ns URI qualifying every OSCAL prop HDF defines. */
+export const HDF_OSCAL_NAMESPACE = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+/**
+ * Names the HDF prop that marks an OSCAL prose home with the HDF description
+ * label whose text it carries.
+ */
+export const DESCRIPTION_LABEL_PROP_NAME = 'description-label';
+
+/** Builds the HDF-namespaced description-label prop. */
+export function descriptionLabelProp(label: string): Property {
+  return { name: DESCRIPTION_LABEL_PROP_NAME, ns: HDF_OSCAL_NAMESPACE, value: label };
+}
+
+/**
+ * Returns the value of the HDF-namespaced description-label, or '' when there
+ * is none; a description-label in any other namespace is foreign.
+ */
+export function descriptionLabel(props: Property[] | undefined): string {
+  return extractPropValue(props, DESCRIPTION_LABEL_PROP_NAME, HDF_OSCAL_NAMESPACE) ?? '';
+}
+
 /**
  * Parses an OSCAL document from JSON input, validates the document type.
  * Throws if input is empty, invalid JSON, or not the expected type.

@@ -293,6 +293,25 @@ func HDFStatusToOSCALRiskStatus(status hdf.ResultStatus) string {
 // OscalVersion is the OSCAL specification version used in reverse converter output documents.
 const OscalVersion = "1.1.2"
 
+// HDFOSCALNamespace is the ns URI qualifying every OSCAL prop HDF defines.
+const HDFOSCALNamespace = "https://mitre.github.io/hdf-libs/ns/oscal"
+
+// DescriptionLabelPropName names the HDF prop that marks an OSCAL prose home
+// with the HDF description label whose text it carries.
+const DescriptionLabelPropName = "description-label"
+
+// DescriptionLabelProp builds the HDF-namespaced description-label prop.
+func DescriptionLabelProp(label string) Property {
+	return Property{Name: DescriptionLabelPropName, Ns: HDFOSCALNamespace, Value: label}
+}
+
+// DescriptionLabel returns the value of props' HDF-namespaced description-label,
+// or "" when there is none; a description-label in any other namespace is foreign.
+func DescriptionLabel(props []Property) string {
+	label, _ := ExtractPropValue(props, DescriptionLabelPropName, HDFOSCALNamespace)
+	return label
+}
+
 // OSCALToken encodes an arbitrary identifier into OSCAL's TokenDatatype shape:
 // ^(\p{L}|_)(\p{L}|\p{N}|[.\-_])*$
 //
