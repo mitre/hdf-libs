@@ -8,6 +8,8 @@ import type {
 } from '@mitre/hdf-schema';
 export { flattenOverlays } from './flatten.js';
 export type { FlattenResult, FlattenMetadata, BaselineMerge } from './flatten.js';
+export { normalizeSafSupplement } from './saf-supplement.js';
+export type { SafNormalizeResult } from './saf-supplement.js';
 import {
   validateResults,
   validateBaseline,
