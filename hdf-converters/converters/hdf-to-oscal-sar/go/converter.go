@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -208,7 +209,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 	// OSCAL requires result.reviewed-controls: the set of controls assessed.
 	// Populate it from the control each requirement targets (deduped).
 	var includeControls []oscal.SelectControl
-	seenControl := make(map[string]bool)
+	controlIndex := make(map[string]int)
 
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
@@ -220,7 +221,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		// target schema rejects. The finding is dropped rather than carrying a
 		// fabricated identifier the source never had. Compute the control id once
 		// so the guard and the reviewed-controls encoding below cannot drift.
-		nistID := oscal.NistTagToControlID(req.ID)
+		nistID, statementID := oscal.NistTagToControlRef(req.ID)
 		if nistID == "" {
 			continue
 		}
@@ -236,12 +237,12 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		if res != nil {
 			resources = append(resources, *res)
 		}
-		// Encoded identically to the finding's target-id below: a finding that
-		// referenced a control absent from this list would validate while
-		// claiming to assess something the result never declares reviewing.
-		if cid := oscal.OSCALToken(nistID); cid != "" && !seenControl[cid] {
-			seenControl[cid] = true
-			includeControls = append(includeControls, oscal.SelectControl{ControlID: cid})
+		// Declares the control behind the finding's target (narrowed to its
+		// statement when the target is one): a finding whose control is absent
+		// from this list would validate while claiming to assess something the
+		// result never declares reviewing.
+		if cid := oscal.OSCALToken(nistID); cid != "" {
+			includeControls = selectControl(includeControls, controlIndex, cid, statementID)
 		}
 	}
 
@@ -256,6 +257,31 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		Observations:     observations,
 		Risks:            risks,
 	}, resources
+}
+
+// selectControl adds a control, or one statement of it, to the reviewed-controls
+// selection, one entry per control. A control selected whole carries no
+// statement-ids, because listing any would narrow the selection to them.
+func selectControl(controls []oscal.SelectControl, index map[string]int, controlID, statementID string) []oscal.SelectControl {
+	i, seen := index[controlID]
+	if !seen {
+		index[controlID] = len(controls)
+		selection := oscal.SelectControl{ControlID: controlID}
+		if statementID != "" {
+			selection.StatementIDs = []string{statementID}
+		}
+		return append(controls, selection)
+	}
+	selection := &controls[i]
+	if selection.StatementIDs == nil {
+		return controls
+	}
+	if statementID == "" {
+		selection.StatementIDs = nil
+	} else if !slices.Contains(selection.StatementIDs, statementID) {
+		selection.StatementIDs = append(selection.StatementIDs, statementID)
+	}
+	return controls
 }
 
 // buildSubjects turns the top-level HDF components[] into OSCAL assessment
@@ -327,7 +353,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	// recorded in the hdf-requirement-id prop below (trimmed, because OSCAL
 	// forbids a padded string value), so the encoding does not lose which
 	// requirement this came from even though it is not injective.
-	controlID := oscal.OSCALToken(oscal.NistTagToControlID(req.ID))
+	controlID, statementID := oscal.NistTagToControlRef(req.ID)
+	targetType, targetID := "objective-id", oscal.OSCALToken(controlID)
+	if statementID != "" {
+		targetType, targetID = "statement-id", statementID
+	}
 
 	// Determine the finding state from the effective (post-override) status when
 	// present, falling back to the raw worst-wins result aggregation. This makes
@@ -483,8 +513,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		Props:       props,
 		Links:       links,
 		Target: oscal.FindingTarget{
-			Type:     "objective-id",
-			TargetID: controlID,
+			Type:     targetType,
+			TargetID: targetID,
 			Status: oscal.TargetStatus{
 				State:  state,
 				Reason: reason,

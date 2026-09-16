@@ -822,3 +822,78 @@ func TestConvertHDFToOSCALSAR_StaleStoredStatusIgnored(t *testing.T) {
 	assert.Equal(t, "not-satisfied", status.State)
 	assert.Empty(t, status.Reason)
 }
+
+// TestConvertHDFToOSCALSAR_NISTRequirementIDControlReferences pins the OSCAL
+// references a NIST requirement id produces in any spelling: the control id in
+// reviewed-controls, and the finding target, which names a statement for a
+// statement-part id. A control selected whole is not narrowed by statement-ids.
+func TestConvertHDFToOSCALSAR_NISTRequirementIDControlReferences(t *testing.T) {
+	ids := []string{
+		"ac-2 (3)", "AC-2 (3)", "Ac-2(3)", "AC-2 (3) (a)",
+		"AC-8 c 1", "AC-8 c 2", "AC-08 c 01",
+		"Si-2", "SC-7 a", "SC-7",
+		"SV-257778",
+	}
+	reqs := make([]map[string]any, 0, len(ids))
+	for _, id := range ids {
+		reqs = append(reqs, map[string]any{
+			"id": id, "impact": 0, "tags": map[string]any{},
+			"descriptions": []map[string]any{{"label": "default", "data": "d"}},
+			"results":      []map[string]any{{"status": "passed", "codeDesc": "c", "startTime": "2020-01-01T00:00:00Z"}},
+		})
+	}
+	input, err := json.Marshal(map[string]any{"baselines": []map[string]any{{"name": "b", "requirements": reqs}}})
+	require.NoError(t, err)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc struct {
+		AR struct {
+			Results []struct {
+				ReviewedControls struct {
+					ControlSelections []struct {
+						IncludeControls []map[string]any `json:"include-controls"`
+					} `json:"control-selections"`
+				} `json:"reviewed-controls"`
+				Findings []struct {
+					Target struct {
+						Type     string `json:"type"`
+						TargetID string `json:"target-id"`
+					} `json:"target"`
+				} `json:"findings"`
+			} `json:"results"`
+		} `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.AR.Results, 1)
+	res := doc.AR.Results[0]
+
+	require.Len(t, res.ReviewedControls.ControlSelections, 1)
+	assert.Equal(t, []map[string]any{
+		{"control-id": "ac-2.3"},
+		{"control-id": "ac-8", "statement-ids": []any{"ac-8_smt.c.1", "ac-8_smt.c.2"}},
+		{"control-id": "si-2"},
+		{"control-id": "sc-7"},
+		{"control-id": "sv-257778"},
+	}, res.ReviewedControls.ControlSelections[0].IncludeControls)
+
+	type target struct{ typ, id string }
+	want := []target{
+		{"objective-id", "ac-2.3"}, {"objective-id", "ac-2.3"}, {"objective-id", "ac-2.3"}, {"statement-id", "ac-2.3_smt.a"},
+		{"statement-id", "ac-8_smt.c.1"}, {"statement-id", "ac-8_smt.c.2"}, {"statement-id", "ac-8_smt.c.1"},
+		{"objective-id", "si-2"}, {"statement-id", "sc-7_smt.a"}, {"objective-id", "sc-7"},
+		{"objective-id", "sv-257778"},
+	}
+	got := make([]target, 0, len(res.Findings))
+	for _, f := range res.Findings {
+		got = append(got, target{f.Target.Type, f.Target.TargetID})
+	}
+	assert.Equal(t, want, got)
+
+	for _, file := range arSchemaFiles {
+		t.Run(file, func(t *testing.T) {
+			requireValidAR(t, arSchemaFor(t, file), "NIST requirement ids", input)
+		})
+	}
+}

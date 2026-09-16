@@ -22,6 +22,7 @@ import {
   extractRiskSeverity,
   extractMetadata,
   nistTagToControlId,
+  nistTagToControlRef,
   impactToSeverity,
   hdfStatusToOscalRiskStatus,
   parseOscalDocument,
@@ -950,16 +951,18 @@ describe('OSCAL shared helpers', () => {
   });
 
   describe('nistTagToControlId', () => {
-    it('converts simple tag', () => {
-      expect(nistTagToControlId('AC-1')).toBe('ac-1');
+    const casesPath = join(__dirname, '..', 'go', 'testdata', 'nist-tag-control-id-cases.json');
+    const { cases } = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+      cases: Array<{ input: string; controlId: string; statementId: string }>;
+    };
+
+    it('has cases', () => {
+      expect(cases.length).toBeGreaterThan(0);
     });
 
-    it('converts enhancement tag', () => {
-      expect(nistTagToControlId('AC-2 (3)')).toBe('ac-2.3');
-    });
-
-    it('handles whitespace', () => {
-      expect(nistTagToControlId('  SI-7 (1)  ')).toBe('si-7.1');
+    it.each(cases)('maps $input the same as the Go peer', ({ input, controlId, statementId }) => {
+      expect(nistTagToControlId(input)).toBe(controlId);
+      expect(nistTagToControlRef(input)).toEqual({ controlId, statementId });
     });
   });
 

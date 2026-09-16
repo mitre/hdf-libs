@@ -519,9 +519,11 @@ type ControlSelection struct {
 // IncludeAll indicates all controls are included.
 type IncludeAll struct{}
 
-// SelectControl identifies a control by ID for selection.
+// SelectControl identifies a control by ID for selection, optionally narrowed
+// to specific statements.
 type SelectControl struct {
-	ControlID string `json:"control-id"`
+	ControlID    string   `json:"control-id"`
+	StatementIDs []string `json:"statement-ids,omitempty"`
 }
 
 // ControlObjective identifies control objectives.

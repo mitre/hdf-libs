@@ -1,6 +1,9 @@
 package oscal
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -213,18 +216,23 @@ func TestToKebabCase(t *testing.T) {
 }
 
 func TestNistTagToControlID(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"AC-1", "ac-1"},
-		{"AC-2 (3)", "ac-2.3"},
-		{"SI-7 (1)", "si-7.1"},
-		{"  AC-1 ", "ac-1"},
+	raw, err := os.ReadFile(filepath.Join("testdata", "nist-tag-control-id-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Cases []struct {
+			Input       string `json:"input"`
+			ControlID   string `json:"controlId"`
+			StatementID string `json:"statementId"`
+		} `json:"cases"`
 	}
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			assert.Equal(t, tt.expected, NistTagToControlID(tt.input))
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases)
+	for _, tc := range table.Cases {
+		t.Run(tc.Input, func(t *testing.T) {
+			assert.Equal(t, tc.ControlID, NistTagToControlID(tc.Input))
+			controlID, statementID := NistTagToControlRef(tc.Input)
+			assert.Equal(t, tc.ControlID, controlID)
+			assert.Equal(t, tc.StatementID, statementID)
 		})
 	}
 }

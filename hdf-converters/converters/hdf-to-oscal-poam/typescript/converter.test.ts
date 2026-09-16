@@ -6,6 +6,7 @@ import { amendments } from '@mitre/hdf-fixtures';
 import { convertHdfToOscalPoam } from './converter.js';
 import { hdfStatusToOscalRiskStatus as hdfStatusToOSCAL, nistTagToControlId as nistTagToControlID } from '../../oscal-to-hdf/typescript/shared.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
+import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -545,5 +546,45 @@ describe('hdf-to-oscal-poam golden parity', () => {
     expect(maskVolatileJson(JSON.parse(out), POAM_VOLATILE_KEYS)).toEqual(
       maskVolatileJson(JSON.parse(golden), POAM_VOLATILE_KEYS),
     );
+  });
+});
+
+// Mirrors the Go TestConvertHDFToOSCALPOAM_NISTRequirementIDImpactedControl.
+describe('NIST requirement id impacted-control-id', () => {
+  const schemas = ['oscal_poam_schema-v1.1.2.json', 'oscal_poam_schema-v1.2.3.json'].map(
+    (file) => [file, loadSchemaValidator(join(__dirname, '..', 'schemas', file))] as const,
+  );
+
+  it.each([
+    ['AC-2 (3)', 'ac-2.3'],
+    ['ac-2 (3)', 'ac-2.3'],
+    ['Ac-2(3)', 'ac-2.3'],
+    ['AC-02 03', 'ac-2.3'],
+    ['AC-8 c 1', 'ac-8'],
+    ['AC-2 (3) (a)', 'ac-2.3'],
+    ['Si-2', 'si-2'],
+    ['SV-257778', 'sv-257778'],
+    ['CVE-2021-44228', 'cve-2021-44228'],
+  ])('maps %s to %s', async (requirementId, want) => {
+    const input = JSON.stringify({
+      name: 'test-poam',
+      overrides: [{
+        type: 'poam',
+        requirementId,
+        reason: 'Pending remediation',
+        status: 'failed',
+        appliedBy: { type: 'simple', identifier: 'admin@example.com' },
+        appliedAt: '2026-01-15T00:00:00Z',
+        expiresAt: '2099-12-31T00:00:00Z',
+      }],
+    });
+    const doc = JSON.parse(await convertHdfToOscalPoam(input));
+    const risks = doc['plan-of-action-and-milestones'].risks;
+    expect(risks).toHaveLength(1);
+    const props = (risks[0].props as Array<{ name: string; value: string }>).filter((p) => p.name === 'impacted-control-id');
+    expect(props.map((p) => p.value)).toEqual([want]);
+    for (const [file, validate] of schemas) {
+      assertSchemaValid(validate, file, doc);
+    }
   });
 });

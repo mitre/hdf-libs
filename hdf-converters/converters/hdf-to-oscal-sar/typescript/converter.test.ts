@@ -7,6 +7,7 @@ import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { convertHdfToOscalSar } from './converter.js';
 import { nistTagToControlId as nistTagToControlID, impactToSeverity } from '../../oscal-to-hdf/typescript/shared.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
+import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -650,4 +651,52 @@ describe('stale stored effectiveStatus is ignored', () => {
     expect(status.state).toBe('not-satisfied');
     expect(status.reason).toBeUndefined();
   });
+});
+
+// Mirrors the Go TestConvertHDFToOSCALSAR_NISTRequirementIDControlReferences.
+describe('NIST requirement id control references', () => {
+  const ids = [
+    'ac-2 (3)', 'AC-2 (3)', 'Ac-2(3)', 'AC-2 (3) (a)',
+    'AC-8 c 1', 'AC-8 c 2', 'AC-08 c 01',
+    'Si-2', 'SC-7 a', 'SC-7',
+    'SV-257778',
+  ];
+  const input = JSON.stringify({
+    baselines: [{
+      name: 'b',
+      requirements: ids.map((id) => ({
+        id,
+        impact: 0,
+        tags: {},
+        descriptions: [{ label: 'default', data: 'd' }],
+        results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+      })),
+    }],
+  });
+
+  it('names the control in reviewed-controls and the control or statement in each finding target', async () => {
+    const res = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0];
+    expect(res['reviewed-controls']['control-selections']).toHaveLength(1);
+    expect(res['reviewed-controls']['control-selections'][0]['include-controls']).toEqual([
+      { 'control-id': 'ac-2.3' },
+      { 'control-id': 'ac-8', 'statement-ids': ['ac-8_smt.c.1', 'ac-8_smt.c.2'] },
+      { 'control-id': 'si-2' },
+      { 'control-id': 'sc-7' },
+      { 'control-id': 'sv-257778' },
+    ]);
+    expect(res.findings.map((f: { target: { type: string; 'target-id': string } }) => [f.target.type, f.target['target-id']])).toEqual([
+      ['objective-id', 'ac-2.3'], ['objective-id', 'ac-2.3'], ['objective-id', 'ac-2.3'], ['statement-id', 'ac-2.3_smt.a'],
+      ['statement-id', 'ac-8_smt.c.1'], ['statement-id', 'ac-8_smt.c.2'], ['statement-id', 'ac-8_smt.c.1'],
+      ['objective-id', 'si-2'], ['statement-id', 'sc-7_smt.a'], ['objective-id', 'sc-7'],
+      ['objective-id', 'sv-257778'],
+    ]);
+  });
+
+  it.each(['oscal_assessment-results_schema-v1.1.2.json', 'oscal_assessment-results_schema-v1.2.3.json'])(
+    'validates against %s',
+    async (file) => {
+      const validate = loadSchemaValidator(join(__dirname, '..', 'schemas', file));
+      assertSchemaValid(validate, file, JSON.parse(await convertHdfToOscalSar(input)));
+    },
+  );
 });

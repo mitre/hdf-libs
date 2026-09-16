@@ -24,12 +24,42 @@ import type {
   Resource,
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
-  nistTagToControlId,
+  nistTagToControlRef,
   oscalString,
   oscalToken,
   impactToSeverity,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
+
+/** A reviewed-controls include-controls entry. */
+interface SelectControl {
+  'control-id': string;
+  'statement-ids'?: string[];
+}
+
+/**
+ * Adds a control, or one statement of it, to the reviewed-controls selection, one
+ * entry per control. A control selected whole carries no statement-ids, because
+ * listing any would narrow the selection to them. Mirrors Go's selectControl.
+ */
+function selectControl(controls: SelectControl[], index: Map<string, number>, controlId: string, statementId: string): void {
+  const i = index.get(controlId);
+  if (i === undefined) {
+    index.set(controlId, controls.length);
+    controls.push(statementId === '' ? { 'control-id': controlId } : { 'control-id': controlId, 'statement-ids': [statementId] });
+    return;
+  }
+  const selection = controls[i]!;
+  const statementIds = selection['statement-ids'];
+  if (statementIds === undefined) {
+    return;
+  }
+  if (statementId === '') {
+    delete selection['statement-ids'];
+  } else if (!statementIds.includes(statementId)) {
+    statementIds.push(statementId);
+  }
+}
 
 /** Root wrapper for the output JSON. */
 interface OscalSARDocument {
@@ -232,8 +262,8 @@ function baselineToResult(
 
   // OSCAL requires result.reviewed-controls: the set of controls assessed.
   // Populate it from the control each requirement targets (deduped).
-  const includeControls: Array<{ 'control-id': string }> = [];
-  const seenControl = new Set<string>();
+  const includeControls: SelectControl[] = [];
+  const controlIndex = new Map<string, number>();
 
   for (const req of baseline.requirements) {
     // A finding is a claim about a specific control, and OSCAL types target-id as
@@ -243,7 +273,7 @@ function baselineToResult(
     // finding is dropped rather than carrying a fabricated identifier. Compute
     // the control id once so the guard and the reviewed-controls encoding below
     // cannot drift.
-    const nistId = nistTagToControlId(req.id ?? '');
+    const { controlId: nistId, statementId } = nistTagToControlRef(req.id ?? '');
     if (nistId === '') {
       continue;
     }
@@ -259,13 +289,13 @@ function baselineToResult(
     if (resource) {
       resources.push(resource);
     }
-    // Encoded identically to the finding's target-id: a finding that referenced a
-    // control absent from this list would validate while claiming to assess
-    // something the result never declares reviewing.
+    // Declares the control behind the finding's target (narrowed to its statement
+    // when the target is one): a finding whose control is absent from this list
+    // would validate while claiming to assess something the result never declares
+    // reviewing.
     const cid = oscalToken(nistId);
-    if (cid !== '' && !seenControl.has(cid)) {
-      seenControl.add(cid);
-      includeControls.push({ 'control-id': cid });
+    if (cid !== '') {
+      selectControl(includeControls, controlIndex, cid, statementId);
     }
   }
 
@@ -343,7 +373,8 @@ function requirementToFindingSet(
   // recorded in the hdf-requirement-id prop below (trimmed, because OSCAL forbids
   // a padded string value), so the encoding does not lose which requirement this
   // came from even though it is not injective.
-  const controlID = oscalToken(nistTagToControlId(req.id ?? ''));
+  const { controlId, statementId } = nistTagToControlRef(req.id ?? '');
+  const [targetType, targetId] = statementId === '' ? ['objective-id', oscalToken(controlId)] : ['statement-id', statementId];
   // results/descriptions are optional and absent on real minimal HDF; normalize
   // to arrays so this converter matches the Go implementation, which ranges nil
   // slices safely rather than throwing.
@@ -371,7 +402,7 @@ function requirementToFindingSet(
   // constrains it to a token, so without this the identifier the source tool
   // reported would be unrecoverable — and the encoding is not injective in
   // principle. Trimmed because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded
-  // value would itself be schema-invalid; nistTagToControlId trims for target-id
+  // value would itself be schema-invalid; nistTagToControlRef trims for target-id
   // too, so the two stay consistent.
   const props: Property[] = [{ name: 'hdf-requirement-id', value: oscalString(req.id) }];
   const addProp = (name: string, value: string): void => {
@@ -477,8 +508,8 @@ function requirementToFindingSet(
   }
 
   const target = {
-    type: 'objective-id',
-    'target-id': controlID,
+    type: targetType,
+    'target-id': targetId,
     status: targetStatus,
   } as unknown as TargetClass;
 

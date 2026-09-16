@@ -4,6 +4,7 @@
  * Mirrors the Go helpers in converters/oscal-to-hdf/go/shared.go.
  */
 
+import { normalizeNistId } from '@mitre/hdf-mappings';
 import { impactToSeverity as sharedImpactToSeverity, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { oscalSeverityFromHdf } from '../../../shared/typescript/converterutil.js';
 import type { Property, Part, Characterization, DocumentMetadata, Oscal } from './types.js';
@@ -194,20 +195,47 @@ export function extractMetadata(m: DocumentMetadata): MetadataInfo {
   };
 }
 
-/** Matches NIST 800-53 tags with enhancements like "AC-2 (3)". */
-const nistEnhancementReverseRe = /^([A-Z]{2}-\d+)\s*\((\d+)\)$/;
-
 /**
- * Converts NIST 800-53 notation back to OSCAL control ID.
- * "AC-1" -> "ac-1", "AC-2 (3)" -> "ac-2.3", "SI-7 (1)" -> "si-7.1"
+ * Converts NIST 800-53 notation, in any spelling normalizeNistId accepts, to the
+ * OSCAL id of the control it names; a statement part names its control. Anything
+ * else is returned trimmed and lowercased.
+ * "AC-1" -> "ac-1", "ac-2 (3)" -> "ac-2.3", "AC-8 c 1" -> "ac-8"
  */
 export function nistTagToControlId(tag: string): string {
-  tag = tag.trim();
-  const m = nistEnhancementReverseRe.exec(tag);
-  if (m) {
-    return `${m[1]!.toLowerCase()}.${m[2]!}`;
+  return nistTagToControlRef(tag).controlId;
+}
+
+/**
+ * Converts NIST 800-53 notation to the OSCAL control id and, for a statement
+ * part, the OSCAL statement id ("AC-8 c 1" -> "ac-8", "ac-8_smt.c.1";
+ * "AC-2 (3) (a)" -> "ac-2.3", "ac-2.3_smt.a"). statementId is empty when the tag
+ * names a whole control. A tag that is not a NIST spelling is returned trimmed and
+ * lowercased as controlId. Mirrors Go's NistTagToControlRef.
+ */
+export function nistTagToControlRef(tag: string): { controlId: string; statementId: string } {
+  const trimmed = tag.trim();
+  const normalized = normalizeNistId(trimmed.split(/\s+/).join(' '));
+  if (normalized === undefined) {
+    return { controlId: trimmed.toLowerCase(), statementId: '' };
   }
-  return tag.toLowerCase();
+  // The normalized spelling is "AC-02", then space-separated padded numbers and
+  // lowercase statement letters. Only a number directly after the control is an
+  // enhancement; every NIST statement part begins with a letter.
+  const [head, ...parts] = normalized.split(' ');
+  const [family, number] = head!.split('-');
+  let controlId = `${family!.toLowerCase()}-${unpadNistNumber(number!)}`;
+  if (parts.length > 0 && parts[0]![0]! >= '0' && parts[0]![0]! <= '9') {
+    controlId += `.${unpadNistNumber(parts.shift()!)}`;
+  }
+  if (parts.length === 0) {
+    return { controlId, statementId: '' };
+  }
+  return { controlId, statementId: `${controlId}_smt.${parts.map(unpadNistNumber).join('.')}` };
+}
+
+/** Strips the zero normalizeNistId pads a one-digit number with. */
+function unpadNistNumber(part: string): string {
+  return part.length === 2 && part.startsWith('0') ? part.slice(1) : part;
 }
 
 /**
