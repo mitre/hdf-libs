@@ -174,6 +174,11 @@ func parseHDFResults(data []byte) (hdf.HDFResults, error) {
 	if !r.Success {
 		return hdf.HDFResults{}, errors.New(translateParserError(r.Error))
 	}
+	// Surface pre-validation normalization notices (e.g. a legacy SAF-supplement
+	// target/passthrough rewritten to v3-native) through the CLI's stderr notice UX.
+	for _, w := range r.Warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
+	}
 	return *r.Data, nil
 }
 

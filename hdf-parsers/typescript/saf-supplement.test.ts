@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
-import { normalizeSafSupplement } from './index.js';
+import { normalizeSafSupplement, parseResults } from './index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, '..', 'testdata', 'saf-supplement');
@@ -85,6 +85,18 @@ describe('normalizeSafSupplement', () => {
     const doc = JSON.parse(output);
     expect('target' in doc).toBe(true);
     expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  // camfd wiring: parseResults runs the normalizer before ajv validation, so a
+  // SAF-supplemented doc (which ajv would otherwise reject on unevaluatedProperties)
+  // parses, with target as a component and the deprecation warning surfaced.
+  it('parseResults accepts a SAF-supplemented doc and surfaces the warning', () => {
+    const input = readFileSync(join(fixturesDir, 'legacy-in.json'), 'utf-8');
+    const r = parseResults(input);
+    expect(r.success).toBe(true);
+    const comps = (r.data?.components ?? []) as Array<{ name?: string; type?: string }>;
+    expect(comps.some((c) => c.name === 'prod-account' && c.type === 'cloudAccount')).toBe(true);
+    expect(r.warnings && r.warnings.length).toBeGreaterThan(0);
   });
 
   // Cross-language parity: TS normalizes the shared legacy-in fixture to the same

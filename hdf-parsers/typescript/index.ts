@@ -8,6 +8,7 @@ import type {
 } from '@mitre/hdf-schema';
 export { flattenOverlays } from './flatten.js';
 export type { FlattenResult, FlattenMetadata, BaselineMerge } from './flatten.js';
+import { normalizeSafSupplement } from './saf-supplement.js';
 export { normalizeSafSupplement } from './saf-supplement.js';
 export type { SafNormalizeResult } from './saf-supplement.js';
 import {
@@ -43,6 +44,9 @@ export interface ParseResult<T> {
   data?: T;
   error?: string;
   type?: 'results' | 'baseline' | 'system' | 'plan' | 'evidencePackage' | 'comparison';
+  /** Non-fatal notices from pre-validation normalization (e.g. a legacy
+   * SAF-supplement shape rewritten to v3-native); callers surface these. */
+  warnings?: string[];
 }
 
 /**
@@ -53,7 +57,11 @@ export interface ParseResult<T> {
 export function parseResults(input: string | Uint8Array): ParseResult<HDFResults> {
   // Convert Uint8Array to string if needed
   const decoded = typeof input === 'string' ? input : new TextDecoder().decode(input);
-  const jsonStr = normalizeTimestamps(decoded);
+  // Rewrite legacy SAF-supplement top-level keys (target/passthrough) into
+  // v3-native carriers BEFORE validation, so a SAF-produced document is accepted
+  // (ajv enforces unevaluatedProperties) with its attribution preserved. Sibling
+  // to normalizeTimestamps.
+  const { output: jsonStr, warnings } = normalizeSafSupplement(normalizeTimestamps(decoded));
 
   // Check for empty input
   if (jsonStr.trim().length === 0) {
@@ -92,7 +100,8 @@ export function parseResults(input: string | Uint8Array): ParseResult<HDFResults
 
   return {
     success: true,
-    data: data as HDFResults
+    data: data as HDFResults,
+    warnings: warnings.length > 0 ? warnings : undefined
   };
 }
 

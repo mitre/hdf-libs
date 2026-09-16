@@ -160,6 +160,28 @@ func TestNormalizeSAFSupplement_UnmappedTypeWarnsAndLeaves(t *testing.T) {
 	assert.NotEmpty(t, warnings, "a warning names the unmapped type")
 }
 
+// TestParseResults_AcceptsSAFSupplementedDoc covers camfd: ParseResults runs the
+// normalizer before validation, so a doc carrying legacy top-level target/passthrough
+// parses with target as a components[] entry and passthrough under extensions, and
+// the deprecation warnings surface on the result.
+func TestParseResults_AcceptsSAFSupplementedDoc(t *testing.T) {
+	in, err := os.ReadFile(filepath.Join("..", "testdata", "saf-supplement", "legacy-in.json"))
+	require.NoError(t, err)
+
+	r := ParseResults(in)
+	require.True(t, r.Success, "SAF-supplemented doc must parse: %s", r.Error)
+	require.NotNil(t, r.Data)
+
+	found := false
+	for _, c := range r.Data.Components {
+		if c.Name == "prod-account" && string(c.Type) == "cloudAccount" {
+			found = true
+		}
+	}
+	assert.True(t, found, "legacy target must be normalized into a components[] entry before parse")
+	assert.NotEmpty(t, r.Warnings, "the deprecation warning must surface on the parse result")
+}
+
 // TestNormalizeSAFSupplement_SharedFixtureParity pins Go against the shared
 // legacy-in/v3-out fixture pair the TS suite also reads, so both languages
 // normalize the same input to the same v3 document (deep-equal; JSON key order
