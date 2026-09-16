@@ -628,7 +628,7 @@ func TestSystemCreate_FromSPDX3AIBOM(t *testing.T) {
 
 	// writeSystemDoc validates against the bundled schema before writing, so a
 	// successful write already proves schema-validity; assert it explicitly too.
-	require.NoError(t, validateHDFOutput(data))
+	require.NoError(t, validateHDFDocument(data))
 }
 
 func TestSystemCreate_FromSPDX3AIBOM_DatasetOnly(t *testing.T) {
@@ -647,7 +647,7 @@ func TestSystemCreate_FromSPDX3AIBOM_DatasetOnly(t *testing.T) {
 	byType := componentsByType(t, sys)
 	assert.Empty(t, byType["aiModel"])
 	require.Len(t, byType["dataset"], 1)
-	require.NoError(t, validateHDFOutput(data))
+	require.NoError(t, validateHDFDocument(data))
 }
 
 // ---- --from format-assertion tests (system create) ----

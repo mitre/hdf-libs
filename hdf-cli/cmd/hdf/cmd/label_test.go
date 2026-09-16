@@ -51,7 +51,8 @@ func TestLabelGatesInput(t *testing.T) {
 			_, _, err := executeCommand("label", "set", p, "env=prod")
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.wantErr)
-			after, _ := os.ReadFile(p)
+			after, readErr := os.ReadFile(p)
+			require.NoError(t, readErr)
 			assert.Equal(t, before, string(after), "a rejected label set must not modify the file")
 		})
 		t.Run("remove rejects "+tc.name, func(t *testing.T) {
@@ -59,7 +60,8 @@ func TestLabelGatesInput(t *testing.T) {
 			_, _, err := executeCommand("label", "remove", p, "env")
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.wantErr)
-			after, _ := os.ReadFile(p)
+			after, readErr := os.ReadFile(p)
+			require.NoError(t, readErr)
 			assert.Equal(t, before, string(after), "a rejected label remove must not modify the file")
 		})
 		t.Run("show rejects "+tc.name, func(t *testing.T) {
@@ -83,11 +85,14 @@ func TestLabel_AcceptsSystemDocument(t *testing.T) {
 
 	data, err := os.ReadFile(p)
 	require.NoError(t, err)
-	var doc map[string]interface{}
+	var doc struct {
+		Components []struct {
+			Labels map[string]string `json:"labels"`
+		} `json:"components"`
+	}
 	require.NoError(t, json.Unmarshal(data, &doc))
-	comp := doc["components"].([]interface{})[0].(map[string]interface{})
-	labels := comp["labels"].(map[string]interface{})
-	assert.Equal(t, "prod", labels["env"])
+	require.Len(t, doc.Components, 1)
+	assert.Equal(t, "prod", doc.Components[0].Labels["env"])
 
 	stdout, _, err := executeCommand("label", "show", p)
 	require.NoError(t, err)

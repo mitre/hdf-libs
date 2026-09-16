@@ -247,7 +247,7 @@ func parseHDFComparison(data []byte) (hdf.HDFComparison, error) {
 // or "amendments"). The function errors when:
 //   - the input's top-level shape doesn't match any known HDF doc type
 //     (detectHDFDocumentType returns "") — would otherwise silently
-//     pass validateHDFOutput's "not HDF-shaped" fallthrough
+//     pass validateHDFDocument's "not HDF-shaped" fallthrough
 //   - the detected doc type doesn't match `expected`
 //   - the schema validator rejects the input
 //
@@ -261,7 +261,7 @@ func loadAndValidateHDFDoc(data []byte, expected string) (map[string]any, error)
 	if expected != "" && docType != expected {
 		return nil, fmt.Errorf("input is HDF %s, expected HDF %s", docType, expected)
 	}
-	if err := validateHDFOutput(data); err != nil {
+	if err := validateHDFDocument(data); err != nil {
 		return nil, fmt.Errorf("input failed schema validation: %w", err)
 	}
 	var doc map[string]any

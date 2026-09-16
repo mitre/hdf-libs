@@ -49,5 +49,5 @@ func TestOpenVexConverter_AutoDetectsAmendmentsAndValidates(t *testing.T) {
 
 	output, err := converter.Convert(input)
 	require.NoError(t, err)
-	require.NoError(t, validateHDFOutput(output), "auto-detect path should route to ValidateAmendments")
+	require.NoError(t, validateHDFDocument(output), "auto-detect path should route to ValidateAmendments")
 }

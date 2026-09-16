@@ -133,7 +133,7 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 		return fmt.Errorf("failed to serialize evidence package: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("evidence package failed validation before write: %w", err)
 	}
 

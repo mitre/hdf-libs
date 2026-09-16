@@ -229,8 +229,8 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 	}
 
 	// Never emit a non-schema-valid results file.
-	if valErr := validateHDFOutput(res.Output); valErr != nil {
-		return fmt.Errorf("merged output failed HDF Results schema validation: %w", valErr)
+	if valErr := validateHDFDocument(res.Output); valErr != nil {
+		return fmt.Errorf("merged output failed schema validation: %w", valErr)
 	}
 
 	// Report how many overrides applied. applied < total is legitimate (a fleet

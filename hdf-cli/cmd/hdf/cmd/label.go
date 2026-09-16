@@ -106,7 +106,7 @@ func gateLabelInput(data []byte) error {
 	if _, typeErr := requireDocumentType(data, []string{"results", "system"}, "hdf label"); typeErr != nil {
 		return typeErr
 	}
-	if valErr := validateHDFOutput(data); valErr != nil {
+	if valErr := validateHDFDocument(data); valErr != nil {
 		return fmt.Errorf("input failed schema validation: %w", valErr)
 	}
 	return nil
