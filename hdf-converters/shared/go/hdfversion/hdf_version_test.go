@@ -343,6 +343,9 @@ func TestDetectHDFVersion(t *testing.T) {
 	}{
 		{"legacy (v2) with profiles+platform", `{"version":"3.4.5","profiles":[],"platform":{"name":"test"}}`, LegacyVersion, false},
 		{"modern (v3) with baselines+components", `{"baselines":[],"components":[]}`, ModernVersion, false},
+		// components is OPTIONAL in the v3 results schema, so a valid v3 doc need
+		// not carry it — baselines alone identifies modern.
+		{"modern (v3) with baselines, no components", `{"baselines":[]}`, ModernVersion, false},
 		{"ambiguous", `{"version":"1.0"}`, "", true},
 		{"invalid json", `not json`, "", true},
 	}
