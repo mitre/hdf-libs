@@ -36,6 +36,13 @@ func (s *VendorFuzzyTitleStrategy) Name() string {
 	return "vendorFuzzyTitle"
 }
 
+// maxLevenshteinRunes bounds the Levenshtein DP. It is far above any realistic
+// requirement/vendor title, so no real match result changes; beyond it the inputs
+// are not titles, and computing the full O(m*n) DP (and allocating O(n)) would be
+// a needless cost and an algorithmic-DoS surface, so such pairs get the trivial
+// upper bound instead.
+const maxLevenshteinRunes = 4096
+
 // LevenshteinDistance computes the Levenshtein edit distance between two strings.
 func LevenshteinDistance(a, b string) int {
 	aRunes := []rune(a)
@@ -47,6 +54,14 @@ func LevenshteinDistance(a, b string) int {
 	}
 	if n == 0 {
 		return m
+	}
+
+	// Bound the DP: beyond the cap the inputs are not realistic titles, so return
+	// the trivial upper bound (edit distance never exceeds the longer length)
+	// rather than allocating O(n) and running O(m*n). This also makes the make()
+	// size below provably bounded.
+	if m > maxLevenshteinRunes || n > maxLevenshteinRunes {
+		return max(m, n)
 	}
 
 	prev := make([]int, n+1)
