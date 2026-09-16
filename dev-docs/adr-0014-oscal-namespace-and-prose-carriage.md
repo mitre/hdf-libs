@@ -236,7 +236,7 @@ Add a carried-property array to requirements and to `Standalone_Override`, valid
 - *During the fallback window, a foreign SAR prop with no `ns` whose name is a legacy row is read as ours instead of carried.* Mitigation: the window is one minor release and limited to the 32 legacy names; after it, such a prop is carried (§3.1).
 - *Carried props grow requirement tags.* Mitigation: carriage is bounded by the source document; no new data is invented.
 - *Stale NIST catalog data fails to confirm a genuine control.* The Rev 5 crosswalk roster predates controls such as `IA-13`, `SA-24` and `SI-2(7)` that the Rev 5 description table already contains; `nistExists` consults the description table. Mitigation: confirmation uses the more current table, and reconciling the two is tracked on `hdf-libs-w5u5r`. An unconfirmed genuine control keeps its verbatim id rather than merging with anything.
-- *Fixing `nistExists` changes a published function's answers.* Mitigation: every input that returns true today still does; only previously unrecognised spellings change, and the change is release-noted (`gxeb.12`).
+- *Fixing `nistExists` changes a published function's answers.* Mitigation: every NIST id spelling that returns true today still does; only previously unrecognised spellings change. The one exception is `Object.prototype` member names (`toString`, `constructor`, `__proto__`), which the old membership test answered true by accident and which now return false. Both changes are release-noted (`gxeb.12`).
 - *Foreign POA&M extension props are lost on import.* Mitigation: stated in the importer and in release notes (§3.6); HDF-produced POA&Ms are unaffected.
 
 ## Implementation Plan
