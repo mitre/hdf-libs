@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Read tools are now correct on documents whose baseline names or requirement IDs repeat — and they do repeat in shipped converter output.** `hdf_compliance groupBy=baseline` keyed its groups by baseline name, so the 16 same-named baselines in Prisma Cloud output collapsed into one group holding only the last baseline's requirements (measured: 94 requirements ungrouped, one group of 7 grouped — a silently wrong number, no error). `hdf_query` full rows and `fields[]` projections, and `hdf_aggregate`'s filtered counts, joined matches back to requirements by `(baseline name, id)`, so the two grype requirements for one CVE (one per package) both reported the last one's `affectedPackages`, and an unmatched duplicate could ride into an aggregate on a matched one's key. The engine's `Match` (Go and TS, parity-tested) now carries `baselineIndex` and `index` — the row's position, its only unique identity — and every read tool keys on them. **Consequences for consumers:** `hdf_compliance` groups gain an additive `baselineIndex` (baseline mode only) and same-named baselines are distinct rows in document order; `hdf query --json` rows gain the two additive fields `baselineIndex` and `index`, so a CLI consumer can tell repeated `(baseline, id)` rows apart — every previous field is unchanged, and the human-readable table and `--count` outputs are byte-identical. No schema change. (ADR-0016 §6; hdf-libs-js1nv.2)
+
 ### Changed
 
 - **BREAKING (Go API):** two exported signatures changed to carry information the

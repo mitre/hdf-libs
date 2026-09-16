@@ -167,20 +167,23 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 	}
 }
 
-// filterResultsToMatches projects a results document down to the requirements the
-// engine matched, preserving baseline grouping, so the shared effective-status
-// counter can be reused on the filtered set (no re-implemented counting).
+// filterResultsToMatches projects a results document down to exactly the
+// requirements the engine matched, preserving baseline grouping, so the shared
+// effective-status counter can be reused on the filtered set (no re-implemented
+// counting). Matches are kept by position (Match.BaselineIndex/Index): keying by
+// (baseline name, id) over-keeps, because that pair repeats in shipped converter
+// output and an unmatched duplicate would ride in on a matched one's key.
 func filterResultsToMatches(results hdf.HDFResults, matches []hdfengine.Match) hdf.HDFResults {
-	keep := make(map[string]bool, len(matches))
+	keep := make(map[[2]int]bool, len(matches))
 	for _, m := range matches {
-		keep[requirementKey(m.Baseline, m.ID)] = true
+		keep[[2]int{m.BaselineIndex, m.Index}] = true
 	}
 	out := hdf.HDFResults{}
 	for i := range results.Baselines {
 		b := results.Baselines[i]
 		var reqs []hdf.EvaluatedRequirement
 		for j := range b.Requirements {
-			if keep[requirementKey(b.Name, b.Requirements[j].ID)] {
+			if keep[[2]int{i, j}] {
 				reqs = append(reqs, b.Requirements[j])
 			}
 		}

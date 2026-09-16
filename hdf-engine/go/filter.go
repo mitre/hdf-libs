@@ -43,14 +43,22 @@ type Options struct {
 	StatusOf func(control hdf.EvaluatedRequirement) string
 }
 
-// Match is a single query result row.
+// Match is a single query result row. BaselineIndex and Index are the match's
+// position in the result set (results.Baselines[BaselineIndex].Requirements[Index])
+// and are the only unique identity a match has: baseline names repeat in shipped
+// converter output (one name for many baselines) and requirement IDs repeat
+// within a baseline (one requirement per package instance), so (Baseline, ID) is
+// not a key. A consumer that needs the source requirement addresses it by
+// position; it must never re-derive it from the name and id.
 type Match struct {
-	ID       string  `json:"id"`
-	Title    string  `json:"title,omitempty"`
-	Status   string  `json:"status"`
-	Impact   float64 `json:"impact"`
-	Severity string  `json:"severity"`
-	Baseline string  `json:"baseline"`
+	ID            string  `json:"id"`
+	Title         string  `json:"title,omitempty"`
+	Status        string  `json:"status"`
+	Impact        float64 `json:"impact"`
+	Severity      string  `json:"severity"`
+	Baseline      string  `json:"baseline"`
+	BaselineIndex int     `json:"baselineIndex"`
+	Index         int     `json:"index"`
 }
 
 type filterFunc func(control hdf.EvaluatedRequirement, status, severity string) bool
@@ -68,11 +76,13 @@ func Filter(ctx context.Context, results hdf.HDFResults, opts Options) []Match {
 	filters := buildFilters(opts)
 
 	var matches []Match
-	for _, baseline := range results.Baselines {
+	for bi := range results.Baselines {
+		baseline := results.Baselines[bi]
 		if opts.Baseline != "" && !matchesGlob(baseline.Name, opts.Baseline) {
 			continue
 		}
-		for _, control := range baseline.Requirements {
+		for ri := range baseline.Requirements {
+			control := baseline.Requirements[ri]
 			if ctx.Err() != nil {
 				return matches
 			}
@@ -98,12 +108,14 @@ func Filter(ctx context.Context, results hdf.HDFResults, opts Options) []Match {
 				title = *control.Title
 			}
 			matches = append(matches, Match{
-				ID:       control.ID,
-				Title:    title,
-				Status:   status,
-				Impact:   control.Impact,
-				Severity: severity,
-				Baseline: baseline.Name,
+				ID:            control.ID,
+				Title:         title,
+				Status:        status,
+				Impact:        control.Impact,
+				Severity:      severity,
+				Baseline:      baseline.Name,
+				BaselineIndex: bi,
+				Index:         ri,
 			})
 		}
 	}

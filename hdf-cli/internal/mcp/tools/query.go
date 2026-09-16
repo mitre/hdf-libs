@@ -352,27 +352,23 @@ func queryTruncationNotice(returned, total, page, numPages int, limited bool) st
 	}
 }
 
-// projectRows converts engine matches into concise or full rows. Full rows join
-// back to the source requirement (by baseline+id) for tags and descriptions.
-// projectRows returns rows as map[string]any so the derived output schema is a
-// concrete object (additionalProperties) rather than a bare boolean, which MCP
-// clients reject under items. Rows are built from the typed conciseRow/fullRow
-// structs and marshalled via structToMap so their json tags (exact concise keys,
-// omitempty full extras) remain authoritative.
+// projectRows converts engine matches into concise or full rows. Full rows and
+// opt-in correlation fields read the source requirement the match points at by
+// position (Match.BaselineIndex/Index) — never by (baseline name, id), which is
+// not unique in shipped converter output and hands every duplicate the same
+// requirement's fields. projectRows returns rows as map[string]any so the
+// derived output schema is a concrete object (additionalProperties) rather than
+// a bare boolean, which MCP clients reject under items. Rows are built from the
+// typed conciseRow/fullRow structs and marshalled via structToMap so their json
+// tags (exact concise keys, omitempty full extras) remain authoritative.
 func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity string, fields []string) []map[string]any {
 	full := verbosity == "full"
-	// The source-requirement index is needed for full's tags/descriptions and for
-	// any opt-in correlation fields; build it once when either is requested.
-	var index map[string]*hdf.EvaluatedRequirement
-	if full || len(fields) > 0 {
-		index = indexRequirements(results)
-	}
 	rows := make([]map[string]any, 0, len(matches))
 	for _, m := range matches {
 		var row map[string]any
 		if full {
 			fr := fullRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact, Baseline: m.Baseline}
-			if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
+			if src := requirementAt(results, m); src != nil {
 				fr.Tags = src.Tags
 				fr.Descriptions = src.Descriptions
 			}
@@ -381,7 +377,7 @@ func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity st
 			row = structToMap(conciseRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact})
 		}
 		if len(fields) > 0 {
-			if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
+			if src := requirementAt(results, m); src != nil {
 				for _, f := range fields {
 					if v := correlationProjectors[f](src); v != nil {
 						row[f] = v
@@ -394,18 +390,16 @@ func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity st
 	return rows
 }
 
-func indexRequirements(results hdf.HDFResults) map[string]*hdf.EvaluatedRequirement {
-	index := map[string]*hdf.EvaluatedRequirement{}
-	for i := range results.Baselines {
-		b := &results.Baselines[i]
-		for j := range b.Requirements {
-			r := &b.Requirements[j]
-			index[requirementKey(b.Name, r.ID)] = r
-		}
+// requirementAt returns the requirement an engine match points at, or nil when
+// the match's position is outside the result set (a match produced from a
+// different document than results — a programming error, not a data condition).
+func requirementAt(results hdf.HDFResults, m hdfengine.Match) *hdf.EvaluatedRequirement {
+	if m.BaselineIndex < 0 || m.BaselineIndex >= len(results.Baselines) {
+		return nil
 	}
-	return index
-}
-
-func requirementKey(baseline, id string) string {
-	return baseline + "\x00" + id
+	b := &results.Baselines[m.BaselineIndex]
+	if m.Index < 0 || m.Index >= len(b.Requirements) {
+		return nil
+	}
+	return &b.Requirements[m.Index]
 }

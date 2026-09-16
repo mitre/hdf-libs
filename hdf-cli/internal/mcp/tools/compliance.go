@@ -72,8 +72,11 @@ type thresholdVerdict struct {
 }
 
 type groupRollup struct {
-	Group      string  `json:"group"`
-	Compliance float64 `json:"compliance"`
+	Group string `json:"group"`
+	// BaselineIndex is set for groupBy=baseline only: the position of the
+	// baseline this group scores, which distinguishes same-named baselines.
+	BaselineIndex *int    `json:"baselineIndex,omitempty"`
+	Compliance    float64 `json:"compliance"`
 	// Counts holds the StatusCounts as status → severity → int (see complianceOutput.Counts).
 	Counts map[string]map[string]int `json:"counts"`
 }
@@ -209,35 +212,67 @@ func effectiveStatusExcludingAgent(control hdf.EvaluatedRequirement) string {
 	return shared.RequirementEffectiveStatus(control)
 }
 
+// partition is one group of a grouped rollup: its label, the sub-result-set the
+// engine scores, and — for baseline mode only — the position of the baseline it
+// holds, which is what keeps two same-named baselines distinct.
+type partition struct {
+	Group         string
+	BaselineIndex *int
+	Results       hdf.HDFResults
+}
+
 // groupedRollups partitions the result set by the requested mode and scores each
-// partition with the shared engine counting/compliance functions.
+// partition with the shared engine counting/compliance functions. Rollups are
+// ordered by group label, then by baseline index, so same-named baselines appear
+// in document order.
 func groupedRollups(results hdf.HDFResults, mode string) ([]groupRollup, *mcperr.Error) {
 	partitions, gerr := partitionResults(results, mode)
 	if gerr != nil {
 		return nil, gerr
 	}
 	rollups := make([]groupRollup, 0, len(partitions))
-	for key, sub := range partitions {
-		counts := countByEffectiveStatus(sub)
+	for _, p := range partitions {
+		counts := countByEffectiveStatus(p.Results)
 		rollups = append(rollups, groupRollup{
-			Group:      key,
-			Compliance: hdfengine.CalculateCompliance(counts),
-			Counts:     countsToNestedInt(counts),
+			Group:         p.Group,
+			BaselineIndex: p.BaselineIndex,
+			Compliance:    hdfengine.CalculateCompliance(counts),
+			Counts:        countsToNestedInt(counts),
 		})
 	}
-	sort.Slice(rollups, func(i, j int) bool { return rollups[i].Group < rollups[j].Group })
+	sort.SliceStable(rollups, func(i, j int) bool {
+		if rollups[i].Group != rollups[j].Group {
+			return rollups[i].Group < rollups[j].Group
+		}
+		return indexOrZero(rollups[i].BaselineIndex) < indexOrZero(rollups[j].BaselineIndex)
+	})
 	return rollups, nil
 }
 
-// partitionResults splits a result set into named sub-result-sets by group mode.
-// Each partition is a full HDFResults so the shared engine scores it unchanged.
-func partitionResults(results hdf.HDFResults, mode string) (map[string]hdf.HDFResults, *mcperr.Error) {
+func indexOrZero(i *int) int {
+	if i == nil {
+		return 0
+	}
+	return *i
+}
+
+// partitionResults splits a result set into sub-result-sets by group mode. Each
+// partition is a full HDFResults so the shared engine scores it unchanged.
+// Baseline mode yields one partition PER BASELINE, by position — baseline names
+// are not unique in shipped converter output, and a name-keyed map silently
+// collapsed same-named baselines into whichever came last.
+func partitionResults(results hdf.HDFResults, mode string) ([]partition, *mcperr.Error) {
 	switch mode {
 	case "baseline":
-		out := map[string]hdf.HDFResults{}
+		out := make([]partition, 0, len(results.Baselines))
 		for i := range results.Baselines {
+			idx := i
 			b := results.Baselines[i]
-			out[b.Name] = hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{b}}
+			out = append(out, partition{
+				Group:         b.Name,
+				BaselineIndex: &idx,
+				Results:       hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{b}},
+			})
 		}
 		return out, nil
 	case "severity":
@@ -254,20 +289,28 @@ func partitionResults(results hdf.HDFResults, mode string) (map[string]hdf.HDFRe
 
 // partitionBy buckets each requirement into every key keyOf returns (a
 // requirement can land in several nistFamily groups), each bucket a single-
-// baseline HDFResults the engine scores directly.
-func partitionBy(results hdf.HDFResults, keyOf func(hdf.EvaluatedRequirement) []string) map[string]hdf.HDFResults {
+// baseline HDFResults the engine scores directly. Buckets are emitted in
+// first-seen order; groupedRollups sorts them by label.
+func partitionBy(results hdf.HDFResults, keyOf func(hdf.EvaluatedRequirement) []string) []partition {
 	buckets := map[string][]hdf.EvaluatedRequirement{}
+	var order []string
 	for i := range results.Baselines {
 		for j := range results.Baselines[i].Requirements {
 			req := results.Baselines[i].Requirements[j]
 			for _, key := range keyOf(req) {
+				if _, seen := buckets[key]; !seen {
+					order = append(order, key)
+				}
 				buckets[key] = append(buckets[key], req)
 			}
 		}
 	}
-	out := make(map[string]hdf.HDFResults, len(buckets))
-	for key, reqs := range buckets {
-		out[key] = hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: key, Requirements: reqs}}}
+	out := make([]partition, 0, len(order))
+	for _, key := range order {
+		out = append(out, partition{
+			Group:   key,
+			Results: hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: key, Requirements: buckets[key]}}},
+		})
 	}
 	return out
 }
