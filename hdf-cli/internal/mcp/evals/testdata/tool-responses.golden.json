@@ -1,10 +1,12 @@
 {
   "hdf_apply_amendment": {
+    "appliedOverrides": 2,
     "changedRequirementCount": 1,
     "projectedCompliance": {
       "after": 50,
       "before": 0
     },
+    "totalOverrides": 2,
     "valid": true
   },
   "hdf_author": {
@@ -28,7 +30,7 @@
         "total": 1
       },
       "no_impact": {
-        "none": 1,
+        "informational": 1,
         "total": 1
       },
       "passed": {

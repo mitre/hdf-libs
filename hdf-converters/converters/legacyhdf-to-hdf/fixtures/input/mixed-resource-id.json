@@ -1,0 +1,45 @@
+{
+  "platform": { "name": "aws", "release": "1.0.0" },
+  "version": "7.0.107",
+  "statistics": { "duration": 0.1 },
+  "profiles": [{
+    "name": "mixed-repro",
+    "version": "1.0.0",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "supports": [], "attributes": [], "groups": [],
+    "controls": [
+      {
+        "id": "C-string",
+        "title": "string-valued resource_id",
+        "desc": "repro",
+        "descriptions": [{ "label": "default", "data": "scalar resource id" }],
+        "impact": 0.5,
+        "refs": [], "tags": {}, "code": "",
+        "source_location": { "ref": "controls/c1.rb", "line": 1 },
+        "results": [{
+          "status": "passed",
+          "code_desc": "file /etc/passwd is expected to exist",
+          "start_time": "2026-09-11T00:00:00Z",
+          "run_time": 0.01,
+          "resource_id": "/etc/passwd"
+        }]
+      },
+      {
+        "id": "C-object",
+        "title": "object-valued resource_id",
+        "desc": "repro",
+        "descriptions": [{ "label": "default", "data": "settings-hash resource id" }],
+        "impact": 0.5,
+        "refs": [], "tags": {}, "code": "",
+        "source_location": { "ref": "controls/c2.rb", "line": 1 },
+        "results": [{
+          "status": "passed",
+          "code_desc": "password policy is compliant",
+          "start_time": "2026-09-11T00:00:00Z",
+          "run_time": 0.01,
+          "resource_id": { "minimum_password_length": 12, "require_symbols": true }
+        }]
+      }
+    ]
+  }]
+}

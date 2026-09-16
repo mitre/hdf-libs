@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **BREAKING (Go API):** two exported signatures changed to carry information the
+  CLI/MCP now surface. `amend.MergeAmendments` (`hdf-diff`) returns a
+  `MergeResult{Output, Applied, Total}` instead of `[]byte`, so callers can report
+  how many overrides applied out of how many were present. `legacyhdf.LegacyResult.ResourceID`
+  (`hdf-converters`) changes from `*string` to `*LegacyResourceID` so an
+  out-of-spec object-valued InSpec `resource_id` no longer fails the whole
+  document (it is normalized to canonical JSON). Both are source-incompatible for
+  external Go consumers that construct/consume these types directly; there is no
+  schema change.
+
+- **BREAKING — the threshold severity bucket `none` is now `informational`, and a generated template validates the document it came from.** `hdf generate threshold --include-controls` emitted a template that immediately failed against its own source document whenever any requirement carried `severity: informational`: generate bucketed those controls under `no_impact.none`, while validate compared the requirement's raw severity string, so every one reported `expected no_impact/none but found no_impact/informational`. Measured on `three-layer-overlay.json.hdf.json`: 27 controls, 27 failures, exit 1. The root cause was a single function normalizing one path and not the other — an *impact-derived* informational was folded to `none` while an *explicit* one passed through — so the two sides disagreed about the same document by construction. The fold existed for SAF CLI threshold compatibility, which is no longer a goal of this project. The threshold vocabulary is now exactly the schema's severity enum (`critical|high|medium|low|informational`); `none`, which the schema never defined, is gone. **Consequences for consumers:** a template written by hand with `none:` still parses and is normalized to `informational`, so existing templates keep working — but a spec setting *both* spellings is refused rather than resolved, since they name one bucket and silently honouring one would drop a bound the author wrote. Newly generated templates write `informational:` and never `none:`. Counts reported under `none` now appear under `informational`, which affects anything parsing `hdf validate threshold --format json`, `hdf compliance` group-by-severity output, or the `hdf_compliance` / `hdf_aggregate` / `hdf_query` MCP responses, whose `severity` schema now advertises `informational` in place of `none`. A severity outside the schema enum never reaches this layer — `hdf` schema-validates the document first and rejects it, naming the legal values. `hdf query --severity` moves with it: the flag now advertises and accepts `informational`, `none` is still accepted as its former spelling so a saved command line keeps selecting the same findings, and an impact-0 row renders as `INFO` rather than `NONE` in human-readable output.
+
+### Fixed
+
+- v2⇄v3 conversion fidelity: object-valued `resource_id` no longer fails the
+  parse; the full `components[]` round-trips v3→v2→v3 via a passthrough carrier;
+  the v2→v3 up-pin emits a valid `default` description instead of schema-invalid
+  `descriptions: null`.
+- `hdf amend apply` now gates its results input (document type + schema) and
+  validates its output, rejecting a legacy-v2/non-HDF/schema-invalid document with
+  an actionable message instead of silently no-opping; it reports `applied N/M`.
+- **`AssertionCount` overlooked a severity bound, reporting a populated threshold spec as asserting nothing.** The bound list backing the "threshold asserts nothing" guard was hand-maintained and did not include every field of the severity model, so a spec whose only assertion used the missed bucket was rejected as empty — the same false green the guard exists to prevent.
+
 ## [3.6.0] - 2026-09-12
 
 Minor release. The Results schema gains one optional root field, `preAmendmentChecksum`, so every schema `$id` moves to v3.6.0. Alongside it: a new MCP server and a new `@mitre/hdf-engine` library, three new converters, and a long list of places where a command, converter or exporter that used to accept bad input at exit 0 now refuses it. The entries marked BREAKING will surface on first run.

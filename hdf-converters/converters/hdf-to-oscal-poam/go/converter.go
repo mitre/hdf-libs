@@ -289,7 +289,7 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 
 	risk := oscal.Risk{
 		UUID:              riskUUID,
-		Title:             override.RequirementID,
+		Title:             requirementTitle(override),
 		Description:       rationale,
 		Statement:         rationale,
 		Status:            riskStatus,
@@ -302,7 +302,7 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 
 	item := oscal.POAMItem{
 		UUID:        oscal.GenerateUUID(),
-		Title:       override.RequirementID,
+		Title:       requirementTitle(override),
 		Description: override.Reason,
 		RelatedRisks: []oscal.RelatedRef{
 			{RiskUUID: riskUUID},
@@ -320,14 +320,27 @@ func poamTitle(a *hdf.HDFAmendments) string {
 	return shared.FirstNonEmpty(a.Name, derefString(a.AmendmentID), "HDF Amendments")
 }
 
+// unidentifiedRequirementTitle stands in for an empty requirementId: HDF puts no
+// minLength on it, and OSCAL 1.2.x requires risk and POA&M item titles to be
+// non-empty.
+const unidentifiedRequirementTitle = "Unidentified requirement"
+
+// requirementTitle is the title of the risk and POA&M item an override produces.
+func requirementTitle(override *hdf.StandaloneOverride) string {
+	return shared.FirstNonEmpty(override.RequirementID, unidentifiedRequirementTitle)
+}
+
 // riskRationale supplies the text OSCAL requires for a risk's description and
 // statement. HDF puts no minLength on reason, so an override can legitimately
 // carry none; the fallback states that absence rather than inventing an impact
-// assessment the source never made.
+// assessment the source never made, and names the requirement only when there is one.
 func riskRationale(override *hdf.StandaloneOverride) string {
-	return shared.FirstNonEmpty(override.Reason,
-		fmt.Sprintf("No rationale was recorded for the %s override applied to %s.",
-			override.Type, override.RequirementID))
+	absence := fmt.Sprintf("No rationale was recorded for the %s override applied to %s.",
+		override.Type, override.RequirementID)
+	if shared.FirstNonEmpty(override.RequirementID) == "" {
+		absence = fmt.Sprintf("No rationale was recorded for the %s override.", override.Type)
+	}
+	return shared.FirstNonEmpty(override.Reason, absence)
 }
 
 func derefString(s *string) string {

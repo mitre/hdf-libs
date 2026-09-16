@@ -67,7 +67,8 @@ func TestCompliance_CountsAndPercentage(t *testing.T) {
 	assert.Equal(t, 1, counts.Skipped.Total)
 	assert.Equal(t, 1, counts.Skipped.Low)
 	assert.Equal(t, 1, counts.Error.Total)
-	assert.Equal(t, 1, counts.Error.None)
+	// Was counts.Error.None before the two spellings were unified.
+	assert.Equal(t, 1, counts.Error.Informational)
 	assert.Equal(t, 1, counts.NoImpact.Total)
 	assert.Equal(t, 1, counts.NoImpact.Medium)
 
@@ -239,4 +240,49 @@ func TestValidateThresholds(t *testing.T) {
 		require.Len(t, v, 1)
 		assert.Contains(t, v[0], "expected control SV-999999 not found")
 	})
+}
+
+// DeriveSeverity must not route an explicit informational and an impact-derived
+// one to different buckets — that split is what let a generated template fail
+// against the document it came from.
+func TestDeriveSeverity_ExplicitAndDerivedInformationalAgree(t *testing.T) {
+	explicit := hdf.Severity("informational")
+	assert.Equal(t, "informational", DeriveSeverity(0.0, &explicit))
+	assert.Equal(t, "informational", DeriveSeverity(0.0, nil), "impact 0 derives informational")
+}
+
+// The catch-all is unreachable through the CLI, which schema-validates first, so
+// it is pinned here: a library caller constructing a requirement by hand still
+// gets the severity counted rather than dropped.
+func TestAddCount_SeverityOutsideTheEnumCountsAsInformational(t *testing.T) {
+	var counts StatusCounts
+	addCount(&counts, hdf.Failed, "sev-9")
+	assert.Equal(t, 1, counts.Failed.Informational, "an unrecognized severity is counted, not dropped")
+	assert.Equal(t, 1, counts.Failed.Total)
+}
+
+// A spec naming both spellings of one bucket is refused rather than silently
+// resolved, so a bound the author wrote is never dropped.
+func TestValidateThresholds_BothNoneAndInformationalIsRefused(t *testing.T) {
+	two := 2
+	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{
+		Informational: &ThresholdBound{Max: &two},
+		None:          &ThresholdBound{Max: &two},
+	}}
+	violations := ValidateThresholds(config, &StatusCounts{}, 100, nil)
+	require.NotEmpty(t, violations)
+	assert.Contains(t, violations[0], "pre-3.7 spelling")
+}
+
+// The legacy spelling resolves to the same bucket it always meant.
+func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
+	zero := 0
+	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
+	counts := StatusCounts{}
+	counts.NoImpact.Informational = 3
+	counts.NoImpact.Total = 3
+
+	violations := ValidateThresholds(config, &counts, 100, nil)
+	require.Len(t, violations, 1, "the legacy bound must still be applied")
+	assert.Contains(t, violations[0], "no_impact.informational")
 }

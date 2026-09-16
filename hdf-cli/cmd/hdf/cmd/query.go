@@ -88,7 +88,7 @@ Examples:
 	}
 
 	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil, "Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed")
-	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, none")
+	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
 	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic; supports globs)")
@@ -132,7 +132,7 @@ func runQuery(_ *cobra.Command, args []string) error {
 	// its display-status resolver so the engine stays convention-agnostic.
 	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{
 		Status:   queryStatus,
-		Severity: querySeverity,
+		Severity: normalizeSeverityFilters(querySeverity),
 		Impact:   queryImpact,
 		CCI:      queryCCI,
 		NIST:     queryNIST,
@@ -201,14 +201,35 @@ func outputQueryResults(matches []hdfengine.Match) error {
 }
 
 // Severity constants aligned with CVSS 3.x bands normalized to 0-1.
-// Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low, 0.0=none.
+// Bands: 0.9-1.0=critical, 0.7-0.8=high, 0.4-0.6=medium, 0.1-0.3=low,
+// 0.0=informational. The vocabulary is the schema's severity enum, so a filter
+// value matches what DeriveSeverity produces.
 const (
-	SeverityCritical = "critical"
-	SeverityHigh     = "high"
-	SeverityMedium   = "medium"
-	SeverityLow      = "low"
-	SeverityNone     = "none"
+	SeverityCritical      = "critical"
+	SeverityHigh          = "high"
+	SeverityMedium        = "medium"
+	SeverityLow           = "low"
+	SeverityInformational = "informational"
+	// SeverityNoneLegacy is the pre-3.7 spelling of informational, still
+	// accepted as a filter value so an existing command line keeps working.
+	SeverityNoneLegacy = "none"
 )
+
+// normalizeSeverityFilters maps the pre-3.7 "none" spelling onto the schema
+// value it named, so a saved command line keeps selecting the same findings.
+func normalizeSeverityFilters(values []string) []string {
+	if len(values) == 0 {
+		return values
+	}
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		if v == SeverityNoneLegacy {
+			v = SeverityInformational
+		}
+		out = append(out, v)
+	}
+	return out
+}
 
 func severityToLabel(severity string) string {
 	switch severity {
@@ -220,10 +241,10 @@ func severityToLabel(severity string) string {
 		return "MED "
 	case SeverityLow:
 		return "LOW "
-	case SeverityNone:
-		return "NONE"
+	case SeverityInformational:
+		return "INFO"
 	default:
-		return "NONE"
+		return "INFO"
 	}
 }
 

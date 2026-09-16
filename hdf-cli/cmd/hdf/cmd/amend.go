@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -200,6 +201,17 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 		return fmt.Errorf("failed to read amendments file: %w", err)
 	}
 
+	// Gate the results input at the boundary: it must be a recognized HDF results
+	// document (a legacy v2/InSpec doc is directed to convert first; anything else
+	// is rejected) AND schema-valid — so a "close enough" document can never reach
+	// the amend engine to silently no-op or emit an invalid artifact.
+	if _, typeErr := requireDocumentType(resultsData, []string{"results"}, "hdf amend apply"); typeErr != nil {
+		return typeErr
+	}
+	if result := validators.ValidateResults(resultsData); !result.Valid {
+		return fmt.Errorf("results document is not schema-valid HDF: %s", firstValidationError(result))
+	}
+
 	if _, typeErr := requireDocumentType(amendmentsData, []string{"amendments"}, "hdf amend apply"); typeErr != nil {
 		return typeErr
 	}
@@ -211,11 +223,22 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 		return errors.New(sanitizeOutput(refuseErr.Error()))
 	}
 
-	merged, err := amend.MergeAmendments(resultsData, amendmentsData)
+	res, err := amend.MergeAmendments(resultsData, amendmentsData)
 	if err != nil {
 		return fmt.Errorf("merge failed: %w", err)
 	}
 
+	// Never emit a non-schema-valid results file.
+	if valErr := validateHDFOutput(res.Output); valErr != nil {
+		return fmt.Errorf("merged output failed HDF Results schema validation: %w", valErr)
+	}
+
+	// Report how many overrides applied. applied < total is legitimate (a fleet
+	// amendments file need not match every host on which it is applied), so this
+	// is a summary rather than an error — but the command is never silent.
+	fmt.Fprintf(os.Stderr, "Applied %d of %d override(s)\n", res.Applied, res.Total)
+
+	merged := res.Output
 	if outputPath != "" {
 		// Ensure trailing newline.
 		if len(merged) > 0 && merged[len(merged)-1] != '\n' {

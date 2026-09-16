@@ -230,12 +230,12 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 			bound = ts.Total
 		} else {
 			// getSeverityBound buckets anything it does not recognize into
-			// "none", which is right when generate is placing a scan's own
-			// severity but wrong here: this segment was typed by a user, so an
-			// unrecognized name is a typo that would otherwise assert a bound
+			// "informational", which is right when generate is placing a scan's
+			// own severity but wrong here: this segment was typed by a user, so
+			// an unrecognized name is a typo that would otherwise assert a bound
 			// nobody asked for and pass silently.
 			if !isKnownSeverityField(segments[1]) {
-				return fmt.Errorf("unknown severity field %q (expected 'critical', 'high', 'medium', 'low', 'none', or 'total')", segments[1])
+				return fmt.Errorf("unknown severity field %q (expected 'critical', 'high', 'medium', 'low', 'informational', or 'total')", segments[1])
 			}
 			bound = getSeverityBound(ts, segments[1])
 		}
@@ -288,10 +288,11 @@ func getOrCreateStatusSeverity(config *ThresholdConfig, status string) *Threshol
 	}
 }
 
-// knownSeverityFields is the severity vocabulary a threshold path may name.
-// getSeverityBound (generate_threshold.go) maps anything else to "none" on
-// purpose, so the inline path checks membership here before calling it.
-var knownSeverityFields = []string{"critical", "high", "medium", "low", "none"}
+// knownSeverityFields is the severity vocabulary a threshold path may name: the
+// schema's severity enum, plus "none" as the pre-3.7 spelling of informational.
+// getSeverityBound (generate_threshold.go) maps anything else to informational
+// on purpose, so the inline path checks membership here before calling it.
+var knownSeverityFields = []string{"critical", "high", "medium", "low", "informational", "none"}
 
 func isKnownSeverityField(name string) bool {
 	for _, known := range knownSeverityFields {

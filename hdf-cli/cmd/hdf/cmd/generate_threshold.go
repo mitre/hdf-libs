@@ -133,8 +133,8 @@ func buildSeverityThreshold(sc *SeverityCounts, exact, useMax bool) *ThresholdSe
 	if sc.Low > 0 || exact {
 		ts.Low = makeBound(sc.Low, exact, useMax)
 	}
-	if sc.None > 0 || exact {
-		ts.None = makeBound(sc.None, exact, useMax)
+	if sc.Informational > 0 || exact {
+		ts.Informational = makeBound(sc.Informational, exact, useMax)
 	}
 
 	return ts
@@ -204,11 +204,22 @@ func getSeverityBound(ts *ThresholdSeverity, severity string) *ThresholdBound {
 			ts.Low = &ThresholdBound{}
 		}
 		return ts.Low
-	default:
+	case "none":
+		// The pre-3.7 spelling, reachable only from an inline path — a document
+		// severity is never "none". It must land in the legacy field rather than
+		// being folded here, so ValidateThresholds can still see a spec that
+		// names both spellings and refuse it instead of silently overwriting one.
 		if ts.None == nil {
 			ts.None = &ThresholdBound{}
 		}
 		return ts.None
+	default:
+		// Informational, plus any severity outside the schema enum — bucketed
+		// here rather than dropped, matching the engine's addCount.
+		if ts.Informational == nil {
+			ts.Informational = &ThresholdBound{}
+		}
+		return ts.Informational
 	}
 }
 

@@ -118,7 +118,8 @@ func convertResult(v1 LegacyResult) hdf.RequirementResult {
 		v2.Resource = v1.ResourceClass
 	}
 	if v1.ResourceID != nil {
-		v2.ResourceID = v1.ResourceID
+		s := string(*v1.ResourceID)
+		v2.ResourceID = &s
 	}
 
 	return v2
@@ -237,15 +238,26 @@ func convertControl(v1 LegacyControl) hdf.EvaluatedRequirement {
 		v2.Refs = convertRefs(v1.Refs)
 	}
 
-	// Convert descriptions
-	if v1.Descriptions != nil {
-		v2.Descriptions = make([]hdf.Description, len(v1.Descriptions))
-		for i, d := range v1.Descriptions {
-			v2.Descriptions[i] = hdf.Description{
-				Label: d.Label,
-				Data:  d.Data,
-			}
+	// Convert descriptions. v3 requires a non-empty descriptions array containing a
+	// 'default' (minItems:1 + contains-default), so both null and [] are invalid —
+	// SAF-produced HDF carries no descriptions[] and hit this on every requirement.
+	// Guarantee a 'default', synthesized from the control desc when absent,
+	// symmetric with the downgrade's default→desc mapping.
+	v2.Descriptions = make([]hdf.Description, 0, len(v1.Descriptions)+1)
+	hasDefault := false
+	for _, d := range v1.Descriptions {
+		if d.Label == "default" {
+			hasDefault = true
 		}
+		v2.Descriptions = append(v2.Descriptions, hdf.Description{Label: d.Label, Data: d.Data})
+	}
+	if !hasDefault {
+		data := ""
+		if v1.Desc != nil {
+			data = *v1.Desc
+		}
+		// Convention: the default description comes first.
+		v2.Descriptions = append([]hdf.Description{{Label: "default", Data: data}}, v2.Descriptions...)
 	}
 
 	// Convert source location
@@ -654,6 +666,13 @@ func ConvertLegacyHDF(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFRes
 		target.OSVersion = v1.Platform.Release
 	}
 	v2.Components = []hdf.Component{target}
+
+	// Restore a full components[] carried through the v2 passthrough (the
+	// v3→v2→v3 round trip); genuine InSpec input has no passthrough and keeps
+	// the platform-derived single component above.
+	if v1.Passthrough != nil && len(v1.Passthrough.HDFComponents) > 0 {
+		v2.Components = v1.Passthrough.HDFComponents
+	}
 
 	// Flatten overlays: merge overlay/wrapper baselines so every requirement
 	// has results and consumers don't see duplicated controls (741→247 fix).

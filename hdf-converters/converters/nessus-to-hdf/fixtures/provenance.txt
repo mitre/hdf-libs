@@ -10,13 +10,21 @@ the document structure.
 ## input/
 
 ### `sample.nessus`
-Real **Nessus Home** scan of a home network (3 hosts, 149 findings), captured
-March 2022 (Log4Shell-era plugins). Sourced from the MITRE **heimdall2** sample
-corpus — `libs/hdf-converters/sample_jsons/nessus_mapper/sample_input_report/sample.nessus`
-(SAF carries a byte-identical copy). Our copy is byte-identical to upstream
-except a single length-preserving hostname sanitization (`DESKTOP-LSFL6KC` →
-`DESKTOP-TEST001`). Exercises the vulnerability path (CVSS v2/v3, CVE/CWE/xref,
-severity → impact).
+Real **Nessus Home** scan of a home network, captured March 2022 (Log4Shell-era
+plugins). Sourced from the MITRE **heimdall2** sample corpus —
+`libs/hdf-converters/sample_jsons/nessus_mapper/sample_input_report/sample.nessus`
+(SAF carries a byte-identical copy). Exercises the vulnerability path (CVSS
+v2/v3, CVE/CWE/xref, severity → impact).
+
+**Modified from upstream, twice.** A length-preserving hostname sanitization
+(`DESKTOP-LSFL6KC` → `DESKTOP-TEST001`), and a 2026-09 reduction from 149
+findings to 18 and from 1.7 MB to 66 KB. The reduction keeps two ReportItems per
+distinct combination of severity, CVE, CVSS3, CWE, see-also and solution, never
+strips a host to zero, and drops the Policy block apart from ServerPreferences —
+of which the converter reads only `sc_version`, a preference this scan does not
+carry. Converter output was profiled before and after: statuses, impacts,
+ecosystems, description labels, tag keys and requirement keys are unchanged; only
+the finding count differs. All 3 hosts are retained.
 
 ### `compliance.nessus`
 Real Nessus **DISA STIG Compliance Audit** against RHEL-7, with authentic STIG

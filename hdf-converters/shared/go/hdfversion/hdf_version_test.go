@@ -7,7 +7,9 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xeipuuv/gojsonschema"
@@ -67,6 +69,67 @@ func TestTransformHDF_ModernToLegacy(t *testing.T) {
 	// Should NOT have modern fields.
 	assert.NotContains(t, legacy, "baselines", "legacy output should not have baselines")
 	assert.NotContains(t, legacy, "components", "legacy output should not have components")
+}
+
+// TestV3ToV2ToV3PreservesComponents: on down-pin the full
+// components[] must be carried through a passthrough carrier (not just the
+// first-component->platform mapping) and named in a warning, and on up-pin
+// restored intact — so a v3->v2->v3 round trip preserves every component field.
+func TestV3ToV2ToV3PreservesComponents(t *testing.T) {
+	osName := "ubuntu"
+	osVersion := "22.04"
+	imageID := "sha256:abc123"
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "C-1",
+				Impact: 0.5,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Passed,
+					CodeDesc:  "ok",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+				}},
+			}},
+		}},
+		Components: []hdf.Component{
+			{Type: hdf.Host, Name: "web01", OSName: &osName, OSVersion: &osVersion},
+			{
+				Type:      hdf.ContainerImage,
+				Name:      "nginx",
+				ImageID:   &imageID,
+				Labels:    map[string]string{"team": "sec"},
+				Integrity: []hdf.Checksum{{Algorithm: hdf.Sha256, Value: "deadbeef"}},
+			},
+		},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	// Down-pin: v3 -> v2.
+	v2out, warnings, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	named := false
+	for _, w := range warnings {
+		if strings.Contains(strings.ToLower(w), "component") {
+			named = true
+		}
+	}
+	assert.True(t, named, "down-pin should emit a specific warning naming components[]")
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	require.Contains(t, legacy, "passthrough", "full components[] carried via passthrough")
+
+	// Up-pin: v2 -> v3.
+	v3out, _, err := TransformHDF(v2out, LegacyVersion, ModernVersion)
+	require.NoError(t, err)
+
+	var restored hdf.HDFResults
+	require.NoError(t, json.Unmarshal(v3out, &restored))
+	assert.Equal(t, original.Components, restored.Components,
+		"v3->v2->v3 preserves components[] (imageId, integrity, labels, name, osName, osVersion, type)")
 }
 
 func TestTransformHDF_SameVersion(t *testing.T) {

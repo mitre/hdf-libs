@@ -134,6 +134,35 @@ func TestApplyAmendment_RejectsOverwritingInput(t *testing.T) {
 	}
 }
 
+// TestApplyAmendment_GatesSchemaInvalidResultsInput: the MCP boundary rejects a
+// schema-invalid results document (a degraded read that fingerprints as results
+// but violates the schema) before the merge, mirroring the CLI's input gate —
+// not only catching it on the output check.
+func TestApplyAmendment_GatesSchemaInvalidResultsInput(t *testing.T) {
+	root, results, amend := applyEnv(t)
+	if err := os.WriteFile(filepath.Join(root, results), []byte(`{"baselines":[{}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	res, _ := callApply(t, applyInput(results, amend, "out.json", false))
+	if res == nil || !res.IsError {
+		t.Fatal("a schema-invalid results input must be rejected at the boundary")
+	}
+}
+
+// TestApplyAmendment_ReportsOverrideCounts: the output surfaces how many
+// overrides applied out of how many were present, so MCP callers can tell 0/N
+// from N/N (parity with the CLI's "applied N/M").
+func TestApplyAmendment_ReportsOverrideCounts(t *testing.T) {
+	_, results, amend := applyEnv(t)
+	res, out := callApply(t, applyInput(results, amend, "merged.json", true))
+	if res != nil {
+		t.Fatalf("expected a successful apply, got an error result")
+	}
+	if out.AppliedOverrides != 1 || out.TotalOverrides != 1 {
+		t.Fatalf("expected applied 1 of 1, got %d of %d", out.AppliedOverrides, out.TotalOverrides)
+	}
+}
+
 // refuseOverwritingInput must use device+inode identity, not lexical equality:
 // an in-root symlink or hardlink alias of the input has a different path string
 // but the same underlying file, so a lexical-only guard would let apply truncate

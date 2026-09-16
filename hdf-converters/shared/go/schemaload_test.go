@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -91,6 +92,31 @@ func schemaBearingDirs(t *testing.T) map[string][]string {
 	return found
 }
 
+// vendoredKind separates the two things this repo vendors from upstream. Not
+// every vendored file is a schema: asff-required-members.json is an extract of
+// AWS's Security Hub service model, authoritative reference data with a real
+// source and hash that no schema compiler can load. The distinction is named
+// here rather than left implicit in a "$schema" probe, because only one kind
+// may be handed to a compiler while BOTH kinds must be hash-checked.
+type vendoredKind int
+
+const (
+	referenceData vendoredKind = iota // hash-checked only
+	jsonSchema                        // hash-checked, and must compile
+	xmlSchema                         // hash-checked; libxml2 compiles it in the xccdf tests
+)
+
+func classifyVendored(name string, raw []byte) vendoredKind {
+	switch {
+	case strings.HasSuffix(name, ".xsd"):
+		return xmlSchema
+	case strings.HasSuffix(name, ".json") && declaresJSONSchema(raw):
+		return jsonSchema
+	default:
+		return referenceData
+	}
+}
+
 // declaresJSONSchema reports whether raw is a JSON object carrying a top-level
 // "$schema". Unparseable JSON is simply not a schema: several converters vendor
 // deliberately malformed fixtures to exercise error paths, and those must not
@@ -102,6 +128,27 @@ func declaresJSONSchema(raw []byte) bool {
 	}
 	_, ok := probe["$schema"]
 	return ok
+}
+
+// provenanceDirs returns every directory under converters/ holding a
+// provenance.json, found by walking for the file itself. Discovery cannot be
+// driven by the schemas it happens to sit beside: an entry naming a file that
+// is not a schema would never be reached that way, which is exactly how a
+// recorded hash went unchecked.
+func provenanceDirs(t *testing.T) []string {
+	t.Helper()
+	var dirs []string
+	require.NoError(t, filepath.Walk(shared.GetConvertersDir(), func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+		if info.Name() == "provenance.json" {
+			dirs = append(dirs, filepath.Dir(path))
+		}
+		return nil
+	}))
+	sort.Strings(dirs)
+	return dirs
 }
 
 func readProvenance(t *testing.T, dir string) (provenanceDoc, bool) {
@@ -145,15 +192,67 @@ func TestSchemaLoadProvenanceCoversEveryVendoredSchema(t *testing.T) {
 				e, listed := recorded[f]
 				require.True(t, listed, "vendored schema is not listed in provenance.json")
 				require.NotEmpty(t, e.Source, "no source URL recorded")
-				raw, err := os.ReadFile(filepath.Join(dir, f)) // #nosec G304 -- repo-relative
-				require.NoError(t, err)
+				_ = e // the hash itself is asserted by the entry-driven test below
+			})
+			checked++
+		}
+	}
+	assert.Greater(t, checked, 3, "too few schemas checked for this to be meaningful")
+}
+
+// Every file a provenance.json names still hashes to what was recorded —
+// whether or not that file is itself a schema. Driving this from the ENTRIES
+// rather than from discovered schemas is the whole point: asff-required-members
+// .json is vendored reference data with no "$schema" key, so a discovery-driven
+// check never visited it and its recorded hash sat unverified.
+//
+// The recorded hash is of the file AS VENDORED, not upstream. Two XCCDF XSDs are
+// modified on purpose so libxml2 resolves them offline; they carry the upstream
+// hash separately and stay tamper-evident locally.
+func TestSchemaLoadEveryProvenanceEntryHashesAsRecorded(t *testing.T) {
+	dirs := provenanceDirs(t)
+	require.NotEmpty(t, dirs, "no provenance.json found — the walk is broken, not the tree")
+
+	checked := 0
+	for _, dir := range dirs {
+		doc, ok := readProvenance(t, dir)
+		require.True(t, ok, "%s: provenance.json found by the walk but unreadable", dir)
+		label := filepath.Base(filepath.Dir(dir)) + "/" + filepath.Base(dir)
+		require.NotEmpty(t, doc.Schemas, "%s: provenance.json lists nothing", label)
+
+		for _, e := range doc.Schemas {
+			t.Run(label+"/"+e.File, func(t *testing.T) {
+				require.NotEmpty(t, e.Source, "no source URL recorded")
+				raw, err := os.ReadFile(filepath.Join(dir, e.File)) // #nosec G304 -- repo-relative
+				require.NoError(t, err, "provenance.json names a file that is not there")
 				assert.Equal(t, e.SHA256, fmt.Sprintf("%x", sha256.Sum256(raw)),
 					"file does not match the SHA-256 recorded in provenance.json")
 			})
 			checked++
 		}
 	}
-	assert.Greater(t, checked, 3, "too few schemas checked for this to be meaningful")
+	assert.Greater(t, checked, 3, "too few entries checked for this to be meaningful")
+}
+
+// The hash sweep above covers reference data as well as schemas; this pins that
+// at least one entry really is non-schema reference data, so a future change
+// that quietly narrowed the walk back to "$schema"-bearing files would fail
+// here rather than going unnoticed until a hash drifted.
+func TestSchemaLoadProvenanceCoversNonSchemaReferenceData(t *testing.T) {
+	nonSchema := 0
+	for _, dir := range provenanceDirs(t) {
+		doc, ok := readProvenance(t, dir)
+		require.True(t, ok)
+		for _, e := range doc.Schemas {
+			raw, err := os.ReadFile(filepath.Join(dir, e.File)) // #nosec G304 -- repo-relative
+			require.NoError(t, err)
+			if classifyVendored(e.File, raw) == referenceData {
+				nonSchema++
+			}
+		}
+	}
+	assert.Positive(t, nonSchema,
+		"no vendored reference data found; if the last of it was removed, this test has outlived its purpose")
 }
 
 // A schema nobody can compile is not ground truth. Kept separate from provenance
@@ -164,12 +263,15 @@ func TestSchemaLoadProvenanceCoversEveryVendoredSchema(t *testing.T) {
 func TestSchemaLoadEveryVendoredSchemaCompiles(t *testing.T) {
 	for dir, files := range schemaBearingDirs(t) {
 		for _, f := range files {
-			if !strings.HasSuffix(f, ".json") {
-				continue // XSDs are compiled by libxml2 in the xccdf converter's own tests
+			raw, err := os.ReadFile(filepath.Join(dir, f)) // #nosec G304 -- repo-relative
+			require.NoError(t, err)
+			// Only actual JSON Schemas go to a compiler. An XSD is libxml2's job in
+			// the xccdf tests, and vendored reference data is not a schema at all —
+			// feeding either to gojsonschema would fail for the wrong reason.
+			if classifyVendored(f, raw) != jsonSchema {
+				continue
 			}
 			t.Run(filepath.Base(filepath.Dir(dir))+"/"+f, func(t *testing.T) {
-				raw, err := os.ReadFile(filepath.Join(dir, f)) // #nosec G304 -- repo-relative
-				require.NoError(t, err)
 				_, schemaErr := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(raw))
 				require.NoError(t, schemaErr, "vendored schema does not compile")
 			})
