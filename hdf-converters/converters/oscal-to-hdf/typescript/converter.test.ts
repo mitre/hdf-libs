@@ -36,6 +36,7 @@ import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 import type { HDFSystem } from '@mitre/hdf-schema';
 import type { HDFPlan } from '@mitre/hdf-schema';
 import type { HDFAmendments } from '@mitre/hdf-schema';
+import type { Oscal } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -381,6 +382,52 @@ describe('convertOscalSspToHdf', () => {
 
     expect(system.name).toBeTruthy();
     expect(system.components).toBeDefined();
+  });
+
+  it('should set componentId to each OSCAL component uuid, distinguishing same-title components', async () => {
+    const duplicateTitleComponentUuid = 'a3ca96ea-f853-4539-9db3-bf9694f7e0dc';
+    const doc = JSON.parse(loadFixture('ssp-example.json')) as Oscal;
+    const sourceComponents = doc['system-security-plan']!['system-implementation'].components;
+    const loggingServer = sourceComponents.find((c) => c.title === 'Logging Server');
+    expect(loggingServer).toBeDefined();
+    sourceComponents.push({ ...structuredClone(loggingServer!), uuid: duplicateTitleComponentUuid });
+
+    const system = JSON.parse(await convertOscalSspToHdf(JSON.stringify(doc))) as HDFSystem;
+
+    expect(system.components.map((c) => c.componentId)).toEqual(sourceComponents.map((c) => c.uuid));
+    const loggingServerIds = system.components
+      .filter((c) => c.name === 'Logging Server')
+      .map((c) => c.componentId);
+    expect(loggingServerIds).toEqual(['e00acdcf-911b-437d-a42f-b0b558cc4f03', duplicateTitleComponentUuid]);
+  });
+
+  it('should carry FedRAMP component uuids verbatim as componentId', async () => {
+    const input = loadFixture('ssp-fedramp.json');
+    const sourceUuids = (JSON.parse(input) as Oscal)['system-security-plan']!['system-implementation'].components.map(
+      (c) => c.uuid,
+    );
+    expect(sourceUuids).toContain('77A1614A-57B3-4B32-9FEE-613A6520EC58');
+
+    const system = JSON.parse(await convertOscalSspToHdf(input)) as HDFSystem;
+
+    expect(system.components.map((c) => c.componentId)).toEqual(sourceUuids);
+  });
+
+  it('should omit componentId when an OSCAL component has no uuid', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: 'd7456980-9277-4dcb-83cf-f8ff0442623b',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': '2024-01-01T00:00:00Z' },
+        'system-implementation': {
+          components: [{ uuid: '', title: 'No UUID', type: 'software' }],
+        },
+      },
+    });
+
+    const system = JSON.parse(await convertOscalSspToHdf(doc)) as HDFSystem;
+
+    expect(system.components[0]!.name).toBe('No UUID');
+    expect(system.components[0]).not.toHaveProperty('componentId');
   });
 });
 
