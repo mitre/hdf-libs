@@ -24,6 +24,18 @@ const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
 const validateAR = ajv.compile(arSchema);
 
+// NIST OSCAL v1.2.3 AR schema, the current release, which constrains
+// control-selection and non-empty strings where 1.1.2 does not.
+const validateAR123 = ajv.compile(
+  JSON.parse(
+    readFileSync(join(__dirname, '..', 'schemas', 'oscal_assessment-results_schema-v1.2.3.json'), 'utf-8'),
+  ) as object,
+);
+const AR_VALIDATORS = [
+  ['v1.1.2', validateAR],
+  ['v1.2.3', validateAR123],
+] as const;
+
 // Modern HDF crafted to trigger all four #184 defects at once: missing
 // reviewed-controls, missing finding.description (empty descriptions), missing
 // characterization.origin (impact > 0), and an empty-string prop value (empty code).
@@ -65,7 +77,7 @@ const MULTILINE_FIXTURE = readFileSync(
   'utf-8',
 );
 
-describe('hdf-to-oscal-sar output validates against NIST OSCAL v1.1.2 AR schema', () => {
+describe('hdf-to-oscal-sar output validates against every vendored NIST OSCAL AR schema', () => {
   const cases: Array<[string, string]> = [
     ['worst-case (all four defects)', WORST_CASE],
     ['shared minimal fixture', results.minimal.read()],
@@ -74,16 +86,18 @@ describe('hdf-to-oscal-sar output validates against NIST OSCAL v1.1.2 AR schema'
     ['real STIG multi-line code/check/fix', MULTILINE_FIXTURE],
   ];
 
-  it.each(cases)('%s', async (_label, input) => {
-    const out = JSON.parse(await convertHdfToOscalSar(input)) as unknown;
-    const valid = validateAR(out);
-    if (!valid) {
-      const errors = (validateAR.errors ?? [])
-        .map((e) => `${e.instancePath || '/'} ${e.message}`)
-        .join('\n');
-      throw new Error(`output is not valid OSCAL Assessment Results v1.1.2:\n${errors}`);
-    }
-    expect(valid).toBe(true);
+  describe.each(AR_VALIDATORS)('%s', (version, validator) => {
+    it.each(cases)('%s', async (_label, input) => {
+      const out = JSON.parse(await convertHdfToOscalSar(input)) as unknown;
+      const valid = validator(out);
+      if (!valid) {
+        const errors = (validator.errors ?? [])
+          .map((e) => `${e.instancePath || '/'} ${e.message}`)
+          .join('\n');
+        throw new Error(`output is not valid OSCAL Assessment Results ${version}:\n${errors}`);
+      }
+      expect(valid).toBe(true);
+    });
   });
 
   // Pins byte-exact carriage: relocating prose out of prop values must never
@@ -302,6 +316,45 @@ describe('hdf-to-oscal-sar empty-assessment handling', () => {
   });
 });
 
+// A clean scan names no control, and OSCAL 1.2.x requires every control-selection
+// to carry include-all or include-controls. Mirrors the Go peer's
+// wantNoControlsRemark case for case.
+const NO_CONTROLS_REMARK =
+  'No controls were identifiable in the assessed input, so none is listed individually. OSCAL requires a control selection; include-all is emitted to satisfy it and does not assert that any control was assessed.';
+
+describe('hdf-to-oscal-sar result with no identifiable controls', () => {
+  const cases: Array<[string, string]> = [
+    ['baseline with no requirements', JSON.stringify({ baselines: [{ name: 'clean-scan', requirements: [] }] })],
+    [
+      'baseline whose only requirement has no identifiable control',
+      JSON.stringify({
+        baselines: [
+          {
+            name: 'unidentified',
+            requirements: [
+              { id: '   ', impact: 0, results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }] },
+            ],
+          },
+        ],
+      }),
+    ],
+  ];
+
+  it.each(cases)('%s selects include-all with a remark and validates on every schema', async (_label, input) => {
+    const out = JSON.parse(await convertHdfToOscalSar(input)) as {
+      'assessment-results': { results: Array<{ 'reviewed-controls': { 'control-selections': unknown[] } }> };
+    };
+    for (const [version, validator] of AR_VALIDATORS) {
+      expect(validator(out), `${version}: ${JSON.stringify(validator.errors)}`).toBe(true);
+    }
+    const results = out['assessment-results'].results;
+    expect(results).toHaveLength(1);
+    expect(results[0]!['reviewed-controls']['control-selections']).toEqual([
+      { 'include-all': {}, remarks: NO_CONTROLS_REMARK },
+    ]);
+  });
+});
+
 describe('hdf-to-oscal-sar findings without a control id', () => {
   // OSCAL types finding-target.target-id as a token, so an empty one fails the
   // pattern and the whole document with it. The finding is dropped rather than
@@ -354,10 +407,10 @@ describe('hdf-to-oscal-sar against the adversarial corpus', () => {
       'baselines currently has no minItems, so an empty assessment is legal HDF that OSCAL cannot represent — this converter rejects it deliberately',
   };
 
-  it('satisfies every contract for every non-exempt case', async () => {
+  it.each(AR_VALIDATORS)('satisfies every contract for every non-exempt case against %s', async (_version, validator) => {
     const cases = resultsCorpus().filter((c) => !(c.name in CORPUS_EXEMPTIONS));
     expect(cases.length, 'every case exempted — the run would prove nothing').toBeGreaterThan(0);
-    await runSchemaCorpus(jsonDocumentValidator(validateAR), cases, (input) => convertHdfToOscalSar(input));
+    await runSchemaCorpus(jsonDocumentValidator(validator), cases, (input) => convertHdfToOscalSar(input));
   });
 });
 
