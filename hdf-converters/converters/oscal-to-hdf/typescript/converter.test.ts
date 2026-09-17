@@ -2391,6 +2391,31 @@ describe('convertOscalSapToHdf edge cases', () => {
 // ---------------------------------------------------------------------------
 
 describe('convertOscalPoamToHdf edge cases', () => {
+  // Mirrors the Go TestConvertPOAMToHDF_PreADRDocument over the same hdf-cli v3.6.0
+  // export and v3.6.0 import (go/testdata/provenance.txt): a pre-ADR HDF POA&M imports through the pre-ADR
+  // mapping (ADR-0014 §4.3), except that an item with no impacted-control-id is
+  // skipped with a warning rather than named by its title or "unknown".
+  it('reads a pre-ADR HDF POA&M through the pre-ADR mapping', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const testdata = join(__dirname, '..', 'go', 'testdata');
+    const comparable = (doc: Record<string, unknown>) => {
+      delete doc.generator;
+      delete doc.integrity;
+      for (const o of doc.overrides as Array<Record<string, unknown>>) delete o.previousChecksum;
+      return doc;
+    };
+    const got = comparable(JSON.parse(await convertOscalPoamToHdf(readFileSync(join(testdata, 'poam-pre-adr.json'), 'utf-8'))));
+    expect(warn.mock.calls.map((c) => c[0] as string)).toContain(
+      'WARNING: Skipping poam-item "6f81f9fe-06ff-418f-b294-04e613bad22d" titled "": its pre-ADR risk has no impacted-control-id',
+    );
+    warn.mockRestore();
+    const want = comparable(JSON.parse(readFileSync(join(testdata, 'poam-pre-adr.v3.6.0-import.json'), 'utf-8')));
+    const overrides = want.overrides as Array<Record<string, unknown>>;
+    expect(overrides.at(-1)!.requirementId, 'the released importer named the id-less item unknown').toBe('unknown');
+    want.overrides = overrides.slice(0, -1);
+    expect(got).toStrictEqual(want);
+  });
+
   it('should throw on wrong document type', async () => {
     await expect(
       convertOscalPoamToHdf(JSON.stringify({ catalog: {} })),

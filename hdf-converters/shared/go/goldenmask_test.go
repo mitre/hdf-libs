@@ -43,6 +43,16 @@ func TestMaskVolatileJSON_DifferentWiringDoesNotCompareEqual(t *testing.T) {
 	assert.NotEqual(t, linked, unlinked, "a document whose uuids point elsewhere must not mask to the same value")
 }
 
+func TestMaskVolatileJSON_FragmentReferenceSharesOrdinal(t *testing.T) {
+	t.Parallel()
+	got := mask(t, `{"a":{"href":"#11111111-1111-1111-1111-111111111111"},"b":{"uuid":"11111111-1111-1111-1111-111111111111"},"c":"#SV-1"}`)
+	assert.Equal(t, map[string]interface{}{
+		"a": map[string]interface{}{"href": "#uuid-1"},
+		"b": map[string]interface{}{"uuid": "uuid-1"},
+		"c": "#SV-1",
+	}, got)
+}
+
 func TestMaskVolatileJSON_VolatileKeysBlanked(t *testing.T) {
 	t.Parallel()
 	got := mask(t, `{"last-modified":"2026-07-12T00:00:00Z","title":"keep me"}`, "last-modified")

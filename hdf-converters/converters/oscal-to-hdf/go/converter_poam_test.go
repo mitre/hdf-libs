@@ -1,13 +1,17 @@
 package oscal
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
@@ -228,4 +232,58 @@ func TestPoamAmendmentsName(t *testing.T) {
 			assert.Equal(t, tt.expected, ToKebabCase(tt.title, "oscal-poam"))
 		})
 	}
+}
+
+// TestConvertPOAMToHDF_PreADRDocument reads a pre-ADR HDF POA&M through the pre-ADR
+// mapping (ADR-0014 §4.3): its risks carry override-type without ns, so none is
+// HDF-produced, and every override imports as the v3.6.0 importer read it, except
+// that an item with no impacted-control-id is skipped with a warning rather than
+// named by its title or "unknown".
+//
+// testdata/provenance.txt records how hdf-cli v3.6.0 produced the fixture and the
+// oracle from testdata/poam-pre-adr.v3.6.0-input.json.
+func TestConvertPOAMToHDF_PreADRDocument(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	input, err := os.ReadFile(filepath.Join("testdata", "poam-pre-adr.json"))
+	require.NoError(t, err)
+	validator := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(), "hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
+	validator.RequireValid(t, "pre-ADR POA&M", input)
+
+	amendments, err := ConvertPOAMToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	got, err := json.Marshal(amendments)
+	require.NoError(t, err)
+	assert.Contains(t, logs.String(), `WARNING: Skipping poam-item "6f81f9fe-06ff-418f-b294-04e613bad22d" titled "": its pre-ADR risk has no impacted-control-id`)
+
+	released, err := os.ReadFile(filepath.Join("testdata", "poam-pre-adr.v3.6.0-import.json"))
+	require.NoError(t, err)
+	want := preADRComparable(t, released)
+	overrides := want["overrides"].([]any)
+	require.Equal(t, "unknown", overrides[len(overrides)-1].(map[string]any)["requirementId"], "the released importer named the id-less item unknown")
+	want["overrides"] = overrides[:len(overrides)-1]
+	assert.Equal(t, want, preADRComparable(t, got))
+
+	logs.Reset()
+	count, _, err := ExpectedPOAMRequirementCount(input)
+	require.NoError(t, err)
+	assert.Equal(t, len(amendments.Overrides), count, "the count agrees with the skip")
+	assert.Empty(t, logs.String(), "the count path skips silently")
+}
+
+// preADRComparable decodes an amendments document without the fields a converter
+// stamps or derives from bytes the comparison does not share: generator,
+// integrity and each override's previousChecksum.
+func preADRComparable(t *testing.T, raw []byte) map[string]any {
+	t.Helper()
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	delete(doc, "generator")
+	delete(doc, "integrity")
+	for _, o := range doc["overrides"].([]any) {
+		delete(o.(map[string]any), "previousChecksum")
+	}
+	return doc
 }

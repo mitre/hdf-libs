@@ -191,6 +191,33 @@ export function findVocabularyProps(props: Property[] | undefined, name: string)
 }
 
 /**
+ * The first prop in props that is the named row's prop and carries group; an
+ * empty group matches only ungrouped props. Mirrors FindGroupedVocabularyProp in Go.
+ */
+export function findGroupedVocabularyProp(props: Property[] | undefined, name: string, group: string): PropMatch | undefined {
+  return findVocabularyProps(props, name).find((m) => (props![m.index]!.group ?? '') === group);
+}
+
+/**
+ * Whether props carry the marker prop (empty-field or absent-field) naming field
+ * within group (§1.7.3, §1.7.4). Mirrors HasFieldMarker in Go.
+ */
+export function hasFieldMarker(props: Property[] | undefined, marker: string, field: string, group: string): boolean {
+  return findVocabularyProps(props, marker).some((m) => m.value === field && (props![m.index]!.group ?? '') === group);
+}
+
+/**
+ * Reads an optional HDF string field: the named row's prop value when present, an
+ * empty string when empty-field names field (§1.7.3), and undefined when the field
+ * is absent. Mirrors VocabularyString in Go.
+ */
+export function vocabularyString(props: Property[] | undefined, name: string, field: string, group: string): string | undefined {
+  const match = findGroupedVocabularyProp(props, name, group);
+  if (match) return match.value;
+  return hasFieldMarker(props, 'empty-field', field, group) ? '' : undefined;
+}
+
+/**
  * Whether p is HDF's own and so must never be carried as a foreign prop: every
  * prop in the HDF namespace, and a prop with no ns whose name is a legacy row
  * (§1.4, §3.1). Mirrors ConsumedVocabularyProp in Go.

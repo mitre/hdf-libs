@@ -1,6 +1,6 @@
 {
   "plan-of-action-and-milestones": {
-    "uuid": "526a2b82-c539-4c6d-bb0f-bd9a31888b96",
+    "uuid": "1f03ee7b-a10d-4031-9a9c-e229204d483c",
     "metadata": {
       "title": "a",
       "last-modified": "2020-01-01T00:00:00Z",
@@ -8,9 +8,38 @@
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "d21e29a4-9019-431e-8c01-a6fb23b2af4f",
+          "uuid": "51ab44cf-4e97-4292-99e2-0e01ea85c879",
           "type": "person",
-          "name": "test"
+          "name": "test",
+          "props": [
+            {
+              "name": "identity-identifier",
+              "value": "test",
+              "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+            },
+            {
+              "name": "identity-type",
+              "value": "simple",
+              "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+            }
+          ]
+        }
+      ],
+      "props": [
+        {
+          "name": "amendments-name",
+          "value": "a",
+          "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+        },
+        {
+          "name": "absent-field",
+          "value": "systemRef",
+          "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+        },
+        {
+          "name": "absent-field",
+          "value": "version",
+          "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
         }
       ]
     },
@@ -19,8 +48,20 @@
     },
     "observations": [
       {
-        "uuid": "4cf048ac-a6eb-4a84-828b-7d3326dcc436",
-        "description": "supporting evidence",
+        "uuid": "3afed3e7-13d6-4ec2-aa27-794bc6d6871c",
+        "description": "Supporting evidence",
+        "props": [
+          {
+            "name": "absent-field",
+            "value": "description",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+          },
+          {
+            "name": "absent-field",
+            "value": "capturedAt",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+          }
+        ],
         "methods": [
           "EXAMINE"
         ],
@@ -31,26 +72,31 @@
         "relevant-evidence": [
           {
             "href": "https://example.com/advisory",
-            "description": "supporting evidence"
+            "description": "Supporting evidence"
           }
         ]
       }
     ],
     "risks": [
       {
-        "uuid": "c013bcaa-18fb-4a5d-b596-860fe5acaeff",
+        "uuid": "18af6adc-c779-4c4e-9d3a-fbb73f3232da",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "statement": "accepted",
         "props": [
           {
-            "name": "impacted-control-id",
-            "value": "cve-2021-44228",
-            "ns": "https://fedramp.gov/ns/oscal"
+            "name": "hdf-requirement-id",
+            "value": "CVE-2021-44228",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
           },
           {
             "name": "override-type",
             "value": "waiver",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+          },
+          {
+            "name": "override-status",
+            "value": "failed",
             "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
           }
         ],
@@ -59,7 +105,17 @@
         "risk-log": {
           "entries": [
             {
-              "uuid": "81567eb9-6c48-45d3-8d2c-53b4cd36ddbc",
+              "uuid": "42ea0017-0080-4271-9ad5-b6cd9d1f261d",
+              "title": "Override applied",
+              "start": "2020-01-01T00:00:00Z",
+              "logged-by": [
+                {
+                  "party-uuid": "51ab44cf-4e97-4292-99e2-0e01ea85c879"
+                }
+              ]
+            },
+            {
+              "uuid": "e5c67171-863e-4acf-984b-6dfb4b30253d",
               "title": "Scheduled review",
               "description": "Amendment expiration date",
               "start": "2099-12-31T00:00:00Z",
@@ -71,17 +127,17 @@
     ],
     "poam-items": [
       {
-        "uuid": "12725586-aa28-47a2-bb45-bc35cb84f80f",
+        "uuid": "5a0e4305-bc2b-42fc-a310-590bf3f1710d",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "related-observations": [
           {
-            "observation-uuid": "4cf048ac-a6eb-4a84-828b-7d3326dcc436"
+            "observation-uuid": "3afed3e7-13d6-4ec2-aa27-794bc6d6871c"
           }
         ],
         "related-risks": [
           {
-            "risk-uuid": "c013bcaa-18fb-4a5d-b596-860fe5acaeff"
+            "risk-uuid": "18af6adc-c779-4c4e-9d3a-fbb73f3232da"
           }
         ]
       }

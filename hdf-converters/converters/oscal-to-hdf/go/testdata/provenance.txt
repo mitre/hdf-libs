@@ -1,0 +1,38 @@
+# oscal-to-hdf go/testdata — provenance (pre-ADR POA&M files)
+
+Recorded 2026-09-17. These three files pin how a POA&M exported before ADR-0014
+imports (ADR-0014 §4.3). They are read by TestConvertPOAMToHDF_PreADRDocument
+(converter_poam_test.go) and its TypeScript mirror (typescript/converter.test.ts).
+
+## `poam-pre-adr.v3.6.0-input.json`
+The HDF amendments document fed to the v3.6.0 exporter. Its first seven
+overrides are the seven `Standalone_Override` examples from
+`hdf-schema/src/schemas/primitives/amendments.schema.json` at tag v3.6.0,
+verbatim and in order (the same overrides as the first case in
+`hdf-converters/shared/oscal-poam-roundtrip-cases.json`). The eighth copies the
+first example with `requirementId` set to "", `type` set to `attestation`, a new
+reason, and `baselineRef` and `evidence` removed. v3.6.0 accepted an empty
+`requirementId` (`hdf validate` passes at v3.6.0); the current schema rejects it,
+so this file is valid only against the v3.6.0 schema.
+
+## `poam-pre-adr.json`
+Unedited output of the hdf-cli built at tag v3.6.0, converting the input above
+to an OSCAL POA&M. Valid against the vendored OSCAL POA&M 1.1.2 schema, which
+the test asserts.
+
+## `poam-pre-adr.v3.6.0-import.json`
+Unedited output of the same v3.6.0 hdf-cli importing `poam-pre-adr.json` back
+to HDF amendments: the pre-ADR mapping the test compares against.
+
+## How they were produced
+From a checkout of this repository:
+
+    mkdir v3.6.0 && git archive v3.6.0 | tar -x -C v3.6.0
+    (cd v3.6.0/hdf-cli && go build -o ../../hdf-v3.6.0 ./cmd/hdf)
+    ./hdf-v3.6.0 validate poam-pre-adr.v3.6.0-input.json
+    ./hdf-v3.6.0 convert --from hdf-amendments --to oscal-poam poam-pre-adr.v3.6.0-input.json -o poam-pre-adr.json
+    ./hdf-v3.6.0 convert poam-pre-adr.json -o poam-pre-adr.v3.6.0-import.json
+
+The exporter mints fresh uuids on every run, so a rerun matches
+`poam-pre-adr.json` only with uuids masked, and the import's `integrity`
+checksum (a hash of the input bytes) changes with them.

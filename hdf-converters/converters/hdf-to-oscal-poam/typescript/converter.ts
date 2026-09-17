@@ -2,15 +2,32 @@
  * Converts HDF Amendments to OSCAL Plan of Action and Milestones (POA&M) format.
  *
  * This is the reverse direction of the oscal-poam to HDF converter.
+ *
+ * Every amendments field has an OSCAL home the importer reads back exactly
+ * (ADR-0014 §4.6), with four exclusions: the document integrity and signature,
+ * the generator (the importer stamps its own), and each override's signature and
+ * previousChecksum. A signature covers the original HDF bytes and the checksum
+ * chain covers document order; neither survives a format change, and the
+ * importer re-chains the overrides it reads.
  */
 
-import { parseTimestamp, formatTimestampSeconds } from '@mitre/hdf-utilities';
+import { encodeBase64Utf8, formatTimestamp, formatTimestampSeconds, parseTimestamp } from '@mitre/hdf-utilities';
+import { nistExists } from '@mitre/hdf-mappings';
 import { requireHdfAmendments, firstNonEmpty } from '../../../shared/typescript/converterutil.js';
-import type { HDFAmendments, StandaloneOverride, Evidence, Cvss, ExternalReference, Milestone, Identity } from '@mitre/hdf-schema';
+import { byCodePoint, canonicalize, floatNumber, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import type {
+  HDFAmendments,
+  StandaloneOverride,
+  Evidence,
+  Cvss,
+  ExternalReference,
+  Milestone,
+  Identity,
+  AffectedPackage,
+} from '@mitre/hdf-schema';
 import type {
   Oscal,
   DocumentMetadata,
-  ImportSystemSecurityPlan,
   PlanOfActionAndMilestonesPOAM,
   POAMItem,
   IdentifiedRisk,
@@ -20,21 +37,29 @@ import type {
   Property,
   RiskResponse,
   RiskLog,
+  RiskLogEntry,
   Observation,
   RelevantEvidence,
   Characterization,
   Facet,
   BackMatter,
   Resource,
+  Link,
+  Task,
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlId,
   hdfStatusToOscalRiskStatus,
-  oscalToken,
   OSCAL_VERSION,
   oscalString,
 } from '../../oscal-to-hdf/typescript/shared.js';
-import { pushVocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import {
+  absentFieldProp,
+  emptyFieldProp,
+  normalizePropValue,
+  pushVocabularyProp,
+  vocabularyProp,
+} from '../../oscal-to-hdf/typescript/vocabulary.js';
 
 /**
  * Convert HDF Amendments JSON to OSCAL POA&M JSON.
@@ -63,6 +88,14 @@ export async function convertHdfToOscalPoam(input: string): Promise<string> {
   return JSON.stringify(doc, null, 2);
 }
 
+/** Role ids of the metadata roles the exporter defines. */
+const ROLE_PREPARED_BY = 'prepared-by';
+const ROLE_APPROVED_BY = 'approved-by';
+const ROLE_COMPLETED_BY = 'completed-by';
+
+/** Marks the risk-log entry whose start is the override's appliedAt and whose logged-by names its appliedBy. */
+const OVERRIDE_APPLIED_TITLE = 'Override applied';
+
 /**
  * Picks the document title, which OSCAL requires on metadata. The HDF name is
  * schema-required, so the fallbacks only matter for a document that slipped
@@ -76,7 +109,8 @@ function poamTitle(a: HDFAmendments): string {
 
 /**
  * Stands in for an empty requirementId: HDF puts no minLength on it, and OSCAL
- * 1.2.x requires risk and POA&M item titles to be non-empty. Mirrors Go's
+ * 1.2.x requires risk and POA&M item titles to be non-empty. It is display text
+ * only; the requirement id rides in hdf-requirement-id. Mirrors Go's
  * unidentifiedRequirementTitle.
  */
 const UNIDENTIFIED_REQUIREMENT_TITLE = 'Unidentified requirement';
@@ -109,40 +143,55 @@ function toDate(value: string | Date | undefined): Date | undefined {
 }
 
 /**
- * Deduplicates HDF identities into OSCAL metadata parties. A party keeps its
- * UUID across reuse so origin actors and responsible parties reference the same
- * entry. Insertion order is preserved for deterministic output.
+ * Deduplicates HDF identities into OSCAL metadata parties, one per distinct
+ * (identifier, type, description) triple; an absent and an empty description are
+ * distinct. Insertion order is preserved for deterministic output.
  */
 class PartyRegistry {
-  private byId = new Map<string, Party>();
+  private byKey = new Map<string, Party>();
 
   getOrAdd(id: Identity): string {
-    // name is omitted, not emptied, when the source identity carries none:
-    // OSCAL requires only uuid and type on a party, and Property/Party name is
-    // StringDatatype, which an empty string violates. Mirrors Go's omitempty.
-    // Keying on the emitted name keeps two spellings that trim alike one party.
-    const name = oscalString(id.identifier);
-    const existing = this.byId.get(name);
+    const key = JSON.stringify([id.identifier, id.type, id.description ?? null]);
+    const existing = this.byKey.get(key);
     if (existing) return existing.uuid as string;
+    // name is omitted, not emptied, when the source identity carries none:
+    // OSCAL requires only uuid and type on a party. Mirrors Go's omitempty.
+    const name = oscalString(id.identifier);
+    const props: Property[] = [];
+    pushVocabularyProp(props, 'identity-identifier', id.identifier ?? '');
+    pushVocabularyProp(props, 'identity-type', String(id.type));
+    if (id.description === '') {
+      props.push(emptyFieldProp('description'));
+    }
     const party = {
       uuid: crypto.randomUUID(),
       type: 'person',
       ...(name === '' ? {} : { name }),
+      ...(props.length > 0 ? { props } : {}),
+      ...(id.description ? { remarks: id.description } : {}),
     } as unknown as Party;
-    this.byId.set(name, party);
+    this.byKey.set(key, party);
     return party.uuid as string;
   }
 
   list(): Party[] {
-    return [...this.byId.values()];
+    return [...this.byKey.values()];
   }
+}
+
+/** Accumulates the document-wide objects overrides contribute to. */
+interface PoamBuilder {
+  parties: PartyRegistry;
+  observations: Observation[];
+  resources: Resource[];
+  completedBy: boolean;
 }
 
 /**
  * Converts parsed HDFAmendments to an OSCAL PlanOfActionAndMilestones.
  */
 function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesPOAM {
-  const parties = new PartyRegistry();
+  const b: PoamBuilder = { parties: new PartyRegistry(), observations: [], resources: [], completedBy: false };
 
   const roles: Role[] = [];
   const responsibleParties: ResponsibleParty[] = [];
@@ -150,40 +199,32 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
   // The document preparer and the authorizing official become responsible
   // parties with distinct roles — a direct mirror of one another.
   if (amendments.appliedBy) {
-    const uuid = parties.getOrAdd(amendments.appliedBy);
-    roles.push({ id: 'prepared-by', title: 'Prepared By' } as unknown as Role);
-    responsibleParties.push({ 'role-id': 'prepared-by', 'party-uuids': [uuid] } as unknown as ResponsibleParty);
+    const uuid = b.parties.getOrAdd(amendments.appliedBy);
+    roles.push({ id: ROLE_PREPARED_BY, title: 'Prepared By' } as unknown as Role);
+    responsibleParties.push({ 'role-id': ROLE_PREPARED_BY, 'party-uuids': [uuid] } as unknown as ResponsibleParty);
   }
   if (amendments.approvedBy) {
-    const uuid = parties.getOrAdd(amendments.approvedBy);
-    roles.push({ id: 'approved-by', title: 'Approved By' } as unknown as Role);
-    responsibleParties.push({ 'role-id': 'approved-by', 'party-uuids': [uuid] } as unknown as ResponsibleParty);
+    const uuid = b.parties.getOrAdd(amendments.approvedBy);
+    roles.push({ id: ROLE_APPROVED_BY, title: 'Approved By' } as unknown as Role);
+    responsibleParties.push({ 'role-id': ROLE_APPROVED_BY, 'party-uuids': [uuid] } as unknown as ResponsibleParty);
   }
 
   // Register each override's own applier so per-override attribution survives as
   // a distinct metadata party even when it differs from the document default.
   for (const override of amendments.overrides) {
-    parties.getOrAdd(override.appliedBy);
+    b.parties.getOrAdd(override.appliedBy);
   }
 
-  // Build import-ssp
-  let importSSP: ImportSystemSecurityPlan;
-  if (amendments.systemRef && amendments.systemRef !== '') {
-    importSSP = { href: amendments.systemRef } as ImportSystemSecurityPlan;
-  } else {
-    importSSP = { href: '#' } as ImportSystemSecurityPlan;
-  }
-
-  // Convert overrides to poam-items, risks and evidence observations.
   const poamItems: POAMItem[] = [];
   const risks: IdentifiedRisk[] = [];
-  const observations: Observation[] = [];
-
   for (const override of amendments.overrides) {
-    const { item, itemRisks, itemObs } = overrideToPOAMItem(override, parties);
+    const { item, risk } = overrideToPOAMItem(override, b);
     poamItems.push(item);
-    risks.push(...itemRisks);
-    observations.push(...itemObs);
+    risks.push(risk);
+  }
+
+  if (b.completedBy) {
+    roles.push({ id: ROLE_COMPLETED_BY, title: 'Completed By' });
   }
 
   const metadata = {
@@ -196,12 +237,14 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
   if (amendments.description) {
     metadata.remarks = amendments.description;
   }
-  const partyList = parties.list();
+  const partyList = b.parties.list();
   if (partyList.length > 0) {
     metadata.parties = partyList;
   }
   if (roles.length > 0) {
     metadata.roles = roles;
+  }
+  if (responsibleParties.length > 0) {
     metadata['responsible-parties'] = responsibleParties;
   }
   const metaProps = metadataProps(amendments);
@@ -212,7 +255,7 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
   const poam: PlanOfActionAndMilestonesPOAM = {
     uuid: crypto.randomUUID(),
     metadata,
-    'import-ssp': importSSP,
+    'import-ssp': { href: amendments.systemRef ? amendments.systemRef : '#' },
     'poam-items': poamItems,
   };
   // Emitted only when non-empty, matching the Go peer's omitempty: the schema
@@ -222,122 +265,68 @@ function amendmentsToPOAM(amendments: HDFAmendments): PlanOfActionAndMilestonesP
   if (risks.length > 0) {
     poam.risks = risks;
   }
-  if (observations.length > 0) {
-    poam.observations = observations;
+  if (b.observations.length > 0) {
+    poam.observations = b.observations;
   }
-  const resources = externalRefResources(amendments.overrides);
-  if (resources.length > 0) {
-    poam['back-matter'] = { resources } as unknown as BackMatter;
+  if (b.resources.length > 0) {
+    poam['back-matter'] = { resources: b.resources } as unknown as BackMatter;
   }
 
   return poam;
 }
 
 /**
- * Converts a single StandaloneOverride to a POAMItem, its associated Risk, and
- * any evidence observations.
+ * Carries an optional HDF string field: its prop when the value is non-empty,
+ * empty-field when it is present and empty (§1.7.3), and nothing when it is
+ * absent. Mirrors appendOptionalString in Go.
  */
-function overrideToPOAMItem(
-  override: StandaloneOverride,
-  parties: PartyRegistry,
-): { item: POAMItem; itemRisks: IdentifiedRisk[]; itemObs: Observation[] } {
+function pushOptionalString(props: Property[], name: string, field: string, value: string | undefined | null): void {
+  if (value === undefined || value === null) return;
+  if (value === '') {
+    props.push(emptyFieldProp(field));
+    return;
+  }
+  pushVocabularyProp(props, name, value);
+}
+
+/** Renders HDF text as single-line OSCAL display text, falling back when there is none. */
+function displayLine(text: string, fallback: string): string {
+  return normalizePropValue(text) || fallback;
+}
+
+/** The HDF canonical trimmed-UTC form of a date, keeping its millisecond fraction. */
+function timestamp(value: string | Date | undefined): string | undefined {
+  const d = toDate(value);
+  return d ? formatTimestamp(d) : undefined;
+}
+
+/**
+ * Converts a single StandaloneOverride to a POAMItem and its risk, adding its
+ * evidence observations, back-matter resources and parties to the builder.
+ */
+function overrideToPOAMItem(override: StandaloneOverride, b: PoamBuilder): { item: POAMItem; risk: IdentifiedRisk } {
   const riskUUID = crypto.randomUUID();
 
-  // Map HDF status to OSCAL risk status
-  const riskStatus = override.status
-    ? hdfStatusToOscalRiskStatus(String(override.status))
-    : 'open';
+  // Overrides without a status field (impact-only) are treated as open risks.
+  const riskStatus = override.status ? hdfStatusToOscalRiskStatus(String(override.status)) : 'open';
 
-  // Convert requirement ID from NIST notation to OSCAL control ID
-  const controlID = nistTagToControlId(override.requirementId);
+  const applier = b.parties.getOrAdd(override.appliedBy);
+  const remediations = milestoneRemediations(override.milestones ?? [], b);
+  const characterizations = cvssCharacterizations(override.cvss, applier);
+  const riskLog = riskLogFor(override, applier, riskStatus);
+  const deadline = timestamp(override.expiresAt);
 
-  // Build risk props: impacted control, override type (disposition), impact
-  // override, controlled-vocabulary justification, and disambiguating scope.
-  const riskProps: Property[] = [];
-  pushVocabularyProp(riskProps, 'impacted-control-id', controlID);
-  pushVocabularyProp(riskProps, 'override-type', override.type ?? '');
-  if (override.impact && typeof override.impact.value === 'number') {
-    pushVocabularyProp(riskProps, 'impact-override', String(override.impact.value));
+  const itemObs: string[] = [];
+  for (const ev of override.evidence ?? []) {
+    const obs = evidenceObservation(ev, override.appliedAt, b);
+    b.observations.push(obs);
+    itemObs.push(obs.uuid);
   }
-  pushVocabularyProp(riskProps, 'justification', override.justification ?? '');
-  pushVocabularyProp(riskProps, 'baseline-ref', override.baselineRef ?? '');
-  pushVocabularyProp(riskProps, 'component-ref', override.componentRef ?? '');
-
-  // Build remediations from milestones. Each milestone becomes a planned
-  // remediation task whose within-date-range end carries the estimated
-  // completion — the structure the forward converter reads back.
-  const remediations: RiskResponse[] = [];
-  if (override.milestones) {
-    for (const ms of override.milestones) {
-      const msProps: Property[] = [];
-      pushVocabularyProp(msProps, 'milestone-status', ms.status ?? '');
-      let tasks: RiskResponse['tasks'];
-      const d = ms.estimatedCompletion ? toDate(ms.estimatedCompletion) : undefined;
-      if (d) {
-        const eta = formatTimestampSeconds(d);
-        const taskProps = milestoneCompletionProps(ms);
-        tasks = [{
-          uuid: crypto.randomUUID(),
-          type: 'milestone',
-          title: ms.description,
-          timing: { 'within-date-range': { start: eta, end: eta } },
-          ...(taskProps.length > 0 ? { props: taskProps } : {}),
-        } as unknown as NonNullable<RiskResponse['tasks']>[number]];
-      }
-      remediations.push({
-        uuid: crypto.randomUUID(),
-        lifecycle: 'planned',
-        title: ms.description,
-        description: ms.description,
-        props: msProps.length > 0 ? msProps : undefined,
-        tasks,
-      });
-    }
-  }
-
-  // Structured CVSS scoring rides on a risk characterization: its facets carry
-  // the scores/vectors, and its origin actor attributes the scoring to the
-  // override's applier.
-  const characterizations: Characterization[] = [];
-  if (override.cvss) {
-    const actorUUID = parties.getOrAdd(override.appliedBy);
-    characterizations.push({
-      origin: { actors: [{ 'actor-uuid': actorUUID, type: 'party' }] },
-      facets: cvssFacets(override.cvss),
-    } as unknown as Characterization);
-  }
-
-  // Build risk log entry for expiration tracking
-  let riskLog: RiskLog | undefined;
-  const expiresDate = override.expiresAt ? toDate(override.expiresAt) : undefined;
-  if (expiresDate && expiresDate.getTime() > 0) {
-    riskLog = {
-      entries: [
-        {
-          uuid: crypto.randomUUID(),
-          title: 'Scheduled review',
-          description: 'Amendment expiration date',
-          start: formatTimestampSeconds(expiresDate),
-          'status-change': riskStatus,
-        },
-      ],
-    } as unknown as RiskLog;
-  }
-
-  // The override's enforceable expiry maps to the risk deadline — the field the
-  // forward converter reads to reconstruct expiresAt.
-  const deadline = expiresDate && expiresDate.getTime() > 0 ? formatTimestampSeconds(expiresDate) : undefined;
-
-  // Supporting evidence becomes observations, linked back from the poam-item.
-  const itemObs: Observation[] = [];
-  const relatedObs: Array<{ 'observation-uuid': string }> = [];
-  const collected = observationCollected(override);
-  if (override.evidence) {
-    for (const ev of override.evidence) {
-      const obsUUID = crypto.randomUUID();
-      itemObs.push(evidenceObservation(ev, obsUUID, collected));
-      relatedObs.push({ 'observation-uuid': obsUUID });
-    }
+  const links: Link[] = [];
+  for (const ref of (override.externalReferences ?? []) as ExternalReference[]) {
+    const res = referenceResource(ref, b);
+    b.resources.push(res);
+    links.push({ href: `#${res.uuid}`, rel: 'reference' });
   }
 
   // OSCAL lists title, description, statement and status as required on a risk.
@@ -349,31 +338,140 @@ function overrideToPOAMItem(
     title: requirementTitle(override),
     description: rationale,
     statement: rationale,
+    props: riskProps(override),
+    ...(links.length > 0 ? { links } : {}),
     status: riskStatus,
-    deadline,
-    props: riskProps,
-    characterizations: characterizations.length > 0 ? characterizations : undefined,
-    remediations: remediations.length > 0 ? remediations : undefined,
-    'risk-log': riskLog,
+    ...(deadline ? { deadline } : {}),
+    ...(characterizations.length > 0 ? { characterizations } : {}),
+    ...(remediations.length > 0 ? { remediations } : {}),
+    ...(riskLog ? { 'risk-log': riskLog } : {}),
   } as unknown as IdentifiedRisk;
 
   const item = {
     uuid: crypto.randomUUID(),
     title: requirementTitle(override),
     description: override.reason,
+    ...(itemObs.length > 0 ? { 'related-observations': itemObs.map((uuid) => ({ 'observation-uuid': uuid })) } : {}),
     'related-risks': [{ 'risk-uuid': riskUUID }],
-    ...(relatedObs.length > 0 ? { 'related-observations': relatedObs } : {}),
   } as unknown as POAMItem;
 
-  return { item, itemRisks: [risk], itemObs };
+  return { item, risk };
+}
+
+/**
+ * Carries the override's identity, disposition and scope. The FedRAMP
+ * impacted-control-id is added only for a requirement id NIST defines.
+ */
+function riskProps(override: StandaloneOverride): Property[] {
+  const props: Property[] = [];
+  pushVocabularyProp(props, 'hdf-requirement-id', override.requirementId ?? '');
+  if (nistExists(override.requirementId ?? '')) {
+    pushVocabularyProp(props, 'impacted-control-id', nistTagToControlId(override.requirementId));
+  }
+  pushVocabularyProp(props, 'override-type', String(override.type));
+  if (override.status !== undefined) {
+    pushVocabularyProp(props, 'override-status', String(override.status));
+  }
+  if (override.impact && typeof override.impact.value === 'number') {
+    pushVocabularyProp(props, 'impact-override', floatNumber(override.impact.value).token);
+  }
+  if (override.justification !== undefined) {
+    pushVocabularyProp(props, 'justification', String(override.justification));
+  }
+  pushOptionalString(props, 'baseline-ref', 'baselineRef', override.baselineRef);
+  pushOptionalString(props, 'component-ref', 'componentRef', override.componentRef);
+  pushOptionalString(props, 'inherited-from', 'inheritedFrom', override.inheritedFrom);
+  (override.affectedPackages ?? []).forEach((pkg, i) => {
+    props.push(...affectedPackageProps(pkg, `package-${i + 1}`));
+  });
+  return props;
+}
+
+/** Carries one affected package, every prop in its group. */
+function affectedPackageProps(pkg: AffectedPackage, group: string): Property[] {
+  const props: Property[] = [];
+  pushOptionalString(props, 'affected-package-name', 'name', pkg.name);
+  pushOptionalString(props, 'affected-package-version', 'version', pkg.version);
+  pushOptionalString(props, 'affected-package-ecosystem', 'ecosystem', pkg.ecosystem === undefined ? undefined : String(pkg.ecosystem));
+  pushOptionalString(props, 'affected-package-cpe', 'cpe', pkg.cpe);
+  pushOptionalString(props, 'affected-package-purl', 'purl', pkg.purl);
+  pushOptionalString(props, 'affected-package-fixed-in-version', 'fixedInVersion', pkg.fixedInVersion);
+  return props.map((p) => ({ ...p, group }));
+}
+
+/** Records when and by whom the override was applied, and its scheduled review at expiry. */
+function riskLogFor(override: StandaloneOverride, applier: string, riskStatus: string): RiskLog | undefined {
+  // The generated type says Date, but OSCAL JSON carries start as the canonical timestamp string.
+  const entries: Array<Omit<RiskLogEntry, 'start'> & { start: string }> = [];
+  const appliedAt = timestamp(override.appliedAt);
+  if (appliedAt) {
+    entries.push({
+      uuid: crypto.randomUUID(),
+      title: OVERRIDE_APPLIED_TITLE,
+      start: appliedAt,
+      'logged-by': [{ 'party-uuid': applier }],
+    });
+  }
+  const expiresAt = timestamp(override.expiresAt);
+  if (expiresAt) {
+    entries.push({
+      uuid: crypto.randomUUID(),
+      title: 'Scheduled review',
+      description: 'Amendment expiration date',
+      start: expiresAt,
+      'status-change': riskStatus,
+    });
+  }
+  return entries.length > 0 ? ({ entries } as unknown as RiskLog) : undefined;
+}
+
+/**
+ * Renders each milestone as a planned remediation whose title and description are
+ * the milestone's and whose task carries its title, schedule, status and
+ * completion. An untitled milestone is titled "Milestone <n>" and marked
+ * absent-field on both objects (§1.7.4). Mirrors milestoneRemediations in Go.
+ */
+function milestoneRemediations(milestones: Milestone[], b: PoamBuilder): RiskResponse[] {
+  return milestones.map((ms, i) => {
+    const marker = ms.title === undefined ? [absentFieldProp('title')] : [];
+    const title = ms.title ?? `Milestone ${i + 1}`;
+    const rem: RiskResponse = {
+      uuid: crypto.randomUUID(),
+      lifecycle: 'planned',
+      title,
+      description: ms.description,
+      ...(marker.length > 0 ? { props: marker } : {}),
+    };
+    const eta = timestamp(ms.estimatedCompletion);
+    if (eta) {
+      const props: Property[] = [...marker];
+      pushVocabularyProp(props, 'milestone-status', String(ms.status));
+      const completedAt = timestamp(ms.completedAt);
+      if (completedAt) {
+        pushVocabularyProp(props, 'completed-at', completedAt);
+      }
+      const task = {
+        uuid: crypto.randomUUID(),
+        type: 'milestone',
+        title,
+        ...(props.length > 0 ? { props } : {}),
+        timing: { 'within-date-range': { start: eta, end: eta } },
+      } as unknown as Task;
+      if (ms.completedBy) {
+        b.completedBy = true;
+        task['responsible-roles'] = [{ 'role-id': ROLE_COMPLETED_BY, 'party-uuids': [b.parties.getOrAdd(ms.completedBy)] }];
+      }
+      rem.tasks = [task];
+    }
+    return rem;
+  });
 }
 
 /**
  * Returns the most recent override appliedAt for metadata.last-modified.
- * Sourcing it from the input keeps output deterministic and lets the reverse
- * importer recover appliedAt. Falls back to the wall clock only when no override
- * carries a date (appliedAt is schema-required, so real documents always supply
- * one).
+ * Sourcing it from the input keeps output deterministic. Falls back to the wall
+ * clock only when no override carries a date (appliedAt is schema-required, so
+ * real documents always supply one).
  */
 function latestAppliedAt(overrides: StandaloneOverride[]): string {
   let latest: Date | undefined;
@@ -386,161 +484,194 @@ function latestAppliedAt(overrides: StandaloneOverride[]): string {
   return formatTimestampSeconds(latest ?? new Date());
 }
 
-/** Sources metadata.version from the amendments document, defaulting when omitted. */
+/**
+ * Sources metadata.version from the amendments document. OSCAL requires a
+ * version, so an absent or empty one is written as 1.0.0 and marked by a metadata prop.
+ */
 function amendmentsVersion(a: HDFAmendments): string {
   return oscalString(a.version ?? '') || '1.0.0';
 }
 
 /**
- * Carries document identifiers and labels that have no first-class OSCAL home.
- * Labels are emitted in sorted key order for deterministic output.
+ * Carries the document fields that have no first-class OSCAL home and marks the
+ * display fallbacks OSCAL forced. Labels are key/value prop pairs grouped in
+ * sorted key order.
  */
 function metadataProps(a: HDFAmendments): Property[] {
   const props: Property[] = [];
-  pushVocabularyProp(props, 'amendment-id', a.amendmentId ?? '');
-  if (a.labels) {
-    for (const [key, value] of Object.entries(a.labels).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))) {
-      // A label whose value is empty after trimming says nothing the absent label
-      // would not, and Property.value is StringDatatype, which cannot hold it.
-      const prop = labelProp(key, value);
-      if (prop.value !== '') {
-        props.push(prop);
-      }
-    }
+  pushVocabularyProp(props, 'amendments-name', a.name ?? '');
+  pushOptionalString(props, 'amendment-id', 'amendmentId', a.amendmentId);
+  if (a.description === '') {
+    props.push(emptyFieldProp('description'));
   }
+  pushFallbackMarker(props, 'systemRef', a.systemRef);
+  pushFallbackMarker(props, 'version', a.version);
+  Object.keys(a.labels ?? {})
+    .sort(byCodePoint)
+    .forEach((key, i) => {
+      const group = `label-${i + 1}`;
+      props.push(labelProp('label-key', 'key', key, group), labelProp('label-value', 'value', a.labels![key]!, group));
+    });
   return props;
 }
 
 /**
- * Render one amendments label as a property. OSCAL types prop/@name as
- * TokenDatatype while HDF puts no constraint on label keys, so the key is
- * encoded and the source key kept in remarks when it had to change. Every label
- * key in this package's converter fixtures is token-shaped today, so this guards a shape real
- * data has not yet produced — but Kubernetes and OCI label keys are namespaced
- * with '/', which HDF permits and OSCAL rejects.
- *
- * Mirrored by labelProp in the Go converter.
+ * Marks an OSCAL-required field written as a display fallback: absent-field when
+ * the HDF field is absent, empty-field when it is empty.
  */
-function labelProp(key: string, value: string): Property {
-  // TokenDatatype requires at least one character, and an empty label key is
-  // valid HDF — labels constrains its values, not its property names.
-  const name = oscalToken(key) === '' ? '_' : oscalToken(key);
-  const prop: Property = { name, value: oscalString(value), class: 'amendment-label' };
-  // Recorded only when the name was encoded away from a non-empty key: an
-  // unchanged name has nothing to recover, and an empty key carries no text
-  // worth recovering.
-  if (key !== '' && name !== key) {
-    prop.remarks = key;
+function pushFallbackMarker(props: Property[], field: string, value: string | undefined): void {
+  if (value === undefined) {
+    props.push(absentFieldProp(field));
+  } else if (value === '') {
+    props.push(emptyFieldProp(field));
   }
-  return prop;
 }
 
-/** Picks the collection timestamp for evidence observations. */
-function observationCollected(override: StandaloneOverride): string {
-  const d = toDate(override.appliedAt);
-  return formatTimestampSeconds(d ?? new Date());
+/** Renders one half of an amendments label; an empty key or value is carried by empty-field (§1.7.3). */
+function labelProp(name: string, field: string, value: string, group: string): Property {
+  const prop = vocabularyProp(name, value) ?? emptyFieldProp(field);
+  return { ...prop, class: 'amendment-label', group };
+}
+
+/** An RFC 3986 URI with a scheme, whose characters are all ones a URI may contain. */
+const ABSOLUTE_URI = /^[A-Za-z][A-Za-z0-9+.-]*:[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]*$/;
+
+/** Whether evidence data is carried as the observation's relevant-evidence href rather than in a back-matter resource. */
+function evidenceDataIsHref(ev: Evidence): boolean {
+  switch (String(ev.type)) {
+    case 'url':
+      return true;
+    case 'screenshot':
+    case 'file':
+      return ABSOLUTE_URI.test(ev.data);
+    default:
+      return false;
+  }
 }
 
 /** Renders a single HDF Evidence item as an OSCAL observation. */
-function evidenceObservation(ev: Evidence, uuid: string, defaultCollected: string): Observation {
-  const captured = ev.capturedAt ? toDate(ev.capturedAt) : undefined;
-  const collected = captured ? formatTimestampSeconds(captured) : defaultCollected;
-
-  const desc = ev.description && ev.description !== '' ? ev.description : 'supporting evidence';
-
-  const re = { description: desc } as unknown as RelevantEvidence;
-  if (ev.type === 'url') {
-    re.href = ev.data;
-  } else if (ev.data) {
-    re.remarks = ev.data;
+function evidenceObservation(ev: Evidence, appliedAt: string | Date, b: PoamBuilder): Observation {
+  const props: Property[] = [];
+  let display = 'Supporting evidence';
+  let description = display;
+  if (ev.description === undefined) {
+    props.push(absentFieldProp('description'));
+  } else {
+    description = ev.description;
+    display = displayLine(ev.description, display);
+  }
+  pushOptionalString(props, 'mime-type', 'mimeType', ev.mimeType);
+  pushOptionalString(props, 'evidence-encoding', 'encoding', ev.encoding);
+  if (typeof ev.size === 'number') {
+    pushVocabularyProp(props, 'evidence-size', floatNumber(ev.size).token);
+  }
+  let collected = timestamp(ev.capturedAt);
+  if (collected === undefined) {
+    collected = timestamp(appliedAt) ?? formatTimestamp(new Date());
+    props.push(absentFieldProp('capturedAt'));
   }
 
-  const props: Property[] = [];
-  pushVocabularyProp(props, 'mime-type', ev.mimeType ?? '');
-  pushVocabularyProp(props, 'captured-by', ev.capturedBy?.identifier ?? '');
+  const re: RelevantEvidence = { description: display };
+  let links: Link[] | undefined;
+  if (evidenceDataIsHref(ev)) {
+    re.href = ev.data;
+  } else {
+    const res = {
+      uuid: crypto.randomUUID(),
+      base64: {
+        ...(ev.mimeType ? { 'media-type': normalizePropValue(ev.mimeType) } : {}),
+        value: ev.encoding === 'base64' ? ev.data : encodeBase64Utf8(ev.data),
+      },
+    } as unknown as Resource;
+    b.resources.push(res);
+    links = [{ href: `#${res.uuid}`, rel: 'evidence' }];
+  }
 
   return {
-    uuid,
-    description: desc,
+    uuid: crypto.randomUUID(),
+    description,
+    ...(props.length > 0 ? { props } : {}),
+    ...(links ? { links } : {}),
     methods: ['EXAMINE'],
     types: [String(ev.type)],
+    ...(ev.capturedBy ? { origins: [{ actors: [{ type: 'party', 'actor-uuid': b.parties.getOrAdd(ev.capturedBy) }] }] } : {}),
     collected,
-    ...(props.length > 0 ? { props } : {}),
     'relevant-evidence': [re],
   } as unknown as Observation;
 }
 
 /**
- * Decomposes an HDF Cvss record into OSCAL risk facets. A version facet is
- * always present so the characterization carries at least one facet.
+ * Carries an HDF Cvss record as one risk characterization: a facet per present
+ * field in the CVSS system for its version, attributed to the override's applier.
  */
-function cvssFacets(c: Cvss): Facet[] {
+function cvssCharacterizations(c: Cvss | undefined, applier: string): Characterization[] {
+  if (!c) return [];
   const system = `http://www.first.org/cvss/v${String(c.version)}`;
-  const facets: Facet[] = [{ name: 'cvss_version', system, value: String(c.version) }];
-  const add = (name: string, value: string | undefined | null): void => {
-    if (value !== undefined && value !== null && value !== '') {
-      facets.push({ name, system, value });
-    }
-  };
-  add('base_score', num(c.baseScore));
-  add('base_severity', c.baseSeverity ? String(c.baseSeverity) : undefined);
-  add('base_vector', c.baseVector ?? undefined);
-  add('threat_score', num(c.threatScore));
-  add('threat_vector', c.threatVector ?? undefined);
-  add('environmental_score', num(c.environmentalScore));
-  add('environmental_vector', c.environmentalVector ?? undefined);
-  add('computed_score', num(c.computedScore));
-  add('computed_severity', c.computedSeverity ? String(c.computedSeverity) : undefined);
-  add('supplemental_vector', c.supplementalVector ?? undefined);
-  add('source', c.source ?? undefined);
-  return facets;
-}
-
-function num(n: number | undefined | null): string | undefined {
-  return typeof n === 'number' ? String(n) : undefined;
-}
-
-/**
- * Collects every override's external references into back-matter resources —
- * the OSCAL home for advisories, STIX, and CTI feeds.
- */
-function externalRefResources(overrides: StandaloneOverride[]): Resource[] {
-  const resources: Resource[] = [];
-  for (const o of overrides) {
-    if (!o.externalReferences) continue;
-    for (const ref of o.externalReferences as ExternalReference[]) {
-      const res = {
-        uuid: crypto.randomUUID(),
-        title: ref.sourceName,
-      } as unknown as Resource;
-      if (ref.description && ref.description !== '') {
-        res.description = ref.description;
-      }
-      if (ref.href && ref.href !== '') {
-        res.rlinks = [{ href: ref.href }] as unknown as Resource['rlinks'];
-      }
-      const props: Property[] = [];
-      pushVocabularyProp(props, 'source-name', ref.sourceName ?? '');
-      pushVocabularyProp(props, 'external-id', ref.externalId ?? '');
-      if (props.length > 0) {
-        res.props = props;
-      }
-      resources.push(res);
-    }
-  }
-  return resources;
-}
-
-/**
- * Carries the actual completion attribution that the estimated-completion
- * timing cannot express.
- */
-function milestoneCompletionProps(ms: Milestone): Property[] {
   const props: Property[] = [];
-  const completedAt = ms.completedAt ? toDate(ms.completedAt) : undefined;
-  if (completedAt) {
-    pushVocabularyProp(props, 'completed-at', formatTimestampSeconds(completedAt));
+  const facets: Facet[] = [];
+  const add = (name: string, field: string, value: string | undefined | null): void => {
+    if (value === undefined || value === null) return;
+    if (value === '') {
+      props.push(emptyFieldProp(field));
+      return;
+    }
+    const facet: Facet = { name, system, value: normalizePropValue(value) };
+    if (facet.value !== value) facet.remarks = value;
+    facets.push(facet);
+  };
+  const score = (name: string, field: string, value: number | undefined | null): void => {
+    if (typeof value === 'number') add(name, field, floatNumber(value).token);
+  };
+  add('cvss_version', 'version', String(c.version));
+  score('base_score', 'baseScore', c.baseScore);
+  add('base_severity', 'baseSeverity', c.baseSeverity === undefined ? undefined : String(c.baseSeverity));
+  add('base_vector', 'baseVector', c.baseVector);
+  score('threat_score', 'threatScore', c.threatScore);
+  add('threat_vector', 'threatVector', c.threatVector);
+  score('environmental_score', 'environmentalScore', c.environmentalScore);
+  add('environmental_vector', 'environmentalVector', c.environmentalVector);
+  score('computed_score', 'computedScore', c.computedScore);
+  add('computed_severity', 'computedSeverity', c.computedSeverity === undefined ? undefined : String(c.computedSeverity));
+  add('supplemental_vector', 'supplementalVector', c.supplementalVector);
+  add('source', 'source', c.source);
+  return [
+    {
+      ...(props.length > 0 ? { props } : {}),
+      origin: { actors: [{ type: 'party', 'actor-uuid': applier }] },
+      facets,
+    } as unknown as Characterization,
+  ];
+}
+
+/** Carries one external reference as a back-matter resource. */
+function referenceResource(ref: ExternalReference, b: PoamBuilder): Resource {
+  const props: Property[] = [];
+  pushVocabularyProp(props, 'source-name', ref.sourceName ?? '');
+  pushOptionalString(props, 'external-id', 'externalId', ref.externalId);
+  if (ref.href === '') props.push(emptyFieldProp('href'));
+  if (ref.description === '') props.push(emptyFieldProp('description'));
+  pushOptionalString(props, 'reference-rel', 'rel', ref.rel);
+  pushOptionalString(props, 'reference-media-type', 'mediaType', ref.mediaType);
+  if (ref.checksum) {
+    pushOptionalString(props, 'checksum-algorithm', 'checksum.algorithm', String(ref.checksum.algorithm));
+    pushOptionalString(props, 'checksum-value', 'checksum.value', ref.checksum.value);
   }
-  pushVocabularyProp(props, 'completed-by', ms.completedBy?.identifier ?? '');
-  return props;
+  if (ref.addedBy) {
+    pushVocabularyProp(props, 'added-by', b.parties.getOrAdd(ref.addedBy));
+  }
+  const addedAt = timestamp(ref.addedAt);
+  if (addedAt) {
+    pushVocabularyProp(props, 'added-at', addedAt);
+  }
+  pushOptionalString(props, 'reference-kind', 'kind', ref.kind);
+
+  return {
+    uuid: crypto.randomUUID(),
+    title: ref.sourceName,
+    ...(ref.description ? { description: ref.description } : {}),
+    ...(props.length > 0 ? { props } : {}),
+    ...(ref.href ? { rlinks: [{ href: ref.href }] } : {}),
+    // Compact JSON with sorted object keys, byte-identical to the Go peer.
+    ...(ref.document ? { base64: { 'media-type': 'application/json', value: encodeBase64Utf8(stringifyLine(canonicalize(ref.document))) } } : {}),
+  } as unknown as Resource;
 }

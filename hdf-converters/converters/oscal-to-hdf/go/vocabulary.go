@@ -226,6 +226,42 @@ func FindVocabularyProps(props []Property, name string) []PropMatch {
 	return matches
 }
 
+// FindGroupedVocabularyProp returns the first prop in props that is the named
+// row's prop and carries group; an empty group matches only ungrouped props.
+func FindGroupedVocabularyProp(props []Property, name, group string) (PropMatch, bool) {
+	for _, m := range FindVocabularyProps(props, name) {
+		if props[m.Index].Group == group {
+			return m, true
+		}
+	}
+	return PropMatch{}, false
+}
+
+// HasFieldMarker reports whether props carry the marker prop (empty-field or
+// absent-field) naming field within group (§1.7.3, §1.7.4).
+func HasFieldMarker(props []Property, marker, field, group string) bool {
+	for _, m := range FindVocabularyProps(props, marker) {
+		if m.Value == field && props[m.Index].Group == group {
+			return true
+		}
+	}
+	return false
+}
+
+// VocabularyString reads an optional HDF string field: the named row's prop value
+// when present, an empty string when empty-field names field (§1.7.3), and nil
+// when the field is absent.
+func VocabularyString(props []Property, name, field, group string) *string {
+	if m, ok := FindGroupedVocabularyProp(props, name, group); ok {
+		return &m.Value
+	}
+	if HasFieldMarker(props, "empty-field", field, group) {
+		empty := ""
+		return &empty
+	}
+	return nil
+}
+
 // matchVocabularyProp matches a prop to a row by name and namespace. An absent ns
 // is NIST's default namespace, except that for a legacy row it is also accepted
 // as the row's own prop.

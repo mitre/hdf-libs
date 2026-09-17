@@ -82,7 +82,9 @@ type Party struct {
 	Type string `json:"type"`
 	// Name is omitted when the source identity carries none: OSCAL requires only
 	// uuid and type on a party, so omitting says exactly what the source did.
-	Name string `json:"name,omitempty"`
+	Name    string     `json:"name,omitempty"`
+	Props   []Property `json:"props,omitempty"`
+	Remarks string     `json:"remarks,omitempty"`
 }
 
 // ResponsibleParty maps a role to party UUIDs.
@@ -97,6 +99,7 @@ type Property struct {
 	Value string `json:"value"`
 	Ns    string `json:"ns,omitempty"`
 	Class string `json:"class,omitempty"`
+	Group string `json:"group,omitempty"`
 	UUID  string `json:"uuid,omitempty"`
 	// Remarks carries the source identifier when Name had to be encoded to a
 	// TokenDatatype, so the mapping back to the HDF value is not lost.
@@ -563,6 +566,8 @@ type Task struct {
 	Props       []Property `json:"props,omitempty"`
 	Timing      *Timing    `json:"timing,omitempty"`
 	Tasks       []Task     `json:"tasks,omitempty"` // nested sub-tasks
+	// ResponsibleRoles names the parties responsible for the task.
+	ResponsibleRoles []ResponsibleRole `json:"responsible-roles,omitempty"`
 }
 
 // Timing defines task scheduling.
@@ -656,8 +661,10 @@ type Observation struct {
 	Title            string             `json:"title,omitempty"`
 	Description      string             `json:"description"`
 	Props            []Property         `json:"props,omitempty"`
+	Links            []Link             `json:"links,omitempty"`
 	Methods          []string           `json:"methods,omitempty"`
 	Types            []string           `json:"types,omitempty"`
+	Origins          []Origin           `json:"origins,omitempty"`
 	Collected        string             `json:"collected"`
 	Expires          string             `json:"expires,omitempty"`
 	Remarks          string             `json:"remarks,omitempty"`
@@ -712,6 +719,7 @@ type Risk struct {
 	Description       string             `json:"description"`
 	Statement         string             `json:"statement,omitempty"`
 	Props             []Property         `json:"props,omitempty"`
+	Links             []Link             `json:"links,omitempty"`
 	Status            string             `json:"status"`
 	Deadline          string             `json:"deadline,omitempty"`
 	Characterizations []Characterization `json:"characterizations,omitempty"`
@@ -721,8 +729,9 @@ type Risk struct {
 
 // Characterization provides risk characterization details.
 type Characterization struct {
-	Origin *Origin `json:"origin,omitempty"`
-	Facets []Facet `json:"facets,omitempty"`
+	Props  []Property `json:"props,omitempty"`
+	Origin *Origin    `json:"origin,omitempty"`
+	Facets []Facet    `json:"facets,omitempty"`
 }
 
 // Origin identifies who made the characterization.
@@ -738,10 +747,11 @@ type Actor struct {
 
 // Facet is a risk facet (e.g., likelihood, impact).
 type Facet struct {
-	Name   string     `json:"name"`
-	System string     `json:"system"`
-	Value  string     `json:"value"`
-	Props  []Property `json:"props,omitempty"`
+	Name    string     `json:"name"`
+	System  string     `json:"system"`
+	Value   string     `json:"value"`
+	Props   []Property `json:"props,omitempty"`
+	Remarks string     `json:"remarks,omitempty"`
 }
 
 // Remediation describes a risk mitigation plan.
@@ -767,6 +777,12 @@ type RiskLogEntry struct {
 	Start        string     `json:"start"`
 	StatusChange string     `json:"status-change,omitempty"`
 	Props        []Property `json:"props,omitempty"`
+	LoggedBy     []LoggedBy `json:"logged-by,omitempty"`
+}
+
+// LoggedBy names the party that made a risk log entry.
+type LoggedBy struct {
+	PartyUUID string `json:"party-uuid"`
 }
 
 // POAMItem tracks a specific remediation item.

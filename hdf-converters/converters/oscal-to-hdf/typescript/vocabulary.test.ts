@@ -13,14 +13,17 @@ import {
   absentFieldProp,
   consumedVocabularyProp,
   emptyFieldProp,
+  findGroupedVocabularyProp,
   findVocabularyProp,
   findVocabularyProps,
+  hasFieldMarker,
   normalizePropValue,
   pushVocabularyProp,
   vocabularyDefaultNamespace,
   vocabularyNamespace,
   vocabularyProp,
   vocabularyRows,
+  vocabularyString,
   validateVocabularyTable,
   type VocabularyRow,
 } from './vocabulary.js';
@@ -62,12 +65,13 @@ const ALL_SAR_PROPS = `{
 /** Exercises every prop the POA&M exporter emits from the vocabulary. Mirrors the Go peer's input. */
 const ALL_POAM_PROPS = `{
   "name": "a", "amendmentId": "8f2b7c1e-4d3a-4b6e-9a1f-2c3d4e5f6a7b",
-  "labels": { "environment": "production" },
+  "labels": { "environment": "production", "ticket": "" },
   "overrides": [{
     "requirementId": "AC-2", "type": "waiver", "status": "notApplicable",
     "reason": "accepted", "justification": "component_not_present",
     "impact": { "value": 0.3 },
     "baselineRef": "rhel-9-stig", "componentRef": "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+    "inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     "appliedAt": "2020-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
     "appliedBy": { "identifier": "analyst", "type": "username" },
     "milestones": [{
@@ -77,10 +81,19 @@ const ALL_POAM_PROPS = `{
       "completedBy": { "identifier": "engineer", "type": "username" }
     }],
     "evidence": [{
-      "type": "file", "data": "log", "mimeType": "text/plain",
+      "type": "file", "data": "bG9n", "mimeType": "text/plain", "encoding": "base64", "size": 3,
       "capturedBy": { "identifier": "scanner", "type": "username" }
     }],
-    "externalReferences": [{ "sourceName": "NVD", "externalId": "CVE-2021-44228", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228" }]
+    "externalReferences": [{
+      "sourceName": "NVD", "externalId": "CVE-2021-44228", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+      "rel": "advisory", "mediaType": "text/html", "kind": "advisory", "addedAt": "2020-01-01T00:00:00Z",
+      "addedBy": { "identifier": "analyst", "type": "username" },
+      "checksum": { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+    }],
+    "affectedPackages": [{
+      "name": "openssl", "version": "1.1.1k-7.el8_4", "ecosystem": "rpm", "fixedInVersion": "1.1.1l",
+      "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*", "purl": "pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64"
+    }]
   }]
 }`;
 
@@ -166,16 +179,12 @@ function canonicalNs(ns: string): string {
   return ns === '' ? vocabularyDefaultNamespace() : ns;
 }
 
-/** Marks the POA&M label props whose names come from HDF data. */
-const AMENDMENT_LABEL_CLASS = 'amendment-label';
-
 async function emittedPropNames(
   inputs: ExporterInput[],
   convert: (input: string) => Promise<string>,
-): Promise<{ seen: Set<string>; labels: number }> {
+): Promise<Set<string>> {
   const rows = new Map(vocabularyRows().map((r) => [r.name, r] as const));
   const seen = new Set<string>();
-  let labels = 0;
   let converted = 0;
   for (const exporterInput of inputs) {
     const { label, input } = exporterInput;
@@ -191,11 +200,6 @@ async function emittedPropNames(
     const props: EmittedProp[] = [];
     collectProps(JSON.parse(out), '$', props);
     for (const p of props) {
-      // ADR-0014 §1.5 excludes data-named label props; §4.6 replaces them.
-      if (p.class === AMENDMENT_LABEL_CLASS) {
-        labels++;
-        continue;
-      }
       const row = rows.get(p.name);
       expect(row, `${label}: ${p.path} emits prop "${p.name}", which is not a vocabulary row`).toBeDefined();
       if (!row) continue;
@@ -207,7 +211,7 @@ async function emittedPropNames(
     }
   }
   expect(converted, 'no input converted — the run would prove nothing').toBeGreaterThan(0);
-  return { seen, labels };
+  return seen;
 }
 
 describe('vocabulary: emitted props are rows', () => {
@@ -228,7 +232,7 @@ describe('vocabulary: emitted props are rows', () => {
   });
 
   it('hdf-to-oscal-sar', async () => {
-    const { seen } = await emittedPropNames(sarInputs(), convertHdfToOscalSar);
+    const seen = await emittedPropNames(sarInputs(), convertHdfToOscalSar);
     for (const name of [
       'hdf-requirement-id', 'baseline-version', 'nist', 'cci', 'control-type', 'verification-method',
       'applicability', 'cwe', 'epss-score', 'epss-percentile', 'kev', 'kev-due-date', 'cvss-base-score',
@@ -239,14 +243,21 @@ describe('vocabulary: emitted props are rows', () => {
   });
 
   it('hdf-to-oscal-poam', async () => {
-    const { seen, labels } = await emittedPropNames(poamInputs(), convertHdfToOscalPoam);
-    expect(labels, 'no input emitted an amendment label prop, so the label exclusion is not exercised').toBeGreaterThan(0);
+    const seen = await emittedPropNames(poamInputs(), convertHdfToOscalPoam);
     for (const name of [
-      'amendment-id', 'override-type', 'impact-override', 'justification', 'baseline-ref', 'component-ref',
-      'milestone-status', 'completed-at', 'completed-by', 'mime-type', 'captured-by', 'source-name',
-      'external-id', 'impacted-control-id',
+      'hdf-requirement-id', 'amendments-name', 'amendment-id', 'label-key', 'label-value', 'identity-identifier',
+      'identity-type', 'override-type', 'override-status', 'impact-override', 'justification', 'baseline-ref',
+      'component-ref', 'inherited-from', 'affected-package-name', 'affected-package-version',
+      'affected-package-ecosystem', 'affected-package-cpe', 'affected-package-purl',
+      'affected-package-fixed-in-version', 'milestone-status', 'completed-at', 'mime-type', 'evidence-encoding',
+      'evidence-size', 'source-name', 'external-id', 'reference-rel', 'reference-media-type',
+      'checksum-algorithm', 'checksum-value', 'added-by', 'added-at', 'reference-kind', 'impacted-control-id',
+      'empty-field', 'absent-field',
     ]) {
       expect(seen.has(name), `no input exercised the POA&M prop "${name}", so the guard does not cover it`).toBe(true);
+    }
+    for (const name of ['completed-by', 'captured-by']) {
+      expect(seen.has(name), `the pre-ADR prop "${name}" is no longer emitted (ADR-0014 §4.6)`).toBe(false);
     }
   });
 });
@@ -471,6 +482,42 @@ describe('vocabulary: read helpers', () => {
   });
 });
 
+describe('vocabulary: grouped read helpers', () => {
+  const hdfNs = vocabularyNamespace();
+  const props: Property[] = [
+    { name: 'affected-package-name', ns: hdfNs, value: 'openssl', group: 'package-1' },
+    { name: 'empty-field', ns: hdfNs, value: 'version', group: 'package-1' },
+    { name: 'affected-package-name', ns: hdfNs, value: 'lodash', group: 'package-2' },
+    { name: 'baseline-ref', ns: hdfNs, value: 'grouped', group: 'package-1' },
+    { name: 'baseline-ref', ns: hdfNs, value: 'RHEL9-STIG' },
+    { name: 'empty-field', ns: hdfNs, value: 'componentRef' },
+    { name: 'absent-field', ns: hdfNs, value: 'systemRef' },
+    { name: 'empty-field', value: 'inheritedFrom' },
+  ];
+  it('a grouped read matches only its group', () => {
+    expect(findGroupedVocabularyProp(props, 'affected-package-name', 'package-2')).toStrictEqual({ index: 2, value: 'lodash', legacy: false });
+    expect(findGroupedVocabularyProp(props, 'affected-package-name', 'package-3')).toBeUndefined();
+  });
+  it('an empty group matches only ungrouped props', () => {
+    expect(findGroupedVocabularyProp(props, 'baseline-ref', '')?.value).toBe('RHEL9-STIG');
+  });
+  it('a field marker matches marker, field and group', () => {
+    expect(hasFieldMarker(props, 'empty-field', 'version', 'package-1')).toBe(true);
+    expect(hasFieldMarker(props, 'empty-field', 'version', '')).toBe(false);
+    expect(hasFieldMarker(props, 'absent-field', 'systemRef', '')).toBe(true);
+    expect(hasFieldMarker(props, 'empty-field', 'systemRef', '')).toBe(false);
+    expect(hasFieldMarker(props, 'empty-field', 'inheritedFrom', ''), 'a marker with no ns is foreign').toBe(false);
+    expect(hasFieldMarker(undefined, 'empty-field', 'inheritedFrom', '')).toBe(false);
+  });
+  it('an optional string is the value, empty, or absent', () => {
+    expect(vocabularyString(props, 'baseline-ref', 'baselineRef', '')).toBe('RHEL9-STIG');
+    expect(vocabularyString(props, 'component-ref', 'componentRef', '')).toBe('');
+    expect(vocabularyString(props, 'inherited-from', 'inheritedFrom', '')).toBeUndefined();
+    expect(vocabularyString(props, 'affected-package-version', 'version', 'package-1')).toBe('');
+    expect(vocabularyString(props, 'affected-package-version', 'version', 'package-2')).toBeUndefined();
+  });
+});
+
 describe('vocabulary: consumed props', () => {
   const hdfNs = vocabularyNamespace();
   it.each([
@@ -495,7 +542,7 @@ interface PropRead {
   lookup: boolean;
 }
 
-const PROP_LOOKUP = /(\bfunction\s+)?\b(?:extractPropValue|extractAllPropValues|findVocabularyProps?)\(\s*[^,()]+,\s*([^,)]+)/g;
+const PROP_LOOKUP = /(\bfunction\s+)?\b(?:extractPropValue|extractAllPropValues|findVocabularyProps?|findGroupedVocabularyProp|vocabularyString|hasFieldMarker)\(\s*[^,()]+,\s*([^,)]+)/g;
 const NAME_COMPARISON = /\.name\s*(?:===|!==)\s*'([^']*)'/g;
 const NON_PROP_COMPARISONS = new Set(['impact', 'risk', 'likelihood']); // risk characterization facet names, not props
 
@@ -561,7 +608,11 @@ describe('vocabulary: importer prop reads', () => {
       }
     }
     expect(problems).toEqual([]);
-    for (const name of ['CORE', 'label', 'sort-id', 'version', 'assessment-type', 'POAM-ID', 'impacted-control-id', 'description-label']) {
+    for (const name of [
+      'CORE', 'label', 'sort-id', 'version', 'assessment-type', 'POAM-ID', 'impacted-control-id', 'description-label',
+      'override-type', 'hdf-requirement-id', 'amendments-name', 'label-key', 'identity-type', 'empty-field',
+      'absent-field', 'affected-package-purl', 'reference-kind', 'evidence-size',
+    ]) {
       expect(read.has(name), `the sweep no longer finds the importer's read of "${name}"; it may have stopped matching`).toBe(true);
     }
   });

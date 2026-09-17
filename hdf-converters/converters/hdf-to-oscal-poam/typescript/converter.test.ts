@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { amendments } from '@mitre/hdf-fixtures';
 import { convertHdfToOscalPoam } from './converter.js';
+import { convertOscalPoamToHdf } from '../../oscal-to-hdf/typescript/converter-poam.js';
 import { hdfStatusToOscalRiskStatus as hdfStatusToOSCAL, nistTagToControlId as nistTagToControlID } from '../../oscal-to-hdf/typescript/shared.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
 import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
@@ -177,12 +178,13 @@ describe('convertHdfToOscalPoam', () => {
     expect(poam['poam-items'][0].title).toBe('AC-1');
     expect(poam['poam-items'][1].title).toBe('SI-7 (1)');
 
-    // Verify risk props contain impacted-control-id in OSCAL format (first prop)
-    expect(poam.risks[0].props[0].name).toBe('impacted-control-id');
-    expect(poam.risks[0].props[0].value).toBe('ac-1');
-
-    expect(poam.risks[1].props[0].name).toBe('impacted-control-id');
-    expect(poam.risks[1].props[0].value).toBe('si-7.1');
+    // Each risk carries the exact requirement id and the FedRAMP impacted control in OSCAL form.
+    const riskProp = (i: number, name: string) =>
+      (poam.risks[i].props as Array<{ name: string; value: string }>).find((p) => p.name === name)?.value;
+    expect(riskProp(0, 'hdf-requirement-id')).toBe('AC-1');
+    expect(riskProp(0, 'impacted-control-id')).toBe('ac-1');
+    expect(riskProp(1, 'hdf-requirement-id')).toBe('SI-7 (1)');
+    expect(riskProp(1, 'impacted-control-id')).toBe('si-7.1');
   });
 
   it('should carry milestone deadline/status and override type/impact', async () => {
@@ -203,13 +205,16 @@ describe('convertHdfToOscalPoam', () => {
     const riskProp = (n: string): string | undefined =>
       risk.props.find((p: { name: string; value: string }) => p.name === n)?.value;
     expect(riskProp('override-type')).toBe('riskAdjustment');
+    expect(riskProp('override-status')).toBe('failed');
     expect(riskProp('impact-override')).toBe('0.3');
     const rem = risk.remediations[0];
-    const remProp = (n: string): string | undefined =>
-      rem.props.find((p: { name: string; value: string }) => p.name === n)?.value;
+    expect(rem.description).toBe('apply patch');
+    expect(rem.props?.find((p: { name: string }) => p.name === 'milestone-status'), 'the milestone status rides on the task').toBeUndefined();
+    const taskProp = (n: string): string | undefined =>
+      rem.tasks[0].props.find((p: { name: string; value: string }) => p.name === n)?.value;
     // The estimated completion rides on the remediation task's within-date-range end.
     expect(rem.tasks[0].timing['within-date-range'].end).toContain('2099-06-30');
-    expect(remProp('milestone-status')).toBe('pending');
+    expect(taskProp('milestone-status')).toBe('pending');
   });
 
   it('should convert milestones to remediations', async () => {
@@ -226,11 +231,13 @@ describe('convertHdfToOscalPoam', () => {
           expiresAt: '2027-01-01T00:00:00Z',
           milestones: [
             {
+              title: 'Deploy MFA',
               description: 'Deploy MFA solution',
               estimatedCompletion: '2026-06-01T00:00:00Z',
               status: 'pending',
             },
             {
+              title: 'Verify MFA',
               description: 'Verify MFA deployment',
               estimatedCompletion: '2026-09-01T00:00:00Z',
               status: 'inProgress',
@@ -248,8 +255,8 @@ describe('convertHdfToOscalPoam', () => {
     expect(risk.remediations).toHaveLength(2);
 
     expect(risk.remediations[0].lifecycle).toBe('planned');
-    expect(risk.remediations[0].title).toBe('Deploy MFA solution');
-    expect(risk.remediations[1].title).toBe('Verify MFA deployment');
+    expect(risk.remediations[0].title).toBe('Deploy MFA');
+    expect(risk.remediations[1].title).toBe('Verify MFA');
   });
 
   it('should include appliedBy in metadata', async () => {
@@ -303,9 +310,12 @@ describe('convertHdfToOscalPoam', () => {
 
     const risk = doc['plan-of-action-and-milestones'].risks[0];
     expect(risk['risk-log']).toBeDefined();
-    expect(risk['risk-log'].entries).toHaveLength(1);
-    // Whole-second RFC3339, byte-identical to the Go converter's output.
-    expect(risk['risk-log'].entries[0].start).toBe('2027-03-15T12:00:00Z');
+    expect(risk['risk-log'].entries).toHaveLength(2);
+    expect(risk['risk-log'].entries[0].title).toBe('Override applied');
+    expect(risk['risk-log'].entries[1].title).toBe('Scheduled review');
+    // HDF canonical trimmed-UTC form, byte-identical to the Go converter's output.
+    expect(risk['risk-log'].entries[1].start).toBe('2027-03-15T12:00:00Z');
+    expect(risk.deadline).toBe('2027-03-15T12:00:00Z');
   });
 
   it('should generate unique UUIDs', async () => {
@@ -511,7 +521,7 @@ describe('hdf-to-oscal-poam export fields', () => {
     const amendments = {
       name: 'minor-test',
       amendmentId: 'AMD-42',
-      labels: { zone: 'prod', env: 'gov' },
+      labels: { zone: 'prod', env: 'gov', 'app.kubernetes.io/name': 'portal' },
       overrides: [{
         type: 'poam', requirementId: 'AC-1', reason: 'r', status: 'failed',
         baselineRef: 'nist-800-53r5', componentRef: 'comp-uuid-1',
@@ -522,13 +532,57 @@ describe('hdf-to-oscal-poam export fields', () => {
     };
     const poam = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'];
     expect(propVal(poam.metadata.props, 'amendment-id')).toBe('AMD-42');
-    expect(propVal(poam.metadata.props, 'env')).toBe('gov');
+    // Labels are key/value pairs grouped in sorted key order, with keys kept verbatim.
+    const labels = (poam.metadata.props as Array<{ name: string; value: string; class?: string; group?: string }>)
+      .filter((p) => p.class === 'amendment-label')
+      .map((p) => [p.name, p.value, p.group]);
+    expect(labels).toEqual([
+      ['label-key', 'app.kubernetes.io/name', 'label-1'],
+      ['label-value', 'portal', 'label-1'],
+      ['label-key', 'env', 'label-2'],
+      ['label-value', 'gov', 'label-2'],
+      ['label-key', 'zone', 'label-3'],
+      ['label-value', 'prod', 'label-3'],
+    ]);
     const risk = poam.risks[0];
     expect(propVal(risk.props, 'baseline-ref')).toBe('nist-800-53r5');
     expect(propVal(risk.props, 'component-ref')).toBe('comp-uuid-1');
     const task = risk.remediations[0].tasks[0];
-    expect(propVal(task.props, 'completed-by')).toBe('ops');
+    expect(propVal(task.props, 'completed-by'), 'completedBy rides on a responsible role, not a prop').toBeUndefined();
+    expect(task['responsible-roles']).toHaveLength(1);
+    expect(task['responsible-roles'][0]['role-id']).toBe('completed-by');
+    const completer = poam.metadata.parties.find((p: { uuid: string }) => p.uuid === task['responsible-roles'][0]['party-uuids'][0]);
+    expect(completer.name).toBe('ops');
+    expect(poam.metadata.roles).toContainEqual({ id: 'completed-by', title: 'Completed By' });
     expect(propVal(task.props, 'completed-at')).toBe('2023-01-01T00:00:00Z');
+  });
+
+  // Mirrors the Go TestExport_MilestoneTitles.
+  it('carries a milestone title exactly and marks an untitled milestone', async () => {
+    const amendments = {
+      name: 'titles',
+      overrides: [{
+        type: 'poam', requirementId: 'AC-1', reason: 'r',
+        appliedBy: { type: 'simple', identifier: 'admin' },
+        appliedAt: '2026-01-15T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        milestones: [
+          { title: 'Deploy OpenSSH 9.8p1', description: 'Upgrade OpenSSH on every host.', estimatedCompletion: '2099-12-31T00:00:00Z', status: 'pending' },
+          { description: 'Isolate the affected host\non a restricted VLAN.', estimatedCompletion: '2099-12-31T00:00:00Z', status: 'pending' },
+        ],
+      }],
+    };
+    type Titled = { title: string; props?: Array<{ name: string; value: string; ns?: string }> };
+    const carried = (o: Titled) => ({
+      title: o.title,
+      marker: (o.props ?? []).some((p) => p.name === 'absent-field' && p.value === 'title' && p.ns === 'https://mitre.github.io/hdf-libs/ns/oscal'),
+    });
+    const rems = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(amendments)))['plan-of-action-and-milestones'].risks[0].remediations;
+    expect(rems).toHaveLength(2);
+    [{ title: 'Deploy OpenSSH 9.8p1', marker: false }, { title: 'Milestone 2', marker: true }].forEach((want, i) => {
+      expect(rems[i].tasks).toHaveLength(1);
+      expect(carried(rems[i]), `remediation ${i + 1}`).toEqual(want);
+      expect(carried(rems[i].tasks[0]), `task ${i + 1}`).toEqual(want);
+    });
   });
 });
 
@@ -563,9 +617,10 @@ describe('NIST requirement id impacted-control-id', () => {
     ['AC-8 c 1', 'ac-8'],
     ['AC-2 (3) (a)', 'ac-2.3'],
     ['Si-2', 'si-2'],
-    ['SV-257778', 'sv-257778'],
-    ['CVE-2021-44228', 'cve-2021-44228'],
-  ])('maps %s to %s', async (requirementId, want) => {
+    ['AC-99', ''],
+    ['SV-257778', ''],
+    ['CVE-2021-44228', ''],
+  ])('maps %s to %j', async (requirementId, want) => {
     const input = JSON.stringify({
       name: 'test-poam',
       overrides: [{
@@ -581,10 +636,162 @@ describe('NIST requirement id impacted-control-id', () => {
     const doc = JSON.parse(await convertHdfToOscalPoam(input));
     const risks = doc['plan-of-action-and-milestones'].risks;
     expect(risks).toHaveLength(1);
-    const props = (risks[0].props as Array<{ name: string; value: string }>).filter((p) => p.name === 'impacted-control-id');
-    expect(props.map((p) => p.value)).toEqual([want]);
+    const props = (risks[0].props as Array<{ name: string; value: string; ns?: string }>).filter((p) => p.name === 'impacted-control-id');
+    for (const p of props) expect(p.ns).toBe('https://fedramp.gov/ns/oscal');
+    expect(props.map((p) => p.value)).toEqual(want === '' ? [] : [want]);
     for (const [file, validate] of schemas) {
       assertSchemaValid(validate, file, doc);
     }
+  });
+});
+
+interface RoundTripCases {
+  excluded: { document: string[]; override: string[] };
+  cases: Array<{ name: string; amendments: Record<string, unknown> }>;
+}
+
+const ROUND_TRIP = JSON.parse(
+  readFileSync(join(__dirname, '..', '..', '..', 'shared', 'oscal-poam-roundtrip-cases.json'), 'utf-8'),
+) as RoundTripCases;
+
+/** An amendments document without the fields the round-trip contract excludes. */
+function withoutExcluded(doc: Record<string, unknown>): Record<string, unknown> {
+  const copy = JSON.parse(JSON.stringify(doc)) as Record<string, unknown>;
+  for (const k of ROUND_TRIP.excluded.document) delete copy[k];
+  for (const o of (copy.overrides ?? []) as Array<Record<string, unknown>>) {
+    for (const k of ROUND_TRIP.excluded.override) delete o[k];
+  }
+  return copy;
+}
+
+/** Compares two JSON objects key by key, so a failure names the field. */
+function expectSameFields(path: string, want: Record<string, unknown>, got: Record<string, unknown>): void {
+  for (const k of new Set([...Object.keys(want), ...Object.keys(got)])) {
+    expect.soft(Object.hasOwn(got, k), `${path}.${k}: present in only one of source and result`).toBe(Object.hasOwn(want, k));
+    expect.soft(got[k], `${path}.${k}`).toStrictEqual(want[k]);
+  }
+}
+
+type SchemaNode = { properties?: Record<string, SchemaNode>; items?: SchemaNode; $ref?: string; $defs?: Record<string, SchemaNode> };
+
+/** The $defs of the source schemas an amendments document draws on, with the document itself under ''. */
+function hdfSchemaDefs(): Map<string, SchemaNode> {
+  const dir = join(__dirname, '..', '..', '..', '..', 'hdf-schema', 'src', 'schemas');
+  const defs = new Map<string, SchemaNode>();
+  for (const f of ['hdf-amendments.schema.json', 'primitives/amendments.schema.json', 'primitives/common.schema.json', 'primitives/affected-package.schema.json', 'primitives/cvss.schema.json']) {
+    const schema = JSON.parse(readFileSync(join(dir, f), 'utf-8')) as SchemaNode;
+    if (f === 'hdf-amendments.schema.json') defs.set('', schema);
+    for (const [name, def] of Object.entries(schema.$defs ?? {})) defs.set(name, def);
+  }
+  return defs;
+}
+
+/** Whether a dot-separated JSON property path names a property of the def, following $ref and array items by def name. */
+function schemaHasProperty(defs: Map<string, SchemaNode>, def: string, path: string): boolean {
+  let node = defs.get(def);
+  for (const name of path.split('.')) {
+    let next = node?.properties?.[name];
+    if (!next) return false;
+    if (next.items) next = next.items;
+    if (next.$ref) next = defs.get(next.$ref.slice(next.$ref.lastIndexOf('/') + 1));
+    node = next;
+  }
+  return true;
+}
+
+/** Maps the OSCAL object carrying a field marker, and the marker's group, to the HDF def whose fields it names. Mirrors Go's markerContexts. */
+const MARKER_CONTEXTS: Array<[RegExp, RegExp, string]> = [
+  [/^metadata$/, /^$/, ''],
+  [/^metadata$/, /^label-[1-9][0-9]*$/, 'label'],
+  [/^metadata\.parties\[\d+\]$/, /^$/, 'Identity'],
+  [/^risks\[\d+\]$/, /^$/, 'Standalone_Override'],
+  [/^risks\[\d+\]$/, /^package-[1-9][0-9]*$/, 'Affected_Package'],
+  [/^risks\[\d+\]\.characterizations\[\d+\]$/, /^$/, 'Cvss'],
+  [/^risks\[\d+\]\.remediations\[\d+\](\.tasks\[\d+\])?$/, /^$/, 'Milestone'],
+  [/^observations\[\d+\]$/, /^$/, 'Evidence'],
+  [/^back-matter\.resources\[\d+\]$/, /^$/, 'External_Reference'],
+];
+
+/** Every empty-field and absent-field marker in a decoded POA&M, with the object that carries it. */
+function collectFieldMarkers(node: unknown, path: string, out: Array<{ path: string; group: string; field: string }>): void {
+  if (Array.isArray(node)) {
+    node.forEach((child, i) => collectFieldMarkers(child, `${path}[${i}]`, out));
+  } else if (node !== null && typeof node === 'object') {
+    for (const [k, child] of Object.entries(node)) {
+      if (k !== 'props') {
+        collectFieldMarkers(child, path === '' ? k : `${path}.${k}`, out);
+        continue;
+      }
+      for (const p of child as Array<{ name: string; value: string; ns?: string; group?: string }>) {
+        if ((p.name === 'empty-field' || p.name === 'absent-field') && p.ns === 'https://mitre.github.io/hdf-libs/ns/oscal') {
+          out.push({ path, group: p.group ?? '', field: p.value });
+        }
+      }
+    }
+  }
+}
+
+// Mirrors the Go TestConvertHDFToOSCALPOAM_FieldMarkersNameHDFProperties: every
+// empty-field and absent-field value is an HDF JSON property name, dot-separated
+// relative to the object carrying the marker, or the field within its prop group
+// (ADR-0014 §1.7.5).
+describe('hdf-to-oscal-poam field marker names (ADR-0014 §1.7.5)', () => {
+  it('name HDF properties in every round-trip case', async () => {
+    const defs = hdfSchemaDefs();
+    const seen = new Set<string>();
+    for (const c of ROUND_TRIP.cases) {
+      const doc = JSON.parse(await convertHdfToOscalPoam(JSON.stringify(c.amendments)));
+      const markers: Array<{ path: string; group: string; field: string }> = [];
+      collectFieldMarkers(doc['plan-of-action-and-milestones'], '', markers);
+      for (const m of markers) {
+        const contexts = MARKER_CONTEXTS.filter(([path, group]) => path.test(m.path) && group.test(m.group));
+        expect.soft(contexts, `${c.name}: a marker at ${m.path} (group ${m.group}) has no HDF context`).not.toHaveLength(0);
+        for (const [, , def] of contexts) {
+          seen.add(def);
+          const named = def === 'label' ? ['key', 'value'].includes(m.field) : schemaHasProperty(defs, def, m.field);
+          expect.soft(named, `${c.name}: ${m.field} at ${m.path} is not a ${def || 'document'} property`).toBe(true);
+        }
+      }
+    }
+    expect([...seen].sort()).toEqual(['', 'Affected_Package', 'Evidence', 'External_Reference', 'Identity', 'Milestone', 'Standalone_Override', 'label']);
+  });
+});
+
+// Mirrors the Go TestConvertHDFToOSCALPOAM_RoundTrip over the same shared case
+// table: HDF amendments -> OSCAL POA&M -> HDF returns every ADR-0014 §4.6 field
+// exactly, and the contract's exclusions are the only differences.
+describe('hdf-to-oscal-poam round trip (ADR-0014 §4.6)', () => {
+  const validateHdf = loadSchemaValidator(
+    join(__dirname, '..', '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-amendments.schema.json'),
+  );
+  const schemas = ['oscal_poam_schema-v1.1.2.json', 'oscal_poam_schema-v1.2.3.json'].map(
+    (file) => [file, loadSchemaValidator(join(__dirname, '..', 'schemas', file))] as const,
+  );
+
+  it('the first case is the Standalone_Override schema examples', () => {
+    const schema = JSON.parse(
+      readFileSync(join(__dirname, '..', '..', '..', '..', 'hdf-schema', 'src', 'schemas', 'primitives', 'amendments.schema.json'), 'utf-8'),
+    ) as { $defs: { Standalone_Override: { examples: unknown[] } } };
+    expect(schema.$defs.Standalone_Override.examples).toHaveLength(7);
+    expect(ROUND_TRIP.cases[0]!.amendments.overrides).toStrictEqual(schema.$defs.Standalone_Override.examples);
+  });
+
+  it.each(ROUND_TRIP.cases.map((c) => [c.name, c] as const))('%s', async (_name, c) => {
+    assertSchemaValid(validateHdf, 'the case', c.amendments);
+    const poam = await convertHdfToOscalPoam(JSON.stringify(c.amendments));
+    for (const [file, validate] of schemas) {
+      assertSchemaValid(validate, file, JSON.parse(poam));
+    }
+    const back = JSON.parse(await convertOscalPoamToHdf(poam)) as Record<string, unknown>;
+
+    const want = withoutExcluded(c.amendments);
+    const got = withoutExcluded(back);
+    const wantOverrides = want.overrides as Array<Record<string, unknown>>;
+    const gotOverrides = got.overrides as Array<Record<string, unknown>>;
+    delete want.overrides;
+    delete got.overrides;
+    expectSameFields('document', want, got);
+    expect(gotOverrides).toHaveLength(wantOverrides.length);
+    wantOverrides.forEach((o, i) => expectSameFields(`overrides[${i}]`, o, gotOverrides[i]!));
   });
 });

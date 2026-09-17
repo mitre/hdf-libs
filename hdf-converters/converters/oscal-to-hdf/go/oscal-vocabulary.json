@@ -6,10 +6,10 @@
     {
       "name": "hdf-requirement-id",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
-      "objects": ["assessment-results.results[].findings[]"],
-      "meaning": "The HDF requirement id the finding assesses, exactly as the source recorded it. The finding target-id carries an OSCAL token encoding of it, which is not injective.",
+      "objects": ["assessment-results.results[].findings[]", "plan-of-action-and-milestones.risks[]"],
+      "meaning": "The HDF requirement id the finding assesses, or the requirement id of the override the POA&M risk represents, exactly as the source recorded it; omitted when the id is empty. The finding target-id carries an OSCAL token encoding of it, which is not injective, and the POA&M item and risk titles are display text.",
       "valueFormat": "String (§1.7)",
-      "hdfField": "baselines[].requirements[].id",
+      "hdfField": "baselines[].requirements[].id, overrides[].requirementId",
       "legacy": true
     },
     {
@@ -182,7 +182,7 @@
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["Any object that carries HDF props"],
       "meaning": "An optional HDF string field that is present but empty; the importer returns it present and empty (§1.7.3).",
-      "valueFormat": "The name of the HDF field",
+      "valueFormat": "The HDF JSON property name, dot-separated relative to the OSCAL object that carries the marker (e.g. systemRef, checksum.value); for props that share a group, the field within that group (e.g. key, fixedInVersion) (§1.7.5)",
       "hdfField": null,
       "legacy": false
     },
@@ -191,7 +191,7 @@
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["Any object that carries HDF props"],
       "meaning": "OSCAL requires a value the HDF field does not have, so the object holds display fallback text; the importer leaves the field absent and never reads the fallback as HDF data (§1.7.4).",
-      "valueFormat": "The name of the HDF field",
+      "valueFormat": "The HDF JSON property name, dot-separated relative to the OSCAL object that carries the marker (e.g. systemRef, checksum.value); for props that share a group, the field within that group (e.g. key, fixedInVersion) (§1.7.5)",
       "hdfField": null,
       "legacy": false
     },
@@ -208,7 +208,7 @@
       "name": "override-type",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["plan-of-action-and-milestones.risks[]"],
-      "meaning": "The type of the HDF override the risk represents.",
+      "meaning": "The type of the HDF override the risk represents. A risk carrying it in the HDF namespace is HDF-produced (ADR-0014 §4.3), so the importer reads every §4.6 field from its HDF props; a risk carrying it without ns is a pre-ADR export, which imports through the pre-ADR mapping.",
       "valueFormat": "An HDF override type, such as waiver, poam or falsePositive",
       "hdfField": "overrides[].type",
       "legacy": true
@@ -252,8 +252,8 @@
     {
       "name": "milestone-status",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
-      "objects": ["plan-of-action-and-milestones.risks[].remediations[]"],
-      "meaning": "The status of the milestone the remediation represents.",
+      "objects": ["plan-of-action-and-milestones.risks[].remediations[].tasks[]"],
+      "meaning": "The status of the milestone the remediation task represents. Documents exported before ADR-0014 carry it on the remediation, and import through the pre-ADR mapping (§4.3), which does not read it.",
       "valueFormat": "An HDF milestone status",
       "hdfField": "overrides[].milestones[].status",
       "legacy": true
@@ -271,7 +271,7 @@
       "name": "completed-by",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["plan-of-action-and-milestones.risks[].remediations[].tasks[]"],
-      "meaning": "The identifier of whoever completed the milestone.",
+      "meaning": "Pre-ADR only: the identifier of whoever completed the milestone. No longer emitted; the task's responsible-roles entry with role-id completed-by names the party.",
       "valueFormat": "String (§1.7)",
       "hdfField": "overrides[].milestones[].completedBy.identifier",
       "legacy": true
@@ -289,7 +289,7 @@
       "name": "captured-by",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["plan-of-action-and-milestones.observations[]"],
-      "meaning": "The identifier of whoever captured the evidence the observation carries.",
+      "meaning": "Pre-ADR only: the identifier of whoever captured the evidence. No longer emitted; the observation's origins actor names the party.",
       "valueFormat": "String (§1.7)",
       "hdfField": "overrides[].evidence[].capturedBy.identifier",
       "legacy": true
@@ -311,6 +311,204 @@
       "valueFormat": "String (§1.7)",
       "hdfField": "overrides[].externalReferences[].externalId",
       "legacy": true
+    },
+    {
+      "name": "override-status",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The status the override sets, emitted only when the override sets one; the risk status is closed for passed and notApplicable and open otherwise.",
+      "valueFormat": "An HDF result status: passed, failed, notApplicable, notReviewed or error",
+      "hdfField": "overrides[].status",
+      "legacy": false
+    },
+    {
+      "name": "inherited-from",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The componentId of the local component that provides the control the override inherits.",
+      "valueFormat": "String (§1.7), a UUID",
+      "hdfField": "overrides[].inheritedFrom",
+      "legacy": false
+    },
+    {
+      "name": "affected-package-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The name of a package the override is scoped to; every prop of one package shares the group package-<n>, n its 1-based position in source order.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].affectedPackages[].name",
+      "legacy": false
+    },
+    {
+      "name": "affected-package-version",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The version of a package the override is scoped to, grouped as affected-package-name.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].affectedPackages[].version",
+      "legacy": false
+    },
+    {
+      "name": "affected-package-ecosystem",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The ecosystem of a package the override is scoped to, grouped as affected-package-name.",
+      "valueFormat": "An HDF package ecosystem, such as npm, rpm or generic",
+      "hdfField": "overrides[].affectedPackages[].ecosystem",
+      "legacy": false
+    },
+    {
+      "name": "affected-package-cpe",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The CPE 2.3 name of a package the override is scoped to, grouped as affected-package-name.",
+      "valueFormat": "String (§1.7), a CPE 2.3 name",
+      "hdfField": "overrides[].affectedPackages[].cpe",
+      "legacy": false
+    },
+    {
+      "name": "affected-package-purl",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The package URL of a package the override is scoped to, grouped as affected-package-name.",
+      "valueFormat": "String (§1.7), a package URL",
+      "hdfField": "overrides[].affectedPackages[].purl",
+      "legacy": false
+    },
+    {
+      "name": "affected-package-fixed-in-version",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The first version of a package the override is scoped to that contains the fix, grouped as affected-package-name.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].affectedPackages[].fixedInVersion",
+      "legacy": false
+    },
+    {
+      "name": "evidence-encoding",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.observations[]"],
+      "meaning": "The encoding the evidence data declares; data whose encoding is exactly base64 is carried in the linked resource as-is.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].evidence[].encoding",
+      "legacy": false
+    },
+    {
+      "name": "evidence-size",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.observations[]"],
+      "meaning": "The size of the evidence data in bytes.",
+      "valueFormat": "Decimal number",
+      "hdfField": "overrides[].evidence[].size",
+      "legacy": false
+    },
+    {
+      "name": "reference-rel",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "The relationship of the external reference the resource carries to the override.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].externalReferences[].rel",
+      "legacy": false
+    },
+    {
+      "name": "reference-media-type",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "The media type of the artifact the external reference points at.",
+      "valueFormat": "String (§1.7), a media type",
+      "hdfField": "overrides[].externalReferences[].mediaType",
+      "legacy": false
+    },
+    {
+      "name": "checksum-algorithm",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "The hash algorithm of the checksum of the artifact the external reference points at.",
+      "valueFormat": "One of sha256, sha384, sha512, blake3",
+      "hdfField": "overrides[].externalReferences[].checksum.algorithm",
+      "legacy": false
+    },
+    {
+      "name": "checksum-value",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "The checksum of the artifact the external reference points at.",
+      "valueFormat": "String (§1.7), a hex digest",
+      "hdfField": "overrides[].externalReferences[].checksum.value",
+      "legacy": false
+    },
+    {
+      "name": "added-by",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "Who attached the external reference: the uuid of the metadata party carrying the identity.",
+      "valueFormat": "A party UUID",
+      "hdfField": "overrides[].externalReferences[].addedBy",
+      "legacy": false
+    },
+    {
+      "name": "added-at",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "When the external reference was attached.",
+      "valueFormat": "RFC 3339 date-time in UTC",
+      "hdfField": "overrides[].externalReferences[].addedAt",
+      "legacy": false
+    },
+    {
+      "name": "reference-kind",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "The kind of payload the external reference classifies, such as threat-intel or advisory.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].externalReferences[].kind",
+      "legacy": false
+    },
+    {
+      "name": "identity-identifier",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.metadata.parties[]"],
+      "meaning": "The identifier of the HDF identity the party carries; omitted when the identifier is empty. The party name is display text.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "Identity.identifier",
+      "legacy": false
+    },
+    {
+      "name": "identity-type",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.metadata.parties[]"],
+      "meaning": "The type of the HDF identity the party carries; the party type is display text. The party remarks hold the identity description.",
+      "valueFormat": "One of email, username, system, agent, simple, other",
+      "hdfField": "Identity.type",
+      "legacy": false
+    },
+    {
+      "name": "amendments-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.metadata"],
+      "meaning": "The name of the HDF amendments document; omitted when the name is empty. The metadata title is display text.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "name",
+      "legacy": false
+    },
+    {
+      "name": "label-key",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.metadata"],
+      "meaning": "The key of an amendments label, with class amendment-label and group label-<n>, n the label's 1-based position in sorted key order.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "labels (key)",
+      "legacy": false
+    },
+    {
+      "name": "label-value",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.metadata"],
+      "meaning": "The value of the amendments label its group names, with class amendment-label.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "labels (value)",
+      "legacy": false
     },
     {
       "name": "impacted-control-id",

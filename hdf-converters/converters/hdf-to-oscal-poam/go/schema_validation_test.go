@@ -366,26 +366,20 @@ func TestCorpusGoldenParity(t *testing.T) {
 }
 
 // OSCAL types prop/@name as TokenDatatype, while HDF puts no constraint on
-// amendments.labels keys, so an arbitrary key copied through produced a POA&M
-// the schema rejects from valid HDF. Every label key in this package's converter fixtures
-// happens to be token-shaped today, so this is a latent defect rather than one
-// real data currently triggers — but the shapes below are standard label
-// conventions (Kubernetes and OCI keys are namespaced with '/') that HDF
-// permits and OSCAL does not.
+// amendments.labels keys, so a label key cannot be a prop name. Labels are
+// label-key/label-value prop pairs, so every key shape — Kubernetes and OCI keys
+// namespaced with '/', and the empty key — is carried verbatim in a valid document.
 func TestConvertHDFToOSCALPOAM_LabelKeysAreTokens(t *testing.T) {
 	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
 	hdfV := amendmentsValidator(t)
 
-	for _, tc := range []struct {
-		key  string
-		want string
-	}{
-		{"app.kubernetes.io/name", "app.kubernetes.io_name"},
-		{"env:prod", "env_prod"},
-		{"2024-audit", "_2024-audit"},
-		{"com.redhat.component", "com.redhat.component"},
-		{"", "_"},
+	for _, tc := range []struct{ key string }{
+		{"app.kubernetes.io/name"},
+		{"env:prod"},
+		{"2024-audit"},
+		{"com.redhat.component"},
+		{""},
 	} {
 		t.Run(tc.key, func(t *testing.T) {
 			input := []byte(`{"name":"a","overrides":[{"requirementId":"r","type":"waiver",` +
@@ -403,17 +397,19 @@ func TestConvertHDFToOSCALPOAM_LabelKeysAreTokens(t *testing.T) {
 			require.NoError(t, v.Validate(out),
 				"a label key that is not a token must not produce an invalid document")
 
-			prop := metadataPropNamed(t, out, tc.want)
-			require.Equal(t, "x", prop.Value)
-			switch {
-			case tc.key == "":
-				require.Empty(t, prop.Remarks, "an empty key has no source text to preserve")
-			case tc.want != tc.key:
-				require.Equal(t, tc.key, prop.Remarks,
-					"a rewritten name must keep the source key, or the label is lost")
-			default:
-				require.Empty(t, prop.Remarks, "an unchanged name needs no remarks")
+			value := metadataPropNamed(t, out, "label-value")
+			require.Equal(t, "x", value.Value)
+			require.Equal(t, "label-1", value.Group)
+			if tc.key == "" {
+				empty := metadataPropNamed(t, out, "empty-field")
+				require.Equal(t, "key", empty.Value, "an empty key is carried by empty-field")
+				require.Equal(t, "label-1", empty.Group)
+				return
 			}
+			key := metadataPropNamed(t, out, "label-key")
+			require.Equal(t, tc.key, key.Value, "the key is carried verbatim as a value")
+			require.Equal(t, "label-1", key.Group)
+			require.Empty(t, key.Remarks)
 		})
 	}
 }
@@ -499,6 +495,54 @@ func TestConvertHDFToOSCALPOAM_StringDatatypeSinks(t *testing.T) {
 	}
 }
 
+// A milestone title is carried byte-exact (ADR-0014 §4.6). OSCAL types task and
+// remediation titles as a plain string (1.1.2) or MarkupLineDatatype ^[^\n]+$
+// (1.2.3), not StringDatatype, and the HDF title pattern already forbids line
+// feeds, so a title with unusual whitespace at an edge or a U+2028 inside is valid
+// OSCAL as written and must not be trimmed.
+func TestConvertHDFToOSCALPOAM_MilestoneTitleCarriedExactly(t *testing.T) {
+	hdfV := amendmentsValidator(t)
+	schemas := poamSchemas(t)
+	for _, tc := range []struct{ name, title string }{
+		{"leading form feed", "\fX"},
+		{"trailing vertical tab", "X\v"},
+		{"leading no-break space", "\u00a0X"},
+		{"leading byte order mark", "\ufeffX"},
+		{"line separator inside", "A\u2028B"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			title, err := json.Marshal(tc.title)
+			require.NoError(t, err)
+			input := []byte(`{"name":"a","overrides":[{"requirementId":"AC-2","type":"poam","status":"failed",` +
+				`"reason":"r","appliedAt":"2020-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z",` +
+				`"appliedBy":{"identifier":"analyst","type":"username"},` +
+				`"milestones":[{"title":` + string(title) + `,"description":"d",` +
+				`"estimatedCompletion":"2099-12-31T00:00:00Z","status":"pending"}]}]}`)
+			require.NoError(t, hdfV.Validate(input), "the test input is not valid HDF")
+
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+			for _, s := range schemas {
+				s.v.RequireValid(t, s.file, out)
+			}
+
+			var doc oscal.OscalDocument
+			require.NoError(t, json.Unmarshal(out, &doc))
+			rem := doc.PlanOfActionAndMilestones.Risks[0].Remediations[0]
+			require.Len(t, rem.Tasks, 1)
+			assert.Equal(t, tc.title, rem.Title)
+			assert.Equal(t, tc.title, rem.Tasks[0].Title)
+
+			back, err := oscal.ConvertPOAMToHDF(out, "1.0.0")
+			require.NoError(t, err)
+			require.Len(t, back.Overrides, 1)
+			require.Len(t, back.Overrides[0].Milestones, 1)
+			require.NotNil(t, back.Overrides[0].Milestones[0].Title)
+			assert.Equal(t, tc.title, *back.Overrides[0].Milestones[0].Title)
+		})
+	}
+}
+
 // The empty case omits the field rather than inventing a placeholder: OSCAL
 // requires only uuid and type on a party, so the party survives and the
 // responsible-party reference that points at it stays valid.
@@ -540,9 +584,9 @@ func TestConvertHDFToOSCALPOAM_EmptyIdentifierOmitsPartyName(t *testing.T) {
 	}
 }
 
-// Two spellings of one identifier that trim alike are one person, and the
-// emitted document must say so: keying the registry on the raw identifier would
-// mint two parties bearing an identical name.
+// One party per distinct (identifier, type, description) triple: two spellings
+// of an identifier are two identities, each returned exactly, while a repeated
+// identity is one party.
 func TestConvertHDFToOSCALPOAM_PaddedIdentifierDedupes(t *testing.T) {
 	override := func(reqID, ident string) string {
 		return `{"requirementId":"` + reqID + `","type":"waiver","status":"notApplicable",` +
@@ -550,7 +594,7 @@ func TestConvertHDFToOSCALPOAM_PaddedIdentifierDedupes(t *testing.T) {
 			`"appliedBy":{"identifier":"` + ident + `","type":"username"}}`
 	}
 	input := []byte(`{"name":"a","overrides":[` +
-		override("AC-2", "analyst") + `,` + override("AC-3", "  analyst  ") + `]}`)
+		override("AC-2", "analyst") + `,` + override("AC-3", "  analyst  ") + `,` + override("AC-4", "analyst") + `]}`)
 
 	require.NoError(t, amendmentsValidator(t).Validate(input), "the test input is not valid HDF")
 
@@ -560,11 +604,19 @@ func TestConvertHDFToOSCALPOAM_PaddedIdentifierDedupes(t *testing.T) {
 	var doc struct {
 		POAM struct {
 			Metadata struct {
-				Parties []struct{ Name string } `json:"parties"`
+				Parties []oscal.Party `json:"parties"`
 			} `json:"metadata"`
 		} `json:"plan-of-action-and-milestones"`
 	}
 	require.NoError(t, json.Unmarshal(out, &doc))
-	require.Len(t, doc.POAM.Metadata.Parties, 1, "one identity, one party")
-	assert.Equal(t, "analyst", doc.POAM.Metadata.Parties[0].Name)
+	require.NoError(t, poamSchemas(t)[1].v.Validate(out))
+	require.Len(t, doc.POAM.Metadata.Parties, 2, "two identities, two parties")
+	var identifiers []string
+	for _, p := range doc.POAM.Metadata.Parties {
+		assert.Equal(t, "analyst", p.Name, "the party name is display text")
+		m, ok := oscal.FindVocabularyProp(p.Props, "identity-identifier")
+		require.True(t, ok)
+		identifiers = append(identifiers, m.Value)
+	}
+	assert.Equal(t, []string{"analyst", "  analyst  "}, identifiers)
 }

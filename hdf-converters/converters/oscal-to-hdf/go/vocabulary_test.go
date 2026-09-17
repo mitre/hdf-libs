@@ -56,12 +56,13 @@ const allSARProps = `{
 // allPOAMProps exercises every prop the POA&M exporter emits from the vocabulary.
 const allPOAMProps = `{
 	"name": "a", "amendmentId": "8f2b7c1e-4d3a-4b6e-9a1f-2c3d4e5f6a7b",
-	"labels": { "environment": "production" },
+	"labels": { "environment": "production", "ticket": "" },
 	"overrides": [{
 		"requirementId": "AC-2", "type": "waiver", "status": "notApplicable",
 		"reason": "accepted", "justification": "component_not_present",
 		"impact": { "value": 0.3 },
 		"baselineRef": "rhel-9-stig", "componentRef": "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+		"inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 		"appliedAt": "2020-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
 		"appliedBy": { "identifier": "analyst", "type": "username" },
 		"milestones": [{
@@ -71,10 +72,19 @@ const allPOAMProps = `{
 			"completedBy": { "identifier": "engineer", "type": "username" }
 		}],
 		"evidence": [{
-			"type": "file", "data": "log", "mimeType": "text/plain",
+			"type": "file", "data": "bG9n", "mimeType": "text/plain", "encoding": "base64", "size": 3,
 			"capturedBy": { "identifier": "scanner", "type": "username" }
 		}],
-		"externalReferences": [{ "sourceName": "NVD", "externalId": "CVE-2021-44228", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228" }]
+		"externalReferences": [{
+			"sourceName": "NVD", "externalId": "CVE-2021-44228", "href": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228",
+			"rel": "advisory", "mediaType": "text/html", "kind": "advisory", "addedAt": "2020-01-01T00:00:00Z",
+			"addedBy": { "identifier": "analyst", "type": "username" },
+			"checksum": { "algorithm": "sha256", "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" }
+		}],
+		"affectedPackages": [{
+			"name": "openssl", "version": "1.1.1k-7.el8_4", "ecosystem": "rpm", "fixedInVersion": "1.1.1l",
+			"cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*", "purl": "pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64"
+		}]
 	}]
 }`
 
@@ -177,20 +187,15 @@ func canonicalNs(ns string) string {
 	return ns
 }
 
-// amendmentLabelClass marks the POA&M label props whose names come from HDF data.
-const amendmentLabelClass = "amendment-label"
-
 // assertEmittedPropsAreRows converts every input and asserts each emitted prop
-// is a vocabulary row carrying that row's namespace. It returns the names seen
-// and how many amendment label props it skipped.
-func assertEmittedPropsAreRows(t *testing.T, inputs []exporterInput, convert func([]byte) ([]byte, error)) (map[string]bool, int) {
+// is a vocabulary row carrying that row's namespace. It returns the names seen.
+func assertEmittedPropsAreRows(t *testing.T, inputs []exporterInput, convert func([]byte) ([]byte, error)) map[string]bool {
 	t.Helper()
 	rows := map[string]oscal.VocabularyRow{}
 	for _, r := range oscal.VocabularyRows() {
 		rows[r.Name] = r
 	}
 	seen := map[string]bool{}
-	labels := 0
 	converted := 0
 	for _, in := range inputs {
 		out, err := convert(in.input)
@@ -206,11 +211,6 @@ func assertEmittedPropsAreRows(t *testing.T, inputs []exporterInput, convert fun
 		var props []emittedProp
 		collectProps(t, doc, "$", &props)
 		for _, p := range props {
-			// ADR-0014 §1.5 excludes data-named label props; §4.6 replaces them.
-			if p.class == amendmentLabelClass {
-				labels++
-				continue
-			}
 			row, ok := rows[p.name]
 			if !assert.True(t, ok, "%s: %s emits prop %q, which is not a vocabulary row", in.label, p.path, p.name) {
 				continue
@@ -223,7 +223,7 @@ func assertEmittedPropsAreRows(t *testing.T, inputs []exporterInput, convert fun
 		}
 	}
 	require.NotZero(t, converted, "no input converted — the run would prove nothing")
-	return seen, labels
+	return seen
 }
 
 // TestVocabulary_InlineInputsAreValidHDF guards the inline inputs: an exporter
@@ -236,7 +236,7 @@ func TestVocabulary_InlineInputsAreValidHDF(t *testing.T) {
 
 func TestVocabulary_EmittedPropsAreRows(t *testing.T) {
 	t.Run("hdf-to-oscal-sar", func(t *testing.T) {
-		seen, _ := assertEmittedPropsAreRows(t, sarInputs(t), func(in []byte) ([]byte, error) {
+		seen := assertEmittedPropsAreRows(t, sarInputs(t), func(in []byte) ([]byte, error) {
 			return hdftooscalsar.ConvertHDFToOSCALSAR(in, "1.0.0")
 		})
 		for _, name := range []string{
@@ -248,16 +248,23 @@ func TestVocabulary_EmittedPropsAreRows(t *testing.T) {
 		}
 	})
 	t.Run("hdf-to-oscal-poam", func(t *testing.T) {
-		seen, labels := assertEmittedPropsAreRows(t, poamInputs(t), func(in []byte) ([]byte, error) {
+		seen := assertEmittedPropsAreRows(t, poamInputs(t), func(in []byte) ([]byte, error) {
 			return hdftooscalpoam.ConvertHDFToOSCALPOAM(in, "1.0.0")
 		})
-		assert.Positive(t, labels, "no input emitted an amendment label prop, so the label exclusion is not exercised")
 		for _, name := range []string{
-			"amendment-id", "override-type", "impact-override", "justification", "baseline-ref", "component-ref",
-			"milestone-status", "completed-at", "completed-by", "mime-type", "captured-by", "source-name",
-			"external-id", "impacted-control-id",
+			"hdf-requirement-id", "amendments-name", "amendment-id", "label-key", "label-value", "identity-identifier",
+			"identity-type", "override-type", "override-status", "impact-override", "justification", "baseline-ref",
+			"component-ref", "inherited-from", "affected-package-name", "affected-package-version",
+			"affected-package-ecosystem", "affected-package-cpe", "affected-package-purl",
+			"affected-package-fixed-in-version", "milestone-status", "completed-at", "mime-type", "evidence-encoding",
+			"evidence-size", "source-name", "external-id", "reference-rel", "reference-media-type",
+			"checksum-algorithm", "checksum-value", "added-by", "added-at", "reference-kind", "impacted-control-id",
+			"empty-field", "absent-field",
 		} {
 			assert.True(t, seen[name], "no input exercised the POA&M prop %q, so the guard does not cover it", name)
+		}
+		for _, name := range []string{"completed-by", "captured-by"} {
+			assert.False(t, seen[name], "the pre-ADR prop %q is no longer emitted (ADR-0014 §4.6)", name)
 		}
 	})
 }
@@ -521,6 +528,46 @@ func TestVocabulary_ReadHelpers(t *testing.T) {
 	})
 }
 
+func TestVocabulary_GroupedReadHelpers(t *testing.T) {
+	hdfNs := oscal.VocabularyNamespace()
+	props := []oscal.Property{
+		{Name: "affected-package-name", Ns: hdfNs, Value: "openssl", Group: "package-1"},
+		{Name: "empty-field", Ns: hdfNs, Value: "version", Group: "package-1"},
+		{Name: "affected-package-name", Ns: hdfNs, Value: "lodash", Group: "package-2"},
+		{Name: "baseline-ref", Ns: hdfNs, Value: "grouped", Group: "package-1"},
+		{Name: "baseline-ref", Ns: hdfNs, Value: "RHEL9-STIG"},
+		{Name: "empty-field", Ns: hdfNs, Value: "componentRef"},
+		{Name: "absent-field", Ns: hdfNs, Value: "systemRef"},
+		{Name: "empty-field", Value: "inheritedFrom"},
+	}
+	t.Run("a grouped read matches only its group", func(t *testing.T) {
+		m, ok := oscal.FindGroupedVocabularyProp(props, "affected-package-name", "package-2")
+		require.True(t, ok)
+		assert.Equal(t, oscal.PropMatch{Index: 2, Value: "lodash"}, m)
+		_, ok = oscal.FindGroupedVocabularyProp(props, "affected-package-name", "package-3")
+		assert.False(t, ok)
+	})
+	t.Run("an empty group matches only ungrouped props", func(t *testing.T) {
+		m, ok := oscal.FindGroupedVocabularyProp(props, "baseline-ref", "")
+		require.True(t, ok)
+		assert.Equal(t, "RHEL9-STIG", m.Value)
+	})
+	t.Run("a field marker matches marker, field and group", func(t *testing.T) {
+		assert.True(t, oscal.HasFieldMarker(props, "empty-field", "version", "package-1"))
+		assert.False(t, oscal.HasFieldMarker(props, "empty-field", "version", ""))
+		assert.True(t, oscal.HasFieldMarker(props, "absent-field", "systemRef", ""))
+		assert.False(t, oscal.HasFieldMarker(props, "empty-field", "systemRef", ""))
+		assert.False(t, oscal.HasFieldMarker(props, "empty-field", "inheritedFrom", ""), "a marker with no ns is foreign")
+	})
+	t.Run("an optional string is the value, empty, or absent", func(t *testing.T) {
+		assert.Equal(t, "RHEL9-STIG", *oscal.VocabularyString(props, "baseline-ref", "baselineRef", ""))
+		assert.Equal(t, "", *oscal.VocabularyString(props, "component-ref", "componentRef", ""))
+		assert.Nil(t, oscal.VocabularyString(props, "inherited-from", "inheritedFrom", ""))
+		assert.Equal(t, "", *oscal.VocabularyString(props, "affected-package-version", "version", "package-1"))
+		assert.Nil(t, oscal.VocabularyString(props, "affected-package-version", "version", "package-2"))
+	})
+}
+
 func TestVocabulary_ConsumedProps(t *testing.T) {
 	hdfNs := oscal.VocabularyNamespace()
 	for _, tc := range []struct {
@@ -627,7 +674,7 @@ type propRead struct {
 }
 
 var (
-	propLookupRe        = regexp.MustCompile(`(\bfunc\s+)?\b(?:ExtractPropValue|ExtractAllPropValues|FindVocabularyProps?)\(\s*[^,()]+,\s*([^,)]+)`)
+	propLookupRe        = regexp.MustCompile(`(\bfunc\s+)?\b(?:ExtractPropValue|ExtractAllPropValues|FindVocabularyProps?|FindGroupedVocabularyProp|VocabularyString|HasFieldMarker)\(\s*[^,()]+,\s*([^,)]+)`)
 	nameComparisonRe    = regexp.MustCompile(`\.Name\s*(?:==|!=)\s*"([^"]*)"`)
 	nonPropComparisonOK = map[string]string{
 		"impact":     "a risk characterization facet name, not a prop",
@@ -704,7 +751,11 @@ func TestVocabulary_ImporterPropReadsAreRows(t *testing.T) {
 			read[r.name] = true
 		}
 	}
-	for _, name := range []string{"CORE", "label", "sort-id", "version", "assessment-type", "POAM-ID", "impacted-control-id", "description-label"} {
+	for _, name := range []string{
+		"CORE", "label", "sort-id", "version", "assessment-type", "POAM-ID", "impacted-control-id", "description-label",
+		"override-type", "hdf-requirement-id", "amendments-name", "label-key", "identity-type", "empty-field",
+		"absent-field", "affected-package-purl", "reference-kind", "evidence-size",
+	} {
 		assert.True(t, read[name], "the sweep no longer finds the importer's read of %q; it may have stopped matching", name)
 	}
 }
