@@ -2,8 +2,20 @@
 // (detect, query, compliance, and future read-side engines). Consumed as a
 // library by the CLI and the MCP; sibling to @mitre/hdf-diff. See ADR-0007.
 
-/** Library version, kept on the workspace lockstep. */
-export const engineVersion = '3.6.0';
+/** Library version, kept on the workspace lockstep (see version.ts). */
+export { engineVersion } from './version.js';
+
+// Merge engine (peer of hdf-engine/go/merge.go; ADR-0016).
+export {
+  merge,
+  LABEL_TOOL,
+  LABEL_TOOL_VERSION,
+  LABEL_SOURCE_DOCUMENT,
+  type MergeSource,
+  type MergeResult,
+  type MergeWarning,
+  type MergeWarningKind,
+} from './merge.js';
 
 // Detection engine (peer of hdf-engine/go/detect.go).
 export { detect, type HdfDocType } from './detect.js';
