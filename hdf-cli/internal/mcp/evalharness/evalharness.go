@@ -32,13 +32,20 @@ const (
 	// ToolsListTotalBudget is the target total for the whole tools/list. Raised
 	// from 4500 to 5200 when hdf_aggregate (the 10th tool) landed: a full surface
 	// of ~5079 wire tokens is the deliberate cost of the cross-document rollup
-	// capability. The per-tool ceiling below is the real anti-bloat invariant; a
-	// deployment that does not need every tool advertises a subset (--tools).
-	ToolsListTotalBudget = 5200
+	// capability. Raised again to 5400 when hdf_query and hdf_compliance gained
+	// sources[] (ADR-0016 §7; owner decision 2026-09-17): a multi-source view is
+	// a capability, not bloat, and the alternative — cutting description text
+	// that was added after measured agent failures — trades accuracy for tokens.
+	// The per-tool ceiling below is the real anti-bloat invariant; a deployment
+	// that does not need every tool advertises a subset (--tools).
+	ToolsListTotalBudget = 5400
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
-	// any one schema from bloating (hdf_aggregate measured 589).
-	ToolsListPerToolBudget = 600
+	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
+	// to 720 with sources[]: hdf_query (596) and hdf_compliance (590) sat at the
+	// ceiling before any field was added, so the two multi-source tools could
+	// not take one without it; the headroom is for them, not for prose.
+	ToolsListPerToolBudget = 720
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -46,9 +53,10 @@ const (
 	// analysis agent carries) must stay materially below the full surface. WIRE
 	// format (what MeasureToolsList tokenizes): ~3403 tokens with the cross-document
 	// aggregate tool included, against the full ~5079. Raised from 2900 to 3500 when
-	// hdf_aggregate joined the read profile. This ceiling only needs to catch the
-	// read surface creeping back toward full; the wire measurement is a faithful proxy.
-	ReadProfileBudget = 3500
+	// hdf_aggregate joined the read profile, and to 3700 with sources[] on the two
+	// read tools that carry it. This ceiling only needs to catch the read surface
+	// creeping back toward full; the wire measurement is a faithful proxy.
+	ReadProfileBudget = 3700
 )
 
 var (

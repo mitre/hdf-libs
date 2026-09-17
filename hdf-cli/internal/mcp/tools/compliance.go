@@ -24,7 +24,10 @@ import (
 // complianceInput is the hdf_compliance argument surface: a source, an optional
 // grouping mode, and an optional threshold (inline object or path).
 type complianceInput struct {
-	Source    handle.Source   `json:"source" jsonschema:"document as {path} or {handle}"`
+	// Source is omitempty so the derived schema does not require it: a call
+	// passes exactly one of source / sources, which the handler enforces.
+	Source    handle.Source   `json:"source,omitempty" jsonschema:"document as {path} or {handle}"`
+	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
 	GroupBy   string          `json:"groupBy,omitempty" jsonschema:"baseline | severity | nistFamily"`
 	Threshold *thresholdInput `json:"threshold,omitempty" jsonschema:"threshold spec: {path} to a YAML/JSON file, or {inline} object"`
 }
@@ -39,10 +42,11 @@ type thresholdInput struct {
 // status×severity rollup, the §3 agent-override detective block, an optional
 // grouped rollup, and an optional threshold verdict.
 type complianceOutput struct {
-	Handle              string  `json:"handle"`
-	DocType             string  `json:"docType"`
-	EngineSchemaVersion string  `json:"engineSchemaVersion"`
-	Compliance          float64 `json:"compliance"`
+	Handle              string         `json:"handle,omitempty"`
+	Sources             []sourceMember `json:"sources,omitempty"`
+	DocType             string         `json:"docType"`
+	EngineSchemaVersion string         `json:"engineSchemaVersion"`
+	Compliance          float64        `json:"compliance"`
 	// Counts holds the status × severity StatusCounts as status → severity → int.
 	// This reflects to object→object→integer (value-typed) — richer than a bare
 	// additionalProperties:true, yet far cheaper than the fully named-key
@@ -97,36 +101,34 @@ func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 
 func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, complianceOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in complianceInput) (*sdkmcp.CallToolResult, complianceOutput, error) {
-		resolved, terr := resolveSource(in.Source, ldr, "source")
+		view, terr, err := resolveView(in.Source, in.Sources, ldr, singleSourceErrors{
+			WrongDocType: func(docType string) *mcperr.Error {
+				return mcperr.New(mcperr.WrongDocType,
+					fmt.Sprintf("hdf_compliance rolls up requirements in results and baseline documents; a %s document has no requirements to score", docType),
+					map[string]any{"docType": docType}).
+					WithNextCall("call hdf_inspect to view this document's structure (hdf_compliance is results/baseline only)")
+			},
+			SchemaInvalid: func(docType string) *mcperr.Error {
+				return mcperr.New(mcperr.SchemaInvalid,
+					fmt.Sprintf("the document is %s but failed schema validation, so it cannot be scored", docType),
+					map[string]any{"docType": docType})
+			},
+		})
+		if err != nil {
+			return nil, errorComplianceOutput(), err
+		}
 		if terr != nil {
 			return toolError(terr), errorComplianceOutput(), nil
 		}
-		encoded, err := handle.Encode(resolved.Handle)
-		if err != nil {
-			return nil, errorComplianceOutput(), fmt.Errorf("encoding handle: %w", err)
-		}
 
-		toResults, ok := queryDispatch[resolved.Load.DocType]
-		if !ok {
-			e := mcperr.New(mcperr.WrongDocType,
-				fmt.Sprintf("hdf_compliance rolls up requirements in results and baseline documents; a %s document has no requirements to score", resolved.Load.DocType),
-				map[string]any{"docType": resolved.Load.DocType}).
-				WithNextCall("call hdf_inspect to view this document's structure (hdf_compliance is results/baseline only)")
-			return toolError(e), errorComplianceOutput(), nil
-		}
-		if !resolved.Load.Valid {
-			e := mcperr.New(mcperr.SchemaInvalid,
-				fmt.Sprintf("the document is %s but failed schema validation, so it cannot be scored", resolved.Load.DocType),
-				map[string]any{"docType": resolved.Load.DocType})
-			return toolError(e), errorComplianceOutput(), nil
-		}
-
-		results := toResults(resolved.Load)
+		results := view.Results
 		counts := countByEffectiveStatus(results)
 		out := complianceOutput{
-			Handle:              encoded,
-			DocType:             resolved.Load.DocType,
-			EngineSchemaVersion: resolved.Handle.EngineSchemaVersion,
+			Handle:              view.Handle,
+			Sources:             view.Members,
+			DocType:             view.DocType,
+			EngineSchemaVersion: view.EngineSchemaVersion,
+			Notice:              mergeWarningsNotice(view.Warnings),
 			Compliance:          hdfengine.CalculateCompliance(counts),
 			Counts:              countsToNestedInt(counts),
 			AgentOverrides: agentOverrideSummary{
@@ -417,20 +419,23 @@ func boundComplianceResponse(out *complianceOutput) {
 	// reserves the groups notice already set plus this headroom) so a response
 	// that trips both branches cannot overflow by their concatenation.
 	noticeHeadroom := strings.Repeat("x", 320)
+	// A notice already on the envelope (merge warnings over sources[]) is kept in
+	// front of the truncation notices and counted in every trial measurement.
+	base := out.Notice
 	if len(out.Groups) > 0 {
 		kept := largestPrefixFitting(len(out.Groups), func(n int) bool {
 			trial := *out
 			trial.Groups = out.Groups[:n]
 			trial.Truncated = true
-			trial.Notice = noticeHeadroom
+			trial.Notice = joinNotice(base, noticeHeadroom)
 			return respond.EstimateTokens(mustJSON(&trial)) <= respond.ConciseTokenBudget
 		})
 		total := len(out.Groups)
 		out.Groups = out.Groups[:kept]
 		out.Truncated = true
-		out.Notice = fmt.Sprintf(
+		out.Notice = joinNotice(base, fmt.Sprintf(
 			"Response truncated to stay within the %d-token cap: showing %d of %d %s groups. Request a specific groupBy, or omit groupBy for the ungrouped rollup.",
-			respond.ConciseTokenBudget, kept, total, out.GroupBy)
+			respond.ConciseTokenBudget, kept, total, out.GroupBy))
 		if respond.EstimateTokens(mustJSON(out)) <= respond.ConciseTokenBudget {
 			return
 		}

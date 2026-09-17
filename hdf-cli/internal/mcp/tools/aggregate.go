@@ -116,27 +116,14 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 
 		for i := range in.Sources {
 			src := in.Sources[i]
-			label := src.Path
-			resolved, terr := resolveSource(src, ldr, "sources")
+			ls, terr := loadSource(src, ldr, fmt.Sprintf("sources[%d]", i), []string{"results", "baseline"}, "aggregated")
 			if terr != nil {
-				failures = append(failures, aggregateFailure{Index: i, Source: label, Error: terr.Message})
+				failures = append(failures, aggregateFailure{Index: i, Source: sourceLabel(src), Error: terr.Message})
 				continue
 			}
-			if label == "" {
-				label = resolved.Handle.Path
-			}
-			toResults, ok := queryDispatch[resolved.Load.DocType]
-			if !ok {
-				failures = append(failures, aggregateFailure{Index: i, Source: label,
-					Error: fmt.Sprintf("a %s document has no requirements to aggregate (results and baseline only)", resolved.Load.DocType)})
-				continue
-			}
-			if !resolved.Load.Valid {
-				failures = append(failures, aggregateFailure{Index: i, Source: label,
-					Error: fmt.Sprintf("the document is %s but failed schema validation, so it cannot be aggregated", resolved.Load.DocType)})
-				continue
-			}
-			results := toResults(resolved.Load)
+			label := ls.Label
+			resolved := ls.Resolved
+			results := ls.Results
 			matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 				Status: in.Status, Severity: in.Severity, NIST: in.NIST,
 				Count: true, StatusOf: shared.RequirementEffectiveStatus,
@@ -157,7 +144,9 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 			filtered = append(filtered, hdfengine.MergeSource{Name: label, Doc: kept})
 		}
 
-		mergedAll, err := mergedForCounts(filtered)
+		// Renaming and provenance labels do not affect status/severity counts,
+		// and the warnings concern names, which this tool never reports.
+		mergedAll, _, err := mergeSources(filtered)
 		if err != nil {
 			return nil, errorAggregateOutput(), err
 		}
@@ -174,24 +163,6 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 		return textResult(fmt.Sprintf("hdf_aggregate: %d sources, %d matching requirements, %.2f%% aggregate compliance, %d failed to load. Per-source + aggregate in structuredContent.",
 			out.SourceCount, out.Aggregate.Total, out.Aggregate.Compliance, len(out.Failures))), out, nil
 	}
-}
-
-// mergedForCounts combines the filtered documents through the engine Merge so
-// the aggregate is counted over one merged result set. With nothing loaded
-// (every source failed) it is the empty set. Merge errors only on an empty
-// input, which is excluded here, so a returned error is an engine invariant
-// violation and is propagated as a Go error rather than zeroed into the counts
-// (a silent all-zero rollup beside a non-zero total would be a lie). Merge's
-// renaming and provenance labels do not affect status/severity counts.
-func mergedForCounts(filtered []hdfengine.MergeSource) (hdf.HDFResults, error) {
-	if len(filtered) == 0 {
-		return hdf.HDFResults{}, nil
-	}
-	merged, _, err := hdfengine.Merge(filtered)
-	if err != nil {
-		return hdf.HDFResults{}, fmt.Errorf("aggregate: merging %d filtered sources: %w", len(filtered), err)
-	}
-	return merged, nil
 }
 
 // filterResultsToMatches projects a results document down to exactly the
