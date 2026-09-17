@@ -729,6 +729,80 @@ describe('prose carriage', () => {
   });
 });
 
+describe('requirement ids round-trip through OSCAL SAR', () => {
+  // A one-baseline HDF Results document whose requirements carry the given ids,
+  // each with one result of the given status.
+  const hdfRequirementsDoc = (ids: string[], statuses: string[]): string =>
+    JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: ids.map((id, i) => ({
+          id, impact: 0.5, tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: statuses[i], codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        })),
+      }],
+    });
+  const shapes = (baseline: { requirements: Array<{ id: string; results: unknown[] }> }) =>
+    baseline.requirements.map((r) => ({ id: r.id, results: r.results.length }));
+
+  it('keeps distinct scanner rule ids apart, byte-exact', async () => {
+    const ids = [
+      'SV-230221r858734_rule',
+      'SV-230221r991589_rule',
+      'xccdf_org.ssgproject.content_rule_accounts_tmout',
+      'xccdf_org.ssgproject.content_rule_audit_rules_login_events',
+    ];
+    const statuses = ['failed', 'passed', 'failed', 'passed'];
+    const back = JSON.parse(await convertOscalSarToHdf(await convertHdfToOscalSar(hdfRequirementsDoc(ids, statuses))));
+    expect(back.baselines).toHaveLength(1);
+    const reqs = back.baselines[0].requirements as Array<{ id: string; results: Array<{ status: string }> }>;
+    expect(reqs.map((r) => r.id)).toEqual(ids);
+    expect(reqs.map((r) => r.results.map((res) => res.status))).toEqual(statuses.map((st) => [st]));
+  });
+
+  it('returns NIST, mixed-case, non-NIST and non-StringDatatype ids exactly', async () => {
+    const ids = [
+      'AC-2 (3)',
+      'ac-2(4)',
+      'AC-8 c 1',
+      'CM-2 (1)',
+      'AC-1',
+      'MixedCase_Rule-7',
+      'sv-230221r858734_rule',
+      'pkg:npm/lodash@4.17.20',
+      '1.1.1.1',
+      '  leading and trailing  ',
+      'line one\nline two',
+    ];
+    const back = JSON.parse(await convertOscalSarToHdf(await convertHdfToOscalSar(hdfRequirementsDoc(ids, ids.map(() => 'passed')))));
+    expect(back.baselines).toHaveLength(1);
+    expect(shapes(back.baselines[0])).toEqual(ids.map((id) => ({ id, results: 1 })));
+  });
+
+  it('keeps requirement ids and result counts through SAR -> HDF -> SAR -> HDF', async () => {
+    const sar = readFileSync(join(__dirname, '..', '..', 'oscal-to-hdf', 'fixtures', 'input', 'sar-fedramp.json'), 'utf-8');
+    const hdf = await convertOscalSarToHdf(sar);
+    const first = JSON.parse(hdf);
+    expect(first.baselines).toHaveLength(1);
+    expect(shapes(first.baselines[0])).toEqual([
+      { id: 'AC-1', results: 3 }, { id: 'AU-1', results: 1 }, { id: 'RA-5', results: 1 },
+      { id: 'CM-2 (1)', results: 1 }, { id: 'AT-2', results: 1 }, { id: 'CA-8 (1)', results: 1 },
+    ]);
+
+    const exported = JSON.parse(await convertHdfToOscalSar(hdf))['assessment-results'];
+    expect(exported.results).toHaveLength(1);
+    expect(exported.results[0].findings).toHaveLength(6);
+
+    const back = JSON.parse(await convertOscalSarToHdf(JSON.stringify({ 'assessment-results': exported })));
+    expect(back.baselines).toHaveLength(1);
+    expect(shapes(back.baselines[0])).toEqual([
+      { id: 'AC-1', results: 1 }, { id: 'AU-1', results: 1 }, { id: 'RA-5', results: 1 },
+      { id: 'CM-2 (1)', results: 1 }, { id: 'AT-2', results: 1 }, { id: 'CA-8 (1)', results: 1 },
+    ]);
+  });
+});
+
 describe('nistTagToControlID', () => {
   it.each([
     ['AC-1', 'ac-1'],

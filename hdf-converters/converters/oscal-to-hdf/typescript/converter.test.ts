@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { detectOscalDocumentType } from './detect.js';
 import { convertOscalCatalogToHdf } from './converter-catalog.js';
 import { convertOscalProfileToHdf } from './converter-profile.js';
@@ -9,7 +9,7 @@ import { convertOscalComponentToHdf } from './converter-component.js';
 import { convertOscalSspToHdf } from './converter-ssp.js';
 import { convertOscalSapToHdf } from './converter-sap.js';
 import { convertOscalPoamToHdf } from './converter-poam.js';
-import { convertOscalSarToHdf } from './converter-sar.js';
+import { convertOscalSarToHdf, sarRequirementId } from './converter-sar.js';
 import {
   controlIdToNistTag,
   controlIdsToNistTags,
@@ -23,6 +23,7 @@ import {
   extractMetadata,
   nistTagToControlId,
   nistTagToControlRef,
+  confirmedControlId,
   impactToSeverity,
   hdfStatusToOscalRiskStatus,
   parseOscalDocument,
@@ -854,6 +855,200 @@ describe('convertOscalSarToHdf prose homes', () => {
   });
 });
 
+describe('convertOscalSarToHdf requirement ids', () => {
+  const NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const sar = (findings: unknown[]): string =>
+    JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: [{
+          uuid: '22222222-2222-4222-8222-222222222222', title: 'r', description: 'd', start: '2026-01-01T00:00:00Z',
+          'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+          findings, observations: [], risks: [],
+        }],
+      },
+    });
+  // One finding per target id, each with its own uuid and title.
+  const sarFindings = (...targetIds: string[]): string =>
+    sar(targetIds.map((id, i) => ({
+      uuid: `f${i + 1}`, title: `Finding ${i + 1}`, description: 'd',
+      target: { type: 'objective-id', 'target-id': id, status: { state: 'satisfied' } },
+    })));
+  const requirementIds = (hdf: HDFResults): Record<string, number> =>
+    Object.fromEntries(hdf.baselines[0]!.requirements.map((r) => [r.id, r.results.length]));
+
+  const foreignNS = 'https://example.org/ns/oscal';
+  it.each([
+    ['objective groups under its control', 'ac-1.a.1_obj.1', undefined, 'AC-1'],
+    ['statement groups under its control', 'au-1_smt.a', undefined, 'AU-1'],
+    ['enhancement statement', 'cm-2.1_smt.c', undefined, 'CM-2 (1)'],
+    ['enhancement objective', 'ca-8.1_obj', undefined, 'CA-8 (1)'],
+    ['whole control', 'ac-2.3', undefined, 'AC-2 (3)'],
+    ['STIG rule id is verbatim', 'sv-230221r858734_rule', undefined, 'sv-230221r858734_rule'],
+    ['uppercase rule id is verbatim', 'SV-230221r858734_rule', undefined, 'SV-230221r858734_rule'],
+    ['uppercase look-alike of an unknown family is verbatim', 'SV-230221', undefined, 'SV-230221'],
+    ['uppercase control groups', 'AC-1', undefined, 'AC-1'],
+    ['uppercase objective groups under its control', 'AC-2.3_OBJ.A', undefined, 'AC-2 (3)'],
+    ['mixed-case part groups under its control', 'ac-1.A_obj', undefined, 'AC-1'],
+    ['zero-padded control groups canonically', 'ac-01_obj.a', undefined, 'AC-1'],
+    ['zero-padded enhancement groups canonically', 'ac-02.03_obj', undefined, 'AC-2 (3)'],
+    ['empty part after the suffix is verbatim', 'ac-1_obj.', undefined, 'ac-1_obj.'],
+    ['XCCDF rule id is verbatim', 'xccdf_org.ssgproject.content_rule_accounts_tmout', undefined, 'xccdf_org.ssgproject.content_rule_accounts_tmout'],
+    ['unconfirmed control is verbatim', 'zz-9_obj.1', undefined, 'zz-9_obj.1'],
+    ['HDF prop wins over a NIST target', 'ac-1', [{ name: 'hdf-requirement-id', ns: NS, value: 'SV-1' }], 'SV-1'],
+    ['HDF prop keeps a statement id', 'ac-8_smt.c.1', [{ name: 'hdf-requirement-id', ns: NS, value: 'AC-8 c 1' }], 'AC-8 c 1'],
+    ['HDF prop remarks hold the exact id', 'line_one_line_two', [{ name: 'hdf-requirement-id', ns: NS, value: 'line one line two', remarks: 'line one\nline two' }], 'line one\nline two'],
+    ['pre-ADR prop without ns is read', 'sv-1', [{ name: 'hdf-requirement-id', value: 'SV-1' }], 'SV-1'],
+    ["foreign-namespace prop is not HDF's", 'ac-1', [{ name: 'hdf-requirement-id', ns: foreignNS, value: 'SV-1' }], 'AC-1'],
+    ['empty HDF prop falls back to the target', 'ac-1', [{ name: 'hdf-requirement-id', ns: NS, value: '' }], 'AC-1'],
+  ])('sarRequirementId: %s', (_name, targetId, props, expected) => {
+    const f = { uuid: 'f', title: 't', description: 'd', props, target: { type: 'objective-id', 'target-id': targetId, status: { state: 'satisfied' } } };
+    expect(sarRequirementId(f as never)).toBe(expected);
+  });
+
+  it('sarRequirementId: empty target-id has no requirement id', () => {
+    const f = { uuid: 'f', title: 't', description: 'd', props: [{ name: 'hdf-requirement-id', ns: NS, value: 'SV-1' }], target: { type: 'objective-id', 'target-id': '', status: { state: 'satisfied' } } };
+    expect(sarRequirementId(f as never)).toBeUndefined();
+  });
+
+  it('groups foreign targets only under roster-confirmed controls, never merging look-alikes', async () => {
+    const input = sarFindings(
+      'sv-230221r858734_rule',
+      'ac-2.3_obj.a',
+      'sv-230221r991589_rule',
+      'xccdf_org.ssgproject.content_rule_accounts_tmout',
+      'ac-2.3_smt.b',
+      'xccdf_org.ssgproject.content_rule_audit_rules_login_events',
+      'au-1_smt.a',
+      'zz-9_obj.1',
+      'zz-9_obj.2',
+      'ac-2.3',
+    );
+    const hdf = JSON.parse(await convertOscalSarToHdf(input)) as HDFResults;
+    expectValidResults(hdf);
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs.map((r) => r.id)).toEqual([
+      'sv-230221r858734_rule',
+      'AC-2 (3)',
+      'sv-230221r991589_rule',
+      'xccdf_org.ssgproject.content_rule_accounts_tmout',
+      'xccdf_org.ssgproject.content_rule_audit_rules_login_events',
+      'AU-1',
+      'zz-9_obj.1',
+      'zz-9_obj.2',
+    ]);
+    expect(requirementIds(hdf)['AC-2 (3)']).toBe(3);
+    expect(reqs.find((r) => r.id === 'AC-2 (3)')!.tags.nist).toEqual(['AC-2 (3)']);
+    const sv = reqs.find((r) => r.id === 'sv-230221r858734_rule')!;
+    expect(sv.tags.nist).toEqual([]);
+    expect(sv.controlType).toBeUndefined();
+    expect(sv.title).toBe('Finding 1');
+  });
+
+  it('ignores letter case when grouping, keeping look-alikes verbatim and apart', async () => {
+    const hdf = JSON.parse(await convertOscalSarToHdf(
+      sarFindings('ac-2.3_obj.a', 'AC-2.3_OBJ.B', 'Ac-2.3', 'SV-230221r858734_rule', 'SV-230221', 'sv-230221', 'ac-1.A_obj'),
+    )) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs.map((r) => r.id)).toEqual(['AC-2 (3)', 'SV-230221r858734_rule', 'SV-230221', 'sv-230221', 'AC-1']);
+    expect(requirementIds(hdf)['AC-2 (3)']).toBe(3);
+    expect(reqs[0]!.tags.nist).toEqual(['AC-2 (3)']);
+  });
+
+  it('groups zero-padded targets under the canonical control and tag', async () => {
+    const hdf = JSON.parse(await convertOscalSarToHdf(sarFindings('ac-01_obj.a', 'ac-1_obj.b', 'ac-02.03_obj', 'ac-2.3'))) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(requirementIds(hdf)).toEqual({ 'AC-1': 2, 'AC-2 (3)': 2 });
+    expect(reqs[0]!.id).toBe('AC-1');
+    expect(reqs.find((r) => r.id === 'AC-1')!.tags.nist).toEqual(['AC-1']);
+    expect(reqs.find((r) => r.id === 'AC-2 (3)')!.tags.nist).toEqual(['AC-2 (3)']);
+  });
+
+  it('quotes titles in warnings literally, matching Go', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = (uuid: string, title: string, findings?: unknown[]) => ({
+      uuid, title, description: 'd', start: '2026-01-01T00:00:00Z',
+      'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+      ...(findings ? { findings } : {}),
+    });
+    await convertOscalSarToHdf(JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: [
+          result('33333333-3333-4333-8333-333333333333', 'Q3 "annual" review'),
+          result('44444444-4444-4444-8444-444444444444', 'Q4 "final" review', [{
+            uuid: 'f1', title: 'say "hi"', description: 'd',
+            target: { type: 'objective-id', 'target-id': '', status: { state: 'satisfied' } },
+          }]),
+        ],
+      },
+    }));
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    expect(warnings).toContain('WARNING: Skipping assessment result "Q3 "annual" review": no findings (empty result set)');
+    expect(warnings).toContain('WARNING: Skipping finding "f1" titled "say "hi"": empty target-id');
+    expect(warnings).toContain('WARNING: Skipping assessment result "Q4 "final" review": no finding has a target-id');
+  });
+
+  it('drops findings beyond the cap with the same warning as Go', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cap = 100_000;
+    const finding = (uuid: string, targetId: string) => ({
+      uuid, title: 't', description: 'd', target: { type: 'objective-id', 'target-id': targetId, status: { state: 'satisfied' } },
+    });
+    const findings = Array.from({ length: cap }, () => finding('f', 'ac-1'));
+    findings.push(finding('over', 'sv-1'));
+    const hdf = JSON.parse(await convertOscalSarToHdf(sar(findings))) as HDFResults;
+    expect(requirementIds(hdf)).toEqual({ 'AC-1': cap });
+    const truncations = warn.mock.calls.map((c) => c[0] as string).filter((w) => w.includes('Input truncated at'));
+    expect(truncations).toEqual(['WARNING: Input truncated at 100000 finding items (original: 100001)']);
+  }, 60_000);
+
+  it('reads the HDF requirement id prop ahead of the target and groups by it', async () => {
+    const prop = (value: string) => [{ name: 'hdf-requirement-id', ns: NS, value }];
+    const finding = (uuid: string, title: string, targetId: string, props?: unknown[]) => ({
+      uuid, title, description: 'd', ...(props ? { props } : {}),
+      target: { type: 'objective-id', 'target-id': targetId, status: { state: 'satisfied' } },
+    });
+    const hdf = JSON.parse(await convertOscalSarToHdf(sar([
+      finding('f1', 't1', 'sv-230221r858734_rule', prop('SV-230221r858734_rule')),
+      finding('f2', 't2', 'ac-8_smt.c.1', prop('AC-8 c 1')),
+      finding('f3', 't3', 'sv-230221r858734_rule', prop('SV-230221r858734_rule')),
+      finding('f4', '', 'ac-8.a_obj.1'),
+    ]))) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(requirementIds(hdf)).toEqual({ 'SV-230221r858734_rule': 2, 'AC-8 c 1': 1, 'AC-8': 1 });
+    expect(reqs[0]!.id).toBe('SV-230221r858734_rule');
+    expect(reqs.find((r) => r.id === 'AC-8 c 1')!.tags.nist).toEqual(['AC-8']);
+    expect(reqs.find((r) => r.id === 'AC-8')!.title).toBe('AC-8');
+  });
+
+  it('skips a finding with an empty target-id with a warning, and a result left with none', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let hdf = JSON.parse(await convertOscalSarToHdf(sarFindings('', 'ac-1', ''))) as HDFResults;
+    expect(requirementIds(hdf)).toEqual({ 'AC-1': 1 });
+    let warnings = warn.mock.calls.map((c) => c[0] as string);
+    expect(warnings).toContain('WARNING: Skipping finding "f1" titled "Finding 1": empty target-id');
+    expect(warnings).toContain('WARNING: Skipping finding "f3" titled "Finding 3": empty target-id');
+    expect(warnings.some((w) => w.includes('"f2"'))).toBe(false);
+
+    warn.mockClear();
+    hdf = JSON.parse(await convertOscalSarToHdf(sarFindings(''))) as HDFResults;
+    expect(hdf.baselines).toEqual([]);
+    warnings = warn.mock.calls.map((c) => c[0] as string);
+    expect(warnings).toContain('WARNING: Skipping finding "f1" titled "Finding 1": empty target-id');
+    expect(warnings).toContain('WARNING: Skipping assessment result "r": no finding has a target-id');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Shared utilities
 // ---------------------------------------------------------------------------
@@ -1104,6 +1299,21 @@ describe('OSCAL shared helpers', () => {
     it.each(cases)('maps $input the same as the Go peer', ({ input, controlId, statementId }) => {
       expect(nistTagToControlId(input)).toBe(controlId);
       expect(nistTagToControlRef(input)).toEqual({ controlId, statementId });
+    });
+  });
+
+  describe('confirmedControlId', () => {
+    const casesPath = join(__dirname, '..', 'go', 'testdata', 'oscal-control-target-cases.json');
+    const { cases } = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+      cases: Array<{ input: string; controlId: string }>;
+    };
+
+    it('has cases', () => {
+      expect(cases.length).toBeGreaterThan(0);
+    });
+
+    it.each(cases)('confirms $input the same as the Go peer', ({ input, controlId }) => {
+      expect(confirmedControlId(input)).toBe(controlId === '' ? undefined : controlId);
     });
   });
 

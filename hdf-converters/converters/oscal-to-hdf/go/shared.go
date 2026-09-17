@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -16,7 +17,7 @@ import (
 // controlEnhancementRe matches OSCAL control IDs with enhancements like "ac-2.3".
 var controlEnhancementRe = regexp.MustCompile(`^([a-z]{2}-\d+)\.(\d+)$`)
 
-// objectiveIDRe extracts the control ID from a SAR objective ID like "ac-1.a.1_obj.1".
+// objectiveIDRe matches the OSCAL control id a SAP objective id or lowercased SAR target-id starts with, as in "ac-1.a.1_obj.1".
 var objectiveIDRe = regexp.MustCompile(`^([a-z]{2}-\d+(?:\.\d+)?)`)
 
 // ControlIDToNistTag converts an OSCAL control ID to NIST 800-53 notation.
@@ -46,8 +47,8 @@ func ControlIDsToNistTags(ids []string) []string {
 	return tags
 }
 
-// ExtractControlIDFromObjectiveID extracts the base control ID from a SAR
-// objective ID. For example, "ac-1.a.1_obj.1" returns "ac-1".
+// ExtractControlIDFromObjectiveID extracts the base control ID from an
+// assessment-plan objective ID. For example, "ac-1.a.1_obj.1" returns "ac-1".
 // Returns the input unchanged if it doesn't match the expected pattern.
 func ExtractControlIDFromObjectiveID(objectiveID string) string {
 	if m := objectiveIDRe.FindStringSubmatch(objectiveID); m != nil {
@@ -188,6 +189,71 @@ func ToKebabCase(title, fallback string) string {
 		return fallback
 	}
 	return hdfutil.ToKebabCase(title)
+}
+
+// ConfirmedControlID returns the canonical OSCAL id of the NIST control a
+// target-id names, when the target, ignoring ASCII letter case, is a control
+// ("ac-2", "ac-2.3"), optionally followed by dot-separated parts and an objective
+// or statement suffix ("ac-2.3_obj.a", "au-1_smt.a", "ac-1.a.1_obj.1"), and NIST
+// defines that control at any supported revision. Any other target, including one
+// shaped like a control that NIST does not define, reports false.
+func ConfirmedControlID(targetID string) (string, bool) {
+	target := asciiLower(targetID)
+	controlID := objectiveIDRe.FindString(target)
+	if controlID == "" || !isObjectiveOrStatementSuffix(target[len(controlID):]) {
+		return "", false
+	}
+	tag := ControlIDToNistTag(controlID)
+	for _, rev := range nist.SupportedRevisions() {
+		if nist.NistExistsForRevision(tag, rev) {
+			return NistTagToControlID(tag), true
+		}
+	}
+	return "", false
+}
+
+// asciiLower lowercases only ASCII letters, so Go and TypeScript fold identically.
+func asciiLower(s string) string {
+	b := []byte(s)
+	for i, c := range b {
+		if c >= 'A' && c <= 'Z' {
+			b[i] = c + ('a' - 'A')
+		}
+	}
+	return string(b)
+}
+
+// isObjectiveOrStatementSuffix reports whether rest, what follows a control id in
+// a lowercased target-id, is empty or names an objective or statement of that
+// control: optional dot-separated letter-and-digit parts, then "_obj" or "_smt",
+// alone or followed by non-empty dot-separated parts.
+func isObjectiveOrStatementSuffix(rest string) bool {
+	if rest == "" {
+		return true
+	}
+	parts, suffix, ok := strings.Cut(rest, "_")
+	if !ok {
+		return false
+	}
+	if parts != "" {
+		if parts[0] != '.' {
+			return false
+		}
+		for _, part := range strings.Split(parts[1:], ".") {
+			if part == "" || strings.TrimFunc(part, isLowerAlphanumeric) != "" {
+				return false
+			}
+		}
+	}
+	kind, after, dotted := strings.Cut(suffix, ".")
+	if kind != "obj" && kind != "smt" {
+		return false
+	}
+	return !dotted || !slices.Contains(strings.Split(after, "."), "")
+}
+
+func isLowerAlphanumeric(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
 }
 
 // NistTagToControlID converts NIST 800-53 notation, in any spelling

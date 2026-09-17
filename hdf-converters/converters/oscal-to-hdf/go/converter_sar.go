@@ -24,12 +24,13 @@ func ConvertAssessmentResultsToHDF(input []byte, converterVersion string) (*hdf.
 }
 
 // ExpectedAssessmentResultsRequirementCount states how many requirements a
-// SAR must convert to: per results[] entry that has findings, one per distinct
-// control id across its findings (within the finding cap; an unresolvable id
-// groups under "unknown"). Entries with no findings are skipped. Computed from
-// the input alone, through the same grouping the conversion uses.
+// SAR must convert to: per results[] entry, one per distinct requirement id
+// across its findings (within the finding cap). A finding with an empty
+// target-id yields none, and an entry left with no requirement yields no
+// baseline. Computed from the input alone, through the same grouping the
+// conversion uses.
 func ExpectedAssessmentResultsRequirementCount(input []byte) (int, string, error) {
-	const unit = "distinct control ids across OSCAL results with findings"
+	const unit = "distinct requirement ids across OSCAL results with findings"
 	doc, err := ParseOscalDocument(input, "assessment-results", "oscal-assessment-results")
 	if err != nil {
 		return 0, unit, err
@@ -40,35 +41,58 @@ func ExpectedAssessmentResultsRequirementCount(input []byte) (int, string, error
 		if !resultHasFindings(r) {
 			continue
 		}
-		order, _ := groupFindingsByControl(r)
+		// The conversion warns about truncation; counting applies the same cap silently.
+		findings, _ := hdfutil.LimitSlice(r.Findings, 0)
+		order, _, _ := groupFindingsByRequirement(findings)
 		count += len(order)
 	}
 	return count, unit, nil
 }
 
-// resultHasFindings reports whether a results[] entry yields a baseline; an
+// resultHasFindings reports whether a results[] entry has any findings; an
 // empty result set is skipped by the conversion.
 func resultHasFindings(r *Result) bool {
 	return len(r.Findings) > 0
 }
 
-// groupFindingsByControl groups a result's findings by control id in
-// first-seen order, within the finding cap. It is the single definition of the
-// SAR's input-to-requirement relation: the conversion builds requirements from
-// it and ExpectedAssessmentResultsRequirementCount counts it.
-func groupFindingsByControl(result *Result) ([]string, map[string][]*Finding) {
-	order := make([]string, 0)
-	groups := make(map[string][]*Finding)
-	limitedFindings := shared.LimitSliceWithWarning(result.Findings, 0, "finding")
-	for i := range limitedFindings {
-		f := &limitedFindings[i]
-		controlID := extractControlIDFromFinding(f)
-		if _, ok := groups[controlID]; !ok {
-			order = append(order, controlID)
+// groupFindingsByRequirement groups a result's findings, already limited to the
+// finding cap, by requirement id in first-seen order, and returns the findings
+// skipped for an empty target-id. It is the single definition of the SAR's
+// input-to-requirement relation: the conversion builds requirements from it and
+// ExpectedAssessmentResultsRequirementCount counts it.
+func groupFindingsByRequirement(findings []Finding) (order []string, groups map[string][]*Finding, skipped []*Finding) {
+	groups = make(map[string][]*Finding)
+	for i := range findings {
+		f := &findings[i]
+		id, ok := sarRequirementID(f)
+		if !ok {
+			skipped = append(skipped, f)
+			continue
 		}
-		groups[controlID] = append(groups[controlID], f)
+		if _, seen := groups[id]; !seen {
+			order = append(order, id)
+		}
+		groups[id] = append(groups[id], f)
 	}
-	return order, groups
+	return order, groups, skipped
+}
+
+// sarRequirementID returns the HDF requirement id a finding belongs to
+// (ADR-0014 §4.5): the HDF-namespaced hdf-requirement-id when present; else the
+// NIST control a roster-confirmed target names; else the target-id verbatim. It
+// reports false for a finding whose target-id is empty.
+func sarRequirementID(f *Finding) (string, bool) {
+	targetID := f.Target.TargetID
+	if targetID == "" {
+		return "", false
+	}
+	if m, ok := FindVocabularyProp(f.Props, "hdf-requirement-id"); ok && m.Value != "" {
+		return m.Value, true
+	}
+	if controlID, ok := ConfirmedControlID(targetID); ok {
+		return ControlIDToNistTag(controlID), true
+	}
+	return targetID, true
 }
 
 // sarToHDFResults converts a parsed AssessmentResults to HDFResults.
@@ -82,15 +106,23 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(sar.Results))
 	for i := range sar.Results {
 		r := &sar.Results[i]
+		title := r.Title
+		if title == "" {
+			title = r.UUID
+		}
 		if !resultHasFindings(r) {
-			title := r.Title
-			if title == "" {
-				title = r.UUID
-			}
-			log.Printf("WARNING: Skipping assessment result %q: no findings (empty result set)", title)
+			log.Printf("WARNING: Skipping assessment result \"%s\": no findings (empty result set)", title)
 			continue
 		}
-		baseline := resultToEvaluatedBaseline(r, sar, rawInput, scanTime)
+		order, groups, skipped := groupFindingsByRequirement(shared.LimitSliceWithWarning(r.Findings, 0, "finding"))
+		for _, f := range skipped {
+			log.Printf("WARNING: Skipping finding \"%s\" titled \"%s\": empty target-id", f.UUID, f.Title)
+		}
+		if len(order) == 0 {
+			log.Printf("WARNING: Skipping assessment result \"%s\": no finding has a target-id", title)
+			continue
+		}
+		baseline := resultToEvaluatedBaseline(r, order, groups, sar, rawInput, scanTime)
 		baselines = append(baselines, baseline)
 	}
 
@@ -123,10 +155,9 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 }
 
 // resultToEvaluatedBaseline converts a single OSCAL Result to an HDF
-// EvaluatedBaseline. Findings are grouped by control ID so that multiple
-// findings for the same control produce multiple results on the same
-// requirement.
-func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput []byte, scanTime time.Time) hdf.EvaluatedBaseline {
+// EvaluatedBaseline from its findings grouped by requirement id, so that
+// multiple findings for the same requirement produce multiple results on it.
+func resultToEvaluatedBaseline(result *Result, order []string, groups map[string][]*Finding, sar *AssessmentResults, rawInput []byte, scanTime time.Time) hdf.EvaluatedBaseline {
 	checksum := shared.InputChecksum(rawInput)
 	integrity := shared.InputIntegrity(rawInput)
 
@@ -134,13 +165,9 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 	obsMap := buildObservationMap(result.Observations)
 	riskMap := buildRiskMap(result.Risks)
 
-	// Group findings by control ID, preserving insertion order
-	controlOrder, controlMap := groupFindingsByControl(result)
-
-	// Build requirements in insertion order
-	requirements := make([]hdf.EvaluatedRequirement, 0, len(controlOrder))
-	for _, controlID := range controlOrder {
-		req := findingsToEvaluatedRequirement(controlID, controlMap[controlID], obsMap, riskMap, result, scanTime)
+	requirements := make([]hdf.EvaluatedRequirement, 0, len(order))
+	for _, id := range order {
+		req := findingsToEvaluatedRequirement(id, groups[id], obsMap, riskMap, result, scanTime)
 		requirements = append(requirements, req)
 	}
 
@@ -165,22 +192,20 @@ func resultToEvaluatedBaseline(result *Result, sar *AssessmentResults, rawInput 
 }
 
 // findingsToEvaluatedRequirement converts one or more findings for the same
-// control ID into a single EvaluatedRequirement with multiple results.
+// requirement id into a single EvaluatedRequirement with multiple results.
 func findingsToEvaluatedRequirement(
-	controlID string,
+	id string,
 	findings []*Finding,
 	obsMap map[string]*Observation,
 	riskMap map[string]*Risk,
 	result *Result,
 	scanTime time.Time,
 ) hdf.EvaluatedRequirement {
-	nistTag := ControlIDToNistTag(controlID)
-
 	// Use the first finding for title/description
 	firstFinding := findings[0]
 	title := firstFinding.Title
 	if title == "" {
-		title = nistTag
+		title = id
 	}
 
 	// Determine impact from related risks across all findings
@@ -199,14 +224,14 @@ func findingsToEvaluatedRequirement(
 		results = append(results, reqResult)
 	}
 
-	// tags.nist carries the finding's NIST control; tags.cci is derived from it
-	// via the standard NIST→CCI mapping (omitted when the control maps to none),
-	// matching how sibling converters emit both.
-	nistTags := []string{nistTag}
+	// tags.nist carries the NIST controls the findings' targets confirm; tags.cci
+	// is derived from them via the standard NIST→CCI mapping (omitted when they
+	// map to none), matching how sibling converters emit both.
+	nistTags := sarConfirmedNistTags(findings)
 	tags := shared.BuildNISTCCITags(nistTags, cci.NISTToCCI(nistTags))
 
 	return hdf.EvaluatedRequirement{
-		ID:           nistTag,
+		ID:           id,
 		Title:        hdfutil.Ptr(title),
 		Impact:       impact,
 		Tags:         tags,
@@ -259,24 +284,16 @@ func findingToRequirementResult(
 	return reqResult
 }
 
-// extractControlIDFromFinding extracts the base control ID from a finding's
-// target. For objective-id targets like "ac-1.a.1_obj.1", extracts "ac-1".
-// For statement-id targets like "au-1_smt.a", extracts "au-1".
-func extractControlIDFromFinding(f *Finding) string {
-	targetID := f.Target.TargetID
-	if targetID == "" {
-		return "unknown"
+// sarConfirmedNistTags returns the distinct NIST controls, in NIST notation,
+// that the findings' targets confirm, in finding order.
+func sarConfirmedNistTags(findings []*Finding) []string {
+	controlIDs := make([]string, 0, len(findings))
+	for _, f := range findings {
+		if controlID, ok := ConfirmedControlID(f.Target.TargetID); ok {
+			controlIDs = append(controlIDs, controlID)
+		}
 	}
-
-	// For objective-id and statement-id, extract the base control ID
-	controlID := ExtractControlIDFromObjectiveID(targetID)
-
-	// Handle statement-id format: "au-1_smt.a" → "au-1"
-	if idx := strings.Index(controlID, "_"); idx > 0 {
-		controlID = controlID[:idx]
-	}
-
-	return controlID
+	return ControlIDsToNistTags(controlIDs)
 }
 
 // mapFindingStatus maps a finding's target status to an HDF ResultStatus.

@@ -1025,6 +1025,109 @@ func TestConvertHDFToOSCALSAR_RoundTrip(t *testing.T) {
 	assert.NotEmpty(t, doc.AssessmentResults.UUID)
 	assert.Equal(t, oscal.OscalVersion, doc.AssessmentResults.Metadata.OscalVersion)
 	assert.NotNil(t, doc.AssessmentResults.ImportAP)
+
+	// The import groups the fixture's objective and statement targets under their
+	// NIST controls in first-seen order, one result per finding.
+	require.Len(t, hdfResults.Baselines, 1)
+	assert.Equal(t, []requirementShape{
+		{"AC-1", 3}, {"AU-1", 1}, {"RA-5", 1}, {"CM-2 (1)", 1}, {"AT-2", 1}, {"CA-8 (1)", 1},
+	}, requirementShapes(&hdfResults.Baselines[0]))
+
+	// Step 3: SAR -> HDF again. The exporter writes one finding per requirement,
+	// and every requirement id comes back exactly.
+	back, err := oscal.ConvertAssessmentResultsToHDF(sarOutput, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Baselines, 1)
+	assert.Equal(t, []requirementShape{
+		{"AC-1", 1}, {"AU-1", 1}, {"RA-5", 1}, {"CM-2 (1)", 1}, {"AT-2", 1}, {"CA-8 (1)", 1},
+	}, requirementShapes(&back.Baselines[0]))
+}
+
+// requirementShape is a requirement's id and how many results it carries.
+type requirementShape struct {
+	ID      string
+	Results int
+}
+
+func requirementShapes(b *hdf.EvaluatedBaseline) []requirementShape {
+	shapes := make([]requirementShape, 0, len(b.Requirements))
+	for i := range b.Requirements {
+		shapes = append(shapes, requirementShape{b.Requirements[i].ID, len(b.Requirements[i].Results)})
+	}
+	return shapes
+}
+
+// hdfRequirementsDoc builds a one-baseline HDF Results document whose
+// requirements carry the given ids, each with one result of the given status.
+func hdfRequirementsDoc(ids, statuses []string) []byte {
+	reqs := make([]string, 0, len(ids))
+	for i, id := range ids {
+		reqs = append(reqs, `{
+			"id": `+jsonString(id)+`, "impact": 0.5, "tags": {},
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "`+statuses[i]+`", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}`)
+	}
+	return []byte(`{ "baselines": [{ "name": "b", "requirements": [` + strings.Join(reqs, ",") + `] }] }`)
+}
+
+// Distinct scanner rule ids that share a NIST-looking or dotted prefix must not
+// merge on the way back: each comes back as its own requirement, byte-exact.
+func TestConvertHDFToOSCALSAR_RuleIDsRoundTripExactly(t *testing.T) {
+	ids := []string{
+		"SV-230221r858734_rule",
+		"SV-230221r991589_rule",
+		"xccdf_org.ssgproject.content_rule_accounts_tmout",
+		"xccdf_org.ssgproject.content_rule_audit_rules_login_events",
+	}
+	statuses := []string{"failed", "passed", "failed", "passed"}
+	sar, err := ConvertHDFToOSCALSAR(hdfRequirementsDoc(ids, statuses), "1.0.0")
+	require.NoError(t, err)
+
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Baselines, 1)
+	reqs := back.Baselines[0].Requirements
+	require.Len(t, reqs, len(ids))
+	for i, id := range ids {
+		assert.Equal(t, id, reqs[i].ID)
+		require.Len(t, reqs[i].Results, 1, "requirement %s", id)
+		assert.Equal(t, hdf.ResultStatus(statuses[i]), reqs[i].Results[0].Status, "requirement %s", id)
+	}
+}
+
+// Every requirement id survives HDF -> SAR -> HDF exactly: NIST ids in any
+// spelling (not re-spelled as the control they target), mixed-case and non-NIST
+// ids, and ids OSCAL's StringDatatype cannot hold.
+func TestConvertHDFToOSCALSAR_RequirementIDsRoundTripExactly(t *testing.T) {
+	ids := []string{
+		"AC-2 (3)",
+		"ac-2(4)",
+		"AC-8 c 1",
+		"CM-2 (1)",
+		"AC-1",
+		"MixedCase_Rule-7",
+		"sv-230221r858734_rule",
+		"pkg:npm/lodash@4.17.20",
+		"1.1.1.1",
+		"  leading and trailing  ",
+		"line one\nline two",
+	}
+	statuses := make([]string, len(ids))
+	for i := range statuses {
+		statuses[i] = "passed"
+	}
+	sar, err := ConvertHDFToOSCALSAR(hdfRequirementsDoc(ids, statuses), "1.0.0")
+	require.NoError(t, err)
+
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Baselines, 1)
+	want := make([]requirementShape, 0, len(ids))
+	for _, id := range ids {
+		want = append(want, requirementShape{id, 1})
+	}
+	assert.Equal(t, want, requirementShapes(&back.Baselines[0]))
 }
 
 func TestConvertHDFToOSCALSAR_ValidJSON(t *testing.T) {

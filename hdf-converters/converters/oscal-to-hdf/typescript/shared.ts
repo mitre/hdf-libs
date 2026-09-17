@@ -4,13 +4,14 @@
  * Mirrors the Go helpers in converters/oscal-to-hdf/go/shared.go.
  */
 
-import { normalizeNistId } from '@mitre/hdf-mappings';
+import { SUPPORTED_NIST_REVISIONS, nistExists, normalizeNistId } from '@mitre/hdf-mappings';
 import { impactToSeverity as sharedImpactToSeverity, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { oscalSeverityFromHdf } from '../../../shared/typescript/converterutil.js';
 import type { Property, Part, Characterization, DocumentMetadata, Oscal } from './types.js';
 import { findVocabularyProp, vocabularyProp } from './vocabulary.js';
 
 const controlEnhancementRe = /^([a-z]{2}-\d+)\.(\d+)$/;
+// The OSCAL control id a SAP objective id or lowercased SAR target-id starts with, as in "ac-1.a.1_obj.1".
 const objectiveIDRe = /^([a-z]{2}-\d+(?:\.\d+)?)/;
 
 /**
@@ -42,7 +43,7 @@ export function controlIdsToNistTags(ids: string[]): string[] {
 }
 
 /**
- * Extracts the base control ID from a SAR objective ID.
+ * Extracts the base control ID from an assessment-plan objective ID.
  * "ac-1.a.1_obj.1" -> "ac-1"
  */
 export function extractControlIdFromObjectiveId(objectiveId: string): string {
@@ -194,6 +195,60 @@ export function extractMetadata(m: DocumentMetadata): MetadataInfo {
     oscalVersion: m['oscal-version'],
     lastModified: String(m['last-modified']),
   };
+}
+
+/**
+ * Returns the canonical OSCAL id of the NIST control a target-id names, when the
+ * target, ignoring ASCII letter case, is a control ("ac-2", "ac-2.3"), optionally
+ * followed by dot-separated parts and an objective or statement suffix
+ * ("ac-2.3_obj.a", "au-1_smt.a", "ac-1.a.1_obj.1"), and NIST defines that control
+ * at any supported revision; otherwise undefined, including for a target shaped
+ * like a control NIST does not define. Mirrors Go's ConfirmedControlID.
+ */
+export function confirmedControlId(targetId: string): string | undefined {
+  const target = asciiLower(targetId);
+  const controlId = objectiveIDRe.exec(target)?.[0];
+  if (controlId === undefined || !isObjectiveOrStatementSuffix(target.slice(controlId.length))) {
+    return undefined;
+  }
+  const tag = controlIdToNistTag(controlId);
+  return SUPPORTED_NIST_REVISIONS.some((rev) => nistExists(tag, rev)) ? nistTagToControlId(tag) : undefined;
+}
+
+/** Lowercases only ASCII letters, so Go and TypeScript fold identically. */
+function asciiLower(s: string): string {
+  return s.replace(/[A-Z]/g, (c) => c.toLowerCase());
+}
+
+/**
+ * Whether rest, what follows a control id in a lowercased target-id, is empty or
+ * names an objective or statement of that control: optional dot-separated
+ * letter-and-digit parts, then "_obj" or "_smt", alone or followed by non-empty
+ * dot-separated parts.
+ */
+function isObjectiveOrStatementSuffix(rest: string): boolean {
+  if (rest === '') {
+    return true;
+  }
+  const cut = rest.indexOf('_');
+  if (cut < 0) {
+    return false;
+  }
+  const parts = rest.slice(0, cut);
+  if (parts !== '') {
+    if (!parts.startsWith('.')) {
+      return false;
+    }
+    if (parts.slice(1).split('.').some((part) => part === '' || !isLowerAlphanumeric(part))) {
+      return false;
+    }
+  }
+  const [kind, ...after] = rest.slice(cut + 1).split('.');
+  return (kind === 'obj' || kind === 'smt') && !after.includes('');
+}
+
+function isLowerAlphanumeric(part: string): boolean {
+  return [...part].every((c) => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'));
 }
 
 /**

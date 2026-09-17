@@ -6,7 +6,7 @@
 
 import { parseJSON, parseTimestamp } from '@mitre/hdf-utilities';
 import { nistToCci } from '@mitre/hdf-mappings';
-import { buildNistCciTags, deriveControlTypeFromTags, inputChecksum, inputIntegrity, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { buildNistCciTags, deriveControlTypeFromTags, emitConverterWarning, inputChecksum, inputIntegrity, limitArrayWithWarning, serializeHdf, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -32,14 +32,16 @@ import type {
   RiskResponse,
 } from './types.js';
 import {
+  confirmedControlId,
   controlIdToNistTag,
-  extractControlIdFromObjectiveId,
+  controlIdsToNistTags,
   oscalStatusToHdf,
   extractRiskSeverity,
   extractMetadata,
   toKebabCase,
   descriptionLabel,
 } from './shared.js';
+import { findVocabularyProp } from './vocabulary.js';
 
 /**
  * Converts an OSCAL Assessment Results (SAR) document to HDF Results JSON.
@@ -72,14 +74,20 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
   // schema's requirements.minItems=1. Mirrors the Go SAR converter.
   const baselines: EvaluatedBaseline[] = [];
   for (const result of sar.results) {
+    const title = result.title || result.uuid;
     if (!result.findings || result.findings.length === 0) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `WARNING: Skipping assessment result "${result.title || result.uuid}": no findings (empty result set)`,
-      );
+      emitConverterWarning(`Skipping assessment result "${title}": no findings (empty result set)`);
       continue;
     }
-    const baseline = await resultToEvaluatedBaseline(result, sar, input, scanTime);
+    const { groups, skipped } = groupFindingsByRequirement(result.findings);
+    for (const f of skipped) {
+      emitConverterWarning(`Skipping finding "${f.uuid}" titled "${f.title}": empty target-id`);
+    }
+    if (groups.size === 0) {
+      emitConverterWarning(`Skipping assessment result "${title}": no finding has a target-id`);
+      continue;
+    }
+    const baseline = await resultToEvaluatedBaseline(result, groups, sar, input, scanTime);
     baselines.push(baseline);
   }
 
@@ -112,8 +120,48 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
   return serializeHdf(hdf);
 }
 
+/**
+ * Groups findings by requirement id in first-seen order (a Map keeps insertion
+ * order), within the finding cap, and returns the findings skipped for an empty
+ * target-id. Mirrors Go's groupFindingsByRequirement.
+ */
+function groupFindingsByRequirement(findings: Finding[]): { groups: Map<string, Finding[]>; skipped: Finding[] } {
+  const groups = new Map<string, Finding[]>();
+  const skipped: Finding[] = [];
+  for (const f of limitArrayWithWarning(findings, 'finding')) {
+    const id = sarRequirementId(f);
+    if (id === undefined) {
+      skipped.push(f);
+      continue;
+    }
+    const existing = groups.get(id);
+    if (existing) {
+      existing.push(f);
+    } else {
+      groups.set(id, [f]);
+    }
+  }
+  return { groups, skipped };
+}
+
+/**
+ * The HDF requirement id a finding belongs to (ADR-0014 §4.5): the HDF-namespaced
+ * hdf-requirement-id when present; else the NIST control a roster-confirmed
+ * target names; else the target-id verbatim. Undefined for a finding whose
+ * target-id is empty. Mirrors Go's sarRequirementID.
+ */
+export function sarRequirementId(f: Finding): string | undefined {
+  const targetId = f.target['target-id'];
+  if (!targetId) return undefined;
+  const prop = findVocabularyProp(f.props, 'hdf-requirement-id');
+  if (prop && prop.value !== '') return prop.value;
+  const controlId = confirmedControlId(targetId);
+  return controlId === undefined ? targetId : controlIdToNistTag(controlId);
+}
+
 async function resultToEvaluatedBaseline(
   result: AssessmentResult,
+  groups: Map<string, Finding[]>,
   sar: SecurityAssessmentResultsSAR,
   rawInput: string,
   scanTime: Date,
@@ -124,27 +172,9 @@ async function resultToEvaluatedBaseline(
   const obsMap = buildObservationMap(result.observations ?? []);
   const riskMap = buildRiskMap(result.risks ?? []);
 
-  // Group findings by control ID, preserving insertion order
-  const controlOrder: string[] = [];
-  const controlMap = new Map<string, Finding[]>();
-
-  for (const f of result.findings ?? []) {
-    const controlId = extractControlIdFromFinding(f);
-    const existing = controlMap.get(controlId);
-    if (existing) {
-      existing.push(f);
-    } else {
-      controlOrder.push(controlId);
-      controlMap.set(controlId, [f]);
-    }
-  }
-
-  // Build requirements in insertion order
   const requirements: EvaluatedRequirement[] = [];
-  for (const controlId of controlOrder) {
-    const findings = controlMap.get(controlId)!;
-    const req = findingsToEvaluatedRequirement(controlId, findings, obsMap, riskMap, result, scanTime);
-    requirements.push(req);
+  for (const [id, findings] of groups) {
+    requirements.push(findingsToEvaluatedRequirement(id, findings, obsMap, riskMap, result, scanTime));
   }
 
   // Derive baseline name
@@ -165,18 +195,16 @@ async function resultToEvaluatedBaseline(
 }
 
 function findingsToEvaluatedRequirement(
-  controlId: string,
+  id: string,
   findings: Finding[],
   obsMap: Map<string, Observation>,
   riskMap: Map<string, IdentifiedRisk>,
   result: AssessmentResult,
   scanTime: Date,
 ): EvaluatedRequirement {
-  const nistTag = controlIdToNistTag(controlId);
-
   // Use the first finding for title
   const firstFinding = findings[0]!;
-  const title = firstFinding.title || nistTag;
+  const title = firstFinding.title || id;
 
   // Determine impact from related risks
   const impact = sarFindingsImpact(findings, riskMap);
@@ -193,13 +221,13 @@ function findingsToEvaluatedRequirement(
     results.push(findingToRequirementResult(f, obsMap, riskMap, result, scanTime));
   }
 
-  // tags.nist carries the finding's NIST control; tags.cci is derived from it
-  // via the standard NIST→CCI mapping (omitted when the control maps to none),
-  // matching how sibling converters emit both.
-  const nistTags = [nistTag];
+  // tags.nist carries the NIST controls the findings' targets confirm; tags.cci
+  // is derived from them via the standard NIST→CCI mapping (omitted when they
+  // map to none), matching how sibling converters emit both.
+  const nistTags = sarConfirmedNistTags(findings);
   const tags: Record<string, unknown> = buildNistCciTags(nistTags, nistToCci(nistTags));
 
-  const req = createRequirement(nistTag, title, descriptions, impact, results, {
+  const req = createRequirement(id, title, descriptions, impact, results, {
     tags,
     ...(refs ? { refs } : {}),
   }) as EvaluatedRequirement;
@@ -238,20 +266,14 @@ function findingToRequirementResult(
   });
 }
 
-function extractControlIdFromFinding(f: Finding): string {
-  const targetId = f.target['target-id'];
-  if (!targetId) return 'unknown';
-
-  // For objective-id and statement-id, extract the base control ID
-  let controlId = extractControlIdFromObjectiveId(targetId);
-
-  // Handle statement-id format: "au-1_smt.a" -> "au-1"
-  const idx = controlId.indexOf('_');
-  if (idx > 0) {
-    controlId = controlId.slice(0, idx);
+/** The distinct NIST controls, in NIST notation, the findings' targets confirm, in finding order. */
+function sarConfirmedNistTags(findings: Finding[]): string[] {
+  const controlIds: string[] = [];
+  for (const f of findings) {
+    const controlId = confirmedControlId(f.target['target-id']);
+    if (controlId !== undefined) controlIds.push(controlId);
   }
-
-  return controlId;
+  return controlIdsToNistTags(controlIds);
 }
 
 function mapFindingStatus(f: Finding): ResultStatus {

@@ -1,8 +1,11 @@
 package oscal
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -212,29 +215,261 @@ func TestConvertAssessmentResultsToHDF_RoundTripJSON(t *testing.T) {
 	assert.Equal(t, results.Generator.Version, roundtrip.Generator.Version)
 }
 
-func TestExtractControlIDFromFinding_ObjectiveID(t *testing.T) {
+func TestSarRequirementID(t *testing.T) {
+	const foreignNS = "https://example.org/ns/oscal"
 	tests := []struct {
+		name     string
 		targetID string
+		props    []Property
 		expected string
 	}{
-		{"ac-1.a.1_obj.1", "ac-1"},
-		{"ac-1.a.1_obj.2", "ac-1"},
-		{"ac-2.a_obj.1", "ac-2"},
-		{"au-1_smt.a", "au-1"},
-		{"ra-5_smt.a", "ra-5"},
-		{"cm-2.1_smt.c", "cm-2.1"},
-		{"at-2.c_obj.2", "at-2"},
-		{"ca-8.1_obj", "ca-8.1"},
-		{"ac-1", "ac-1"},
-		{"", "unknown"},
+		{"objective groups under its control", "ac-1.a.1_obj.1", nil, "AC-1"},
+		{"statement groups under its control", "au-1_smt.a", nil, "AU-1"},
+		{"enhancement statement", "cm-2.1_smt.c", nil, "CM-2 (1)"},
+		{"enhancement objective", "ca-8.1_obj", nil, "CA-8 (1)"},
+		{"whole control", "ac-2.3", nil, "AC-2 (3)"},
+		{"STIG rule id is verbatim", "sv-230221r858734_rule", nil, "sv-230221r858734_rule"},
+		{"uppercase rule id is verbatim", "SV-230221r858734_rule", nil, "SV-230221r858734_rule"},
+		{"uppercase look-alike of an unknown family is verbatim", "SV-230221", nil, "SV-230221"},
+		{"uppercase control groups", "AC-1", nil, "AC-1"},
+		{"uppercase objective groups under its control", "AC-2.3_OBJ.A", nil, "AC-2 (3)"},
+		{"mixed-case part groups under its control", "ac-1.A_obj", nil, "AC-1"},
+		{"zero-padded control groups canonically", "ac-01_obj.a", nil, "AC-1"},
+		{"zero-padded enhancement groups canonically", "ac-02.03_obj", nil, "AC-2 (3)"},
+		{"empty part after the suffix is verbatim", "ac-1_obj.", nil, "ac-1_obj."},
+		{"XCCDF rule id is verbatim", "xccdf_org.ssgproject.content_rule_accounts_tmout", nil, "xccdf_org.ssgproject.content_rule_accounts_tmout"},
+		{"unconfirmed control is verbatim", "zz-9_obj.1", nil, "zz-9_obj.1"},
+		{"HDF prop wins over a NIST target", "ac-1", []Property{{Name: "hdf-requirement-id", Ns: hdfNS, Value: "SV-1"}}, "SV-1"},
+		{"HDF prop keeps a statement id", "ac-8_smt.c.1", []Property{{Name: "hdf-requirement-id", Ns: hdfNS, Value: "AC-8 c 1"}}, "AC-8 c 1"},
+		{"HDF prop remarks hold the exact id", "line_one_line_two", []Property{{Name: "hdf-requirement-id", Ns: hdfNS, Value: "line one line two", Remarks: "line one\nline two"}}, "line one\nline two"},
+		{"pre-ADR prop without ns is read", "sv-1", []Property{{Name: "hdf-requirement-id", Value: "SV-1"}}, "SV-1"},
+		{"foreign-namespace prop is not HDF's", "ac-1", []Property{{Name: "hdf-requirement-id", Ns: foreignNS, Value: "SV-1"}}, "AC-1"},
+		{"empty HDF prop falls back to the target", "ac-1", []Property{{Name: "hdf-requirement-id", Ns: hdfNS}}, "AC-1"},
 	}
-
 	for _, tt := range tests {
-		t.Run(tt.targetID, func(t *testing.T) {
-			f := &Finding{Target: FindingTarget{TargetID: tt.targetID}}
-			assert.Equal(t, tt.expected, extractControlIDFromFinding(f))
+		t.Run(tt.name, func(t *testing.T) {
+			f := &Finding{Props: tt.props, Target: FindingTarget{TargetID: tt.targetID}}
+			id, ok := sarRequirementID(f)
+			assert.True(t, ok)
+			assert.Equal(t, tt.expected, id)
 		})
 	}
+
+	t.Run("empty target-id has no requirement id", func(t *testing.T) {
+		f := &Finding{Props: []Property{{Name: "hdf-requirement-id", Ns: hdfNS, Value: "SV-1"}}}
+		id, ok := sarRequirementID(f)
+		assert.False(t, ok)
+		assert.Empty(t, id)
+	})
+}
+
+// sarFindings builds a one-result SAR whose findings target the given ids, each
+// with its own uuid and title, and no observations or risks.
+func sarFindings(targetIDs ...string) []byte {
+	findings := make([]string, 0, len(targetIDs))
+	for i, id := range targetIDs {
+		n := strconv.Itoa(i + 1)
+		findings = append(findings, `{"uuid":"f`+n+`","title":"Finding `+n+`","description":"d","target":{"type":"objective-id","target-id":"`+id+`","status":{"state":"satisfied"}}}`)
+	}
+	return sarWithProse("["+strings.Join(findings, ",")+"]", `[]`, `[]`)
+}
+
+// requirementIDs lists a baseline's requirement ids with their result counts.
+func requirementIDs(b *hdf.EvaluatedBaseline) map[string]int {
+	ids := make(map[string]int, len(b.Requirements))
+	for i := range b.Requirements {
+		ids[b.Requirements[i].ID] = len(b.Requirements[i].Results)
+	}
+	return ids
+}
+
+// Foreign targets group only under roster-confirmed NIST controls; every other
+// target is its own requirement, verbatim, and never merges with a look-alike.
+func TestConvertAssessmentResultsToHDF_ForeignTargetsGroupOnlyUnderConfirmedControls(t *testing.T) {
+	input := sarFindings(
+		"sv-230221r858734_rule",
+		"ac-2.3_obj.a",
+		"sv-230221r991589_rule",
+		"xccdf_org.ssgproject.content_rule_accounts_tmout",
+		"ac-2.3_smt.b",
+		"xccdf_org.ssgproject.content_rule_audit_rules_login_events",
+		"au-1_smt.a",
+		"zz-9_obj.1",
+		"zz-9_obj.2",
+		"ac-2.3",
+	)
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 1)
+	b := &results.Baselines[0]
+
+	order := make([]string, 0, len(b.Requirements))
+	for i := range b.Requirements {
+		order = append(order, b.Requirements[i].ID)
+	}
+	assert.Equal(t, []string{
+		"sv-230221r858734_rule",
+		"AC-2 (3)",
+		"sv-230221r991589_rule",
+		"xccdf_org.ssgproject.content_rule_accounts_tmout",
+		"xccdf_org.ssgproject.content_rule_audit_rules_login_events",
+		"AU-1",
+		"zz-9_obj.1",
+		"zz-9_obj.2",
+	}, order)
+	assert.Equal(t, 3, requirementIDs(b)["AC-2 (3)"])
+
+	ac23 := findReqByID(b, "AC-2 (3)")
+	assert.Equal(t, []interface{}{"AC-2 (3)"}, ac23.Tags["nist"])
+	sv := findReqByID(b, "sv-230221r858734_rule")
+	assert.Equal(t, []interface{}{}, sv.Tags["nist"], "an unconfirmed target names no NIST control")
+	assert.Nil(t, sv.ControlType)
+	assert.Equal(t, "Finding 1", *sv.Title)
+
+	expected, _, err := ExpectedAssessmentResultsRequirementCount(input)
+	require.NoError(t, err)
+	assert.Equal(t, len(b.Requirements), expected)
+}
+
+// Grouping ignores letter case: a target groups with its lowercase form, while
+// look-alikes NIST does not define stay verbatim and apart.
+func TestConvertAssessmentResultsToHDF_TargetCaseIgnoredForGrouping(t *testing.T) {
+	input := sarFindings("ac-2.3_obj.a", "AC-2.3_OBJ.B", "Ac-2.3", "SV-230221r858734_rule", "SV-230221", "sv-230221", "ac-1.A_obj")
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 1)
+	b := &results.Baselines[0]
+	order := make([]string, 0, len(b.Requirements))
+	for i := range b.Requirements {
+		order = append(order, b.Requirements[i].ID)
+	}
+	assert.Equal(t, []string{"AC-2 (3)", "SV-230221r858734_rule", "SV-230221", "sv-230221", "AC-1"}, order)
+	assert.Equal(t, 3, requirementIDs(b)["AC-2 (3)"])
+	assert.Equal(t, []interface{}{"AC-2 (3)"}, findReqByID(b, "AC-2 (3)").Tags["nist"])
+}
+
+// A zero-padded target names the same control as its unpadded form, so both
+// group under the one canonical requirement and NIST tag.
+func TestConvertAssessmentResultsToHDF_PaddedControlGroupsCanonically(t *testing.T) {
+	results, err := ConvertAssessmentResultsToHDF(sarFindings("ac-01_obj.a", "ac-1_obj.b", "ac-02.03_obj", "ac-2.3"), "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 1)
+	b := &results.Baselines[0]
+	assert.Equal(t, map[string]int{"AC-1": 2, "AC-2 (3)": 2}, requirementIDs(b))
+	assert.Equal(t, "AC-1", b.Requirements[0].ID)
+	assert.Equal(t, []interface{}{"AC-1"}, findReqByID(b, "AC-1").Tags["nist"])
+	assert.Equal(t, []interface{}{"AC-2 (3)"}, findReqByID(b, "AC-2 (3)").Tags["nist"])
+}
+
+// Warnings quote titles literally, as the TypeScript converter does, so both
+// languages print identical text for a title containing a double quote.
+func TestConvertAssessmentResultsToHDF_WarningsQuoteLiterally(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	input := []byte(`{"assessment-results":{
+		"uuid":"11111111-1111-4111-8111-111111111111",
+		"metadata":{"title":"t","last-modified":"2026-01-01T00:00:00Z","version":"1","oscal-version":"1.1.2"},
+		"import-ap":{"href":"#"},
+		"results":[
+			{"uuid":"33333333-3333-4333-8333-333333333333","title":"Q3 \"annual\" review","description":"d","start":"2026-01-01T00:00:00Z",
+			 "reviewed-controls":{"control-selections":[{"include-all":{}}]}},
+			{"uuid":"44444444-4444-4444-8444-444444444444","title":"Q4 \"final\" review","description":"d","start":"2026-01-01T00:00:00Z",
+			 "reviewed-controls":{"control-selections":[{"include-all":{}}]},
+			 "findings":[{"uuid":"f1","title":"say \"hi\"","description":"d","target":{"type":"objective-id","target-id":"","status":{"state":"satisfied"}}}]}
+		]}}`)
+	_, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	assert.Contains(t, logs.String(), `WARNING: Skipping assessment result "Q3 "annual" review": no findings (empty result set)`)
+	assert.Contains(t, logs.String(), `WARNING: Skipping finding "f1" titled "say "hi"": empty target-id`)
+	assert.Contains(t, logs.String(), `WARNING: Skipping assessment result "Q4 "final" review": no finding has a target-id`)
+}
+
+// Findings beyond the cap are dropped. The CLI counts the expected requirements
+// and then converts, so the count applies the cap silently and the conversion
+// warns once; the TypeScript converter prints the same text and converts the
+// same findings.
+func TestConvertAssessmentResultsToHDF_FindingCap(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	const findingCap = 100000
+	findings := make([]string, 0, findingCap+1)
+	for i := 0; i < findingCap; i++ {
+		findings = append(findings, `{"uuid":"f","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}}}`)
+	}
+	findings = append(findings, `{"uuid":"over","title":"t","description":"d","target":{"type":"objective-id","target-id":"sv-1","status":{"state":"satisfied"}}}`)
+	input := sarWithProse("["+strings.Join(findings, ",")+"]", `[]`, `[]`)
+
+	expected, _, err := ExpectedAssessmentResultsRequirementCount(input)
+	require.NoError(t, err)
+	assert.Equal(t, 1, expected)
+	assert.Empty(t, logs.String(), "counting must not warn")
+
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 1)
+	assert.Equal(t, map[string]int{"AC-1": findingCap}, requirementIDs(&results.Baselines[0]))
+	const warning = "WARNING: Input truncated at 100000 finding items (original: 100001)"
+	assert.Contains(t, logs.String(), warning)
+	assert.Equal(t, 1, strings.Count(logs.String(), "Input truncated at"), "count and conversion together warn exactly once")
+}
+
+// HDF-produced findings carry their requirement id in the HDF prop; findings
+// with the same id are one requirement, and the prop outranks the target.
+func TestConvertAssessmentResultsToHDF_HDFRequirementIDProp(t *testing.T) {
+	prop := func(id string) string {
+		return `"props":[{"name":"hdf-requirement-id","ns":"` + hdfNS + `","value":"` + id + `"}]`
+	}
+	input := sarWithProse(`[
+		{"uuid":"f1","title":"t1","description":"d",`+prop("SV-230221r858734_rule")+`,"target":{"type":"objective-id","target-id":"sv-230221r858734_rule","status":{"state":"not-satisfied"}}},
+		{"uuid":"f2","title":"t2","description":"d",`+prop("AC-8 c 1")+`,"target":{"type":"statement-id","target-id":"ac-8_smt.c.1","status":{"state":"satisfied"}}},
+		{"uuid":"f3","title":"t3","description":"d",`+prop("SV-230221r858734_rule")+`,"target":{"type":"objective-id","target-id":"sv-230221r858734_rule","status":{"state":"satisfied"}}},
+		{"uuid":"f4","title":"","description":"d","target":{"type":"objective-id","target-id":"ac-8.a_obj.1","status":{"state":"satisfied"}}}
+	]`, `[]`, `[]`)
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 1)
+	b := &results.Baselines[0]
+	assert.Equal(t, map[string]int{"SV-230221r858734_rule": 2, "AC-8 c 1": 1, "AC-8": 1}, requirementIDs(b))
+	assert.Equal(t, "SV-230221r858734_rule", b.Requirements[0].ID)
+	assert.Equal(t, []interface{}{"AC-8"}, findReqByID(b, "AC-8 c 1").Tags["nist"])
+	assert.Equal(t, "AC-8", *findReqByID(b, "AC-8").Title, "an untitled finding is titled by its requirement id")
+}
+
+// A finding with an empty target-id is invalid OSCAL: it is skipped with a
+// warning naming it, and no requirement is named "unknown". A result left with
+// no usable finding yields no baseline.
+func TestConvertAssessmentResultsToHDF_EmptyTargetSkippedWithWarning(t *testing.T) {
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	input := sarFindings("", "ac-1", "")
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 1)
+	assert.Equal(t, map[string]int{"AC-1": 1}, requirementIDs(&results.Baselines[0]))
+	assert.Contains(t, logs.String(), `WARNING: Skipping finding "f1" titled "Finding 1": empty target-id`)
+	assert.Contains(t, logs.String(), `WARNING: Skipping finding "f3" titled "Finding 3": empty target-id`)
+	assert.NotContains(t, logs.String(), `"f2"`)
+
+	expected, _, err := ExpectedAssessmentResultsRequirementCount(input)
+	require.NoError(t, err)
+	assert.Equal(t, 1, expected)
+
+	logs.Reset()
+	onlyEmpty := sarFindings("")
+	results, err = ConvertAssessmentResultsToHDF(onlyEmpty, "1.0.0")
+	require.NoError(t, err)
+	assert.Empty(t, results.Baselines)
+	assert.Contains(t, logs.String(), `WARNING: Skipping finding "f1" titled "Finding 1": empty target-id`)
+	assert.Contains(t, logs.String(), `WARNING: Skipping assessment result "r": no finding has a target-id`)
+	expected, _, err = ExpectedAssessmentResultsRequirementCount(onlyEmpty)
+	require.NoError(t, err)
+	assert.Equal(t, 0, expected)
 }
 
 func TestSarBaselineName(t *testing.T) {

@@ -59,6 +59,26 @@ func TestExtractControlIDFromObjectiveID(t *testing.T) {
 	}
 }
 
+func TestConfirmedControlID(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("testdata", "oscal-control-target-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Cases []struct {
+			Input     string `json:"input"`
+			ControlID string `json:"controlId"`
+		} `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases)
+	for _, tc := range table.Cases {
+		t.Run(tc.Input, func(t *testing.T) {
+			controlID, ok := ConfirmedControlID(tc.Input)
+			assert.Equal(t, tc.ControlID, controlID)
+			assert.Equal(t, tc.ControlID != "", ok)
+		})
+	}
+}
+
 func TestOscalStatusToHDF(t *testing.T) {
 	tests := []struct {
 		input    string
