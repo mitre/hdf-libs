@@ -55,8 +55,8 @@ func TestDetectHDFDocType(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got, ok := detectHDFDocType([]byte(tc.input))
-			assert.Equal(t, tc.wantOK, ok)
+			got := detectHDFDocumentType([]byte(tc.input))
+			assert.Equal(t, tc.wantOK, got != "")
 			assert.Equal(t, tc.want, got)
 		})
 	}
@@ -172,8 +172,8 @@ func TestWriteValidatedHDFOutput_NoValidateFlagSkipsCheck(t *testing.T) {
 
 func TestDetectHDFDocType_DetectsAmendments(t *testing.T) {
 	t.Parallel()
-	docType, ok := detectHDFDocType([]byte(`{"overrides":[{"type":"waiver","requirementId":"AC-1"}]}`))
-	assert.True(t, ok)
+	docType := detectHDFDocumentType([]byte(`{"overrides":[{"type":"waiver","requirementId":"AC-1"}]}`))
+	assert.NotEmpty(t, docType)
 	assert.Equal(t, "amendments", docType)
 }
 
@@ -216,17 +216,33 @@ func TestDetectHDFDocType_DetectsSystemPlanEvidenceComparison(t *testing.T) {
 	}{
 		{"system via components", `{"name":"s","components":[{"name":"c","type":"application"}]}`, "system"},
 		{"plan via assessments", `{"name":"p","assessments":[{"baselineRef":"x"}]}`, "plan"},
-		{"evidence via contents", `{"name":"e","contents":[{"type":"hdf-results","uri":"a","checksum":{"algorithm":"sha256","value":"abc"}}]}`, "evidencePackage"},
-		{"comparison via requirementDiffs", `{"formatVersion":"1.0.0","requirementDiffs":[]}`, "comparison"},
+		{"evidence via contents", `{"name":"e","contents":[{"type":"hdf-results","uri":"a","checksum":{"algorithm":"sha256","value":"abc"}}]}`, "evidence-package"},
+		{"comparison via comparisonMode", `{"formatVersion":"1.0.0","comparisonMode":"temporal","requirementDiffs":[]}`, "comparison"},
+		{"comparison via requirementDiffs alone", `{"formatVersion":"1.0.0","requirementDiffs":[]}`, "comparison"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got, ok := detectHDFDocType([]byte(tc.input))
-			assert.True(t, ok)
+			got := detectHDFDocumentType([]byte(tc.input))
+			assert.NotEmpty(t, got)
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+// TestValidateHDFOutput_RejectsRequirementDiffsOnlyComparison guards the
+// detection change: a doc carrying requirementDiffs but missing the required
+// comparisonMode is a MALFORMED comparison. It must still be classified as a
+// comparison and fail schema validation — never fall through to "" and skip
+// validation entirely.
+func TestValidateHDFOutput_RejectsRequirementDiffsOnlyComparison(t *testing.T) {
+	t.Parallel()
+	invalid := []byte(`{"formatVersion":"1.0.0","requirementDiffs":[]}`)
+	require.Equal(t, "comparison", detectHDFDocumentType(invalid),
+		"a requirementDiffs-only doc must classify as comparison, not skip validation")
+	err := validateHDFOutput(invalid)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Comparison")
 }
 
 func TestValidateHDFOutput_AcceptsValidSystem(t *testing.T) {
@@ -296,8 +312,8 @@ func TestValidateHDFOutput_AcceptsValidComparison(t *testing.T) {
 
 func TestValidateHDFOutput_RejectsInvalidComparison(t *testing.T) {
 	t.Parallel()
-	// requirementDiffs present (detection passes) but formatVersion is wrong.
-	invalid := []byte(`{"formatVersion":"0.0.1","requirementDiffs":[]}`)
+	// comparisonMode present (detection passes) but formatVersion is wrong.
+	invalid := []byte(`{"formatVersion":"0.0.1","comparisonMode":"temporal","requirementDiffs":[]}`)
 	err := validateHDFOutput(invalid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Comparison")

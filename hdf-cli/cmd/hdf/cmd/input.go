@@ -247,11 +247,11 @@ func parseHDFComparison(data []byte) (hdf.HDFComparison, error) {
 // re-marshal flows (system.go, doc_set.go, evidence_build.go's System read)
 // where typed-struct access is not the goal but the load-side schema gate IS.
 //
-// `expected` is the doc type the caller expects ("system", "plan",
-// "evidencePackage", "comparison", "results", "baseline", or "amendments").
-// The function errors when:
+// `expected` is the doc type the caller expects — a validators.Type* value
+// ("system", "plan", "evidence-package", "comparison", "results", "baseline",
+// or "amendments"). The function errors when:
 //   - the input's top-level shape doesn't match any known HDF doc type
-//     (detectHDFDocType returns ("", false)) — would otherwise silently
+//     (detectHDFDocumentType returns "") — would otherwise silently
 //     pass validateHDFOutput's "not HDF-shaped" fallthrough
 //   - the detected doc type doesn't match `expected`
 //   - the schema validator rejects the input
@@ -259,8 +259,8 @@ func parseHDFComparison(data []byte) (hdf.HDFComparison, error) {
 // Pass `expected = ""` only when the caller genuinely accepts any HDF doc
 // type (rare).
 func loadAndValidateHDFDoc(data []byte, expected string) (map[string]any, error) {
-	docType, ok := detectHDFDocType(data)
-	if !ok {
+	docType := detectHDFDocumentType(data)
+	if docType == "" {
 		return nil, fmt.Errorf("input is not a recognized HDF document (no top-level discriminator key matched)")
 	}
 	if expected != "" && docType != expected {

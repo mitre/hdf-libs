@@ -19,26 +19,39 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-// arSchema loads the vendored NIST OSCAL v1.1.2 Assessment Results JSON Schema.
-// The converter self-declares "oscal-version": "1.1.2", so its output must
-// validate against exactly that schema. See ../schemas/provenance.txt.
+// arSchemaFiles lists the vendored NIST OSCAL Assessment Results schemas the
+// output must satisfy: 1.1.2, which the converter self-declares as
+// "oscal-version", and 1.2.3, the current release, which constrains
+// control-selection and non-empty strings where 1.1.2 does not. See
+// ../schemas/provenance.txt.
+var arSchemaFiles = []string{
+	"oscal_assessment-results_schema-v1.1.2.json",
+	"oscal_assessment-results_schema-v1.2.3.json",
+}
+
+// arSchemaFor loads one vendored AR schema by file name.
 //
 // The schema is read as bytes rather than via a file:// reference loader: a
 // Windows absolute path ("D:\...") produces a malformed file:// URI and fails
 // on windows-latest CI. NewBytesLoader sidesteps URI parsing entirely.
-func arSchema(t *testing.T) *gojsonschema.Schema {
+func arSchemaFor(t *testing.T, file string) *gojsonschema.Schema {
 	t.Helper()
-	path := filepath.Join(shared.GetConvertersDir(), "hdf-to-oscal-sar", "schemas",
-		"oscal_assessment-results_schema-v1.1.2.json")
+	path := filepath.Join(shared.GetConvertersDir(), "hdf-to-oscal-sar", "schemas", file)
 	schemaBytes, err := os.ReadFile(path)
-	require.NoError(t, err, "read OSCAL AR schema")
+	require.NoError(t, err, "read OSCAL AR schema %s", file)
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaBytes))
-	require.NoError(t, err, "load OSCAL AR schema")
+	require.NoError(t, err, "load OSCAL AR schema %s", file)
 	return schema
 }
 
+// arSchema loads the declared 1.1.2 schema.
+func arSchema(t *testing.T) *gojsonschema.Schema {
+	t.Helper()
+	return arSchemaFor(t, arSchemaFiles[0])
+}
+
 // requireValidAR converts input and asserts the output validates against the
-// NIST OSCAL v1.1.2 AR schema, reporting every schema violation on failure.
+// given AR schema, reporting every schema violation on failure.
 func requireValidAR(t *testing.T, schema *gojsonschema.Schema, label string, input []byte) {
 	t.Helper()
 	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
@@ -50,18 +63,69 @@ func requireValidAR(t *testing.T, schema *gojsonschema.Schema, label string, inp
 		for _, e := range result.Errors() {
 			t.Errorf("%s: %s: %s", label, e.Field(), e.Description())
 		}
-		t.Fatalf("%s: output is not valid OSCAL Assessment Results v1.1.2", label)
+		t.Fatalf("%s: output is not valid OSCAL Assessment Results", label)
 	}
 }
 
-// TestConvertHDFToOSCALSAR_SchemaValid gates the converter output on the NIST
-// OSCAL v1.1.2 AR schema. The worstCase input is built to exercise every defect
-// from GitHub #184: missing reviewed-controls, missing finding.description
+// wantNoControlsRemark is the remark a result that names no control must carry.
+const wantNoControlsRemark = "No controls were identifiable in the assessed input, so none is listed individually. OSCAL requires a control selection; include-all is emitted to satisfy it and does not assert that any control was assessed."
+
+// TestConvertHDFToOSCALSAR_CleanScanValid_1_2_3 pins the no-controls selection.
+// A clean scan names no control, and OSCAL 1.2.x requires every control-selection
+// to carry include-all or include-controls, so an empty selection is invalid.
+func TestConvertHDFToOSCALSAR_CleanScanValid_1_2_3(t *testing.T) {
+	cases := []struct {
+		label string
+		input []byte
+	}{
+		{"baseline with no requirements", []byte(`{"baselines":[{"name":"clean-scan","requirements":[]}]}`)},
+		{"baseline whose only requirement has no identifiable control", []byte(`{
+			"baselines": [{
+				"name": "unidentified",
+				"requirements": [{ "id": "   ", "impact": 0,
+					"results": [{ "status": "passed", "codeDesc": "c", "startTime": "2026-06-01T00:00:00Z" }] }]
+			}]
+		}`)},
+	}
+
+	for _, file := range arSchemaFiles {
+		schema := arSchemaFor(t, file)
+		for _, tc := range cases {
+			t.Run(file+"/"+tc.label, func(t *testing.T) {
+				requireValidAR(t, schema, tc.label, tc.input)
+			})
+		}
+	}
+
+	for _, tc := range cases {
+		t.Run("selection/"+tc.label, func(t *testing.T) {
+			out, err := ConvertHDFToOSCALSAR(tc.input, "1.0.0")
+			require.NoError(t, err)
+			var doc struct {
+				AssessmentResults struct {
+					Results []struct {
+						ReviewedControls struct {
+							ControlSelections []map[string]any `json:"control-selections"`
+						} `json:"reviewed-controls"`
+					} `json:"results"`
+				} `json:"assessment-results"`
+			}
+			require.NoError(t, json.Unmarshal(out, &doc))
+			require.Len(t, doc.AssessmentResults.Results, 1)
+			assert.Equal(t, []map[string]any{{
+				"include-all": map[string]any{},
+				"remarks":     wantNoControlsRemark,
+			}}, doc.AssessmentResults.Results[0].ReviewedControls.ControlSelections)
+		})
+	}
+}
+
+// TestConvertHDFToOSCALSAR_SchemaValid gates the converter output on every
+// vendored NIST OSCAL AR schema. The worstCase input is built to exercise every
+// defect from GitHub #184: missing reviewed-controls, missing finding.description
 // (empty descriptions), missing characterization.origin (impact > 0), and an
 // empty-string prop value (empty code).
 func TestConvertHDFToOSCALSAR_SchemaValid(t *testing.T) {
-	schema := arSchema(t)
-
 	// Modern HDF crafted to trigger all four #184 defects at once.
 	worstCase := []byte(`{
 		"baselines": [{
@@ -86,10 +150,13 @@ func TestConvertHDFToOSCALSAR_SchemaValid(t *testing.T) {
 		{"minimal failed", minimalHDFResults(hdf.Failed)},
 		{"real STIG multi-line code/check/fix", multilineFixture(t)},
 	}
-	for _, tc := range cases {
-		t.Run(tc.label, func(t *testing.T) {
-			requireValidAR(t, schema, tc.label, tc.input)
-		})
+	for _, file := range arSchemaFiles {
+		schema := arSchemaFor(t, file)
+		for _, tc := range cases {
+			t.Run(file+"/"+tc.label, func(t *testing.T) {
+				requireValidAR(t, schema, tc.label, tc.input)
+			})
+		}
 	}
 }
 
@@ -320,14 +387,18 @@ func corpusMinusExemptions(t *testing.T) []corpus.CorpusCase {
 }
 
 // TestConvertHDFToOSCALSAR_AdversarialCorpus holds this converter to all three
-// contracts, minus the two documented exemptions above.
+// contracts against every vendored schema, minus the two documented exemptions
+// above.
 func TestConvertHDFToOSCALSAR_AdversarialCorpus(t *testing.T) {
-	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
-		"hdf-to-oscal-sar", "schemas", "oscal_assessment-results_schema-v1.1.2.json"))
-
-	corpus.RunSchemaCorpus(t, v, corpusMinusExemptions(t), func(in []byte) ([]byte, error) {
-		return ConvertHDFToOSCALSAR(in, "1.0.0")
-	})
+	for _, file := range arSchemaFiles {
+		t.Run(file, func(t *testing.T) {
+			v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
+				"hdf-to-oscal-sar", "schemas", file))
+			corpus.RunSchemaCorpus(t, v, corpusMinusExemptions(t), func(in []byte) ([]byte, error) {
+				return ConvertHDFToOSCALSAR(in, "1.0.0")
+			})
+		})
+	}
 }
 
 // TestConvertHDFToOSCALSAR_RejectsZeroBaselines pins the converter-specific

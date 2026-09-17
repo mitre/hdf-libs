@@ -17,14 +17,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestConvertHDFToOSCALPOAM_SchemaValid gates the converter output on the NIST
-// OSCAL v1.1.2 POA&M schema. The converter self-declares "oscal-version":
-// "1.1.2", so its output must validate against exactly that schema. See
-// ../schemas/provenance.txt.
-func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
-	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
-		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
+// poamSchema is one vendored NIST OSCAL POA&M schema, compiled.
+type poamSchema struct {
+	file string
+	v    *shared.SchemaValidator
+}
 
+// poamSchemas compiles every vendored POA&M schema the output must satisfy:
+// 1.1.2, which the converter declares as "oscal-version", and 1.2.3, the current
+// release, whose non-empty string patterns 1.1.2 does not apply. See
+// ../schemas/provenance.txt.
+func poamSchemas(t *testing.T) []poamSchema {
+	t.Helper()
+	files := []string{"oscal_poam_schema-v1.1.2.json", "oscal_poam_schema-v1.2.3.json"}
+	schemas := make([]poamSchema, 0, len(files))
+	for _, f := range files {
+		schemas = append(schemas, poamSchema{f, shared.NewSchemaValidator(t,
+			filepath.Join(shared.GetConvertersDir(), "hdf-to-oscal-poam", "schemas", f))})
+	}
+	return schemas
+}
+
+// minimalAmendments loads the repo's minimal amendments fixture and lets the
+// caller rewrite fields on its single override.
+func minimalAmendments(t *testing.T, override map[string]any) []byte {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(shared.GetConvertersDir(), "..", "..",
+		"hdf-schema", "test", "fixtures", "minimal-amendments.json"))
+	require.NoError(t, err)
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	overrides, ok := doc["overrides"].([]any)
+	require.True(t, ok)
+	require.Len(t, overrides, 1)
+	first, ok := overrides[0].(map[string]any)
+	require.True(t, ok)
+	for k, val := range override {
+		first[k] = val
+	}
+	out, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return out
+}
+
+// TestConvertHDFToOSCALPOAM_SchemaValid gates the converter output on every
+// vendored NIST OSCAL POA&M schema.
+func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
 	appliedAt := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
 	expiresAt := time.Date(2027, 1, 15, 0, 0, 0, 0, time.UTC)
 	sysRef := "https://example.com/ssp.json"
@@ -69,27 +107,112 @@ func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
 		},
 	}
 
+	inputs := make([]struct {
+		label string
+		input []byte
+	}, 0, len(cases)+1)
 	for _, tc := range cases {
-		t.Run(tc.label, func(t *testing.T) {
-			input, err := json.Marshal(tc.amendments)
+		input, err := json.Marshal(tc.amendments)
+		require.NoError(t, err)
+		inputs = append(inputs, struct {
+			label string
+			input []byte
+		}{tc.label, input})
+	}
+	inputs = append(inputs, struct {
+		label string
+		input []byte
+	}{"empty requirementId", minimalAmendments(t, map[string]any{"requirementId": ""})})
+
+	for _, s := range poamSchemas(t) {
+		for _, tc := range inputs {
+			t.Run(s.file+"/"+tc.label, func(t *testing.T) {
+				out, err := ConvertHDFToOSCALPOAM(tc.input, "1.0.0")
+				require.NoError(t, err)
+				s.v.RequireValid(t, tc.label, out)
+			})
+		}
+	}
+}
+
+// TestConvertHDFToOSCALPOAM_EmptyRequirementIDTitle_1_2_3 pins the title
+// fallback. HDF puts no minLength on requirementId, and OSCAL 1.2.x requires
+// both titles to be a non-empty single line.
+func TestConvertHDFToOSCALPOAM_EmptyRequirementIDTitle_1_2_3(t *testing.T) {
+	schemas := poamSchemas(t)
+	for _, tc := range []struct{ name, requirementID, wantTitle string }{
+		{"empty requirementId falls back", "", "Unidentified requirement"},
+		{"whitespace-only requirementId falls back", "   ", "Unidentified requirement"},
+		{"a real requirementId is used verbatim", "SV-001", "SV-001"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := ConvertHDFToOSCALPOAM(minimalAmendments(t, map[string]any{"requirementId": tc.requirementID}), "1.0.0")
 			require.NoError(t, err)
-			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
-			require.NoError(t, err)
-			v.RequireValid(t, tc.label, out)
+			for _, s := range schemas {
+				s.v.RequireValid(t, s.file, out)
+			}
+
+			var doc struct {
+				POAM struct {
+					Risks []struct {
+						Title string `json:"title"`
+					} `json:"risks"`
+					Items []struct {
+						Title string `json:"title"`
+					} `json:"poam-items"`
+				} `json:"plan-of-action-and-milestones"`
+			}
+			require.NoError(t, json.Unmarshal(out, &doc))
+			require.Len(t, doc.POAM.Risks, 1)
+			require.Len(t, doc.POAM.Items, 1)
+			assert.Equal(t, tc.wantTitle, doc.POAM.Risks[0].Title)
+			assert.Equal(t, tc.wantTitle, doc.POAM.Items[0].Title)
 		})
 	}
 }
 
-// TestConvertHDFToOSCALPOAM_AdversarialCorpus runs the shared corpus, so this
-// converter is held to both contracts an exporter owes rather than only to
-// fully-populated fixtures — the gap that let the defects in issue #236 ship.
-func TestConvertHDFToOSCALPOAM_AdversarialCorpus(t *testing.T) {
-	v := shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
-		"hdf-to-oscal-poam", "schemas", "oscal_poam_schema-v1.1.2.json"))
+// TestConvertHDFToOSCALPOAM_RiskRationaleWithoutRequirementID pins the
+// absence sentence for an override that carries neither a reason nor an id: it
+// must not end on a dangling "applied to ." clause.
+func TestConvertHDFToOSCALPOAM_RiskRationaleWithoutRequirementID(t *testing.T) {
+	for _, tc := range []struct{ name, requirementID, want string }{
+		{"no identifier drops the applied-to clause", "", "No rationale was recorded for the waiver override."},
+		{"an identifier is named", "SV-001", "No rationale was recorded for the waiver override applied to SV-001."},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := ConvertHDFToOSCALPOAM(minimalAmendments(t, map[string]any{
+				"requirementId": tc.requirementID, "reason": "",
+			}), "1.0.0")
+			require.NoError(t, err)
 
-	corpus.RunSchemaCorpus(t, v, corpus.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
-		return ConvertHDFToOSCALPOAM(in, "1.0.0")
-	})
+			var doc struct {
+				POAM struct {
+					Risks []struct {
+						Statement   string `json:"statement"`
+						Description string `json:"description"`
+					} `json:"risks"`
+				} `json:"plan-of-action-and-milestones"`
+			}
+			require.NoError(t, json.Unmarshal(out, &doc))
+			require.Len(t, doc.POAM.Risks, 1)
+			assert.Equal(t, tc.want, doc.POAM.Risks[0].Statement)
+			assert.Equal(t, tc.want, doc.POAM.Risks[0].Description)
+		})
+	}
+}
+
+// TestConvertHDFToOSCALPOAM_AdversarialCorpus runs the shared corpus against
+// every vendored schema, so this converter is held to both contracts an exporter
+// owes rather than only to fully-populated fixtures — the gap that let the
+// defects in issue #236 ship.
+func TestConvertHDFToOSCALPOAM_AdversarialCorpus(t *testing.T) {
+	for _, s := range poamSchemas(t) {
+		t.Run(s.file, func(t *testing.T) {
+			corpus.RunSchemaCorpus(t, s.v, corpus.AmendmentsCorpus(), func(in []byte) ([]byte, error) {
+				return ConvertHDFToOSCALPOAM(in, "1.0.0")
+			})
+		})
+	}
 }
 
 // TestConvertHDFToOSCALPOAM_RejectsUnconvertibleInput pins the structural guard.

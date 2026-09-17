@@ -1,10 +1,14 @@
 # OSCAL Assessment Results schema — provenance
 
-`oscal_assessment-results_schema-v1.1.2.json` is the official NIST OSCAL
-**v1.1.2** Assessment Results (AR) JSON Schema, used to validate this converter's
-output in its tests. The `hdf-to-oscal-sar` converter self-declares
-`"oscal-version": "1.1.2"`, so its output is validated against exactly that
-schema version.
+Two official NIST OSCAL Assessment Results (AR) JSON Schemas validate this
+converter's output in its tests. The `hdf-to-oscal-sar` converter self-declares
+`"oscal-version": "1.1.2"`, so its output is validated against that declared
+version. It is also validated against 1.2.3, the current release, because 1.2.x
+applies constraints 1.1.2 does not (for example, every `control-selection` must
+carry `include-all` or `include-controls`), and a consumer validating against the
+current release must not receive a document it rejects.
+
+## oscal_assessment-results_schema-v1.1.2.json
 
 - **Source:** https://github.com/usnistgov/OSCAL/releases/download/v1.1.2/oscal_assessment-results_schema.json
 - **Release:** usnistgov/OSCAL `v1.1.2`
@@ -15,5 +19,17 @@ schema version.
 - **SHA-256:** `d033da70154cf6625ae46a746199e88e58f2928b1387dfac051d381b92f41b0d`
 - **Retrieved:** 2026-07-27
 
-Byte-identical to the upstream release asset. Do not edit; re-fetch from the
-pinned release URL to update.
+## oscal_assessment-results_schema-v1.2.3.json
+
+- **Source:** https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_assessment-results_schema.json
+- **Release:** usnistgov/OSCAL `v1.2.3` (published 2026-08-07)
+- **`$id`:** `http://csrc.nist.gov/ns/oscal/1.2.3/oscal-ar-schema.json`
+- **JSON Schema draft:** draft-07
+- **Self-contained:** yes — all 532 `$ref`s are local JSON Pointers, so no
+  `$ref` rewrite is needed to resolve it offline; validates a full
+  `{ "assessment-results": { … } }` document at the root.
+- **SHA-256:** `4034e2032332dbf597e59e0646ec16c2c31df992962490371e91f47b219ff42c`
+- **Retrieved:** 2026-09-14
+
+Both files are byte-identical to the upstream release assets. Do not edit;
+re-fetch from the pinned release URL to update.

@@ -74,16 +74,29 @@ function poamTitle(a: HDFAmendments): string {
 }
 
 /**
+ * Stands in for an empty requirementId: HDF puts no minLength on it, and OSCAL
+ * 1.2.x requires risk and POA&M item titles to be non-empty. Mirrors Go's
+ * unidentifiedRequirementTitle.
+ */
+const UNIDENTIFIED_REQUIREMENT_TITLE = 'Unidentified requirement';
+
+/** The title of the risk and POA&M item an override produces. */
+function requirementTitle(override: StandaloneOverride): string {
+  return firstNonEmpty(override.requirementId, UNIDENTIFIED_REQUIREMENT_TITLE);
+}
+
+/**
  * Supplies the text OSCAL requires for a risk's description and statement. HDF
  * puts no minLength on reason, so an override can legitimately carry none; the
  * fallback states that absence rather than inventing an impact assessment the
- * source never made.
+ * source never made, and names the requirement only when there is one.
  */
 function riskRationale(override: StandaloneOverride): string {
-  return firstNonEmpty(
-    override.reason,
-    `No rationale was recorded for the ${String(override.type)} override applied to ${override.requirementId}.`,
-  );
+  const absence =
+    firstNonEmpty(override.requirementId) === ''
+      ? `No rationale was recorded for the ${String(override.type)} override.`
+      : `No rationale was recorded for the ${String(override.type)} override applied to ${override.requirementId}.`;
+  return firstNonEmpty(override.reason, absence);
 }
 
 /** HDF dates arrive as strings from JSON.parse but are typed as Date. */
@@ -342,7 +355,7 @@ function overrideToPOAMItem(
 
   const risk = {
     uuid: riskUUID,
-    title: override.requirementId,
+    title: requirementTitle(override),
     description: rationale,
     statement: rationale,
     status: riskStatus,
@@ -355,7 +368,7 @@ function overrideToPOAMItem(
 
   const item = {
     uuid: crypto.randomUUID(),
-    title: override.requirementId,
+    title: requirementTitle(override),
     description: override.reason,
     'related-risks': [{ 'risk-uuid': riskUUID }],
     ...(relatedObs.length > 0 ? { 'related-observations': relatedObs } : {}),
