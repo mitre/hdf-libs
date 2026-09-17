@@ -418,44 +418,6 @@ On auto-detection the source format and a confidence score are reported on the `
 
 See [Supported Conversions](#supported-conversions) for the full list.
 
-### merge
-
-Combine results documents from several scanners into **one** HDF results document, one baseline per input baseline, so a single `hdf query` (or one `hdf_query` / `hdf_compliance` MCP call) answers a question across every scanner at once. Design: `dev-docs/adr-0016-multi-scanner-results-merge.md`.
-
-```
-USAGE
-  hdf merge <results-file> [results-file...] [flags]
-
-FLAGS
-  -o, --output string   Output file (default: stdout)
-  -f, --force           Allow overwriting an input file with output
-      --json            Print a summary (counts, sha256, warnings) instead of nothing
-
-EXAMPLES
-  hdf merge gosec.hdf.json zap.hdf.json grype.hdf.json -o system.hdf.json
-  hdf merge scans/*.hdf.json -o system.hdf.json --json
-  hdf query system.hdf.json --baseline 'grype/*' --count
-```
-
-Each merged baseline is renamed `<tool>/<original name>` — `tool` is the input's root `tool.name` (lower-cased), else its `generator.name`, else `doc<N>` — and carries the labels `tool`, `toolVersion` (when the input has one) and `sourceDocument`, so `--baseline '<tool>/*'` and `hdf_compliance groupBy=baseline` select one scanner's findings. Requirements are never deduplicated or re-keyed. The merged root records `generator: hdf-merge`, no single `tool`, the latest input timestamp, the union of components (by `componentId`), and each input's own root provenance verbatim under `extensions["hdf-merge"].sources[]`. Output is byte-reproducible for the same inputs in the same order and is schema-validated before it is written (atomically).
-
-Example output:
-
-```console
-$ hdf merge gosec.hdf.json zap.hdf.json grype.hdf.json -o system.hdf.json --json
-{"output":"system.hdf.json","baselines":6,"requirements":120,"components":5,"sha256":"6a92…9382","warnings":[]}
-
-$ hdf list system.hdf.json
-Baselines:    6
-Requirements: 120
-Components:   5
-
-$ hdf merge gosec.hdf.json gosec.hdf.json -o dup.hdf.json
-warning: duplicate-baseline-name: "gosec/gosec Scan" at baselines 0,1 — both kept; name-keyed consumers (hdf diff, baselineRef) cannot tell them apart
-```
-
-Only results documents are accepted; a baseline, system or other document among the inputs is refused and nothing is written. An existing output file is overwritten (as `hdf convert` does); writing over one of the inputs needs `--force`. Do not export a merged document to formats that assume one tool per document (XCCDF, ECS/Splunk) — they would attribute every finding to the first baseline's tool.
-
 ### system
 
 View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and interconnections.

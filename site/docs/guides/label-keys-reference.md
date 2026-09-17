@@ -70,14 +70,14 @@ The team responsible for the component.
 
 ## Merge Provenance Keys
 
-`hdf merge` combines several scanners' results documents into one, one baseline per input baseline. Because `tool` and `generator` are document-root fields, a merged document cannot say per baseline which scanner produced it — so the merge writes three baseline labels (ADR-0016 §3). They are written on **baselines only**; existing labels such as `component` are preserved.
+The engine's `Merge` combines several scanners' results documents into one multi-baseline **view**, one baseline per input baseline — the view the MCP read tools build in memory when given `sources[]` (ADR-0016). It is never written to a file. Because `tool` and `generator` are document-root fields, the view cannot say per baseline which scanner produced it — so the merge writes three baseline labels (ADR-0016 §3). They are written on **baselines only**; existing labels such as `component` are preserved.
 
 ### `tool`
 
 The source scanner, lower-cased and trimmed: the input document's root `tool.name`, else its `generator.name`, else `doc<N>` by input position. The same value prefixes the merged baseline's name (`<tool>/<original name>`).
 
-- **Expected values:** `"grype"`, `"owasp zap"`, `"gosec"`, `"hdf-merge"` (a re-merged document)
-- **Used by:** `hdf_compliance groupBy=tool`, `hdf_query --baseline '<tool>/*'`
+- **Expected values:** `"grype"`, `"owasp zap"`, `"gosec"`, `"hdf-merge"` (a re-merged view)
+- **Used by:** `hdf_compliance groupBy=tool`, `hdf_query baseline: '<tool>/*'` over `sources[]`
 
 ### `toolVersion`
 
@@ -87,7 +87,7 @@ The input document's root `tool.version`. Omitted when the source carries none; 
 
 ### `sourceDocument`
 
-The name the input was recorded under — its file basename, or the caller's label — so a baseline can be traced back to the document it came from. The input's full root provenance (`tool`, `generator`, `timestamp`, `runner`) is kept verbatim at the merged root under `extensions["hdf-merge"].sources[]`.
+The name the input was recorded under — its path or handle, or the caller's label — so a baseline can be traced back to the document it came from. The input's full root provenance (`tool`, `generator`, `timestamp`, `runner`) is kept verbatim at the view's root under `extensions["hdf-merge"].sources[]`.
 
 - **Expected values:** `"grype.hdf.json"`
 
@@ -116,7 +116,7 @@ A small number of converters automatically extract labels from source tool metad
 |---|---|---|
 | `aws-config` | `labels.account`, `labels.region`, `labels.provider` | AWS resource ARN |
 | `oscal-sar` | Populates `planRef` (not labels directly) | OSCAL `import-ap` href |
-| `hdf merge` | `labels.tool`, `labels.toolVersion`, `labels.sourceDocument` on every baseline | Each input document's root `tool` / `generator` and its file name (see [Merge Provenance Keys](#merge-provenance-keys)) |
+| engine `Merge` (the MCP's `sources[]` view, in memory) | `labels.tool`, `labels.toolVersion`, `labels.sourceDocument` on every baseline | Each input document's root `tool` / `generator` and its name (see [Merge Provenance Keys](#merge-provenance-keys)) |
 
 Most converters produce results without labels. Labels can be added after conversion using the CLI.
 

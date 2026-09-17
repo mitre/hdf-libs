@@ -105,9 +105,10 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 		}
 
 		// The all-source total is counted over the engine's Merge of the
-		// filtered documents — the same operation `hdf merge` persists — so there
-		// is exactly one definition of "these documents combined" (ADR-0016 §7).
-		// Only counts leave this tool; the merged document is never returned.
+		// filtered documents — the same in-memory view hdf_query and
+		// hdf_compliance build over sources[] — so there is exactly one
+		// definition of "these documents combined" (ADR-0016 §1, §7). Only
+		// counts leave this tool; the merged view is never returned or persisted.
 		var filtered []hdfengine.MergeSource
 		perSource := make([]aggregateSourceRollup, 0, len(in.Sources))
 		var failures []aggregateFailure
