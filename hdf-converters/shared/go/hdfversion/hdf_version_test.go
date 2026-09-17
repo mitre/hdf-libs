@@ -132,6 +132,210 @@ func TestV3ToV2ToV3PreservesComponents(t *testing.T) {
 		"v3->v2->v3 preserves components[] (imageId, integrity, labels, name, osName, osVersion, type)")
 }
 
+// TestV3ToV2ToV3PreservesPassthroughProvenance: a v3 doc's extensions.passthrough
+// (where the SAF normalizer homes a legacy passthrough, and where native provenance
+// lives) must survive a v3->v2->v3 round trip. On the down-pin it rides in the single
+// top-level v2 passthrough alongside the hdf_components carrier — neither clobbers the
+// other. Regression for issue #234 (provenance destroyed by conversion).
+func TestV3ToV2ToV3PreservesPassthroughProvenance(t *testing.T) {
+	accountID := "prod-account"
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "C-1",
+				Impact: 0.5,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Passed,
+					CodeDesc:  "ok",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+				}},
+			}},
+		}},
+		Components: []hdf.Component{
+			{Type: hdf.CloudAccount, Name: "prod-account", AccountID: &accountID, Labels: map[string]string{"boundary": "sparc"}},
+		},
+		Extensions: map[string]interface{}{
+			"passthrough": map[string]interface{}{
+				"audit": map[string]interface{}{"runId": "r-123"},
+			},
+		},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	// Down-pin: v3 -> v2. Both the components carrier and the provenance land under
+	// the single top-level passthrough key.
+	v2out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	pt, ok := legacy["passthrough"].(map[string]any)
+	require.True(t, ok, "v2 output has a passthrough object")
+	require.Contains(t, pt, "hdf_components", "components carried alongside provenance")
+	audit, ok := pt["audit"].(map[string]any)
+	require.True(t, ok, "audit provenance survives the downgrade (not clobbered by the components carrier)")
+	assert.Equal(t, "r-123", audit["runId"])
+
+	// Up-pin: v2 -> v3. Provenance restored to extensions.passthrough; components restored.
+	v3out, _, err := TransformHDF(v2out, LegacyVersion, ModernVersion)
+	require.NoError(t, err)
+	var restored hdf.HDFResults
+	require.NoError(t, json.Unmarshal(v3out, &restored))
+	assert.Equal(t, original.Components, restored.Components, "components restored")
+	require.NotNil(t, restored.Extensions, "extensions restored")
+	rpt, ok := restored.Extensions["passthrough"].(map[string]any)
+	require.True(t, ok, "extensions.passthrough restored")
+	raudit, ok := rpt["audit"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "r-123", raudit["runId"], "provenance round-trips losslessly")
+}
+
+// TestDowngradeV3ToV2_PreservesProvenanceWithoutComponents: provenance survives the
+// downgrade even with no components (previously the passthrough was set only when
+// components existed, so a provenance-only doc downgraded to passthrough: null).
+func TestDowngradeV3ToV2_PreservesProvenanceWithoutComponents(t *testing.T) {
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "C-1",
+				Impact: 0.5,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Passed,
+					CodeDesc:  "ok",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+				}},
+			}},
+		}},
+		Extensions: map[string]interface{}{
+			"passthrough": map[string]interface{}{
+				"audit": map[string]interface{}{"runId": "r-123"},
+			},
+		},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	v2out, _, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	pt, ok := legacy["passthrough"].(map[string]any)
+	require.True(t, ok, "provenance-only downgrade still emits a passthrough (was nil before the fix)")
+	audit, ok := pt["audit"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "r-123", audit["runId"])
+}
+
+// TestDowngradeV3ToV2_ReservedComponentsKeyCollision: hdf_components is reserved
+// for the round-trip carrier. A provenance entry of that name is overridden by the
+// real carrier (never silently — a warning is emitted), while non-colliding
+// provenance keys still round-trip. This locks the card's decision-point precedence.
+func TestDowngradeV3ToV2_ReservedComponentsKeyCollision(t *testing.T) {
+	accountID := "prod-account"
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "C-1",
+				Impact: 0.5,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Passed,
+					CodeDesc:  "ok",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+				}},
+			}},
+		}},
+		Components: []hdf.Component{{Type: hdf.CloudAccount, Name: "prod-account", AccountID: &accountID}},
+		Extensions: map[string]interface{}{
+			"passthrough": map[string]interface{}{
+				"hdf_components": "USER_DATA_COLLIDES",
+				"audit":          map[string]interface{}{"runId": "r-123"},
+			},
+		},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	v2out, warnings, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	collisionWarned := false
+	for _, w := range warnings {
+		if strings.Contains(w, "reserved for the components round-trip carrier") {
+			collisionWarned = true
+		}
+	}
+	assert.True(t, collisionWarned, "a colliding hdf_components provenance key is warned, not silently dropped")
+
+	// The real carrier wins: round-trip restores the actual components, and the
+	// user's colliding string value does not survive as components.
+	v3out, _, err := TransformHDF(v2out, LegacyVersion, ModernVersion)
+	require.NoError(t, err)
+	var restored hdf.HDFResults
+	require.NoError(t, json.Unmarshal(v3out, &restored))
+	assert.Equal(t, original.Components, restored.Components, "the real components carrier wins over the colliding key")
+	rpt, ok := restored.Extensions["passthrough"].(map[string]any)
+	require.True(t, ok, "non-colliding provenance still round-trips")
+	assert.Equal(t, "r-123", rpt["audit"].(map[string]any)["runId"])
+}
+
+// TestDowngradeV3ToV2_StripsReservedKeyWithoutComponents: the reserved carrier key
+// inside provenance is stripped and warned even when there are no real components,
+// so a later v2→v3 upgrade cannot misread it as the components carrier.
+func TestDowngradeV3ToV2_StripsReservedKeyWithoutComponents(t *testing.T) {
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "C-1",
+				Impact: 0.5,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Passed,
+					CodeDesc:  "ok",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+				}},
+			}},
+		}},
+		// No components.
+		Extensions: map[string]interface{}{
+			"passthrough": map[string]interface{}{
+				"hdf_components": "USER_DATA_COLLIDES",
+				"audit":          map[string]interface{}{"runId": "r-123"},
+			},
+		},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	v2out, warnings, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	warned := false
+	for _, w := range warnings {
+		if strings.Contains(w, "reserved for the components round-trip carrier") {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "reserved-key collision is warned even without components")
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	pt, ok := legacy["passthrough"].(map[string]any)
+	require.True(t, ok)
+	_, leaked := pt["hdf_components"]
+	assert.False(t, leaked, "the reserved key is stripped from the v2 passthrough when no components exist to carry")
+	assert.Equal(t, "r-123", pt["audit"].(map[string]any)["runId"], "non-reserved provenance survives")
+
+	// A later upgrade must not choke on the stripped key: had the string value
+	// survived under hdf_components it would fail to unmarshal into []Component.
+	_, _, err = TransformHDF(v2out, LegacyVersion, ModernVersion)
+	require.NoError(t, err, "re-upgrade succeeds because the reserved string was stripped, not read as the carrier")
+}
+
 func TestTransformHDF_SameVersion(t *testing.T) {
 	legacyInput := legacyhdfFixture(t, "minimal.json")
 

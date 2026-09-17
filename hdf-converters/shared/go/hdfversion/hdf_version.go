@@ -158,10 +158,39 @@ func convertV3ToV2(v2 *hdf.HDFResults) (*legacyhdf.LegacyHDFResults, []string) {
 	// Map baselines → profiles
 	var warnings []string
 
-	// Carry the full components[] through a passthrough so a v3→v2→v3 round trip is
-	// lossless — the platform mapping above keeps only the first component's name/OS.
+	// Carry the full components[] and any provenance (extensions.passthrough)
+	// through the single v2 passthrough so a v3→v2→v3 round trip is lossless — the
+	// platform mapping above keeps only the first component's name/OS, and v2 has
+	// no native slot for extensions.
+	var provenance map[string]interface{}
+	if pt, ok := v2.Extensions["passthrough"].(map[string]interface{}); ok && len(pt) > 0 {
+		provenance = pt
+	}
+	// The reserved carrier key must never travel inside provenance: on a later
+	// v2→v3 upgrade it would be read as the components carrier, silently turning
+	// provenance into components. Strip it (into a copy, so the input map is not
+	// mutated) and warn whenever present, independent of whether real components
+	// exist.
+	if _, collides := provenance[legacyhdf.HDFComponentsKey]; collides {
+		stripped := make(map[string]interface{}, len(provenance))
+		for k, v := range provenance {
+			if k == legacyhdf.HDFComponentsKey {
+				continue
+			}
+			stripped[k] = v
+		}
+		provenance = stripped
+		warnings = append(warnings, fmt.Sprintf(
+			"extensions.passthrough.%s is reserved for the components round-trip carrier and was dropped on downgrade",
+			legacyhdf.HDFComponentsKey))
+	}
+	if len(v2.Components) > 0 || len(provenance) > 0 {
+		v1.Passthrough = &legacyhdf.LegacyPassthrough{
+			HDFComponents: v2.Components,
+			Provenance:    provenance,
+		}
+	}
 	if len(v2.Components) > 0 {
-		v1.Passthrough = &legacyhdf.LegacyPassthrough{HDFComponents: v2.Components}
 		warnings = append(warnings, fmt.Sprintf(
 			"components[]: all %d component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform",
 			len(v2.Components)))
