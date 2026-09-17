@@ -131,6 +131,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewListCmd())
 	cmd.AddCommand(NewQueryCmd())
 	cmd.AddCommand(NewConvertCmd())
+	cmd.AddCommand(NewMergeCmd())
 	cmd.AddCommand(NewDiffCmd())
 	cmd.AddCommand(NewEventsCmd())
 	cmd.AddCommand(NewAmendCmd())
