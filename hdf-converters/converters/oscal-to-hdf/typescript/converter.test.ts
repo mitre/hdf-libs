@@ -27,8 +27,6 @@ import {
   hdfStatusToOscalRiskStatus,
   parseOscalDocument,
   toKebabCase,
-  HDF_OSCAL_NAMESPACE,
-  DESCRIPTION_LABEL_PROP_NAME,
   descriptionLabelProp,
   descriptionLabel,
 } from './shared.js';
@@ -759,14 +757,13 @@ describe('convertOscalSarToHdf prose homes', () => {
   const desc = (req: { descriptions?: Array<{ label: string; data: string }> }, l: string) =>
     req.descriptions?.find((d) => d.label === l)?.data;
 
-  it('exports the namespace and description-label helpers', () => {
-    expect(HDF_OSCAL_NAMESPACE).toBe(NS);
-    expect(DESCRIPTION_LABEL_PROP_NAME).toBe('description-label');
+  it('exports the description-label helpers', () => {
     expect(descriptionLabelProp('check')).toEqual({ name: 'description-label', ns: NS, value: 'check' });
     expect(descriptionLabel([{ name: 'other', ns: NS, value: 'x' }, descriptionLabelProp('fix')])).toBe('fix');
     expect(descriptionLabel(label('fix', null))).toBe('');
     expect(descriptionLabel(label('fix', 'https://example.org/ns/oscal'))).toBe('');
     expect(descriptionLabel(undefined)).toBe('');
+    expect(() => descriptionLabelProp('')).toThrow('oscal: description label "" yields no description-label prop');
   });
 
   it('reads rationale from finding.target.description, not observation descriptions', async () => {

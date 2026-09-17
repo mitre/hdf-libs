@@ -33,6 +33,7 @@ import {
   descriptionLabelProp,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
+import { pushVocabularyProp, vocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
 
 /** A reviewed-controls include-controls entry. */
 interface SelectControl {
@@ -254,8 +255,8 @@ function baselineToResult(
 
   // baseline.version has no first-class SAR home; carry it as a result prop.
   const resultProps: Property[] = [];
-  if (baseline.version && baseline.version !== '') {
-    resultProps.push({ name: 'baseline-version', value: baseline.version });
+  if (typeof baseline.version === 'string') {
+    pushVocabularyProp(resultProps, 'baseline-version', baseline.version);
   }
 
   const findings: Finding[] = [];
@@ -373,9 +374,8 @@ function requirementToFindingSet(
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined; resource: Resource | undefined } {
   // OSCAL types target-id as a token, and a requirement id is only token-shaped
   // when the source tool happens to number its rules that way. The source id is
-  // recorded in the hdf-requirement-id prop below (trimmed, because OSCAL forbids
-  // a padded string value), so the encoding does not lose which requirement this
-  // came from even though it is not injective.
+  // recorded exactly in the hdf-requirement-id prop below, so the encoding does
+  // not lose which requirement this came from even though it is not injective.
   const { controlId, statementId } = nistTagToControlRef(req.id ?? '');
   const [targetType, targetId] = statementId === '' ? ['objective-id', oscalToken(controlId)] : ['statement-id', statementId];
   // results/descriptions are optional and absent on real minimal HDF; normalize
@@ -388,35 +388,18 @@ function requirementToFindingSet(
   const { state, reason } = effectiveState(req);
   const findingDesc = extractDefaultDescription(descriptions);
 
-  // Build props from control mappings (nist/cci) and v3.2 classification
-  // fields. OSCAL prop values are StringDatatype (no newlines, no edge
-  // whitespace), so a prose-capable prop emits a single-line preview as the
-  // value and carries the full text in the prop's own remarks (markup-multiline).
   // The source requirement id. target-id carries an encoded form, because OSCAL
   // constrains it to a token and the encoding is not injective, so without this
-  // the identifier the source tool reported would be unrecoverable. Trimmed
-  // because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded value would itself
-  // be schema-invalid.
+  // the identifier the source tool reported would be unrecoverable.
   //
-  // OSCAL prop values must be non-empty strings, so skip any empty value
-  // (e.g. an empty source `code`) rather than emitting a schema-invalid value: ''.
-  // The source requirement id. target-id carries an encoded form, because OSCAL
-  // constrains it to a token, so without this the identifier the source tool
-  // reported would be unrecoverable — and the encoding is not injective in
-  // principle. Trimmed because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded
-  // value would itself be schema-invalid; nistTagToControlRef trims for target-id
-  // too, so the two stay consistent.
-  const props: Property[] = [{ name: 'hdf-requirement-id', value: oscalString(req.id) }];
+  // Then control mappings (nist/cci) and v3.2 classification fields. Every prop
+  // goes through the vocabulary helper, which namespaces it and keeps the exact
+  // value in remarks when OSCAL's single-line StringDatatype cannot hold it.
+  const props: Property[] = [];
   const addProp = (name: string, value: string): void => {
-    if (value !== '') props.push({ name, value });
+    pushVocabularyProp(props, name, value);
   };
-  const addProseProp = (name: string, text: string): void => {
-    const preview = previewLine(text);
-    if (preview === '') return;
-    const p: Property = { name, value: preview };
-    if (preview !== text) p.remarks = text;
-    props.push(p);
-  };
+  addProp('hdf-requirement-id', req.id);
   const descriptionByLabel = (label: string): string => {
     const d = descriptions.find((x) => x.label === label);
     return d ? d.data : '';
@@ -459,7 +442,7 @@ function requirementToFindingSet(
       const o = r as { url?: unknown; uri?: unknown; ref?: unknown };
       if (typeof o.url === 'string') links.push({ href: o.url, rel: 'reference' });
       else if (typeof o.uri === 'string') links.push({ href: o.uri, rel: 'reference' });
-      else if (typeof o.ref === 'string') addProseProp('reference', o.ref);
+      else if (typeof o.ref === 'string') addProp('reference', o.ref);
     }
   }
 
@@ -482,7 +465,7 @@ function requirementToFindingSet(
     resource = {
       uuid: resourceUuid,
       title: `Check source code for ${req.id}`,
-      props: [{ name: 'type', value: 'evidence' }],
+      props: [vocabularyProp('type', 'evidence')!],
       base64: {
         value: encodeBase64Utf8(req.code),
         'media-type': 'text/plain',
@@ -594,8 +577,8 @@ function requirementToFindingSet(
 }
 
 /**
- * Reduces prose to a single line legal as an OSCAL StringDatatype prop value:
- * the first non-empty line, trimmed, truncated to 120 code points.
+ * Reduces prose to a single line for an OSCAL single-line field: the first
+ * non-empty line, trimmed, truncated to 120 code points.
  */
 function previewLine(text: string): string {
   for (let line of text.split('\n')) {

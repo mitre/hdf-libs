@@ -293,23 +293,21 @@ func HDFStatusToOSCALRiskStatus(status hdf.ResultStatus) string {
 // OscalVersion is the OSCAL specification version used in reverse converter output documents.
 const OscalVersion = "1.1.2"
 
-// HDFOSCALNamespace is the ns URI qualifying every OSCAL prop HDF defines.
-const HDFOSCALNamespace = "https://mitre.github.io/hdf-libs/ns/oscal"
-
-// DescriptionLabelPropName names the HDF prop that marks an OSCAL prose home
-// with the HDF description label whose text it carries.
-const DescriptionLabelPropName = "description-label"
-
-// DescriptionLabelProp builds the HDF-namespaced description-label prop.
+// DescriptionLabelProp builds the description-label prop that marks an OSCAL
+// prose home with the HDF description label whose text it carries.
 func DescriptionLabelProp(label string) Property {
-	return Property{Name: DescriptionLabelPropName, Ns: HDFOSCALNamespace, Value: label}
+	prop, ok := VocabularyProp("description-label", label)
+	if !ok {
+		panic(fmt.Sprintf("oscal: description label %q yields no description-label prop", label))
+	}
+	return prop
 }
 
-// DescriptionLabel returns the value of props' HDF-namespaced description-label,
-// or "" when there is none; a description-label in any other namespace is foreign.
+// DescriptionLabel returns props' description-label, or "" when there is none; a
+// description-label in any other namespace is foreign.
 func DescriptionLabel(props []Property) string {
-	label, _ := ExtractPropValue(props, DescriptionLabelPropName, HDFOSCALNamespace)
-	return label
+	m, _ := FindVocabularyProp(props, "description-label")
+	return m.Value
 }
 
 // OSCALToken encodes an arbitrary identifier into OSCAL's TokenDatatype shape:
@@ -341,9 +339,9 @@ func DescriptionLabel(props []Property) string {
 //
 // Two different ids can encode to the same token ("a/b" and "a:b" both yield
 // "a_b"), which is why callers must also record the source id in the emitted
-// document — for SAR that is a prop on the finding, trimmed because OSCAL's
-// StringDatatype forbids a padded value. No collision occurs across the distinct
-// requirement ids in this package's converter fixtures, which
+// document — for SAR that is the finding's hdf-requirement-id prop. No
+// collision occurs across the distinct requirement ids in this package's
+// converter fixtures, which
 // TestOSCALToken_NoCollisionsAcrossRealFixtureIDs pins against the same
 // composition the converter uses.
 func OSCALToken(s string) string {

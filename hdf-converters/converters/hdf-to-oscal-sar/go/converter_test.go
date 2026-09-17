@@ -254,7 +254,7 @@ func labelledEvidence(obs *oscal.Observation, label string) []oscal.RelevantEvid
 	var out []oscal.RelevantEvidence
 	for _, e := range obs.RelevantEvidence {
 		for _, p := range e.Props {
-			if p.Name == oscal.DescriptionLabelPropName && p.Ns == oscal.HDFOSCALNamespace && p.Value == label {
+			if p == oscal.DescriptionLabelProp(label) {
 				out = append(out, e)
 			}
 		}
@@ -654,6 +654,25 @@ func TestConvertHDFToOSCALSAR_EnrichmentSurfaced(t *testing.T) {
 	// facet the reverse importer reads.
 	facet := doc.AssessmentResults.Results[0].Risks[0].Characterizations[0].Facets[0]
 	assert.Equal(t, "critical", facet.Value)
+}
+
+// FedRAMP owns the impact facet, and its rev5 SAR template and extensions
+// registry name the system https://fedramp.gov, so that URI is kept deliberately.
+func TestConvertHDFToOSCALSAR_ImpactFacetUsesFedRAMPSystem(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-1", "impact": 0.7, "tags": { "nist": ["AC-1"] },
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}]}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	require.Len(t, doc.AssessmentResults.Results[0].Risks, 1)
+	assert.Equal(t, []oscal.Facet{{Name: "impact", System: "https://fedramp.gov", Value: "high"}},
+		doc.AssessmentResults.Results[0].Risks[0].Characterizations[0].Facets)
 }
 
 // a4/a5: evidence, sourceLocation, and refs land in observation

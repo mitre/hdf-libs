@@ -1,6 +1,6 @@
 {
   "plan-of-action-and-milestones": {
-    "uuid": "9acabde0-6e76-4799-aec4-aea8e27360fe",
+    "uuid": "526a2b82-c539-4c6d-bb0f-bd9a31888b96",
     "metadata": {
       "title": "a",
       "last-modified": "2020-01-01T00:00:00Z",
@@ -8,7 +8,7 @@
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "ca3401c4-c7a2-4ed0-9e9c-e038a4c8ce5b",
+          "uuid": "d21e29a4-9019-431e-8c01-a6fb23b2af4f",
           "type": "person",
           "name": "test"
         }
@@ -19,7 +19,7 @@
     },
     "observations": [
       {
-        "uuid": "42b07233-c99a-49fb-bd8d-681436ac6d34",
+        "uuid": "4cf048ac-a6eb-4a84-828b-7d3326dcc436",
         "description": "supporting evidence",
         "methods": [
           "EXAMINE"
@@ -38,18 +38,20 @@
     ],
     "risks": [
       {
-        "uuid": "1df5ec3b-c09a-409f-b0c2-881a081b390a",
+        "uuid": "c013bcaa-18fb-4a5d-b596-860fe5acaeff",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "statement": "accepted",
         "props": [
           {
             "name": "impacted-control-id",
-            "value": "cve-2021-44228"
+            "value": "cve-2021-44228",
+            "ns": "https://fedramp.gov/ns/oscal"
           },
           {
             "name": "override-type",
-            "value": "waiver"
+            "value": "waiver",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
           }
         ],
         "status": "open",
@@ -57,7 +59,7 @@
         "risk-log": {
           "entries": [
             {
-              "uuid": "aad17938-58e9-45fa-89ba-d0076c35f5fe",
+              "uuid": "81567eb9-6c48-45d3-8d2c-53b4cd36ddbc",
               "title": "Scheduled review",
               "description": "Amendment expiration date",
               "start": "2099-12-31T00:00:00Z",
@@ -69,17 +71,17 @@
     ],
     "poam-items": [
       {
-        "uuid": "4253328f-62ab-44e0-a680-1c39af213b67",
+        "uuid": "12725586-aa28-47a2-bb45-bc35cb84f80f",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "related-observations": [
           {
-            "observation-uuid": "42b07233-c99a-49fb-bd8d-681436ac6d34"
+            "observation-uuid": "4cf048ac-a6eb-4a84-828b-7d3326dcc436"
           }
         ],
         "related-risks": [
           {
-            "risk-uuid": "1df5ec3b-c09a-409f-b0c2-881a081b390a"
+            "risk-uuid": "c013bcaa-18fb-4a5d-b596-860fe5acaeff"
           }
         ]
       }

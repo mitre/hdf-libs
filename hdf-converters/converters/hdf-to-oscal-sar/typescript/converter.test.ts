@@ -221,6 +221,22 @@ describe('convertHdfToOscalSar', () => {
     expect(result.risks[0].characterizations[0].facets[0].value).toBe('critical');
   });
 
+  // FedRAMP owns the impact facet, and its rev5 SAR template and extensions
+  // registry name the system https://fedramp.gov, so that URI is kept deliberately.
+  it("names the impact facet in FedRAMP's system", async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b', requirements: [{
+          id: 'AC-1', impact: 0.7, tags: { nist: ['AC-1'] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      }],
+    });
+    const result = JSON.parse(await convertHdfToOscalSar(input))['assessment-results'].results[0];
+    expect(result.risks[0].characterizations[0].facets).toStrictEqual([{ name: 'impact', system: 'https://fedramp.gov', value: 'high' }]);
+  });
+
   // a4/a5: refs, evidence, and sourceLocation land in relevant-evidence.
   it('emits refs, evidence, and source location as relevant-evidence', async () => {
     const input = JSON.stringify({

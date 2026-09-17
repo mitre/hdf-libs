@@ -198,8 +198,8 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	// baseline.version has no first-class SAR home; carry it as a result prop.
 	var resultProps []oscal.Property
-	if baseline.Version != nil && *baseline.Version != "" {
-		resultProps = append(resultProps, oscal.Property{Name: "baseline-version", Value: *baseline.Version})
+	if baseline.Version != nil {
+		resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-version", *baseline.Version)
 	}
 
 	var findings []oscal.Finding
@@ -351,9 +351,8 @@ func descriptionByLabel(descriptions []hdf.Description, label string) string {
 func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Finding, *oscal.Observation, *oscal.Risk, *oscal.Resource) {
 	// OSCAL types target-id as a token, and a requirement id is only token-shaped
 	// when the source tool happens to number its rules that way. The source id is
-	// recorded in the hdf-requirement-id prop below (trimmed, because OSCAL
-	// forbids a padded string value), so the encoding does not lose which
-	// requirement this came from even though it is not injective.
+	// recorded exactly in the hdf-requirement-id prop below, so the encoding does
+	// not lose which requirement this came from even though it is not injective.
 	controlID, statementID := oscal.NistTagToControlRef(req.ID)
 	targetType, targetID := "objective-id", oscal.OSCALToken(controlID)
 	if statementID != "" {
@@ -372,32 +371,14 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 
 	// The source requirement id. target-id carries an encoded form, because OSCAL
 	// constrains it to a token, so without this the identifier the source tool
-	// reported would be unrecoverable — the encoding is not injective. Trimmed
-	// because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded value would
-	// itself be schema-invalid.
+	// reported would be unrecoverable — the encoding is not injective.
 	//
-	// Then control mappings (nist/cci) and v3.2 classification fields. OSCAL prop
-	// values are StringDatatype (no newlines, no edge whitespace), so a
-	// prose-capable prop emits a single-line preview as the value and carries the
-	// full text in the prop's own remarks (markup-multiline).
-	props := []oscal.Property{{Name: "hdf-requirement-id", Value: oscal.OSCALString(req.ID)}}
-	// OSCAL prop values must be non-empty strings, so skip any empty value
-	// (e.g. an empty source `code`) rather than emitting a schema-invalid value: "".
+	// Then control mappings (nist/cci) and v3.2 classification fields. Every prop
+	// goes through the vocabulary helper, which namespaces it and keeps the exact
+	// value in remarks when OSCAL's single-line StringDatatype cannot hold it.
+	props := oscal.AppendVocabularyProp(nil, "hdf-requirement-id", req.ID)
 	addProp := func(name, value string) {
-		if value != "" {
-			props = append(props, oscal.Property{Name: name, Value: value})
-		}
-	}
-	addProseProp := func(name, text string) {
-		preview := previewLine(text)
-		if preview == "" {
-			return
-		}
-		p := oscal.Property{Name: name, Value: preview}
-		if preview != text {
-			p.Remarks = text
-		}
-		props = append(props, p)
+		props = oscal.AppendVocabularyProp(props, name, value)
 	}
 	pushTagValues := func(key string) {
 		if raw, ok := req.Tags[key]; ok {
@@ -459,7 +440,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		case r.URI != nil:
 			links = append(links, oscal.Link{Href: *r.URI, Rel: "reference"})
 		case r.Ref != nil && r.Ref.String != nil:
-			addProseProp("reference", *r.Ref.String)
+			addProp("reference", *r.Ref.String)
 		}
 	}
 
@@ -484,7 +465,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		codeResource = &oscal.Resource{
 			UUID:  oscal.GenerateUUID(),
 			Title: "Check source code for " + req.ID,
-			Props: []oscal.Property{{Name: "type", Value: "evidence"}},
+			Props: oscal.AppendVocabularyProp(nil, "type", "evidence"),
 			Base64: &oscal.Base64{
 				Value:     base64.StdEncoding.EncodeToString([]byte(*req.Code)),
 				MediaType: "text/plain",
@@ -595,8 +576,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	return finding, observation, risk, codeResource
 }
 
-// previewLine reduces prose to a single line legal as an OSCAL StringDatatype
-// prop value: the first non-empty line, trimmed, truncated to 120 runes.
+// previewLine reduces prose to a single line for an OSCAL single-line field: the
+// first non-empty line, trimmed, truncated to 120 runes.
 func previewLine(text string) string {
 	for _, line := range strings.Split(text, "\n") {
 		line = strings.TrimSpace(line)

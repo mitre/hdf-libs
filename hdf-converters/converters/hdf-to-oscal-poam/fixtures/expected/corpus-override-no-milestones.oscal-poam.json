@@ -1,6 +1,6 @@
 {
   "plan-of-action-and-milestones": {
-    "uuid": "849e45a7-6434-4644-895a-7510ffe14753",
+    "uuid": "18de0697-d8a4-4853-90ee-d588f02d1592",
     "metadata": {
       "title": "a",
       "last-modified": "2020-01-01T00:00:00Z",
@@ -8,7 +8,7 @@
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "b314621e-13d2-4dfb-90a5-7d4c228c23ce",
+          "uuid": "ca043969-4115-4b67-a6a3-6153aac1cab9",
           "type": "person",
           "name": "test"
         }
@@ -19,18 +19,20 @@
     },
     "risks": [
       {
-        "uuid": "318dbf05-b067-4ab5-8aa9-c76d8d42e9ac",
+        "uuid": "611c50d1-fa39-4076-932e-80a7a54e038d",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "statement": "accepted",
         "props": [
           {
             "name": "impacted-control-id",
-            "value": "cve-2021-44228"
+            "value": "cve-2021-44228",
+            "ns": "https://fedramp.gov/ns/oscal"
           },
           {
             "name": "override-type",
-            "value": "waiver"
+            "value": "waiver",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
           }
         ],
         "status": "open",
@@ -38,7 +40,7 @@
         "risk-log": {
           "entries": [
             {
-              "uuid": "fceb0a91-7b01-4db0-8844-103a7cf16857",
+              "uuid": "18aa164a-21c3-4711-9146-15ce84e1b732",
               "title": "Scheduled review",
               "description": "Amendment expiration date",
               "start": "2099-12-31T00:00:00Z",
@@ -50,12 +52,12 @@
     ],
     "poam-items": [
       {
-        "uuid": "649723e5-16b7-4cd0-94e5-3d2f0577157a",
+        "uuid": "a2c521b5-fed2-4c9e-85e3-f3c897fb722a",
         "title": "CVE-2021-44228",
         "description": "accepted",
         "related-risks": [
           {
-            "risk-uuid": "318dbf05-b067-4ab5-8aa9-c76d8d42e9ac"
+            "risk-uuid": "611c50d1-fa39-4076-932e-80a7a54e038d"
           }
         ]
       }

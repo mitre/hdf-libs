@@ -521,15 +521,15 @@ func convertSingleRequirement(t *testing.T, input []byte) *hdf.EvaluatedRequirem
 
 const hdfNS = "https://mitre.github.io/hdf-libs/ns/oscal"
 
-func TestDescriptionLabelConstants(t *testing.T) {
-	assert.Equal(t, hdfNS, HDFOSCALNamespace)
-	assert.Equal(t, "description-label", DescriptionLabelPropName)
+func TestDescriptionLabelHelpers(t *testing.T) {
 	assert.Equal(t, Property{Name: "description-label", Ns: hdfNS, Value: "check"}, DescriptionLabelProp("check"))
 
 	assert.Equal(t, "fix", DescriptionLabel([]Property{{Name: "other", Ns: hdfNS, Value: "x"}, DescriptionLabelProp("fix")}))
 	assert.Empty(t, DescriptionLabel([]Property{{Name: "description-label", Value: "fix"}}), "no ns is foreign")
 	assert.Empty(t, DescriptionLabel([]Property{{Name: "description-label", Ns: "https://example.org/ns/oscal", Value: "fix"}}))
 	assert.Empty(t, DescriptionLabel(nil))
+
+	assert.PanicsWithValue(t, `oscal: description label "" yields no description-label prop`, func() { DescriptionLabelProp("") })
 }
 
 // Rationale is read from finding.target.description; observation descriptions

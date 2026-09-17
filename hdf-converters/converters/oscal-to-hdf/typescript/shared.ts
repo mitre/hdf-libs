@@ -8,6 +8,7 @@ import { normalizeNistId } from '@mitre/hdf-mappings';
 import { impactToSeverity as sharedImpactToSeverity, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { oscalSeverityFromHdf } from '../../../shared/typescript/converterutil.js';
 import type { Property, Part, Characterization, DocumentMetadata, Oscal } from './types.js';
+import { findVocabularyProp, vocabularyProp } from './vocabulary.js';
 
 const controlEnhancementRe = /^([a-z]{2}-\d+)\.(\d+)$/;
 const objectiveIDRe = /^([a-z]{2}-\d+(?:\.\d+)?)/;
@@ -260,26 +261,24 @@ export function hdfStatusToOscalRiskStatus(status: string): string {
 /** OSCAL specification version used in reverse converter output documents. */
 export const OSCAL_VERSION = '1.1.2';
 
-/** ns URI qualifying every OSCAL prop HDF defines. */
-export const HDF_OSCAL_NAMESPACE = 'https://mitre.github.io/hdf-libs/ns/oscal';
-
 /**
- * Names the HDF prop that marks an OSCAL prose home with the HDF description
- * label whose text it carries.
+ * Builds the description-label prop that marks an OSCAL prose home with the HDF
+ * description label whose text it carries.
  */
-export const DESCRIPTION_LABEL_PROP_NAME = 'description-label';
-
-/** Builds the HDF-namespaced description-label prop. */
 export function descriptionLabelProp(label: string): Property {
-  return { name: DESCRIPTION_LABEL_PROP_NAME, ns: HDF_OSCAL_NAMESPACE, value: label };
+  const prop = vocabularyProp('description-label', label);
+  if (!prop) {
+    throw new Error(`oscal: description label ${JSON.stringify(label)} yields no description-label prop`);
+  }
+  return prop;
 }
 
 /**
- * Returns the value of the HDF-namespaced description-label, or '' when there
- * is none; a description-label in any other namespace is foreign.
+ * Returns props' description-label, or '' when there is none; a
+ * description-label in any other namespace is foreign.
  */
 export function descriptionLabel(props: Property[] | undefined): string {
-  return extractPropValue(props, DESCRIPTION_LABEL_PROP_NAME, HDF_OSCAL_NAMESPACE) ?? '';
+  return findVocabularyProp(props, 'description-label')?.value ?? '';
 }
 
 /**
@@ -360,8 +359,7 @@ export function toKebabCase(title: string, fallback: string): string {
  *
  * Two different ids can encode to the same token ('a/b' and 'a:b' both yield
  * 'a_b'), which is why callers must also record the source id in the emitted
- * document — for SAR that is a prop on the finding, trimmed because OSCAL's
- * StringDatatype forbids a padded value.
+ * document — for SAR that is the finding's hdf-requirement-id prop.
  */
 export function oscalToken(s: string): string {
   if (s === '') return '';

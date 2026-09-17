@@ -34,6 +34,7 @@ import {
   OSCAL_VERSION,
   oscalString,
 } from '../../oscal-to-hdf/typescript/shared.js';
+import { pushVocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
 
 /**
  * Convert HDF Amendments JSON to OSCAL POA&M JSON.
@@ -253,22 +254,14 @@ function overrideToPOAMItem(
   // Build risk props: impacted control, override type (disposition), impact
   // override, controlled-vocabulary justification, and disambiguating scope.
   const riskProps: Property[] = [];
-  pushStringProp(riskProps, 'impacted-control-id', controlID);
-  if (override.type) {
-    riskProps.push({ name: 'override-type', value: String(override.type) });
-  }
+  pushVocabularyProp(riskProps, 'impacted-control-id', controlID);
+  pushVocabularyProp(riskProps, 'override-type', override.type ?? '');
   if (override.impact && typeof override.impact.value === 'number') {
-    riskProps.push({ name: 'impact-override', value: String(override.impact.value) });
+    pushVocabularyProp(riskProps, 'impact-override', String(override.impact.value));
   }
-  if (override.justification) {
-    pushStringProp(riskProps, 'justification', String(override.justification));
-  }
-  if (override.baselineRef) {
-    pushStringProp(riskProps, 'baseline-ref', override.baselineRef);
-  }
-  if (override.componentRef) {
-    pushStringProp(riskProps, 'component-ref', override.componentRef);
-  }
+  pushVocabularyProp(riskProps, 'justification', override.justification ?? '');
+  pushVocabularyProp(riskProps, 'baseline-ref', override.baselineRef ?? '');
+  pushVocabularyProp(riskProps, 'component-ref', override.componentRef ?? '');
 
   // Build remediations from milestones. Each milestone becomes a planned
   // remediation task whose within-date-range end carries the estimated
@@ -277,9 +270,7 @@ function overrideToPOAMItem(
   if (override.milestones) {
     for (const ms of override.milestones) {
       const msProps: Property[] = [];
-      if (ms.status) {
-        msProps.push({ name: 'milestone-status', value: String(ms.status) });
-      }
+      pushVocabularyProp(msProps, 'milestone-status', ms.status ?? '');
       let tasks: RiskResponse['tasks'];
       const d = ms.estimatedCompletion ? toDate(ms.estimatedCompletion) : undefined;
       if (d) {
@@ -395,19 +386,6 @@ function latestAppliedAt(overrides: StandaloneOverride[]): string {
   return formatTimestampSeconds(latest ?? new Date());
 }
 
-/**
- * Add a property whose value OSCAL types as StringDatatype, trimming it and
- * omitting the property entirely when nothing survives. A prop with an empty
- * value carries no more than an absent one and is schema-invalid. Mirrors
- * appendStringProp in the Go peer.
- */
-function pushStringProp(props: Property[], name: string, value: string | undefined | null): void {
-  const trimmed = oscalString(value ?? '');
-  if (trimmed !== '') {
-    props.push({ name, value: trimmed });
-  }
-}
-
 /** Sources metadata.version from the amendments document, defaulting when omitted. */
 function amendmentsVersion(a: HDFAmendments): string {
   return oscalString(a.version ?? '') || '1.0.0';
@@ -419,9 +397,7 @@ function amendmentsVersion(a: HDFAmendments): string {
  */
 function metadataProps(a: HDFAmendments): Property[] {
   const props: Property[] = [];
-  if (a.amendmentId) {
-    pushStringProp(props, 'amendment-id', a.amendmentId);
-  }
+  pushVocabularyProp(props, 'amendment-id', a.amendmentId ?? '');
   if (a.labels) {
     for (const [key, value] of Object.entries(a.labels).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))) {
       // A label whose value is empty after trimming says nothing the absent label
@@ -480,12 +456,8 @@ function evidenceObservation(ev: Evidence, uuid: string, defaultCollected: strin
   }
 
   const props: Property[] = [];
-  if (ev.mimeType) {
-    pushStringProp(props, 'mime-type', ev.mimeType);
-  }
-  if (ev.capturedBy && ev.capturedBy.identifier) {
-    pushStringProp(props, 'captured-by', ev.capturedBy.identifier);
-  }
+  pushVocabularyProp(props, 'mime-type', ev.mimeType ?? '');
+  pushVocabularyProp(props, 'captured-by', ev.capturedBy?.identifier ?? '');
 
   return {
     uuid,
@@ -548,12 +520,8 @@ function externalRefResources(overrides: StandaloneOverride[]): Resource[] {
         res.rlinks = [{ href: ref.href }] as unknown as Resource['rlinks'];
       }
       const props: Property[] = [];
-      if (ref.sourceName) {
-        props.push({ name: 'source-name', value: ref.sourceName });
-      }
-      if (ref.externalId) {
-        props.push({ name: 'external-id', value: ref.externalId });
-      }
+      pushVocabularyProp(props, 'source-name', ref.sourceName ?? '');
+      pushVocabularyProp(props, 'external-id', ref.externalId ?? '');
       if (props.length > 0) {
         res.props = props;
       }
@@ -571,10 +539,8 @@ function milestoneCompletionProps(ms: Milestone): Property[] {
   const props: Property[] = [];
   const completedAt = ms.completedAt ? toDate(ms.completedAt) : undefined;
   if (completedAt) {
-    props.push({ name: 'completed-at', value: formatTimestampSeconds(completedAt) });
+    pushVocabularyProp(props, 'completed-at', formatTimestampSeconds(completedAt));
   }
-  if (ms.completedBy && ms.completedBy.identifier) {
-    props.push({ name: 'completed-by', value: ms.completedBy.identifier });
-  }
+  pushVocabularyProp(props, 'completed-by', ms.completedBy?.identifier ?? '');
   return props;
 }
