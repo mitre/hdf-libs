@@ -94,6 +94,10 @@ function buildSidebar() {
         items: getDocsItems('guides'),
       },
       {
+        text: 'Packages',
+        items: getDocsItems('packages'),
+      },
+      {
         text: 'Contributing',
         items: getDocsItems('contributing'),
       },
