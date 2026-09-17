@@ -1,8 +1,10 @@
 # Writing a Converter
 
-A converter turns one security tool's output into HDF. There are 60-odd of them, each implemented twice — TypeScript for `@mitre/hdf-converters`, Go for the `hdf` CLI — against shared fixtures that keep the two honest.
+A converter turns a source security tool's output into HDF. These libraries implement dozens (around 60 at time of writing) of converters that allow HDF to make good on its promise of serving as the normalization point for security assessment data of all types.
 
-This page is the human walkthrough. If you work in Claude Code, the `/build-converter` skill automates the same process in more depth; this page is what to read when you want to understand the shape rather than delegate it.
+The converters are what enable HDF to be used practically. They are how CLI tools and apps can ingest disparate sources (SARIF documents, InSpec scans, OWASP ZAP reports, and so on) representing many different parts of the software stack and create a common dataset from them.
+
+This page provides a brief overview of how a new converter is built and added to the HDF libraries, in both Typescript and Go implementations. HDF is intended to be community driven, so if you want your favorite scanning tool's custom output to be convertable to HDF, feel free to put up a pull request following these conventions. Note that the HDF Libs repo includes a `build-converter` skill that automates much of this process if you're using coding agents (but as always, it is on the human to ensure that the outcome is correct).
 
 Related conventions live elsewhere and are not repeated here: the [developer guide](./developer-guide.md) covers the dual-implementation pattern, differential testing, timestamps and number formatting; [using mappings](./using-mappings-in-converters.md) covers enriching output with NIST controls.
 
