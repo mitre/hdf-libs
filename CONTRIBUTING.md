@@ -54,7 +54,7 @@ pnpm test:coverage
 
 Converters require dual implementations (TypeScript and Go) plus CLI integration. A converter is not considered complete until it is wired into `hdf-cli`.
 
-See **[CONVERTER_GUIDE.md](./hdf-converters/CONVERTER_GUIDE.md)** for the full step-by-step process. The short version:
+See **[Writing a Converter](./site/docs/contributing/writing-a-converter.md)** for the full step-by-step process. The short version:
 
 1. Implement the TypeScript converter in `hdf-converters/converters/{tool}/typescript/`
 2. Add test fixtures in `hdf-converters/converters/{tool}/fixtures/`
