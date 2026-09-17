@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -215,12 +216,30 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return err
 	}
 
-	// Migrate a legacy SAF-supplement shape (top-level target/passthrough) on HDF
-	// input into v3-native carriers BEFORE conversion, so attribution survives the
-	// convert path — the motivating #234 case — not only the parse path. Sibling to
-	// the read-path wiring in hdf-parsers ParseResults. Gated to HDF input so a
-	// scanner format that happens to carry a top-level "target" key is untouched.
-	if strings.EqualFold(fromFormat, "hdf") {
+	// Absorb a legacy SAF-supplement shape (top-level target/passthrough, which SAF
+	// writes onto HDF documents) into v3-native carriers so attribution survives the
+	// convert path — the motivating #234 case — not only the parse path. These keys
+	// ride v2's additionalProperties, so they are present on the raw bytes even
+	// though the legacy struct has no field for them. For legacy (v2) input we
+	// capture them, upgrade to v3 (which would otherwise drop target), re-attach, and
+	// normalize on the v3 doc so the rewrite lands where it survives; the version
+	// transform below then carries the result (including a down-pin to hdf@2). Gated
+	// to HDF/legacy input so a scanner format that happens to carry a top-level
+	// "target" key is untouched.
+	if (strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf")) && hasSAFSupplement(data) {
+		if legacyhdf.IsLegacyHDF(data) {
+			supp := captureSAFSupplement(data)
+			upgraded, _, upErr := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
+			if upErr != nil {
+				return fmt.Errorf("failed to upgrade legacy HDF (v2) input for SAF-supplement absorption: %w", upErr)
+			}
+			data, err = reattachSAFSupplement(upgraded, supp)
+			if err != nil {
+				return err
+			}
+			fromFormat = "hdf"
+			fromVersion = ""
+		}
 		var safWarnings []string
 		data, safWarnings = hdfparsers.NormalizeSAFSupplement(data)
 		for _, w := range safWarnings {
@@ -315,6 +334,52 @@ func applyNistOptions(cmd *cobra.Command) (reset func(), err error) {
 		nist.ResetRevision()
 		nist.SetStrict(false)
 	}, nil
+}
+
+// hasSAFSupplement reports whether the bytes carry a top-level SAF-supplement key
+// (target or passthrough) — the non-schema attribution SAF writes onto HDF
+// documents. A cheap presence check; NormalizeSAFSupplement owns the rewrite.
+func hasSAFSupplement(data []byte) bool {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return false
+	}
+	_, hasTarget := doc["target"]
+	_, hasPassthrough := doc["passthrough"]
+	return hasTarget || hasPassthrough
+}
+
+// captureSAFSupplement extracts the top-level target/passthrough keys so they can
+// be re-attached after a legacy→v3 upgrade drops them (the legacy struct has no
+// field for target, so a plain unmarshal/marshal loses it).
+func captureSAFSupplement(data []byte) map[string]json.RawMessage {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil
+	}
+	out := map[string]json.RawMessage{}
+	for _, k := range []string{"target", "passthrough"} {
+		if v, ok := doc[k]; ok {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// reattachSAFSupplement puts captured SAF-supplement keys back onto an upgraded v3
+// document so NormalizeSAFSupplement can absorb them into components[]/extensions.
+func reattachSAFSupplement(data []byte, supp map[string]json.RawMessage) ([]byte, error) {
+	if len(supp) == 0 {
+		return data, nil
+	}
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("failed to re-attach SAF supplement: %w", err)
+	}
+	for k, v := range supp {
+		doc[k] = v
+	}
+	return json.Marshal(doc)
 }
 
 // normalizeLegacyHDFInput upgrades legacy HDF (v2, the InSpec exec-json
