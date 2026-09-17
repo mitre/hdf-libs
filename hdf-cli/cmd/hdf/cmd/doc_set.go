@@ -41,7 +41,7 @@ func runGenericDocSet(inputPath, outputPath, expectedDocType string, unsetFields
 		return fmt.Errorf("failed to serialize document: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("document failed validation before write: %w", err)
 	}
 

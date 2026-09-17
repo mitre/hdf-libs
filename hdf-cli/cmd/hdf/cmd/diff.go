@@ -570,8 +570,8 @@ func outputDiffJSON(result diffResult) error {
 	if err != nil {
 		return err
 	}
-	if err := validateHDFOutput(output); err != nil {
-		return fmt.Errorf("diff output failed Comparison schema validation: %w", err)
+	if err := validateHDFDocument(output); err != nil {
+		return fmt.Errorf("diff output failed schema validation: %w", err)
 	}
 	fmt.Println(string(output))
 	return nil

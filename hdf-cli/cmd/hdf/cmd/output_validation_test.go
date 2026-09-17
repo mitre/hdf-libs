@@ -80,9 +80,11 @@ func TestValidateHDFOutput_RejectsEmptyRequirements(t *testing.T) {
 		]
 	}`
 
-	err := validateHDFOutput([]byte(invalid))
+	err := validateHDFDocument([]byte(invalid))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "schema validation")
+	// The validator names the schema it dispatched to; callers add the
+	// input/output framing.
+	assert.Contains(t, err.Error(), "HDF Results schema")
 }
 
 func TestValidateHDFOutput_AcceptsValidResults(t *testing.T) {
@@ -110,7 +112,7 @@ func TestValidateHDFOutput_AcceptsValidResults(t *testing.T) {
 		]
 	}`
 
-	err := validateHDFOutput([]byte(valid))
+	err := validateHDFDocument([]byte(valid))
 	assert.NoError(t, err)
 }
 
@@ -124,7 +126,7 @@ func TestValidateHDFOutput_SkipsNonHDF(t *testing.T) {
 		`{"oscalCatalog":{"uuid":"test"}}`,
 	}
 	for _, in := range cases {
-		assert.NoError(t, validateHDFOutput([]byte(in)))
+		assert.NoError(t, validateHDFDocument([]byte(in)))
 	}
 }
 
@@ -180,7 +182,7 @@ func TestDetectHDFDocType_DetectsAmendments(t *testing.T) {
 func TestValidateHDFOutput_RejectsInvalidAmendments(t *testing.T) {
 	t.Parallel()
 	invalid := []byte(`{"overrides":[{"type":"waiver","requirementId":"AC-1"}]}`)
-	err := validateHDFOutput(invalid)
+	err := validateHDFDocument(invalid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Amendments")
 }
@@ -201,7 +203,7 @@ func TestValidateHDFOutput_AcceptsValidAmendments(t *testing.T) {
 			}
 		]
 	}`)
-	err := validateHDFOutput(valid)
+	err := validateHDFDocument(valid)
 	assert.NoError(t, err)
 }
 
@@ -240,7 +242,7 @@ func TestValidateHDFOutput_RejectsRequirementDiffsOnlyComparison(t *testing.T) {
 	invalid := []byte(`{"formatVersion":"1.0.0","requirementDiffs":[]}`)
 	require.Equal(t, "comparison", detectHDFDocumentType(invalid),
 		"a requirementDiffs-only doc must classify as comparison, not skip validation")
-	err := validateHDFOutput(invalid)
+	err := validateHDFDocument(invalid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Comparison")
 }
@@ -248,7 +250,7 @@ func TestValidateHDFOutput_RejectsRequirementDiffsOnlyComparison(t *testing.T) {
 func TestValidateHDFOutput_AcceptsValidSystem(t *testing.T) {
 	t.Parallel()
 	valid := []byte(`{"name":"sys","components":[{"name":"c","type":"application"}]}`)
-	assert.NoError(t, validateHDFOutput(valid))
+	assert.NoError(t, validateHDFDocument(valid))
 }
 
 func TestValidateHDFOutput_RejectsInvalidSystem(t *testing.T) {
@@ -257,7 +259,7 @@ func TestValidateHDFOutput_RejectsInvalidSystem(t *testing.T) {
 	// sees the (empty) components key so detection succeeds, but validation
 	// rejects the doc.
 	invalid := []byte(`{"name":"sys","components":[]}`)
-	err := validateHDFOutput(invalid)
+	err := validateHDFDocument(invalid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "System")
 }
@@ -265,13 +267,13 @@ func TestValidateHDFOutput_RejectsInvalidSystem(t *testing.T) {
 func TestValidateHDFOutput_AcceptsValidPlan(t *testing.T) {
 	t.Parallel()
 	valid := []byte(`{"name":"plan","assessments":[{"baselineRef":"RHEL9-STIG"}]}`)
-	assert.NoError(t, validateHDFOutput(valid))
+	assert.NoError(t, validateHDFDocument(valid))
 }
 
 func TestValidateHDFOutput_RejectsInvalidPlan(t *testing.T) {
 	t.Parallel()
 	invalid := []byte(`{"assessments":[]}`)
-	err := validateHDFOutput(invalid)
+	err := validateHDFDocument(invalid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Plan")
 }
@@ -284,13 +286,13 @@ func TestValidateHDFOutput_AcceptsValidEvidencePackage(t *testing.T) {
 			{"type":"hdf-results","uri":"a.json","checksum":{"algorithm":"sha256","value":"abc"}}
 		]
 	}`)
-	assert.NoError(t, validateHDFOutput(valid))
+	assert.NoError(t, validateHDFDocument(valid))
 }
 
 func TestValidateHDFOutput_RejectsInvalidEvidencePackage(t *testing.T) {
 	t.Parallel()
 	invalid := []byte(`{"contents":[]}`)
-	err := validateHDFOutput(invalid)
+	err := validateHDFDocument(invalid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Evidence Package")
 }
@@ -307,14 +309,14 @@ func TestValidateHDFOutput_AcceptsValidComparison(t *testing.T) {
 		"summary": {"total":0,"matchedCount":0,"unmatchedOldCount":0,"unmatchedNewCount":0},
 		"requirementDiffs": []
 	}`)
-	assert.NoError(t, validateHDFOutput(valid))
+	assert.NoError(t, validateHDFDocument(valid))
 }
 
 func TestValidateHDFOutput_RejectsInvalidComparison(t *testing.T) {
 	t.Parallel()
 	// comparisonMode present (detection passes) but formatVersion is wrong.
 	invalid := []byte(`{"formatVersion":"0.0.1","comparisonMode":"temporal","requirementDiffs":[]}`)
-	err := validateHDFOutput(invalid)
+	err := validateHDFDocument(invalid)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Comparison")
 }

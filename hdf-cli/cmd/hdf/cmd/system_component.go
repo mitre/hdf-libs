@@ -571,7 +571,7 @@ func writeSystemJSON(sysDoc map[string]interface{}, outputPath, message string) 
 		return fmt.Errorf("failed to serialize system document: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 

@@ -97,6 +97,21 @@ Examples:
 	return cmd
 }
 
+// gateLabelInput enforces the label commands' input contract at the boundary:
+// the document must be a schema-valid HDF results or system document (labels
+// live on components[], which both carry). A legacy v2 / non-HDF / schema-invalid
+// document is rejected before any render (show) or mutation (set/remove), rather
+// than silently no-opping or rewriting a non-HDF file in place.
+func gateLabelInput(data []byte) error {
+	if _, typeErr := requireDocumentType(data, []string{"results", "system"}, "hdf label"); typeErr != nil {
+		return typeErr
+	}
+	if valErr := validateHDFDocument(data); valErr != nil {
+		return fmt.Errorf("input failed schema validation: %w", valErr)
+	}
+	return nil
+}
+
 func runLabelShow(_ *cobra.Command, args []string) error {
 	filePath := args[0]
 
@@ -105,8 +120,8 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	if _, typeErr := requireDocumentType(data, []string{"results"}, "hdf label"); typeErr != nil {
-		return typeErr
+	if gateErr := gateLabelInput(data); gateErr != nil {
+		return gateErr
 	}
 
 	infos, err := extractComponentLabels(data)
@@ -169,6 +184,10 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
+	if gateErr := gateLabelInput(data); gateErr != nil {
+		return gateErr
+	}
+
 	result := data
 
 	// Apply key=value labels if provided
@@ -206,6 +225,10 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	if gateErr := gateLabelInput(data); gateErr != nil {
+		return gateErr
 	}
 
 	result, err := removeLabels(data, keys)
