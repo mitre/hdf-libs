@@ -536,6 +536,12 @@ func TestHdfCompliance_UnknownGroupBy(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	res, _ := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "bogus"})
 	assertArgError(t, res, "unknown groupBy")
+	// The remedy names every mode, so an agent never has to guess the enum.
+	for _, mode := range []string{"baseline", "severity", "nistFamily", "tool", "cwe"} {
+		if txt := payloadText(t, res); !strings.Contains(txt, mode) {
+			t.Errorf("unknown-groupBy remedy must name %q, got %s", mode, txt)
+		}
+	}
 }
 
 func TestGroupSeverity_ExplicitAndDerived(t *testing.T) {

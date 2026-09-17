@@ -430,7 +430,7 @@
         "additionalProperties": false,
         "properties": {
           "groupBy": {
-            "description": "baseline | severity | nistFamily",
+            "description": "baseline | severity | nistFamily | tool | cwe",
             "type": "string"
           },
           "source": {

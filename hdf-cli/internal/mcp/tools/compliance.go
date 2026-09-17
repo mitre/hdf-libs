@@ -28,7 +28,7 @@ type complianceInput struct {
 	// passes exactly one of source / sources, which the handler enforces.
 	Source    handle.Source   `json:"source,omitempty" jsonschema:"document as {path} or {handle}"`
 	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
-	GroupBy   string          `json:"groupBy,omitempty" jsonschema:"baseline | severity | nistFamily"`
+	GroupBy   string          `json:"groupBy,omitempty" jsonschema:"baseline | severity | nistFamily | tool | cwe"`
 	Threshold *thresholdInput `json:"threshold,omitempty" jsonschema:"threshold spec: {path} to a YAML/JSON file, or {inline} object"`
 }
 
@@ -262,7 +262,9 @@ func indexOrZero(i *int) int {
 // partition is a full HDFResults so the shared engine scores it unchanged.
 // Baseline mode yields one partition PER BASELINE, by position — baseline names
 // are not unique in shipped converter output, and a name-keyed map silently
-// collapsed same-named baselines into whichever came last.
+// collapsed same-named baselines into whichever came last. Tool mode groups by
+// the per-baseline tool label; cwe mode by each requirement's CWE numbers
+// (multi-membership, like nistFamily).
 func partitionResults(results hdf.HDFResults, mode string) ([]partition, *mcperr.Error) {
 	switch mode {
 	case "baseline":
@@ -283,10 +285,59 @@ func partitionResults(results hdf.HDFResults, mode string) ([]partition, *mcperr
 		}), nil
 	case "nistFamily":
 		return partitionBy(results, nistFamilies), nil
+	case "tool":
+		return partitionByBaselineLabel(results, hdfengine.LabelTool, "unlabeled"), nil
+	case "cwe":
+		return partitionBy(results, cweGroups), nil
 	default:
 		return nil, mcperr.Arg(fmt.Sprintf("unknown groupBy %q", mode),
-			"use groupBy = baseline, severity, or nistFamily (or omit it)")
+			"use groupBy = baseline, severity, nistFamily, tool, or cwe (or omit it)")
 	}
+}
+
+// partitionByBaselineLabel buckets requirements by the value of one baseline
+// label — for `tool`, the scanner the engine Merge stamps on every baseline of a
+// multi-source view (ADR-0016 §3). The label is the contract; a baseline name's
+// <tool>/ prefix is a convenience and is never parsed. A baseline without the
+// label (any single document) lands in the fallback bucket. Buckets are emitted
+// in first-seen order; groupedRollups sorts them by label.
+func partitionByBaselineLabel(results hdf.HDFResults, label, fallback string) []partition {
+	buckets := map[string][]hdf.EvaluatedRequirement{}
+	var order []string
+	for i := range results.Baselines {
+		b := &results.Baselines[i]
+		key := b.Labels[label]
+		if key == "" {
+			key = fallback
+		}
+		if _, seen := buckets[key]; !seen {
+			order = append(order, key)
+		}
+		buckets[key] = append(buckets[key], b.Requirements...)
+	}
+	out := make([]partition, 0, len(order))
+	for _, key := range order {
+		out = append(out, partition{
+			Group:   key,
+			Results: hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: key, Requirements: buckets[key]}}},
+		})
+	}
+	return out
+}
+
+// cweGroups returns the distinct CWE numbers a requirement's first-class cwe[]
+// field cites — the schema's normalized key, which the hdf_query correlation
+// projector reads too, so the two tools never disagree about a row — through
+// the shared extractor: the CWE-N spellings it recognises ("CWE-79", "cwe 79",
+// "cwe79") meet as the group "79". The schema pins the field to `CWE-N`, so a
+// bare number never reaches here. A requirement citing none groups under
+// "unmapped" — including one whose converter put its CWEs only in tags.cwe.
+func cweGroups(req hdf.EvaluatedRequirement) []string {
+	ids := hdfutil.ExtractCWEIDs(strings.Join(req.Cwe, " "))
+	if len(ids) == 0 {
+		return []string{"unmapped"}
+	}
+	return ids
 }
 
 // partitionBy buckets each requirement into every key keyOf returns (a

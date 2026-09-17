@@ -34,7 +34,7 @@ body.
 | `hdf_open` | Entry point: open a document, return its detected type, schema version, validity, and a handle. Optional — every read tool also accepts a `{path}` directly. |
 | `hdf_inspect` | Document **structure and metadata** for all eight HDF document types (counts, component/baseline/assessment breakdowns, top-level fields). For a results document the metadata includes the root `tool` (name, version, format — each when present) and `generator` when present, and each baseline entry carries its `labels` when it has any — on a multi-baseline document that is how an agent sees which baseline is which. It never returns requirements. |
 | `hdf_query` | The **only** path to requirements (results and baseline documents only). Filters by status, severity, requirement ID, tag, and free text; concise by default, full on request; paginates when a response would exceed the token budget. An opt-in `fields` array adds cross-source correlation keys per row (see [Correlation fields](#correlation-fields)). Takes one `source`, or several results documents as one set via `sources[]` (see [Several documents as one set](#several-documents-as-one-set)). |
-| `hdf_compliance` | Status × severity rollups, the compliance percentage, optional threshold verdicts, and the agent-attributed override count for one document — or for a set of results documents via `sources[]`, where `groupBy: baseline` is one group per input baseline. |
+| `hdf_compliance` | Status × severity rollups, the compliance percentage, optional threshold verdicts, and the agent-attributed override count for one document — or for a set of results documents via `sources[]`. `groupBy` is `baseline` (one group per input baseline), `severity`, `nistFamily`, `tool` (the scanner each baseline came from — the label the combined view carries; a single document groups as `unlabeled`) or `cwe` (each requirement's CWE numbers, `unmapped` for none). |
 | `hdf_aggregate` | Roll up status/severity counts across **multiple** documents in one call — per-source counts plus a server-computed total and compliance, with optional status/severity/nist filters. Counts only, never rows; a source that fails to load is reported and the rest still aggregate. |
 | `hdf_diff` | Compare two documents — temporal (results across time) or system-drift (system documents) — and emit an `hdf-comparison`. |
 | `hdf_validate` | Validate a document in `schema`, `checksums`, or `completeness` mode. |
@@ -120,9 +120,15 @@ question over any set of them.
 Every baseline in the view is renamed `<tool>/<original name>` (the tool is the
 document's root `tool.name`) and labelled `tool` / `toolVersion` /
 `sourceDocument`, so a `baseline` glob selects one scanner across the set, full
-rows say which scanner each row came from, and `groupBy: baseline` in
-`hdf_compliance` is one group per input baseline with its `baselineIndex`. A
-`threshold` is evaluated over the set's counts exactly as over one document.
+rows say which scanner each row came from, and in `hdf_compliance`
+`groupBy: baseline` is one group per input baseline with its `baselineIndex`,
+`groupBy: tool` is one rollup per scanner (keyed by that label, never by the
+name prefix), and `groupBy: cwe` rolls the set up by weakness across scanners
+— by each requirement's normalized `cwe[]` field, the same key `hdf_query`'s
+`fields: ["cwe"]` reads. A converter that records CWEs only under `tags.cwe`
+(the SARIF converter does today) leaves that field empty, and its rows group
+as `unmapped` until it is fixed.
+A `threshold` is evaluated over the set's counts exactly as over one document.
 
 The response names the set instead of one handle:
 
