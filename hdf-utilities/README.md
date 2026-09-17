@@ -1,6 +1,6 @@
 # @mitre/hdf-utilities
 
-Generic utility functions for working with common data formats (JSON, XML, CSV) and cryptographic hashing. These utilities provide safe parsing, building, and validation operations used throughout the HDF library ecosystem.
+Generic utility functions used throughout the HDF library ecosystem: safe parsing and building for common data formats (JSON, XML, CSV), cryptographic hashing, and the shared primitives that keep converters consistent — timestamp parsing and normalization, CVSS scoring, CPE and PURL identifiers, severity and status vocabularies, input-size guards, and object and string helpers.
 
 ## Scope and Responsibilities
 
