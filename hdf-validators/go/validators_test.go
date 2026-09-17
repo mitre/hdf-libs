@@ -620,6 +620,57 @@ func TestValidateAmendments_RequirementIDMustNotBeEmpty(t *testing.T) {
 	})
 }
 
+// TestValidateAmendments_MilestoneTitleAndEvidenceData is asserted case for case
+// by the TS peer, so both regex engines are held to the same title and base64
+// verdicts: the title pattern avoids \S and '.', which Go regexp and ECMA-262
+// read differently, so a carriage return must be rejected by both.
+func TestValidateAmendments_MilestoneTitleAndEvidenceData(t *testing.T) {
+	doc := func(extra string) []byte {
+		return []byte(`{"name": "POA&Ms", "overrides": [{
+			"type": "poam", "requirementId": "SV-257777", "status": "failed",
+			"reason": "Remediation scheduled",
+			"appliedBy": {"type": "email", "identifier": "ao@agency.gov"},
+			"appliedAt": "2026-01-15T10:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+			` + extra + `
+		}]}`)
+	}
+	milestone := func(title string) string {
+		return `"milestones": [{"title": ` + title + `, "description": "Apply RHSA-2026:1234",
+			"estimatedCompletion": "2026-04-15T00:00:00Z", "status": "pending"}]`
+	}
+
+	evidence := func(data, encoding string) string {
+		return `"evidence": [{"type": "screenshot", "data": ` + data + `, "mimeType": "image/png", "encoding": ` + encoding + `}]`
+	}
+
+	for _, tc := range []struct {
+		name  string
+		extra string
+		valid bool
+	}{
+		{"titled milestone", milestone(`"Apply vendor patch"`), true},
+		{"single-character title", milestone(`"X"`), true},
+		{"empty title", milestone(`""`), false},
+		{"title with a line feed", milestone(`"Apply\npatch"`), false},
+		{"title with a carriage return", milestone(`"Apply\rpatch"`), false},
+		{"title with a leading space", milestone(`" Apply patch"`), false},
+		{"title with a trailing tab", milestone(`"Apply patch\t"`), false},
+		{"evidence with data", `"evidence": [{"type": "url", "data": "https://jira.example.com/SEC-1"}]`, true},
+		{"evidence with empty data", `"evidence": [{"type": "url", "data": ""}]`, false},
+		{"base64 evidence with real base64", evidence(`"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="`, `"base64"`), true},
+		{"base64 evidence with non-base64 text", evidence(`"not base64!"`, `"base64"`), false},
+		{"base64 evidence with a data: URI", evidence(`"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="`, `"base64"`), false},
+		{"base64 evidence with a trailing line feed", evidence(`"aGk=\n"`, `"base64"`), false},
+		{"URL evidence with encoding absent", `"evidence": [{"type": "url", "data": "https://evidence.example.com/firewall.png"}]`, true},
+		{"URL evidence with utf-8 encoding", evidence(`"https://evidence.example.com/firewall.png"`, `"utf-8"`), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ValidateAmendments(doc(tc.extra))
+			assert.Equal(t, tc.valid, result.Valid, result.Error())
+		})
+	}
+}
+
 // amendmentAndVulnRequirementFields is the shared shape asserted identically by
 // the Go and TS validator suites: a requirement carrying amendment fields
 // (effectiveStatus, disposition, statusOverrides, poams) and vulnerability

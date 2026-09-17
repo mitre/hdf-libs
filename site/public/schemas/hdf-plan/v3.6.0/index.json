@@ -543,6 +543,24 @@
             "type",
             "data"
           ],
+          "if": {
+            "properties": {
+              "encoding": {
+                "const": "base64"
+              }
+            },
+            "required": [
+              "encoding"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "pattern": "^[0-9A-Za-z+/]+={0,2}$",
+                "contentEncoding": "base64"
+              }
+            }
+          },
           "properties": {
             "type": {
               "type": "string",
@@ -559,7 +577,8 @@
             },
             "data": {
               "type": "string",
-              "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
+              "minLength": 1,
+              "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string. Must not be empty. When encoding is 'base64', data must be bare base64 matching ^[0-9A-Za-z+/]+={0,2}$ (OSCAL's Base64Datatype): no data: URI prefix, URL, or line breaks."
             },
             "description": {
               "type": "string",
@@ -571,7 +590,7 @@
             },
             "encoding": {
               "type": "string",
-              "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
+              "description": "Encoding used for the data. Example: 'base64', 'utf-8'. The value 'base64' (exactly, lowercase) requires data to be bare base64."
             },
             "size": {
               "type": "number",
@@ -635,6 +654,7 @@
               }
             }
           ],
+          "$comment": "Examples, in order: 1) base64-encoded PNG screenshot with full capture provenance; 2) raw configuration text; 3) log excerpt; 4) URL to an external ticket; 5) base64-encoded file captured by an automated system.",
           "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
           "title": "Evidence"
         },
@@ -712,6 +732,13 @@
             "status"
           ],
           "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[^ \\t\\n\\r]([^\\n\\r]*[^ \\t\\n\\r])?$",
+              "$comment": "The pattern is OSCAL's StringDatatype (\\S(.*\\S)?) as its XSD defines \\S and '.', spelled with explicit classes so ECMA-262 and Go regexp engines agree: \\S and '.' differ between them on CR and non-ASCII whitespace.",
+              "description": "Short single-line label for this milestone, suitable where a consumer needs a title (for example an OSCAL POA&M remediation or task). No line breaks, and no leading or trailing whitespace. The description remains the full text of the milestone; the title does not replace it."
+            },
             "description": {
               "type": "string",
               "description": "Description of this milestone or task."
@@ -741,6 +768,25 @@
               "description": "Identity of who completed this milestone."
             }
           },
+          "examples": [
+            {
+              "title": "Deploy OpenSSH 9.8p1",
+              "description": "Upgrade OpenSSH to 9.8p1 on every RHEL 9 host in the web tier to remediate CVE-2024-6387, then restart sshd during the Saturday maintenance window.",
+              "estimatedCompletion": "2026-10-31T00:00:00Z",
+              "status": "inProgress"
+            },
+            {
+              "description": "Isolate the affected host on a restricted VLAN until the vendor patch is available.",
+              "estimatedCompletion": "2026-09-05T00:00:00Z",
+              "status": "completed",
+              "completedAt": "2026-09-04T14:30:00Z",
+              "completedBy": {
+                "identifier": "network-admin@example.com",
+                "type": "email"
+              }
+            }
+          ],
+          "$comment": "Examples, in order: 1) titled milestone in progress — the title is the short label, the description the full remediation text; 2) untitled completed milestone with completion provenance — title is optional, and a consumer needing one derives it.",
           "description": "A milestone or task within a POA&M remediation plan.",
           "title": "Milestone"
         },
@@ -1613,7 +1659,7 @@
               "evidence": [
                 {
                   "type": "screenshot",
-                  "data": "base64-encoded-screenshot-data-here",
+                  "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
                   "description": "Screenshot showing firewall configuration",
                   "mimeType": "image/png",
                   "encoding": "base64",

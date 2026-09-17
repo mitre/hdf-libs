@@ -254,6 +254,50 @@ describe('amendments.schema.json — Standalone_Override', () => {
     expect(validate(override)).toBe(true);
   });
 
+  it('should accept override with a titled milestone', () => {
+    const override = {
+      ...valid,
+      type: 'poam',
+      milestones: [{
+        title: 'Apply vendor patch',
+        description: 'Apply RHSA-2026:1234 to every RHEL 9 host in the web tier',
+        estimatedCompletion: '2026-04-15T00:00:00Z',
+        status: 'pending',
+      }],
+    };
+    expect(validate(override), JSON.stringify(validate.errors)).toBe(true);
+  });
+
+  it('should reject override with a multi-line milestone title', () => {
+    const override = {
+      ...valid,
+      type: 'poam',
+      milestones: [{
+        title: 'Apply vendor patch\nthen reboot',
+        description: 'Apply RHSA-2026:1234 to every RHEL 9 host in the web tier',
+        estimatedCompletion: '2026-04-15T00:00:00Z',
+        status: 'pending',
+      }],
+    };
+    expect(validate(override)).toBe(false);
+  });
+
+  it('should reject override with empty evidence data', () => {
+    const override = { ...valid, evidence: [{ type: 'url', data: '' }] };
+    expect(validate(override)).toBe(false);
+  });
+
+  it('should reject override evidence under base64 encoding whose data is not base64', () => {
+    const withData = (data: string) => ({
+      ...valid,
+      type: 'attestation',
+      evidence: [{ type: 'screenshot', data, mimeType: 'image/png', encoding: 'base64' }],
+    });
+    expect(validate(withData('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==')), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate(withData('not base64!'))).toBe(false);
+    expect(validate(withData('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='))).toBe(false);
+  });
+
   it('should accept override with previousChecksum', () => {
     const override = {
       ...valid,
