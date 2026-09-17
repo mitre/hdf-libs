@@ -525,10 +525,12 @@ func DetectHDFVersion(input []byte) (string, error) {
 		return LegacyVersion, nil
 	}
 
-	// Modern schema (v3) has baselines + components.
-	_, hasBaselines := obj["baselines"]
-	_, hasComponents := obj["components"]
-	if hasBaselines && hasComponents {
+	// Modern schema (v3) results are identified by baselines. components is an
+	// OPTIONAL top-level field, so a valid v3 results document need not carry it —
+	// requiring both wrongly rejected component-less v3 docs from convert.
+	// baselines is unique to v3 results (v3 baseline docs use requirements), so it
+	// is an unambiguous marker on its own.
+	if _, hasBaselines := obj["baselines"]; hasBaselines {
 		return ModernVersion, nil
 	}
 
