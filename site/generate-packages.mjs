@@ -52,15 +52,9 @@ function rewriteLinks(markdown) {
 
 function render(pkg) {
   const readme = fs.readFileSync(path.join(REPO_ROOT, pkg, 'README.md'), 'utf8');
-  const source = `${BLOB}/${pkg}/README.md`;
-  const note = `::: tip Package reference\nRendered from [\`${pkg}/README.md\`](${source}) in the repository, which is the canonical source.\n:::\n\n`;
-  const body = rewriteLinks(readme).trimEnd();
-  // Keep the README's own h1 as the page title, with the provenance note
-  // directly beneath it so the reader knows where to send a correction.
-  const lines = body.split('\n');
-  const h1 = lines.findIndex((l) => l.startsWith('# '));
-  if (h1 === -1) return `${note}${body}\n`;
-  return `${lines.slice(0, h1 + 1).join('\n')}\n\n${note}${lines.slice(h1 + 1).join('\n').trimStart()}\n`;
+  // Rendered as-is. The reader wants the package's documentation, not a note
+  // about where the file lives.
+  return `${rewriteLinks(readme).trimEnd()}\n`;
 }
 
 function main() {

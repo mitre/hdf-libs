@@ -34,12 +34,59 @@ function getSchemaNavItems(schemasDir, urlPrefix) {
 // Discover markdown pages in a docs subdirectory (specification, guides,
 // architecture, contributing). Each page's display name is its first
 // heading; the sidebar link is the path-without-extension.
+// Sidebar order, by subdirectory. Alphabetical ordering scattered related pages
+// — the amendments and thresholds walkthroughs are the same kind of document and
+// sorted to opposite ends — so the reading order is stated here instead. A page
+// not listed falls to the end in alphabetical order rather than breaking the
+// build, so adding one is never blocked on editing this.
+const DOCS_ORDER = {
+  guides: [
+    // Start here
+    'cli-user-story-examples',
+    // End-to-end workflows
+    'amendments-workflow',
+    'thresholds-workflow',
+    // Converting
+    'converters',
+    'converter-fingerprint-registry',
+    'conversion-fidelity',
+    'migration-legacy-hdf',
+    'generate-upgrade',
+    // Interoperating with other formats
+    'oscal-alignment',
+    'oscal-cli-examples',
+    'asff-interop',
+    'vex-interop',
+    'cti-stix',
+    'siem-export',
+    // Reference
+    'nist-revisions',
+    'cve-ecosystem',
+    'label-keys-reference',
+    'sonarqube-severity',
+    // Tooling
+    'hdf-mcp',
+    'verifying-releases',
+  ],
+  contributing: [
+    'developer-guide',
+    // Writing a mapper only comes up while writing a converter, so it follows it.
+    'writing-a-converter',
+    'using-mappings-in-converters',
+  ],
+};
+
 function getDocsItems(subdir) {
   const dir = path.resolve(__dirname, `../docs/${subdir}`);
   if (!fs.existsSync(dir)) return [];
+  const order = DOCS_ORDER[subdir] ?? [];
+  const rank = (f) => {
+    const i = order.indexOf(f.replace('.md', ''));
+    return i === -1 ? order.length : i;
+  };
   return fs.readdirSync(dir)
     .filter((f) => f.endsWith('.md') && f !== 'index.md')
-    .sort()
+    .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
     .map((f) => {
       const name = f.replace('.md', '');
       const content = fs.readFileSync(path.join(dir, f), 'utf-8');
