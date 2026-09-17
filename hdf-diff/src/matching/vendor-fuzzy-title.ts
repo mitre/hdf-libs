@@ -3,6 +3,13 @@ import type { MatchStrategy, MatchResult, MatchPair } from './types.js';
 /** Default threshold for accepting a Levenshtein match. */
 const DEFAULT_ACCEPT_THRESHOLD = 0.45;
 
+// Bounds the Levenshtein DP. Far above any realistic requirement/vendor title,
+// so no real match result changes; beyond it the inputs are not titles, and the
+// O(m*n) DP (plus O(n) allocation) would be a needless cost and an algorithmic-DoS
+// surface, so such pairs get the trivial upper bound instead. Mirrors the Go port
+// (hdf-diff/go/matching/vendor_fuzzy_title.go: maxLevenshteinRunes).
+const MAX_LEVENSHTEIN_LENGTH = 4096;
+
 /** Modal verbs that mark the start of compliance statements. */
 const COMPLIANCE_MODALS = new Set([
   'must', 'will', 'shall', 'should', 'may', 'needs',
@@ -16,6 +23,13 @@ export function levenshteinDistance(a: string, b: string): number {
   const n = b.length;
   if (m === 0) return n;
   if (n === 0) return m;
+
+  // Beyond the cap the inputs are not realistic titles: return the trivial upper
+  // bound (edit distance never exceeds the longer length) rather than allocating
+  // O(n) and running O(m*n). Mirrors the Go port's bound.
+  if (m > MAX_LEVENSHTEIN_LENGTH || n > MAX_LEVENSHTEIN_LENGTH) {
+    return Math.max(m, n);
+  }
 
   // Use single row optimization
   let prev = new Array<number>(n + 1);

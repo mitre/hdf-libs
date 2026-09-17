@@ -1,12 +1,32 @@
 package matching
 
 import (
+	"strings"
 	"testing"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestLevenshteinDistance_BoundsOverlongInput: pathological over-cap inputs are
+// not run through the O(m*n) DP — they return the trivial upper bound max(m,n).
+// Realistic-length titles keep their exact distance.
+func TestLevenshteinDistance_BoundsOverlongInput(t *testing.T) {
+	a := strings.Repeat("x", maxLevenshteinRunes+1000)
+	b := a + strings.Repeat("y", 100) // exact edit distance is 100
+	got := LevenshteinDistance(a, b)
+	assert.Equal(t, len([]rune(b)), got,
+		"over-cap inputs return max(m,n), not the exact distance")
+
+	// A boundary-length pair (exactly at the cap) is still computed exactly.
+	c := strings.Repeat("x", maxLevenshteinRunes)
+	d := strings.Repeat("x", maxLevenshteinRunes-1) + "y"
+	assert.Equal(t, 1, LevenshteinDistance(c, d), "at-cap inputs keep the exact distance")
+
+	// Normal titles are unaffected.
+	assert.Equal(t, 3, LevenshteinDistance("kitten", "sitting"))
+}
 
 func TestLevenshteinDistance(t *testing.T) {
 	assert.Equal(t, 0, LevenshteinDistance("abc", "abc"))
