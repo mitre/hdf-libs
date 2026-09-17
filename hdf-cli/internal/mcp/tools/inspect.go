@@ -139,23 +139,41 @@ func resultsStructure(r *hdf.HDFResults) map[string]any {
 	for i := range r.Baselines {
 		b := &r.Baselines[i]
 		counts := countByEffectiveStatus(hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{*b}})
-		baselines = append(baselines, map[string]any{
+		entry := map[string]any{
 			"name":             b.Name,
 			"requirementCount": len(b.Requirements),
 			"statusBreakdown": map[string]int{
 				"passed": counts.Passed.Total, "failed": counts.Failed.Total,
 				"notApplicable": counts.NoImpact.Total, "notReviewed": counts.Skipped.Total, "error": counts.Error.Total,
 			},
-		})
+		}
+		// Labels are the per-baseline provenance carrier (ADR-0016 §3: a merged
+		// document names each baseline's scanner here) and the grouping key
+		// hdf_compliance groupBy=tool reads. Surfaced only when present.
+		if len(b.Labels) > 0 {
+			entry["labels"] = b.Labels
+		}
+		baselines = append(baselines, entry)
 	}
 	byType := map[string]int{}
 	for i := range r.Components {
 		byType[string(r.Components[i].Type)]++
 	}
+	meta := docMetadata(r.ID, r.SystemRef, r.PlanRef)
+	// Root provenance — which scanner produced the document and which converter
+	// wrote it — was projected by no read tool; an agent could not attribute a
+	// finding without opening the file. Emitted only when present, never as
+	// synthesized empties (the statistics rule below).
+	if tm := toolMetadata(r.Tool); len(tm) > 0 {
+		meta["tool"] = tm
+	}
+	if r.Generator != nil {
+		meta["generator"] = map[string]any{"name": r.Generator.Name, "version": r.Generator.Version}
+	}
 	out := map[string]any{
 		"baselines":  baselines,
 		"components": map[string]any{"count": len(r.Components), "byType": byType},
-		"metadata":   docMetadata(r.ID, r.SystemRef, r.PlanRef),
+		"metadata":   meta,
 	}
 	// Statistics is an optional pointer — converters like gosec omit it. Only
 	// surface the key when present, so a client never reads a synthesized zero
@@ -366,6 +384,27 @@ func verbosityLabel(v string) string {
 
 func docMetadata(id, systemRef, planRef *string) map[string]any {
 	return map[string]any{"id": strPtrOrEmpty(id), "systemRef": strPtrOrEmpty(systemRef), "planRef": strPtrOrEmpty(planRef)}
+}
+
+// toolMetadata projects the root Tool: name, version and format, each only when
+// the document carries it (all three are optional in the schema — `format` is
+// the named source format a converter records, e.g. SARIF). A nil or empty Tool
+// projects to an empty map, which the caller omits rather than emitting {}.
+func toolMetadata(t *hdf.Tool) map[string]any {
+	out := map[string]any{}
+	if t == nil {
+		return out
+	}
+	if t.Name != nil {
+		out["name"] = *t.Name
+	}
+	if t.Version != nil {
+		out["version"] = *t.Version
+	}
+	if t.Format != nil {
+		out["format"] = *t.Format
+	}
+	return out
 }
 
 func strPtrOrEmpty(s *string) string {
