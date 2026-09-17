@@ -40,7 +40,7 @@ Use --detail to expand a specific section to item-level detail.
 Detail sections by document type:
   results:          requirements, baselines, components
   baseline:         requirements, groups
-  system:           components, interconnections
+  system:           components, dataFlows
   plan:             assessments
   amendments:       overrides
   evidence-package: contents

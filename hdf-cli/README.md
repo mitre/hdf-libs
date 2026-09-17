@@ -158,7 +158,7 @@ USAGE
 DETAIL SECTIONS by document type
   results:           requirements, baselines, components
   baseline:          requirements, groups
-  system:            components, interconnections
+  system:            components, dataFlows
   plan:              assessments
   amendments:        overrides
   evidence-package:  contents
@@ -420,7 +420,7 @@ See [Supported Conversions](#supported-conversions) for the full list.
 
 ### system
 
-View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and interconnections.
+View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and data flows.
 
 ```
 USAGE
