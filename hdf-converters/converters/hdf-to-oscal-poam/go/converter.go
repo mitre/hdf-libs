@@ -185,21 +185,19 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 
 	// Build risk props: impacted control, override type (disposition), impact
 	// override, controlled-vocabulary justification, and disambiguating scope.
-	riskProps := appendStringProp(nil, "impacted-control-id", controlID)
-	if override.Type != "" {
-		riskProps = append(riskProps, oscal.Property{Name: "override-type", Value: string(override.Type)})
-	}
+	riskProps := oscal.AppendVocabularyProp(nil, "impacted-control-id", controlID)
+	riskProps = oscal.AppendVocabularyProp(riskProps, "override-type", string(override.Type))
 	if override.Impact != nil {
-		riskProps = append(riskProps, oscal.Property{Name: "impact-override", Value: strconv.FormatFloat(override.Impact.Value, 'f', -1, 64)})
+		riskProps = oscal.AppendVocabularyProp(riskProps, "impact-override", strconv.FormatFloat(override.Impact.Value, 'f', -1, 64))
 	}
-	if override.Justification != nil && *override.Justification != "" {
-		riskProps = appendStringProp(riskProps, "justification", string(*override.Justification))
+	if override.Justification != nil {
+		riskProps = oscal.AppendVocabularyProp(riskProps, "justification", string(*override.Justification))
 	}
-	if override.BaselineRef != nil && *override.BaselineRef != "" {
-		riskProps = appendStringProp(riskProps, "baseline-ref", *override.BaselineRef)
+	if override.BaselineRef != nil {
+		riskProps = oscal.AppendVocabularyProp(riskProps, "baseline-ref", *override.BaselineRef)
 	}
-	if override.ComponentRef != nil && *override.ComponentRef != "" {
-		riskProps = appendStringProp(riskProps, "component-ref", *override.ComponentRef)
+	if override.ComponentRef != nil {
+		riskProps = oscal.AppendVocabularyProp(riskProps, "component-ref", *override.ComponentRef)
 	}
 
 	// Build remediations from milestones. Each milestone becomes a planned
@@ -207,10 +205,7 @@ func overrideToPOAMItem(override *hdf.StandaloneOverride, parties *partyRegistry
 	// completion — the structure the forward converter reads back.
 	var remediations []oscal.Remediation
 	for _, ms := range override.Milestones {
-		var msProps []oscal.Property
-		if ms.Status != "" {
-			msProps = append(msProps, oscal.Property{Name: "milestone-status", Value: string(ms.Status)})
-		}
+		msProps := oscal.AppendVocabularyProp(nil, "milestone-status", string(ms.Status))
 		var tasks []oscal.Task
 		if !ms.EstimatedCompletion.IsZero() {
 			eta := ms.EstimatedCompletion.UTC().Format(time.RFC3339)
@@ -379,23 +374,12 @@ func amendmentsVersion(a *hdf.HDFAmendments) string {
 	return "1.0.0"
 }
 
-// appendStringProp adds a property whose value OSCAL types as StringDatatype,
-// trimming it and omitting the property entirely when nothing survives. A prop
-// with an empty value carries no more than an absent one and is schema-invalid.
-func appendStringProp(props []oscal.Property, name, value string) []oscal.Property {
-	trimmed := oscal.OSCALString(value)
-	if trimmed == "" {
-		return props
-	}
-	return append(props, oscal.Property{Name: name, Value: trimmed})
-}
-
 // metadataProps carries document identifiers and labels that have no first-class
 // OSCAL home. Labels are emitted in sorted key order for deterministic output.
 func metadataProps(a *hdf.HDFAmendments) []oscal.Property {
 	var props []oscal.Property
-	if a.AmendmentID != nil && *a.AmendmentID != "" {
-		props = appendStringProp(props, "amendment-id", *a.AmendmentID)
+	if a.AmendmentID != nil {
+		props = oscal.AppendVocabularyProp(props, "amendment-id", *a.AmendmentID)
 	}
 	if len(a.Labels) > 0 {
 		keys := make([]string, 0, len(a.Labels))
@@ -466,11 +450,11 @@ func evidenceObservation(ev hdf.Evidence, uuid, defaultCollected string) oscal.O
 	}
 
 	var props []oscal.Property
-	if ev.MIMEType != nil && *ev.MIMEType != "" {
-		props = appendStringProp(props, "mime-type", *ev.MIMEType)
+	if ev.MIMEType != nil {
+		props = oscal.AppendVocabularyProp(props, "mime-type", *ev.MIMEType)
 	}
-	if ev.CapturedBy != nil && ev.CapturedBy.Identifier != "" {
-		props = appendStringProp(props, "captured-by", ev.CapturedBy.Identifier)
+	if ev.CapturedBy != nil {
+		props = oscal.AppendVocabularyProp(props, "captured-by", ev.CapturedBy.Identifier)
 	}
 
 	return oscal.Observation{
@@ -546,12 +530,9 @@ func externalRefResources(overrides []hdf.StandaloneOverride) []oscal.Resource {
 			if ref.Href != nil && *ref.Href != "" {
 				res.Rlinks = []oscal.Rlink{{Href: *ref.Href}}
 			}
-			var props []oscal.Property
-			if ref.SourceName != "" {
-				props = append(props, oscal.Property{Name: "source-name", Value: ref.SourceName})
-			}
-			if ref.ExternalID != nil && *ref.ExternalID != "" {
-				props = append(props, oscal.Property{Name: "external-id", Value: *ref.ExternalID})
+			props := oscal.AppendVocabularyProp(nil, "source-name", ref.SourceName)
+			if ref.ExternalID != nil {
+				props = oscal.AppendVocabularyProp(props, "external-id", *ref.ExternalID)
 			}
 			res.Props = props
 			resources = append(resources, res)
@@ -565,10 +546,10 @@ func externalRefResources(overrides []hdf.StandaloneOverride) []oscal.Resource {
 func milestoneCompletionProps(ms *hdf.Milestone) []oscal.Property {
 	var props []oscal.Property
 	if ms.CompletedAt != nil && !ms.CompletedAt.IsZero() {
-		props = append(props, oscal.Property{Name: "completed-at", Value: ms.CompletedAt.UTC().Format(time.RFC3339)})
+		props = oscal.AppendVocabularyProp(props, "completed-at", ms.CompletedAt.UTC().Format(time.RFC3339))
 	}
-	if ms.CompletedBy != nil && ms.CompletedBy.Identifier != "" {
-		props = append(props, oscal.Property{Name: "completed-by", Value: ms.CompletedBy.Identifier})
+	if ms.CompletedBy != nil {
+		props = oscal.AppendVocabularyProp(props, "completed-by", ms.CompletedBy.Identifier)
 	}
 	return props
 }

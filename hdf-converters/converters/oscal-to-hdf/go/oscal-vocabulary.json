@@ -1,0 +1,388 @@
+{
+  "$comment": "The HDF OSCAL extension vocabulary (ADR-0014 §1.5): every prop an hdf-libs OSCAL exporter emits or importer reads by name, with the namespace it belongs to. The Go oscal package embeds this file and the TypeScript peer imports it; it is the only place a prop name or the HDF namespace URI is defined. 'objects' are OSCAL JSON paths; 'hdfField' is the HDF path the prop carries, or null when it carries none; 'legacy' is true exactly for the names exporters emitted without ns before ADR-0014, which the read helpers accept without ns for one minor release (§1.4).",
+  "namespace": "https://mitre.github.io/hdf-libs/ns/oscal",
+  "defaultNamespace": "http://csrc.nist.gov/ns/oscal",
+  "props": [
+    {
+      "name": "hdf-requirement-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "The HDF requirement id the finding assesses, exactly as the source recorded it. The finding target-id carries an OSCAL token encoding of it, which is not injective.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].id",
+      "legacy": true
+    },
+    {
+      "name": "baseline-version",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[]"],
+      "meaning": "The version of the HDF baseline the result reports.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].version",
+      "legacy": true
+    },
+    {
+      "name": "nist",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "A NIST SP 800-53 control the requirement maps to, one prop per mapping, in source order.",
+      "valueFormat": "String (§1.7), NIST control notation as the source spelled it",
+      "hdfField": "baselines[].requirements[].tags.nist[]",
+      "legacy": true
+    },
+    {
+      "name": "cci",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "A DISA Control Correlation Identifier the requirement maps to, one prop per mapping, in source order.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].tags.cci[]",
+      "legacy": true
+    },
+    {
+      "name": "control-type",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "The requirement's control type.",
+      "valueFormat": "One of policy, procedure, technical, management, operational",
+      "hdfField": "baselines[].requirements[].controlType",
+      "legacy": true
+    },
+    {
+      "name": "verification-method",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "How the requirement is verified.",
+      "valueFormat": "One of automated, manual-by-design, manual-pending-automation, hybrid",
+      "hdfField": "baselines[].requirements[].verificationMethod",
+      "legacy": true
+    },
+    {
+      "name": "applicability",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "Whether the requirement is required, optional or advisory.",
+      "valueFormat": "One of required, optional, advisory",
+      "hdfField": "baselines[].requirements[].applicability",
+      "legacy": true
+    },
+    {
+      "name": "cwe",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "A CWE identifier associated with the requirement, one prop per identifier, in source order.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].cwe[]",
+      "legacy": true
+    },
+    {
+      "name": "epss-score",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "The EPSS exploitation probability score.",
+      "valueFormat": "Decimal number from 0 to 1",
+      "hdfField": "baselines[].requirements[].epss.score",
+      "legacy": true
+    },
+    {
+      "name": "epss-percentile",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "The EPSS percentile of the score.",
+      "valueFormat": "Decimal number from 0 to 1",
+      "hdfField": "baselines[].requirements[].epss.percentile",
+      "legacy": true
+    },
+    {
+      "name": "kev",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "The vulnerability is in the CISA Known Exploited Vulnerabilities catalog; emitted only when it is.",
+      "valueFormat": "The literal true",
+      "hdfField": "baselines[].requirements[].kev.inKev",
+      "legacy": true
+    },
+    {
+      "name": "kev-due-date",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "The remediation due date the KEV catalog sets for the vulnerability.",
+      "valueFormat": "String (§1.7), a date as the source recorded it",
+      "hdfField": "baselines[].requirements[].kev.dueDate",
+      "legacy": true
+    },
+    {
+      "name": "cvss-base-score",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "A CVSS base score, one prop per CVSS record that carries one, in source order.",
+      "valueFormat": "Decimal number from 0 to 10",
+      "hdfField": "baselines[].requirements[].cvss[].baseScore",
+      "legacy": true
+    },
+    {
+      "name": "cvss-base-vector",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "A CVSS base vector, one prop per CVSS record that carries one, in source order.",
+      "valueFormat": "String (§1.7), a CVSS vector string",
+      "hdfField": "baselines[].requirements[].cvss[].baseVector",
+      "legacy": true
+    },
+    {
+      "name": "reference",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "A requirement reference that is plain text rather than a URL or URI (those become finding links).",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].refs[].ref",
+      "legacy": true
+    },
+    {
+      "name": "check",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "Pre-ADR only: a one-line preview of the requirement's check text, with the full text in remarks. No longer emitted; the check text is carried in observation relevant-evidence marked with description-label.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].descriptions[label=check].data",
+      "legacy": true
+    },
+    {
+      "name": "fix",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "Pre-ADR only: a one-line preview of the requirement's fix text when no risk was emitted, with the full text in remarks. No longer emitted; the fix text is carried in a risk remediation or observation relevant-evidence marked with description-label.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].descriptions[label=fix].data",
+      "legacy": true
+    },
+    {
+      "name": "rationale",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "Pre-ADR only: a one-line preview of the requirement's rationale text, with the full text in remarks. No longer emitted; the rationale is carried in the finding target description.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].descriptions[label=rationale].data",
+      "legacy": true
+    },
+    {
+      "name": "description-label",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": [
+        "assessment-results.results[].observations[].relevant-evidence[]",
+        "assessment-results.results[].risks[].remediations[]"
+      ],
+      "meaning": "Marks the object as carrying the text of the HDF description with this label; evidence entries hold the full text in remarks, remediations in description.",
+      "valueFormat": "One of check, fix",
+      "hdfField": "baselines[].requirements[].descriptions[].label",
+      "legacy": false
+    },
+    {
+      "name": "empty-field",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["Any object that carries HDF props"],
+      "meaning": "An optional HDF string field that is present but empty; the importer returns it present and empty (§1.7.3).",
+      "valueFormat": "The name of the HDF field",
+      "hdfField": null,
+      "legacy": false
+    },
+    {
+      "name": "absent-field",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["Any object that carries HDF props"],
+      "meaning": "OSCAL requires a value the HDF field does not have, so the object holds display fallback text; the importer leaves the field absent and never reads the fallback as HDF data (§1.7.4).",
+      "valueFormat": "The name of the HDF field",
+      "hdfField": null,
+      "legacy": false
+    },
+    {
+      "name": "amendment-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.metadata"],
+      "meaning": "The identifier of the HDF amendments document.",
+      "valueFormat": "String (§1.7), a UUID",
+      "hdfField": "amendmentId",
+      "legacy": true
+    },
+    {
+      "name": "override-type",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The type of the HDF override the risk represents.",
+      "valueFormat": "An HDF override type, such as waiver, poam or falsePositive",
+      "hdfField": "overrides[].type",
+      "legacy": true
+    },
+    {
+      "name": "impact-override",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The impact the override assigns to the requirement.",
+      "valueFormat": "Decimal number from 0 to 1",
+      "hdfField": "overrides[].impact.value",
+      "legacy": true
+    },
+    {
+      "name": "justification",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The controlled-vocabulary justification for the override.",
+      "valueFormat": "An HDF override justification value",
+      "hdfField": "overrides[].justification",
+      "legacy": true
+    },
+    {
+      "name": "baseline-ref",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The baseline the override is scoped to.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].baselineRef",
+      "legacy": true
+    },
+    {
+      "name": "component-ref",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "The component the override is scoped to.",
+      "valueFormat": "String (§1.7), a UUID",
+      "hdfField": "overrides[].componentRef",
+      "legacy": true
+    },
+    {
+      "name": "milestone-status",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[].remediations[]"],
+      "meaning": "The status of the milestone the remediation represents.",
+      "valueFormat": "An HDF milestone status",
+      "hdfField": "overrides[].milestones[].status",
+      "legacy": true
+    },
+    {
+      "name": "completed-at",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[].remediations[].tasks[]"],
+      "meaning": "When the milestone was completed.",
+      "valueFormat": "RFC 3339 date-time in UTC",
+      "hdfField": "overrides[].milestones[].completedAt",
+      "legacy": true
+    },
+    {
+      "name": "completed-by",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[].remediations[].tasks[]"],
+      "meaning": "The identifier of whoever completed the milestone.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].milestones[].completedBy.identifier",
+      "legacy": true
+    },
+    {
+      "name": "mime-type",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.observations[]"],
+      "meaning": "The media type of the evidence the observation carries.",
+      "valueFormat": "String (§1.7), a media type",
+      "hdfField": "overrides[].evidence[].mimeType",
+      "legacy": true
+    },
+    {
+      "name": "captured-by",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.observations[]"],
+      "meaning": "The identifier of whoever captured the evidence the observation carries.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].evidence[].capturedBy.identifier",
+      "legacy": true
+    },
+    {
+      "name": "source-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "The name of the source of the external reference the resource carries.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].externalReferences[].sourceName",
+      "legacy": true
+    },
+    {
+      "name": "external-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.back-matter.resources[]"],
+      "meaning": "The identifier the source assigns to the external reference the resource carries.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "overrides[].externalReferences[].externalId",
+      "legacy": true
+    },
+    {
+      "name": "impacted-control-id",
+      "ns": "https://fedramp.gov/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.risks[]"],
+      "meaning": "FedRAMP vocabulary: a control impacted by the POA&M item. The POA&M exporter emits it and the importer reads it as the override requirement id.",
+      "valueFormat": "OSCAL control id token",
+      "hdfField": "overrides[].requirementId",
+      "legacy": true
+    },
+    {
+      "name": "POAM-ID",
+      "ns": "https://fedramp.gov/ns/oscal",
+      "objects": ["plan-of-action-and-milestones.poam-items[]"],
+      "meaning": "FedRAMP vocabulary: the CSP-assigned POA&M tracking identifier. The importer reads it as the override requirement id when no related risk carries impacted-control-id.",
+      "valueFormat": "String, a CSP tracking number",
+      "hdfField": "overrides[].requirementId",
+      "legacy": false
+    },
+    {
+      "name": "CORE",
+      "ns": "https://fedramp.gov/ns/oscal",
+      "objects": ["catalog.controls[]", "catalog.groups[].controls[]", "profile.modify.alters[].adds[]"],
+      "meaning": "FedRAMP vocabulary: the control must be included in every FedRAMP assessment. The importer maps the value true to applicability required.",
+      "valueFormat": "The literal true",
+      "hdfField": "requirements[].applicability",
+      "legacy": false
+    },
+    {
+      "name": "assessment-type",
+      "ns": "https://fedramp.gov/ns/oscal",
+      "objects": ["assessment-plan.metadata"],
+      "meaning": "FedRAMP vocabulary: the type of assessment. The importer maps automated and manual to the plan type.",
+      "valueFormat": "String",
+      "hdfField": "type",
+      "legacy": false
+    },
+    {
+      "name": "label",
+      "ns": "http://csrc.nist.gov/ns/oscal",
+      "objects": ["catalog.controls[]", "catalog.groups[].controls[]"],
+      "meaning": "NIST vocabulary: a human-readable label for the control, which may be rendered in place of its identifier.",
+      "valueFormat": "String",
+      "hdfField": "requirements[].tags.label",
+      "legacy": false
+    },
+    {
+      "name": "sort-id",
+      "ns": "http://csrc.nist.gov/ns/oscal",
+      "objects": ["catalog.controls[]", "catalog.groups[].controls[]"],
+      "meaning": "NIST vocabulary: an alternative identifier that sorts easily among the other controls in the document.",
+      "valueFormat": "String",
+      "hdfField": "requirements[].tags.sort-id",
+      "legacy": false
+    },
+    {
+      "name": "version",
+      "ns": "http://csrc.nist.gov/ns/oscal",
+      "objects": ["assessment-plan.assessment-assets.components[]"],
+      "meaning": "NIST vocabulary: the version of the component. The importer reads it from the first assessment-asset component as the runner version.",
+      "valueFormat": "String",
+      "hdfField": "assessments[].runner.version",
+      "legacy": false
+    },
+    {
+      "name": "type",
+      "ns": "http://csrc.nist.gov/ns/oscal",
+      "objects": ["assessment-results.back-matter.resources[]"],
+      "meaning": "NIST vocabulary: the kind of resource. HDF emits the value evidence on the resource holding a requirement's source code.",
+      "valueFormat": "A NIST resource type; HDF emits evidence",
+      "hdfField": null,
+      "legacy": false
+    }
+  ]
+}

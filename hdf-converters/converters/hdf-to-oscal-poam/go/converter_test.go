@@ -599,3 +599,48 @@ func TestGoldenParity(t *testing.T) {
 
 	assert.Equal(t, maskedGolden, maskedOut, "golden mismatch for uc-01-fixed.oscal-poam.json")
 }
+
+// TestConvertHDFToOSCALPOAM_NISTRequirementIDImpactedControl pins the control id
+// a NIST requirement id produces in any spelling. A statement-part id names its
+// control, since impacted-control-id takes only the control form.
+func TestConvertHDFToOSCALPOAM_NISTRequirementIDImpactedControl(t *testing.T) {
+	cases := []struct {
+		requirementID string
+		want          string
+	}{
+		{"AC-2 (3)", "ac-2.3"},
+		{"ac-2 (3)", "ac-2.3"},
+		{"Ac-2(3)", "ac-2.3"},
+		{"AC-02 03", "ac-2.3"},
+		{"AC-8 c 1", "ac-8"},
+		{"AC-2 (3) (a)", "ac-2.3"},
+		{"Si-2", "si-2"},
+		{"SV-257778", "sv-257778"},
+		{"CVE-2021-44228", "cve-2021-44228"},
+	}
+	schemas := poamSchemas(t)
+	for _, tc := range cases {
+		t.Run(tc.requirementID, func(t *testing.T) {
+			input := minimalAmendments(t, map[string]any{"requirementId": tc.requirementID})
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+
+			var doc struct {
+				POAM oscal.PlanOfActionAndMilestones `json:"plan-of-action-and-milestones"`
+			}
+			require.NoError(t, json.Unmarshal(out, &doc))
+			require.Len(t, doc.POAM.Risks, 1)
+			var got []string
+			for _, p := range doc.POAM.Risks[0].Props {
+				if p.Name == "impacted-control-id" {
+					got = append(got, p.Value)
+				}
+			}
+			assert.Equal(t, []string{tc.want}, got)
+
+			for _, s := range schemas {
+				s.v.RequireValid(t, s.file, out)
+			}
+		})
+	}
+}

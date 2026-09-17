@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -189,21 +190,56 @@ func ToKebabCase(title, fallback string) string {
 	return hdfutil.ToKebabCase(title)
 }
 
-// nistEnhancementReverseRe matches NIST tags with enhancements like "AC-2 (3)".
-var nistEnhancementReverseRe = regexp.MustCompile(`^([A-Z]{2}-\d+)\s*\((\d+)\)$`)
-
-// NistTagToControlID converts NIST 800-53 notation back to OSCAL control ID.
-// Examples:
+// NistTagToControlID converts NIST 800-53 notation, in any spelling
+// nist.NormalizeID accepts, to the OSCAL id of the control it names; a
+// statement part names its control. Anything else is returned trimmed and
+// lowercased. Examples:
 //
 //	"AC-1"     → "ac-1"
-//	"AC-2 (3)" → "ac-2.3"
-//	"SI-7 (1)" → "si-7.1"
+//	"ac-2 (3)" → "ac-2.3"
+//	"AC-8 c 1" → "ac-8"
 func NistTagToControlID(tag string) string {
+	controlID, _ := NistTagToControlRef(tag)
+	return controlID
+}
+
+// NistTagToControlRef converts NIST 800-53 notation to the OSCAL control id and,
+// for a statement part, the OSCAL statement id ("AC-8 c 1" → "ac-8",
+// "ac-8_smt.c.1"; "AC-2 (3) (a)" → "ac-2.3", "ac-2.3_smt.a"). statementID is
+// empty when the tag names a whole control. A tag that is not a NIST spelling
+// is returned trimmed and lowercased as controlID.
+func NistTagToControlRef(tag string) (controlID, statementID string) {
 	tag = strings.TrimSpace(tag)
-	if m := nistEnhancementReverseRe.FindStringSubmatch(tag); m != nil {
-		return fmt.Sprintf("%s.%s", strings.ToLower(m[1]), m[2])
+	normalized, ok := nist.NormalizeID(strings.Join(strings.Fields(tag), " "))
+	if !ok {
+		return strings.ToLower(tag), ""
 	}
-	return strings.ToLower(tag)
+	// The normalized spelling is "AC-02", then space-separated padded numbers
+	// and lowercase statement letters. Only a number directly after the control
+	// is an enhancement; every NIST statement part begins with a letter.
+	parts := strings.Fields(normalized)
+	family, number, _ := strings.Cut(parts[0], "-")
+	controlID = strings.ToLower(family) + "-" + unpadNistNumber(number)
+	parts = parts[1:]
+	if len(parts) > 0 && parts[0][0] >= '0' && parts[0][0] <= '9' {
+		controlID += "." + unpadNistNumber(parts[0])
+		parts = parts[1:]
+	}
+	if len(parts) == 0 {
+		return controlID, ""
+	}
+	for i := range parts {
+		parts[i] = unpadNistNumber(parts[i])
+	}
+	return controlID, controlID + "_smt." + strings.Join(parts, ".")
+}
+
+// unpadNistNumber strips the zero nist.NormalizeID pads a one-digit number with.
+func unpadNistNumber(part string) string {
+	if len(part) == 2 && part[0] == '0' {
+		return part[1:]
+	}
+	return part
 }
 
 // ParseOscalDocument parses raw JSON input into an OscalDocument, performing
@@ -257,6 +293,23 @@ func HDFStatusToOSCALRiskStatus(status hdf.ResultStatus) string {
 // OscalVersion is the OSCAL specification version used in reverse converter output documents.
 const OscalVersion = "1.1.2"
 
+// DescriptionLabelProp builds the description-label prop that marks an OSCAL
+// prose home with the HDF description label whose text it carries.
+func DescriptionLabelProp(label string) Property {
+	prop, ok := VocabularyProp("description-label", label)
+	if !ok {
+		panic(fmt.Sprintf("oscal: description label %q yields no description-label prop", label))
+	}
+	return prop
+}
+
+// DescriptionLabel returns props' description-label, or "" when there is none; a
+// description-label in any other namespace is foreign.
+func DescriptionLabel(props []Property) string {
+	m, _ := FindVocabularyProp(props, "description-label")
+	return m.Value
+}
+
 // OSCALToken encodes an arbitrary identifier into OSCAL's TokenDatatype shape:
 // ^(\p{L}|_)(\p{L}|\p{N}|[.\-_])*$
 //
@@ -286,9 +339,9 @@ const OscalVersion = "1.1.2"
 //
 // Two different ids can encode to the same token ("a/b" and "a:b" both yield
 // "a_b"), which is why callers must also record the source id in the emitted
-// document — for SAR that is a prop on the finding, trimmed because OSCAL's
-// StringDatatype forbids a padded value. No collision occurs across the distinct
-// requirement ids in this package's converter fixtures, which
+// document — for SAR that is the finding's hdf-requirement-id prop. No
+// collision occurs across the distinct requirement ids in this package's
+// converter fixtures, which
 // TestOSCALToken_NoCollisionsAcrossRealFixtureIDs pins against the same
 // composition the converter uses.
 func OSCALToken(s string) string {

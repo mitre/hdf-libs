@@ -1,6 +1,7 @@
 // Regenerates the NIST SP 800-53 Rev 5 control descriptions
-// (src/data/nist-descriptions-rev5.json) from NIST's own machine-readable OSCAL
-// catalog. Run it, review the diff, commit the JSON.
+// (go/nist/nist-descriptions-rev5.json) from NIST's own machine-readable OSCAL
+// catalog. Run it, review the diff, commit the JSON. The Go nist package embeds
+// the file and the TypeScript loader imports it, so both read this one copy.
 //
 //   node scripts/generate-nist-descriptions.mjs          # regenerate
 //   node scripts/generate-nist-descriptions.mjs --check  # fail on drift (CI)
@@ -29,7 +30,7 @@ import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..', '..');
-const OUT_FILE = join(REPO, 'hdf-mappings', 'src', 'data', 'nist-descriptions-rev5.json');
+const OUT_FILE = join(REPO, 'hdf-mappings', 'go', 'nist', 'nist-descriptions-rev5.json');
 const SOURCE =
   'https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json';
 

@@ -4,11 +4,13 @@
   "categorizationLevel": "moderate",
   "components": [
     {
+      "componentId": "74042245-3db1-4f4d-be9a-ceb62d81152c",
       "description": "The system described by this SSP.",
       "name": "This System",
       "type": "application"
     },
     {
+      "componentId": "e00acdcf-911b-437d-a42f-b0b558cc4f03",
       "description": "Provides a means for hosts to publish logged events to a central server.",
       "name": "Logging Server",
       "type": "application"
@@ -17,6 +19,7 @@
       "baselineRefs": [
         "AU-1"
       ],
+      "componentId": "795533ab-9427-4abe-820f-0b571bacfe6d",
       "description": "Requires all components to send logs to the enterprise logging solution\n\n*  Requires all components synchronize their time with the appropriate enterprise time service, and at what frequency. \n*  Identifies the events that must be captured \n*  Identifies who is responsible/accountable for performing these functions \n",
       "name": "Enterprise Logging, Monitoring, and Alerting Policy",
       "type": "application"
@@ -25,6 +28,7 @@
       "baselineRefs": [
         "AU-1"
       ],
+      "componentId": "941e2a87-46f4-4b3e-9e87-bbd187091ca1",
       "description": "Ensures proper integration into the enterprise as new systems are brought into production.",
       "name": "System Integration Process",
       "type": "application"
@@ -33,6 +37,7 @@
       "baselineRefs": [
         "AU-1"
       ],
+      "componentId": "fa39eb84-3014-46b4-b6bc-7da10527c262",
       "description": "Describes how new components are introduced into the system - ensures monitoring teams know about every asset that should be producing logs, thus should be monitored.",
       "name": "Inventory Management Process",
       "type": "application"
@@ -41,6 +46,7 @@
       "baselineRefs": [
         "AU-1"
       ],
+      "componentId": "4938767c-dd8b-4ea4-b74a-fafffd48ac99",
       "description": "Describes how to configure a component to ensure its logs are transmitted to Splunk in the appropriate format. Also describes how to configure time synchronization.",
       "name": "Configuration Management Guidance",
       "type": "application"

@@ -22,10 +22,13 @@ import {
   extractRiskSeverity,
   extractMetadata,
   nistTagToControlId,
+  nistTagToControlRef,
   impactToSeverity,
   hdfStatusToOscalRiskStatus,
   parseOscalDocument,
   toKebabCase,
+  descriptionLabelProp,
+  descriptionLabel,
 } from './shared.js';
 import {
   assertRequirementCount,
@@ -36,6 +39,7 @@ import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 import type { HDFSystem } from '@mitre/hdf-schema';
 import type { HDFPlan } from '@mitre/hdf-schema';
 import type { HDFAmendments } from '@mitre/hdf-schema';
+import type { Oscal } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -382,6 +386,52 @@ describe('convertOscalSspToHdf', () => {
     expect(system.name).toBeTruthy();
     expect(system.components).toBeDefined();
   });
+
+  it('should set componentId to each OSCAL component uuid, distinguishing same-title components', async () => {
+    const duplicateTitleComponentUuid = 'a3ca96ea-f853-4539-9db3-bf9694f7e0dc';
+    const doc = JSON.parse(loadFixture('ssp-example.json')) as Oscal;
+    const sourceComponents = doc['system-security-plan']!['system-implementation'].components;
+    const loggingServer = sourceComponents.find((c) => c.title === 'Logging Server');
+    expect(loggingServer).toBeDefined();
+    sourceComponents.push({ ...structuredClone(loggingServer!), uuid: duplicateTitleComponentUuid });
+
+    const system = JSON.parse(await convertOscalSspToHdf(JSON.stringify(doc))) as HDFSystem;
+
+    expect(system.components.map((c) => c.componentId)).toEqual(sourceComponents.map((c) => c.uuid));
+    const loggingServerIds = system.components
+      .filter((c) => c.name === 'Logging Server')
+      .map((c) => c.componentId);
+    expect(loggingServerIds).toEqual(['e00acdcf-911b-437d-a42f-b0b558cc4f03', duplicateTitleComponentUuid]);
+  });
+
+  it('should carry FedRAMP component uuids verbatim as componentId', async () => {
+    const input = loadFixture('ssp-fedramp.json');
+    const sourceUuids = (JSON.parse(input) as Oscal)['system-security-plan']!['system-implementation'].components.map(
+      (c) => c.uuid,
+    );
+    expect(sourceUuids).toContain('77A1614A-57B3-4B32-9FEE-613A6520EC58');
+
+    const system = JSON.parse(await convertOscalSspToHdf(input)) as HDFSystem;
+
+    expect(system.components.map((c) => c.componentId)).toEqual(sourceUuids);
+  });
+
+  it('should omit componentId when an OSCAL component has no uuid', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: 'd7456980-9277-4dcb-83cf-f8ff0442623b',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': '2024-01-01T00:00:00Z' },
+        'system-implementation': {
+          components: [{ uuid: '', title: 'No UUID', type: 'software' }],
+        },
+      },
+    });
+
+    const system = JSON.parse(await convertOscalSspToHdf(doc)) as HDFSystem;
+
+    expect(system.components[0]!.name).toBe('No UUID');
+    expect(system.components[0]).not.toHaveProperty('componentId');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -665,6 +715,145 @@ describe('convertOscalSarToHdf', () => {
   });
 });
 
+describe('convertOscalSarToHdf prose homes', () => {
+  const NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+  // Builds a one-result SAR from raw findings, observations and risks, so each
+  // test states exactly the prose homes it reads.
+  const sarWithProse = (findings: unknown[], observations: unknown[], risks: unknown[]): string =>
+    JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: [{
+          uuid: '22222222-2222-4222-8222-222222222222', title: 'r', description: 'd', start: '2026-01-01T00:00:00Z',
+          'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+          findings, observations, risks,
+        }],
+      },
+    });
+
+  const finding = (uuid: string, extra: Record<string, unknown> = {}, targetDescription?: string) => ({
+    uuid, title: 't', description: `d-${uuid}`,
+    target: {
+      type: 'objective-id', 'target-id': 'ac-1', status: { state: 'not-satisfied' },
+      ...(targetDescription !== undefined ? { description: targetDescription } : {}),
+    },
+    ...extra,
+  });
+  const observation = (uuid: string, evidence?: unknown[]) => ({
+    uuid, description: 'observation prose', methods: ['TEST'], collected: '2026-01-01T00:00:00Z',
+    ...(evidence ? { 'relevant-evidence': evidence } : {}),
+  });
+  const label = (value: string, ns: string | null = NS) => [{ name: 'description-label', value, ...(ns !== null ? { ns } : {}) }];
+
+  const onlyRequirement = async (input: string) => {
+    const hdf = JSON.parse(await convertOscalSarToHdf(input)) as HDFResults;
+    expect(hdf.baselines).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    return hdf.baselines[0]!.requirements[0]!;
+  };
+  const desc = (req: { descriptions?: Array<{ label: string; data: string }> }, l: string) =>
+    req.descriptions?.find((d) => d.label === l)?.data;
+
+  it('exports the description-label helpers', () => {
+    expect(descriptionLabelProp('check')).toEqual({ name: 'description-label', ns: NS, value: 'check' });
+    expect(descriptionLabel([{ name: 'other', ns: NS, value: 'x' }, descriptionLabelProp('fix')])).toBe('fix');
+    expect(descriptionLabel(label('fix', null))).toBe('');
+    expect(descriptionLabel(label('fix', 'https://example.org/ns/oscal'))).toBe('');
+    expect(descriptionLabel(undefined)).toBe('');
+    expect(() => descriptionLabelProp('')).toThrow('oscal: description label "" yields no description-label prop');
+  });
+
+  it('reads rationale from finding.target.description, not observation descriptions', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }] }, 'first\nconclusion\n'),
+      finding('f2'),
+      finding('f3', {}, 'second'),
+    ], [observation('o1')], []));
+    expect(desc(req, 'rationale')).toBe('first\nconclusion\n\nsecond');
+  });
+
+  it('emits no rationale when no target carries a description', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }] }),
+    ], [observation('o1')], []));
+    expect(desc(req, 'rationale')).toBeUndefined();
+  });
+
+  it('reads labelled evidence and fix remediations back exactly', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+    ], [observation('o1', [
+      { description: 'Check line', remarks: 'Check line\n  full check\n', props: label('check') },
+      { description: 'plain evidence' },
+    ])], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [
+        { uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'do\nthis', props: label('fix') },
+        { uuid: 'm2', lifecycle: 'accepted', title: 'waiver', description: 'accepted' },
+      ],
+    }]));
+    expect(desc(req, 'check')).toBe('Check line\n  full check\n');
+    expect(desc(req, 'fix')).toBe('do\nthis');
+    expect(desc(req, 'remediation')).toBe('waiver: accepted');
+    expect(desc(req, 'evidence')).toBe('plain evidence');
+  });
+
+  it('reads a labelled evidence entry without remarks from its description', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }, { 'observation-uuid': 'o1' }] }),
+    ], [observation('o1', [{ description: 'single-line fix', props: label('fix') }])], []));
+    expect(desc(req, 'fix')).toBe('single-line fix');
+    expect(desc(req, 'evidence')).toBeUndefined();
+    expect(desc(req, 'check')).toBeUndefined();
+  });
+
+  it('imports unlabelled or foreign-labelled evidence and remediations as before', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+    ], [observation('o1', [
+      { description: 'no label', remarks: 'remark one' },
+      { description: 'no ns', remarks: 'remark two', props: label('check', null) },
+      { description: 'other ns', props: label('fix', 'https://example.org/ns/oscal') },
+      { description: 'unknown value', props: label('rationale') },
+    ])], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [
+        { uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'patch it' },
+        { uuid: 'm2', lifecycle: 'recommendation', title: 'Vendor', description: 'upgrade', props: label('fix', null) },
+        { uuid: 'm3', lifecycle: 'recommendation', title: 'Checker', description: 'look', props: label('check') },
+      ],
+    }]));
+    expect(desc(req, 'check')).toBeUndefined();
+    expect(desc(req, 'fix')).toBeUndefined();
+    expect(desc(req, 'remediation')).toBe('Recommended fix: patch it\n\nVendor: upgrade\n\nChecker: look');
+    expect(desc(req, 'evidence')).toBe('no label\nno ns\nother ns\nunknown value');
+  });
+
+  it('joins labelled prose across merged findings in finding order', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+      finding('f2', {
+        'related-observations': [{ 'observation-uuid': 'o2' }, { 'observation-uuid': 'o1' }, { 'observation-uuid': 'missing' }],
+        'related-risks': [{ 'risk-uuid': 'r1' }, { 'risk-uuid': 'r2' }, { 'risk-uuid': 'missing' }],
+      }),
+    ], [
+      observation('o1', [{ description: 'c1', remarks: 'check one', props: label('check') }]),
+      observation('o2', [
+        { description: 'c2', remarks: 'check two', props: label('check') },
+        { description: 'f2', remarks: 'fix two', props: label('fix') },
+      ]),
+    ], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [{ uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'fix one', props: label('fix') }],
+    }, { uuid: 'r2', title: 'Risk', description: 'rd', statement: 'rs', status: 'open' }]));
+    expect(desc(req, 'check')).toBe('check one\ncheck two');
+    expect(desc(req, 'fix')).toBe('fix one\nfix two');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Shared utilities
 // ---------------------------------------------------------------------------
@@ -903,16 +1092,18 @@ describe('OSCAL shared helpers', () => {
   });
 
   describe('nistTagToControlId', () => {
-    it('converts simple tag', () => {
-      expect(nistTagToControlId('AC-1')).toBe('ac-1');
+    const casesPath = join(__dirname, '..', 'go', 'testdata', 'nist-tag-control-id-cases.json');
+    const { cases } = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+      cases: Array<{ input: string; controlId: string; statementId: string }>;
+    };
+
+    it('has cases', () => {
+      expect(cases.length).toBeGreaterThan(0);
     });
 
-    it('converts enhancement tag', () => {
-      expect(nistTagToControlId('AC-2 (3)')).toBe('ac-2.3');
-    });
-
-    it('handles whitespace', () => {
-      expect(nistTagToControlId('  SI-7 (1)  ')).toBe('si-7.1');
+    it.each(cases)('maps $input the same as the Go peer', ({ input, controlId, statementId }) => {
+      expect(nistTagToControlId(input)).toBe(controlId);
+      expect(nistTagToControlRef(input)).toEqual({ controlId, statementId });
     });
   });
 

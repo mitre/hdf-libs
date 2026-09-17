@@ -14,10 +14,6 @@
               "label": "default"
             },
             {
-              "data": "[EXAMPLE]The AC policy existed, and had all the required elements.\n[EXAMPLE]The person interviewed knew about the policy and where to find it.",
-              "label": "rationale"
-            },
-            {
               "data": "This is a statement about the identified risk.\n\nTCW: Risk Statement..\n\nScans: N/A.\n\nPen Risk Statement.\n\nRET: Risk Statement.",
               "label": "statement"
             },
@@ -65,10 +61,6 @@
             {
               "data": "[EXAMPLE]There is an issue with an SSP Statement.",
               "label": "default"
-            },
-            {
-              "data": "The policy describes a procedure, which could not be found.",
-              "label": "rationale"
             }
           ],
           "results": [
@@ -93,10 +85,6 @@
             {
               "data": "The results of the discovery scan.",
               "label": "default"
-            },
-            {
-              "data": "Undocumented devices found on network.",
-              "label": "rationale"
             },
             {
               "data": "Raw scanner tool output - discovery scan.",
@@ -128,10 +116,6 @@
             {
               "data": "An example set of infrastructure scan findings.",
               "label": "default"
-            },
-            {
-              "data": "[EXAMPLE]Scanner Output.\nProvide the justification for the operational requirement.\nDescribe the false positive here.\nDescribe the risk adjustment justification here.",
-              "label": "rationale"
             },
             {
               "data": "This is a statement about the identified risk as provided by the tool.\n\nThis field must be present, but may be blank (or state 'No Risk Statement' if no statement is provided by the tool.",
@@ -176,10 +160,6 @@
               "label": "default"
             },
             {
-              "data": "[EXAMPLE]Describe the finding.",
-              "label": "rationale"
-            },
-            {
               "data": "Penetration Test Report.",
               "label": "evidence"
             }
@@ -206,10 +186,6 @@
             {
               "data": "A finding from penetration testing activities.",
               "label": "default"
-            },
-            {
-              "data": "[EXAMPLE]Describe the finding.",
-              "label": "rationale"
             },
             {
               "data": "This is a statement about the risk identified by penetration testing.",

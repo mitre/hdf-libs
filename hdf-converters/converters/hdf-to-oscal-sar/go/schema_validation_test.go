@@ -149,6 +149,8 @@ func TestConvertHDFToOSCALSAR_SchemaValid(t *testing.T) {
 		{"minimal passed", minimalHDFResults(hdf.Passed)},
 		{"minimal failed", minimalHDFResults(hdf.Failed)},
 		{"real STIG multi-line code/check/fix", multilineFixture(t)},
+		{"multi-line rationale/check/fix, impact 0", proseRequirementInput("0")},
+		{"multi-line rationale/check/fix, impact > 0", proseRequirementInput("0.5")},
 	}
 	for _, file := range arSchemaFiles {
 		schema := arSchemaFor(t, file)
@@ -252,26 +254,45 @@ func TestConvertHDFToOSCALSAR_MultilineContentPreserved(t *testing.T) {
 	}
 
 	reqs := hdfDoc.Baselines[0].Requirements
-	findings := doc.AssessmentResults.Results[0].Findings
+	result := &doc.AssessmentResults.Results[0]
+	findings := result.Findings
 	require.Len(t, findings, len(reqs))
+	obsByUUID := map[string]*oscal.Observation{}
+	for i := range result.Observations {
+		obsByUUID[result.Observations[i].UUID] = &result.Observations[i]
+	}
+	riskByUUID := map[string]*oscal.Risk{}
+	for i := range result.Risks {
+		riskByUUID[result.Risks[i].UUID] = &result.Risks[i]
+	}
 	for i := range reqs {
 		req, f := &reqs[i], &findings[i]
 
-		propByName := map[string]oscal.Property{}
-		for _, p := range f.Props {
-			propByName[p.Name] = p
-		}
+		require.Len(t, f.RelatedObservations, 1, req.ID)
+		obs := obsByUUID[f.RelatedObservations[0].ObservationUUID]
+		require.NotNil(t, obs, "%s: related observation must resolve", req.ID)
 
 		check := descriptionByLabel(req.Descriptions, "check")
 		require.NotEmpty(t, check, "%s: fixture must carry check text", req.ID)
-		assert.Equal(t, check, propByName["check"].Remarks,
-			"%s: multi-line check text must be byte-exact in prop remarks", req.ID)
+		checks := labelledEvidence(obs, "check")
+		require.Len(t, checks, 1, req.ID)
+		assert.Equal(t, check, checks[0].Remarks,
+			"%s: multi-line check text must be byte-exact in evidence remarks", req.ID)
 
+		fix := descriptionByLabel(req.Descriptions, "fix")
+		require.NotEmpty(t, fix, "%s: fixture must carry fix text", req.ID)
 		if req.Impact <= 0 {
-			fix := descriptionByLabel(req.Descriptions, "fix")
-			require.NotEmpty(t, fix, "%s: impact-0 fixture must carry fix text", req.ID)
-			assert.Equal(t, fix, propByName["fix"].Remarks,
-				"%s: impact-0 fix text must be byte-exact in prop remarks", req.ID)
+			fixes := labelledEvidence(obs, "fix")
+			require.Len(t, fixes, 1, req.ID)
+			assert.Equal(t, fix, fixes[0].Remarks,
+				"%s: impact-0 fix text must be byte-exact in evidence remarks", req.ID)
+		} else {
+			require.Len(t, f.RelatedRisks, 1, req.ID)
+			risk := riskByUUID[f.RelatedRisks[0].RiskUUID]
+			require.NotNil(t, risk, "%s: related risk must resolve", req.ID)
+			require.NotEmpty(t, risk.Remediations, req.ID)
+			assert.Equal(t, fix, risk.Remediations[0].Description,
+				"%s: fix text must be byte-exact in the remediation description", req.ID)
 		}
 
 		var codeHref string
