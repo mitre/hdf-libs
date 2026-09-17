@@ -3,6 +3,7 @@ package matching
 import (
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
@@ -36,12 +37,19 @@ func (s *VendorFuzzyTitleStrategy) Name() string {
 	return "vendorFuzzyTitle"
 }
 
+// maxLevenshteinRunes bounds the Levenshtein DP. It is far above any realistic
+// requirement/vendor title, so no real match result changes; beyond it the inputs
+// are not titles, and computing the full O(m*n) DP (and allocating O(n)) would be
+// a needless cost and an algorithmic-DoS surface, so such pairs get the trivial
+// upper bound instead.
+const maxLevenshteinRunes = 4096
+
 // LevenshteinDistance computes the Levenshtein edit distance between two strings.
 func LevenshteinDistance(a, b string) int {
-	aRunes := []rune(a)
-	bRunes := []rune(b)
-	m := len(aRunes)
-	n := len(bRunes)
+	// Count runes without materializing slices, so an over-cap (attacker-sized)
+	// input is rejected before allocating anything proportional to it.
+	m := utf8.RuneCountInString(a)
+	n := utf8.RuneCountInString(b)
 	if m == 0 {
 		return n
 	}
@@ -49,6 +57,16 @@ func LevenshteinDistance(a, b string) int {
 		return m
 	}
 
+	// Bound the DP: beyond the cap the inputs are not realistic titles, so return
+	// the trivial upper bound (edit distance never exceeds the longer length)
+	// rather than allocating the O(m+n) rune slices and O(n) rows and running the
+	// O(m*n) DP.
+	if m > maxLevenshteinRunes || n > maxLevenshteinRunes {
+		return max(m, n)
+	}
+
+	aRunes := []rune(a)
+	bRunes := []rune(b)
 	prev := make([]int, n+1)
 	curr := make([]int, n+1)
 	for j := 0; j <= n; j++ {

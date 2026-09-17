@@ -48,7 +48,7 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}
 
-	doc, err := loadAndValidateHDFDoc(data, "evidencePackage")
+	doc, err := loadAndValidateHDFDoc(data, "evidence-package")
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}

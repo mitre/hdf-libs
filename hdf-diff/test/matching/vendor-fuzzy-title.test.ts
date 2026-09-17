@@ -26,6 +26,19 @@ describe('levenshteinDistance', () => {
     expect(levenshteinDistance('a', 'b')).toBe(1);
     expect(levenshteinDistance('a', 'a')).toBe(0);
   });
+
+  it('bounds pathological over-cap input to the trivial upper bound', () => {
+    // Over-cap pairs are not run through the O(m*n) DP — they return max(m,n)
+    // rather than the exact distance. Mirrors the Go port's bound.
+    const a = 'x'.repeat(4096 + 1000);
+    const b = a + 'y'.repeat(100); // exact edit distance is 100
+    expect(levenshteinDistance(a, b)).toBe(b.length);
+
+    // A boundary-length pair (exactly at the cap) is still computed exactly.
+    const c = 'x'.repeat(4096);
+    const d = 'x'.repeat(4096 - 1) + 'y';
+    expect(levenshteinDistance(c, d)).toBe(1);
+  });
 });
 
 describe('normalizedLevenshtein', () => {
