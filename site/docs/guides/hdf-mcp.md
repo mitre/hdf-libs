@@ -371,8 +371,8 @@ practice, mirroring the per-endpoint budget profiles MITRE's
 The generative workflows an agent runs against this server — drafting
 attestation amendments for `notReviewed` requirements, or applying a VEX
 document as amendments — ship as a **usage Skill**, not as MCP prompts.
-See `.claude/commands/hdf-mcp-workflows.md` for the tool sequencing each
-workflow needs.
+The repository ships an `hdf-mcp-workflows` skill carrying the tool sequencing
+each workflow needs, for use with coding agents that support skills.
 
 ## Worked example — the HDF MCP by example
 
