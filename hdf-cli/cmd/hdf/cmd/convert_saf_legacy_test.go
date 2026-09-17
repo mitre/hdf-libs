@@ -86,3 +86,24 @@ func TestConvertCommand_AbsorbsSAFSupplement_ForcedFromHDF(t *testing.T) {
 	}
 	assertSAFAbsorbed(t, stdout, stderr)
 }
+
+// A NON-HDF export target must also absorb the supplement. The absorption runs
+// before normalizeLegacyHDFInput; otherwise that helper upgrades legacy→v3 for a
+// non-hdf target first and drops the top-level target before it can be captured.
+func TestConvertCommand_AbsorbsSAFSupplement_NonHDFTarget(t *testing.T) {
+	path := writeSupplementedLegacyFixture(t)
+	stdout, stderr, err := executeCommand("convert", path, "--to", "oscal-sar")
+	if err != nil {
+		t.Fatalf("convert failed: %v (stderr: %s)", err, stderr)
+	}
+	// Both deprecation warnings prove the SAF rewrite ran before the drop.
+	if !strings.Contains(stderr, "normalized into components[]") ||
+		!strings.Contains(stderr, "normalized into extensions.passthrough") {
+		t.Errorf("expected both SAF deprecation warnings on a non-hdf conversion; stderr=%s", stderr)
+	}
+	// The cloudAccount absorbed from target reaches the OSCAL output (was dropped
+	// before the capture/absorb was moved ahead of the legacy upgrade).
+	if !strings.Contains(stdout, "prod-account") {
+		t.Error("SAF target's cloudAccount did not survive into the oscal-sar output")
+	}
+}

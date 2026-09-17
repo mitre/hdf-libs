@@ -207,15 +207,6 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		}
 	}
 
-	// Legacy HDF v1 (InSpec exec-json shape) carries no `baselines`, which every
-	// HDF-export converter requires. The hdf→hdf path upgrades it implicitly;
-	// mirror that for all other export targets so legacy input converts in one
-	// step instead of failing on the missing field.
-	data, fromFormat, fromVersion, err = normalizeLegacyHDFInput(data, fromFormat, fromVersion, toFormat)
-	if err != nil {
-		return err
-	}
-
 	// Absorb a legacy SAF-supplement shape (top-level target/passthrough, which SAF
 	// writes onto HDF documents) into v3-native carriers so attribution survives the
 	// convert path — the motivating #234 case — not only the parse path. These keys
@@ -223,8 +214,13 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	// though the legacy struct has no field for them. For legacy (v2) input we
 	// capture them, upgrade to v3 (which would otherwise drop target), re-attach, and
 	// normalize on the v3 doc so the rewrite lands where it survives; the version
-	// transform below then carries the result (including a down-pin to hdf@2). Gated
-	// to HDF/legacy input so a scanner format that happens to carry a top-level
+	// transform below then carries the result (including a down-pin to hdf@2).
+	//
+	// This runs BEFORE normalizeLegacyHDFInput: for a non-hdf export target that
+	// helper upgrades legacy→v3 itself, dropping the top-level target before we could
+	// capture it. Doing the capture/upgrade/normalize here (which sets fromFormat=hdf
+	// for legacy input) leaves normalizeLegacyHDFInput a no-op on the now-v3 data.
+	// Gated to HDF/legacy input so a scanner format that happens to carry a top-level
 	// "target" key is untouched.
 	if (strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf")) && hasSAFSupplement(data) {
 		if legacyhdf.IsLegacyHDF(data) {
@@ -245,6 +241,16 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		for _, w := range safWarnings {
 			fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
 		}
+	}
+
+	// Legacy HDF v1 (InSpec exec-json shape) carries no `baselines`, which every
+	// HDF-export converter requires. The hdf→hdf path upgrades it implicitly;
+	// mirror that for all other export targets so legacy input converts in one
+	// step instead of failing on the missing field. (SAF-supplemented legacy input
+	// was already upgraded above, so this is a no-op for it.)
+	data, fromFormat, fromVersion, err = normalizeLegacyHDFInput(data, fromFormat, fromVersion, toFormat)
+	if err != nil {
+		return err
 	}
 
 	// Sync the CLI --catalog flag into the lifted registry so the oscal-profile

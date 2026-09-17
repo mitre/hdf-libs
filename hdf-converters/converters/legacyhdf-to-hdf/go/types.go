@@ -173,10 +173,15 @@ type LegacyPassthrough struct {
 const HDFComponentsKey = "hdf_components"
 
 // MarshalJSON flattens Provenance to the top level and adds the reserved
-// components carrier, so both survive under the single v2 passthrough key.
+// components carrier, so both survive under the single v2 passthrough key. The
+// reserved key is filtered out of Provenance so provenance data can never shadow
+// or be mistaken for the carrier.
 func (p LegacyPassthrough) MarshalJSON() ([]byte, error) {
 	out := make(map[string]interface{}, len(p.Provenance)+1)
 	for k, v := range p.Provenance {
+		if k == HDFComponentsKey {
+			continue
+		}
 		out[k] = v
 	}
 	if len(p.HDFComponents) > 0 {
@@ -187,6 +192,10 @@ func (p LegacyPassthrough) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON splits the reserved components carrier from the provenance keys.
 func (p *LegacyPassthrough) UnmarshalJSON(data []byte) error {
+	// Reset so a reused instance cannot leak stale fields when the next document
+	// omits hdf_components or carries no provenance.
+	p.HDFComponents = nil
+	p.Provenance = nil
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err

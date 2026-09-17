@@ -283,6 +283,59 @@ func TestDowngradeV3ToV2_ReservedComponentsKeyCollision(t *testing.T) {
 	assert.Equal(t, "r-123", rpt["audit"].(map[string]any)["runId"])
 }
 
+// TestDowngradeV3ToV2_StripsReservedKeyWithoutComponents: the reserved carrier key
+// inside provenance is stripped and warned even when there are no real components,
+// so a later v2→v3 upgrade cannot misread it as the components carrier.
+func TestDowngradeV3ToV2_StripsReservedKeyWithoutComponents(t *testing.T) {
+	original := hdf.HDFResults{
+		Baselines: []hdf.EvaluatedBaseline{{
+			Name: "b1",
+			Requirements: []hdf.EvaluatedRequirement{{
+				ID:     "C-1",
+				Impact: 0.5,
+				Results: []hdf.RequirementResult{{
+					Status:    hdf.Passed,
+					CodeDesc:  "ok",
+					StartTime: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC),
+				}},
+			}},
+		}},
+		// No components.
+		Extensions: map[string]interface{}{
+			"passthrough": map[string]interface{}{
+				"hdf_components": "USER_DATA_COLLIDES",
+				"audit":          map[string]interface{}{"runId": "r-123"},
+			},
+		},
+	}
+	input, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	v2out, warnings, err := TransformHDF(input, ModernVersion, LegacyVersion)
+	require.NoError(t, err)
+
+	warned := false
+	for _, w := range warnings {
+		if strings.Contains(w, "reserved for the components round-trip carrier") {
+			warned = true
+		}
+	}
+	assert.True(t, warned, "reserved-key collision is warned even without components")
+
+	var legacy map[string]any
+	require.NoError(t, json.Unmarshal(v2out, &legacy))
+	pt, ok := legacy["passthrough"].(map[string]any)
+	require.True(t, ok)
+	_, leaked := pt["hdf_components"]
+	assert.False(t, leaked, "the reserved key is stripped from the v2 passthrough when no components exist to carry")
+	assert.Equal(t, "r-123", pt["audit"].(map[string]any)["runId"], "non-reserved provenance survives")
+
+	// A later upgrade must not choke on the stripped key: had the string value
+	// survived under hdf_components it would fail to unmarshal into []Component.
+	_, _, err = TransformHDF(v2out, LegacyVersion, ModernVersion)
+	require.NoError(t, err, "re-upgrade succeeds because the reserved string was stripped, not read as the carrier")
+}
+
 func TestTransformHDF_SameVersion(t *testing.T) {
 	legacyInput := legacyhdfFixture(t, "minimal.json")
 

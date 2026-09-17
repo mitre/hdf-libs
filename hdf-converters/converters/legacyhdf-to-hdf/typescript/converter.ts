@@ -127,6 +127,30 @@ export interface LegacyHDFResults {
   [key: string]: unknown;
 }
 
+/** Reserved passthrough key for the components round-trip carrier. */
+const RESERVED_COMPONENTS_KEY = 'hdf_components';
+
+/**
+ * Copy provenance into a null-prototype object, keeping only own enumerable keys
+ * and dropping the reserved carrier key. A null prototype makes `__proto__`/
+ * `constructor` entries plain data rather than a prototype-pollution vector, and
+ * only a plain (non-array) object is treated as provenance. Returns undefined
+ * when there is nothing to carry.
+ */
+function sanitizeProvenance(raw: unknown): Record<string, unknown> | undefined {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return undefined;
+  }
+  const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (key === RESERVED_COMPONENTS_KEY) {
+      continue;
+    }
+    out[key] = value;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 // ===== V2.0 Type Definitions =====
 
 export interface V2Result {
@@ -976,18 +1000,33 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
   // through the single v2 passthrough so a v3→v2→v3 round trip is lossless — the
   // platform mapping above keeps only the first component's name/OS, and v2 has
   // no native slot for extensions.
-  const provenance = (v2Data.extensions as {passthrough?: Record<string, unknown>} | undefined)?.passthrough;
-  const hasProvenance = provenance != null && Object.keys(provenance).length > 0;
+  const rawProvenance = (v2Data.extensions as {passthrough?: unknown} | undefined)?.passthrough;
+  const provenance = sanitizeProvenance(rawProvenance);
+  const hasProvenance = provenance !== undefined;
   const hasComponents = Array.isArray(v2Data.components) && v2Data.components.length > 0;
   if (hasComponents || hasProvenance) {
-    hdf.passthrough = hasProvenance ? {...provenance} : {};
+    // Null-prototype target: provenance keys are attacker-influenced, so writing
+    // them onto a plain object would risk prototype pollution.
+    const bag: {hdf_components?: unknown[]; [key: string]: unknown} = Object.assign(
+      Object.create(null) as {[key: string]: unknown},
+      provenance ?? {},
+    );
     if (hasComponents) {
-      hdf.passthrough.hdf_components = v2Data.components as unknown[];
+      bag.hdf_components = v2Data.components as unknown[];
     }
+    hdf.passthrough = bag;
   }
-  if (hasComponents && hasProvenance && provenance && 'hdf_components' in provenance) {
+  // The reserved carrier key must never travel inside provenance (it would be read
+  // as the carrier on a later upgrade); it is stripped by sanitizeProvenance, and
+  // its presence is warned regardless of whether real components exist.
+  if (
+    rawProvenance !== null &&
+    typeof rawProvenance === 'object' &&
+    !Array.isArray(rawProvenance) &&
+    Object.prototype.hasOwnProperty.call(rawProvenance, RESERVED_COMPONENTS_KEY)
+  ) {
     warnings.push(
-      'extensions.passthrough.hdf_components is reserved for the components round-trip carrier and was overridden on downgrade',
+      'extensions.passthrough.hdf_components is reserved for the components round-trip carrier and was dropped on downgrade',
     );
   }
   if (hasComponents) {
@@ -1091,18 +1130,10 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
   // downgrade, which moved v3 extensions.passthrough into the v2 passthrough.
   // The hdf_components carrier itself is consumed (restored to components above),
   // never leaked into extensions.
-  let carriedProvenance: Record<string, unknown> | undefined;
-  if (v1Data.passthrough) {
-    const rest: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(v1Data.passthrough)) {
-      if (key !== 'hdf_components') {
-        rest[key] = value;
-      }
-    }
-    if (Object.keys(rest).length > 0) {
-      carriedProvenance = rest;
-    }
-  }
+  // sanitizeProvenance drops the reserved carrier key and copies into a
+  // null-prototype object, so restoring attacker-influenced keys cannot pollute
+  // a prototype.
+  const carriedProvenance = sanitizeProvenance(v1Data.passthrough);
 
   // Preserve any extension fields not part of the core v1 schema. `passthrough`
   // is a consumed carrier (handled above), not an unknown field.
