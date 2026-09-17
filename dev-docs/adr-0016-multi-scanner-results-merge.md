@@ -47,7 +47,7 @@ Finally, the project has already recorded where cross-document analysis is going
 
 ### 1. `Merge` is an hdf-engine operation, Go + TS, parity in the same PR
 
-`hdf-engine` gains `Merge(sources []MergeSource, opts MergeOptions) (hdf.HDFResults, []MergeWarning, error)` (Go) and `merge(sources, opts)` (TS) with identical semantics and a cross-language parity test on shared real fixtures (the loader/detect parity pattern). It is the single implementation consumed by the CLI (`hdf merge`), the MCP (`hdf_merge`), and `hdf_aggregate`'s totals. Per ADR-0007 §Quality Standards, merge logic inside `hdf-cli/internal/mcp` or `hdf-cli/cmd` is a defect.
+`hdf-engine` gains `Merge(sources []MergeSource) (hdf.HDFResults, []MergeWarning, error)` (Go) and `merge(sources): {results, warnings}` (TS) — no options parameter, see the Revision bullet with identical semantics and a cross-language parity test on shared real fixtures (the loader/detect parity pattern). It is the single implementation consumed by the CLI (`hdf merge`) and by `hdf_aggregate`'s totals (§7: no MCP merge tool). Per ADR-0007 §Quality Standards, merge logic inside `hdf-cli/internal/mcp` or `hdf-cli/cmd` is a defect.
 
 `MergeSource` is `{Name string; Doc hdf.HDFResults}` where `Name` is the source's basename (or a caller-supplied label) and is recorded, never used as a key. Inputs are results documents only; a baseline (non-results) document is rejected with an error naming its index and type (the wrap alternative is rejected in §Owner decisions 2).
 
@@ -97,8 +97,7 @@ Requirements are appended as they are. Nothing is deduplicated, re-keyed, re-sco
 
 ### 7. MCP reflection (per ADR-0007 §Known constraints: a per-change decision)
 
-- **`hdf_merge` IS reflected.** Args `{sources[], output?, dryRun?, overwrite?}`; runs engine `Merge`; writes through the shared `writeArtifact` gate (`HDF_MCP_ENABLE_WRITES`, dry-run preview, `OUTPUT_EXISTS`, path confinement); returns `{outputPath, handle, docType, baselineCount, requirementCount, sha256, valid, warnings[], writesDisabled, notice}` — **never the document** (the `hdf_convert` precedent). Advertised in the `all` profile only; it writes, so never in `read`. Per-source load failures are reported per source (the `hdf_aggregate` `failures[]` pattern) and no partial merge is written. Schema ≤ 600 tokens; `tools/list` total budget test must still pass.
-- **`output` omitted = pure computation:** the summary and warnings are returned with no `handle` and no cache registration. A handle encodes a path plus content hash (ADR-0007 §8); a pathless document has no identity to hand back. This keeps the write model's rule ("ungated when `output` is omitted") intact.
+- **`hdf_merge` is NOT reflected into the MCP.** *(Owner decision at card `.5`, 2026-09-16, reversing the first draft.)* ADR-0007 §12's default holds: merge is a deterministic pipeline operation with no model judgment, exactly like `hdf enrich` and `hdf events`, which were kept out of the tool surface for that reason. The merged document is produced by `hdf merge` where the scans are produced — in the pipeline — and lands under `HDF_MCP_ROOT`, where every read tool already operates on it by `{path}`. Reflecting it was measured and rejected: an advertised tool costs its schema (534 tokens) on **every** agent turn of every default deployment whether or not a merge ever happens, the eleventh tool pushes the full `tools/list` past its 5,200-token budget (5,639), and with writes off by default the tool would mostly mint cache-only handles. The one capability given up — an agent handed N unmerged documents merging them itself — has no user story today; `hdf_aggregate` already answers the counts case across N documents. Revisit with a concrete agent-driven use case (the benchmark's ad-hoc arm would be the natural one); the engine `Merge` makes the tool a day's work when that day comes. The first draft's `hdf_merge` contract and its "handle without output" discussion are superseded by this bullet.
 - **`hdf_aggregate` computes its totals through engine `Merge`** and deletes its private concatenation. Its contract (counts only, never rows) is unchanged.
 - **`hdf_compliance groupBy` gains `tool` and `cwe`** (`.7`): `tool` groups by `baselines[].labels.tool` with `unlabeled` fallback; `cwe` by each `tags.cwe` value with `unmapped` fallback (multi-membership, the `nistFamily` pattern). Additive enum values (ADR-0007 §17). Grouping is added here and **not** to `hdf_aggregate`: the merged document plus one grouping surface is the design; a second grouping surface would recreate the overlapping-tools problem ADR-0007 §Tool surface warns about.
 - **`hdf_inspect` surfaces provenance** (`.6`): results `metadata` gains `tool {name, version, format}` (each field only when present — `format` is the schema's third `Tool` field, the named source format a converter records, e.g. `SARIF`; an empty tool object projects to no key) and `generator {name, version}` when present; each baseline entry gains `labels` when non-empty. Absent values are omitted, never synthesized (the `statistics` rule at `inspect.go:160-165`).
@@ -106,7 +105,7 @@ Requirements are appended as they are. Nothing is deduplicated, re-keyed, re-sco
 
 ### 8. Relationship to ADR-0012
 
-The merged document is the **interchange artifact** the ADR-0012 store imports (`hdf db import` of one file per system-scan instead of N), and the tool surface above is what the store will sit behind. It is **not** a query engine: it is a snapshot with no index, re-merged on every change, bounded by one document-size budget (`HDF_MCP_MAX_SIZE`, default 50 MB; engine `Load` validates size first). When ADR-0012 lands, `hdf_merge` remains the way to produce the artifact and `hdf_aggregate`/`hdf_compliance` remain correct on it; anything row-returning across documents (joins on `affectedPackages`/purl, precedent, similarity) is the store's. If ADR-0012 merges mid-epic, the epic stops and reconciles rather than shipping two aggregation stories.
+The merged document is the **interchange artifact** the ADR-0012 store imports (`hdf db import` of one file per system-scan instead of N), and the tool surface above is what the store will sit behind. It is **not** a query engine: it is a snapshot with no index, re-merged on every change, bounded by one document-size budget (`HDF_MCP_MAX_SIZE`, default 50 MB; engine `Load` validates size first). When ADR-0012 lands, `hdf merge` remains the way to produce the artifact and `hdf_aggregate`/`hdf_compliance` remain correct on it; anything row-returning across documents (joins on `affectedPackages`/purl, precedent, similarity) is the store's. If ADR-0012 merges mid-epic, the epic stops and reconciles rather than shipping two aggregation stories.
 
 ## Alternatives Considered
 
@@ -140,7 +139,7 @@ The merged document is the **interchange artifact** the ADR-0012 store imports (
 - **Baseline-name uniqueness remains unenforced.** Enforcing "must be unique" in validators is a schema-governance decision (it would reject shipped converter output) and is not taken here; §6 makes the read surface correct under collision instead.
 - **`hdf label set` cannot write baseline labels;** `Merge` writes them itself. Extending `hdf label set` is a small follow-on.
 - **Size:** a merged STIG-plus-scanners document can approach the input ceiling; `Load` validates size first and `hdf merge` fails loudly. The store (ADR-0012) is the answer past that point.
-- **Token budget:** one new tool (`hdf_merge`) joins `tools/list`; the total budget and the 600-per-tool ceiling are asserted by test. `hdf_compliance` sits at 580 tokens and gains two enum words — measured in card `.7`, with the description shortened rather than the ceiling raised if it exceeds.
+- **Token budget:** no new tool joins `tools/list` (§7 — an eleventh tool would have pushed it to 5,639 against the 5,200 budget). `hdf_compliance` sits at 580 tokens and gains two enum words in card `.7` — measured there, with the description shortened rather than the ceiling raised if it exceeds.
 - **The benchmark** (hdf-mcp-demo) gains a merged-document question (`.8`); results on it are not comparable to pre-merge runs (the ablation plan applies).
 
 ## Implementation Plan
@@ -150,7 +149,7 @@ Cards under `hdf-libs-js1nv`, in dependency order:
 1. `.1` this ADR — owner acceptance gates everything below except `.2`.
 2. `.2` (P1 bug, independent) engine `Match` indices + index-keyed read tools.
 3. `.3` engine `Merge`, Go + TS + parity, real fixtures.
-4. `.4` `hdf merge` CLI; `.5` `hdf_merge` MCP + `hdf_aggregate` refactor (needs `.2` and `.3`); `.6` `hdf_inspect` provenance.
+4. `.4` `hdf merge` CLI; `.5` `hdf_aggregate` computes its totals through engine `Merge` (rescoped — no MCP tool, see §7); `.6` `hdf_inspect` provenance.
 5. `.7` `groupBy tool | cwe`; `.8` benchmark question (hdf-mcp-demo, needs `.4`).
 
 Quality standards are ADR-0007's: framework-first, no new logic in `internal/mcp`, token bounding as an AC, real fixtures only, >90% coverage, `pnpm check` and `golangci-lint` clean, determinism asserted.

@@ -70,7 +70,7 @@ The team responsible for the component.
 
 ## Merge Provenance Keys
 
-`hdf merge` (and the `hdf_merge` MCP tool) combines several scanners' results documents into one, one baseline per input baseline. Because `tool` and `generator` are document-root fields, a merged document cannot say per baseline which scanner produced it — so the merge writes three baseline labels (ADR-0016 §3). They are written on **baselines only**; existing labels such as `component` are preserved.
+`hdf merge` combines several scanners' results documents into one, one baseline per input baseline. Because `tool` and `generator` are document-root fields, a merged document cannot say per baseline which scanner produced it — so the merge writes three baseline labels (ADR-0016 §3). They are written on **baselines only**; existing labels such as `component` are preserved.
 
 ### `tool`
 
@@ -116,7 +116,7 @@ A small number of converters automatically extract labels from source tool metad
 |---|---|---|
 | `aws-config` | `labels.account`, `labels.region`, `labels.provider` | AWS resource ARN |
 | `oscal-sar` | Populates `planRef` (not labels directly) | OSCAL `import-ap` href |
-| `hdf merge` / `hdf_merge` | `labels.tool`, `labels.toolVersion`, `labels.sourceDocument` on every baseline | Each input document's root `tool` / `generator` and its file name (see [Merge Provenance Keys](#merge-provenance-keys)) |
+| `hdf merge` | `labels.tool`, `labels.toolVersion`, `labels.sourceDocument` on every baseline | Each input document's root `tool` / `generator` and its file name (see [Merge Provenance Keys](#merge-provenance-keys)) |
 
 Most converters produce results without labels. Labels can be added after conversion using the CLI.
 

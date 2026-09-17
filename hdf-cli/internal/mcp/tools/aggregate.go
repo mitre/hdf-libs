@@ -104,7 +104,11 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 				"pass sources[] with one or more {path} or {handle} documents"), errorAggregateOutput(), nil
 		}
 
-		combined := hdf.HDFResults{}
+		// The all-source total is counted over the engine's Merge of the
+		// filtered documents — the same operation `hdf merge` persists — so there
+		// is exactly one definition of "these documents combined" (ADR-0016 §7).
+		// Only counts leave this tool; the merged document is never returned.
+		var filtered []hdfengine.MergeSource
 		perSource := make([]aggregateSourceRollup, 0, len(in.Sources))
 		var failures []aggregateFailure
 		total := 0
@@ -141,18 +145,22 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 			if err := ctx.Err(); err != nil {
 				return nil, errorAggregateOutput(), err
 			}
-			filtered := filterResultsToMatches(results, matches)
-			counts := countByEffectiveStatus(filtered)
+			kept := filterResultsToMatches(results, matches)
+			counts := countByEffectiveStatus(kept)
 			perSource = append(perSource, aggregateSourceRollup{
 				Index: i, Source: label, DocType: resolved.Load.DocType,
 				Total: len(matches), Compliance: hdfengine.CalculateCompliance(counts),
 				Counts: countsToNestedInt(counts),
 			})
 			total += len(matches)
-			combined.Baselines = append(combined.Baselines, filtered.Baselines...)
+			filtered = append(filtered, hdfengine.MergeSource{Name: label, Doc: kept})
 		}
 
-		aggCounts := countByEffectiveStatus(combined)
+		mergedAll, err := mergedForCounts(filtered)
+		if err != nil {
+			return nil, errorAggregateOutput(), err
+		}
+		aggCounts := countByEffectiveStatus(mergedAll)
 		out := aggregateOutput{
 			SourceCount: len(perSource),
 			Aggregate: aggregateTotals{
@@ -165,6 +173,24 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 		return textResult(fmt.Sprintf("hdf_aggregate: %d sources, %d matching requirements, %.2f%% aggregate compliance, %d failed to load. Per-source + aggregate in structuredContent.",
 			out.SourceCount, out.Aggregate.Total, out.Aggregate.Compliance, len(out.Failures))), out, nil
 	}
+}
+
+// mergedForCounts combines the filtered documents through the engine Merge so
+// the aggregate is counted over one merged result set. With nothing loaded
+// (every source failed) it is the empty set. Merge errors only on an empty
+// input, which is excluded here, so a returned error is an engine invariant
+// violation and is propagated as a Go error rather than zeroed into the counts
+// (a silent all-zero rollup beside a non-zero total would be a lie). Merge's
+// renaming and provenance labels do not affect status/severity counts.
+func mergedForCounts(filtered []hdfengine.MergeSource) (hdf.HDFResults, error) {
+	if len(filtered) == 0 {
+		return hdf.HDFResults{}, nil
+	}
+	merged, _, err := hdfengine.Merge(filtered)
+	if err != nil {
+		return hdf.HDFResults{}, fmt.Errorf("aggregate: merging %d filtered sources: %w", len(filtered), err)
+	}
+	return merged, nil
 }
 
 // filterResultsToMatches projects a results document down to exactly the

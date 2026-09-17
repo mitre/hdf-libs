@@ -69,3 +69,44 @@ func TestAggregate_TotalEqualsQueryTotal_OnRepeatedKeys(t *testing.T) {
 		t.Errorf("hdf_query total = %d, want 94 (equal to the aggregate total)", q.Total)
 	}
 }
+
+// TestAggregate_MergedCountsAcrossSources pins the all-source rollup that goes
+// through the engine Merge — the status × severity counts and compliance — on
+// two real documents with different severity mixes, so a merge that dropped a
+// source or a baseline would be caught here even though Aggregate.Total is
+// summed independently. ZAP webgoat: 28 requirements; grype tensorflow: 26.
+func TestAggregate_MergedCountsAcrossSources(t *testing.T) {
+	srcs := sourcesUnderRoot(t, "zap-webgoat.json", "grype-duplicate-ids.json")
+	_, out := callAggregate(t, aggregateInput{Sources: srcs})
+	if out.Aggregate.Total != 54 {
+		t.Fatalf("total = %d, want 54", out.Aggregate.Total)
+	}
+	c := out.Aggregate.Counts
+	if c["failed"]["total"] != 38 || c["skipped"]["total"] != 12 || c["no_impact"]["total"] != 4 {
+		t.Errorf("merged status counts = failed %d / skipped %d / no_impact %d, want 38 / 12 / 4", c["failed"]["total"], c["skipped"]["total"], c["no_impact"]["total"])
+	}
+	if got := c["failed"]["total"] + c["skipped"]["total"] + c["no_impact"]["total"] + c["passed"]["total"] + c["error"]["total"]; got != 54 {
+		t.Errorf("merged counts sum to %d, want every one of the 54 requirements", got)
+	}
+	// Compliance is passed / (total − no_impact): 0 / 50 here.
+	if out.Aggregate.Compliance != 0 {
+		t.Errorf("compliance = %v, want 0 (no passed requirements)", out.Aggregate.Compliance)
+	}
+	// A severity filter narrows what is merged: critical+high across both docs.
+	_, hi := callAggregate(t, aggregateInput{Sources: srcs, Severity: []string{"critical", "high"}})
+	hc := hi.Aggregate.Counts
+	statusSum := hc["failed"]["total"] + hc["skipped"]["total"] + hc["no_impact"]["total"] + hc["passed"]["total"] + hc["error"]["total"]
+	if hi.Aggregate.Total != 9 || statusSum != 9 || hc["failed"]["total"] != 5 {
+		t.Errorf("critical+high across sources = total %d, status sum %d, failed %d; want 9 / 9 / 5 (grype's not-reviewed and not-applicable highs are counted, not lost)", hi.Aggregate.Total, statusSum, hc["failed"]["total"])
+	}
+	// A source contributing zero matches is merged as an empty document and must
+	// neither fail the call nor perturb the counts: every ZAP requirement is
+	// failed, so a notReviewed filter matches nothing in ZAP and grype's 12.
+	_, nr := callAggregate(t, aggregateInput{Sources: srcs, Status: []string{"notReviewed"}})
+	if nr.Aggregate.Total != 12 || nr.Aggregate.Counts["skipped"]["total"] != 12 || nr.Aggregate.Counts["failed"]["total"] != 0 {
+		t.Errorf("notReviewed across sources = total %d / skipped %d / failed %d, want 12 / 12 / 0 (ZAP contributes nothing)", nr.Aggregate.Total, nr.Aggregate.Counts["skipped"]["total"], nr.Aggregate.Counts["failed"]["total"])
+	}
+	if len(nr.PerSource) != 2 || nr.PerSource[0].Total != 0 || nr.PerSource[1].Total != 12 {
+		t.Errorf("per-source: %+v, want ZAP 0 and grype 12", nr.PerSource)
+	}
+}

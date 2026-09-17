@@ -16,7 +16,9 @@ import (
 // NewMergeCmd creates the merge command: several results documents in, one
 // multi-baseline results document out (ADR-0016). The command is I/O only —
 // reading, type-checking, writing — and the merge itself is the shared
-// hdf-engine Merge that the MCP's hdf_merge and hdf_aggregate also use.
+// hdf-engine Merge that the MCP's hdf_aggregate also computes its totals
+// through; merging is deliberately a pipeline operation, not an MCP tool
+// (ADR-0016 §7).
 func NewMergeCmd() *cobra.Command {
 	var outputPath string
 
