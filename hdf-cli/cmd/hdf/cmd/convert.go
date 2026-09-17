@@ -16,6 +16,7 @@ import (
 	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
+	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -212,6 +213,19 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	data, fromFormat, fromVersion, err = normalizeLegacyHDFInput(data, fromFormat, fromVersion, toFormat)
 	if err != nil {
 		return err
+	}
+
+	// Migrate a legacy SAF-supplement shape (top-level target/passthrough) on HDF
+	// input into v3-native carriers BEFORE conversion, so attribution survives the
+	// convert path — the motivating #234 case — not only the parse path. Sibling to
+	// the read-path wiring in hdf-parsers ParseResults. Gated to HDF input so a
+	// scanner format that happens to carry a top-level "target" key is untouched.
+	if strings.EqualFold(fromFormat, "hdf") {
+		var safWarnings []string
+		data, safWarnings = hdfparsers.NormalizeSAFSupplement(data)
+		for _, w := range safWarnings {
+			fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
+		}
 	}
 
 	// Sync the CLI --catalog flag into the lifted registry so the oscal-profile
