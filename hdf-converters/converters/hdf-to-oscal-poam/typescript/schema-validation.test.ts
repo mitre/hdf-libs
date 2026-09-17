@@ -1,7 +1,7 @@
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
+import { loadSchemaValidator, assertSchemaValid, schemaErrors } from '../../../shared/typescript/schema-validation.js';
 import { amendmentsCorpus, runSchemaCorpus, jsonDocumentValidator } from '../../../shared/typescript/schema-corpus.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
 import { readFileSync } from 'node:fs';
@@ -95,15 +95,22 @@ describe('hdf-to-oscal-poam output validates against every vendored NIST OSCAL P
   });
 });
 
-// HDF puts no minLength on requirementId, and OSCAL 1.2.x requires both titles to
-// be a non-empty single line. Mirrors the Go peer case for case.
+// OSCAL 1.2.x requires both titles to be a non-empty single line. HDF rejects an
+// empty requirementId but not a whitespace-only one, and the converter's input
+// guard is top-level only, so both still reach the fallback. The verdict is scoped
+// to requirementId because the shared fixture's appliedBy.name is undeclared,
+// which a 2020-12 validator also reports. Mirrors the Go peer case for case.
 describe('hdf-to-oscal-poam titles without a requirement id', () => {
   it.each([
-    ['empty requirementId falls back', '', 'Unidentified requirement'],
-    ['whitespace-only requirementId falls back', '   ', 'Unidentified requirement'],
-    ['a real requirementId is used verbatim', 'SV-001', 'SV-001'],
-  ])('%s', async (_name, requirementId, want) => {
-    const out = JSON.parse(await convertHdfToOscalPoam(minimalAmendmentsWith({ requirementId }))) as PoamOut;
+    ['empty requirementId falls back', '', 'Unidentified requirement', true],
+    ['whitespace-only requirementId falls back', '   ', 'Unidentified requirement', false],
+    ['a real requirementId is used verbatim', 'SV-001', 'SV-001', false],
+  ])('%s', async (_name, requirementId, want, hdfRejectsId) => {
+    const input = minimalAmendmentsWith({ requirementId });
+    const hdfErrors = schemaErrors(validateHdfAmendments, JSON.parse(input)) ?? '';
+    expect(hdfErrors.includes('/overrides/0/requirementId'), hdfErrors).toBe(hdfRejectsId);
+
+    const out = JSON.parse(await convertHdfToOscalPoam(input)) as PoamOut;
     for (const [file, v] of POAM_SCHEMAS) {
       assertSchemaValid(v, file, out);
     }
@@ -271,11 +278,12 @@ describe('hdf-to-oscal-poam label keys', () => {
 // which is why its padded form IS a real case here.
 //
 // OSCAL types many fields StringDatatype (^\S(.*\S)?$ — non-empty, no leading or
-// trailing whitespace), while hdf-amendments puts no minLength on the strings
-// that feed them. So an empty or padded value is valid HDF that yields a POA&M
-// the schema rejects, at exit 0. Six sinks were affected. Mirrors the Go peer
-// case for case, and asserts each input is valid HDF first so a test cannot
-// silently prove nothing by feeding input the schema rejects.
+// trailing whitespace), while hdf-amendments puts no minLength on most of the
+// strings that feed them. So an empty or padded value is valid HDF that yields a
+// POA&M the schema rejects, at exit 0. Six sinks were affected. An empty
+// requirementId is no longer valid HDF, so the title-fallback test covers it
+// instead. Mirrors the Go peer case for case, and asserts each input is valid HDF
+// first so a test cannot silently prove nothing by feeding input the schema rejects.
 describe('hdf-to-oscal-poam StringDatatype sinks', () => {
   const doc = (o: {
     root?: Record<string, unknown>;
@@ -303,7 +311,6 @@ describe('hdf-to-oscal-poam StringDatatype sinks', () => {
   it.each([
     ['empty identifier', { identifier: '' }],
     ['padded identifier', { identifier: '  analyst  ' }],
-    ['empty requirementId', { reqId: '' }],
     ['padded baselineRef', { override: { baselineRef: '  b  ' } }],
     ['empty label value', { root: { labels: { env: '' } } }],
     ['padded label value', { root: { labels: { env: '  p  ' } } }],

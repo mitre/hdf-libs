@@ -598,6 +598,28 @@ func TestPoamRequiresExpiresAt(t *testing.T) {
 	})
 }
 
+func TestValidateAmendments_RequirementIDMustNotBeEmpty(t *testing.T) {
+	doc := func(requirementID string) []byte {
+		return []byte(`{"name": "Waivers", "overrides": [{
+			"type": "waiver", "requirementId": ` + requirementID + `, "status": "passed",
+			"reason": "Risk accepted by the AO",
+			"appliedBy": {"type": "email", "identifier": "ao@agency.gov"},
+			"appliedAt": "2026-01-15T10:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"
+		}]}`)
+	}
+
+	t.Run("rejects an empty requirementId", func(t *testing.T) {
+		result := ValidateAmendments(doc(`""`))
+		assert.False(t, result.Valid)
+		assert.Contains(t, result.Error(), "requirementId")
+	})
+
+	t.Run("accepts a non-empty requirementId", func(t *testing.T) {
+		result := ValidateAmendments(doc(`"SV-257777"`))
+		assert.True(t, result.Valid, result.Error())
+	})
+}
+
 // amendmentAndVulnRequirementFields is the shared shape asserted identically by
 // the Go and TS validator suites: a requirement carrying amendment fields
 // (effectiveStatus, disposition, statusOverrides, poams) and vulnerability

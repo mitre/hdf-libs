@@ -896,6 +896,34 @@ describe('CVE-ecosystem: Standalone_Override.cvss in an amendments document', ()
   });
 });
 
+describe('Amendments: requirementId must not be empty', () => {
+  const doc = (requirementId: string) => ({
+    name: 'Waivers',
+    overrides: [
+      {
+        type: 'waiver',
+        requirementId,
+        status: 'passed',
+        reason: 'Risk accepted by the AO',
+        appliedBy: { type: 'email', identifier: 'ao@agency.gov' },
+        appliedAt: '2026-01-15T10:00:00Z',
+        expiresAt: '2099-12-31T00:00:00Z',
+      },
+    ],
+  });
+
+  it('rejects an empty requirementId', () => {
+    const result = validateAmendments(doc(''));
+    expect(result.valid).toBe(false);
+    expect(result.getErrorMessage()).toContain('requirementId');
+  });
+
+  it('accepts a non-empty requirementId', () => {
+    const result = validateAmendments(doc('SV-257777'));
+    expect(result.valid, result.getErrorMessage()).toBe(true);
+  });
+});
+
 describe('HDF Requirement Change Event Validation', () => {
   const validEvent = {
     eventId: '0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01',

@@ -1997,6 +1997,7 @@
             },
             "requirementId": {
               "type": "string",
+              "minLength": 1,
               "description": "The ID of the requirement being amended. Must match a requirement ID in the referenced baseline."
             },
             "baselineRef": {

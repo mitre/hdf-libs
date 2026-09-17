@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -136,17 +137,30 @@ func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
 }
 
 // TestConvertHDFToOSCALPOAM_EmptyRequirementIDTitle_1_2_3 pins the title
-// fallback. HDF puts no minLength on requirementId, and OSCAL 1.2.x requires
-// both titles to be a non-empty single line.
+// fallback. OSCAL 1.2.x requires both titles to be a non-empty single line. HDF
+// rejects an empty requirementId but not a whitespace-only one, and the
+// converter's input guard is top-level only, so both still reach the fallback.
+// The verdict is scoped to requirementId because the shared fixture's
+// appliedBy.name is undeclared, which a 2020-12 validator also reports.
 func TestConvertHDFToOSCALPOAM_EmptyRequirementIDTitle_1_2_3(t *testing.T) {
 	schemas := poamSchemas(t)
-	for _, tc := range []struct{ name, requirementID, wantTitle string }{
-		{"empty requirementId falls back", "", "Unidentified requirement"},
-		{"whitespace-only requirementId falls back", "   ", "Unidentified requirement"},
-		{"a real requirementId is used verbatim", "SV-001", "SV-001"},
+	hdfV := shared.NewSchemaValidator(t, filepath.Join("..", "..", "..", "..",
+		"hdf-validators", "go", "schemas", "hdf-amendments.schema.json"))
+	for _, tc := range []struct {
+		name, requirementID, wantTitle string
+		hdfRejectsID                   bool
+	}{
+		{"empty requirementId falls back", "", "Unidentified requirement", true},
+		{"whitespace-only requirementId falls back", "   ", "Unidentified requirement", false},
+		{"a real requirementId is used verbatim", "SV-001", "SV-001", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := ConvertHDFToOSCALPOAM(minimalAmendments(t, map[string]any{"requirementId": tc.requirementID}), "1.0.0")
+			input := minimalAmendments(t, map[string]any{"requirementId": tc.requirementID})
+			verr := hdfV.Validate(input)
+			assert.Equal(t, tc.hdfRejectsID, verr != nil && strings.Contains(verr.Error(), "/overrides/0/requirementId"),
+				"HDF amendments schema verdict on requirementId: %v", verr)
+
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
 			require.NoError(t, err)
 			for _, s := range schemas {
 				s.v.RequireValid(t, s.file, out)
@@ -446,11 +460,12 @@ func amendmentsValidator(t *testing.T) *shared.SchemaValidator {
 // which is why its padded form IS a real case here.
 //
 // OSCAL types many fields StringDatatype (^\S(.*\S)?$ — non-empty, no leading or
-// trailing whitespace), while hdf-amendments puts no minLength on the strings
-// that feed them. So an empty or padded value is valid HDF that yields a POA&M
-// the schema rejects, at exit 0. Six sinks were affected, not the two the sweep
-// first found; every free-text string now goes through one helper that trims and
-// drops what is left empty.
+// trailing whitespace), while hdf-amendments puts no minLength on most of the
+// strings that feed them. So an empty or padded value is valid HDF that yields a
+// POA&M the schema rejects, at exit 0. Six sinks were affected, not the two the
+// sweep first found; every free-text string now goes through one helper that
+// trims and drops what is left empty. An empty requirementId is no longer valid
+// HDF, so the title-fallback test covers it instead.
 //
 // Each input is asserted valid HDF first: a converter fed input its own schema
 // rejects proves nothing about what it does with real documents.
@@ -467,7 +482,6 @@ func TestConvertHDFToOSCALPOAM_StringDatatypeSinks(t *testing.T) {
 	for _, tc := range []struct{ name, root, reqID, override, ident string }{
 		{"empty identifier", "", `"AC-2"`, "", `""`},
 		{"padded identifier", "", `"AC-2"`, "", `"  analyst  "`},
-		{"empty requirementId", "", `""`, "", `"analyst"`},
 		{"padded baselineRef", "", `"AC-2"`, `,"baselineRef":"  b  "`, `"analyst"`},
 		{"empty label value", `,"labels":{"env":""}`, `"AC-2"`, "", `"analyst"`},
 		{"padded label value", `,"labels":{"env":"  p  "}`, `"AC-2"`, "", `"analyst"`},

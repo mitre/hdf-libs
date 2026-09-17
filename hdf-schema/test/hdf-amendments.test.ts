@@ -104,6 +104,11 @@ describe('hdf-amendments.schema.json', () => {
 
   // -- Required fields --
 
+  it('should reject a document whose override has an empty requirementId', () => {
+    const emptyId = { ...minimal, overrides: [{ ...minimalOverride, requirementId: '' }] };
+    expect(validate(emptyId)).toBe(false);
+  });
+
   it('should reject document missing name', () => {
     expect(validate({ overrides: [minimalOverride] })).toBe(false);
   });
@@ -186,6 +191,10 @@ describe('amendments.schema.json — Standalone_Override', () => {
     const obj = { ...valid } as Record<string, unknown>;
     delete obj.requirementId;
     expect(validate(obj)).toBe(false);
+  });
+
+  it('should reject override with an empty requirementId', () => {
+    expect(validate({ ...valid, requirementId: '' })).toBe(false);
   });
 
   it('should reject override missing both status and impact', () => {
