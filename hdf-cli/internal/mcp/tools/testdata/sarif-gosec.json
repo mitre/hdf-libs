@@ -83,7 +83,7 @@
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-08-09T17:25:53.193386-04:00",
+              "expiresAt": "2099-12-31T00:00:00Z",
               "reason": "#nosec G304 -- filePath is validated against allowlist",
               "status": "passed",
               "type": "waiver"
