@@ -158,10 +158,26 @@ func convertV3ToV2(v2 *hdf.HDFResults) (*legacyhdf.LegacyHDFResults, []string) {
 	// Map baselines → profiles
 	var warnings []string
 
-	// Carry the full components[] through a passthrough so a v3→v2→v3 round trip is
-	// lossless — the platform mapping above keeps only the first component's name/OS.
+	// Carry the full components[] and any provenance (extensions.passthrough)
+	// through the single v2 passthrough so a v3→v2→v3 round trip is lossless — the
+	// platform mapping above keeps only the first component's name/OS, and v2 has
+	// no native slot for extensions.
+	var provenance map[string]interface{}
+	if pt, ok := v2.Extensions["passthrough"].(map[string]interface{}); ok && len(pt) > 0 {
+		provenance = pt
+	}
+	if len(v2.Components) > 0 || len(provenance) > 0 {
+		v1.Passthrough = &legacyhdf.LegacyPassthrough{
+			HDFComponents: v2.Components,
+			Provenance:    provenance,
+		}
+	}
+	if _, collides := provenance[legacyhdf.HDFComponentsKey]; collides && len(v2.Components) > 0 {
+		warnings = append(warnings, fmt.Sprintf(
+			"extensions.passthrough.%s is reserved for the components round-trip carrier and was overridden on downgrade",
+			legacyhdf.HDFComponentsKey))
+	}
 	if len(v2.Components) > 0 {
-		v1.Passthrough = &legacyhdf.LegacyPassthrough{HDFComponents: v2.Components}
 		warnings = append(warnings, fmt.Sprintf(
 			"components[]: all %d component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform",
 			len(v2.Components)))

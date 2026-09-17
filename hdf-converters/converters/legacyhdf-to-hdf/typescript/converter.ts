@@ -119,9 +119,11 @@ export interface LegacyHDFResults {
   statistics: unknown;
   generator?: unknown;
   timestamp?: string;
-  // Carries v3-only data with no native v2 slot for lossless round-tripping
-  // (currently the full components[]); absent on genuine InSpec exec-json input.
-  passthrough?: {hdf_components?: unknown[]};
+  // Carries v3-only data with no native v2 slot for lossless round-tripping:
+  // the full components[] under the reserved hdf_components key, plus any
+  // provenance (extensions.passthrough) flattened alongside it. Absent on
+  // genuine InSpec exec-json input.
+  passthrough?: {hdf_components?: unknown[]; [key: string]: unknown};
   [key: string]: unknown;
 }
 
@@ -970,12 +972,27 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
     statistics: projectV1Statistics(v2Data.statistics),
   };
 
-  // Carry the full components[] through a passthrough so a v3→v2→v3 round trip is
-  // lossless — the platform mapping above keeps only the first component's name/OS.
-  if (Array.isArray(v2Data.components) && v2Data.components.length > 0) {
-    hdf.passthrough = {hdf_components: v2Data.components};
+  // Carry the full components[] and any provenance (extensions.passthrough)
+  // through the single v2 passthrough so a v3→v2→v3 round trip is lossless — the
+  // platform mapping above keeps only the first component's name/OS, and v2 has
+  // no native slot for extensions.
+  const provenance = (v2Data.extensions as {passthrough?: Record<string, unknown>} | undefined)?.passthrough;
+  const hasProvenance = provenance != null && Object.keys(provenance).length > 0;
+  const hasComponents = Array.isArray(v2Data.components) && v2Data.components.length > 0;
+  if (hasComponents || hasProvenance) {
+    hdf.passthrough = hasProvenance ? {...provenance} : {};
+    if (hasComponents) {
+      hdf.passthrough.hdf_components = v2Data.components as unknown[];
+    }
+  }
+  if (hasComponents && hasProvenance && provenance && 'hdf_components' in provenance) {
     warnings.push(
-      `components[]: all ${v2Data.components.length} component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform`,
+      'extensions.passthrough.hdf_components is reserved for the components round-trip carrier and was overridden on downgrade',
+    );
+  }
+  if (hasComponents) {
+    warnings.push(
+      `components[]: all ${(v2Data.components as unknown[]).length} component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform`,
     );
   }
 
@@ -1069,10 +1086,26 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
     v2.timestamp = timestamp;
   }
 
-  // Preserve any extension fields not part of core schema. `passthrough` is a
-  // consumed carrier (its hdf_components restored above), NOT an unknown field —
-  // it must not leak into extensions, or a v3→v2→v3 round trip would diverge from
-  // the Go peer, which drops the carrier.
+  // Restore provenance carried in the passthrough (every key except the
+  // hdf_components carrier) to extensions.passthrough — the mirror of the
+  // downgrade, which moved v3 extensions.passthrough into the v2 passthrough.
+  // The hdf_components carrier itself is consumed (restored to components above),
+  // never leaked into extensions.
+  let carriedProvenance: Record<string, unknown> | undefined;
+  if (v1Data.passthrough) {
+    const rest: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(v1Data.passthrough)) {
+      if (key !== 'hdf_components') {
+        rest[key] = value;
+      }
+    }
+    if (Object.keys(rest).length > 0) {
+      carriedProvenance = rest;
+    }
+  }
+
+  // Preserve any extension fields not part of the core v1 schema. `passthrough`
+  // is a consumed carrier (handled above), not an unknown field.
   const knownV1Fields = new Set(['version', 'platform', 'profiles', 'statistics', 'generator', 'timestamp', 'passthrough']);
   const extensionFields: Record<string, unknown> = {};
 
@@ -1087,6 +1120,12 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
       ...extensionFields,
       v1_version: v1Data.version, // Preserve original version for tracking
     };
+  }
+
+  // extensions.passthrough is set independently of v1_version so a provenance-only
+  // round trip matches the Go peer, which stamps only extensions.passthrough.
+  if (carriedProvenance) {
+    v2.extensions = {...(v2.extensions ?? {}), passthrough: carriedProvenance};
   }
 
   // Flatten overlays: merge overlay/wrapper baselines so every requirement

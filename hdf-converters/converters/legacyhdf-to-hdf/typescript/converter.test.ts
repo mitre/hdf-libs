@@ -1729,6 +1729,69 @@ describe('downgradeToLegacyHdf downgrade (Go parity)', () => {
     expect((restored as {extensions?: {passthrough?: unknown}}).extensions?.passthrough).toBeUndefined();
   });
 
+  it('round-trips extensions.passthrough provenance through v3→v2→v3 alongside components', () => {
+    const v2 = {
+      baselines: [{name: 'b1', requirements: [{
+        id: 'C-1', impact: 0.5,
+        results: [{status: 'passed', codeDesc: 'ok', startTime: '2026-09-11T00:00:00Z'}],
+      }]}],
+      statistics: {},
+      components: [{type: 'cloudAccount', name: 'prod-account', accountId: 'prod-account', labels: {boundary: 'sparc'}}],
+      extensions: {passthrough: {audit: {runId: 'r-123'}}},
+      generator: {name: 'g', version: '1.0.0'},
+    } as unknown as HDFV2Results;
+
+    const {hdf} = downgradeToLegacyHdf(v2);
+    // Both the provenance and the components carrier ride the single v2 passthrough.
+    expect((hdf.passthrough as {audit?: {runId?: string}}).audit?.runId).toBe('r-123');
+    expect(hdf.passthrough?.hdf_components).toHaveLength(1);
+
+    const restored = convertLegacyHdf(hdf);
+    expect(restored.components).toEqual(v2.components);
+    expect((restored as {extensions?: {passthrough?: unknown}}).extensions?.passthrough)
+      .toEqual({audit: {runId: 'r-123'}});
+  });
+
+  it('preserves extensions.passthrough provenance on downgrade even with no components', () => {
+    const v2 = {
+      baselines: [{name: 'b1', requirements: [{
+        id: 'C-1', impact: 0.5,
+        results: [{status: 'passed', codeDesc: 'ok', startTime: '2026-09-11T00:00:00Z'}],
+      }]}],
+      statistics: {},
+      extensions: {passthrough: {audit: {runId: 'r-123'}}},
+      generator: {name: 'g', version: '1.0.0'},
+    } as unknown as HDFV2Results;
+
+    const {hdf} = downgradeToLegacyHdf(v2);
+    expect((hdf.passthrough as {audit?: {runId?: string}}).audit?.runId).toBe('r-123');
+    expect(hdf.passthrough?.hdf_components).toBeUndefined();
+  });
+
+  it('warns and lets the carrier win when provenance collides with the reserved hdf_components key', () => {
+    const v2 = {
+      baselines: [{name: 'b1', requirements: [{
+        id: 'C-1', impact: 0.5,
+        results: [{status: 'passed', codeDesc: 'ok', startTime: '2026-09-11T00:00:00Z'}],
+      }]}],
+      statistics: {},
+      components: [{type: 'cloudAccount', name: 'prod-account', accountId: 'prod-account'}],
+      extensions: {passthrough: {hdf_components: 'USER_DATA_COLLIDES', audit: {runId: 'r-123'}}},
+      generator: {name: 'g', version: '1.0.0'},
+    } as unknown as HDFV2Results;
+
+    const {hdf, warnings} = downgradeToLegacyHdf(v2);
+    expect(warnings.join('\n')).toContain('reserved for the components round-trip carrier');
+    // The real carrier wins over the colliding value.
+    expect(hdf.passthrough?.hdf_components).toHaveLength(1);
+
+    const restored = convertLegacyHdf(hdf);
+    expect(restored.components).toEqual(v2.components);
+    // Non-colliding provenance still round-trips; the colliding string is gone.
+    expect((restored as {extensions?: {passthrough?: Record<string, unknown>}}).extensions?.passthrough)
+      .toEqual({audit: {runId: 'r-123'}});
+  });
+
   it('produces a document that validates against the InSpec exec-json schema', () => {
     // Authoritative guard: validate the whole downgrade output against the InSpec
     // exec-json schema Heimdall's parser enforces (vendored in Go testdata), rather
