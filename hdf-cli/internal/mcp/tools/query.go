@@ -106,7 +106,8 @@ func errorQueryOutput() queryOutput {
 
 // queryOutput is the hdf_query result envelope: the bounded requirement rows plus
 // the pagination metadata, alongside the source handle and detected type — or,
-// for a sources[] call, one sources entry per member in place of the handle.
+// for a sources[] call, one {index, source} entry per member in place of the
+// handle.
 type queryOutput struct {
 	Handle              string           `json:"handle,omitempty"`
 	Sources             []sourceMember   `json:"sources,omitempty"`

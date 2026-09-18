@@ -36,7 +36,7 @@ func TestCompliance_MultiSource_CountsOverTheSet(t *testing.T) {
 	if out.Compliance != 0 {
 		t.Errorf("compliance = %v, want 0", out.Compliance)
 	}
-	if out.Handle != "" || len(out.Sources) != 2 || out.Sources[1].Index != 1 || out.Sources[1].Handle == "" {
+	if out.Handle != "" || len(out.Sources) != 2 || out.Sources[1].Index != 1 || out.Sources[1].Source != grype {
 		t.Errorf("envelope must name the two members and omit handle, got handle %q sources %+v", out.Handle, out.Sources)
 	}
 	if out.DocType != "results" {

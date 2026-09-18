@@ -130,10 +130,15 @@ name prefix), and `groupBy: cwe` rolls the set up by weakness across scanners
 as `unmapped` until it is fixed.
 A `threshold` is evaluated over the set's counts exactly as over one document.
 
-The response names the set instead of one handle:
+The response names the set instead of one handle — each member by the source
+it was loaded from, not by a handle (a handle per member cost ~230 bytes on
+every response for something you already hold; open a member with `hdf_open`
+if you want one):
 
 ```json
-{ "sources": [ { "index": 0, "handle": "…" }, { "index": 1, "handle": "…" }, { "index": 2, "handle": "…" } ],
+{ "sources": [ { "index": 0, "source": "scans/gosec.hdf.json" },
+               { "index": 1, "source": "scans/zap.hdf.json" },
+               { "index": 2, "source": "scans/grype.hdf.json" } ],
   "docType": "results", "total": 28, "returned": 2, "truncated": true, "requirements": [ … ] }
 ```
 

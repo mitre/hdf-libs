@@ -37,8 +37,8 @@ func TestSources_HandleMembers(t *testing.T) {
 	_, opened := callQuery(t, queryInput{Source: srcs[1], Limit: 1})
 	zapHandle := handle.Source{Handle: opened.Handle}
 	_, out := callQuery(t, queryInput{Sources: []handle.Source{srcs[0], zapHandle}, Limit: 1})
-	if out.Total != 32 || len(out.Sources) != 2 || out.Sources[1].Handle != opened.Handle {
-		t.Errorf("path + handle members: total %d, sources %+v; want 32 and the handle echoed at index 1", out.Total, out.Sources)
+	if out.Total != 32 || len(out.Sources) != 2 || out.Sources[1].Source != srcs[1].Path {
+		t.Errorf("path + handle members: total %d, sources %+v; want 32 and the handle's path named at index 1", out.Total, out.Sources)
 	}
 	// hdf_aggregate names a failing handle member by the path its handle carries.
 	_, sys := callInspect(t, inspectInput{Source: srcs[2]})
@@ -159,6 +159,22 @@ func TestSources_MergeWarningsSurfaceInNotice(t *testing.T) {
 	for _, want := range []string{"duplicate-baseline-name", "gosec/gosec"} {
 		if !strings.Contains(out.Notice, want) {
 			t.Errorf("notice must report the merge warning %q, got %q", want, out.Notice)
+		}
+	}
+}
+
+// The member label is the path the caller passed; for a handle member, the
+// path inside the handle; for a content-addressed handle (no path), the slot —
+// never empty, so a refusal or a member list always names something.
+func TestSources_MemberLabel(t *testing.T) {
+	for _, c := range []struct{ path, handlePath, slot, want string }{
+		{"zap.json", "", "sources[0]", "zap.json"},
+		{"", "scans/zap.json", "sources[1]", "scans/zap.json"},
+		{"", "", "sources[2]", "sources[2]"},
+		{"zap.json", "other.json", "sources[3]", "zap.json"},
+	} {
+		if got := memberLabel(c.path, c.handlePath, c.slot); got != c.want {
+			t.Errorf("memberLabel(%q, %q, %q) = %q, want %q", c.path, c.handlePath, c.slot, got, c.want)
 		}
 	}
 }

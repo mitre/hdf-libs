@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
 )
 
 // Three real converter outputs under one HDF_MCP_ROOT: gosec (SARIF, 1 baseline,
@@ -81,8 +83,8 @@ func TestQuery_MultiSource_DistinctCWEAcrossTools(t *testing.T) {
 		t.Fatalf("sources = %+v, want three members", first.Sources)
 	}
 	for i, m := range first.Sources {
-		if m.Index != i || m.Handle == "" {
-			t.Errorf("sources[%d] = %+v, want index %d and a handle", i, m, i)
+		if m.Index != i || m.Source != []string{gosec, zap, grype}[i] {
+			t.Errorf("sources[%d] = %+v, want index %d and the member's path", i, m, i)
 		}
 	}
 	if first.DocType != "results" {
@@ -155,5 +157,35 @@ func TestQuery_DescriptionAdvertisesSources(t *testing.T) {
 	}
 	if !strings.Contains(queryToolDescription, "read the source file for the `code` payload itself") {
 		t.Error("the code-blind-spot sentence must be kept verbatim")
+	}
+}
+
+// TestQuery_MultiSource_MembersCarrySourceNotHandle: the envelope names each
+// member by its source — the path the caller passed — and nothing else. A
+// per-member handle cost ~230 bytes each on every response (three members:
+// ~700 bytes, ~300 o200k tokens per call in the benchmark's bookends) for
+// something the caller already holds; an agent that wants a handle opens the
+// member. Pinned on the marshalled JSON and on the envelope's size.
+func TestQuery_MultiSource_MembersCarrySourceNotHandle(t *testing.T) {
+	gosec, zap, grype := threeScannerSources(t)
+	_, out := callQuery(t, queryInput{Sources: pathSources(gosec, zap, grype), Limit: 1})
+	want := []sourceMember{{Index: 0, Source: gosec}, {Index: 1, Source: zap}, {Index: 2, Source: grype}}
+	if len(out.Sources) != 3 {
+		t.Fatalf("sources = %+v, want %+v", out.Sources, want)
+	}
+	for i := range want {
+		if out.Sources[i] != want[i] {
+			t.Errorf("sources[%d] = %+v, want %+v", i, out.Sources[i], want[i])
+		}
+	}
+	raw := mustJSON(&out)
+	if strings.Contains(raw, `"handle"`) {
+		t.Errorf("no handle may appear anywhere in a multi-source response: %s", raw)
+	}
+	// Before this change the same response was 1,267 bytes / 317 estimated
+	// tokens; the members alone were ~700 bytes. The bound leaves room for the
+	// row and notice, not for handles.
+	if n := respond.EstimateTokens(raw); n > 200 {
+		t.Errorf("multi-source limit-1 response is %d estimated tokens (%d bytes), want ≤ 200: %s", n, len(raw), raw)
 	}
 }

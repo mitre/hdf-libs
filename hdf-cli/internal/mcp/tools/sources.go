@@ -20,13 +20,29 @@ import (
 // or returns the combined document; only the tool's own answer leaves.
 
 // sourceMember names one member of a multi-source view in a response envelope:
-// its position in sources[] and the handle it resolved to. Its document type is
-// not repeated per member — a multi-source view is results documents only, and
-// the envelope's docType says so once (owner decision 2026-09-17: the field
-// cost tokens on every turn and never varied).
+// its position in sources[] and the source it was loaded from — the path the
+// caller passed, else the path its handle carries, else the slot. It carries
+// no handle and no document type (owner decisions 2026-09-17): a handle cost
+// ~230 bytes per member on every response for something the caller already
+// holds — an agent that wants one opens the member — and the type never varies
+// (a view is results documents only; the envelope's docType says so once).
 type sourceMember struct {
 	Index  int    `json:"index"`
-	Handle string `json:"handle"`
+	Source string `json:"source"`
+}
+
+// memberLabel names a member for the envelope and for refusals: the path the
+// caller passed, else the path inside the handle it passed, else the slot
+// ("sources[2]") — so a member is always named, even a content-addressed one.
+func memberLabel(path, handlePath, slot string) string {
+	switch {
+	case path != "":
+		return path
+	case handlePath != "":
+		return handlePath
+	default:
+		return slot
+	}
 }
 
 // loadedSource is one resolved, requirement-bearing document projected to the
@@ -59,14 +75,7 @@ func loadSource(src handle.Source, ldr *loader.Loader, slot string, accept []str
 			fmt.Sprintf("%s is %s but failed schema validation, so it cannot be %s", slot, docType, verb),
 			map[string]any{"slot": slot, "docType": docType})
 	}
-	label := src.Path
-	if label == "" {
-		label = resolved.Handle.Path
-	}
-	if label == "" {
-		label = slot
-	}
-	return &loadedSource{Resolved: resolved, Results: toResults(resolved.Load), Label: label}, nil
+	return &loadedSource{Resolved: resolved, Results: toResults(resolved.Load), Label: memberLabel(src.Path, resolved.Handle.Path, slot)}, nil
 }
 
 // sourceLabel names a source for a per-member failure record before (or
@@ -94,7 +103,9 @@ func containsString(list []string, s string) bool {
 
 // sourceView is what a read tool computes over: one document as loaded, or the
 // engine Merge of several. Exactly one of Handle (single) and Members (multi)
-// is set, which is also how the response envelope tells the two apart.
+// is set, which is also how the response envelope tells the two apart: a
+// single-source response carries the document's handle, a multi-source one
+// names its members by source.
 type sourceView struct {
 	Results             hdf.HDFResults
 	DocType             string
@@ -159,11 +170,7 @@ func resolveView(single handle.Source, many []handle.Source, ldr *loader.Loader,
 		if terr != nil {
 			return nil, terr, nil
 		}
-		encoded, err := handle.Encode(ls.Resolved.Handle)
-		if err != nil {
-			return nil, nil, fmt.Errorf("encoding handle for %s: %w", slot, err)
-		}
-		members = append(members, sourceMember{Index: i, Handle: encoded})
+		members = append(members, sourceMember{Index: i, Source: ls.Label})
 		inputs = append(inputs, hdfengine.MergeSource{Name: ls.Label, Doc: ls.Results})
 		version = ls.Resolved.Handle.EngineSchemaVersion
 	}

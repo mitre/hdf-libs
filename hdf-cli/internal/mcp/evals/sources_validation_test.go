@@ -40,8 +40,18 @@ func TestSourcesOnly_PassesSDKArgumentValidation(t *testing.T) {
 	if _, ok := q["handle"]; ok {
 		t.Error("multi-source hdf_query response must not carry handle")
 	}
-	if members, _ := q["sources"].([]any); len(members) != 2 {
-		t.Errorf("multi-source hdf_query response sources = %v, want two members", q["sources"])
+	members, _ := q["sources"].([]any)
+	if len(members) != 2 {
+		t.Fatalf("multi-source hdf_query response sources = %v, want two members", q["sources"])
+	}
+	for i, m := range members {
+		mm, _ := m.(map[string]any)
+		if _, ok := mm["handle"]; ok {
+			t.Errorf("sources[%d] must not carry a handle (a per-call token tax), got %v", i, mm)
+		}
+		if mm["source"] != []string{"sarif-gosec.json", "zap-webgoat.json"}[i] {
+			t.Errorf("sources[%d].source = %v, want the member's path", i, mm["source"])
+		}
 	}
 
 	c := callToolStructured(t, cs, "hdf_compliance", map[string]any{"sources": sources, "groupBy": "baseline"})

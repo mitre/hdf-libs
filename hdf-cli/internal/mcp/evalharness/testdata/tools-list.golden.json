@@ -576,16 +576,16 @@
             "items": {
               "additionalProperties": false,
               "properties": {
-                "handle": {
-                  "type": "string"
-                },
                 "index": {
                   "type": "integer"
+                },
+                "source": {
+                  "type": "string"
                 }
               },
               "required": [
                 "index",
-                "handle"
+                "source"
               ],
               "type": "object"
             },
@@ -1330,16 +1330,16 @@
             "items": {
               "additionalProperties": false,
               "properties": {
-                "handle": {
-                  "type": "string"
-                },
                 "index": {
                   "type": "integer"
+                },
+                "source": {
+                  "type": "string"
                 }
               },
               "required": [
                 "index",
-                "handle"
+                "source"
               ],
               "type": "object"
             },

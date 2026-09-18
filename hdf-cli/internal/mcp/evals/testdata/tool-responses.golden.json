@@ -155,10 +155,12 @@
     ],
     "sources": [
       {
-        "index": 0
+        "index": 0,
+        "source": "r.json"
       },
       {
-        "index": 1
+        "index": 1,
+        "source": "from.json"
       }
     ]
   },
@@ -305,10 +307,12 @@
     "returned": 2,
     "sources": [
       {
-        "index": 0
+        "index": 0,
+        "source": "r.json"
       },
       {
-        "index": 1
+        "index": 1,
+        "source": "from.json"
       }
     ],
     "total": 2
