@@ -44,8 +44,13 @@ const (
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
 	// to 720 with sources[]: hdf_query (596) and hdf_compliance (590) sat at the
 	// ceiling before any field was added, so the two multi-source tools could
-	// not take one without it; the headroom is for them, not for prose.
-	ToolsListPerToolBudget = 720
+	// not take one without it; the headroom is for them, not for prose. Raised
+	// to 740 (owner decision 2026-09-17, hdf-libs-pud7x) so hdf_query's
+	// description can SAY that sources[] combines several documents — a
+	// benchmark smoke showed a 20B model never discovering it from the
+	// parameter hint alone, so the sentence is capability, not prose; measured
+	// 738 with the naming aside kept.
+	ToolsListPerToolBudget = 740
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile

@@ -175,6 +175,8 @@ var queryDispatch = map[string]func(*loader.Result) hdf.HDFResults{
 // the agent a wrong or incomplete answer.
 const queryToolDescription = "Filter requirements in an HDF results or baseline document — the only path to a " +
 	"requirement collection; for other document types call hdf_inspect. " +
+	"Pass sources[] instead of source to combine SEVERAL results documents into one set for the call " +
+	"(rows then carry <tool>/<baseline> names). " +
 	"verbosity=concise (default) returns normalized fields; verbosity=full also returns descriptions[] " +
 	"verbatim, where a converter may have placed scanner detail. Each requirement's raw scanner finding " +
 	"in `code` is projected by no verbosity — read the source file for the `code` payload itself."

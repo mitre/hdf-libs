@@ -1168,7 +1168,7 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
-      "description": "Filter requirements in an HDF results or baseline document — the only path to a requirement collection; for other document types call hdf_inspect. verbosity=concise (default) returns normalized fields; verbosity=full also returns descriptions[] verbatim, where a converter may have placed scanner detail. Each requirement's raw scanner finding in `code` is projected by no verbosity — read the source file for the `code` payload itself.",
+      "description": "Filter requirements in an HDF results or baseline document — the only path to a requirement collection; for other document types call hdf_inspect. Pass sources[] instead of source to combine SEVERAL results documents into one set for the call (rows then carry \u003ctool\u003e/\u003cbaseline\u003e names). verbosity=concise (default) returns normalized fields; verbosity=full also returns descriptions[] verbatim, where a converter may have placed scanner detail. Each requirement's raw scanner finding in `code` is projected by no verbosity — read the source file for the `code` payload itself.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {

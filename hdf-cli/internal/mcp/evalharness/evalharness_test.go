@@ -126,7 +126,7 @@ func TestTokenizerPinned(t *testing.T) {
 
 func TestMeasureToolsList_WithinCeilings(t *testing.T) {
 	golden := readTestdata(t, "tools-list.golden.json")
-	// Feed the real per-tool JSON so the per-tool ceiling (600) is enforced on the
+	// Feed the real per-tool JSON so the per-tool ceiling (ToolsListPerToolBudget) is enforced on the
 	// production surface, not just the total — this is where tool-schema growth
 	// surfaces before it silently consumes headroom.
 	m, err := MeasureToolsList(golden, perToolJSON(t, golden))

@@ -139,3 +139,21 @@ func TestQuery_SingleSource_WireShapeUnchanged(t *testing.T) {
 		t.Error("multi-source response must carry sources")
 	}
 }
+
+// TestQuery_DescriptionAdvertisesSources: a model chooses a tool by its
+// description, not by reading parameter hints — in the js1nv.11 smoke a 20B
+// model used sources[] on hdf_aggregate (whose description says MULTIPLE) and
+// made three single-source hdf_query calls for a cross-scanner question. The
+// description must say, in a sentence, that sources[] combines several
+// documents for the call; the code-blind-spot sentence (uqhe.13) stays.
+func TestQuery_DescriptionAdvertisesSources(t *testing.T) {
+	d := strings.ToLower(queryToolDescription)
+	for _, want := range []string{"sources", "several", "one set"} {
+		if !strings.Contains(d, want) {
+			t.Errorf("hdf_query description must mention %q, got %q", want, queryToolDescription)
+		}
+	}
+	if !strings.Contains(queryToolDescription, "read the source file for the `code` payload itself") {
+		t.Error("the code-blind-spot sentence must be kept verbatim")
+	}
+}
