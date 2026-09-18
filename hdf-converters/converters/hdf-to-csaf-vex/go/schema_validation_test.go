@@ -20,7 +20,7 @@ const testCVE = "CVE-2021-44228"
 // alongside it and registered as companions so it compiles offline.
 func csafValidator(t *testing.T) *shared.SchemaValidator {
 	t.Helper()
-	base := filepath.Join(shared.GetConvertersDir(), "csaf-vex-to-hdf", "fixtures")
+	base := filepath.Join("..", "schemas")
 	return shared.NewSchemaValidatorWithResources(t,
 		filepath.Join(base, "csaf_json_schema.json"),
 		map[string]string{

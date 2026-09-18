@@ -21,12 +21,12 @@ const CVE = 'CVE-2021-44228';
 
 // OASIS CSAF v2.0 (draft 2020-12). The schema $refs the FIRST.org CVSS schemas
 // by URL; those are vendored alongside it and registered as companions so it
-// compiles offline. Shared with the reverse importer rather than re-vendored.
-const csafFixtures = join(__dirname, '..', '..', 'csaf-vex-to-hdf', 'fixtures');
-const validate = loadSchemaValidatorWithResources(join(csafFixtures, 'csaf_json_schema.json'), {
-  'https://www.first.org/cvss/cvss-v2.0.json': join(csafFixtures, 'cvss-v2.0.json'),
-  'https://www.first.org/cvss/cvss-v3.0.json': join(csafFixtures, 'cvss-v3.0.json'),
-  'https://www.first.org/cvss/cvss-v3.1.json': join(csafFixtures, 'cvss-v3.1.json'),
+// compiles offline. See ../schemas/provenance.txt.
+const csafSchemas = join(__dirname, '..', 'schemas');
+const validate = loadSchemaValidatorWithResources(join(csafSchemas, 'csaf_json_schema.json'), {
+  'https://www.first.org/cvss/cvss-v2.0.json': join(csafSchemas, 'cvss-v2.0.json'),
+  'https://www.first.org/cvss/cvss-v3.0.json': join(csafSchemas, 'cvss-v3.0.json'),
+  'https://www.first.org/cvss/cvss-v3.1.json': join(csafSchemas, 'cvss-v3.1.json'),
 });
 
 // The HDF schema the converter's inputs must themselves satisfy, so an input
