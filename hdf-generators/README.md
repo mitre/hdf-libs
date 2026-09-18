@@ -11,6 +11,12 @@ Takes an HDF Baseline JSON document (requirement definitions with metadata, desc
 
 This bridges from HDF's tool-agnostic baseline format to InSpec's executable compliance-as-code format.
 
+It also carries the **upgrade engine**: given a current baseline or InSpec profile and a newer
+upstream one, it matches requirements between them and smart-merges the fields, so local
+customizations survive a guidance version bump instead of being overwritten. Requirements the
+upstream adds arrive as new controls; the delta between the two is reportable. The CLI reaches
+it as `hdf generate upgrade <current> <upstream>`.
+
 ## Relationship to other packages
 
 | Package | Relationship |
