@@ -3,11 +3,33 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execFileSync } from 'child_process';
 import { workspacePackages } from '../generate-packages.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const PAGES_DIR = path.resolve(__dirname, '../docs/packages');
+
+// The rendered pages are git-ignored and produced by `pnpm generate`, which
+// runs before `dev` and `build` — so they are never committed and cannot go
+// stale in the repository. Generate them here rather than reading whatever a
+// previous local run happened to leave behind: without this the suite fails in
+// CI, where nothing has generated yet, and passes locally for the wrong reason.
+//
+// What that leaves these checks catching is a GENERATOR fault — a package it
+// silently skips, an index entry it omits, a link it fails to rewrite — not a
+// forgotten regeneration, which the build already makes impossible.
+test('generate the package pages', () => {
+  // Into an empty directory: a page left by an earlier run would otherwise
+  // stand in for one this run failed to produce, and the checks below would
+  // pass on stale output. Verified by mutation — skipping a package in the
+  // generator goes unnoticed without this.
+  fs.rmSync(PAGES_DIR, { recursive: true, force: true });
+  execFileSync(process.execPath, [path.resolve(__dirname, '../generate-packages.mjs')], {
+    cwd: path.resolve(__dirname, '..'),
+    stdio: 'pipe',
+  });
+});
 
 function renderedPages() {
   if (!fs.existsSync(PAGES_DIR)) return [];
@@ -21,13 +43,13 @@ function renderedPages() {
 // The expected set is derived from the workspace, never restated here. A
 // hand-kept list is the failure this guard exists to prevent: it would happily
 // agree with itself while a new package went unrendered.
-test('every workspace package with a README is rendered to the site', () => {
+test('the generator renders every workspace package with a README', () => {
   const expected = workspacePackages();
   assert.ok(expected.length > 0, 'workspace discovery returned nothing');
   assert.deepEqual(
     renderedPages(),
     expected,
-    'run `pnpm generate` in site/ — the rendered package pages no longer match the workspace',
+    'the generator did not render one page per workspace package with a README',
   );
 });
 
