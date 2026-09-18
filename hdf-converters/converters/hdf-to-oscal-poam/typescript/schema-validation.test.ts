@@ -8,8 +8,13 @@ import { readFileSync } from 'node:fs';
 import { convertHdfToOscalPoam } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// NIST OSCAL v1.1.2 POA&M schema (draft-07). See ../schemas/provenance.txt.
-const validate = loadSchemaValidator(join(__dirname, '..', 'schemas', 'oscal_poam_schema-v1.1.2.json'));
+// NIST OSCAL POA&M schemas (draft-07): 1.1.2, which the converter declares as
+// "oscal-version", and 1.2.3, the current release, whose non-empty string
+// patterns 1.1.2 does not apply. See ../schemas/provenance.txt.
+const POAM_SCHEMAS = (['oscal_poam_schema-v1.1.2.json', 'oscal_poam_schema-v1.2.3.json'] as const).map(
+  (file) => [file, loadSchemaValidator(join(__dirname, '..', 'schemas', file))] as const,
+);
+const validate = POAM_SCHEMAS[0][1];
 /** The HDF schema the converter's inputs must themselves satisfy. */
 const validateHdfAmendments = loadSchemaValidator(
   join(__dirname, '..', '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-amendments.schema.json'),
@@ -30,10 +35,100 @@ const amendments = JSON.stringify({
   ],
 });
 
-describe('hdf-to-oscal-poam output validates against NIST OSCAL v1.1.2 POA&M schema', () => {
-  it('minimal poam override', async () => {
-    const out = JSON.parse(await convertHdfToOscalPoam(amendments)) as unknown;
-    assertSchemaValid(validate, 'minimal poam override', out);
+const multiOverride = JSON.stringify({
+  name: 'multi',
+  systemRef: 'https://example.com/ssp.json',
+  overrides: [
+    {
+      type: 'poam',
+      requirementId: 'AC-1',
+      reason: 'r1',
+      status: 'failed',
+      appliedBy: { type: 'simple', identifier: 'a@example.com' },
+      appliedAt: '2026-01-15T00:00:00Z',
+      expiresAt: '2027-01-15T00:00:00Z',
+    },
+    {
+      type: 'poam',
+      requirementId: 'AC-2',
+      reason: 'r2',
+      status: 'failed',
+      appliedBy: { type: 'simple', identifier: 'b@example.com' },
+      appliedAt: '2026-01-15T00:00:00Z',
+      expiresAt: '2027-01-15T00:00:00Z',
+    },
+  ],
+});
+
+const MINIMAL_AMENDMENTS = readFileSync(
+  join(__dirname, '..', '..', '..', '..', 'hdf-schema', 'test', 'fixtures', 'minimal-amendments.json'),
+  'utf-8',
+);
+
+/** The repo's minimal amendments fixture with fields rewritten on its single override. */
+function minimalAmendmentsWith(fields: Record<string, unknown>): string {
+  const doc = JSON.parse(MINIMAL_AMENDMENTS) as { overrides: Array<Record<string, unknown>> };
+  expect(doc.overrides).toHaveLength(1);
+  Object.assign(doc.overrides[0]!, fields);
+  return JSON.stringify(doc);
+}
+
+interface PoamOut {
+  'plan-of-action-and-milestones': {
+    risks: Array<{ title: string; statement: string; description: string }>;
+    'poam-items': Array<{ title: string }>;
+  };
+}
+
+describe('hdf-to-oscal-poam output validates against every vendored NIST OSCAL POA&M schema', () => {
+  const cases: Array<[string, string]> = [
+    ['minimal poam override', amendments],
+    ['with system ref and multiple overrides', multiOverride],
+    ['empty requirementId', minimalAmendmentsWith({ requirementId: '' })],
+  ];
+
+  describe.each(POAM_SCHEMAS)('%s', (file, v) => {
+    it.each(cases)('%s', async (label, input) => {
+      const out = JSON.parse(await convertHdfToOscalPoam(input)) as unknown;
+      assertSchemaValid(v, `${file}: ${label}`, out);
+    });
+  });
+});
+
+// HDF puts no minLength on requirementId, and OSCAL 1.2.x requires both titles to
+// be a non-empty single line. Mirrors the Go peer case for case.
+describe('hdf-to-oscal-poam titles without a requirement id', () => {
+  it.each([
+    ['empty requirementId falls back', '', 'Unidentified requirement'],
+    ['whitespace-only requirementId falls back', '   ', 'Unidentified requirement'],
+    ['a real requirementId is used verbatim', 'SV-001', 'SV-001'],
+  ])('%s', async (_name, requirementId, want) => {
+    const out = JSON.parse(await convertHdfToOscalPoam(minimalAmendmentsWith({ requirementId }))) as PoamOut;
+    for (const [file, v] of POAM_SCHEMAS) {
+      assertSchemaValid(v, file, out);
+    }
+    const poam = out['plan-of-action-and-milestones'];
+    expect(poam.risks).toHaveLength(1);
+    expect(poam['poam-items']).toHaveLength(1);
+    expect(poam.risks[0]!.title).toBe(want);
+    expect(poam['poam-items'][0]!.title).toBe(want);
+  });
+});
+
+// An override with neither a reason nor an id must not end on a dangling
+// "applied to ." clause. Mirrors the Go peer case for case.
+describe('hdf-to-oscal-poam risk rationale without a requirement id', () => {
+  it.each([
+    ['no identifier drops the applied-to clause', '', 'No rationale was recorded for the waiver override.'],
+    ['an identifier is named', 'SV-001', 'No rationale was recorded for the waiver override applied to SV-001.'],
+  ])('%s', async (_name, requirementId, want) => {
+    const out = JSON.parse(
+      await convertHdfToOscalPoam(minimalAmendmentsWith({ requirementId, reason: '' })),
+    ) as PoamOut;
+    const risks = out['plan-of-action-and-milestones'].risks;
+    expect(risks).toHaveLength(1);
+    expect(risks[0]!.statement).toBe(want);
+    expect(risks[0]!.description).toBe(want);
   });
 });
 
@@ -41,10 +136,8 @@ describe('hdf-to-oscal-poam output validates against NIST OSCAL v1.1.2 POA&M sch
 // rather than only to fully-populated fixtures — the gap that let the defects in
 // issue #236 ship.
 describe('hdf-to-oscal-poam against the adversarial corpus', () => {
-  it('satisfies both corpus contracts', async () => {
-    await runSchemaCorpus(jsonDocumentValidator(validate), amendmentsCorpus(), (input) =>
-      convertHdfToOscalPoam(input),
-    );
+  it.each(POAM_SCHEMAS)('satisfies both corpus contracts against %s', async (_file, v) => {
+    await runSchemaCorpus(jsonDocumentValidator(v), amendmentsCorpus(), (input) => convertHdfToOscalPoam(input));
   });
 });
 

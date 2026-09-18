@@ -152,7 +152,7 @@ func writePlanOutput(plan map[string]interface{}, outputPath string) error {
 		return fmt.Errorf("failed to serialize plan: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("plan document failed validation before write: %w", err)
 	}
 

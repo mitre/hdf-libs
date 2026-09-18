@@ -174,6 +174,11 @@ func parseHDFResults(data []byte) (hdf.HDFResults, error) {
 	if !r.Success {
 		return hdf.HDFResults{}, errors.New(translateParserError(r.Error))
 	}
+	// Surface pre-validation normalization notices (e.g. a legacy SAF-supplement
+	// target/passthrough rewritten to v3-native) through the CLI's stderr notice UX.
+	for _, w := range r.Warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
+	}
 	return *r.Data, nil
 }
 
@@ -242,26 +247,26 @@ func parseHDFComparison(data []byte) (hdf.HDFComparison, error) {
 // re-marshal flows (system.go, doc_set.go, evidence_build.go's System read)
 // where typed-struct access is not the goal but the load-side schema gate IS.
 //
-// `expected` is the doc type the caller expects ("system", "plan",
-// "evidencePackage", "comparison", "results", "baseline", or "amendments").
-// The function errors when:
+// `expected` is the doc type the caller expects — a validators.Type* value
+// ("system", "plan", "evidence-package", "comparison", "results", "baseline",
+// or "amendments"). The function errors when:
 //   - the input's top-level shape doesn't match any known HDF doc type
-//     (detectHDFDocType returns ("", false)) — would otherwise silently
-//     pass validateHDFOutput's "not HDF-shaped" fallthrough
+//     (detectHDFDocumentType returns "") — would otherwise silently
+//     pass validateHDFDocument's "not HDF-shaped" fallthrough
 //   - the detected doc type doesn't match `expected`
 //   - the schema validator rejects the input
 //
 // Pass `expected = ""` only when the caller genuinely accepts any HDF doc
 // type (rare).
 func loadAndValidateHDFDoc(data []byte, expected string) (map[string]any, error) {
-	docType, ok := detectHDFDocType(data)
-	if !ok {
+	docType := detectHDFDocumentType(data)
+	if docType == "" {
 		return nil, fmt.Errorf("input is not a recognized HDF document (no top-level discriminator key matched)")
 	}
 	if expected != "" && docType != expected {
 		return nil, fmt.Errorf("input is HDF %s, expected HDF %s", docType, expected)
 	}
-	if err := validateHDFOutput(data); err != nil {
+	if err := validateHDFDocument(data); err != nil {
 		return nil, fmt.Errorf("input failed schema validation: %w", err)
 	}
 	var doc map[string]any

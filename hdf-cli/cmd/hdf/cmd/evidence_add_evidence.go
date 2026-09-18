@@ -149,7 +149,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}
-	doc, err := loadAndValidateHDFDoc(data, "evidencePackage")
+	doc, err := loadAndValidateHDFDoc(data, "evidence-package")
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", file, err)
 	}
@@ -187,7 +187,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	if err != nil {
 		return fmt.Errorf("failed to serialize evidence package: %w", err)
 	}
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("evidence package failed validation before write: %w", err)
 	}
 

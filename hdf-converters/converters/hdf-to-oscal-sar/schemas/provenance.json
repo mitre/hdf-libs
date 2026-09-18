@@ -5,6 +5,12 @@
       "source": "https://github.com/usnistgov/OSCAL/releases/download/v1.1.2/oscal_assessment-results_schema.json",
       "sha256": "d033da70154cf6625ae46a746199e88e58f2928b1387dfac051d381b92f41b0d",
       "retrieved": "2026-09-09"
+    },
+    {
+      "file": "oscal_assessment-results_schema-v1.2.3.json",
+      "source": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_assessment-results_schema.json",
+      "sha256": "4034e2032332dbf597e59e0646ec16c2c31df992962490371e91f47b219ff42c",
+      "retrieved": "2026-09-14"
     }
   ]
 }

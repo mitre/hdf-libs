@@ -37,6 +37,14 @@ interface OscalSARDocument {
 }
 
 /**
+ * Accompanies the include-all selection of a result whose baseline names no
+ * control, so the selection is not read as a claim. Mirrors Go's
+ * noIdentifiableControlsRemark.
+ */
+const NO_IDENTIFIABLE_CONTROLS_REMARK =
+  'No controls were identifiable in the assessed input, so none is listed individually. OSCAL requires a control selection; include-all is emitted to satisfy it and does not assert that any control was assessed.';
+
+/**
  * Convert HDF Results JSON to OSCAL Assessment Results (SAR) JSON.
  *
  * @param input - HDF Results JSON string
@@ -261,8 +269,14 @@ function baselineToResult(
     }
   }
 
-  // Match Go's omitempty: an empty include-controls list collapses to {}.
-  const controlSelection = includeControls.length > 0 ? { 'include-controls': includeControls } : {};
+  // From OSCAL 1.2.0 every control-selection must carry include-all or
+  // include-controls, so a baseline with no identifiable controls (a clean scan)
+  // selects include-all with a remark stating that no control was assessed.
+  // 1.1.2 accepts the same shape. Mirrors Go's reviewedControls.
+  const controlSelection =
+    includeControls.length > 0
+      ? { 'include-controls': includeControls }
+      : { 'include-all': {}, remarks: NO_IDENTIFIABLE_CONTROLS_REMARK };
 
   const result = {
     uuid: crypto.randomUUID(),

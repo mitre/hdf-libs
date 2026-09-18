@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -25,100 +24,57 @@ func shouldSkipValidation(cmd *cobra.Command) bool {
 	return skip
 }
 
-// validateHDFOutput runs the appropriate HDF schema validator over the
-// produced output bytes. It auto-detects Results vs Baseline by examining
-// the top-level JSON keys.
+// validateHDFDocument detects a document's type from its top-level JSON keys
+// and runs that type's schema validator. It covers every HDF document type and
+// serves input gates as well as output gates, so its errors name the schema
+// only — each caller supplies the input/output framing.
 //
-// Returns nil if the input does not look like an HDF JSON document
-// (e.g., it's a CKL/CSV/OSCAL export that is not HDF-shaped). The caller
-// is responsible for only invoking this when the output is expected to
-// be HDF.
-func validateHDFOutput(data []byte) error {
-	docType, ok := detectHDFDocType(data)
-	if !ok {
+// Returns nil if the bytes do not look like an HDF JSON document (e.g. a
+// CKL/CSV/OSCAL export that is not HDF-shaped), so a caller must only invoke it
+// where an HDF document is actually expected.
+func validateHDFDocument(data []byte) error {
+	docType := detectHDFDocumentType(data)
+	if docType == "" {
 		return nil
 	}
 	switch docType {
 	case "results":
 		result := validators.ValidateResults(data)
 		if !result.Valid {
-			return fmt.Errorf("output failed HDF Results schema validation: %s", result.Error())
+			return fmt.Errorf("HDF Results schema: %s", result.Error())
 		}
 	case "baseline":
 		result := validators.ValidateBaseline(data)
 		if !result.Valid {
-			return fmt.Errorf("output failed HDF Baseline schema validation: %s", result.Error())
+			return fmt.Errorf("HDF Baseline schema: %s", result.Error())
 		}
 	case "amendments":
 		result := validators.ValidateAmendments(data)
 		if !result.Valid {
-			return fmt.Errorf("output failed HDF Amendments schema validation: %s", result.Error())
+			return fmt.Errorf("HDF Amendments schema: %s", result.Error())
 		}
 	case "comparison":
 		result := validators.ValidateComparison(data)
 		if !result.Valid {
-			return fmt.Errorf("output failed HDF Comparison schema validation: %s", result.Error())
+			return fmt.Errorf("HDF Comparison schema: %s", result.Error())
 		}
 	case "plan":
 		result := validators.ValidatePlan(data)
 		if !result.Valid {
-			return fmt.Errorf("output failed HDF Plan schema validation: %s", result.Error())
+			return fmt.Errorf("HDF Plan schema: %s", result.Error())
 		}
-	case "evidencePackage":
+	case "evidence-package":
 		result := validators.ValidateEvidencePackage(data)
 		if !result.Valid {
-			return fmt.Errorf("output failed HDF Evidence Package schema validation: %s", result.Error())
+			return fmt.Errorf("HDF Evidence Package schema: %s", result.Error())
 		}
 	case "system":
 		result := validators.ValidateSystem(data)
 		if !result.Valid {
-			return fmt.Errorf("output failed HDF System schema validation: %s", result.Error())
+			return fmt.Errorf("HDF System schema: %s", result.Error())
 		}
 	}
 	return nil
-}
-
-// detectHDFDocType inspects the top-level JSON shape and returns the HDF
-// document type when one of the seven root signatures matches. Probe order
-// is most-specific-first so that documents with overlapping fields (e.g.
-// `name` appears on five doc types) route to the right validator.
-//
-//	baselines        -> results
-//	overrides        -> amendments
-//	requirementDiffs -> comparison    (unique to Comparison root)
-//	assessments      -> plan
-//	contents         -> evidencePackage
-//	requirements     -> baseline
-//	components       -> system        (last; Results' `baselines` check already excluded)
-//
-// Returns ("", false) when no signature key matches.
-func detectHDFDocType(data []byte) (string, bool) {
-	var probe map[string]json.RawMessage
-	if err := json.Unmarshal(data, &probe); err != nil {
-		return "", false
-	}
-	if _, ok := probe["baselines"]; ok {
-		return "results", true
-	}
-	if _, ok := probe["overrides"]; ok {
-		return "amendments", true
-	}
-	if _, ok := probe["requirementDiffs"]; ok {
-		return "comparison", true
-	}
-	if _, ok := probe["assessments"]; ok {
-		return "plan", true
-	}
-	if _, ok := probe["contents"]; ok {
-		return "evidencePackage", true
-	}
-	if _, ok := probe["requirements"]; ok {
-		return "baseline", true
-	}
-	if _, ok := probe["components"]; ok {
-		return "system", true
-	}
-	return "", false
 }
 
 // writeValidatedHDFOutput validates HDF-shaped output before writing.
@@ -130,8 +86,8 @@ func detectHDFDocType(data []byte) (string, bool) {
 // behaviour matches writeConvertOutput.
 func writeValidatedHDFOutput(cmd *cobra.Command, data []byte, path string) error {
 	if !shouldSkipValidation(cmd) {
-		if err := validateHDFOutput(data); err != nil {
-			return fmt.Errorf("%w (re-run with --%s to skip this check and write the invalid output anyway)",
+		if err := validateHDFDocument(data); err != nil {
+			return fmt.Errorf("output failed schema validation: %w (re-run with --%s to skip this check and write the invalid output anyway)",
 				err, noValidateFlag)
 		}
 	}

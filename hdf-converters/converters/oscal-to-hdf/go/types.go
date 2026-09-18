@@ -513,6 +513,7 @@ type ControlSelection struct {
 	Description     string          `json:"description,omitempty"`
 	IncludeAll      *IncludeAll     `json:"include-all,omitempty"`
 	IncludeControls []SelectControl `json:"include-controls,omitempty"`
+	Remarks         string          `json:"remarks,omitempty"`
 }
 
 // IncludeAll indicates all controls are included.

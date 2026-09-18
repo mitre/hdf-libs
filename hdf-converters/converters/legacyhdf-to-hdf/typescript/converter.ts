@@ -119,10 +119,36 @@ export interface LegacyHDFResults {
   statistics: unknown;
   generator?: unknown;
   timestamp?: string;
-  // Carries v3-only data with no native v2 slot for lossless round-tripping
-  // (currently the full components[]); absent on genuine InSpec exec-json input.
-  passthrough?: {hdf_components?: unknown[]};
+  // Carries v3-only data with no native v2 slot for lossless round-tripping:
+  // the full components[] under the reserved hdf_components key, plus any
+  // provenance (extensions.passthrough) flattened alongside it. Absent on
+  // genuine InSpec exec-json input.
+  passthrough?: {hdf_components?: unknown[]; [key: string]: unknown};
   [key: string]: unknown;
+}
+
+/** Reserved passthrough key for the components round-trip carrier. */
+const RESERVED_COMPONENTS_KEY = 'hdf_components';
+
+/**
+ * Copy provenance into a null-prototype object, keeping only own enumerable keys
+ * and dropping the reserved carrier key. A null prototype makes `__proto__`/
+ * `constructor` entries plain data rather than a prototype-pollution vector, and
+ * only a plain (non-array) object is treated as provenance. Returns undefined
+ * when there is nothing to carry.
+ */
+function sanitizeProvenance(raw: unknown): Record<string, unknown> | undefined {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return undefined;
+  }
+  const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (key === RESERVED_COMPONENTS_KEY) {
+      continue;
+    }
+    out[key] = value;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 // ===== V2.0 Type Definitions =====
@@ -970,12 +996,42 @@ export function downgradeToLegacyHdf(v2Data: HDFV2Results): {hdf: LegacyHDFResul
     statistics: projectV1Statistics(v2Data.statistics),
   };
 
-  // Carry the full components[] through a passthrough so a v3→v2→v3 round trip is
-  // lossless — the platform mapping above keeps only the first component's name/OS.
-  if (Array.isArray(v2Data.components) && v2Data.components.length > 0) {
-    hdf.passthrough = {hdf_components: v2Data.components};
+  // Carry the full components[] and any provenance (extensions.passthrough)
+  // through the single v2 passthrough so a v3→v2→v3 round trip is lossless — the
+  // platform mapping above keeps only the first component's name/OS, and v2 has
+  // no native slot for extensions.
+  const rawProvenance = (v2Data.extensions as {passthrough?: unknown} | undefined)?.passthrough;
+  const provenance = sanitizeProvenance(rawProvenance);
+  const hasProvenance = provenance !== undefined;
+  const hasComponents = Array.isArray(v2Data.components) && v2Data.components.length > 0;
+  if (hasComponents || hasProvenance) {
+    // Null-prototype target: provenance keys are attacker-influenced, so writing
+    // them onto a plain object would risk prototype pollution.
+    const bag: {hdf_components?: unknown[]; [key: string]: unknown} = Object.assign(
+      Object.create(null) as {[key: string]: unknown},
+      provenance ?? {},
+    );
+    if (hasComponents) {
+      bag.hdf_components = v2Data.components as unknown[];
+    }
+    hdf.passthrough = bag;
+  }
+  // The reserved carrier key must never travel inside provenance (it would be read
+  // as the carrier on a later upgrade); it is stripped by sanitizeProvenance, and
+  // its presence is warned regardless of whether real components exist.
+  if (
+    rawProvenance !== null &&
+    typeof rawProvenance === 'object' &&
+    !Array.isArray(rawProvenance) &&
+    Object.prototype.hasOwnProperty.call(rawProvenance, RESERVED_COMPONENTS_KEY)
+  ) {
     warnings.push(
-      `components[]: all ${v2Data.components.length} component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform`,
+      'extensions.passthrough.hdf_components is reserved for the components round-trip carrier and was dropped on downgrade',
+    );
+  }
+  if (hasComponents) {
+    warnings.push(
+      `components[]: all ${(v2Data.components as unknown[]).length} component(s) carried via passthrough.hdf_components for lossless round-trip; Heimdall renders only the first (name/OS) via platform`,
     );
   }
 
@@ -1069,10 +1125,18 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
     v2.timestamp = timestamp;
   }
 
-  // Preserve any extension fields not part of core schema. `passthrough` is a
-  // consumed carrier (its hdf_components restored above), NOT an unknown field —
-  // it must not leak into extensions, or a v3→v2→v3 round trip would diverge from
-  // the Go peer, which drops the carrier.
+  // Restore provenance carried in the passthrough (every key except the
+  // hdf_components carrier) to extensions.passthrough — the mirror of the
+  // downgrade, which moved v3 extensions.passthrough into the v2 passthrough.
+  // The hdf_components carrier itself is consumed (restored to components above),
+  // never leaked into extensions.
+  // sanitizeProvenance drops the reserved carrier key and copies into a
+  // null-prototype object, so restoring attacker-influenced keys cannot pollute
+  // a prototype.
+  const carriedProvenance = sanitizeProvenance(v1Data.passthrough);
+
+  // Preserve any extension fields not part of the core v1 schema. `passthrough`
+  // is a consumed carrier (handled above), not an unknown field.
   const knownV1Fields = new Set(['version', 'platform', 'profiles', 'statistics', 'generator', 'timestamp', 'passthrough']);
   const extensionFields: Record<string, unknown> = {};
 
@@ -1087,6 +1151,12 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
       ...extensionFields,
       v1_version: v1Data.version, // Preserve original version for tracking
     };
+  }
+
+  // extensions.passthrough is set independently of v1_version so a provenance-only
+  // round trip matches the Go peer, which stamps only extensions.passthrough.
+  if (carriedProvenance) {
+    v2.extensions = {...(v2.extensions ?? {}), passthrough: carriedProvenance};
   }
 
   // Flatten overlays: merge overlay/wrapper baselines so every requirement

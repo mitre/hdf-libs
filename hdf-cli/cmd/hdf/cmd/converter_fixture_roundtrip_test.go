@@ -104,8 +104,8 @@ func TestAllConverterInputFixturesProduceValidHDF(t *testing.T) {
 // that aren't HDF-shaped) are skipped silently.
 func assertHDFShapedDataValid(t *testing.T, data []byte, sourcePath string) {
 	t.Helper()
-	docType, ok := detectHDFDocType(data)
-	if !ok {
+	docType := detectHDFDocumentType(data)
+	if docType == "" {
 		// Not an HDF JSON document — nothing to validate here.
 		return
 	}
