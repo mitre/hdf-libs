@@ -131,6 +131,33 @@ func TestValidateXMLInput_CustomSizeLimit(t *testing.T) {
 	assert.Contains(t, err.Error(), "exceeds maximum")
 }
 
+// The XML guard must honor the configured process default (set by the CLI from
+// --max-size), exactly like the JSON guard — otherwise XML converters (nessus,
+// fortify, ckl, …) that pass 0 would stay stuck at 50 MiB no matter the flag.
+func TestValidateXMLSize_HonorsConfiguredDefault(t *testing.T) {
+	t.Cleanup(func() { hdfutil.SetDefaultMaxInputSize(0) })
+	big := make([]byte, DefaultMaxXMLSize+1)
+
+	// Baseline: a 0-caller is rejected at the built-in default.
+	assert.Error(t, ValidateXMLSize(big, 0))
+	assert.Error(t, ValidateXMLInput(big, 0))
+
+	// Raising the configured default admits the same 0-callers (both helpers).
+	hdfutil.SetDefaultMaxInputSize(DefaultMaxXMLSize + 10)
+	assert.NoError(t, ValidateXMLSize(big, 0))
+	assert.NoError(t, ValidateXMLInput(big, 0))
+
+	// An explicit smaller limit still wins over the configured default.
+	assert.Error(t, ValidateXMLSize(big, 5))
+
+	// Entity-declaration detection is independent of the size limit: still rejected
+	// even when the configured default would admit the size.
+	entity := []byte(`<!DOCTYPE foo [<!ENTITY x "y">]><foo/>`)
+	err := ValidateXMLInput(entity, 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "entity declarations")
+}
+
 func TestBuildHDFResults_MinimalFields(t *testing.T) {
 	baseline := hdf.EvaluatedBaseline{Name: "test-baseline"}
 	now := time.Now().UTC()

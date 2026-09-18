@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { validateInputSize, DEFAULT_MAX_INPUT_SIZE } from './index.js';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { validateInputSize, resolveMaxInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from './index.js';
 
 describe('validateInputSize — parity with go/size.go ValidateInputSize', () => {
   it('accepts input under the limit', () => {
@@ -74,5 +74,31 @@ describe('validateInputSize — cheap-bound edges', () => {
     } finally {
       encode.mockRestore();
     }
+  });
+});
+
+describe('configurable default — parity with go/size.go SetDefaultMaxInputSize', () => {
+  afterEach(() => setDefaultMaxInputSize(0)); // never leak into other suites
+
+  it('raises the fallback for maxSize<=0 callers, and reset restores the built-in default', () => {
+    const over = 'a'.repeat(DEFAULT_MAX_INPUT_SIZE + 1);
+    expect(() => validateInputSize(over)).toThrow(/exceeds maximum/); // built-in default
+
+    setDefaultMaxInputSize(DEFAULT_MAX_INPUT_SIZE + 10);
+    expect(() => validateInputSize(over)).not.toThrow(); // configured default admits it
+
+    // An explicit smaller limit still wins over the configured default.
+    expect(() => validateInputSize(over, 5)).toThrow(/exceeds maximum/);
+
+    setDefaultMaxInputSize(0);
+    expect(() => validateInputSize(over)).toThrow(/exceeds maximum/); // restored
+  });
+
+  it('resolveMaxInputSize: explicit > configured > built-in default', () => {
+    expect(resolveMaxInputSize(123)).toBe(123);
+    expect(resolveMaxInputSize(0)).toBe(DEFAULT_MAX_INPUT_SIZE);
+    setDefaultMaxInputSize(999);
+    expect(resolveMaxInputSize(0)).toBe(999);
+    expect(resolveMaxInputSize(50)).toBe(50);
   });
 });

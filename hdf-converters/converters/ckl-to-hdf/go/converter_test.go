@@ -204,7 +204,7 @@ func TestConvertCKLToHDF_NoHostNoCCI(t *testing.T) {
 }
 
 func TestConvertCKLToHDF_OversizedInput(t *testing.T) {
-	big := make([]byte, maxInputSize+1)
+	big := make([]byte, shared.DefaultMaxXMLSize+1)
 	_, err := ConvertCKLToHDF(big, converterVersion)
 	assert.Error(t, err)
 }
