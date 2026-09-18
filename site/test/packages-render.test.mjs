@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execFileSync } from 'child_process';
-import { workspacePackages } from '../generate-packages.mjs';
+import { workspacePackages, generatePackages } from '../generate-packages.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -25,10 +24,7 @@ test('generate the package pages', () => {
   // pass on stale output. Verified by mutation — skipping a package in the
   // generator goes unnoticed without this.
   fs.rmSync(PAGES_DIR, { recursive: true, force: true });
-  execFileSync(process.execPath, [path.resolve(__dirname, '../generate-packages.mjs')], {
-    cwd: path.resolve(__dirname, '..'),
-    stdio: 'pipe',
-  });
+  generatePackages();
 });
 
 function renderedPages() {

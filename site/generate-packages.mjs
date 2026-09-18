@@ -57,7 +57,7 @@ function render(pkg) {
   return `${rewriteLinks(readme).trimEnd()}\n`;
 }
 
-function main() {
+export function generatePackages() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   const packages = workspacePackages();
 
@@ -86,4 +86,10 @@ function main() {
   console.log(`Generated docs/packages — ${packages.length} package pages.`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+// Compare native paths, not URLs. `file://${process.argv[1]}` never matches on
+// Windows — argv[1] is D:\path\file.mjs while import.meta.url is
+// file:///D:/path/file.mjs — so the generator silently did nothing there. The
+// guard exists because this module is imported as a library by its test.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  generatePackages();
+}
