@@ -415,3 +415,53 @@ func TestFilter_TagWithoutColon(t *testing.T) {
 	got := ids(Filter(context.Background(), results, Options{Tag: []string{"nocolonhere"}, StatusOf: testStatusOf}))
 	assert.Equal(t, all, got)
 }
+
+// TestFilter_MatchCarriesIndices pins the positional identity of a match: every
+// Match names the baseline and requirement it came from by index, so a consumer
+// can address the source requirement directly instead of re-deriving it from
+// (baseline name, id) — a key that is not unique in shipped converter output
+// (hdf-libs-js1nv.2). src/query.test.ts asserts the same contract.
+func TestFilter_MatchCarriesIndices(t *testing.T) {
+	results := loadQueryFixture(t)
+	matches := Filter(context.Background(), results, Options{StatusOf: testStatusOf})
+	require.Len(t, matches, 5)
+	for _, m := range matches {
+		require.Less(t, m.BaselineIndex, len(results.Baselines), "baseline index in range for %s", m.ID)
+		b := results.Baselines[m.BaselineIndex]
+		require.Less(t, m.Index, len(b.Requirements), "requirement index in range for %s", m.ID)
+		assert.Equal(t, b.Name, m.Baseline, "baseline name must agree with the indexed baseline")
+		assert.Equal(t, b.Requirements[m.Index].ID, m.ID, "indexed requirement must be the matched one")
+	}
+	// Positions are exact, not merely consistent: the fixture's first baseline
+	// (RHEL9-STIG) holds SV-230221..3 at 0..2 and web-hardening holds SV-100001..2.
+	byID := map[string]Match{}
+	for _, m := range matches {
+		byID[m.ID] = m
+	}
+	assert.Equal(t, Match{ID: "SV-230223", Title: byID["SV-230223"].Title, Status: byID["SV-230223"].Status,
+		Impact: byID["SV-230223"].Impact, Severity: byID["SV-230223"].Severity, Baseline: "RHEL9-STIG",
+		BaselineIndex: 0, Index: 2}, byID["SV-230223"])
+	assert.Equal(t, 1, byID["SV-100002"].BaselineIndex)
+	assert.Equal(t, 1, byID["SV-100002"].Index)
+}
+
+// TestFilter_IndicesDistinguishRepeatedKeys: on real converter output where one
+// baseline name carries many baselines and (name, id) repeats, the indices are
+// unique even though the names are not.
+func TestFilter_IndicesDistinguishRepeatedKeys(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "duplicate-baselines.json"))
+	require.NoError(t, err)
+	var results hdf.HDFResults
+	require.NoError(t, json.Unmarshal(data, &results))
+	matches := Filter(context.Background(), results, Options{StatusOf: testStatusOf})
+	require.Len(t, matches, 94, "the Prisma fixture holds 94 requirements across 16 baselines")
+	seenKey := map[string]int{}
+	seenPos := map[[2]int]bool{}
+	for _, m := range matches {
+		seenKey[m.Baseline+"\x00"+m.ID]++
+		pos := [2]int{m.BaselineIndex, m.Index}
+		assert.False(t, seenPos[pos], "position %v must be unique", pos)
+		seenPos[pos] = true
+	}
+	assert.Equal(t, 6, seenKey["Prisma Cloud Scan\x0060522-redhat-RHEL7-high"], "the (name,id) key repeats six times in this fixture")
+}

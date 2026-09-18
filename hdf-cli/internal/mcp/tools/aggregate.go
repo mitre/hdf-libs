@@ -104,34 +104,26 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 				"pass sources[] with one or more {path} or {handle} documents"), errorAggregateOutput(), nil
 		}
 
-		combined := hdf.HDFResults{}
+		// The all-source total is counted over the engine's Merge of the
+		// filtered documents — the same in-memory view hdf_query and
+		// hdf_compliance build over sources[] — so there is exactly one
+		// definition of "these documents combined" (ADR-0016 §1, §7). Only
+		// counts leave this tool; the merged view is never returned or persisted.
+		var filtered []hdfengine.MergeSource
 		perSource := make([]aggregateSourceRollup, 0, len(in.Sources))
 		var failures []aggregateFailure
 		total := 0
 
 		for i := range in.Sources {
 			src := in.Sources[i]
-			label := src.Path
-			resolved, terr := resolveSource(src, ldr, "sources")
+			ls, terr := loadSource(src, ldr, fmt.Sprintf("sources[%d]", i), []string{"results", "baseline"}, "aggregated")
 			if terr != nil {
-				failures = append(failures, aggregateFailure{Index: i, Source: label, Error: terr.Message})
+				failures = append(failures, aggregateFailure{Index: i, Source: sourceLabel(src), Error: terr.Message})
 				continue
 			}
-			if label == "" {
-				label = resolved.Handle.Path
-			}
-			toResults, ok := queryDispatch[resolved.Load.DocType]
-			if !ok {
-				failures = append(failures, aggregateFailure{Index: i, Source: label,
-					Error: fmt.Sprintf("a %s document has no requirements to aggregate (results and baseline only)", resolved.Load.DocType)})
-				continue
-			}
-			if !resolved.Load.Valid {
-				failures = append(failures, aggregateFailure{Index: i, Source: label,
-					Error: fmt.Sprintf("the document is %s but failed schema validation, so it cannot be aggregated", resolved.Load.DocType)})
-				continue
-			}
-			results := toResults(resolved.Load)
+			label := ls.Label
+			resolved := ls.Resolved
+			results := ls.Results
 			matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 				Status: in.Status, Severity: in.Severity, NIST: in.NIST,
 				Count: true, StatusOf: shared.RequirementEffectiveStatus,
@@ -141,18 +133,24 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 			if err := ctx.Err(); err != nil {
 				return nil, errorAggregateOutput(), err
 			}
-			filtered := filterResultsToMatches(results, matches)
-			counts := countByEffectiveStatus(filtered)
+			kept := filterResultsToMatches(results, matches)
+			counts := countByEffectiveStatus(kept)
 			perSource = append(perSource, aggregateSourceRollup{
 				Index: i, Source: label, DocType: resolved.Load.DocType,
 				Total: len(matches), Compliance: hdfengine.CalculateCompliance(counts),
 				Counts: countsToNestedInt(counts),
 			})
 			total += len(matches)
-			combined.Baselines = append(combined.Baselines, filtered.Baselines...)
+			filtered = append(filtered, hdfengine.MergeSource{Name: label, Doc: kept})
 		}
 
-		aggCounts := countByEffectiveStatus(combined)
+		// Renaming and provenance labels do not affect status/severity counts,
+		// and the warnings concern names, which this tool never reports.
+		mergedAll, _, err := mergeSources(filtered)
+		if err != nil {
+			return nil, errorAggregateOutput(), err
+		}
+		aggCounts := countByEffectiveStatus(mergedAll)
 		out := aggregateOutput{
 			SourceCount: len(perSource),
 			Aggregate: aggregateTotals{
@@ -167,20 +165,23 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 	}
 }
 
-// filterResultsToMatches projects a results document down to the requirements the
-// engine matched, preserving baseline grouping, so the shared effective-status
-// counter can be reused on the filtered set (no re-implemented counting).
+// filterResultsToMatches projects a results document down to exactly the
+// requirements the engine matched, preserving baseline grouping, so the shared
+// effective-status counter can be reused on the filtered set (no re-implemented
+// counting). Matches are kept by position (Match.BaselineIndex/Index): keying by
+// (baseline name, id) over-keeps, because that pair repeats in shipped converter
+// output and an unmatched duplicate would ride in on a matched one's key.
 func filterResultsToMatches(results hdf.HDFResults, matches []hdfengine.Match) hdf.HDFResults {
-	keep := make(map[string]bool, len(matches))
+	keep := make(map[[2]int]bool, len(matches))
 	for _, m := range matches {
-		keep[requirementKey(m.Baseline, m.ID)] = true
+		keep[[2]int{m.BaselineIndex, m.Index}] = true
 	}
 	out := hdf.HDFResults{}
 	for i := range results.Baselines {
 		b := results.Baselines[i]
 		var reqs []hdf.EvaluatedRequirement
 		for j := range b.Requirements {
-			if keep[requirementKey(b.Name, b.Requirements[j].ID)] {
+			if keep[[2]int{i, j}] {
 				reqs = append(reqs, b.Requirements[j])
 			}
 		}

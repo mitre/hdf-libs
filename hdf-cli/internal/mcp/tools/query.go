@@ -26,20 +26,23 @@ const queryNarrowParam = "a status/severity/nist/id/search filter"
 // projection that adds the bounded correlation set per row. Every filter is
 // forwarded verbatim to the shared engine — the tool re-implements no matching.
 type queryInput struct {
-	Source    handle.Source `json:"source" jsonschema:"document as {path} or {handle}"`
-	Status    []string      `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
-	Severity  []string      `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
-	Impact    string        `json:"impact,omitempty" jsonschema:"comparison e.g. >0.5, =0"`
-	CCI       []string      `json:"cci,omitempty"`
-	NIST      []string      `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
-	ID        string        `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title"`
-	Tag       []string      `json:"tag,omitempty" jsonschema:"key:value (OR)"`
-	Search    string        `json:"search,omitempty" jsonschema:"text match over id/title/descriptions"`
-	Baseline  string        `json:"baseline,omitempty" jsonschema:"baseline name, glob allowed"`
-	Verbosity string        `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
-	Limit     int           `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
-	Page      int           `json:"page,omitempty" jsonschema:"0-based page when truncated"`
-	Fields    []string      `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
+	// Source is omitempty so the derived schema does not require it: a call
+	// passes exactly one of source / sources, which the handler enforces.
+	Source    handle.Source   `json:"source,omitempty" jsonschema:"document as {path} or {handle}"`
+	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
+	Status    []string        `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
+	Severity  []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
+	Impact    string          `json:"impact,omitempty" jsonschema:"comparison e.g. >0.5, =0"`
+	CCI       []string        `json:"cci,omitempty"`
+	NIST      []string        `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
+	ID        string          `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title"`
+	Tag       []string        `json:"tag,omitempty" jsonschema:"key:value (OR)"`
+	Search    string          `json:"search,omitempty" jsonschema:"text match over id/title/descriptions"`
+	Baseline  string          `json:"baseline,omitempty" jsonschema:"baseline name, glob allowed"`
+	Verbosity string          `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
+	Limit     int             `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
+	Page      int             `json:"page,omitempty" jsonschema:"0-based page when truncated"`
+	Fields    []string        `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
 }
 
 // correlationProjectors is the bounded correlation set (bead-established): the
@@ -102,9 +105,12 @@ func errorQueryOutput() queryOutput {
 }
 
 // queryOutput is the hdf_query result envelope: the bounded requirement rows plus
-// the pagination metadata, alongside the source handle and detected type.
+// the pagination metadata, alongside the source handle and detected type — or,
+// for a sources[] call, one {index, source} entry per member in place of the
+// handle.
 type queryOutput struct {
-	Handle              string           `json:"handle"`
+	Handle              string           `json:"handle,omitempty"`
+	Sources             []sourceMember   `json:"sources,omitempty"`
 	DocType             string           `json:"docType"`
 	EngineSchemaVersion string           `json:"engineSchemaVersion"`
 	Total               int              `json:"total"`
@@ -170,6 +176,8 @@ var queryDispatch = map[string]func(*loader.Result) hdf.HDFResults{
 // the agent a wrong or incomplete answer.
 const queryToolDescription = "Filter requirements in an HDF results or baseline document — the only path to a " +
 	"requirement collection; for other document types call hdf_inspect. " +
+	"Pass sources[] instead of source to combine SEVERAL results documents into one set for the call " +
+	"(rows then carry <tool>/<baseline> names). " +
 	"verbosity=concise (default) returns normalized fields; verbosity=full also returns descriptions[] " +
 	"verbatim, where a converter may have placed scanner detail. Each requirement's raw scanner finding " +
 	"in `code` is projected by no verbosity — read the source file for the `code` payload itself."
@@ -196,27 +204,22 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 			return argError(fmt.Sprintf("unknown correlation field %q", f),
 				fmt.Sprintf("fields accepts only: %s", strings.Join(correlationFieldNames, ", "))), errorQueryOutput(), nil
 		}
-		resolved, terr := resolveSource(in.Source, ldr, "source")
+		view, terr, err := resolveView(in.Source, in.Sources, ldr, singleSourceErrors{
+			WrongDocType: wrongDocTypeForQuery,
+			SchemaInvalid: func(docType string) *mcperr.Error {
+				return mcperr.New(mcperr.SchemaInvalid,
+					fmt.Sprintf("the document is %s but failed schema validation, so its requirements cannot be filtered", docType),
+					map[string]any{"docType": docType})
+			},
+		})
+		if err != nil {
+			return nil, queryOutput{}, err
+		}
 		if terr != nil {
 			return toolError(terr), errorQueryOutput(), nil
 		}
-		encoded, err := handle.Encode(resolved.Handle)
-		if err != nil {
-			return nil, queryOutput{}, fmt.Errorf("encoding handle: %w", err)
-		}
 
-		toResults, ok := queryDispatch[resolved.Load.DocType]
-		if !ok {
-			return toolError(wrongDocTypeForQuery(resolved.Load.DocType)), errorQueryOutput(), nil
-		}
-		if !resolved.Load.Valid {
-			e := mcperr.New(mcperr.SchemaInvalid,
-				fmt.Sprintf("the document is %s but failed schema validation, so its requirements cannot be filtered", resolved.Load.DocType),
-				map[string]any{"docType": resolved.Load.DocType})
-			return toolError(e), errorQueryOutput(), nil
-		}
-
-		results := toResults(resolved.Load)
+		results := view.Results
 		matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 			Status: in.Status, Severity: in.Severity, Impact: in.Impact,
 			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
@@ -230,7 +233,13 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 			return nil, errorQueryOutput(), err
 		}
 
-		out := queryOutput{Handle: encoded, DocType: resolved.Load.DocType, EngineSchemaVersion: resolved.Handle.EngineSchemaVersion}
+		out := queryOutput{
+			Handle: view.Handle, Sources: view.Members,
+			DocType: view.DocType, EngineSchemaVersion: view.EngineSchemaVersion,
+			// Set before pagination so the merge notice is measured inside the
+			// budget and survives the truncation notices, which append to it.
+			Notice: mergeWarningsNotice(view.Warnings),
+		}
 		buildQueryResponse(&out, results, matches, in.Verbosity, in.Limit, in.Page, in.Fields)
 		return textResult(fmt.Sprintf("hdf_query: %d of %d requirements returned (%s). Full rows in structuredContent.",
 			out.Returned, out.Total, out.DocType)), out, nil
@@ -284,6 +293,9 @@ func baselineAsResults(b *hdf.HDFBaseline) hdf.HDFResults {
 func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfengine.Match, verbosity string, limit, page int, fields []string) {
 	rows := projectRows(results, matches, verbosity, fields)
 	out.Total = len(rows)
+	// A notice already on the envelope (merge warnings) is kept in front of any
+	// pagination notice; the trial measurements below include it.
+	base := out.Notice
 
 	candidates := rows
 	limited := false
@@ -311,7 +323,7 @@ func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfe
 		out.Requirements = []map[string]any{}
 		out.Returned = 0
 		out.Truncated = true
-		out.Notice = fmt.Sprintf("page %d is out of range (%d page(s)); page 0 is the first.", page, len(pages))
+		out.Notice = joinNotice(base, fmt.Sprintf("page %d is out of range (%d page(s)); page 0 is the first.", page, len(pages)))
 		return
 	}
 
@@ -324,7 +336,7 @@ func buildQueryResponse(out *queryOutput, results hdf.HDFResults, matches []hdfe
 		if page+1 < len(pages) {
 			out.NextPage = page + 1
 		}
-		out.Notice = queryTruncationNotice(out.Returned, out.Total, page, len(pages), limited)
+		out.Notice = joinNotice(base, queryTruncationNotice(out.Returned, out.Total, page, len(pages), limited))
 	}
 }
 
@@ -352,27 +364,23 @@ func queryTruncationNotice(returned, total, page, numPages int, limited bool) st
 	}
 }
 
-// projectRows converts engine matches into concise or full rows. Full rows join
-// back to the source requirement (by baseline+id) for tags and descriptions.
-// projectRows returns rows as map[string]any so the derived output schema is a
-// concrete object (additionalProperties) rather than a bare boolean, which MCP
-// clients reject under items. Rows are built from the typed conciseRow/fullRow
-// structs and marshalled via structToMap so their json tags (exact concise keys,
-// omitempty full extras) remain authoritative.
+// projectRows converts engine matches into concise or full rows. Full rows and
+// opt-in correlation fields read the source requirement the match points at by
+// position (Match.BaselineIndex/Index) — never by (baseline name, id), which is
+// not unique in shipped converter output and hands every duplicate the same
+// requirement's fields. projectRows returns rows as map[string]any so the
+// derived output schema is a concrete object (additionalProperties) rather than
+// a bare boolean, which MCP clients reject under items. Rows are built from the
+// typed conciseRow/fullRow structs and marshalled via structToMap so their json
+// tags (exact concise keys, omitempty full extras) remain authoritative.
 func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity string, fields []string) []map[string]any {
 	full := verbosity == "full"
-	// The source-requirement index is needed for full's tags/descriptions and for
-	// any opt-in correlation fields; build it once when either is requested.
-	var index map[string]*hdf.EvaluatedRequirement
-	if full || len(fields) > 0 {
-		index = indexRequirements(results)
-	}
 	rows := make([]map[string]any, 0, len(matches))
 	for _, m := range matches {
 		var row map[string]any
 		if full {
 			fr := fullRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact, Baseline: m.Baseline}
-			if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
+			if src := requirementAt(results, m); src != nil {
 				fr.Tags = src.Tags
 				fr.Descriptions = src.Descriptions
 			}
@@ -381,7 +389,7 @@ func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity st
 			row = structToMap(conciseRow{ID: m.ID, Title: m.Title, Status: m.Status, Severity: m.Severity, Impact: m.Impact})
 		}
 		if len(fields) > 0 {
-			if src := index[requirementKey(m.Baseline, m.ID)]; src != nil {
+			if src := requirementAt(results, m); src != nil {
 				for _, f := range fields {
 					if v := correlationProjectors[f](src); v != nil {
 						row[f] = v
@@ -394,18 +402,16 @@ func projectRows(results hdf.HDFResults, matches []hdfengine.Match, verbosity st
 	return rows
 }
 
-func indexRequirements(results hdf.HDFResults) map[string]*hdf.EvaluatedRequirement {
-	index := map[string]*hdf.EvaluatedRequirement{}
-	for i := range results.Baselines {
-		b := &results.Baselines[i]
-		for j := range b.Requirements {
-			r := &b.Requirements[j]
-			index[requirementKey(b.Name, r.ID)] = r
-		}
+// requirementAt returns the requirement an engine match points at, or nil when
+// the match's position is outside the result set (a match produced from a
+// different document than results — a programming error, not a data condition).
+func requirementAt(results hdf.HDFResults, m hdfengine.Match) *hdf.EvaluatedRequirement {
+	if m.BaselineIndex < 0 || m.BaselineIndex >= len(results.Baselines) {
+		return nil
 	}
-	return index
-}
-
-func requirementKey(baseline, id string) string {
-	return baseline + "\x00" + id
+	b := &results.Baselines[m.BaselineIndex]
+	if m.Index < 0 || m.Index >= len(b.Requirements) {
+		return nil
+	}
+	return &b.Requirements[m.Index]
 }
