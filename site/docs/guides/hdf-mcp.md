@@ -15,9 +15,7 @@ A typical MCP client entry (for example a `config.toml` `mcp_servers`
 block) launches the built binary with `mcp` as its argument and sets the
 [environment variables](#deployment) below.
 
-The design rationale lives in the architecture decision record
-`dev-docs/adr-0007-hdf-mcp-server.md`; this guide documents the shipped
-surface for consumers.
+This guide documents the shipped surface.
 
 ## The tool surface
 
@@ -99,7 +97,7 @@ travel through the model's context to be operated on again.
 
 `hdf_query` and `hdf_compliance` also take `sources[]` — several results
 documents that the server combines **in memory, for that call** into one
-multi-baseline view (the engine `Merge`, ADR-0016). Nothing is written and no
+multi-baseline view (the engine `Merge`). Nothing is written and no
 merged file exists: the pipeline keeps one document per scanner, which is what
 thresholds, amendments and exports work on, and the agent asks its cross-tool
 question over any set of them.
