@@ -23,14 +23,13 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
-// maxInputSize caps CKLB JSON input at 50MB.
-const maxInputSize = 50 * 1024 * 1024
-
 // parseInput applies the converter's input guards and parses the checklist.
 // ConvertCKLBToHDF and ExpectedRequirementCount share it so they accept and
 // reject exactly the same inputs.
 func parseInput(input []byte) (*checklist.Checklist, error) {
-	if err := shared.ValidateJSONSize(input, "cklb", maxInputSize); err != nil {
+	// maxSize 0 resolves to the configured process default (50 MB unless the CLI
+	// raised it via --max-size), like every other converter.
+	if err := shared.ValidateJSONSize(input, "cklb", 0); err != nil {
 		return nil, fmt.Errorf("cklb: %w", err)
 	}
 	cl, err := checklist.ParseCKLB(input)

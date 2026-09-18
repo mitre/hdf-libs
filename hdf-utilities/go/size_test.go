@@ -42,3 +42,47 @@ func TestValidateInputSize_DefaultLimitEnforced(t *testing.T) {
 		t.Fatal("expected error for input exceeding the default limit")
 	}
 }
+
+func TestConfiguredDefaultMaxInputSize(t *testing.T) {
+	t.Cleanup(func() { SetDefaultMaxInputSize(0) }) // never leak into other tests
+	over := make([]byte, DefaultMaxInputSize+1)
+
+	// Baseline: a 0-caller ("use the default") is rejected at the built-in default.
+	if err := ValidateInputSize(over, 0); err == nil {
+		t.Fatal("expected rejection at the built-in default before configuring an override")
+	}
+
+	// Raise the process default; the same 0-caller now passes without touching it.
+	SetDefaultMaxInputSize(DefaultMaxInputSize + 10)
+	if err := ValidateInputSize(over, 0); err != nil {
+		t.Fatalf("expected the raised configured default to admit the input: %v", err)
+	}
+
+	// An explicit smaller limit still wins over the configured default.
+	if err := ValidateInputSize(over, 5); err == nil {
+		t.Fatal("an explicit maxSize must cap below the configured default")
+	}
+
+	// A non-positive value restores the built-in default.
+	SetDefaultMaxInputSize(0)
+	if err := ValidateInputSize(over, 0); err == nil {
+		t.Fatal("resetting the configured default must restore the built-in limit")
+	}
+}
+
+func TestResolveMaxInputSize(t *testing.T) {
+	t.Cleanup(func() { SetDefaultMaxInputSize(0) })
+	if got := ResolveMaxInputSize(123); got != 123 {
+		t.Errorf("explicit value should win: got %d", got)
+	}
+	if got := ResolveMaxInputSize(0); got != DefaultMaxInputSize {
+		t.Errorf("zero with no override should be the built-in default: got %d", got)
+	}
+	SetDefaultMaxInputSize(999)
+	if got := ResolveMaxInputSize(0); got != 999 {
+		t.Errorf("zero should resolve to the configured default: got %d", got)
+	}
+	if got := ResolveMaxInputSize(50); got != 50 {
+		t.Errorf("explicit value should still win over the configured default: got %d", got)
+	}
+}

@@ -18,6 +18,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -122,6 +123,13 @@ Examples:
 // runConvert executes the convert command.
 func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputPath string) error {
 	inputPath := args[0]
+
+	// Raise the converters' own input-size guard (they pass a literal 0 = the
+	// 50 MiB default) to the resolved --max-size, so input the CLI pre-read admits
+	// is not then rejected by the converter — the "use --max-size to increase"
+	// advice now works end to end. Same resolver as the pre-read; scoped to this
+	// convert invocation (the process exits after).
+	hdfutil.SetDefaultMaxInputSize(maxInputSizeBytes())
 
 	// Parse version specifiers from format flags (e.g. "sarif@2.0" → "sarif", "2.0")
 	fromFormat, fromVersion := parseFormatVersion(fromFormat)

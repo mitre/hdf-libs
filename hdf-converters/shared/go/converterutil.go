@@ -671,23 +671,25 @@ func rejectWronglyTypedFields(input []byte, converterName string) error {
 const DefaultMaxXMLSize = 50 * 1024 * 1024
 
 // ValidateXMLSize checks that XML input doesn't exceed the maximum allowed size.
-// If maxSize <= 0, DefaultMaxXMLSize is used.
+// maxSize <= 0 resolves through hdfutil.ResolveMaxInputSize — the configured
+// process default (set by the CLI from --max-size) when present, else the built-in
+// 50 MB (== DefaultMaxXMLSize) — so a raised --max-size reaches XML converters too,
+// not just the JSON ones. An explicit positive maxSize still wins.
 func ValidateXMLSize(input []byte, maxSize int) error {
-	if maxSize <= 0 {
-		maxSize = DefaultMaxXMLSize
-	}
-	if len(input) > maxSize {
-		return fmt.Errorf("XML input exceeds maximum allowed size of %d bytes (%d bytes provided)", maxSize, len(input))
+	limit := hdfutil.ResolveMaxInputSize(maxSize)
+	if len(input) > limit {
+		return fmt.Errorf("XML input exceeds maximum allowed size of %d bytes (%d bytes provided)", limit, len(input))
 	}
 	return nil
 }
 
 // ValidateXMLInput performs safety checks on XML input:
-//  1. Size limit check (default 50 MB)
-//  2. Entity declaration detection (billion-laughs prevention)
+//  1. Size limit check (see ValidateXMLSize; maxSize <= 0 uses the configured
+//     process default or the built-in 50 MB)
+//  2. Entity declaration detection (billion-laughs prevention) — always run,
+//     independent of the size limit
 //
-// Returns nil if input passes all checks. If maxSize <= 0, DefaultMaxXMLSize
-// is used.
+// Returns nil if input passes all checks.
 func ValidateXMLInput(input []byte, maxSize int) error {
 	if err := ValidateXMLSize(input, maxSize); err != nil {
 		return err

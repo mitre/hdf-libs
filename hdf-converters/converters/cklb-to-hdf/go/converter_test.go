@@ -150,7 +150,7 @@ func TestConvertCKLBToHDF_InvalidInput(t *testing.T) {
 }
 
 func TestConvertCKLBToHDF_OversizedInput(t *testing.T) {
-	big := make([]byte, maxInputSize+1)
+	big := make([]byte, shared.DefaultMaxJSONSize+1)
 	_, err := ConvertCKLBToHDF(big, converterVersion)
 	assert.Error(t, err)
 }
