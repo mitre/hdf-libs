@@ -14,6 +14,7 @@ import {
   parseTimestamp,
   isUnratedSeverity,
   validateInputSize as guardInputSize,
+  setDefaultMaxInputSize,
   DEFAULT_MAX_INPUT_SIZE,
 } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
@@ -232,8 +233,8 @@ export function firstNonEmpty(...candidates: Array<string | undefined | null>): 
   return '';
 }
 
-/** The one input-size limit (50 MB), defined by @mitre/hdf-utilities. */
-export { DEFAULT_MAX_INPUT_SIZE };
+/** The one input-size limit (256 MB) and its settable process default, defined by @mitre/hdf-utilities. */
+export { DEFAULT_MAX_INPUT_SIZE, setDefaultMaxInputSize };
 
 /**
  * The converter-facing face of the @mitre/hdf-utilities size guard: same

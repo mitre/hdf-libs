@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
 import { convertIonchannelToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
-import { DEFAULT_MAX_INPUT_SIZE } from '../../../shared/typescript/converterutil.js';
+import { setDefaultMaxInputSize } from '../../../shared/typescript/converterutil.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
 import type { HDFResults } from '@mitre/hdf-schema';
@@ -100,8 +100,12 @@ describe('ionchannel parent order parity', () => {
 describe('ionchannel to HDF converter', async () => {
   describe('input validation', async () => {
     it('should throw on oversized input', async () => {
-      const big = '{' + 'x'.repeat(DEFAULT_MAX_INPUT_SIZE + 1) + '}';
-      await expect(convertIonchannelToHdf(big)).rejects.toThrow('exceeds maximum');
+      setDefaultMaxInputSize(8);
+      try {
+        await expect(convertIonchannelToHdf('{' + 'x'.repeat(9) + '}')).rejects.toThrow('exceeds maximum');
+      } finally {
+        setDefaultMaxInputSize(0);
+      }
     });
 
     it('should throw when scan_summaries is not an array', async () => {
