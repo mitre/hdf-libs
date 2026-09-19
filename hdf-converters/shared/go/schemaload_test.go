@@ -255,6 +255,40 @@ func TestSchemaLoadProvenanceCoversNonSchemaReferenceData(t *testing.T) {
 		"no vendored reference data found; if the last of it was removed, this test has outlived its purpose")
 }
 
+// Every converter fixture directory records where its fixtures came from:
+// provenance.json where the source format has a machine-readable schema,
+// provenance.txt otherwise. The backfill closed this gap for every directory;
+// this keeps it closed, so a new converter cannot land fixtures with no record
+// of what tool version produced them or where they were obtained.
+func TestSchemaLoadEveryFixtureDirectoryRecordsProvenance(t *testing.T) {
+	root := shared.GetConvertersDir()
+	entries, err := os.ReadDir(root)
+	require.NoError(t, err)
+
+	checked := 0
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		dir := filepath.Join(root, e.Name(), "fixtures")
+		if info, statErr := os.Stat(dir); statErr != nil || !info.IsDir() {
+			continue
+		}
+		checked++
+		t.Run(e.Name(), func(t *testing.T) {
+			for _, name := range []string{"provenance.txt", "provenance.json"} {
+				if info, statErr := os.Stat(filepath.Join(dir, name)); statErr == nil {
+					assert.Positive(t, info.Size(), "%s is empty — an empty record is no record", name)
+					return
+				}
+			}
+			assert.Fail(t, "fixtures/ has neither provenance.txt nor provenance.json",
+				"record where these fixtures came from: provenance.json when the format has a schema, prose in provenance.txt otherwise")
+		})
+	}
+	assert.Greater(t, checked, 50, "too few fixture directories found for this to be meaningful")
+}
+
 // A schema nobody can compile is not ground truth. Kept separate from provenance
 // because ajv and gojsonschema do not accept exactly the same documents, so the
 // TypeScript peer asserts the same property over the same tree -- minus the
