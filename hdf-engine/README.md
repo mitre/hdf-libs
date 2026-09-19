@@ -103,8 +103,8 @@ dropped, and the same inputs in the same order always produce the same output.
 
 ```go
 merged, warnings, err := hdfengine.Merge([]hdfengine.MergeSource{
-    {Name: "nessus-scan", Results: nessusResults},
-    {Name: "checkov-scan", Results: checkovResults},
+    {Name: "nessus-scan", Doc: nessusResults},
+    {Name: "checkov-scan", Doc: checkovResults},
 })
 ```
 
@@ -160,7 +160,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 ### Loader
 
 - `load(data, maxSize)` / `Load(data, maxSize)` — parse and normalize input
-- `detectFormat` / `InputFormat`, `LoadResult` — the detected input shape and result
+- `detectFormat` (TypeScript only) — the detected input shape; `InputFormat` and `LoadResult` are the accompanying types
 
 ### Evidence
 
