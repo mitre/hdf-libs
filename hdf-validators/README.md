@@ -101,7 +101,8 @@ if (!baselineResult.valid) {
 import { validate } from '@mitre/hdf-validators';
 
 const autoResult = validate(someHdfDocument);
-// Automatically determines if it's Results or Baseline and validates accordingly
+// Determines the document type — Results, Baseline, System, Plan, Amendments,
+// Comparison or Evidence Package — and validates against that schema
 ```
 
 ### Go

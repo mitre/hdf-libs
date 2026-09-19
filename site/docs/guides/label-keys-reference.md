@@ -70,7 +70,7 @@ The team responsible for the component.
 
 ## Merge Provenance Keys
 
-The engine's `Merge` combines several scanners' results documents into one multi-baseline **view**, one baseline per input baseline — the view the MCP read tools build in memory when given `sources[]` (ADR-0016). It is never written to a file. Because `tool` and `generator` are document-root fields, the view cannot say per baseline which scanner produced it — so the merge writes three baseline labels (ADR-0016 §3). They are written on **baselines only**; existing labels such as `component` are preserved.
+The engine's `Merge` combines several scanners' results documents into one multi-baseline **view**, one baseline per input baseline — the view the MCP read tools build in memory when given `sources[]`. It is never written to a file. Because `tool` and `generator` are document-root fields, the view cannot say per baseline which scanner produced it — so the merge writes three baseline labels. They are written on **baselines only**; existing labels such as `component` are preserved.
 
 ### `tool`
 
