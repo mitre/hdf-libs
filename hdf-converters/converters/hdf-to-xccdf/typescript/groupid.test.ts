@@ -6,6 +6,12 @@ import { convertHdfToXccdf, isXccdfGroupId, xccdfGroupId } from './converter.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+interface GroupIdCorpus {
+  count: number;
+  shapes: string[];
+  gids: string[];
+}
+
 interface GroupIdCase {
   gid: string;
   id: string;
@@ -18,6 +24,14 @@ const CASES = (
     readFileSync(join(__dirname, '..', '..', '..', 'shared', 'xccdf-group-id-cases.json'), 'utf-8'),
   ) as { cases: GroupIdCase[] }
 ).cases;
+
+// A committed snapshot of every distinct real gid the repo's fixtures carried when
+// it was extracted (scripts/extract-xccdf-group-id-corpus.mjs), read by the Go
+// peer too. Not rebuilt from the fixture tree at test time: that made every
+// converter's fixture size load-bearing for this one assertion.
+const CORPUS = JSON.parse(
+  readFileSync(join(__dirname, '..', '..', '..', 'shared', 'xccdf-group-id-corpus.json'), 'utf-8'),
+) as GroupIdCorpus;
 
 function hdfWithGid(gid: string): string {
   return JSON.stringify({
@@ -181,5 +195,30 @@ describe('hdf-to-xccdf InSpec check', () => {
       }),
     );
     expect(out.includes(INSPEC), 'a check is emitted only for code that carries text').toBe(want);
+  });
+
+  // Encoding is not injective, so what matters is whether collisions exist for the
+  // gids real STIG content carries. The sample is the whole corpus, not a
+  // threshold: the file records its own count and every gid shape it holds, and
+  // both are required, so a truncated file fails rather than passing over less.
+  // The shape check guards against losing a class of real gid, not sanitization
+  // coverage — the hostile inputs for that are the shared cases table above.
+  describe('collision corpus', () => {
+    it('holds exactly the gids and shapes it records', () => {
+      expect(CORPUS.count, 'an empty corpus would pass vacuously').toBeGreaterThan(0);
+      expect(CORPUS.gids).toHaveLength(CORPUS.count);
+      expect(new Set(CORPUS.gids).size, 'a repeated gid pads the count without testing anything').toBe(CORPUS.count);
+      const shapes = new Set(CORPUS.gids.map((g) => g.replace(/[0-9]+/g, 'N')));
+      expect([...shapes].sort()).toEqual([...CORPUS.shapes].sort());
+    });
+
+    it('encodes no two real gids to the same Group/@id', () => {
+      const byId = new Map<string, string>();
+      for (const gid of CORPUS.gids) {
+        const id = xccdfGroupId(gid);
+        expect(byId.get(id), `gids ${JSON.stringify(byId.get(id))} and ${JSON.stringify(gid)} both encode to ${id}`).toBeUndefined();
+        byId.set(id, gid);
+      }
+    });
   });
 });

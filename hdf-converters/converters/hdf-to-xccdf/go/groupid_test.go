@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"testing"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,22 +60,61 @@ func TestXCCDFGroupIDAlwaysSatisfiesGroupIDType(t *testing.T) {
 	}
 }
 
-// Encoding is not injective, so the question is not whether collisions can exist
-// but whether they exist for the gids this repo actually produces. Two gids
-// encoding to one id would merge two distinct STIG groups into one.
-func TestXCCDFGroupIDNoCollisionsAcrossRealFixtureGIDs(t *testing.T) {
-	seen := map[string]bool{}
-	var gids []string
-	require.NoError(t, shared.ForEachFixtureTags(func(tags map[string]interface{}) {
-		if gid, ok := tags["gid"].(string); ok && !seen[gid] {
-			seen[gid] = true
-			gids = append(gids, gid)
-		}
-	}))
-	require.Greater(t, len(gids), 1000, "the fixture scan found too few gids to be meaningful")
+type groupIDCorpus struct {
+	Count  int      `json:"count"`
+	Shapes []string `json:"shapes"`
+	GIDs   []string `json:"gids"`
+}
 
-	byID := make(map[string]string, len(gids))
-	for _, gid := range gids {
+// The collision corpus is a committed snapshot of every distinct real gid the
+// repo's fixtures carried when it was extracted, with the fixtures it came from
+// recorded in the file. It is deliberately NOT rebuilt from the fixture tree at
+// test time: that coupled every converter's fixture size to this one test, so a
+// clean trim of an unrelated fixture failed here with a message blaming the scan.
+func loadGroupIDCorpus(t *testing.T) groupIDCorpus {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "xccdf-group-id-corpus.json"))
+	require.NoError(t, err)
+
+	var corpus groupIDCorpus
+	require.NoError(t, json.Unmarshal(raw, &corpus))
+	require.Len(t, corpus.GIDs, corpus.Count, "the corpus does not hold the number of gids it records — truncated or hand-edited")
+	require.Positive(t, corpus.Count, "an empty corpus would pass vacuously")
+	uniq := make(map[string]bool, len(corpus.GIDs))
+	for _, gid := range corpus.GIDs {
+		uniq[gid] = true
+	}
+	require.Len(t, uniq, corpus.Count, "the corpus repeats a gid — a duplicate can never collide with itself, so it pads the count without testing anything")
+	return corpus
+}
+
+// Encoding is not injective, so the question is not whether collisions can exist
+// but whether they exist for the gids real STIG content actually carries. Two
+// gids encoding to one id would merge two distinct groups into one.
+//
+// Sample size is the whole corpus, not a threshold: the file records how many
+// distinct gids it holds and the test requires exactly that many, so a truncated
+// file fails rather than passing over fewer ids. The shape check below is a
+// guard against the corpus silently losing a CLASS of real gid (the digit-free
+// SSG group names, say), not a claim about sanitization coverage: real content
+// is almost entirely NCName-safe, so this corpus mostly exercises the identity
+// path, and the hostile inputs that do exercise the sanitizer live in the shared
+// cases table (TestXCCDFGroupIDMatchesSharedTable).
+func TestXCCDFGroupIDNoCollisionsAcrossRealCorpus(t *testing.T) {
+	corpus := loadGroupIDCorpus(t)
+
+	digits := regexp.MustCompile(`[0-9]+`)
+	shapes := map[string]bool{}
+	for _, gid := range corpus.GIDs {
+		shapes[digits.ReplaceAllString(gid, "N")] = true
+	}
+	for _, want := range corpus.Shapes {
+		assert.True(t, shapes[want], "the corpus records shape %q but no gid in it has that shape", want)
+	}
+	assert.Len(t, shapes, len(corpus.Shapes), "the corpus holds gid shapes its shapes list does not record: %v", shapes)
+
+	byID := make(map[string]string, len(corpus.GIDs))
+	for _, gid := range corpus.GIDs {
 		id := xccdfGroupID(gid)
 		if prior, dup := byID[id]; dup {
 			t.Errorf("gids %q and %q both encode to %q", prior, gid, id)
