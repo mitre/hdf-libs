@@ -116,7 +116,7 @@ hdf-converters/converters/<name>/
 ```
 
 ### Shared helpers
-- **Go**: `shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"` — `BuildHDFResults()`, `SeverityToImpact()`, `ValidateJSONSize()`, `LimitSliceWithWarning()`, `MapCWEToNIST()`
+- **Go**: `shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"` — `BuildHDFResults()`, `ValidateJSONSize()`, `LimitSliceWithWarning()`, `MapCWEToNIST()`. `SeverityToImpact()` is not here — it lives in `hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"` alongside `ParseTimestamp()`.
 - **TS**: `converterutil.ts` — `buildHdfResults()`, `inputChecksum()`, `validateInputSize()`, `mapCWEToNIST()`, `limitArrayWithWarning()`
 
 ### Timestamps (canonical = trimmed-UTC RFC3339)
