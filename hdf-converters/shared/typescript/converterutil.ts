@@ -244,11 +244,14 @@ export { DEFAULT_MAX_INPUT_SIZE };
 export function validateInputSize(
   input: string,
   converterName: string,
-  maxSize = DEFAULT_MAX_INPUT_SIZE,
+  maxSize = 0,
 ): void {
-  const limit = maxSize > 0 ? maxSize : DEFAULT_MAX_INPUT_SIZE;
+  // Pass maxSize straight through (0/negative means "use the default"): the
+  // hdf-utilities guard resolves it to the configured process default, then the
+  // built-in 256 MB — mirroring Go's ValidateJSONSize, so setDefaultMaxInputSize
+  // reaches TS converters exactly as it reaches Go ones.
   try {
-    guardInputSize(input, limit);
+    guardInputSize(input, maxSize);
   } catch (err) {
     // Prefix the converter name and keep the guard's own wording, the way Go's
     // ValidateJSONSize wraps with %w — otherwise the two languages report the

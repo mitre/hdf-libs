@@ -24,9 +24,15 @@ describe('validateInputSize — parity with go/size.go ValidateInputSize', () =>
     expect(() => validateInputSize('€', 3)).not.toThrow();
   });
   it('enforces the default limit', () => {
-    expect(DEFAULT_MAX_INPUT_SIZE).toBe(50 * 1024 * 1024);
-    const over = 'a'.repeat(DEFAULT_MAX_INPUT_SIZE + 1);
-    expect(() => validateInputSize(over)).toThrow(/exceeds maximum/);
+    expect(DEFAULT_MAX_INPUT_SIZE).toBe(256 * 1024 * 1024);
+    // Exercise the maxSize<=0 fallback against a lowered configured default, so we
+    // do not allocate a 256 MB string just to prove rejection.
+    setDefaultMaxInputSize(8);
+    try {
+      expect(() => validateInputSize('a'.repeat(9))).toThrow(/exceeds maximum/);
+    } finally {
+      setDefaultMaxInputSize(0);
+    }
   });
 });
 
@@ -80,18 +86,23 @@ describe('validateInputSize — cheap-bound edges', () => {
 describe('configurable default — parity with go/size.go SetDefaultMaxInputSize', () => {
   afterEach(() => setDefaultMaxInputSize(0)); // never leak into other suites
 
-  it('raises the fallback for maxSize<=0 callers, and reset restores the built-in default', () => {
-    const over = 'a'.repeat(DEFAULT_MAX_INPUT_SIZE + 1);
-    expect(() => validateInputSize(over)).toThrow(/exceeds maximum/); // built-in default
+  it('lowers/raises the fallback for maxSize<=0 callers; explicit wins; reset restores', () => {
+    const input = 'a'.repeat(9); // tiny — no 256 MB allocation
 
-    setDefaultMaxInputSize(DEFAULT_MAX_INPUT_SIZE + 10);
-    expect(() => validateInputSize(over)).not.toThrow(); // configured default admits it
+    // Lower the configured default below the input: the 0-caller rejects.
+    setDefaultMaxInputSize(8);
+    expect(() => validateInputSize(input)).toThrow(/exceeds maximum/);
+
+    // Raise it above the input: now admitted.
+    setDefaultMaxInputSize(100);
+    expect(() => validateInputSize(input)).not.toThrow();
 
     // An explicit smaller limit still wins over the configured default.
-    expect(() => validateInputSize(over, 5)).toThrow(/exceeds maximum/);
+    expect(() => validateInputSize(input, 5)).toThrow(/exceeds maximum/);
 
+    // Reset restores the (256 MB) built-in default; the 9-byte input is fine.
     setDefaultMaxInputSize(0);
-    expect(() => validateInputSize(over)).toThrow(/exceeds maximum/); // restored
+    expect(() => validateInputSize(input)).not.toThrow();
   });
 
   it('resolveMaxInputSize: explicit > configured > built-in default', () => {

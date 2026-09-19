@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xeipuuv/gojsonschema"
@@ -405,9 +407,9 @@ func TestParseBom_ErrorsAndEdgeCases(t *testing.T) {
 	})
 
 	t.Run("validates input size before parsing (rejects oversized input)", func(t *testing.T) {
-		huge := []byte(`{"bomFormat":"CycloneDX","pad":"` + strings.Repeat("a", 60*1024*1024) + `"}`)
+		huge := []byte(`{"bomFormat":"CycloneDX","pad":"` + strings.Repeat("a", shared.DefaultMaxJSONSize+1) + `"}`)
 		_, err := ParseBom(huge)
-		require.Error(t, err)
+		require.ErrorContains(t, err, "exceeds maximum")
 		assert.Contains(t, err.Error(), "exceeds maximum allowed size")
 	})
 

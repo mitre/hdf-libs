@@ -112,7 +112,7 @@ For more information: https://github.com/mitre/hdf-libs`,
 	// Global persistent flags
 	cmd.PersistentFlags().BoolVar(&gf.JSONOutput, "json", false, "Output in JSON format")
 	cmd.PersistentFlags().BoolVarP(&gf.Debug, "debug", "d", false, "Enable debug output")
-	cmd.PersistentFlags().IntVar(&gf.MaxSizeMB, "max-size", 50, "Maximum file size in MB")
+	cmd.PersistentFlags().IntVar(&gf.MaxSizeMB, "max-size", 256, "Maximum file size in MB")
 	cmd.PersistentFlags().BoolVar(&gf.NoFollowSymlinks, "no-follow-symlinks", false, "Refuse to read symlinked files")
 	cmd.PersistentFlags().StringVar(&gf.SchemaDirFlag, "schema-dir", "", "Load schemas from directory instead of embedded (for development)")
 	cmd.PersistentFlags().BoolVarP(&gf.FailFast, "fail-fast", "F", false, "Abort on first file that fails instead of continuing")

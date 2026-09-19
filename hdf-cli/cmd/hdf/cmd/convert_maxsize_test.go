@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,80 +9,64 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
-// A grype input larger than the 50 MiB converter default must convert when the
-// user raises --max-size. Before the fix the CLI pre-read passed at --max-size
-// but the converter's own guard (a literal 0 = the 50 MiB default) still rejected
-// it, so the "use --max-size to increase" advice was a dead end (#334).
-func TestConvertCommand_MaxSizeLiftsConverterGuard(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds a >50 MiB fixture; skipped under -short")
-	}
-	// runConvert sets a process-wide configured default; reset it so the raised
-	// ceiling never leaks into a later test that relies on the 50 MiB default.
+// A converter's own input guard must honor the configured process default (set by
+// the CLI from --max-size), for both JSON and XML converters — the #334 fix. Before
+// it, the guard passed a literal 0 = the built-in default no matter the flag.
+// Exercised directly at the converter (no CLI, no giant fixture): lower the
+// configured default and hand each converter a tiny over-limit input.
+func TestConverterGuardHonorsConfiguredDefault(t *testing.T) {
 	t.Cleanup(func() { hdfutil.SetDefaultMaxInputSize(0) })
+	hdfutil.SetDefaultMaxInputSize(1024)
 
-	// Minimal valid grype doc padded past 50 MiB with an ignored descriptor field;
-	// the size guard runs before parsing, so the padding need only be valid JSON.
-	doc := map[string]any{
-		"descriptor": map[string]any{"name": "grype", "padding": strings.Repeat("x", 51*1024*1024)},
-		"source":     map[string]any{"target": map[string]any{"userInput": "test"}},
-		"matches":    []any{},
-	}
-	raw, err := json.Marshal(doc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(raw) <= hdfutil.DefaultMaxInputSize {
-		t.Fatalf("fixture must exceed the %d-byte default; got %d", hdfutil.DefaultMaxInputSize, len(raw))
-	}
-	path := filepath.Join(t.TempDir(), "grype-big.json")
-	if err := os.WriteFile(path, raw, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	out := filepath.Join(t.TempDir(), "out.json")
-
-	// --max-size 250 admits it at BOTH the CLI pre-read and the converter guard.
-	_, stderr, err := executeCommand("convert", "--from", "grype", path, "--max-size", "250", "-o", out)
-	if err != nil {
-		t.Fatalf("convert with --max-size 250 should succeed on a >50 MiB input, got: %v (stderr: %s)", err, stderr)
-	}
-	if _, statErr := os.Stat(out); statErr != nil {
-		t.Fatalf("expected output written: %v", statErr)
+	for _, from := range []string{"grype" /* JSON */, "nessus" /* XML */} {
+		t.Run(from, func(t *testing.T) {
+			conv, err := GetConverter(from, "hdf")
+			if err != nil {
+				t.Fatalf("GetConverter(%s): %v", from, err)
+			}
+			// 2 KiB > the 1 KiB configured default; the size guard runs before any
+			// parse, so the bytes need not be valid input.
+			if _, err := conv.Convert(make([]byte, 2048)); err == nil ||
+				!strings.Contains(err.Error(), "exceeds maximum") {
+				t.Fatalf("%s converter should reject input over the configured default; got %v", from, err)
+			}
+		})
 	}
 }
 
-// The XML input guard must honor --max-size too: nessus (and the other XML
-// converters) previously stayed capped at 50 MiB regardless of the flag, because
-// the XML guard did not consult the configured default (#334).
-func TestConvertCommand_MaxSizeLiftsXMLConverterGuard(t *testing.T) {
-	if testing.Short() {
-		t.Skip("builds a >50 MiB fixture; skipped under -short")
-	}
+// The CLI threads --max-size into the convert read path: a file over a small
+// --max-size is rejected, so the flag actually governs convert input.
+func TestConvertCommand_MaxSizeCapsRead(t *testing.T) {
 	t.Cleanup(func() { hdfutil.SetDefaultMaxInputSize(0) })
-
-	orig, err := os.ReadFile(converterFixturePath(t, "nessus-to-hdf", "input/sample.nessus"))
-	if err != nil {
+	path := filepath.Join(t.TempDir(), "big.json")
+	if err := os.WriteFile(path, make([]byte, 2*1024*1024), 0o600); err != nil { // 2 MB
 		t.Fatal(err)
 	}
-	// Pad past 50 MiB with a prolog XML comment: valid, parser-ignored, and free of
-	// entity declarations, so only the size guard is exercised. The guard runs on
-	// the raw bytes before parsing.
-	pad := []byte("?>\n<!--" + strings.Repeat("x", 51*1024*1024) + "-->")
-	raw := bytes.Replace(orig, []byte("?>"), pad, 1)
-	if len(raw) <= hdfutil.DefaultMaxInputSize {
-		t.Fatalf("padded fixture must exceed the %d-byte default; got %d", hdfutil.DefaultMaxInputSize, len(raw))
+	out := filepath.Join(t.TempDir(), "o.json")
+	_, stderr, err := executeCommand("convert", "--from", "grype", path, "--max-size", "1", "-o", out)
+	if err == nil || !strings.Contains(err.Error(), "too large") {
+		t.Fatalf("convert should reject a 2 MB input under --max-size 1; err=%v stderr=%s", err, stderr)
 	}
-	path := filepath.Join(t.TempDir(), "nessus-big.nessus")
-	if err := os.WriteFile(path, raw, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	out := filepath.Join(t.TempDir(), "out.json")
+}
 
-	_, stderr, err := executeCommand("convert", "--from", "nessus", path, "--max-size", "250", "-o", out)
-	if err != nil {
-		t.Fatalf("nessus convert with --max-size 250 should succeed on a >50 MiB input, got: %v (stderr: %s)", err, stderr)
+// outputSizeWarning fires only when output exceeds the default read limit, and
+// names the --max-size a downstream read will need. Pure function → no giant
+// conversion needed to exercise it.
+func TestOutputSizeWarning(t *testing.T) {
+	if got := outputSizeWarning(hdfutil.DefaultMaxInputSize); got != "" {
+		t.Errorf("no warning expected at/below the default; got %q", got)
 	}
-	if _, statErr := os.Stat(out); statErr != nil {
-		t.Fatalf("expected output written: %v", statErr)
+	if got := outputSizeWarning(1024); got != "" {
+		t.Errorf("no warning for small output; got %q", got)
+	}
+	over := hdfutil.DefaultMaxInputSize + 5*1024*1024
+	got := outputSizeWarning(over)
+	if got == "" {
+		t.Fatal("expected a warning for output over the default read limit")
+	}
+	for _, want := range []string{"default read limit", "downstream", "--max-size"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("warning %q missing %q", got, want)
+		}
 	}
 }

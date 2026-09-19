@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	// DefaultMaxSizeMB is the default maximum file size in megabytes.
-	DefaultMaxSizeMB = 50
+	// DefaultMaxSizeMB is the default maximum file size in megabytes (matches
+	// hdfutil.DefaultMaxInputSize; raise per-invocation with --max-size).
+	DefaultMaxSizeMB = 256
 )
 
 // utf8BOM is the UTF-8 byte-order-mark sequence that some Windows tools prepend.
@@ -25,7 +26,7 @@ const (
 var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
 
 // maxInputSizeBytes resolves the --max-size flag (megabytes) to a byte count,
-// falling back to the 50 MB default. Single source of truth for both the CLI's
+// falling back to the 256 MB default. Single source of truth for both the CLI's
 // pre-read file guard (getMaxFileSize) and the converter input-size ceiling
 // threaded via hdfutil.SetDefaultMaxInputSize, so the two never diverge.
 func maxInputSizeBytes() int {
@@ -37,7 +38,7 @@ func maxInputSizeBytes() int {
 }
 
 // getMaxFileSize returns the maximum allowed file size in bytes.
-// Uses the --max-size flag if set, otherwise defaults to 50MB.
+// Uses the --max-size flag if set, otherwise defaults to 256MB.
 func getMaxFileSize() int64 {
 	return int64(maxInputSizeBytes())
 }

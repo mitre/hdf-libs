@@ -78,7 +78,7 @@ func TestSanitizeOutput(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestReadFromFile_ExceedsSizeLimit(t *testing.T) {
-	// Set maxSizeMB to 0 so getMaxFileSize returns default 50MB;
+	// Set maxSizeMB to 0 so getMaxFileSize returns the default (256MB);
 	// instead set it to 1 byte by using a tiny custom value
 	oldMax := maxSizeMB
 	maxSizeMB = 1 // 1 MB

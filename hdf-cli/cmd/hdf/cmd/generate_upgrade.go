@@ -854,7 +854,7 @@ func pruneStaleControlFiles(controlsDir string, keepIDs map[string]bool) (int, e
 			continue
 		}
 		path := filepath.Join(controlsDir, entry.Name())
-		content, err := os.ReadFile(path) //nolint:gosec // path is a .rb file in user-supplied profile dir
+		content, err := readInputFile(path)
 		if err != nil {
 			return pruned, fmt.Errorf("reading %s: %w", path, err)
 		}
@@ -903,7 +903,7 @@ func copyDir(src, dst string) error {
 		}
 		// #nosec G122 -- copyDir walks a profile directory the user supplied
 		// and owns; there is no TOCTOU threat model for this local CLI copy.
-		data, err := os.ReadFile(path)
+		data, err := readInputFile(path)
 		if err != nil {
 			return err
 		}

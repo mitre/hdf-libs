@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+
 	openvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/openvex-to-hdf/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -233,8 +235,8 @@ func TestConvertHDFToOpenVEX_RejectsInvalidJSON(t *testing.T) {
 
 func TestConvertHDFToOpenVEX_RejectsOversizedInput(t *testing.T) {
 	t.Parallel()
-	_, err := ConvertHDFToOpenVEX(make([]byte, 51*1024*1024), testVersion)
-	require.Error(t, err)
+	_, err := ConvertHDFToOpenVEX(make([]byte, shared.DefaultMaxJSONSize+1), testVersion)
+	require.ErrorContains(t, err, "exceeds maximum")
 }
 
 func TestProductsFor_PrefersComponentRef(t *testing.T) {

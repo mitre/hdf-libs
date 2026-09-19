@@ -556,9 +556,9 @@ func BuildAffectedPackage(opts AffectedPackageOptions) *hdf.AffectedPackage {
 	return pkg
 }
 
-// DefaultMaxJSONSize is the maximum allowed JSON input size (50 MB) — the one
+// DefaultMaxJSONSize is the maximum allowed JSON input size (256 MB) — the one
 // limit hdfutil defines, so converters used as libraries outside the CLI
-// (which has its own 50 MB input limit) share it with the engine loader.
+// (which has its own 256 MB input limit) share it with the engine loader.
 const DefaultMaxJSONSize = hdfutil.DefaultMaxInputSize
 
 // ValidateJSONSize is hdfutil.ValidateInputSize with the converter name
@@ -665,15 +665,16 @@ func rejectWronglyTypedFields(input []byte, converterName string) error {
 	return fmt.Errorf("%s: input is not valid HDF: %s", converterName, strings.Join(msgs, "; "))
 }
 
-// DefaultMaxXMLSize is the maximum allowed XML input size (50 MB).
-// This provides defense against entity expansion DoS when converters are used
-// as libraries outside the CLI (which has its own 50 MB input limit).
-const DefaultMaxXMLSize = 50 * 1024 * 1024
+// DefaultMaxXMLSize is the maximum allowed XML input size, tracking the shared
+// input default (256 MB) so JSON and XML converters share one ceiling. Defends
+// against entity-expansion DoS when converters are used as libraries outside the
+// CLI (which threads its own --max-size in).
+const DefaultMaxXMLSize = hdfutil.DefaultMaxInputSize
 
 // ValidateXMLSize checks that XML input doesn't exceed the maximum allowed size.
 // maxSize <= 0 resolves through hdfutil.ResolveMaxInputSize — the configured
 // process default (set by the CLI from --max-size) when present, else the built-in
-// 50 MB (== DefaultMaxXMLSize) — so a raised --max-size reaches XML converters too,
+// 256 MB (== DefaultMaxXMLSize) — so a raised --max-size reaches XML converters too,
 // not just the JSON ones. An explicit positive maxSize still wins.
 func ValidateXMLSize(input []byte, maxSize int) error {
 	limit := hdfutil.ResolveMaxInputSize(maxSize)
@@ -685,7 +686,7 @@ func ValidateXMLSize(input []byte, maxSize int) error {
 
 // ValidateXMLInput performs safety checks on XML input:
 //  1. Size limit check (see ValidateXMLSize; maxSize <= 0 uses the configured
-//     process default or the built-in 50 MB)
+//     process default or the built-in 256 MB)
 //  2. Entity declaration detection (billion-laughs prevention) — always run,
 //     independent of the size limit
 //

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { setDefaultMaxInputSize } from '@mitre/hdf-utilities';
 import {
   CVSSSeverity,
   Justification,
@@ -163,7 +164,12 @@ describe('convertSpdxVexToHdf — edge cases', () => {
   });
 
   it('rejects oversized input', async () => {
-    await expect(convertSpdxVexToHdf('x'.repeat(51 * 1024 * 1024), TEST_VERSION)).rejects.toThrow();
+    setDefaultMaxInputSize(8);
+    try {
+      await expect(convertSpdxVexToHdf('x'.repeat(9), TEST_VERSION)).rejects.toThrow();
+    } finally {
+      setDefaultMaxInputSize(0);
+    }
   });
 });
 

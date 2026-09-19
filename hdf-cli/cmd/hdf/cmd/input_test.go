@@ -114,7 +114,7 @@ func TestReadFromFile_TooLarge(t *testing.T) {
 	// We'll test this by temporarily setting a small limit
 	// Since MaxHDFFileSize is a const, we can't easily test this
 	// without creating a huge file, so we'll skip this test
-	t.Skip("skipping large file test - would require creating 50MB+ file")
+	t.Skip("skipping large file test - would require creating 256MB+ file")
 }
 
 func TestReadInputFile_StdinPath(t *testing.T) {
@@ -162,8 +162,8 @@ func TestParseHDFBaseline_InvalidJSON(t *testing.T) {
 }
 
 func TestGetMaxFileSize(t *testing.T) {
-	// Verify default max size is 50MB
-	expected := int64(50 * 1024 * 1024)
+	// Verify default max size matches DefaultMaxSizeMB (256MB).
+	expected := int64(DefaultMaxSizeMB) * 1024 * 1024
 	actual := getMaxFileSize()
 	if actual != expected {
 		t.Errorf("getMaxFileSize() = %d, want %d", actual, expected)

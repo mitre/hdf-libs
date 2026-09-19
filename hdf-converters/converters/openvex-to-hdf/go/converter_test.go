@@ -103,8 +103,8 @@ func TestConvertOpenVEXToHDF_EmptyActionableStatementsRejected(t *testing.T) {
 
 func TestConvertOpenVEXToHDF_RejectsOversizedInput(t *testing.T) {
 	t.Parallel()
-	_, err := ConvertOpenVEXToHDF(make([]byte, 51*1024*1024), testVersion)
-	require.Error(t, err)
+	_, err := ConvertOpenVEXToHDF(make([]byte, shared.DefaultMaxJSONSize+1), testVersion)
+	require.ErrorContains(t, err, "exceeds maximum")
 	assert.Contains(t, err.Error(), "openvex-to-hdf")
 }
 

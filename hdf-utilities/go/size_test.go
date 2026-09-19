@@ -36,37 +36,36 @@ func TestValidateInputSize(t *testing.T) {
 }
 
 func TestValidateInputSize_DefaultLimitEnforced(t *testing.T) {
-	// One byte over the default must be rejected when maxSize falls back.
-	over := make([]byte, DefaultMaxInputSize+1)
-	if err := ValidateInputSize(over, 0); err == nil {
-		t.Fatal("expected error for input exceeding the default limit")
+	// Exercise the maxSize<=0 fallback against a lowered configured default, so
+	// the test does not allocate a full default-sized (256 MB) buffer.
+	t.Cleanup(func() { SetDefaultMaxInputSize(0) })
+	SetDefaultMaxInputSize(8)
+	if err := ValidateInputSize(make([]byte, 9), 0); err == nil {
+		t.Fatal("expected error for input exceeding the (configured) default limit")
 	}
 }
 
 func TestConfiguredDefaultMaxInputSize(t *testing.T) {
 	t.Cleanup(func() { SetDefaultMaxInputSize(0) }) // never leak into other tests
-	over := make([]byte, DefaultMaxInputSize+1)
+	small := make([]byte, 9)
 
-	// Baseline: a 0-caller ("use the default") is rejected at the built-in default.
-	if err := ValidateInputSize(over, 0); err == nil {
-		t.Fatal("expected rejection at the built-in default before configuring an override")
+	// With no override, a 9-byte input is fine at the (256 MB) built-in default.
+	if err := ValidateInputSize(small, 0); err != nil {
+		t.Fatalf("unexpected error at the built-in default: %v", err)
 	}
-
-	// Raise the process default; the same 0-caller now passes without touching it.
-	SetDefaultMaxInputSize(DefaultMaxInputSize + 10)
-	if err := ValidateInputSize(over, 0); err != nil {
-		t.Fatalf("expected the raised configured default to admit the input: %v", err)
+	// Lower the configured default below the input: the same 0-caller now rejects.
+	SetDefaultMaxInputSize(8)
+	if err := ValidateInputSize(small, 0); err == nil {
+		t.Fatal("expected rejection under the lowered configured default")
 	}
-
-	// An explicit smaller limit still wins over the configured default.
-	if err := ValidateInputSize(over, 5); err == nil {
-		t.Fatal("an explicit maxSize must cap below the configured default")
+	// An explicit larger limit still wins over the configured default.
+	if err := ValidateInputSize(small, 100); err != nil {
+		t.Fatalf("explicit limit should win over the configured default: %v", err)
 	}
-
-	// A non-positive value restores the built-in default.
+	// Reset restores the built-in default (the 9-byte input is fine again).
 	SetDefaultMaxInputSize(0)
-	if err := ValidateInputSize(over, 0); err == nil {
-		t.Fatal("resetting the configured default must restore the built-in limit")
+	if err := ValidateInputSize(small, 0); err != nil {
+		t.Fatalf("reset should restore the built-in default: %v", err)
 	}
 }
 

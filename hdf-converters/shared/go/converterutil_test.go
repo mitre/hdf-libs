@@ -96,8 +96,8 @@ func TestValidateXMLSize_Normal(t *testing.T) {
 }
 
 func TestValidateXMLSize_TooLarge(t *testing.T) {
-	big := make([]byte, 51*1024*1024)
-	err := ValidateXMLSize(big, 0)
+	// Explicit small limit → no need to allocate a default-sized buffer.
+	err := ValidateXMLSize(make([]byte, 16), 8)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeds maximum")
 }
@@ -119,8 +119,8 @@ func TestValidateXMLInput_WithEntities(t *testing.T) {
 }
 
 func TestValidateXMLInput_TooLarge(t *testing.T) {
-	big := make([]byte, 51*1024*1024)
-	err := ValidateXMLInput(big, 0)
+	// Explicit small limit → no need to allocate a default-sized buffer.
+	err := ValidateXMLInput(make([]byte, 16), 8)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeds maximum")
 }

@@ -483,7 +483,8 @@ func TestSystemCreate_OversizedInputRejected(t *testing.T) {
 	cmd.SetArgs([]string{"system", "create", f, "--max-size", "1"})
 	err := cmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+	// Guarded read rejects at read time ("file too large") before the doc is slurped.
+	assert.Contains(t, err.Error(), "too large")
 }
 
 // ---- AI-model BOM input tests ----

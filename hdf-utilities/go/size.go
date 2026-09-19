@@ -2,10 +2,13 @@ package hdfutil
 
 import "fmt"
 
-// DefaultMaxInputSize is the default maximum input size (50 MB) for loading HDF
+// DefaultMaxInputSize is the default maximum input size (256 MB) for loading HDF
 // documents — matching the converters' DefaultMaxJSONSize and the CLI's file
-// limit. Callers pass an explicit limit; <= 0 falls back to this default.
-const DefaultMaxInputSize = 50 * 1024 * 1024
+// limit. Callers pass an explicit limit; <= 0 falls back to this default. Sized
+// so large scanner-to-HDF conversions (output runs ~2x its input) stay readable
+// by downstream commands at the default; the value is a memory-safety ceiling,
+// not a correctness limit — raise it per-invocation with the CLI's --max-size.
+const DefaultMaxInputSize = 256 * 1024 * 1024
 
 // configuredMaxInputSize, when > 0, overrides DefaultMaxInputSize for callers
 // that pass maxSize <= 0 ("use the default"). The host sets it once from its own

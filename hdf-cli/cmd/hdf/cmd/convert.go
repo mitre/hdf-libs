@@ -319,9 +319,29 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		if err != nil {
 			return err
 		}
+		if w := outputSizeWarning(len(output)); w != "" {
+			fmt.Fprintln(os.Stderr, "Warning: "+w)
+		}
 		return writeValidatedHDFOutput(cmd, output, outputPath)
 	}
 	return writeConvertOutput(output, outputPath)
+}
+
+// outputSizeWarning returns a warning (or "") when converted HDF output is larger
+// than the default input read limit, so the user knows downstream commands (hdf
+// validate, label, amend) will need --max-size to read it at the default — the
+// convert-emits-what-validate-rejects trap from issue #334. It reports downstream
+// need regardless of this invocation's --max-size, since the next command starts
+// from the default again.
+func outputSizeWarning(outputLen int) string {
+	if outputLen <= hdfutil.DefaultMaxInputSize {
+		return ""
+	}
+	const mib = 1024 * 1024
+	needMB := (outputLen + mib - 1) / mib
+	return fmt.Sprintf(
+		"output is %d bytes, larger than the %d MB default read limit; downstream commands will need --max-size %d to read it.",
+		outputLen, hdfutil.DefaultMaxInputSize/mib, needMB)
 }
 
 // applyNistOptions reads the --nist-rev and --nist-strict flags and sets the

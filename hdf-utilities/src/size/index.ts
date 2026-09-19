@@ -2,8 +2,8 @@
 // at behavioural parity. The engine loader runs it as its FIRST operation,
 // before any parse, to defend against memory exhaustion on untrusted input.
 
-/** Default maximum input size (50 MB), matching the Go DefaultMaxInputSize. */
-export const DEFAULT_MAX_INPUT_SIZE = 50 * 1024 * 1024;
+/** Default maximum input size (256 MB), matching the Go DefaultMaxInputSize. */
+export const DEFAULT_MAX_INPUT_SIZE = 256 * 1024 * 1024;
 
 // configuredMaxInputSize, when > 0, overrides DEFAULT_MAX_INPUT_SIZE for callers
 // that pass maxSize <= 0 ("use the default"). A host sets it once from its own
