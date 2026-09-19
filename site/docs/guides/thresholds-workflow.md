@@ -134,6 +134,7 @@ hdf generate threshold results.json --include-controls -o threshold.yaml
 ```
 
 ```yaml
+# abridged — the file also carries compliance, the total bounds, and skipped
 passed:
     medium:
         min: 1
