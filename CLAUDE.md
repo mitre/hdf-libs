@@ -155,13 +155,17 @@ Quick reference: `hdf convert <file> -o <output>` (auto-detects format) or `hdf 
 Never fabricate fixture data. A fixture counts as real in exactly two cases:
 
 1. **We generated it by running another published tool** — an actual run, a public CI pipeline, or one of this repo's own converters fed an input that itself qualifies.
-2. **We took it from someone else's published example or sample set** — heimdall2 (`~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/`), SAF CLI (`~/repos/saf/test/sample_data/`), or a format's upstream spec/example repository.
+2. **We took it from someone else's published example or sample set** — [heimdall2](https://github.com/mitre/heimdall2/tree/master/libs/hdf-converters/sample_jsons), [SAF CLI](https://github.com/mitre/saf/tree/main/test/sample_data), or a format's upstream spec/example repository.
 
 Anything else is fabrication, including hand-assembling a document out of real strings: the assembly itself can be wrong even when every string inside it is genuine. **Schema validation is not a third source.** Validating against the format's official schema (JSON Schema, XSD, etc.) is a check on a fixture that already qualifies under (1) or (2), and the proof belongs in the fixture's `provenance.txt` or the commit message — it never establishes that a document we built ourselves is real.
 
 If no real data source exists, **stop and ask** — do not invent data. A converter tested against fabricated fixtures is untrusted: the fixture determines whether the converter works on real data; if the fixture is fake, the test proves nothing. Where no real source exists for some case, record the coverage gap instead of filling it.
 
 **Trimming a real document is allowed** — by dropping whole elements only (a requirement, a POA&M item, a product branch). Never edit a string inside a kept element, and never add, remove or convert whitespace or line endings to make a test pass.
+
+**No fixture carries a contributor's machine or identity** — a capture path (`/Users/<name>/…`, `~/…`), a hostname, a username, a token. Published tool output routinely contains them, so check before committing one.
+
+**Redaction is therefore the one exception to "never edit a string".** Anything in the line above may be replaced. Redact the smallest thing that works — a path prefix, not the whole value — and record in the fixture's `provenance.txt` which field was redacted and what shape it had before. Redaction is never a licence to reshape prose: leave line endings, blank lines and edge whitespace exactly as captured.
 
 ### Realistic-prose fixtures
 
