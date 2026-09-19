@@ -1,6 +1,7 @@
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { amendments as sharedAmendments } from '@mitre/hdf-fixtures';
 import { loadSchemaValidator, assertSchemaValid, schemaErrors } from '../../../shared/typescript/schema-validation.js';
 import { amendmentsCorpus, runSchemaCorpus, jsonDocumentValidator } from '../../../shared/typescript/schema-corpus.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
@@ -21,44 +22,14 @@ const validateHdfAmendments = loadSchemaValidator(
   join(__dirname, '..', '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-amendments.schema.json'),
 );
 
-const amendments = JSON.stringify({
-  name: 'test-poam',
-  overrides: [
-    {
-      type: 'poam',
-      requirementId: 'AC-1',
-      reason: 'Pending remediation',
-      status: 'failed',
-      appliedBy: { type: 'simple', identifier: 'admin@example.com' },
-      appliedAt: '2026-01-15T00:00:00Z',
-      expiresAt: '2027-01-15T00:00:00Z',
-    },
-  ],
-});
-
-const multiOverride = JSON.stringify({
-  name: 'multi',
-  systemRef: 'https://example.com/ssp.json',
-  overrides: [
-    {
-      type: 'poam',
-      requirementId: 'AC-1',
-      reason: 'r1',
-      status: 'failed',
-      appliedBy: { type: 'simple', identifier: 'a@example.com' },
-      appliedAt: '2026-01-15T00:00:00Z',
-      expiresAt: '2027-01-15T00:00:00Z',
-    },
-    {
-      type: 'poam',
-      requirementId: 'AC-2',
-      reason: 'r2',
-      status: 'failed',
-      appliedBy: { type: 'simple', identifier: 'b@example.com' },
-      appliedAt: '2026-01-15T00:00:00Z',
-      expiresAt: '2027-01-15T00:00:00Z',
-    },
-  ],
+const poamOverride = (requirementId: string, reason: string, identifier: string) => ({
+  type: 'poam',
+  requirementId,
+  reason,
+  status: 'failed',
+  appliedBy: { type: 'simple', identifier },
+  appliedAt: '2026-01-15T00:00:00Z',
+  expiresAt: '2099-12-31T00:00:00Z',
 });
 
 const MINIMAL_AMENDMENTS = readFileSync(
@@ -81,15 +52,30 @@ interface PoamOut {
   };
 }
 
-describe('hdf-to-oscal-poam output validates against every vendored NIST OSCAL POA&M schema', () => {
-  const cases: Array<[string, string]> = [
-    ['minimal poam override', amendments],
-    ['with system ref and multiple overrides', multiOverride],
-    ['empty requirementId', minimalAmendmentsWith({ requirementId: '' })],
-  ];
+// Mirrors the Go peer's case table case for case.
+const SCHEMA_CASES: Array<[string, string]> = [
+  [
+    'minimal poam override',
+    JSON.stringify({
+      name: 'test-poam',
+      overrides: [poamOverride('AC-1', 'Pending remediation', 'admin@example.com')],
+    }),
+  ],
+  [
+    'with system ref and multiple overrides',
+    JSON.stringify({
+      name: 'multi',
+      systemRef: 'https://example.com/ssp.json',
+      overrides: [poamOverride('AC-1', 'r1', 'a@example.com'), poamOverride('AC-2', 'r2', 'b@example.com')],
+    }),
+  ],
+  // The golden input is gated too, or the golden parity test freezes output no schema has judged.
+  ['uc-01-fixed-amendments.json', sharedAmendments.uc01Fixed.read()],
+];
 
+describe('hdf-to-oscal-poam output validates against every vendored NIST OSCAL POA&M schema', () => {
   describe.each(POAM_SCHEMAS)('%s', (file, v) => {
-    it.each(cases)('%s', async (label, input) => {
+    it.each(SCHEMA_CASES)('%s', async (label, input) => {
       const out = JSON.parse(await convertHdfToOscalPoam(input)) as unknown;
       assertSchemaValid(v, `${file}: ${label}`, out);
     });

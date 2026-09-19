@@ -3,6 +3,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
+import { amendments as sharedAmendments } from '@mitre/hdf-fixtures';
 import {
   loadSchemaValidator,
   loadSchemaValidatorWithResources,
@@ -39,9 +40,12 @@ const sparseOverride = () =>
   testhdf.override('waiver', CVE, { status: 'failed', reason: 'accepted' });
 
 describe('hdf-to-csaf-vex output validates against the OASIS CSAF v2.0 schema', () => {
-  it('sec-vex-amendments.json', () => {
-    const input = readFileSync(join(__dirname, '..', 'fixtures', 'input', 'sec-vex-amendments.json'), 'utf-8');
-    assertSchemaValid(validate, 'sec-vex-amendments.json', JSON.parse(convertHdfToCsafVex(input, TEST_VERSION)));
+  // Exactly the golden parity inputs, so no frozen golden escapes the schema.
+  it.each([
+    ['sec-vex-amendments.json', () => readFileSync(join(__dirname, '..', 'fixtures', 'input', 'sec-vex-amendments.json'), 'utf-8')],
+    ['uc-01-fixed-amendments.json', () => sharedAmendments.uc01Fixed.read()],
+  ])('%s', (name, load) => {
+    assertSchemaValid(validate, name, JSON.parse(convertHdfToCsafVex(load(), TEST_VERSION)));
   });
 
   const sparse: Array<[string, () => unknown]> = [

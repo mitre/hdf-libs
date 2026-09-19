@@ -13,6 +13,7 @@ import (
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,7 +66,7 @@ func minimalAmendments(t *testing.T, override map[string]any) []byte {
 // vendored NIST OSCAL POA&M schema.
 func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
 	appliedAt := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
-	expiresAt := time.Date(2027, 1, 15, 0, 0, 0, 0, time.UTC)
+	expiresAt := time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)
 	sysRef := "https://example.com/ssp.json"
 
 	cases := []struct {
@@ -111,7 +112,7 @@ func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
 	inputs := make([]struct {
 		label string
 		input []byte
-	}, 0, len(cases)+1)
+	}, 0, len(cases)+2)
 	for _, tc := range cases {
 		input, err := json.Marshal(tc.amendments)
 		require.NoError(t, err)
@@ -120,10 +121,11 @@ func TestConvertHDFToOSCALPOAM_SchemaValid(t *testing.T) {
 			input []byte
 		}{tc.label, input})
 	}
+	// The golden input is gated too, or TestGoldenParity freezes output no schema has judged.
 	inputs = append(inputs, struct {
 		label string
 		input []byte
-	}{"empty requirementId", minimalAmendments(t, map[string]any{"requirementId": ""})})
+	}{"uc-01-fixed-amendments.json", fixtures.Amendments.UC01Fixed})
 
 	for _, s := range poamSchemas(t) {
 		for _, tc := range inputs {
@@ -255,7 +257,7 @@ func TestConvertHDFToOSCALPOAM_RejectsUnconvertibleInput(t *testing.T) {
 // statement — which the schema lists as required alongside title and status.
 func TestConvertHDFToOSCALPOAM_RiskStatementNeverOmitted(t *testing.T) {
 	appliedAt := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
-	expiresAt := time.Date(2027, 1, 15, 0, 0, 0, 0, time.UTC)
+	expiresAt := time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)
 
 	input, err := json.Marshal(hdf.HDFAmendments{
 		Name: "t",
