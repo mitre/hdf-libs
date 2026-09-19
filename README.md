@@ -125,7 +125,7 @@ The following tools must be installed before running `pnpm lint` or `pnpm test`:
 
 ```bash
 brew install node go gitleaks
-corepack enable && corepack prepare pnpm@9.14.2 --activate
+corepack enable && corepack prepare pnpm@11.10.0 --activate
 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 go install github.com/securego/gosec/v2/cmd/gosec@latest
 go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -137,7 +137,7 @@ go install golang.org/x/vuln/cmd/govulncheck@latest
 # Node.js 22.x
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
-corepack enable && corepack prepare pnpm@9.14.2 --activate
+corepack enable && corepack prepare pnpm@11.10.0 --activate
 
 # Go 1.26 — check https://go.dev/dl/ for the latest 1.26.x tarball
 wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
@@ -161,7 +161,7 @@ winget install OpenJS.NodeJS.LTS
 winget install GoLang.Go
 
 # pnpm
-corepack enable && corepack prepare pnpm@9.14.2 --activate
+corepack enable && corepack prepare pnpm@11.10.0 --activate
 
 # Go tools (restart your terminal after installing Go)
 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest

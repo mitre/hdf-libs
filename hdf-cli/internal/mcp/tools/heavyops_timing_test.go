@@ -35,6 +35,56 @@ func loadBig(t *testing.T, path string) []byte {
 // recorded durations are the artifact (transcribed into ADR-0007 §16 + the card).
 // It fails only if an op errors. Gated behind HDF_BENCH so it never slows the
 // normal suite; run with: HDF_BENCH=1 go test -run TestBenchHeavyOps -v -timeout 300s
+// fixtureLabel describes a fixture by what it actually contains. The harness is
+// the tripwire for "has a >10s workload appeared", so it must never report a
+// size the file stopped having — the grype fixture shrank from 14 MB to 200 KB
+// in 2026-09 and the hardcoded labels kept claiming the old figure.
+func fixtureLabel(raw []byte) string {
+	var doc hdf.HDFResults
+	if json.Unmarshal(raw, &doc) != nil {
+		return byteLabel(len(raw))
+	}
+	return byteLabel(len(raw)) + "/" + strconv.Itoa(countReqs(doc)) + "req"
+}
+
+func byteLabel(n int) string {
+	switch {
+	case n >= 1<<20:
+		return strconv.FormatFloat(float64(n)/(1<<20), 'f', 1, 64) + "MB"
+	default:
+		return strconv.Itoa(n/1024) + "KB"
+	}
+}
+
+func countReqs(doc hdf.HDFResults) int {
+	n := 0
+	for i := range doc.Baselines {
+		n += len(doc.Baselines[i].Requirements)
+	}
+	return n
+}
+
+// largestOf returns the biggest of the given fixtures, so the fan-out measures
+// the heaviest hash available rather than whichever file used to be heaviest.
+func largestOf(paths ...string) ([]byte, error) {
+	var best []byte
+	var err error
+	for _, p := range paths {
+		b, e := os.ReadFile(p) // #nosec G304 -- repo-relative test fixture
+		if e != nil {
+			err = e
+			continue
+		}
+		if len(b) > len(best) {
+			best = b
+		}
+	}
+	if best == nil {
+		return nil, err
+	}
+	return best, nil
+}
+
 func TestBenchHeavyOps(t *testing.T) {
 	if os.Getenv("HDF_BENCH") == "" {
 		t.Skip("set HDF_BENCH=1 to run the heavy-op timing harness")
@@ -62,8 +112,11 @@ func TestBenchHeavyOps(t *testing.T) {
 		t.Logf("%-46s %9.3fs%s", name, d.Seconds(), flag)
 	}
 
-	for _, fx := range []struct{ label, path string }{{"14MB/1621req", grypeHDF}, {"3MB/534req", legacyHDF}} {
-		raw := loadBig(t, fx.path)
+	// Labels are computed, never hardcoded: fixtures get trimmed, and a harness
+	// that prints a size the file no longer has turns a tripwire into a lie.
+	for _, path := range []string{grypeHDF, legacyHDF} {
+		raw := loadBig(t, path)
+		fx := struct{ label, path string }{fixtureLabel(raw), path}
 		var doc hdf.HDFResults
 		if err := json.Unmarshal(raw, &doc); err != nil {
 			t.Logf("skip %s (unmarshal): %v", fx.path, err)
@@ -105,7 +158,7 @@ func TestBenchHeavyOps(t *testing.T) {
 	if _, err := conv.Convert(graw); err != nil {
 		t.Fatalf("convert grype: %v", err)
 	}
-	record("convert grype (7.9MB source)", st)
+	record("convert grype ("+byteLabel(len(graw))+" source)", st)
 
 	// --- The two realistic >10s candidates (huzc.1 re-scope). ---
 
@@ -122,14 +175,14 @@ func TestBenchHeavyOps(t *testing.T) {
 				if _, err := diff.DiffHdf(ctx, doc, systems, diff.Options{ComparisonMode: diff.ModeFleet}); err != nil {
 					t.Fatalf("fleet diff n=%d: %v", n, err)
 				}
-				record("fleet diff ("+strconv.Itoa(n)+" systems x 534 req)", st)
+				record("fleet diff ("+strconv.Itoa(n)+" systems x "+strconv.Itoa(countReqs(doc))+" req)", st)
 			}
 		}
 	}
 
 	// Evidence-package checksum fan-out: VerifyChecksums hashes each referenced
 	// file. Cost is dominated by hashing file bytes x referenced-file count.
-	if blob, err := os.ReadFile(grypeHDF); err == nil {
+	if blob, err := largestOf(grypeHDF, legacyHDF); err == nil {
 		sum := sha256.Sum256(blob)
 		hexsum := hex.EncodeToString(sum[:])
 		fetch := func(string) ([]byte, error) { return blob, nil }
@@ -140,7 +193,7 @@ func TestBenchHeavyOps(t *testing.T) {
 			}
 			st := time.Now()
 			_ = hdfengine.VerifyChecksums(contents, fetch)
-			record("checksum fan-out ("+strconv.Itoa(n)+" files x 14.2MB)", st)
+			record("checksum fan-out ("+strconv.Itoa(n)+" files x "+byteLabel(len(blob))+")", st)
 		}
 	}
 

@@ -499,7 +499,7 @@ A reference to external native-format evidence (a log or telemetry corpus, or an
 
 ## 8. Requirement Change Event *(v3.5.0)*
 
-A single continuous-monitoring event describing how one requirement's posture changed between two same-target results scans. Producers (`hdf events derive`) emit an NDJSON stream of these events; a batch replays onto a seed results document to reassemble a reconciled state (`hdf events apply`) or folds into a `systemDrift` comparison (`hdf events fold`). The unit is the *requirement*, keyed by `(systemRef, componentId, requirementId)` with a per-key integer `sequence` as the sole ordering authority. Design: ADR-0005; the [SIEM export guide](../guides/siem-export.md) documents the change-event projections to OCSF and SARIF.
+A single continuous-monitoring event describing how one requirement's posture changed between two same-target results scans. Producers (`hdf events derive`) emit an NDJSON stream of these events; a batch replays onto a seed results document to reassemble a reconciled state (`hdf events apply`) or folds into a `systemDrift` comparison (`hdf events fold`). The unit is the *requirement*, keyed by `(systemRef, componentId, requirementId)` with a per-key integer `sequence` as the sole ordering authority. The [SIEM export guide](../guides/siem-export.md) documents the change-event projections to OCSF and SARIF.
 
 **Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0`
 

@@ -8,7 +8,7 @@ hdf-libs exports an HDF Results document to three SIEM-native event formats, one
 | Splunk | HEC envelope, normalized to the Common Information Model (CIM) | `hdf convert --from hdf --to splunk` |
 | OCSF | Open Cybersecurity Schema Framework 1.8.0 Findings | `hdf convert --from hdf --to ocsf` |
 
-All three share a mapping core and emit byte-identical output from the TypeScript and Go implementations. The design decisions live in ADR-0002 (ECS + OCSF) and ADR-0004 (Splunk CIM).
+All three share a mapping core and emit byte-identical output from the TypeScript and Go implementations.
 
 ## The raw-primary status model
 
@@ -127,4 +127,3 @@ genuinely reports failures alone, and say so where the projection is defined.
 ## See also
 
 - [HDF Status Determination](../architecture/status-determination.md) — the two-axis verdict/acceptance model and its standards grounding.
-- ADR-0002 (HDF to ECS / OCSF) and ADR-0004 (HDF to Splunk CIM) — the design records, including the cross-exporter raw-primary reconciliation.

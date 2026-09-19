@@ -12,7 +12,7 @@
 // automated-then-exported, or mixed, so stamping a constant would assert a
 // classification the source cannot substantiate. applicability is omitted
 // likewise (a not_applicable status is an assessment outcome, not a baseline
-// applicability marker). See .claude/commands/build-converter.md Step 4d.
+// applicability marker).
 package cklb
 
 import (

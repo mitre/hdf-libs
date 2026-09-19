@@ -434,3 +434,47 @@ func TestQuerySeverity_ImpactZeroRendersAsInfo(t *testing.T) {
 	assert.Contains(t, stdout, "INFO")
 	assert.NotContains(t, stdout, "NONE")
 }
+
+// TestQueryCommand_JSONRows_CarryPosition (hdf-libs-js1nv.2, owner-accepted
+// additive change): `hdf query --json` marshals engine matches directly, so each
+// row carries its position — baselineIndex and index — alongside the six fields
+// it always had. Position is the only unique identity a row has: requirement IDs
+// repeat within a baseline (grype emits one per package instance), so two rows
+// with the same id must still be distinguishable to a CLI consumer.
+func TestQueryCommand_JSONRows_CarryPosition(t *testing.T) {
+	reqs := []map[string]any{
+		makeRequirement("CVE-2024-7264", "curl", 0.5),
+		makeRequirement("CVE-2024-7264", "libcurl3-gnutls", 0.5),
+		makeRequirement("CVE-2024-0001", "other", 0.9),
+	}
+	fixturePath := buildQueryFixture(t, reqs)
+
+	stdout, stderr, err := executeCommand("query", "--json", fixturePath)
+	require.NoError(t, err, "stderr: %s", stderr)
+
+	var rows []map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &rows))
+	require.Len(t, rows, 3)
+
+	// The row shape is exactly the previous six fields plus the two positional ones.
+	wantKeys := []string{"id", "title", "status", "impact", "severity", "baseline", "baselineIndex", "index"}
+	for i, r := range rows {
+		gotKeys := make([]string, 0, len(r))
+		for k := range r {
+			gotKeys = append(gotKeys, k)
+		}
+		assert.ElementsMatch(t, wantKeys, gotKeys, "row %d keys", i)
+	}
+
+	// Two rows share an id; their positions tell them apart, in document order.
+	assert.Equal(t, "CVE-2024-7264", rows[0]["id"])
+	assert.Equal(t, "curl", rows[0]["title"])
+	assert.Equal(t, float64(0), rows[0]["baselineIndex"])
+	assert.Equal(t, float64(0), rows[0]["index"])
+	assert.Equal(t, "CVE-2024-7264", rows[1]["id"])
+	assert.Equal(t, "libcurl3-gnutls", rows[1]["title"])
+	assert.Equal(t, float64(0), rows[1]["baselineIndex"])
+	assert.Equal(t, float64(1), rows[1]["index"])
+	assert.Equal(t, float64(2), rows[2]["index"])
+	assert.Equal(t, "Query Test Baseline", rows[2]["baseline"])
+}

@@ -18,7 +18,7 @@ func NewSystemCmd() *cobra.Command {
 		Long: `Commands for viewing and managing HDF system documents.
 
 An HDF system document describes a system's authorization boundary, components,
-baselines, and interconnections.
+baselines, and data flows.
 
 Examples:
   hdf system info portal-prod.hdf-system.json
@@ -42,7 +42,7 @@ func newSystemInfoCmd() *cobra.Command {
 - System name, authorization status, and categorization level
 - Description
 - Components with their baselines and target selectors
-- Interconnections
+- Data flows
 
 Examples:
   hdf system info portal-prod.hdf-system.json

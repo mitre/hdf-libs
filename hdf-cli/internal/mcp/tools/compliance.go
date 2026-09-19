@@ -24,8 +24,11 @@ import (
 // complianceInput is the hdf_compliance argument surface: a source, an optional
 // grouping mode, and an optional threshold (inline object or path).
 type complianceInput struct {
-	Source    handle.Source   `json:"source" jsonschema:"document as {path} or {handle}"`
-	GroupBy   string          `json:"groupBy,omitempty" jsonschema:"baseline | severity | nistFamily"`
+	// Source is omitempty so the derived schema does not require it: a call
+	// passes exactly one of source / sources, which the handler enforces.
+	Source    handle.Source   `json:"source,omitempty" jsonschema:"document as {path} or {handle}"`
+	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
+	GroupBy   string          `json:"groupBy,omitempty" jsonschema:"baseline | severity | nistFamily | tool | cwe"`
 	Threshold *thresholdInput `json:"threshold,omitempty" jsonschema:"threshold spec: {path} to a YAML/JSON file, or {inline} object"`
 }
 
@@ -39,10 +42,11 @@ type thresholdInput struct {
 // status×severity rollup, the §3 agent-override detective block, an optional
 // grouped rollup, and an optional threshold verdict.
 type complianceOutput struct {
-	Handle              string  `json:"handle"`
-	DocType             string  `json:"docType"`
-	EngineSchemaVersion string  `json:"engineSchemaVersion"`
-	Compliance          float64 `json:"compliance"`
+	Handle              string         `json:"handle,omitempty"`
+	Sources             []sourceMember `json:"sources,omitempty"`
+	DocType             string         `json:"docType"`
+	EngineSchemaVersion string         `json:"engineSchemaVersion"`
+	Compliance          float64        `json:"compliance"`
 	// Counts holds the status × severity StatusCounts as status → severity → int.
 	// This reflects to object→object→integer (value-typed) — richer than a bare
 	// additionalProperties:true, yet far cheaper than the fully named-key
@@ -72,8 +76,11 @@ type thresholdVerdict struct {
 }
 
 type groupRollup struct {
-	Group      string  `json:"group"`
-	Compliance float64 `json:"compliance"`
+	Group string `json:"group"`
+	// BaselineIndex is set for groupBy=baseline only: the position of the
+	// baseline this group scores, which distinguishes same-named baselines.
+	BaselineIndex *int    `json:"baselineIndex,omitempty"`
+	Compliance    float64 `json:"compliance"`
 	// Counts holds the StatusCounts as status → severity → int (see complianceOutput.Counts).
 	Counts map[string]map[string]int `json:"counts"`
 }
@@ -94,36 +101,34 @@ func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 
 func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, complianceOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in complianceInput) (*sdkmcp.CallToolResult, complianceOutput, error) {
-		resolved, terr := resolveSource(in.Source, ldr, "source")
+		view, terr, err := resolveView(in.Source, in.Sources, ldr, singleSourceErrors{
+			WrongDocType: func(docType string) *mcperr.Error {
+				return mcperr.New(mcperr.WrongDocType,
+					fmt.Sprintf("hdf_compliance rolls up requirements in results and baseline documents; a %s document has no requirements to score", docType),
+					map[string]any{"docType": docType}).
+					WithNextCall("call hdf_inspect to view this document's structure (hdf_compliance is results/baseline only)")
+			},
+			SchemaInvalid: func(docType string) *mcperr.Error {
+				return mcperr.New(mcperr.SchemaInvalid,
+					fmt.Sprintf("the document is %s but failed schema validation, so it cannot be scored", docType),
+					map[string]any{"docType": docType})
+			},
+		})
+		if err != nil {
+			return nil, errorComplianceOutput(), err
+		}
 		if terr != nil {
 			return toolError(terr), errorComplianceOutput(), nil
 		}
-		encoded, err := handle.Encode(resolved.Handle)
-		if err != nil {
-			return nil, errorComplianceOutput(), fmt.Errorf("encoding handle: %w", err)
-		}
 
-		toResults, ok := queryDispatch[resolved.Load.DocType]
-		if !ok {
-			e := mcperr.New(mcperr.WrongDocType,
-				fmt.Sprintf("hdf_compliance rolls up requirements in results and baseline documents; a %s document has no requirements to score", resolved.Load.DocType),
-				map[string]any{"docType": resolved.Load.DocType}).
-				WithNextCall("call hdf_inspect to view this document's structure (hdf_compliance is results/baseline only)")
-			return toolError(e), errorComplianceOutput(), nil
-		}
-		if !resolved.Load.Valid {
-			e := mcperr.New(mcperr.SchemaInvalid,
-				fmt.Sprintf("the document is %s but failed schema validation, so it cannot be scored", resolved.Load.DocType),
-				map[string]any{"docType": resolved.Load.DocType})
-			return toolError(e), errorComplianceOutput(), nil
-		}
-
-		results := toResults(resolved.Load)
+		results := view.Results
 		counts := countByEffectiveStatus(results)
 		out := complianceOutput{
-			Handle:              encoded,
-			DocType:             resolved.Load.DocType,
-			EngineSchemaVersion: resolved.Handle.EngineSchemaVersion,
+			Handle:              view.Handle,
+			Sources:             view.Members,
+			DocType:             view.DocType,
+			EngineSchemaVersion: view.EngineSchemaVersion,
+			Notice:              mergeWarningsNotice(view.Warnings),
 			Compliance:          hdfengine.CalculateCompliance(counts),
 			Counts:              countsToNestedInt(counts),
 			AgentOverrides: agentOverrideSummary{
@@ -209,35 +214,69 @@ func effectiveStatusExcludingAgent(control hdf.EvaluatedRequirement) string {
 	return shared.RequirementEffectiveStatus(control)
 }
 
+// partition is one group of a grouped rollup: its label, the sub-result-set the
+// engine scores, and — for baseline mode only — the position of the baseline it
+// holds, which is what keeps two same-named baselines distinct.
+type partition struct {
+	Group         string
+	BaselineIndex *int
+	Results       hdf.HDFResults
+}
+
 // groupedRollups partitions the result set by the requested mode and scores each
-// partition with the shared engine counting/compliance functions.
+// partition with the shared engine counting/compliance functions. Rollups are
+// ordered by group label, then by baseline index, so same-named baselines appear
+// in document order.
 func groupedRollups(results hdf.HDFResults, mode string) ([]groupRollup, *mcperr.Error) {
 	partitions, gerr := partitionResults(results, mode)
 	if gerr != nil {
 		return nil, gerr
 	}
 	rollups := make([]groupRollup, 0, len(partitions))
-	for key, sub := range partitions {
-		counts := countByEffectiveStatus(sub)
+	for _, p := range partitions {
+		counts := countByEffectiveStatus(p.Results)
 		rollups = append(rollups, groupRollup{
-			Group:      key,
-			Compliance: hdfengine.CalculateCompliance(counts),
-			Counts:     countsToNestedInt(counts),
+			Group:         p.Group,
+			BaselineIndex: p.BaselineIndex,
+			Compliance:    hdfengine.CalculateCompliance(counts),
+			Counts:        countsToNestedInt(counts),
 		})
 	}
-	sort.Slice(rollups, func(i, j int) bool { return rollups[i].Group < rollups[j].Group })
+	sort.SliceStable(rollups, func(i, j int) bool {
+		if rollups[i].Group != rollups[j].Group {
+			return rollups[i].Group < rollups[j].Group
+		}
+		return indexOrZero(rollups[i].BaselineIndex) < indexOrZero(rollups[j].BaselineIndex)
+	})
 	return rollups, nil
 }
 
-// partitionResults splits a result set into named sub-result-sets by group mode.
-// Each partition is a full HDFResults so the shared engine scores it unchanged.
-func partitionResults(results hdf.HDFResults, mode string) (map[string]hdf.HDFResults, *mcperr.Error) {
+func indexOrZero(i *int) int {
+	if i == nil {
+		return 0
+	}
+	return *i
+}
+
+// partitionResults splits a result set into sub-result-sets by group mode. Each
+// partition is a full HDFResults so the shared engine scores it unchanged.
+// Baseline mode yields one partition PER BASELINE, by position — baseline names
+// are not unique in shipped converter output, and a name-keyed map silently
+// collapsed same-named baselines into whichever came last. Tool mode groups by
+// the per-baseline tool label; cwe mode by each requirement's CWE numbers
+// (multi-membership, like nistFamily).
+func partitionResults(results hdf.HDFResults, mode string) ([]partition, *mcperr.Error) {
 	switch mode {
 	case "baseline":
-		out := map[string]hdf.HDFResults{}
+		out := make([]partition, 0, len(results.Baselines))
 		for i := range results.Baselines {
+			idx := i
 			b := results.Baselines[i]
-			out[b.Name] = hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{b}}
+			out = append(out, partition{
+				Group:         b.Name,
+				BaselineIndex: &idx,
+				Results:       hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{b}},
+			})
 		}
 		return out, nil
 	case "severity":
@@ -246,28 +285,85 @@ func partitionResults(results hdf.HDFResults, mode string) (map[string]hdf.HDFRe
 		}), nil
 	case "nistFamily":
 		return partitionBy(results, nistFamilies), nil
+	case "tool":
+		return partitionByBaselineLabel(results, hdfengine.LabelTool, "unlabeled"), nil
+	case "cwe":
+		return partitionBy(results, cweGroups), nil
 	default:
 		return nil, mcperr.Arg(fmt.Sprintf("unknown groupBy %q", mode),
-			"use groupBy = baseline, severity, or nistFamily (or omit it)")
+			"use groupBy = baseline, severity, nistFamily, tool, or cwe (or omit it)")
 	}
+}
+
+// partitionByBaselineLabel buckets requirements by the value of one baseline
+// label — for `tool`, the scanner the engine Merge stamps on every baseline of a
+// multi-source view (ADR-0016 §3). The label is the contract; a baseline name's
+// <tool>/ prefix is a convenience and is never parsed. A baseline without the
+// label (any single document) lands in the fallback bucket. Buckets are emitted
+// in first-seen order; groupedRollups sorts them by label.
+func partitionByBaselineLabel(results hdf.HDFResults, label, fallback string) []partition {
+	buckets := map[string][]hdf.EvaluatedRequirement{}
+	var order []string
+	for i := range results.Baselines {
+		b := &results.Baselines[i]
+		key := b.Labels[label]
+		if key == "" {
+			key = fallback
+		}
+		if _, seen := buckets[key]; !seen {
+			order = append(order, key)
+		}
+		buckets[key] = append(buckets[key], b.Requirements...)
+	}
+	out := make([]partition, 0, len(order))
+	for _, key := range order {
+		out = append(out, partition{
+			Group:   key,
+			Results: hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: key, Requirements: buckets[key]}}},
+		})
+	}
+	return out
+}
+
+// cweGroups returns the distinct CWE numbers a requirement's first-class cwe[]
+// field cites — the schema's normalized key, which the hdf_query correlation
+// projector reads too, so the two tools never disagree about a row — through
+// the shared extractor: the CWE-N spellings it recognises ("CWE-79", "cwe 79",
+// "cwe79") meet as the group "79". The schema pins the field to `CWE-N`, so a
+// bare number never reaches here. A requirement citing none groups under
+// "unmapped" — including one whose converter put its CWEs only in tags.cwe.
+func cweGroups(req hdf.EvaluatedRequirement) []string {
+	ids := hdfutil.ExtractCWEIDs(strings.Join(req.Cwe, " "))
+	if len(ids) == 0 {
+		return []string{"unmapped"}
+	}
+	return ids
 }
 
 // partitionBy buckets each requirement into every key keyOf returns (a
 // requirement can land in several nistFamily groups), each bucket a single-
-// baseline HDFResults the engine scores directly.
-func partitionBy(results hdf.HDFResults, keyOf func(hdf.EvaluatedRequirement) []string) map[string]hdf.HDFResults {
+// baseline HDFResults the engine scores directly. Buckets are emitted in
+// first-seen order; groupedRollups sorts them by label.
+func partitionBy(results hdf.HDFResults, keyOf func(hdf.EvaluatedRequirement) []string) []partition {
 	buckets := map[string][]hdf.EvaluatedRequirement{}
+	var order []string
 	for i := range results.Baselines {
 		for j := range results.Baselines[i].Requirements {
 			req := results.Baselines[i].Requirements[j]
 			for _, key := range keyOf(req) {
+				if _, seen := buckets[key]; !seen {
+					order = append(order, key)
+				}
 				buckets[key] = append(buckets[key], req)
 			}
 		}
 	}
-	out := make(map[string]hdf.HDFResults, len(buckets))
-	for key, reqs := range buckets {
-		out[key] = hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: key, Requirements: reqs}}}
+	out := make([]partition, 0, len(order))
+	for _, key := range order {
+		out = append(out, partition{
+			Group:   key,
+			Results: hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Name: key, Requirements: buckets[key]}}},
+		})
 	}
 	return out
 }
@@ -374,20 +470,23 @@ func boundComplianceResponse(out *complianceOutput) {
 	// reserves the groups notice already set plus this headroom) so a response
 	// that trips both branches cannot overflow by their concatenation.
 	noticeHeadroom := strings.Repeat("x", 320)
+	// A notice already on the envelope (merge warnings over sources[]) is kept in
+	// front of the truncation notices and counted in every trial measurement.
+	base := out.Notice
 	if len(out.Groups) > 0 {
 		kept := largestPrefixFitting(len(out.Groups), func(n int) bool {
 			trial := *out
 			trial.Groups = out.Groups[:n]
 			trial.Truncated = true
-			trial.Notice = noticeHeadroom
+			trial.Notice = joinNotice(base, noticeHeadroom)
 			return respond.EstimateTokens(mustJSON(&trial)) <= respond.ConciseTokenBudget
 		})
 		total := len(out.Groups)
 		out.Groups = out.Groups[:kept]
 		out.Truncated = true
-		out.Notice = fmt.Sprintf(
+		out.Notice = joinNotice(base, fmt.Sprintf(
 			"Response truncated to stay within the %d-token cap: showing %d of %d %s groups. Request a specific groupBy, or omit groupBy for the ungrouped rollup.",
-			respond.ConciseTokenBudget, kept, total, out.GroupBy)
+			respond.ConciseTokenBudget, kept, total, out.GroupBy))
 		if respond.EstimateTokens(mustJSON(out)) <= respond.ConciseTokenBudget {
 			return
 		}

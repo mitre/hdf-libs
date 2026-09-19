@@ -200,8 +200,8 @@ Interactive schema reference documentation is published at:
 
 ### What's new in v3.5.0
 
-- **`hdf-requirement-change-event` document type** — a new schema for the continuous-monitoring change-event stream (ADR-0005): per-requirement events (`new`/`absent`/`updated`/`fixed`/`regressed`) with a full after-state, thin before-state, and per-key sequence, chained for deterministic replay from a seed. Produced by `hdf events derive`.
-- **`External_Reference` primitive + `externalReferences[]` wiring** — a generalized, STIX-2.1-aligned reference (required `sourceName` plus one of `externalId`/`href`/`description`, open `rel`/`kind`, optional lossless embedded `document`) wired across the document types, including on the inline `Status_Override`. Backs the STIX CTI enrichment feature (ADR-0006).
+- **`hdf-requirement-change-event` document type** — a new schema for the continuous-monitoring change-event stream: per-requirement events (`new`/`absent`/`updated`/`fixed`/`regressed`) with a full after-state, thin before-state, and per-key sequence, chained for deterministic replay from a seed. Produced by `hdf events derive`.
+- **`External_Reference` primitive + `externalReferences[]` wiring** — a generalized, STIX-2.1-aligned reference (required `sourceName` plus one of `externalId`/`href`/`description`, open `rel`/`kind`, optional lossless embedded `document`) wired across the document types, including on the inline `Status_Override`. Backs the STIX CTI enrichment feature.
 - **`Change_Reason` gains `dispositionChanged` and `effectiveImpactChanged`** — the diff engine's amendment-axis change reasons are now part of the comparison vocabulary.
 - **POA&M `expiresAt` is now required** — a POA&M is a time-boxed acceptance of an open finding; the deadline is no longer optional. **Breaking:** previously-valid HDF documents with deadline-less POA&Ms now fail validation. Source a real remediation/vendor-fix date.
 - **Compatibility.** The additions are additive except the required POA&M `expiresAt`; v3.4.x documents without deadline-less POA&Ms validate cleanly under v3.5.0. See CHANGELOG.

@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -112,6 +113,77 @@ func TestQuery_CorrelationAdditiveToFull(t *testing.T) {
 	for _, k := range []string{"baseline", "tags", "descriptions", "cwe"} {
 		if _, ok := row[k]; !ok {
 			t.Errorf("full+correlation must carry %q; keys=%v", k, keysOf(row))
+		}
+	}
+}
+
+// rowsByID returns every projected row with the given id, in response order.
+func rowsByID(rows []map[string]any, id string) []map[string]any {
+	var out []map[string]any
+	for _, r := range rows {
+		if r["id"] == id {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// packageNames marshals a row's affectedPackages projection and returns its
+// package names, so the assertion reads the wire shape rather than a Go type.
+func packageNames(t *testing.T, v any) []string {
+	t.Helper()
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("marshal affectedPackages: %v", err)
+	}
+	var pkgs []struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal(b, &pkgs); err != nil {
+		t.Fatalf("unmarshal affectedPackages: %v", err)
+	}
+	names := make([]string, len(pkgs))
+	for i, p := range pkgs {
+		names[i] = p.Name
+	}
+	return names
+}
+
+// TestQuery_CorrelationFields_DistinctOnRepeatedIDs (js1nv.2): grype emits one
+// requirement per package instance, so one CVE id appears more than once in a
+// baseline. Each projected row must carry ITS OWN affectedPackages — joining on
+// (baseline name, id) hands every duplicate the last requirement's fields.
+func TestQuery_CorrelationFields_DistinctOnRepeatedIDs(t *testing.T) {
+	path := writeRoot(t, "grype.json", readToolsFixture(t, "grype-duplicate-ids.json"))
+	_, out := callQuery(t, queryInput{
+		Source: handle.Source{Path: path},
+		Search: "CVE-2024-7264",
+		Fields: []string{"affectedPackages"},
+	})
+	rows := rowsByID(out.Requirements, "Grype/CVE-2024-7264")
+	if len(rows) != 2 {
+		t.Fatalf("expected the repeated id twice, got %d row(s): %v", len(rows), out.Requirements)
+	}
+	// Document order: requirement 6 is curl, requirement 7 is libcurl3-gnutls.
+	if got := packageNames(t, rows[0]["affectedPackages"]); len(got) != 1 || got[0] != "curl" {
+		t.Errorf("first row affectedPackages = %v, want [curl]", got)
+	}
+	if got := packageNames(t, rows[1]["affectedPackages"]); len(got) != 1 || got[0] != "libcurl3-gnutls" {
+		t.Errorf("second row affectedPackages = %v, want [libcurl3-gnutls]", got)
+	}
+	// Full verbosity joins tags/descriptions through the same positional lookup.
+	// In this fixture the two requirements share one CVE description (grype
+	// describes the vulnerability, not the package), so descriptions cannot
+	// discriminate; affectedPackages above is the field that proves the join is
+	// positional. Here: full rows still come back one per duplicate, joined.
+	_, full := callQuery(t, queryInput{Source: handle.Source{Path: path}, Search: "CVE-2024-7264", Verbosity: "full"})
+	frows := rowsByID(full.Requirements, "Grype/CVE-2024-7264")
+	if len(frows) != 2 {
+		t.Fatalf("full: expected 2 rows, got %d", len(frows))
+	}
+	for i, r := range frows {
+		if r["baseline"] == "" || r["descriptions"] == nil {
+			t.Errorf("full row %d lost its joined fields: %v", i, keysOf(r))
 		}
 	}
 }
