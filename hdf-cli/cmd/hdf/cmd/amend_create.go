@@ -165,7 +165,7 @@ func runAmendCreate(resultsPath, outputPath string) error {
 // amendFromResults reads a results file, lets the user select requirements,
 // then collects amendment details for each selected requirement.
 func amendFromResults(resultsPath string) ([]amendOverride, error) {
-	data, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided path
+	data, err := readInputFile(resultsPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read results file: %w", err)
 	}

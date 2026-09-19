@@ -115,7 +115,7 @@ func gateLabelInput(data []byte) error {
 func runLabelShow(_ *cobra.Command, args []string) error {
 	filePath := args[0]
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
@@ -179,7 +179,7 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 			"  or:  hdf label set <file> --generate-component-id")
 	}
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
@@ -222,7 +222,7 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
 	keys := args[1:]
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}

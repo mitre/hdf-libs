@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -716,7 +715,7 @@ type systemComponent struct {
 
 // parseSystemDocument reads and parses a system document from a file path.
 func parseSystemDocument(path string) (systemDocument, error) {
-	data, err := os.ReadFile(path) // #nosec G304 -- path is user-provided CLI arg
+	data, err := readInputFile(path)
 	if err != nil {
 		return systemDocument{}, fmt.Errorf("failed to read system document: %w", err)
 	}
@@ -878,11 +877,11 @@ func computeBaselineCompliance(results hdf.HDFResults, baselineSet map[string]bo
 
 // runSbomDiff handles the --sbom flag: reads two SBOM files and outputs a package diff.
 func runSbomDiff(args []string, flags *diffFlags) error {
-	oldData, err := os.ReadFile(args[0]) //nolint:gosec // path is user-provided CLI arg
+	oldData, err := readInputFile(args[0])
 	if err != nil {
 		return fmt.Errorf("failed to read old SBOM file: %w", err)
 	}
-	newData, err := os.ReadFile(args[1]) //nolint:gosec // path is user-provided CLI arg
+	newData, err := readInputFile(args[1])
 	if err != nil {
 		return fmt.Errorf("failed to read new SBOM file: %w", err)
 	}

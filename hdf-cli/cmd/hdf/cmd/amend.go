@@ -191,12 +191,12 @@ Examples:
 }
 
 func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath string) error {
-	resultsData, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided file path
+	resultsData, err := readInputFile(resultsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
 	}
 
-	amendmentsData, err := os.ReadFile(amendmentsPath) // #nosec G304 -- CLI reads user-provided file path
+	amendmentsData, err := readInputFile(amendmentsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read amendments file: %w", err)
 	}
@@ -258,7 +258,7 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 func runAmendList(_ *cobra.Command, args []string) error {
 	filePath := args[0]
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read amendments file: %w", err)
 	}
@@ -326,7 +326,7 @@ func runAmendList(_ *cobra.Command, args []string) error {
 func runAmendVerify(_ *cobra.Command, args []string) error {
 	amendPath := args[0]
 
-	amendData, err := os.ReadFile(amendPath) // #nosec G304 -- CLI reads user-provided file path
+	amendData, err := readInputFile(amendPath)
 	if err != nil {
 		return fmt.Errorf("failed to read amendments file: %w", err)
 	}
@@ -398,7 +398,7 @@ func printVerifySummary(result *amend.VerifyResult) {
 }
 
 func runAmendVerifyChain(amendData []byte, resultsPath string) error {
-	resultsData, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided file path
+	resultsData, err := readInputFile(resultsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
 	}

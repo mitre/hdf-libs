@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { setDefaultMaxInputSize } from '@mitre/hdf-utilities';
 import {
   IdentityType,
   Justification,
@@ -277,7 +278,12 @@ describe('convertHdfToOpenVex — edge cases', () => {
     await expect(convertHdfToOpenVex('not json', TEST_VERSION)).rejects.toThrow();
   });
   it('rejects oversized input', async () => {
-    await expect(convertHdfToOpenVex('x'.repeat(51 * 1024 * 1024), TEST_VERSION)).rejects.toThrow();
+    setDefaultMaxInputSize(8);
+    try {
+      await expect(convertHdfToOpenVex('x'.repeat(9), TEST_VERSION)).rejects.toThrow();
+    } finally {
+      setDefaultMaxInputSize(0);
+    }
   });
 });
 

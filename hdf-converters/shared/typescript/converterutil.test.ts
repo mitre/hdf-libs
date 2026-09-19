@@ -206,8 +206,8 @@ describe('validateInputSize', () => {
     expect(() => validateInputSize('normal input', 'test', -1)).not.toThrow();
   });
 
-  it('should export DEFAULT_MAX_INPUT_SIZE as 50MB', () => {
-    expect(DEFAULT_MAX_INPUT_SIZE).toBe(50 * 1024 * 1024);
+  it('should export DEFAULT_MAX_INPUT_SIZE as 256MB', () => {
+    expect(DEFAULT_MAX_INPUT_SIZE).toBe(256 * 1024 * 1024);
   });
 
   it('is the @mitre/hdf-utilities guard: one limit, measured in UTF-8 bytes like Go', () => {

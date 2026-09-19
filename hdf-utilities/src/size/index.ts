@@ -2,16 +2,43 @@
 // at behavioural parity. The engine loader runs it as its FIRST operation,
 // before any parse, to defend against memory exhaustion on untrusted input.
 
-/** Default maximum input size (50 MB), matching the Go DefaultMaxInputSize. */
-export const DEFAULT_MAX_INPUT_SIZE = 50 * 1024 * 1024;
+/** Default maximum input size (256 MB), matching the Go DefaultMaxInputSize. */
+export const DEFAULT_MAX_INPUT_SIZE = 256 * 1024 * 1024;
+
+// configuredMaxInputSize, when > 0, overrides DEFAULT_MAX_INPUT_SIZE for callers
+// that pass maxSize <= 0 ("use the default"). A host sets it once from its own
+// configuration so a raised ceiling reaches every converter's size guard — which
+// passes 0 — without threading a value through every call site. The Go peer is
+// hdfutil.configuredMaxInputSize / SetDefaultMaxInputSize.
+let configuredMaxInputSize = 0;
 
 /**
- * validateInputSize throws if input exceeds maxSize bytes (maxSize <= 0 uses
+ * setDefaultMaxInputSize sets the process-wide fallback used when a caller passes
+ * maxSize <= 0. A value <= 0 restores the built-in DEFAULT_MAX_INPUT_SIZE.
+ */
+export function setDefaultMaxInputSize(maxSize: number): void {
+  configuredMaxInputSize = maxSize > 0 ? maxSize : 0;
+}
+
+/**
+ * resolveMaxInputSize returns the effective byte limit for a caller-supplied
+ * maxSize: the explicit value when > 0, else the configured process default, else
+ * DEFAULT_MAX_INPUT_SIZE. An explicit limit always wins.
+ */
+export function resolveMaxInputSize(maxSize = 0): number {
+  if (maxSize > 0) return maxSize;
+  if (configuredMaxInputSize > 0) return configuredMaxInputSize;
+  return DEFAULT_MAX_INPUT_SIZE;
+}
+
+/**
+ * validateInputSize throws if input exceeds the effective limit for maxSize (see
+ * resolveMaxInputSize; maxSize <= 0 uses the configured default or
  * DEFAULT_MAX_INPUT_SIZE). Byte length is measured on the UTF-8 encoding for a
  * string input, so it matches the Go []byte length for the same document.
  */
 export function validateInputSize(input: string | Uint8Array, maxSize = 0): void {
-  const limit = maxSize > 0 ? maxSize : DEFAULT_MAX_INPUT_SIZE;
+  const limit = resolveMaxInputSize(maxSize);
   if (typeof input !== 'string') {
     if (input.length > limit) throw tooLarge(limit, input.length);
     return;

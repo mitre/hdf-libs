@@ -14,6 +14,7 @@ import {
   parseTimestamp,
   isUnratedSeverity,
   validateInputSize as guardInputSize,
+  setDefaultMaxInputSize,
   DEFAULT_MAX_INPUT_SIZE,
 } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
@@ -232,8 +233,8 @@ export function firstNonEmpty(...candidates: Array<string | undefined | null>): 
   return '';
 }
 
-/** The one input-size limit (50 MB), defined by @mitre/hdf-utilities. */
-export { DEFAULT_MAX_INPUT_SIZE };
+/** The one input-size limit (256 MB) and its settable process default, defined by @mitre/hdf-utilities. */
+export { DEFAULT_MAX_INPUT_SIZE, setDefaultMaxInputSize };
 
 /**
  * The converter-facing face of the @mitre/hdf-utilities size guard: same
@@ -244,11 +245,14 @@ export { DEFAULT_MAX_INPUT_SIZE };
 export function validateInputSize(
   input: string,
   converterName: string,
-  maxSize = DEFAULT_MAX_INPUT_SIZE,
+  maxSize = 0,
 ): void {
-  const limit = maxSize > 0 ? maxSize : DEFAULT_MAX_INPUT_SIZE;
+  // Pass maxSize straight through (0/negative means "use the default"): the
+  // hdf-utilities guard resolves it to the configured process default, then the
+  // built-in 256 MB — mirroring Go's ValidateJSONSize, so setDefaultMaxInputSize
+  // reaches TS converters exactly as it reaches Go ones.
   try {
-    guardInputSize(input, limit);
+    guardInputSize(input, maxSize);
   } catch (err) {
     // Prefix the converter name and keep the guard's own wording, the way Go's
     // ValidateJSONSize wraps with %w — otherwise the two languages report the

@@ -304,7 +304,9 @@ func TestSystemAddComponent_OversizedInputRejected(t *testing.T) {
 	cmd.SetArgs([]string{"system", "add-component", f, "--system", sysFile, "--component-name", "X", "--max-size", "1"})
 	err := cmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+	// The guarded read now rejects at read time ("file too large") before the doc
+	// is slurped, rather than later at the in-memory ValidateJSONSize check.
+	assert.Contains(t, err.Error(), "too large")
 }
 
 // applyNamePrefix numbers only the nameless subjects, independent of position:

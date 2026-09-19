@@ -79,7 +79,7 @@ func runPlanCreateStandalone(planName, baseline, planID, outputPath string) erro
 }
 
 func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
-	data, err := os.ReadFile(systemFile) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(systemFile)
 	if err != nil {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}

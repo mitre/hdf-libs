@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+
 	cyclonedxvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cyclonedx-vex-to-hdf/go"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -204,8 +206,8 @@ func TestConvertHDFToCycloneDXVEX_RejectsInvalidJSON(t *testing.T) {
 
 func TestConvertHDFToCycloneDXVEX_RejectsOversizedInput(t *testing.T) {
 	t.Parallel()
-	_, err := ConvertHDFToCycloneDXVEX(make([]byte, 51*1024*1024), testVersion)
-	require.Error(t, err)
+	_, err := ConvertHDFToCycloneDXVEX(make([]byte, shared.DefaultMaxJSONSize+1), testVersion)
+	require.ErrorContains(t, err, "exceeds maximum")
 }
 
 func TestProductIDsFor_PrefersComponentRef(t *testing.T) {

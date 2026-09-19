@@ -11,7 +11,7 @@ import (
 // expectedDocType ("plan", "evidence-package", "amendments", "system"), applies
 // field updates, processes --unset flags, and writes the result back.
 func runGenericDocSet(inputPath, outputPath, expectedDocType string, unsetFields []string, requiredFields map[string]bool, updates map[string]string) error {
-	data, err := os.ReadFile(inputPath) //nolint:gosec // CLI reads user-provided file path
+	data, err := readInputFile(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to read document: %w", err)
 	}

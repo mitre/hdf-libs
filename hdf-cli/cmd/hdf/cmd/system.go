@@ -158,7 +158,7 @@ var requiredSystemFields = map[string]bool{
 }
 
 func runSystemSet(inputPath, outputPath, owner, description, name, systemID string, unsetFields []string) error {
-	data, err := os.ReadFile(inputPath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to read system document: %w", err)
 	}

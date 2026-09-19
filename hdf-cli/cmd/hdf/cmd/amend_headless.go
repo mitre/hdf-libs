@@ -77,16 +77,12 @@ func runAmendCreateHeadless(specPath, outputPath string) error {
 // readSpecInput reads the spec from a file path, or from stdin when the path is
 // "-" or empty.
 func readSpecInput(specPath string) ([]byte, error) {
-	if specPath == "" || specPath == "-" {
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read spec from stdin: %w", err)
-		}
-		return data, nil
-	}
-	data, err := os.ReadFile(specPath) // #nosec G304 -- CLI reads user-provided path
+	// readInputFile treats "" / "-" as (size-capped) stdin and any other value as
+	// a (size-capped) file, so the spec read is guarded like every other input —
+	// no unbounded io.ReadAll(os.Stdin).
+	data, err := readInputFile(specPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read spec file: %w", err)
+		return nil, fmt.Errorf("failed to read spec: %w", err)
 	}
 	return data, nil
 }
@@ -374,7 +370,7 @@ func sortedKeys(m map[string]int) []string {
 // stubs (one per matching requirement), and writes it. The output is marked
 // _draft and is rejected by `hdf amend apply` until completed.
 func runAmendDraft(resultsPath, amendType, statusFilter, selectStr, expires, outputPath string) error {
-	data, err := os.ReadFile(resultsPath) // #nosec G304 -- CLI reads user-provided path
+	data, err := readInputFile(resultsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read results file: %w", err)
 	}

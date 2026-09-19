@@ -78,7 +78,9 @@ func resolveThresholdConfig(templateFile, templateInline string) (*ThresholdConf
 
 	var config ThresholdConfig
 	if templateFile != "" {
-		templateData, readErr := os.ReadFile(templateFile) //nolint:gosec // user-provided path
+		// allowEmpty: an empty template is still size-capped, but must reach the
+		// "asserts nothing" content check rather than being rejected as empty here.
+		templateData, readErr := readInputFileAllowEmpty(templateFile)
 		if readErr != nil {
 			return nil, fmt.Errorf("failed to read threshold template: %w", readErr)
 		}

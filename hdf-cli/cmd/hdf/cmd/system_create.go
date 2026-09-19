@@ -191,7 +191,7 @@ func runSystemCreate(opts systemCreateOpts) error {
 		return runSystemCreateFromSBOMRef(opts, opts.fromFile)
 	}
 
-	data, err := os.ReadFile(opts.fromFile) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(opts.fromFile)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %w", err)
 	}

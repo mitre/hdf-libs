@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { describe, it, expect } from 'vitest';
+import { setDefaultMaxInputSize } from '@mitre/hdf-utilities';
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import {
@@ -366,8 +367,13 @@ describe('parseBom errors and edge cases', () => {
   });
 
   it('validates input size before parsing (rejects oversized input)', () => {
-    const huge = `{"bomFormat":"CycloneDX","pad":"${'a'.repeat(60 * 1024 * 1024)}"}`;
-    expect(() => parseBom(huge)).toThrow(/exceeds maximum allowed size/);
+    setDefaultMaxInputSize(8);
+    try {
+      const huge = `{"bomFormat":"CycloneDX","pad":"${'a'.repeat(9)}"}`;
+      expect(() => parseBom(huge)).toThrow(/exceeds maximum allowed size/);
+    } finally {
+      setDefaultMaxInputSize(0);
+    }
   });
 
   it('re-parsing is stable', () => {
