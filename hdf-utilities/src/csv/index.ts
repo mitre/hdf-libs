@@ -355,16 +355,20 @@ export function isValidCsv(csv: string): boolean {
 /**
  * Sanitize a single CSV value to prevent formula injection
  *
- * Prefixes values starting with =, +, -, @, |, or % with a single quote
- * to prevent Excel/LibreOffice from interpreting them as formulas.
+ * Prefixes values whose first non-whitespace character is =, +, -, @, |, or %
+ * with a single quote so Excel/LibreOffice read them as text. Leading ASCII
+ * whitespace (space, tab, CR, LF) is skipped before the check because
+ * spreadsheets trim it before evaluating a cell as a formula, so " =1+1" still
+ * executes (OWASP CSV Injection guidance). The quote prefixes the whole value,
+ * leaving the whitespace intact — the export stays lossless. A non-ASCII leading
+ * rune is not whitespace, so the scan stops and it is never falsely quoted.
  *
  * @param value - Value to sanitize
  * @returns Sanitized value
  */
 export function sanitizeCsvValue(value: unknown): string {
   const str = String(value);
-  // Check if string starts with formula trigger characters
-  if (/^[=+\-@|%]/.test(str)) {
+  if (/^[ \t\r\n]*[=+\-@|%]/.test(str)) {
     return `'${str}`;
   }
   return str;

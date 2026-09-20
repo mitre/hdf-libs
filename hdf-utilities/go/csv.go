@@ -21,15 +21,26 @@ const csvFormulaTriggers = "=+-@|%"
 // JavaScript has no stdlib CSV writer to leave the serializing to — the same
 // reason hash and json are TypeScript-only.
 //
-// Only the FIRST character decides, and it is compared as a byte: a multi-byte
-// UTF-8 character never begins with an ASCII trigger, so no non-ASCII value is
-// falsely quoted.
+// The FIRST NON-WHITESPACE character decides: spreadsheets trim leading
+// whitespace before deciding a cell is a formula, so " =1+1" still executes and
+// a byte-zero-only check would miss it (OWASP CSV Injection guidance). Only
+// ASCII whitespace is skipped and the trigger is compared as a byte, so a
+// multi-byte UTF-8 rune (which never begins with an ASCII trigger or whitespace)
+// stops the scan and is never falsely quoted. The quote prefixes the whole
+// value, leaving the leading whitespace intact — the export stays lossless.
 func SanitizeCSVValue(value string) string {
-	if value == "" {
-		return value
+	i := 0
+	for i < len(value) && isCSVLeadingWhitespace(value[i]) {
+		i++
 	}
-	if strings.IndexByte(csvFormulaTriggers, value[0]) >= 0 {
+	if i < len(value) && strings.IndexByte(csvFormulaTriggers, value[i]) >= 0 {
 		return "'" + value
 	}
 	return value
+}
+
+// isCSVLeadingWhitespace reports whether b is ASCII whitespace a spreadsheet
+// trims before formula evaluation (space, tab, CR, LF).
+func isCSVLeadingWhitespace(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\r' || b == '\n'
 }
