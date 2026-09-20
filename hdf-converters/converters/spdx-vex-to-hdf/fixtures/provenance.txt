@@ -91,4 +91,4 @@ A version below is what the fixture *says about itself*; where a format carries 
 
 SPDX publishes a JSON Schema for 3.0.x at `https://spdx.org/schema/3.0.1/spdx-json-schema.json`; the fixtures' `@context` is 3.0.1, so that file is vendored here and recorded in `provenance.json`. It uses ECMAScript regex syntax that Go's RE2 rejects, so the Go sweep lists it as uncompilable and the TypeScript sweep (ajv) compiles it.
 
-Validation (ajv, (2026-09-20)): both inputs validate.
+Validation (ajv, 2026-09-20): both inputs validate.

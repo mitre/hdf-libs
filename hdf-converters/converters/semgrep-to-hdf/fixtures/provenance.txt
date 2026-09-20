@@ -44,4 +44,4 @@ A version below is what the fixture *says about itself*; where a format carries 
 
 Semgrep publishes the JSON Schema for `--json` output in semgrep/semgrep-interfaces, tagged per release. The fixtures report `version` 1.174.0, so that tag's `semgrep_output_v1.jsonschema` is vendored here as `semgrep_output_v1-1.174.0.schema.json` and recorded in `provenance.json`.
 
-Validation (gojsonschema, (2026-09-20)): `empty.json`, `minimal.json` and `real.json` validate. `errors.json` does not — its `errors[0].type` matches none of the schema's error-type variants; that file was authored here to exercise the error path (see above), so the fixture policy's validation requirement applies and is not met. Recorded as a defect, not corrected here.
+Validation (ajv, 2026-09-20): all four inputs validate. The schema is JSON Schema 2020-12 and encodes error types as tuples (`prefixItems`), which gojsonschema does not implement — it reports `errors.json` as failing the `oneOf`, an engine artifact, not a defect in the file; ajv is the engine of record for this schema.
