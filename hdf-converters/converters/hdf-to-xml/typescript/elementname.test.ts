@@ -15,6 +15,14 @@ interface ElementNameCase {
   why: string;
 }
 
+interface ElementNameShape {
+  key: string;
+  name: string;
+  rewritten: boolean;
+  shape: string;
+  source: string;
+}
+
 interface ElementNameCollision {
   name: string;
   keys: string[];
@@ -24,10 +32,11 @@ interface ElementNameCollision {
 
 const TABLE = JSON.parse(
   readFileSync(join(__dirname, '..', '..', '..', 'shared', 'xml-element-name-cases.json'), 'utf-8'),
-) as { cases: ElementNameCase[]; collisions: ElementNameCollision[] };
+) as { cases: ElementNameCase[]; collisions: ElementNameCollision[]; realShapes?: ElementNameShape[] };
 
 const CASES = TABLE.cases;
 const COLLISIONS = TABLE.collisions;
+const REAL_SHAPES = TABLE.realShapes ?? [];
 
 // The encoder is implemented twice, so the expectations live in one shared file
 // both languages read rather than in two hand-kept copies.
@@ -41,14 +50,18 @@ describe('xmlElementName', () => {
   });
 });
 
-// Real converter output already carries keys that are not XML Names —
-// sonarqube-to-hdf emits "sonarqube/hash", ionchannel-to-hdf emits
-// "ionchannel/trigger" — so this asserts the document parses at all, which is a
-// stronger property than schema validity.
-describe('hdf-to-xml tag keys', () => {
-  it.each(['sonarqube/hash', 'sonarqube/quick_fix_available', 'ionchannel/trigger_author'])(
-    'emits parseable XML for the real key %s',
-    (key) => {
+describe('hdf-to-xml real tag-key shapes', () => {
+  it('has a populated shape table', () => {
+    expect(REAL_SHAPES.length, 'an empty table would pass vacuously').toBeGreaterThan(0);
+  });
+
+  it.each(REAL_SHAPES.map((r) => [r.key, r] as const))('encodes the real key %s as recorded', (_key, r) => {
+    expect(xmlElementName(r.key), r.source).toEqual([r.name, r.rewritten]);
+  });
+
+  it.each(REAL_SHAPES.filter((r) => r.rewritten).map((r) => [r.key, r] as const))(
+    'emits parseable XML for the rewritten real key %s',
+    (key, r) => {
       const input = JSON.stringify({
         baselines: [
           {
@@ -67,14 +80,25 @@ describe('hdf-to-xml tag keys', () => {
       });
 
       const out = convertHdfToXml(input);
-      expect(isValidXml(out), `a tag key must not produce XML that fails to parse:\n${out}`).toBe(
-        true,
-      );
+      expect(isValidXml(out), `a tag key must not produce XML that fails to parse:\n${out}`).toBe(true);
       // The exact element the Go peer must also emit, byte for byte.
-      const [name] = xmlElementName(key);
-      expect(out).toContain(`<${name} name="${key}">v</${name}>`);
+      expect(out).toContain(`<${r.name} name="${key}">v</${r.name}>`);
     },
   );
+});
+
+// Every encoded name must be one an XML parser accepts — over every key the shared
+// table knows, real and hostile alike, plus a few that stress the start rule.
+describe('hdf-to-xml element names always parse', () => {
+  const keys = [
+    ...CASES.map((c) => c.key),
+    ...REAL_SHAPES.map((r) => r.key),
+    '800-53', 'a<b', 'my tag', '', 'café', '1', '-', '.', '$ref', 'a/b/c',
+  ];
+  it.each(keys.map((k) => [k] as const))('encodes %j to a parseable name', (key) => {
+    const [name] = xmlElementName(key);
+    expect(isValidXml(`<${name}>v</${name}>`), `key ${JSON.stringify(key)} encoded to unparseable name ${name}`).toBe(true);
+  });
 });
 
 /** The (element name, name attribute) of every start tag inside the first <tags>, in document order. */

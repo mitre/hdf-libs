@@ -298,8 +298,8 @@ func xmlStart(key string) xml.StartElement {
 // xmlElementName encodes a key to an XML Name, reporting whether it had to
 // change. Two keys can encode to the same name ("a/b" and "a.b" do not, but
 // "a/b" and "a b" do), which yields repeated sibling elements the name
-// attribute still tells apart; no collision occurs across this package's
-// converter fixture tag keys, which TestXMLElementNameNoCollisionsAcrossRealFixtureKeys pins.
+// attribute still tells apart. The key shapes real converters emit are pinned
+// in shared/xml-element-name-cases.json (realShapes).
 func xmlElementName(key string) (string, bool) {
 	keep := func(r rune) bool {
 		switch {
