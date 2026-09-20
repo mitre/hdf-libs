@@ -352,3 +352,24 @@ describe('cyclonedx-vex-to-hdf ground-truth anchor', () => {
     );
   });
 });
+
+// The spec's own example carries no analysis date, so appliedAt is conversion
+// time and the snapshot harness cannot hold it; the conversion is pinned here
+// (mirrors TestConvertCycloneDXVEX_SpecExample in Go).
+describe('cyclonedx-vex-to-hdf spec example', () => {
+  it('converts the not_affected statement to one falsePositive override', async () => {
+    const out = (await convertCyclonedxVexToHdf(loadInput('cyclonedx-vex-example.json'), TEST_VERSION)) as unknown as {
+      overrides: { requirementId: string; type: string; status: string; justification?: string; appliedAt: string; evidence?: { data: string }[] }[];
+    };
+    expect(out.overrides).toHaveLength(1);
+    const o = out.overrides[0]!;
+    expect(o.requirementId).toBe('CVE-2020-25649');
+    expect(o.type).toBe('falsePositive');
+    expect(o.status).toBe('passed');
+    expect(o.justification).toBe('vulnerable_code_not_in_execute_path');
+    expect(o.appliedAt).toBeTruthy();
+    expect(o.evidence).toHaveLength(2);
+    expect(o.evidence?.[0]?.data).toBe('https://nvd.nist.gov/vuln/detail/CVE-2020-25649');
+  });
+});
+

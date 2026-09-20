@@ -5,10 +5,12 @@ package shared
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -235,6 +237,81 @@ func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, r
 		t.Fatalf("%s: snapshot suite registered zero subtests — no golden in %s matched the <input>.hdf.json convention",
 			converterName, expectedDir)
 	}
+
+	// The loop above only ever discovers goldens, so deleting one deleted its
+	// subtest in silence; this is the other direction.
+	problems, err := checkGoldenCoverage(inputDir, expectedDir, filepath.Join(convertersDir, converterName, "fixtures", "no-golden.txt"))
+	require.NoError(t, err)
+	for _, p := range problems {
+		t.Errorf("%s: %s", converterName, p)
+	}
+}
+
+// checkGoldenCoverage reports every input in inputDir that has no golden in
+// expectedDir and no line in the manifest saying why. The empty.* convention
+// (an input that converts to nothing, asserted by a dedicated empty-input test)
+// needs no entry. Every manifest entry must name an input that exists and has
+// no golden, so the list cannot rot, and must carry a reason after " — ", so
+// the exception is a deliberate, visible act. Mirrors checkGoldenCoverage in
+// shared/typescript/snapshot.ts.
+func checkGoldenCoverage(inputDir, expectedDir, manifestPath string) ([]string, error) {
+	var problems []string
+	inputs := map[string]bool{}
+	entries, err := os.ReadDir(inputDir)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			inputs[e.Name()] = true
+		}
+	}
+	goldens := map[string]bool{}
+	expected, err := os.ReadDir(expectedDir)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	for _, e := range expected {
+		goldens[e.Name()] = true
+	}
+
+	recorded := map[string]bool{}
+	if raw, err := os.ReadFile(manifestPath); err == nil { // #nosec G304 -- repo-relative test manifest
+		for _, line := range strings.Split(string(raw), "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			name, reason, hasReason := strings.Cut(line, " — ")
+			name = strings.TrimSpace(name)
+			switch {
+			case !hasReason || strings.TrimSpace(reason) == "":
+				problems = append(problems, fmt.Sprintf("no-golden.txt entry for %s gives no reason — write one after \" — \"", name))
+				recorded[name] = true // reported once, as the defective entry, not again as uncovered
+			case !inputs[name]:
+				problems = append(problems, fmt.Sprintf("no-golden.txt names %s, which is not in input/ — remove the entry", name))
+			case goldens[name+".hdf.json"]:
+				problems = append(problems, fmt.Sprintf("no-golden.txt names %s, but expected/%s.hdf.json exists — remove the entry", name, name))
+			default:
+				recorded[name] = true
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	names := make([]string, 0, len(inputs))
+	for name := range inputs {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if strings.HasPrefix(name, "empty.") || recorded[name] || goldens[name+".hdf.json"] {
+			continue
+		}
+		problems = append(problems, fmt.Sprintf("input %s has no golden expected/%s.hdf.json and no entry in no-golden.txt", name, name))
+	}
+	return problems, nil
 }
 
 // RunSnapshotTestsRaw is like RunSnapshotTests but for converters that return
