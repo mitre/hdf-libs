@@ -85,11 +85,16 @@ interface TwistlockDistribution {
   total: number;
 }
 
-// Mirrors the Go twin: "important" (critical-tier) and "moderate" (medium-tier)
-// are the Twistlock-specific aliases; standard levels come from the shared map.
+// Mirrors the Go twin's twistlockAliases exactly. Red Hat's important/moderate
+// and Debian's unimportant/negligible are the distro-feed severities Twistlock
+// passes through; standard levels (critical=0.9, high, medium, low, info) come
+// from the shared map. negligible is the 0.0 floor (grype-to-hdf convention);
+// unimportant is Debian's lowest *rated* tier -> nearest standard rated tier, low.
 const TWISTLOCK_ALIASES: Record<string, number> = {
   important: 0.9,
   moderate: 0.5,
+  unimportant: 0.3,
+  negligible: 0.0,
 };
 
 function twistlockSeverityToImpact(severity: string | undefined): number {
