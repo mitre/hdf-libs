@@ -12,6 +12,12 @@ hdf-converters/**/fixtures/** eol=lf
 # and forcing LF would make our copy differ from the bytes we recorded a hash
 # for -- the same corruption as a CRLF checkout, in the other direction.
 hdf-converters/**/schemas/** -text
+# Schemas vendored beside an importer's fixtures (sarif-schema-*.json, bom-*.schema.json,
+# *-report-format-*.json, *.xsd, ...) are the same kind of artifact and get the same rule;
+# the fixtures eol=lf line above would otherwise rewrite the bytes their hash was taken from.
+hdf-converters/**/fixtures/*.xsd -text
+hdf-converters/**/fixtures/*schema*.json -text
+hdf-converters/**/fixtures/*-report-format-*.json -text
 hdf-cli/cmd/hdf/cmd/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.jsonl eol=lf

@@ -1,0 +1,10 @@
+{
+  "schemas": [
+    {
+      "file": "spdx-json-schema-3.0.1.json",
+      "source": "https://spdx.org/schema/3.0.1/spdx-json-schema.json",
+      "sha256": "582c64e809d5b3ef9bd0c4de13a32391b47b0284a3e8d199569fb96f649234b1",
+      "retrieved": "2026-09-20"
+    }
+  ]
+}
