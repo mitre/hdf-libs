@@ -160,6 +160,8 @@ Never fabricate fixture data. Every converter fixture must be one of:
 
 If no real data source exists and no schema exists to validate against, **stop and ask** — do not invent data. A converter tested against fabricated fixtures is untrusted: the fixture determines whether the converter works on real data; if the fixture is fake, the test proves nothing.
 
+The procedure that applies this policy when a fixture is added — builder or file, sourcing, schema vendoring, the `provenance.txt` / `provenance.json` record, trimming, goldens and `no-golden.txt`, local versus shared — is the `/fixtures` skill (`.claude/skills/fixtures/SKILL.md`). Every `fixtures/` directory must carry a provenance record; `hdf-converters/shared/go/schemaload_test.go` enforces it.
+
 ### Where fixtures live: local vs shared
 
 - **Single-consumer → stays local.** If only the owning package's tests load the file (a converter's `fixtures/input/` or `fixtures/expected/`, a package's `test/fixtures/`, a Go package's `testdata/`), it stays there as that package's *tested contract*.
