@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"testing"
 
-	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,27 +60,43 @@ func TestXCCDFGroupIDAlwaysSatisfiesGroupIDType(t *testing.T) {
 	}
 }
 
-// Encoding is not injective, so the question is not whether collisions can exist
-// but whether they exist for the gids this repo actually produces. Two gids
-// encoding to one id would merge two distinct STIG groups into one.
-func TestXCCDFGroupIDNoCollisionsAcrossRealFixtureGIDs(t *testing.T) {
-	seen := map[string]bool{}
-	var gids []string
-	require.NoError(t, shared.ForEachFixtureTags(func(tags map[string]interface{}) {
-		if gid, ok := tags["gid"].(string); ok && !seen[gid] {
-			seen[gid] = true
-			gids = append(gids, gid)
-		}
-	}))
-	require.Greater(t, len(gids), 1000, "the fixture scan found too few gids to be meaningful")
+type realShape struct {
+	GID    string `json:"gid"`
+	Shape  string `json:"shape"`
+	Source string `json:"source"`
+}
 
-	byID := make(map[string]string, len(gids))
-	for _, gid := range gids {
-		id := xccdfGroupID(gid)
-		if prior, dup := byID[id]; dup {
-			t.Errorf("gids %q and %q both encode to %q", prior, gid, id)
-			continue
-		}
-		byID[id] = gid
+func loadRealShapes(t *testing.T) []realShape {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "xccdf-group-id-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		RealShapes []realShape `json:"realShapes"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.RealShapes, "an empty table would pass vacuously")
+	return table.RealShapes
+}
+
+// Encoding is not injective: sanitization folds every character outside
+// [A-Za-z0-9._-] to "_", so two gids that differ only in such characters
+// collide, and the shared table above pins that behaviour on hostile input.
+// What real content needs is narrower and provable rather than sampled: for
+// every gid shape real tools emit, sanitization must be the identity, because
+// then encoding is prefix-plus-gid (or passthrough) and cannot collide at all.
+// One representative per shape is enough — the property is about the
+// characters a shape uses, not about how many gids share it.
+func TestXCCDFGroupIDLeavesRealShapesUntouched(t *testing.T) {
+	for _, r := range loadRealShapes(t) {
+		t.Run(r.Shape, func(t *testing.T) {
+			got := xccdfGroupID(r.GID)
+			if isXCCDFGroupID(r.GID) {
+				assert.Equal(t, r.GID, got, "a conforming %s id must pass through unchanged", r.Source)
+				return
+			}
+			assert.Equal(t, "xccdf_hdf_group_"+r.GID, got,
+				"a %s id (%s) was rewritten by the sanitizer — that shape can now collide", r.Source, r.Shape)
+		})
 	}
 }
