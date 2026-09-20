@@ -17,22 +17,22 @@ const validators: Record<number, ReturnType<typeof loadSchemaValidator>> = {
   2003: loadSchemaValidator(join(schemas, 'ocsf-compliance_finding-2003.schema.json')),
 };
 
-// The EXACT set of schema violations this converter still produces, tracked as
-// the exporter-conformance board and mirrored one-for-one by the Go peer. Pinned rather than
-// tolerated: a new violation fails, and so does fixing one, so it cannot drift
-// either way.
+// The EXACT set of schema violations this converter still produces, tracked on
+// the exporter-conformance board and mirrored one-for-one by the Go peer. Pinned
+// rather than tolerated: a new violation fails, and so does fixing one, so it
+// cannot drift either way.
+//
+// cloud and osint are not base members of either class: in the OCSF metaschema
+// (1.8.0 and 1.9.0 alike) each is contributed by the profile of the same name
+// and required only under that profile. The vendored export was taken with every
+// profile enabled, so it requires both; the converter applies neither profile and
+// HDF carries no OSINT indicators to populate one honestly. Reconciling the two
+// is a schema-vendoring decision, not a mapping fix.
 //
 // The key includes params.additionalProperty so an additionalProperties error
 // names the offending member, matching gojsonschema. Keying on the message alone
 // collapses every extra member into one entry and hides a newly added one.
-const KNOWN_VIOLATIONS = [
-  '2002|additionalProperties|evidences',
-  '2002|additionalProperties|remediation',
-  '2002|required|cloud',
-  '2002|required|osint',
-  '2003|required|cloud',
-  '2003|required|osint',
-].sort();
+const KNOWN_VIOLATIONS = ['2002|required|cloud', '2002|required|osint', '2003|required|cloud', '2003|required|osint'].sort();
 
 function violations(out: string): Set<string> {
   const seen = new Set<string>();

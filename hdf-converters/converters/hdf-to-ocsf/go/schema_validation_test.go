@@ -36,16 +36,17 @@ func classSchemas(t *testing.T) map[float64]*gojsonschema.Schema {
 }
 
 // knownViolations is the EXACT set of schema violations this converter still
-// produces, tracked on the exporter-conformance board. It is pinned rather than tolerated: a
-// new violation fails this test, and fixing one fails it too, so the list cannot
-// drift in either direction without someone noticing.
+// produces, tracked on the exporter-conformance board. It is pinned rather than
+// tolerated: a new violation fails this test, and fixing one fails it too, so the
+// list cannot drift in either direction without someone noticing.
 //
-// None of these is a version artifact. The version-pinned OCSF metaschema shows
-// evidences and remediation absent from class 2002, and cloud and osint required,
-// in BOTH 1.8.0 (which this converter self-declares) and 1.9.0 (vendored).
+// cloud and osint are not base members of either class: in the OCSF metaschema
+// (1.8.0 and 1.9.0 alike) each is contributed by the profile of the same name
+// and required only under that profile. The vendored export was taken with every
+// profile enabled, so it requires both; the converter applies neither profile and
+// HDF carries no OSINT indicators to populate one honestly. Reconciling the two
+// is a schema-vendoring decision, not a mapping fix.
 var knownViolations = map[string]bool{
-	"2002|additional_property_not_allowed|Additional property evidences is not allowed":   true,
-	"2002|additional_property_not_allowed|Additional property remediation is not allowed": true,
 	"2002|required|cloud is required": true,
 	"2002|required|osint is required": true,
 	"2003|required|cloud is required": true,
