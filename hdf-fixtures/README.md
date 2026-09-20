@@ -52,7 +52,7 @@ tested against invented data proves nothing about real data.
 
 | File | Source | Consumers |
 |------|--------|-----------|
-| `inspec-multilayered.json` | InSpec runner, multi-overlay scan | hdf-extension-graph TS + Go tests + hdf-parsers parser parity test. The bug-exhibiting fixture for `hdf-libs-2nm0` — bare timestamps that broke parsers before #83/#828d landed. Moved from `hdf-extension-graph/test/fixtures/multilayered-inspec.json`. |
+| `inspec-multilayered.json` | InSpec runner, multi-overlay scan | hdf-extension-graph TS + Go tests + hdf-parsers parser parity test + hdf-engine compliance tests (TS + Go). The bug-exhibiting fixture for `hdf-libs-2nm0` — bare timestamps that broke parsers before #83/#828d landed. Moved from `hdf-extension-graph/test/fixtures/multilayered-inspec.json`. The overlay chain re-reports the same requirement id in every layer it touches (534 ids appear more than once, 406 of them with differing statuses, and `SV-257777` twice within a single baseline), which is what hdf-engine's duplicate-id threshold tests need. |
 | `minimal.json` | Hand-crafted minimal valid HDF Results doc | hdf-to-xml converter (TS + Go) + hdf-parsers integration test + hdf-validators integration test. The smallest schema-valid HDF Results document — single baseline, one passing requirement. Moved from `hdf-converters/converters/hdf-to-xml/fixtures/input/minimal.json`. |
 
 ### `baseline/` — HDF Baseline docs

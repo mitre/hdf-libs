@@ -149,6 +149,8 @@ failed:
 
 Now the gate fails if `CKV_TF_1` starts passing, or if a different control fails in its place. That is stricter than a count and suits a baseline you expect to be stable; it is noisy for a scan whose findings move around.
 
+A requirement id names the requirement, not one finding, so the same id legitimately appears more than once — one CVE reported against several packages emits one requirement per package, in one baseline or across several. A named control is checked against **every** entry carrying that id: the assertion holds only if all of them have the expected status and severity, and each entry that does not is reported with its position (`entry 2 of 3`). Counting bounds are unchanged — they count requirement entries, duplicates included.
+
 ## Gate a GitHub pipeline
 
 Two steps. Convert, then check:

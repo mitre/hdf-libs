@@ -9,6 +9,7 @@ import {
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
 import type { HDFResults, RequirementResult, EvaluatedRequirement } from '@mitre/hdf-schema';
+import { results as fixtureResults } from '@mitre/hdf-fixtures';
 import {
   countControlsByStatusSeverity,
   countControlsByStatus,
@@ -276,4 +277,103 @@ describe('agent-override detective surface — parity with go/compliance_test.go
     expect(counts.error.total).toBe(1);
     expect(counts.noImpact.total).toBe(0);
   });
+});
+
+// Shared real InSpec multi-overlay run from @mitre/hdf-fixtures (also read by
+// go/compliance_test.go). A requirement id names the requirement, not one
+// finding, so an overlay chain re-reports the same id in every layer it touches
+// — 534 of this run's ids appear more than once, 406 with differing statuses.
+const multilayered = JSON.parse(fixtureResults.inspecMultilayered.read()) as HDFResults;
+
+describe('named-control assertions over duplicate ids — parity with go/compliance_test.go TestValidateThresholds_NamedControlMustHoldForEveryEntry', () => {
+  const counts = countControlsByStatusSeverity(multilayered);
+  const compliance = calculateCompliance(counts);
+  const controlMap = mapControlIDs(multilayered);
+
+  const validate = (cfg: ThresholdConfig): string[] => validateThresholds(cfg, counts, compliance, controlMap);
+
+  // namedControl builds a spec asserting one control id under one
+  // status/severity bucket — test code, not fixture data.
+  const namedControl = (status: string, severity: string, id: string): ThresholdConfig => ({
+    [status === 'no_impact' ? 'noImpact' : status]: { [severity]: { controls: [id] } },
+  });
+
+  it('duplicate ids are counted per entry (counting semantics unchanged)', () => {
+    // 1603 requirement entries over 534 distinct ids: every entry is counted.
+    expect(counts.skipped.total).toBe(1196);
+    expect(counts.skipped.medium).toBe(885);
+    expect(counts.failed.total).toBe(273);
+    expect(counts.failed.medium).toBe(246);
+    expect(counts.passed.total).toBe(134);
+    expect(
+      counts.passed.total + counts.failed.total + counts.skipped.total + counts.error.total + counts.noImpact.total,
+    ).toBe(1603);
+  });
+
+  // V-242399 is notReviewed in the two wrapper layers and passed in the
+  // k8s-node layer, so the last entry alone satisfies passed/medium.
+  it('a passing last entry no longer greens a gate its earlier entries fail', () => {
+    expect(validate(namedControl('passed', 'medium', 'V-242399'))).toEqual([
+      'passed.medium: control V-242399 expected passed/medium but found skipped/medium (entry 1 of 3)',
+      'passed.medium: control V-242399 expected passed/medium but found skipped/medium (entry 2 of 3)',
+    ]);
+  });
+
+  // The mirror: the FIRST entries satisfy skipped/medium and the last does not.
+  // A first-wins resolution would pass this; fail-closed must not.
+  it('a satisfying first entry does not rescue an unsatisfying last', () => {
+    expect(validate(namedControl('skipped', 'medium', 'V-242399'))).toEqual([
+      'skipped.medium: control V-242399 expected skipped/medium but found passed/medium (entry 3 of 3)',
+    ]);
+  });
+
+  // V-242387: notReviewed, notReviewed, failed across three baselines.
+  it('a failing last entry no longer greens a failed-control gate', () => {
+    expect(validate(namedControl('failed', 'high', 'V-242387'))).toEqual([
+      'failed.high: control V-242387 expected failed/high but found skipped/high (entry 1 of 3)',
+      'failed.high: control V-242387 expected failed/high but found skipped/high (entry 2 of 3)',
+    ]);
+  });
+
+  it('every baseline carrying the id contributes an entry', () => {
+    expect(controlMap.filter((m) => m.id === 'V-242387')).toHaveLength(3);
+    const baselinesWithIt = (multilayered.baselines ?? []).filter((b) =>
+      (b.requirements ?? []).some((r) => r.id === 'V-242387'),
+    );
+    expect(baselinesWithIt).toHaveLength(3);
+  });
+
+  // SV-257777 is reported twice within ONE baseline (and again in two others):
+  // duplication inside a single baseline resolves the same way.
+  it('duplicate entries within one baseline are resolved too', () => {
+    expect(validate(namedControl('skipped', 'informational', 'SV-257777'))).toEqual([
+      'skipped.informational: control SV-257777 expected skipped/informational but found failed/informational (entry 3 of 5)',
+      'skipped.informational: control SV-257777 expected skipped/informational but found failed/informational (entry 4 of 5)',
+    ]);
+  });
+
+  // Severity is checked per entry alongside status: V-242387 is impact 0.7
+  // (high) in every layer, so a critical assertion mismatches all three.
+  it('severity is checked on every entry', () => {
+    const v = validate(namedControl('failed', 'critical', 'V-242387'));
+    expect(v).toHaveLength(3);
+    expect(v[0]).toBe('failed.critical: control V-242387 expected failed/critical but found skipped/high (entry 1 of 3)');
+    expect(v[2]).toBe('failed.critical: control V-242387 expected failed/critical but found failed/high (entry 3 of 3)');
+  });
+
+  // V-242376 is notReviewed at impact 0 in all three layers.
+  it('duplicate entries that all satisfy the assertion pass', () => {
+    expect(validate(namedControl('skipped', 'informational', 'V-242376'))).toEqual([]);
+  });
+
+  it('an id in no entry is still reported missing', () => {
+    expect(validate(namedControl('failed', 'high', 'V-999999'))).toEqual([
+      'failed.high: expected control V-999999 not found in results',
+    ]);
+  });
+
+  // The single-entry contract — identical verdict AND identical message text,
+  // with no entry-index suffix — is pinned by the 'threshold verdict' suite
+  // above, whose fixture carries each id exactly once. Every id in this
+  // document is duplicated, so it cannot be asserted here.
 });

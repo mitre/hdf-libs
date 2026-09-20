@@ -282,9 +282,13 @@ func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, complianc
 	// once rather than in each of the file, inline and MCP callers.
 	violations = append(violations, normalizeLegacySeverity(config)...)
 
-	actualControls := make(map[string]ControlIDMapping)
+	// A requirement id names the requirement, not one finding, so several
+	// entries legitimately carry it (one CVE reported against several packages).
+	// Keeping every entry is what lets a named-control assertion be judged
+	// against all of them rather than whichever one was indexed last.
+	actualControls := make(map[string][]ControlIDMapping)
 	for _, m := range controlMap {
-		actualControls[m.ID] = m
+		actualControls[m.ID] = append(actualControls[m.ID], m)
 	}
 
 	if config.Compliance != nil {
@@ -339,7 +343,7 @@ func normalizeLegacySeverity(config *ThresholdConfig) []string {
 }
 
 // checkSeverityThreshold validates all severity bounds within a status category.
-func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping) []string {
+func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string][]ControlIDMapping) []string {
 	if threshold == nil {
 		return nil
 	}
@@ -357,13 +361,24 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 			violations = append(violations, fmt.Sprintf("%s: %d exceeds maximum %d", path, actualCount, *bound.Max))
 		}
 		for _, expectedID := range bound.Controls {
-			ac, found := actualControls[expectedID]
-			if !found {
+			matches := actualControls[expectedID]
+			if len(matches) == 0 {
 				violations = append(violations, fmt.Sprintf("%s: expected control %s not found in results", path, expectedID))
-			} else if ac.Status != status || ac.Severity != label {
+				continue
+			}
+			// Fail-closed: every entry carrying the id must satisfy the
+			// assertion. One passing finding out of three must not green a gate.
+			for i, ac := range matches {
+				if ac.Status == status && ac.Severity == label {
+					continue
+				}
+				entry := ""
+				if len(matches) > 1 {
+					entry = fmt.Sprintf(" (entry %d of %d)", i+1, len(matches))
+				}
 				violations = append(violations, fmt.Sprintf(
-					"%s: control %s expected %s/%s but found %s/%s",
-					path, expectedID, status, label, ac.Status, ac.Severity))
+					"%s: control %s expected %s/%s but found %s/%s%s",
+					path, expectedID, status, label, ac.Status, ac.Severity, entry))
 			}
 		}
 	}

@@ -325,9 +325,18 @@ export function validateThresholds(
   // rather than in each caller.
   violations.push(...normalizeLegacySeverity(config));
 
-  const actualControls = new Map<string, ControlIDMapping>();
+  // A requirement id names the requirement, not one finding, so several entries
+  // legitimately carry it (one CVE reported against several packages). Keeping
+  // every entry is what lets a named-control assertion be judged against all of
+  // them rather than whichever one was indexed last.
+  const actualControls = new Map<string, ControlIDMapping[]>();
   for (const m of controlMap) {
-    actualControls.set(m.id, m);
+    const existing = actualControls.get(m.id);
+    if (existing) {
+      existing.push(m);
+    } else {
+      actualControls.set(m.id, [m]);
+    }
   }
 
   if (config.compliance) {
@@ -352,7 +361,7 @@ function checkSeverityThreshold(
   status: string,
   threshold: ThresholdSeverity | undefined,
   actual: SeverityCounts,
-  actualControls: Map<string, ControlIDMapping>,
+  actualControls: Map<string, ControlIDMapping[]>,
 ): string[] {
   if (!threshold) {
     return [];
@@ -370,14 +379,22 @@ function checkSeverityThreshold(
       violations.push(`${path}: ${actualCount} exceeds maximum ${bound.max}`);
     }
     for (const expectedID of bound.controls ?? []) {
-      const ac = actualControls.get(expectedID);
-      if (!ac) {
+      const matches = actualControls.get(expectedID) ?? [];
+      if (matches.length === 0) {
         violations.push(`${path}: expected control ${expectedID} not found in results`);
-      } else if (ac.status !== status || ac.severity !== label) {
-        violations.push(
-          `${path}: control ${expectedID} expected ${status}/${label} but found ${ac.status}/${ac.severity}`,
-        );
+        continue;
       }
+      // Fail-closed: every entry carrying the id must satisfy the assertion. One
+      // passing finding out of three must not green a gate.
+      matches.forEach((ac, i) => {
+        if (ac.status === status && ac.severity === label) {
+          return;
+        }
+        const entry = matches.length > 1 ? ` (entry ${i + 1} of ${matches.length})` : '';
+        violations.push(
+          `${path}: control ${expectedID} expected ${status}/${label} but found ${ac.status}/${ac.severity}${entry}`,
+        );
+      });
     }
   };
 
