@@ -489,7 +489,7 @@ describe('grype-to-hdf scan-target component', () => {
 
   // A real directory/SBOM scan emits source.target as a bare STRING, not an
   // object. The name must be that string, not the "Grype Scan" fallback the TS
-  // twin silently produced before (hdf-libs-yt05).
+  // twin silently produced before.
   it('names the artifact after a bare-string source.target (directory scan)', async () => {
     const result = parseJSON<HDFResults>(await convertGrypeToHdf(loadFixture('directory_scan.json')));
     expect(result.baselines[0]!.name).toBe('.');

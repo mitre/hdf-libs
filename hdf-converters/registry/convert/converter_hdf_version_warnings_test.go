@@ -7,10 +7,10 @@ import (
 )
 
 // The downgrade warning slice is heterogeneous: a components[] passthrough-carrier
-// notice is NOT an amendment, so the header must not call every item one. Issue
-// #325 asked the notice to name what was affected; the old header re-genericized
-// it into the wrong category ("amendment(s)"), so CI greps saw a phantom amendment
-// failure.
+// notice is NOT an amendment, so the header must not call every item one. The
+// named-warning ask was for the notice to name what was affected; the old header
+// re-genericized it into the wrong category ("amendment(s)"), so CI greps saw a
+// phantom amendment failure.
 func TestWriteTransformWarnings_HeaderIsCategoryNeutral(t *testing.T) {
 	var buf bytes.Buffer
 	writeTransformWarnings(&buf, []string{

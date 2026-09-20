@@ -79,7 +79,7 @@ func emitTransformWarnings(warnings []string) {
 // v3-native fields such as components[] carried via passthrough — so the header
 // stays category-neutral ("item(s)") rather than calling every item an
 // amendment, and says "not fully represented" because a carried field is present
-// in passthrough even when it has no native v2 home (issue #325).
+// in passthrough even when it has no native v2 home.
 func writeTransformWarnings(w io.Writer, warnings []string) {
 	if len(warnings) == 0 {
 		return
