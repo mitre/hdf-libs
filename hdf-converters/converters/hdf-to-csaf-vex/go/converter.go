@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -117,32 +118,68 @@ type Score struct {
 	CvssV4   *CvssData `json:"cvss_v4,omitempty"`
 }
 
-// CvssData is the CSAF representation of a CVSS block.
+// CvssData is a CSAF score's CVSS block, holding exactly the fields the
+// FIRST.org schema for its version requires; buildCsafScore emits nothing else.
 type CvssData struct {
 	Version      string   `json:"version"`
-	VectorString string   `json:"vectorString,omitempty"`
-	BaseScore    *float64 `json:"baseScore,omitempty"`
+	VectorString string   `json:"vectorString"`
+	BaseScore    *float64 `json:"baseScore"`
 	BaseSeverity string   `json:"baseSeverity,omitempty"`
 }
 
-// buildCsafScore maps an HDF Cvss block to a CSAF score entry (cvss_v2/v3/v4 by version).
-func buildCsafScore(cvss *hdf.Cvss, products []string) *Score {
+// csafSeverity maps an HDF Cvss_Severity band to the FIRST.org severityType
+// enum: the same five bands, which FIRST spells uppercase. Pinned in both
+// languages to fixtures/cvss-score-cases.json and to the vendored schema's enum.
+func csafSeverity(s hdf.CVSSSeverity) string { return strings.ToUpper(string(s)) }
+
+// buildCsafScore maps an HDF Cvss block to a CSAF score entry, or nil when the
+// block cannot be exported.
+//
+// A score is emitted only when every field the FIRST.org schema for its
+// version requires is present: version, vectorString and baseScore, plus
+// baseSeverity for 3.x and 4.0 (2.0 defines no severity, so none is emitted
+// for it). HDF requires only version, so legal HDF can fall short, and the
+// choice is to drop such a block rather than emit it partially: a partial
+// score fails the CSAF schema, and conforming consumers reject a document that
+// fails it, so it would cost every statement in the export, not just itself.
+// Nothing is synthesized to close the gap — a vector cannot be recovered from
+// a score, and a band the source never stated would be asserted in its name —
+// and the drop is logged so the loss is visible. A block with no base metrics
+// at all is consumer enrichment by design (threat or environmental deltas on a
+// riskAdjustment); CSAF scores carry base metrics, so nothing exportable was
+// lost and it is skipped silently.
+func buildCsafScore(cvss *hdf.Cvss, cve string, products []string) *Score {
 	if cvss == nil {
 		return nil
 	}
-	ver := string(cvss.Version)
-	data := &CvssData{Version: ver}
-	if cvss.BaseVector != nil {
-		data.VectorString = *cvss.BaseVector
-	}
-	if cvss.BaseScore != nil {
-		data.BaseScore = cvss.BaseScore
-	}
-	if cvss.BaseSeverity != nil {
-		data.BaseSeverity = string(*cvss.BaseSeverity)
-	}
-	if data.VectorString == "" && data.BaseScore == nil {
+	hasVector := cvss.BaseVector != nil && *cvss.BaseVector != ""
+	hasScore := cvss.BaseScore != nil
+	hasSeverity := cvss.BaseSeverity != nil
+	if !hasVector && !hasScore && !hasSeverity {
 		return nil
+	}
+
+	ver := string(cvss.Version)
+	v2 := strings.HasPrefix(ver, "2")
+	var missing []string
+	if !hasVector {
+		missing = append(missing, "vectorString")
+	}
+	if !hasScore {
+		missing = append(missing, "baseScore")
+	}
+	if !v2 && !hasSeverity {
+		missing = append(missing, "baseSeverity")
+	}
+	if len(missing) > 0 {
+		log.Printf("WARNING: hdf-to-csaf-vex: %s: CVSS %s score not exported, CSAF requires %s",
+			cve, ver, strings.Join(missing, ", "))
+		return nil
+	}
+
+	data := &CvssData{Version: ver, VectorString: *cvss.BaseVector, BaseScore: cvss.BaseScore}
+	if !v2 {
+		data.BaseSeverity = csafSeverity(*cvss.BaseSeverity)
 	}
 	score := &Score{Products: products}
 	switch {
@@ -468,7 +505,7 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 		pids := productIDsFor(o)
 
 		// Emit consumer-supplied CVSS enrichment as a CSAF score entry.
-		if s := buildCsafScore(o.Cvss, pids); s != nil {
+		if s := buildCsafScore(o.Cvss, group.cve, pids); s != nil {
 			v.Scores = append(v.Scores, *s)
 			emittedAny = true
 		}
