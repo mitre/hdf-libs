@@ -123,7 +123,7 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	token, err := resolveGitLabToken(baseURL.Host)
+	token, err := ResolveToken(baseURL.Host)
 	if err != nil {
 		return nil, err
 	}
@@ -209,11 +209,13 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	return body, nil
 }
 
-// resolveGitLabToken resolves a GitLab API token using this priority:
+// ResolveToken resolves a GitLab API token for hostname using this priority:
 // 1. GITLAB_TOKEN env var
 // 2. GLAB_TOKEN env var
 // 3. glab CLI config file (~/.config/glab-cli/config.yml).
-func resolveGitLabToken(hostname string) (string, error) {
+//
+// Exported so every GitLab fetcher shares one credential chain.
+func ResolveToken(hostname string) (string, error) {
 	if token := os.Getenv("GITLAB_TOKEN"); token != "" {
 		return token, nil
 	}

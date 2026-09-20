@@ -1,0 +1,11 @@
+query VulnerabilityReportProbe($fullPath: ID!) {
+  metadata { enterprise version }
+  currentUser { username }
+  currentLicense { plan trial expiresAt }
+  project(fullPath: $fullPath) {
+    id fullPath name webUrl archived
+    repository { rootRef }
+    securityScanners { available enabled pipelineRun }
+    vulnerabilityStatistic { total critical high medium low info unknown }
+  }
+}

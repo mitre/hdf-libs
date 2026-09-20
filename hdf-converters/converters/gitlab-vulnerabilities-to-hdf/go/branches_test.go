@@ -159,12 +159,12 @@ func TestIngestionError_ScanStatusBranches(t *testing.T) {
 		p.SecurityReportSummary["sast"].Scans.Nodes = scans
 		return &Envelope{Project: Project{FullPath: "g/p", LatestDefaultBranchPipeline: p}}
 	}
-	assert.NoError(t, ingestionError(&Envelope{Project: Project{VulnerabilityStatistic: &Statistic{}}}))
-	assert.NoError(t, ingestionError(env(Scan{Status: "SUCCEEDED"})), "a succeeded scan without a statistic row still counts as populated")
-	assert.ErrorContains(t, ingestionError(env(Scan{Status: "PREPARING"})), "never ingested")
-	assert.ErrorContains(t, ingestionError(env(Scan{Status: ""})), "status unknown")
-	assert.ErrorContains(t, ingestionError(env(Scan{Status: "JOB_FAILED", Errors: []string{"exit 1"}})), "sast: JOB_FAILED (exit 1)")
-	assert.ErrorContains(t, ingestionError(env()), "no security scanner has run")
+	assert.NoError(t, IngestionError(&Envelope{Project: Project{VulnerabilityStatistic: &Statistic{}}}))
+	assert.NoError(t, IngestionError(env(Scan{Status: "SUCCEEDED"})), "a succeeded scan without a statistic row still counts as populated")
+	assert.ErrorContains(t, IngestionError(env(Scan{Status: "PREPARING"})), "never ingested")
+	assert.ErrorContains(t, IngestionError(env(Scan{Status: ""})), "status unknown")
+	assert.ErrorContains(t, IngestionError(env(Scan{Status: "JOB_FAILED", Errors: []string{"exit 1"}})), "sast: JOB_FAILED (exit 1)")
+	assert.ErrorContains(t, IngestionError(env()), "no security scanner has run")
 	assert.Empty(t, ingestedReportTypes(nil))
 }
 

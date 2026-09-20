@@ -316,7 +316,7 @@ func ExpectedRequirementCount(input []byte) (int, string, error) {
 		limited, _ := hdfutil.LimitSlice(env.Vulnerabilities, 0)
 		return len(limited), unit, nil
 	}
-	if err := ingestionError(env); err != nil {
+	if err := IngestionError(env); err != nil {
 		return 0, unit, err
 	}
 	n := len(ingestedReportTypes(env.Project.LatestDefaultBranchPipeline))
@@ -326,10 +326,12 @@ func ExpectedRequirementCount(input []byte) (int, string, error) {
 	return n, unit, nil
 }
 
-// ingestionError classifies an empty vulnerability list. A report that has
+// IngestionError classifies an empty vulnerability list. A report that has
 // never been populated by ingestion is an error, not a clean document: a
-// no-findings pass there would be the one truly silent false pass.
-func ingestionError(env *Envelope) error {
+// no-findings pass there would be the one truly silent false pass. The fetcher
+// applies the same classification before it writes anything, so both doors
+// reject the same envelopes.
+func IngestionError(env *Envelope) error {
 	if env.Project.VulnerabilityStatistic != nil {
 		return nil
 	}
@@ -415,7 +417,7 @@ func ConvertGitlabVulnerabilitiesToHDF(input []byte, converterVersion string) (*
 
 	var baselines []hdf.EvaluatedBaseline
 	if len(env.Vulnerabilities) == 0 {
-		if err := ingestionError(env); err != nil {
+		if err := IngestionError(env); err != nil {
 			return nil, err
 		}
 		baselines = noFindingsBaselines(env, fetchedAt, resultsChecksum)

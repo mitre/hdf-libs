@@ -26,6 +26,7 @@ Currently in tree:
 | `aws-securityhub` | ✓ | ✓ | fetch, verify |
 | `defectdojo` | ✓ | ✓ | fetch, verify |
 | `gitlab` | ✓ | — | fetch |
+| `gitlab-vulnerabilities` | ✓ | — | fetch (project or group), verify |
 | `sonarqube` | ✓ | — | fetch |
 | `splunk` | ✓ | — | fetch |
 
