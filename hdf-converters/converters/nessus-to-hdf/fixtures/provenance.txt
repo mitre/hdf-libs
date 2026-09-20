@@ -60,3 +60,15 @@ DoD-internal and not shareable, Tenable's public docs specify only the
 documented public ACAS scan was locatable. Rather than pad the corpus with a
 synthetic fixture duplicating fields `sample.nessus` already exercises, ACAS
 coverage is asserted against that real scan.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `compliance.nessus` — Nessus `.nessus` v2 export, policy "DISA STIG Compliance Audit"; the scanner version is not written into the export, so its version is not determinable from file content (see the origin notes above for what is known).
+- `empty-host.nessus` — Nessus `.nessus` v2 export, policy "Basic Network Scan"; the scanner version is not written into the export, so its version is not determinable from file content (see the origin notes above for what is known).
+- `sample.nessus` — Nessus `.nessus` v2 export, policy "Basic Network Scan"; the scanner version is not written into the export, so its version is not determinable from file content (see the origin notes above for what is known).
+
+## Schema
+
+Tenable documents the `.nessus` v2 format in prose (`nessus_v2_file_format.pdf`); no XSD was located in Tenable's documentation (2026-09-20).

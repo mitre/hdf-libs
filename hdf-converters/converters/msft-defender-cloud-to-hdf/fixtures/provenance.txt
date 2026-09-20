@@ -15,3 +15,15 @@ at the directory level.
 **Refreshing:** requires an Azure tenant with Defender for Cloud (licensed). To
 replace with a real export, pull `Microsoft.Security/assessments`, scrub tenant/
 subscription/resource IDs, and drop the `_provenance` marker.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — Microsoft Defender API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `minimal.json` — Microsoft Defender API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `sample.json` — Microsoft Defender API response body; the service version is not part of the response, so its version is not determinable from file content.
+
+## Schema
+
+The fixture is an Azure Resource Manager `assessments` response; Microsoft publishes the Swagger 2.0 description in Azure/azure-rest-api-specs under `specification/security/resource-manager/Microsoft.Security/Security/stable/<api-version>/assessments.json`. It describes the endpoint, not a document format, and is not vendored (2026-09-20).

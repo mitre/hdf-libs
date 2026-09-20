@@ -22,3 +22,16 @@ struct in `mitre/hipcheck` `hipcheck/src/report/mod.rs`), Hipcheck v3.15.0.
 - **empty.json** — A structurally valid report with empty `passing`/`failing`/
   `errored` arrays, to exercise the no-findings placeholder synthesizer. Derived
   from the real report shape (Hipcheck normally always runs analyses).
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — Hipcheck 3.15.0 (`hipcheck_version`).
+- `minimal.json` — Hipcheck 3.15.0 (`hipcheck_version`).
+- `pass.json` — Hipcheck 3.15.0 (`hipcheck_version`).
+- `real.json` — Hipcheck 3.15.0 (`hipcheck_version`).
+
+## Schema
+
+Hipcheck publishes no schema for its JSON report; the shape is the Rust structs under `hipcheck/src/report/` (2026-09-20).

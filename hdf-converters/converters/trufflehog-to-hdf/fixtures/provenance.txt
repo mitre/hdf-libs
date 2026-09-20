@@ -50,3 +50,17 @@ They are the two real shapes of "a clean scan" a user can hand the converter:
 zero-findings HDF (modulo the volatile `resultsChecksum = sha256(input)` and the
 masked timestamps). Keeping both guards against a future regression that handles
 one shape but not the other.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty-stdout.json` — TruffleHog JSON; TruffleHog writes no version into findings, so its version is not determinable from file content.
+- `empty.json` — TruffleHog JSON; TruffleHog writes no version into findings, so its version is not determinable from file content.
+- `minimal.json` — TruffleHog JSON; TruffleHog writes no version into findings, so its version is not determinable from file content.
+- `multi-detector.json` — TruffleHog JSON; TruffleHog writes no version into findings, so its version is not determinable from file content.
+- `ndjson-input.ndjson` — TruffleHog NDJSON, one finding per line; TruffleHog writes no version into findings, so its version is not determinable from file content.
+
+## Schema
+
+TruffleHog publishes no schema for its JSON findings; they are marshalled Go structs (`pkg/output/json.go`) (2026-09-20).

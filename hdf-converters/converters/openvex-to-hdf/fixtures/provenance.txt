@@ -44,3 +44,15 @@ EOF
 the round-trip HDF Amendments output for visual diff review. They do not
 gate the test suite; the in-memory Go and TypeScript tests are
 authoritative.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.openvex.json` — OpenVEX; spec version from `@context` (https://openvex.dev/ns/v0.2.0); the document names no producing tool, so a tool version is not determinable from file content.
+- `multi-status.openvex.json` — OpenVEX; spec version from `@context` (https://openvex.dev/ns/v0.2.0); the document names no producing tool, so a tool version is not determinable from file content.
+- `spring-boot-log4j.openvex.json` — OpenVEX; spec version from `@context` (https://openvex.dev/ns/v0.2.0); the document names no producing tool, so a tool version is not determinable from file content.
+
+## Schema
+
+OpenVEX's schema is vendored here (`openvex_json_schema.json`, see `provenance.json`).

@@ -79,3 +79,16 @@ suites under the shared normalization. Regenerate after intentional changes with
 ```
 go test ./converters/spdx-vex-to-hdf/go/... -run TestSnapshots -update
 ```
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `no-actionable.spdx.json` — SPDX 3.0.1 JSON-LD (`@context` https://spdx.org/rdf/3.0.1/spdx-context.jsonld); the producing tool and version are not named in the file.
+- `sample.spdx.json` — SPDX 3.0.1 JSON-LD (`@context` https://spdx.org/rdf/3.0.1/spdx-context.jsonld); the producing tool and version are not named in the file.
+
+## Schema
+
+SPDX publishes a JSON Schema for 3.0.x at `https://spdx.org/schema/3.0.1/spdx-json-schema.json`; the fixtures' `@context` is 3.0.1, so that file is vendored here and recorded in `provenance.json`. It uses ECMAScript regex syntax that Go's RE2 rejects, so the Go sweep lists it as uncompilable and the TypeScript sweep (ajv) compiles it.
+
+Validation (ajv, (2026-09-20)): both inputs validate.

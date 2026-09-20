@@ -11,3 +11,14 @@ path to regenerate current output. The response contract is stable, so this
 capture remains a valid tested contract. Refresh only on an API-shape change,
 sourcing from a real Conveyor instance and scrubbing any environment-specific
 identifiers.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — Conveyor 4.4.0 (`api_server_version`).
+- `sample-results.json` — Conveyor 4.4.0.20 (`api_server_version`).
+
+## Schema
+
+The fixture is a REST response body; no published API description was located (2026-09-20).
