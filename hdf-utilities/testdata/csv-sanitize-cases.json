@@ -1,5 +1,5 @@
 {
-  "$comment": "Shared table for CSV formula-injection sanitizing. hdfutil.SanitizeCSVValue (Go) and sanitizeCsvValue (TypeScript) both read it, so the trigger set cannot drift on one side. The control prepends a single quote to any value whose first character would make a spreadsheet evaluate it as a formula.",
+  "$comment": "Shared table for CSV formula-injection sanitizing. hdfutil.SanitizeCSVValue (Go) and sanitizeCsvValue (TypeScript) both read it, so the trigger set cannot drift on one side. The control prepends a single quote to any value whose first NON-WHITESPACE character is a trigger, skipping a leading run of space, tab, CR or LF — a first-character-only test is bypassed by padding the payload with whitespace, which a spreadsheet ignores before evaluating. The quote goes at the very front, ahead of the preserved whitespace, and a value whose leading whitespace is followed by anything else is left untouched.",
   "triggers": [
     "=",
     "+",
