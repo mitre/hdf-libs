@@ -64,6 +64,7 @@ const DOCS_ORDER = {
     'cve-ecosystem',
     'label-keys-reference',
     'sonarqube-severity',
+    'gitlab-vulnerability-report',
     // Tooling
     'hdf-mcp',
     'verifying-releases',
