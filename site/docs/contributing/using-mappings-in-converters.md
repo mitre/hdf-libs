@@ -9,7 +9,7 @@ This page is the convention for doing that. For what each mapper covers and its 
 Mapping is not a one-liner. Several source identifiers commonly map to the same control, so the results need deduplicating; and a stable order matters because converter output is compared against goldens. The shared converter layer already encapsulates that for CWE:
 
 ```typescript
-import { mapCWEToNIST, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '../../shared/typescript/converterutil.js';
+import { mapCWEToNIST, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '../../../shared/typescript/converterutil.js';
 
 tags.nist = mapCWEToNIST(cweIDs, [...DEFAULT_STATIC_ANALYSIS_NIST_TAGS]);
 ```

@@ -71,6 +71,46 @@ test('the packages index links every rendered page', () => {
   }
 });
 
+// The two transitions the clean render cannot see. Regenerating into an emptied
+// directory is right for CI, but it erases exactly the states these describe —
+// so they are exercised against the generator's own prune loop instead, WITHOUT
+// the wipe. That loop is what removes a dropped or renamed package's page in
+// normal use, and nothing else covers it.
+test('the generator prunes a page whose package no longer exists', () => {
+  const ghost = path.join(PAGES_DIR, 'hdf-ghost-not-a-package.md');
+  fs.writeFileSync(ghost, '# ghost\n');
+  generatePackages();
+  assert.equal(fs.existsSync(ghost), false, 'a page with no matching package must be pruned');
+});
+
+test('the generator prunes the old page when a package is renamed', () => {
+  // A rename presents as the old name's page lingering beside the new one.
+  const old = path.join(PAGES_DIR, 'hdf-former-name.md');
+  fs.writeFileSync(old, '# former\n');
+  generatePackages();
+  assert.equal(fs.existsSync(old), false, 'the pre-rename page must not survive');
+  assert.deepEqual(renderedPages(), workspacePackages(), 'and the set must match the workspace');
+});
+
+// The index is the nav's entry point, so a run that does not produce it breaks
+// navigation silently. Note this cannot test the prune loop's index.md
+// exemption: the index is rewritten after pruning, so deleting it mid-run is
+// unobservable — the exemption is belt-and-braces, not load-bearing.
+test('every run produces the packages index', () => {
+  fs.rmSync(PAGES_DIR, { recursive: true, force: true });
+  generatePackages();
+  assert.ok(fs.existsSync(path.join(PAGES_DIR, 'index.md')), 'the run must write index.md');
+});
+
+// site is a workspace package (pnpm-workspace.yaml) that is deliberately not
+// rendered — it is the site itself, not a library. The exclusion is implicit in
+// the hdf- prefix filter, so state it here; otherwise the generator and the
+// check agree by construction and neither records the intent.
+test('site is excluded from the rendered set, deliberately', () => {
+  assert.ok(!workspacePackages().includes('site'), 'site must not be rendered as a package page');
+  assert.equal(fs.existsSync(path.join(PAGES_DIR, 'site.md')), false);
+});
+
 // A README link written for the repository 404s on the site unless rewritten,
 // and a silent 404 is exactly what nobody notices.
 test('no rendered page carries an unrewritten repo-relative link', () => {

@@ -77,7 +77,7 @@ Prefer an input-derived count over a literal where one is available — `countXm
 
 ### 3. Implement both languages
 
-Build against the shared helpers rather than reimplementing them. `buildHdfResults` / `BuildHDFResults` assemble the document; `SeverityToImpact`, `MapCWEToNIST`, `inputChecksum`, `LimitSliceWithWarning` and the rest live in `hdf-converters/shared`. A converter that reinvents library functionality will be sent back — check what exists before writing.
+Build against the shared helpers rather than reimplementing them. `buildHdfResults` / `BuildHDFResults` assemble the document; `MapCWEToNIST`, `inputChecksum` and `LimitSliceWithWarning` live in `hdf-converters/shared`, while lower-level primitives such as `SeverityToImpact` and `ParseTimestamp` come from `hdf-utilities`. A converter that reinvents library functionality will be sent back — check what exists before writing.
 
 Parse timestamps with `parseTimestamp` / `ParseTimestamp`, never `new Date(value)` or `time.Parse` directly; zone-less input is otherwise read as host-local and the two languages diverge.
 
