@@ -7,6 +7,9 @@ import { convertHdfToCyclonedxVex } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const schemas = join(__dirname, '..', 'schemas');
+// The url fields are `format: iri-reference` and contacts `idn-email`, neither of
+// which ajv-formats implements, so a green run here says nothing about them. The
+// Go peer asserts both; see shared/testdata/format-assertion-cases.json.
 const validate = loadSchemaValidatorWithResources(join(schemas, 'bom-1.4.schema.json'), {
   'http://cyclonedx.org/schema/spdx.schema.json': join(schemas, 'spdx.schema.json'),
   'http://cyclonedx.org/schema/jsf-0.82.schema.json': join(schemas, 'jsf-0.82.schema.json'),
