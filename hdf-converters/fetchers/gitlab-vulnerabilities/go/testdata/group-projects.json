@@ -1,0 +1,38 @@
+{
+  "data": {
+    "group": {
+      "id": "gid://gitlab/Group/15",
+      "fullPath": "security-demo",
+      "name": "security-demo",
+      "webUrl": "https://gitlab.example.com/groups/security-demo",
+      "projects": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "eyJpZCI6IjEifQ"
+        },
+        "nodes": [
+          {
+            "id": "gid://gitlab/Project/4",
+            "fullPath": "security-demo/unscanned-app",
+            "archived": false
+          },
+          {
+            "id": "gid://gitlab/Project/3",
+            "fullPath": "security-demo/empty-app",
+            "archived": false
+          },
+          {
+            "id": "gid://gitlab/Project/2",
+            "fullPath": "security-demo/web-goat",
+            "archived": false
+          },
+          {
+            "id": "gid://gitlab/Project/1",
+            "fullPath": "security-demo/juice-shop",
+            "archived": false
+          }
+        ]
+      }
+    }
+  }
+}

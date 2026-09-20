@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "enterprise": true,
+    "version": "18.9.1-ee"
+  },
+  "project": {
+    "id": "gid://gitlab/Project/4",
+    "fullPath": "security-demo/unscanned-app",
+    "name": "unscanned-app",
+    "webUrl": "https://gitlab.example.com/security-demo/unscanned-app",
+    "archived": false,
+    "repository": {
+      "rootRef": "main"
+    },
+    "securityScanners": {
+      "available": [
+        "SAST",
+        "SAST_ADVANCED",
+        "SAST_IAC",
+        "DAST",
+        "DEPENDENCY_SCANNING",
+        "CONTAINER_SCANNING",
+        "SECRET_DETECTION",
+        "COVERAGE_FUZZING",
+        "API_FUZZING",
+        "CLUSTER_IMAGE_SCANNING"
+      ],
+      "enabled": [
+        "SAST"
+      ],
+      "pipelineRun": [
+        "SAST"
+      ]
+    },
+    "vulnerabilityStatistic": null,
+    "latestDefaultBranchPipeline": {
+      "iid": "4",
+      "sha": "2ff8a411e21797ffa773ec101dd45eddf17caf7b",
+      "ref": "main",
+      "status": "SUCCESS",
+      "createdAt": "2026-09-20T19:38:48Z",
+      "finishedAt": "2026-09-20T19:38:56Z",
+      "securityReportSummary": {
+        "sast": {
+          "vulnerabilitiesCount": 0,
+          "scans": {
+            "nodes": [
+              {
+                "name": "custom-sast",
+                "status": "REPORT_ERROR",
+                "errors": [
+                  "[ParsingError] An unexpected error happened!"
+                ],
+                "warnings": []
+              }
+            ]
+          }
+        },
+        "secretDetection": null,
+        "dependencyScanning": null,
+        "containerScanning": null,
+        "dast": null,
+        "coverageFuzzing": null,
+        "apiFuzzing": null,
+        "clusterImageScanning": null
+      }
+    }
+  },
+  "vulnerabilities": [],
+  "fetchedAt": "2026-09-20T19:42:17Z"
+}

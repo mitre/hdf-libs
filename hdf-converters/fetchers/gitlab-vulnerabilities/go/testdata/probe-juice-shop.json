@@ -1,0 +1,67 @@
+{
+  "errors": [
+    {
+      "message": "The resource that you are attempting to access does not exist or you don't have permission to perform this action",
+      "locations": [
+        {
+          "line": 4,
+          "column": 3
+        }
+      ],
+      "path": [
+        "currentLicense"
+      ]
+    }
+  ],
+  "data": {
+    "metadata": {
+      "enterprise": true,
+      "version": "18.9.1-ee"
+    },
+    "currentUser": {
+      "username": "sec-reviewer"
+    },
+    "currentLicense": null,
+    "project": {
+      "id": "gid://gitlab/Project/1",
+      "fullPath": "security-demo/juice-shop",
+      "name": "juice-shop",
+      "webUrl": "https://gitlab.example.com/security-demo/juice-shop",
+      "archived": false,
+      "repository": {
+        "rootRef": "master"
+      },
+      "securityScanners": {
+        "available": [
+          "SAST",
+          "SAST_ADVANCED",
+          "SAST_IAC",
+          "DAST",
+          "DEPENDENCY_SCANNING",
+          "CONTAINER_SCANNING",
+          "SECRET_DETECTION",
+          "COVERAGE_FUZZING",
+          "API_FUZZING",
+          "CLUSTER_IMAGE_SCANNING"
+        ],
+        "enabled": [
+          "SAST",
+          "SECRET_DETECTION"
+        ],
+        "pipelineRun": [
+          "SAST",
+          "SECRET_DETECTION"
+        ]
+      },
+      "vulnerabilityStatistic": {
+        "total": 89,
+        "critical": 36,
+        "high": 1,
+        "medium": 50,
+        "low": 2,
+        "info": 0,
+        "unknown": 0
+      }
+    }
+  }
+}

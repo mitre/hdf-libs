@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "enterprise": true,
+    "version": "18.9.1-ee"
+  },
+  "project": {
+    "id": "gid://gitlab/Project/2",
+    "fullPath": "security-demo/web-goat",
+    "name": "Web Goat",
+    "webUrl": "https://gitlab.example.com/security-demo/web-goat",
+    "archived": false,
+    "repository": {
+      "rootRef": "main"
+    },
+    "securityScanners": {
+      "available": [
+        "SAST",
+        "SAST_ADVANCED",
+        "SAST_IAC",
+        "DAST",
+        "DEPENDENCY_SCANNING",
+        "CONTAINER_SCANNING",
+        "SECRET_DETECTION",
+        "COVERAGE_FUZZING",
+        "API_FUZZING",
+        "CLUSTER_IMAGE_SCANNING"
+      ],
+      "enabled": [
+        "SECRET_DETECTION"
+      ],
+      "pipelineRun": [
+        "SECRET_DETECTION"
+      ]
+    },
+    "vulnerabilityStatistic": {
+      "total": 0,
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 0,
+      "unknown": 0
+    },
+    "latestDefaultBranchPipeline": {
+      "iid": "1",
+      "sha": "10f78f3ef6838c19504060d43c0f3734fa4e5dee",
+      "ref": "main",
+      "status": "SUCCESS",
+      "createdAt": "2026-09-20T19:22:49Z",
+      "finishedAt": "2026-09-20T19:22:59Z",
+      "securityReportSummary": {
+        "sast": null,
+        "secretDetection": {
+          "vulnerabilitiesCount": 0,
+          "scans": {
+            "nodes": [
+              {
+                "name": "secret_detection",
+                "status": "SUCCEEDED",
+                "errors": [],
+                "warnings": []
+              }
+            ]
+          }
+        },
+        "dependencyScanning": null,
+        "containerScanning": null,
+        "dast": null,
+        "coverageFuzzing": null,
+        "apiFuzzing": null,
+        "clusterImageScanning": null
+      }
+    }
+  },
+  "vulnerabilities": [],
+  "fetchedAt": "2026-09-20T19:42:17Z"
+}

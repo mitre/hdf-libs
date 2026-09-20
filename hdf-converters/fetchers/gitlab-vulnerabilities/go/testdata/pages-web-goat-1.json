@@ -1,0 +1,51 @@
+{
+  "data": {
+    "project": {
+      "fullPath": "security-demo/web-goat",
+      "pipelines": {
+        "nodes": [
+          {
+            "iid": "1",
+            "sha": "10f78f3ef6838c19504060d43c0f3734fa4e5dee",
+            "ref": "main",
+            "status": "SUCCESS",
+            "createdAt": "2026-09-20T19:22:49Z",
+            "finishedAt": "2026-09-20T19:22:59Z",
+            "securityReportSummary": {
+              "sast": null,
+              "secretDetection": {
+                "vulnerabilitiesCount": 0,
+                "scans": {
+                  "nodes": [
+                    {
+                      "name": "secret_detection",
+                      "status": "SUCCEEDED",
+                      "errors": [],
+                      "warnings": []
+                    }
+                  ]
+                }
+              },
+              "dependencyScanning": null,
+              "containerScanning": null,
+              "dast": null,
+              "coverageFuzzing": null,
+              "apiFuzzing": null,
+              "clusterImageScanning": null
+            }
+          }
+        ]
+      },
+      "vulnerabilities": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
+      }
+    }
+  },
+  "extensions": {
+    "disabled_filters": []
+  }
+}
