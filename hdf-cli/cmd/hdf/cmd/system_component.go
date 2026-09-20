@@ -426,7 +426,7 @@ func loadBOM(fromRef string) ([]byte, map[string]interface{}, string, error) {
 		return nil, nil, guessFormatFromURI(fromRef), nil
 	}
 
-	data, err := os.ReadFile(fromRef) // #nosec G304
+	data, err := readInputFile(fromRef)
 	if err != nil {
 		return nil, nil, "", fmt.Errorf("failed to read BOM file: %w", err)
 	}
@@ -448,7 +448,7 @@ func loadBOM(fromRef string) ([]byte, map[string]interface{}, string, error) {
 
 // loadSystemDoc reads and schema-validates an HDF system document.
 func loadSystemDoc(systemFile string) (map[string]interface{}, error) {
-	sysData, err := os.ReadFile(systemFile) // #nosec G304
+	sysData, err := readInputFile(systemFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read system file: %w", err)
 	}
@@ -571,7 +571,7 @@ func writeSystemJSON(sysDoc map[string]interface{}, outputPath, message string) 
 		return fmt.Errorf("failed to serialize system document: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 

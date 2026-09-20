@@ -536,6 +536,12 @@ func TestHdfCompliance_UnknownGroupBy(t *testing.T) {
 	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
 	res, _ := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "bogus"})
 	assertArgError(t, res, "unknown groupBy")
+	// The remedy names every mode, so an agent never has to guess the enum.
+	for _, mode := range []string{"baseline", "severity", "nistFamily", "tool", "cwe"} {
+		if txt := payloadText(t, res); !strings.Contains(txt, mode) {
+			t.Errorf("unknown-groupBy remedy must name %q, got %s", mode, txt)
+		}
+	}
 }
 
 func TestGroupSeverity_ExplicitAndDerived(t *testing.T) {
@@ -833,5 +839,46 @@ func TestResolveThreshold_PathGoesThroughTheSharedReader(t *testing.T) {
 	}
 	if terr.Code != mcperr.TooLarge {
 		t.Errorf("code = %s, want %s", terr.Code, mcperr.TooLarge)
+	}
+}
+
+// TestCompliance_GroupByBaseline_SameNamedBaselinesStayDistinct is js1nv.2's
+// first failing test. Real Prisma converter output carries 16 baselines under one
+// name; grouping by baseline must yield 16 groups whose totals sum to the
+// ungrouped total, each carrying its baseline index — never a single group that
+// silently holds only the last baseline's requirements.
+func TestCompliance_GroupByBaseline_SameNamedBaselinesStayDistinct(t *testing.T) {
+	path := writeRoot(t, "dup.json", readToolsFixture(t, "duplicate-baselines.json"))
+	_, whole := callCompliance(t, complianceInput{Source: handle.Source{Path: path}})
+	if got := whole.Counts["failed"]["total"]; got != 94 {
+		t.Fatalf("ungrouped failed total = %d, want 94 (fixture invariant)", got)
+	}
+	_, out := callCompliance(t, complianceInput{Source: handle.Source{Path: path}, GroupBy: "baseline"})
+	if len(out.Groups) != 16 {
+		t.Fatalf("groupBy=baseline on 16 same-named baselines returned %d group(s); want 16", len(out.Groups))
+	}
+	sum := 0
+	seenIdx := map[int]bool{}
+	for _, g := range out.Groups {
+		if g.Group != "Prisma Cloud Scan" {
+			t.Errorf("group name %q, want the document's baseline name", g.Group)
+		}
+		if g.BaselineIndex == nil {
+			t.Fatalf("group %+v carries no baselineIndex", g)
+		}
+		seenIdx[*g.BaselineIndex] = true
+		sum += g.Counts["failed"]["total"]
+	}
+	if sum != 94 {
+		t.Errorf("sum of group failed totals = %d, want 94 (the ungrouped total)", sum)
+	}
+	if len(seenIdx) != 16 {
+		t.Errorf("baseline indices %v are not the 16 distinct positions", seenIdx)
+	}
+	// Per-baseline sizes are pinned: baseline 9 is the largest (11 requirements).
+	for _, g := range out.Groups {
+		if *g.BaselineIndex == 9 && g.Counts["failed"]["total"] != 11 {
+			t.Errorf("baseline 9 failed total = %d, want 11", g.Counts["failed"]["total"])
+		}
 	}
 }

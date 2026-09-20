@@ -46,6 +46,124 @@
     "docType": "results",
     "engineSchemaVersion": "3.6.0"
   },
+  "hdf_compliance.sources": {
+    "agentOverrides": {
+      "complianceDelta": 16.67,
+      "count": 1
+    },
+    "compliance": 66.67,
+    "counts": {
+      "error": {
+        "total": 0
+      },
+      "failed": {
+        "high": 1,
+        "medium": 1,
+        "total": 2
+      },
+      "no_impact": {
+        "informational": 1,
+        "total": 1
+      },
+      "passed": {
+        "critical": 1,
+        "high": 1,
+        "medium": 2,
+        "total": 4
+      },
+      "skipped": {
+        "total": 0
+      }
+    },
+    "docType": "results",
+    "engineSchemaVersion": "3.6.0",
+    "groupBy": "baseline",
+    "groups": [
+      {
+        "baselineIndex": 1,
+        "compliance": 0,
+        "counts": {
+          "error": {
+            "total": 0
+          },
+          "failed": {
+            "medium": 1,
+            "total": 1
+          },
+          "no_impact": {
+            "informational": 1,
+            "total": 1
+          },
+          "passed": {
+            "total": 0
+          },
+          "skipped": {
+            "total": 0
+          }
+        },
+        "group": "doc0/K8S-NODE-STIG"
+      },
+      {
+        "baselineIndex": 0,
+        "compliance": 100,
+        "counts": {
+          "error": {
+            "total": 0
+          },
+          "failed": {
+            "total": 0
+          },
+          "no_impact": {
+            "total": 0
+          },
+          "passed": {
+            "critical": 1,
+            "high": 1,
+            "medium": 1,
+            "total": 3
+          },
+          "skipped": {
+            "total": 0
+          }
+        },
+        "group": "doc0/RHEL9-STIG"
+      },
+      {
+        "baselineIndex": 2,
+        "compliance": 50,
+        "counts": {
+          "error": {
+            "total": 0
+          },
+          "failed": {
+            "high": 1,
+            "total": 1
+          },
+          "no_impact": {
+            "total": 0
+          },
+          "passed": {
+            "medium": 1,
+            "total": 1
+          },
+          "skipped": {
+            "total": 0
+          }
+        },
+        "group": "doc1/RHEL9-STIG"
+      }
+    ],
+    "sources": [
+      {
+        "index": 0,
+        "source": "r.json"
+      },
+      {
+        "index": 1,
+        "source": "from.json"
+      }
+    ]
+  },
   "hdf_convert": {
     "baselineCount": 1,
     "docType": "results",
@@ -142,6 +260,62 @@
     ],
     "returned": 1,
     "total": 1
+  },
+  "hdf_query.sources": {
+    "docType": "results",
+    "engineSchemaVersion": "3.6.0",
+    "requirements": [
+      {
+        "baseline": "doc0/K8S-NODE-STIG",
+        "descriptions": [
+          {
+            "data": "Failed and never waived.",
+            "label": "default"
+          }
+        ],
+        "id": "V-D-FAIL",
+        "impact": 0.4,
+        "severity": "medium",
+        "status": "failed",
+        "tags": {
+          "nist": [
+            "AU-3"
+          ]
+        },
+        "title": "Audit log directory permissions"
+      },
+      {
+        "baseline": "doc1/RHEL9-STIG",
+        "descriptions": [
+          {
+            "data": "x",
+            "label": "default"
+          }
+        ],
+        "id": "V-FIX-01",
+        "impact": 0.7,
+        "severity": "high",
+        "status": "failed",
+        "tags": {
+          "nist": [
+            "AC-6"
+          ]
+        },
+        "title": "Will be fixed"
+      }
+    ],
+    "returned": 2,
+    "sources": [
+      {
+        "index": 0,
+        "source": "r.json"
+      },
+      {
+        "index": 1,
+        "source": "from.json"
+      }
+    ],
+    "total": 2
   },
   "hdf_validate": {
     "docType": "system",

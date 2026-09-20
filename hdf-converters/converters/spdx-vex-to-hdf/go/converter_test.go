@@ -186,8 +186,8 @@ func TestConvertSPDXVEX_RejectsEmptyGraph(t *testing.T) {
 
 func TestConvertSPDXVEX_RejectsOversizedInput(t *testing.T) {
 	t.Parallel()
-	_, err := ConvertSPDXVEXToHDF(make([]byte, 51*1024*1024), testVersion)
-	require.Error(t, err)
+	_, err := ConvertSPDXVEXToHDF(make([]byte, shared.DefaultMaxJSONSize+1), testVersion)
+	require.ErrorContains(t, err, "exceeds maximum")
 }
 
 func TestCvssVersion(t *testing.T) {

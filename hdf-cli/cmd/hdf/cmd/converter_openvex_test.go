@@ -22,8 +22,8 @@ func TestOpenVexConverter_RegisteredAndProducesValidAmendments(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, output)
 
-	docType, ok := detectHDFDocType(output)
-	require.True(t, ok)
+	docType := detectHDFDocumentType(output)
+	require.NotEmpty(t, docType)
 	assert.Equal(t, "amendments", docType)
 
 	result := validators.ValidateAmendments(output)
@@ -49,5 +49,5 @@ func TestOpenVexConverter_AutoDetectsAmendmentsAndValidates(t *testing.T) {
 
 	output, err := converter.Convert(input)
 	require.NoError(t, err)
-	require.NoError(t, validateHDFOutput(output), "auto-detect path should route to ValidateAmendments")
+	require.NoError(t, validateHDFDocument(output), "auto-detect path should route to ValidateAmendments")
 }

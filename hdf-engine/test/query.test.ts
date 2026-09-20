@@ -206,3 +206,32 @@ describe('hdf-engine filter helpers — parity with the Go helper unit tests', (
     expect(safeGlobMatch('AC-2', 'AC-*')).toBe(true);
   });
 });
+
+describe('match indices — parity with go/filter_test.go TestFilter_MatchCarriesIndices', () => {
+  it('every match names its baseline and requirement by position', () => {
+    const matches = filter(results, { statusOf: testStatusOf });
+    expect(matches).toHaveLength(5);
+    for (const m of matches) {
+      const b = results.baselines[m.baselineIndex];
+      expect(b).toBeDefined();
+      expect(b.name).toBe(m.baseline);
+      expect(b.requirements[m.index].id).toBe(m.id);
+    }
+    const byId = Object.fromEntries(matches.map((m) => [m.id, m]));
+    expect(byId['SV-230223'].baselineIndex).toBe(0);
+    expect(byId['SV-230223'].index).toBe(2);
+    expect(byId['SV-100002'].baselineIndex).toBe(1);
+    expect(byId['SV-100002'].index).toBe(1);
+  });
+
+  it('indices are unique where (baseline name, id) is not — real Prisma output', () => {
+    const dupPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'duplicate-baselines.json');
+    const dup = JSON.parse(readFileSync(dupPath, 'utf-8')) as HDFResults;
+    const matches = filter(dup, { statusOf: testStatusOf });
+    expect(matches).toHaveLength(94);
+    const positions = new Set(matches.map((m) => `${m.baselineIndex}:${m.index}`));
+    expect(positions.size).toBe(94);
+    const repeated = matches.filter((m) => m.baseline === 'Prisma Cloud Scan' && m.id === '60522-redhat-RHEL7-high');
+    expect(repeated).toHaveLength(6);
+  });
+});

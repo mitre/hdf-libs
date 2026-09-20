@@ -110,8 +110,8 @@ func TestConvertCSAFVEX_RejectsNonVEXProfile(t *testing.T) {
 
 func TestConvertCSAFVEX_RejectsOversizedInput(t *testing.T) {
 	t.Parallel()
-	_, err := ConvertCSAFVEXToHDF(make([]byte, 51*1024*1024), testVersion)
-	require.Error(t, err)
+	_, err := ConvertCSAFVEXToHDF(make([]byte, shared.DefaultMaxJSONSize+1), testVersion)
+	require.ErrorContains(t, err, "exceeds maximum")
 }
 
 func TestConvertCSAFVEX_RejectsInvalidJSON(t *testing.T) {

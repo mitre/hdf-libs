@@ -191,7 +191,7 @@ func runSystemCreate(opts systemCreateOpts) error {
 		return runSystemCreateFromSBOMRef(opts, opts.fromFile)
 	}
 
-	data, err := os.ReadFile(opts.fromFile) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(opts.fromFile)
 	if err != nil {
 		return fmt.Errorf("failed to read input file: %w", err)
 	}
@@ -571,7 +571,7 @@ func writeSystemDoc(systemName string, components []map[string]interface{}, outp
 		return fmt.Errorf("failed to serialize system document: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 

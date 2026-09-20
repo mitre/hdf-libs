@@ -12,7 +12,7 @@
 // automated-then-exported, or mixed, so stamping a constant would assert a
 // classification the source cannot substantiate. applicability is omitted
 // likewise (a not_applicable status is an assessment outcome, not a baseline
-// applicability marker). See .claude/commands/build-converter.md Step 4d.
+// applicability marker).
 package cklb
 
 import (
@@ -23,14 +23,13 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
-// maxInputSize caps CKLB JSON input at 50MB.
-const maxInputSize = 50 * 1024 * 1024
-
 // parseInput applies the converter's input guards and parses the checklist.
 // ConvertCKLBToHDF and ExpectedRequirementCount share it so they accept and
 // reject exactly the same inputs.
 func parseInput(input []byte) (*checklist.Checklist, error) {
-	if err := shared.ValidateJSONSize(input, "cklb", maxInputSize); err != nil {
+	// maxSize 0 resolves to the configured process default (50 MB unless the CLI
+	// raised it via --max-size), like every other converter.
+	if err := shared.ValidateJSONSize(input, "cklb", 0); err != nil {
 		return nil, fmt.Errorf("cklb: %w", err)
 	}
 	cl, err := checklist.ParseCKLB(input)

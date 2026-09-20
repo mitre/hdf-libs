@@ -202,7 +202,7 @@ Each converter has shared test fixtures and differential tests that verify TypeS
 
 ## Adding a New Converter
 
-See [CONVERTER_GUIDE.md](https://github.com/mitre/hdf-libs/blob/main/hdf-converters/CONVERTER_GUIDE.md) for implementation instructions.
+See [Writing a Converter](../site/docs/contributing/writing-a-converter.md) for implementation instructions.
 
 Summary:
 1. Add real tool output fixtures in `converters/<name>/fixtures/input/`

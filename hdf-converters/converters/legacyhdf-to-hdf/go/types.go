@@ -151,10 +151,72 @@ type LegacyStatistics struct {
 // v3→v2→v3 round trip is lossless. It lives under a single top-level
 // "passthrough" key; the InSpec exec-json schema Heimdall loads sets
 // additionalProperties:true at every level, so Heimdall ignores it.
+//
+// It marshals as a flat object: every Provenance key sits at the top level of
+// the passthrough (v2's native home for provenance — a SAF-written passthrough
+// or a native extensions.passthrough), plus the reserved "hdf_components" key
+// carrying the full components[]. "hdf_components" is reserved for the carrier:
+// a Provenance entry of that name is overridden by HDFComponents on marshal and
+// read back as components (never provenance) on unmarshal.
 type LegacyPassthrough struct {
 	// HDFComponents preserves the full v3 components[] (the down-pin otherwise
 	// keeps only the first component, mapped to platform).
-	HDFComponents []hdf.Component `json:"hdf_components,omitempty"`
+	HDFComponents []hdf.Component
+	// Provenance carries the v3 extensions.passthrough back to v2's top-level
+	// passthrough, so document provenance is not lost on a version downgrade.
+	Provenance map[string]interface{}
+}
+
+// HDFComponentsKey is the reserved passthrough key for the components carrier;
+// a provenance entry of this name is overridden by the carrier (the downgrade
+// warns when that happens).
+const HDFComponentsKey = "hdf_components"
+
+// MarshalJSON flattens Provenance to the top level and adds the reserved
+// components carrier, so both survive under the single v2 passthrough key. The
+// reserved key is filtered out of Provenance so provenance data can never shadow
+// or be mistaken for the carrier.
+func (p LegacyPassthrough) MarshalJSON() ([]byte, error) {
+	out := make(map[string]interface{}, len(p.Provenance)+1)
+	for k, v := range p.Provenance {
+		if k == HDFComponentsKey {
+			continue
+		}
+		out[k] = v
+	}
+	if len(p.HDFComponents) > 0 {
+		out[HDFComponentsKey] = p.HDFComponents
+	}
+	return json.Marshal(out)
+}
+
+// UnmarshalJSON splits the reserved components carrier from the provenance keys.
+func (p *LegacyPassthrough) UnmarshalJSON(data []byte) error {
+	// Reset so a reused instance cannot leak stale fields when the next document
+	// omits hdf_components or carries no provenance.
+	p.HDFComponents = nil
+	p.Provenance = nil
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if comp, ok := raw[HDFComponentsKey]; ok {
+		if err := json.Unmarshal(comp, &p.HDFComponents); err != nil {
+			return err
+		}
+		delete(raw, HDFComponentsKey)
+	}
+	if len(raw) > 0 {
+		p.Provenance = make(map[string]interface{}, len(raw))
+		for k, v := range raw {
+			var val interface{}
+			if err := json.Unmarshal(v, &val); err != nil {
+				return err
+			}
+			p.Provenance[k] = val
+		}
+	}
+	return nil
 }
 
 // LegacyHDFResults represents HDF v1.0 results format.

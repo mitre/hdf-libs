@@ -4,6 +4,8 @@ Command-line tool for validating, inspecting, querying, and converting Heimdall 
 
 HDF (Heimdall Data Format) is a standardized JSON format for security assessment results. It normalizes outputs from vulnerability scanners, compliance checkers, configuration auditors, and cloud security tools into a unified schema that can be viewed in [Heimdall](https://github.com/mitre/heimdall2).
 
+The CLI is **Go only, by design.** Most packages in this monorepo ship a TypeScript implementation alongside the Go one, and there is deliberately no TypeScript CLI: shipping a single static binary means a user needs no Node runtime and inherits no npm dependency tree at execution time. The TypeScript libraries remain the path for programmatic and web use.
+
 ## Table of Contents
 
 - [Installation](#installation)
@@ -158,7 +160,7 @@ USAGE
 DETAIL SECTIONS by document type
   results:           requirements, baselines, components
   baseline:          requirements, groups
-  system:            components, interconnections
+  system:            components, dataFlows
   plan:              assessments
   amendments:        overrides
   evidence-package:  contents
@@ -363,6 +365,8 @@ USAGE
   hdf convert --from <source> <file> -o <output>        # Explicit source format
   hdf convert --from <source> --to <dest> <file> -o <output>  # Explicit both
   hdf convert <file>                                     # Auto-detect, stdout
+  hdf convert <file> [file...] -o <output-dir>/          # Bulk convert to a directory
+  hdf convert --from <source>@<version> <file>           # Select a schema version
   cat scan.json | hdf convert -                          # stdin
 
 INPUT/OUTPUT
@@ -420,7 +424,7 @@ See [Supported Conversions](#supported-conversions) for the full list.
 
 ### system
 
-View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and interconnections.
+View and manage HDF **system** documents — a system's authorization boundary, components, baselines, and data flows.
 
 ```
 USAGE
@@ -668,7 +672,7 @@ passed:
 
 Fetch security data from a live API and convert to HDF in a single step. No intermediate files needed.
 
-All fetch subcommands support `--format raw` to skip HDF conversion and return the tool's native output, and `--output` / `-o` to write to a file instead of stdout.
+Every fetch subcommand except `splunk` supports `--format raw` to skip HDF conversion and return the tool's native output. All of them, `splunk` included, support `--output` / `-o` to write to a file instead of stdout.
 
 For endpoints behind a custom TLS chain, every fetch subcommand accepts `--ca-cert <pem>` (a PEM CA bundle for corporate/custom CAs) and `--insecure` (skip TLS verification — prints a warning; use only against trusted hosts).
 
@@ -1089,7 +1093,7 @@ Override with the `GLAB_CONFIG_DIR` environment variable on any platform.
 
 ## Development
 
-See the [monorepo root README](https://github.com/mitre/hdf-libs/blob/main/README.md) and [CLAUDE.md](https://github.com/mitre/hdf-libs/blob/main/hdf-cli/CLAUDE.md) for full architecture and contribution guidelines.
+See the [monorepo root README](https://github.com/mitre/hdf-libs/blob/main/README.md) and the [developer guide](../site/docs/contributing/developer-guide.md) for full architecture and contribution guidelines.
 
 ### Quick Reference
 
@@ -1113,7 +1117,7 @@ pnpm test:coverage              # coverage report (generates coverage.out)
 
 ### Adding a New Converter
 
-See the [`/build-converter` skill documentation](https://github.com/mitre/hdf-libs/blob/main/hdf-cli/CLAUDE.md) for the full process. In brief:
+See [Writing a Converter](../site/docs/contributing/writing-a-converter.md) for the full process. In brief:
 
 1. Implement Go converter in `hdf-converters/converters/<name>/go/converter.go`
 2. Implement TypeScript converter in `hdf-converters/converters/<name>/typescript/converter.ts`

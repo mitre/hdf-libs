@@ -18,7 +18,7 @@ func NewSystemCmd() *cobra.Command {
 		Long: `Commands for viewing and managing HDF system documents.
 
 An HDF system document describes a system's authorization boundary, components,
-baselines, and interconnections.
+baselines, and data flows.
 
 Examples:
   hdf system info portal-prod.hdf-system.json
@@ -42,7 +42,7 @@ func newSystemInfoCmd() *cobra.Command {
 - System name, authorization status, and categorization level
 - Description
 - Components with their baselines and target selectors
-- Interconnections
+- Data flows
 
 Examples:
   hdf system info portal-prod.hdf-system.json
@@ -158,7 +158,7 @@ var requiredSystemFields = map[string]bool{
 }
 
 func runSystemSet(inputPath, outputPath, owner, description, name, systemID string, unsetFields []string) error {
-	data, err := os.ReadFile(inputPath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to read system document: %w", err)
 	}
@@ -198,7 +198,7 @@ func runSystemSet(inputPath, outputPath, owner, description, name, systemID stri
 		return fmt.Errorf("failed to serialize system document: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 

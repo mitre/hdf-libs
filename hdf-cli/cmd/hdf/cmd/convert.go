@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,8 @@ import (
 	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/hdfversion"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
+	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -121,6 +124,13 @@ Examples:
 func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputPath string) error {
 	inputPath := args[0]
 
+	// Raise the converters' own input-size guard (they pass a literal 0 = the
+	// 50 MiB default) to the resolved --max-size, so input the CLI pre-read admits
+	// is not then rejected by the converter — the "use --max-size to increase"
+	// advice now works end to end. Same resolver as the pre-read; scoped to this
+	// convert invocation (the process exits after).
+	hdfutil.SetDefaultMaxInputSize(maxInputSizeBytes())
+
 	// Parse version specifiers from format flags (e.g. "sarif@2.0" → "sarif", "2.0")
 	fromFormat, fromVersion := parseFormatVersion(fromFormat)
 	toFormat, toVersion := parseFormatVersion(toFormat)
@@ -205,10 +215,47 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		}
 	}
 
+	// Absorb a legacy SAF-supplement shape (top-level target/passthrough, which SAF
+	// writes onto HDF documents) into v3-native carriers so attribution survives the
+	// convert path — the motivating #234 case — not only the parse path. These keys
+	// ride v2's additionalProperties, so they are present on the raw bytes even
+	// though the legacy struct has no field for them. For legacy (v2) input we
+	// capture them, upgrade to v3 (which would otherwise drop target), re-attach, and
+	// normalize on the v3 doc so the rewrite lands where it survives; the version
+	// transform below then carries the result (including a down-pin to hdf@2).
+	//
+	// This runs BEFORE normalizeLegacyHDFInput: for a non-hdf export target that
+	// helper upgrades legacy→v3 itself, dropping the top-level target before we could
+	// capture it. Doing the capture/upgrade/normalize here (which sets fromFormat=hdf
+	// for legacy input) leaves normalizeLegacyHDFInput a no-op on the now-v3 data.
+	// Gated to HDF/legacy input so a scanner format that happens to carry a top-level
+	// "target" key is untouched.
+	if (strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf")) && hasSAFSupplement(data) {
+		if legacyhdf.IsLegacyHDF(data) {
+			supp := captureSAFSupplement(data)
+			upgraded, _, upErr := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
+			if upErr != nil {
+				return fmt.Errorf("failed to upgrade legacy HDF (v2) input for SAF-supplement absorption: %w", upErr)
+			}
+			data, err = reattachSAFSupplement(upgraded, supp)
+			if err != nil {
+				return err
+			}
+			fromFormat = "hdf"
+			fromVersion = ""
+		}
+		var safWarnings []string
+		data, safWarnings = hdfparsers.NormalizeSAFSupplement(data)
+		for _, w := range safWarnings {
+			fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
+		}
+	}
+
 	// Legacy HDF v1 (InSpec exec-json shape) carries no `baselines`, which every
 	// HDF-export converter requires. The hdf→hdf path upgrades it implicitly;
 	// mirror that for all other export targets so legacy input converts in one
-	// step instead of failing on the missing field.
+	// step instead of failing on the missing field. (SAF-supplemented legacy input
+	// was already upgraded above, so this is a no-op for it.)
 	data, fromFormat, fromVersion, err = normalizeLegacyHDFInput(data, fromFormat, fromVersion, toFormat)
 	if err != nil {
 		return err
@@ -272,9 +319,29 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		if err != nil {
 			return err
 		}
+		if w := outputSizeWarning(len(output)); w != "" {
+			fmt.Fprintln(os.Stderr, "Warning: "+w)
+		}
 		return writeValidatedHDFOutput(cmd, output, outputPath)
 	}
 	return writeConvertOutput(output, outputPath)
+}
+
+// outputSizeWarning returns a warning (or "") when converted HDF output is larger
+// than the default input read limit, so the user knows downstream commands (hdf
+// validate, label, amend) will need --max-size to read it at the default — the
+// convert-emits-what-validate-rejects trap from issue #334. It reports downstream
+// need regardless of this invocation's --max-size, since the next command starts
+// from the default again.
+func outputSizeWarning(outputLen int) string {
+	if outputLen <= hdfutil.DefaultMaxInputSize {
+		return ""
+	}
+	const mib = 1024 * 1024
+	needMB := (outputLen + mib - 1) / mib
+	return fmt.Sprintf(
+		"output is %d bytes, larger than the %d MB default read limit; downstream commands will need --max-size %d to read it.",
+		outputLen, hdfutil.DefaultMaxInputSize/mib, needMB)
 }
 
 // applyNistOptions reads the --nist-rev and --nist-strict flags and sets the
@@ -301,6 +368,52 @@ func applyNistOptions(cmd *cobra.Command) (reset func(), err error) {
 		nist.ResetRevision()
 		nist.SetStrict(false)
 	}, nil
+}
+
+// hasSAFSupplement reports whether the bytes carry a top-level SAF-supplement key
+// (target or passthrough) — the non-schema attribution SAF writes onto HDF
+// documents. A cheap presence check; NormalizeSAFSupplement owns the rewrite.
+func hasSAFSupplement(data []byte) bool {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return false
+	}
+	_, hasTarget := doc["target"]
+	_, hasPassthrough := doc["passthrough"]
+	return hasTarget || hasPassthrough
+}
+
+// captureSAFSupplement extracts the top-level target/passthrough keys so they can
+// be re-attached after a legacy→v3 upgrade drops them (the legacy struct has no
+// field for target, so a plain unmarshal/marshal loses it).
+func captureSAFSupplement(data []byte) map[string]json.RawMessage {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil
+	}
+	out := map[string]json.RawMessage{}
+	for _, k := range []string{"target", "passthrough"} {
+		if v, ok := doc[k]; ok {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// reattachSAFSupplement puts captured SAF-supplement keys back onto an upgraded v3
+// document so NormalizeSAFSupplement can absorb them into components[]/extensions.
+func reattachSAFSupplement(data []byte, supp map[string]json.RawMessage) ([]byte, error) {
+	if len(supp) == 0 {
+		return data, nil
+	}
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("failed to re-attach SAF supplement: %w", err)
+	}
+	for k, v := range supp {
+		doc[k] = v
+	}
+	return json.Marshal(doc)
 }
 
 // normalizeLegacyHDFInput upgrades legacy HDF (v2, the InSpec exec-json

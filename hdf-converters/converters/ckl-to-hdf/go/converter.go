@@ -12,7 +12,7 @@
 // automated-then-exported, or mixed, so stamping a constant would assert a
 // classification the source cannot substantiate. applicability is omitted
 // likewise (a Not_Applicable STATUS is an assessment outcome, not a baseline
-// applicability marker). See .claude/commands/build-converter.md Step 4d.
+// applicability marker).
 package ckl
 
 import (
@@ -23,14 +23,13 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
-// maxInputSize caps CKL input at 50MB (entity-expansion + size guard).
-const maxInputSize = 50 * 1024 * 1024
-
 // parseInput applies the converter's input guards and parses the checklist.
 // ConvertCKLToHDF and ExpectedRequirementCount share it so they accept and
 // reject exactly the same inputs.
 func parseInput(input []byte) (*checklist.Checklist, error) {
-	if err := shared.ValidateXMLInput(input, maxInputSize); err != nil {
+	// maxSize 0 resolves to the configured process default (50 MB unless the CLI
+	// raised it via --max-size), like every other XML converter.
+	if err := shared.ValidateXMLInput(input, 0); err != nil {
 		return nil, fmt.Errorf("ckl: %w", err)
 	}
 	cl, err := checklist.ParseCKL(input)

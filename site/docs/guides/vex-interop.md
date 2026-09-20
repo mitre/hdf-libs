@@ -5,10 +5,12 @@ statements about whether a specific CVE actually affects a specific product.
 Three formats dominate the ecosystem: **OpenVEX** (the openvex/spec
 JSON-LD format), **CSAF VEX** (the OASIS Common Security Advisory Framework
 2.0 `csaf_vex` profile), and **CycloneDX VEX** (analysis blocks on
-CycloneDX BOM vulnerabilities). HDF v3.3.x ships round-trippable
-converters for all three.
+CycloneDX BOM vulnerabilities). HDF ships round-trippable converters for all
+three, and additionally imports **SPDX VEX** — `spdx-vex-to-hdf` reads it,
+with no export counterpart, so an SPDX VEX document converts into HDF
+Amendments but does not round-trip back.
 
-This guide explains how the three formats map to HDF Amendments, the
+This guide explains how the round-trippable formats map to HDF Amendments, the
 real-system vs abstract-vuln invariant that shapes the design, and the
 partial-fidelity contract each converter honors.
 
@@ -89,8 +91,8 @@ statements.
 ## Justification
 
 `Justification` is an HDF enum on `Standalone_Override` that records the
-**structured reason** a `not_affected` claim is true. As of v3.3.x it
-covers the full vocabulary across all three formats:
+**structured reason** a `not_affected` claim is true. It covers the full
+vocabulary across all three round-trippable formats:
 
 | HDF `Justification` | OpenVEX / CSAF (long-form) | CycloneDX (short-form) |
 |---|---|---|

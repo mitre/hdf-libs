@@ -28,6 +28,77 @@ func createLabelTestFixture(t *testing.T) string {
 	return fixturePath
 }
 
+// TestLabelGatesInput: label set/remove/show reject a legacy v2, non-HDF, or
+// fingerprint-valid-but-schema-invalid document at the boundary — instead of
+// mutating (set/remove) or rendering (show) it. Mutating paths must not write.
+func TestLabelGatesInput(t *testing.T) {
+	cases := []struct {
+		name, doc, wantErr string
+	}{
+		{"legacy v2", `{"platform":{"name":"x"},"version":"1.0.0","statistics":{},"profiles":[]}`, "hdf convert"},
+		{"non-HDF", `{"hello":"world"}`, "not a recognized HDF document"},
+		{"schema-invalid results", `{"baselines":[{}]}`, "schema"},
+	}
+	writeDoc := func(t *testing.T, doc string) (path string, before string) {
+		t.Helper()
+		path = filepath.Join(t.TempDir(), "in.json")
+		require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+		return path, doc
+	}
+	for _, tc := range cases {
+		t.Run("set rejects "+tc.name, func(t *testing.T) {
+			p, before := writeDoc(t, tc.doc)
+			_, _, err := executeCommand("label", "set", p, "env=prod")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+			after, readErr := os.ReadFile(p)
+			require.NoError(t, readErr)
+			assert.Equal(t, before, string(after), "a rejected label set must not modify the file")
+		})
+		t.Run("remove rejects "+tc.name, func(t *testing.T) {
+			p, before := writeDoc(t, tc.doc)
+			_, _, err := executeCommand("label", "remove", p, "env")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+			after, readErr := os.ReadFile(p)
+			require.NoError(t, readErr)
+			assert.Equal(t, before, string(after), "a rejected label remove must not modify the file")
+		})
+		t.Run("show rejects "+tc.name, func(t *testing.T) {
+			p, _ := writeDoc(t, tc.doc)
+			_, _, err := executeCommand("label", "show", p)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+		})
+	}
+}
+
+// TestLabel_AcceptsSystemDocument locks the decision that label operates on both
+// results AND system documents (labels live on components[], which both carry —
+// mirroring `hdf list`), not results alone.
+func TestLabel_AcceptsSystemDocument(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "sys.json")
+	require.NoError(t, os.WriteFile(p, []byte(`{"name":"sys","components":[{"name":"h1","type":"host"}]}`), 0o600))
+
+	_, _, err := executeCommand("label", "set", p, "env=prod")
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(p)
+	require.NoError(t, err)
+	var doc struct {
+		Components []struct {
+			Labels map[string]string `json:"labels"`
+		} `json:"components"`
+	}
+	require.NoError(t, json.Unmarshal(data, &doc))
+	require.Len(t, doc.Components, 1)
+	assert.Equal(t, "prod", doc.Components[0].Labels["env"])
+
+	stdout, _, err := executeCommand("label", "show", p)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "env = prod")
+}
+
 func TestLabelShowCommand(t *testing.T) {
 	t.Run("shows targets with no labels", func(t *testing.T) {
 		fixture := createLabelTestFixture(t)

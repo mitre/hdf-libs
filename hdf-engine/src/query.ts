@@ -28,7 +28,13 @@ export interface FilterOptions {
   statusOf?: (control: EvaluatedRequirement) => string;
 }
 
-/** A single query result row. */
+/**
+ * A single query result row. baselineIndex and index are the match's position in
+ * the result set (results.baselines[baselineIndex].requirements[index]) and are
+ * the only unique identity a match has: baseline names repeat in shipped
+ * converter output and requirement ids repeat within a baseline, so (baseline,
+ * id) is not a key. Address the source requirement by position, never by name.
+ */
 export interface Match {
   id: string;
   title: string;
@@ -36,6 +42,8 @@ export interface Match {
   impact: number;
   severity: string;
   baseline: string;
+  baselineIndex: number;
+  index: number;
 }
 
 type FilterFunc = (control: EvaluatedRequirement, status: string, severity: string) => boolean;
@@ -49,11 +57,11 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
   const filters = buildFilters(options);
   const matches: Match[] = [];
 
-  for (const baseline of results.baselines ?? []) {
+  for (const [baselineIndex, baseline] of (results.baselines ?? []).entries()) {
     if (options.baseline && !matchesGlob(baseline.name, options.baseline)) {
       continue;
     }
-    for (const control of baseline.requirements ?? []) {
+    for (const [index, control] of (baseline.requirements ?? []).entries()) {
       if (options.limit && options.limit > 0 && matches.length >= options.limit && !options.count) {
         return matches;
       }
@@ -75,6 +83,8 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
         impact: control.impact,
         severity,
         baseline: baseline.name,
+        baselineIndex,
+        index,
       });
     }
   }

@@ -12,7 +12,7 @@ import { parseCkl, serializeCkl } from './ckl.js';
 import { parseCklb, serializeCklb } from './cklb.js';
 import { checklistToHdf } from './to-hdf.js';
 import { hdfToChecklist } from './from-hdf.js';
-import { DEFAULT_MAX_INPUT_SIZE } from '../converterutil.js';
+import { setDefaultMaxInputSize } from '../converterutil.js';
 
 const SAMPLE_CKL = `<?xml version="1.0" encoding="UTF-8"?>
 <CHECKLIST>
@@ -263,8 +263,12 @@ describe('checklist shared model', () => {
   // it must run the same input prologue as every other HDF exporter.
   it('runs the shared input guard before parsing', () => {
     expect(() => hdfToChecklist('')).toThrow(/empty input/);
-    const over = '{' + 'x'.repeat(DEFAULT_MAX_INPUT_SIZE + 1) + '}';
-    expect(() => hdfToChecklist(over)).toThrow(/exceeds maximum allowed size/);
+    setDefaultMaxInputSize(8);
+    try {
+      expect(() => hdfToChecklist('{' + 'x'.repeat(9) + '}')).toThrow(/exceeds maximum allowed size/);
+    } finally {
+      setDefaultMaxInputSize(0);
+    }
   });
 
   it('throws on malformed input', () => {

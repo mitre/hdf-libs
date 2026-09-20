@@ -667,11 +667,19 @@ func ConvertLegacyHDF(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFRes
 	}
 	v2.Components = []hdf.Component{target}
 
-	// Restore a full components[] carried through the v2 passthrough (the
-	// v3→v2→v3 round trip); genuine InSpec input has no passthrough and keeps
-	// the platform-derived single component above.
-	if v1.Passthrough != nil && len(v1.Passthrough.HDFComponents) > 0 {
-		v2.Components = v1.Passthrough.HDFComponents
+	// Restore the full components[] and provenance carried through the v2
+	// passthrough (the v3→v2→v3 round trip); genuine InSpec input has no
+	// passthrough and keeps the platform-derived single component above.
+	if v1.Passthrough != nil {
+		if len(v1.Passthrough.HDFComponents) > 0 {
+			v2.Components = v1.Passthrough.HDFComponents
+		}
+		if len(v1.Passthrough.Provenance) > 0 {
+			if v2.Extensions == nil {
+				v2.Extensions = map[string]interface{}{}
+			}
+			v2.Extensions["passthrough"] = v1.Passthrough.Provenance
+		}
 	}
 
 	// Flatten overlays: merge overlay/wrapper baselines so every requirement

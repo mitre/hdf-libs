@@ -120,8 +120,8 @@ func TestConvertCycloneDXVEX_RejectsInvalidJSON(t *testing.T) {
 
 func TestConvertCycloneDXVEX_RejectsOversizedInput(t *testing.T) {
 	t.Parallel()
-	_, err := ConvertCycloneDXVEXToHDF(make([]byte, 51*1024*1024), testVersion)
-	require.Error(t, err)
+	_, err := ConvertCycloneDXVEXToHDF(make([]byte, shared.DefaultMaxJSONSize+1), testVersion)
+	require.ErrorContains(t, err, "exceeds maximum")
 }
 
 func TestFirstActionFromResponse(t *testing.T) {

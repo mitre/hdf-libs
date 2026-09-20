@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-01-01T00:00:00Z",
+  "generator": {"name": "t", "version": "0.0.1"},
+  "statistics": {"duration": 0.1},
+  "baselines": [{
+    "name": "B",
+    "resultsChecksum": {"algorithm": "sha256", "value": "0000000000000000000000000000000000000000000000000000000000000000"},
+    "requirements": [{
+      "id": "x", "title": "t", "impact": 0, "tags": {},
+      "descriptions": [{"label": "default", "data": "d"}],
+      "results": [{"status": "passed", "codeDesc": "d", "startTime": "2026-01-01T00:00:00Z"}]
+    }]
+  }],
+  "target": {"id": "prod-account", "type": "cloudAccount", "boundary": "sparc"},
+  "passthrough": {"audit": {"runId": "r-123"}}
+}

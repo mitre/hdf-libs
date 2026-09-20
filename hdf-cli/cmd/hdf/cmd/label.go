@@ -97,16 +97,31 @@ Examples:
 	return cmd
 }
 
+// gateLabelInput enforces the label commands' input contract at the boundary:
+// the document must be a schema-valid HDF results or system document (labels
+// live on components[], which both carry). A legacy v2 / non-HDF / schema-invalid
+// document is rejected before any render (show) or mutation (set/remove), rather
+// than silently no-opping or rewriting a non-HDF file in place.
+func gateLabelInput(data []byte) error {
+	if _, typeErr := requireDocumentType(data, []string{"results", "system"}, "hdf label"); typeErr != nil {
+		return typeErr
+	}
+	if valErr := validateHDFDocument(data); valErr != nil {
+		return fmt.Errorf("input failed schema validation: %w", valErr)
+	}
+	return nil
+}
+
 func runLabelShow(_ *cobra.Command, args []string) error {
 	filePath := args[0]
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	if _, typeErr := requireDocumentType(data, []string{"results"}, "hdf label"); typeErr != nil {
-		return typeErr
+	if gateErr := gateLabelInput(data); gateErr != nil {
+		return gateErr
 	}
 
 	infos, err := extractComponentLabels(data)
@@ -164,9 +179,13 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 			"  or:  hdf label set <file> --generate-component-id")
 	}
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	if gateErr := gateLabelInput(data); gateErr != nil {
+		return gateErr
 	}
 
 	result := data
@@ -203,9 +222,13 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
 	keys := args[1:]
 
-	data, err := os.ReadFile(filePath) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	if gateErr := gateLabelInput(data); gateErr != nil {
+		return gateErr
 	}
 
 	result, err := removeLabels(data, keys)

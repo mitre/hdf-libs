@@ -149,7 +149,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
 	}
-	doc, err := loadAndValidateHDFDoc(data, "evidencePackage")
+	doc, err := loadAndValidateHDFDoc(data, "evidence-package")
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", file, err)
 	}
@@ -187,7 +187,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	if err != nil {
 		return fmt.Errorf("failed to serialize evidence package: %w", err)
 	}
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("evidence package failed validation before write: %w", err)
 	}
 
@@ -237,9 +237,12 @@ func normalizeSHA256Hex(s string) (string, error) {
 }
 
 // fileChecksumHex streams the file through SHA-256 so a large corpus is not
-// loaded into memory.
+// loaded into memory. It is deliberately NOT subject to the --max-size input
+// cap: the cap guards against loading untrusted input into memory, and this
+// read is constant-memory by construction, so capping it would only reject
+// large evidence artifacts (logs, packet captures, images) for no safety gain.
 func fileChecksumHex(path string) (string, error) {
-	f, err := os.Open(path) // #nosec G304 -- CLI reads user-provided file path
+	f, err := os.Open(path) // #nosec G304 -- CLI reads user-provided file path; streamed, not slurped
 	if err != nil {
 		return "", err
 	}

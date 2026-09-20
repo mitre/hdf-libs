@@ -45,8 +45,8 @@ them via the materialize-to-tmp-file helper in `converter_test.go`).
 
 ## Fixture provenance
 
-All fixtures here are **real tool output**, never fabricated (per
-CLAUDE.md's fixture-integrity rule).
+All fixtures here are **real tool output**, never fabricated — a converter
+tested against invented data proves nothing about real data.
 
 ### `results/` — HDF Results docs
 

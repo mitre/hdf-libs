@@ -69,7 +69,7 @@ Output defaults to stdout when no output path is given.`,
 			// case a caller needs to narrow the pull.
 			var filters *securitytypes.AwsSecurityFindingFilters
 			if filterJSON != "" {
-				data, err := os.ReadFile(filterJSON) //nolint:gosec // operator-supplied path
+				data, err := readInputFile(filterJSON)
 				if err != nil {
 					return fmt.Errorf("failed to read --filter-json file: %w", err)
 				}

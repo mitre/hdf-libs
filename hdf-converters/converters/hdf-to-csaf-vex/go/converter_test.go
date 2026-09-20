@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+
 	csafvex "github.com/mitre/hdf-libs/hdf-converters/v3/converters/csaf-vex-to-hdf/go"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -178,8 +180,8 @@ func TestConvertHDFToCSAFVEX_RejectsInvalidJSON(t *testing.T) {
 
 func TestConvertHDFToCSAFVEX_RejectsOversizedInput(t *testing.T) {
 	t.Parallel()
-	_, err := ConvertHDFToCSAFVEX(make([]byte, 51*1024*1024), testVersion)
-	require.Error(t, err)
+	_, err := ConvertHDFToCSAFVEX(make([]byte, shared.DefaultMaxJSONSize+1), testVersion)
+	require.ErrorContains(t, err, "exceeds maximum")
 }
 
 func TestProductIDsFor_PrefersComponentRef(t *testing.T) {

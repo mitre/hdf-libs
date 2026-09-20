@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	// DefaultMaxSizeMB is the default maximum file size in megabytes.
-	DefaultMaxSizeMB = 50
+	// DefaultMaxSizeMB is the default maximum file size in megabytes (matches
+	// hdfutil.DefaultMaxInputSize; raise per-invocation with --max-size).
+	DefaultMaxSizeMB = 256
 )
 
 // utf8BOM is the UTF-8 byte-order-mark sequence that some Windows tools prepend.
@@ -24,13 +25,22 @@ const (
 // the input boundary before any downstream consumer sees the bytes.
 var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
 
-// getMaxFileSize returns the maximum allowed file size in bytes.
-// Uses the --max-size flag if set, otherwise defaults to 50MB.
-func getMaxFileSize() int64 {
-	if maxSizeMB > 0 {
-		return int64(maxSizeMB) * 1024 * 1024
+// maxInputSizeBytes resolves the --max-size flag (megabytes) to a byte count,
+// falling back to the 256 MB default. Single source of truth for both the CLI's
+// pre-read file guard (getMaxFileSize) and the converter input-size ceiling
+// threaded via hdfutil.SetDefaultMaxInputSize, so the two never diverge.
+func maxInputSizeBytes() int {
+	mb := maxSizeMB
+	if mb <= 0 {
+		mb = DefaultMaxSizeMB
 	}
-	return DefaultMaxSizeMB * 1024 * 1024
+	return mb * 1024 * 1024
+}
+
+// getMaxFileSize returns the maximum allowed file size in bytes.
+// Uses the --max-size flag if set, otherwise defaults to 256MB.
+func getMaxFileSize() int64 {
+	return int64(maxInputSizeBytes())
 }
 
 // readInputFile reads from a file path or stdin with security validations.
@@ -174,6 +184,11 @@ func parseHDFResults(data []byte) (hdf.HDFResults, error) {
 	if !r.Success {
 		return hdf.HDFResults{}, errors.New(translateParserError(r.Error))
 	}
+	// Surface pre-validation normalization notices (e.g. a legacy SAF-supplement
+	// target/passthrough rewritten to v3-native) through the CLI's stderr notice UX.
+	for _, w := range r.Warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
+	}
 	return *r.Data, nil
 }
 
@@ -242,26 +257,26 @@ func parseHDFComparison(data []byte) (hdf.HDFComparison, error) {
 // re-marshal flows (system.go, doc_set.go, evidence_build.go's System read)
 // where typed-struct access is not the goal but the load-side schema gate IS.
 //
-// `expected` is the doc type the caller expects ("system", "plan",
-// "evidencePackage", "comparison", "results", "baseline", or "amendments").
-// The function errors when:
+// `expected` is the doc type the caller expects — a validators.Type* value
+// ("system", "plan", "evidence-package", "comparison", "results", "baseline",
+// or "amendments"). The function errors when:
 //   - the input's top-level shape doesn't match any known HDF doc type
-//     (detectHDFDocType returns ("", false)) — would otherwise silently
-//     pass validateHDFOutput's "not HDF-shaped" fallthrough
+//     (detectHDFDocumentType returns "") — would otherwise silently
+//     pass validateHDFDocument's "not HDF-shaped" fallthrough
 //   - the detected doc type doesn't match `expected`
 //   - the schema validator rejects the input
 //
 // Pass `expected = ""` only when the caller genuinely accepts any HDF doc
 // type (rare).
 func loadAndValidateHDFDoc(data []byte, expected string) (map[string]any, error) {
-	docType, ok := detectHDFDocType(data)
-	if !ok {
+	docType := detectHDFDocumentType(data)
+	if docType == "" {
 		return nil, fmt.Errorf("input is not a recognized HDF document (no top-level discriminator key matched)")
 	}
 	if expected != "" && docType != expected {
 		return nil, fmt.Errorf("input is HDF %s, expected HDF %s", docType, expected)
 	}
-	if err := validateHDFOutput(data); err != nil {
+	if err := validateHDFDocument(data); err != nil {
 		return nil, fmt.Errorf("input failed schema validation: %w", err)
 	}
 	var doc map[string]any

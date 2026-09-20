@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -391,5 +393,169 @@ func TestShapeFunctions_OmittedOptionals(t *testing.T) {
 				t.Errorf("%s shape must return a non-nil structure for an optionals-omitted document", name)
 			}
 		})
+	}
+}
+
+// TestInspect_ResultsSurfacesToolGeneratorAndBaselineLabels is js1nv.6's first
+// failing test: a results document's provenance — root tool and generator, and
+// each baseline's labels — is visible through hdf_inspect, and a document
+// without them gets no synthesized keys (the statistics rule).
+func TestInspect_ResultsSurfacesToolGeneratorAndBaselineLabels(t *testing.T) {
+	// Real ZAP converter output: tool OWASP ZAP 2.7.0, generator zap-to-hdf 1.0.0,
+	// four baselines each labelled with its site as `component`.
+	path := writeRoot(t, "zap.hdf.json", readToolsFixture(t, "zap-webgoat.json"))
+	errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
+	if errRes != nil && errRes.IsError {
+		t.Fatalf("inspect must succeed: %s", payloadText(t, errRes))
+	}
+	meta, ok := out.Structure["metadata"].(map[string]any)
+	if !ok {
+		t.Fatalf("metadata missing from structure: %v", keysOf(out.Structure))
+	}
+	if got := meta["tool"]; !reflect.DeepEqual(got, map[string]any{"name": "OWASP ZAP", "version": "2.7.0"}) {
+		t.Errorf("metadata.tool = %#v, want {name: OWASP ZAP, version: 2.7.0}", got)
+	}
+	if got := meta["generator"]; !reflect.DeepEqual(got, map[string]any{"name": "zap-to-hdf", "version": "1.0.0"}) {
+		t.Errorf("metadata.generator = %#v, want {name: zap-to-hdf, version: 1.0.0}", got)
+	}
+	baselines, ok := out.Structure["baselines"].([]map[string]any)
+	if !ok || len(baselines) != 4 {
+		t.Fatalf("expected 4 baseline entries, got %T %v", out.Structure["baselines"], out.Structure["baselines"])
+	}
+	if got := baselines[0]["labels"]; !reflect.DeepEqual(got, map[string]string{"component": "ciscobinary.openh264.org"}) {
+		t.Errorf("baselines[0].labels = %#v, want {component: ciscobinary.openh264.org}", got)
+	}
+	if out.Truncated {
+		t.Errorf("a 4-baseline document with labels must fit the concise budget; got truncated with notice %q", out.Notice)
+	}
+
+	// A document with no tool, no generator and no baseline labels: the keys are
+	// absent, never synthesized as empty.
+	bare := writeRoot(t, "bare.json", readToolsFixture(t, "query-results.json"))
+	_, out = callInspect(t, inspectInput{Source: handle.Source{Path: bare}})
+	meta = out.Structure["metadata"].(map[string]any)
+	for _, k := range []string{"tool", "generator"} {
+		if _, present := meta[k]; present {
+			t.Errorf("metadata.%s must be absent when the document has none; got %#v", k, meta[k])
+		}
+	}
+	for i, b := range out.Structure["baselines"].([]map[string]any) {
+		if _, present := b["labels"]; present {
+			t.Errorf("baselines[%d].labels must be absent when the baseline has none", i)
+		}
+	}
+}
+
+// TestInspect_ToolMetadataShapes pins the tool projection across the shapes real
+// converter output takes: name only (Prisma has no tool.version), name +
+// version + format (SARIF converter output records the named source format),
+// and — derived from a real document, as TestInspect_ResultsWithoutStatistics
+// does — an empty tool object, which must project to no key at all.
+func TestInspect_ToolMetadataShapes(t *testing.T) {
+	cases := []struct {
+		name    string
+		fixture []byte
+		want    any // nil means the key must be absent
+	}{
+		{"name only (Prisma)", readToolsFixture(t, "duplicate-baselines.json"), map[string]any{"name": "Prisma Cloud"}},
+		{"name, version and format (SARIF)", readToolsFixture(t, "sarif-gosec.json"), map[string]any{"name": "gosec", "version": "2.18.2", "format": "SARIF"}},
+		{"empty tool object", withEmptyTool(t, readToolsFixture(t, "sarif-gosec.json")), nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeRoot(t, "doc.json", tc.fixture)
+			errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
+			if errRes != nil && errRes.IsError {
+				t.Fatalf("inspect must succeed: %s", payloadText(t, errRes))
+			}
+			meta := out.Structure["metadata"].(map[string]any)
+			got, present := meta["tool"]
+			if tc.want == nil {
+				if present {
+					t.Fatalf("metadata.tool must be absent for an empty tool object; got %#v", got)
+				}
+				return
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("metadata.tool = %#v, want %#v", got, tc.want)
+			}
+		})
+	}
+}
+
+// withEmptyTool replaces a real document's root tool with {} — schema-legal,
+// since every Tool field is optional.
+func withEmptyTool(t *testing.T, doc []byte) []byte {
+	t.Helper()
+	var m map[string]any
+	if err := json.Unmarshal(doc, &m); err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	m["tool"] = map[string]any{}
+	out, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	return out
+}
+
+// TestInspect_MergedDocumentShowsPerBaselineProvenance is the reason for this
+// card: on a document produced by the engine's Merge (ADR-0016), every baseline
+// entry names its scanner through the provenance labels, so an agent can
+// attribute a finding without opening the file. Built in-test from two real
+// fixtures with the real engine; the largest tools fixture is also confirmed to
+// fit the concise budget.
+func TestInspect_MergedDocumentShowsPerBaselineProvenance(t *testing.T) {
+	var zap, prisma hdf.HDFResults
+	if err := json.Unmarshal(readToolsFixture(t, "zap-webgoat.json"), &zap); err != nil {
+		t.Fatalf("parse zap: %v", err)
+	}
+	if err := json.Unmarshal(readToolsFixture(t, "duplicate-baselines.json"), &prisma); err != nil {
+		t.Fatalf("parse prisma: %v", err)
+	}
+	merged, _, err := hdfengine.Merge([]hdfengine.MergeSource{
+		{Name: "zap-webgoat.json", Doc: zap},
+		{Name: "duplicate-baselines.json", Doc: prisma},
+	})
+	if err != nil {
+		t.Fatalf("merge: %v", err)
+	}
+	doc, err := json.Marshal(merged)
+	if err != nil {
+		t.Fatalf("marshal merged: %v", err)
+	}
+	path := writeRoot(t, "merged.json", doc)
+	errRes, out := callInspect(t, inspectInput{Source: handle.Source{Path: path}})
+	if errRes != nil && errRes.IsError {
+		t.Fatalf("inspect must succeed on a merged document: %s", payloadText(t, errRes))
+	}
+	meta := out.Structure["metadata"].(map[string]any)
+	if got := meta["generator"]; !reflect.DeepEqual(got, map[string]any{"name": "hdf-merge", "version": hdfengine.Version()}) {
+		t.Errorf("metadata.generator = %#v, want hdf-merge @ %s", got, hdfengine.Version())
+	}
+	if _, present := meta["tool"]; present {
+		t.Errorf("a merged root carries no tool; got %#v", meta["tool"])
+	}
+	baselines := out.Structure["baselines"].([]map[string]any)
+	if len(baselines) != 4+16 {
+		t.Fatalf("expected 20 baseline entries (4 ZAP + 16 Prisma), got %d", len(baselines))
+	}
+	if got := baselines[0]["labels"]; !reflect.DeepEqual(got, map[string]string{
+		"component": "ciscobinary.openh264.org", "tool": "owasp zap", "toolVersion": "2.7.0", "sourceDocument": "zap-webgoat.json",
+	}) {
+		t.Errorf("baselines[0].labels = %#v", got)
+	}
+	if got := baselines[4]["labels"]; !reflect.DeepEqual(got, map[string]string{"tool": "prisma cloud", "sourceDocument": "duplicate-baselines.json"}) {
+		t.Errorf("baselines[4].labels = %#v (Prisma has no tool.version, so no toolVersion label)", got)
+	}
+	if out.Truncated {
+		t.Errorf("a 20-baseline merged document must fit the concise budget; notice %q", out.Notice)
+	}
+
+	// The largest committed tools fixture on its own also fits the concise budget.
+	big := writeRoot(t, "big.json", readToolsFixture(t, "duplicate-baselines.json"))
+	_, out = callInspect(t, inspectInput{Source: handle.Source{Path: big}})
+	if out.Truncated {
+		t.Errorf("duplicate-baselines.json (16 baselines) must fit the concise budget; notice %q", out.Notice)
 	}
 }

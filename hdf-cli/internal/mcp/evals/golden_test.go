@@ -48,6 +48,16 @@ func TestGolden_ToolResponses(t *testing.T) {
 	capture("hdf_inspect", call{"hdf_inspect", map[string]any{"source": src("system.json")}}, [2]string{fxSystem, "system.json"})
 	capture("hdf_query", call{"hdf_query", map[string]any{"source": src("r.json"), "status": []any{"failed"}}}, [2]string{fxAgentOverrides, "r.json"})
 	capture("hdf_compliance", call{"hdf_compliance", map[string]any{"source": src("r.json")}}, [2]string{fxAgentOverrides, "r.json"})
+	// The multi-source shape (ADR-0016 §7): a sources[] envelope in place of
+	// handle, rows under <tool>/<original> baseline names (these fixtures carry
+	// no root tool, so the deterministic doc<N> fallback names them), and one
+	// compliance group per input baseline with its baselineIndex.
+	capture("hdf_query.sources", call{"hdf_query", map[string]any{
+		"sources": []any{src("r.json"), src("from.json")}, "status": []any{"failed"}, "verbosity": "full"}},
+		[2]string{fxAgentOverrides, "r.json"}, [2]string{fxDiffFrom, "from.json"})
+	capture("hdf_compliance.sources", call{"hdf_compliance", map[string]any{
+		"sources": []any{src("r.json"), src("from.json")}, "groupBy": "baseline"}},
+		[2]string{fxAgentOverrides, "r.json"}, [2]string{fxDiffFrom, "from.json"})
 	capture("hdf_diff", call{"hdf_diff", map[string]any{"from": src("from.json"), "to": src("to.json")}},
 		[2]string{fxDiffFrom, "from.json"}, [2]string{fxDiffTo, "to.json"})
 	capture("hdf_validate", call{"hdf_validate", map[string]any{"source": src("system.json"), "mode": "schema"}}, [2]string{fxSystem, "system.json"})

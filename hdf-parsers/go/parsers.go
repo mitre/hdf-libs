@@ -35,6 +35,10 @@ type ResultsParseResult struct {
 	Success bool            `json:"success"`
 	Data    *hdf.HDFResults `json:"data,omitempty"`
 	Error   string          `json:"error,omitempty"`
+	// Warnings carries non-fatal notices from pre-validation normalization
+	// (e.g. a legacy SAF-supplement shape rewritten to v3-native); callers
+	// surface these through their notice UX.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // BaselineParseResult is a specialized parse result for HDF Baseline
@@ -75,6 +79,11 @@ type ComparisonParseResult struct {
 // ParseResults parses HDF Results document from JSON bytes
 func ParseResults(input []byte) ResultsParseResult {
 	input = NormalizeTimestamps(input)
+	// Rewrite legacy SAF-supplement top-level keys (target/passthrough) into
+	// v3-native carriers BEFORE validation, so a SAF-produced document is accepted
+	// and its attribution survives instead of being rejected (TS/ajv) or dropped at
+	// the typed unmarshal (Go). Sibling to NormalizeTimestamps above.
+	input, warnings := NormalizeSAFSupplement(input)
 	trimmed := strings.TrimSpace(string(input))
 	if len(trimmed) == 0 {
 		return ResultsParseResult{
@@ -111,8 +120,9 @@ func ParseResults(input []byte) ResultsParseResult {
 	}
 
 	return ResultsParseResult{
-		Success: true,
-		Data:    &data,
+		Success:  true,
+		Data:     &data,
+		Warnings: warnings,
 	}
 }
 

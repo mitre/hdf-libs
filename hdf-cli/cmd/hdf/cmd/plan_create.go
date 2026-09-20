@@ -79,7 +79,7 @@ func runPlanCreateStandalone(planName, baseline, planID, outputPath string) erro
 }
 
 func runPlanCreateFromSystem(systemFile, planID, outputPath string) error {
-	data, err := os.ReadFile(systemFile) // #nosec G304 -- CLI reads user-provided file path
+	data, err := readInputFile(systemFile)
 	if err != nil {
 		return fmt.Errorf("failed to read system file: %w", err)
 	}
@@ -152,7 +152,7 @@ func writePlanOutput(plan map[string]interface{}, outputPath string) error {
 		return fmt.Errorf("failed to serialize plan: %w", err)
 	}
 
-	if err := validateHDFOutput(output); err != nil {
+	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("plan document failed validation before write: %w", err)
 	}
 
