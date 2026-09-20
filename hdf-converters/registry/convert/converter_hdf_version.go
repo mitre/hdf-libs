@@ -2,6 +2,7 @@ package convert
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
@@ -67,15 +68,25 @@ func (c *hdfVersionConverter) Convert(input []byte) ([]byte, error) {
 	return output, nil
 }
 
-// emitTransformWarnings prints per-item warnings (e.g. amendments with no v2
-// equivalent) to stderr so a lossy downgrade is never silent.
+// emitTransformWarnings prints per-item downgrade warnings to stderr so a lossy
+// conversion is never silent.
 func emitTransformWarnings(warnings []string) {
+	writeTransformWarnings(os.Stderr, warnings)
+}
+
+// writeTransformWarnings writes the downgrade warning block to w. The slice is
+// heterogeneous — some items are amendments with no v2 equivalent, others are
+// v3-native fields such as components[] carried via passthrough — so the header
+// stays category-neutral ("item(s)") rather than calling every item an
+// amendment, and says "not fully represented" because a carried field is present
+// in passthrough even when it has no native v2 home (issue #325).
+func writeTransformWarnings(w io.Writer, warnings []string) {
 	if len(warnings) == 0 {
 		return
 	}
-	fmt.Fprintf(os.Stderr, "Warning: %d amendment(s) could not be represented in the target HDF version:\n", len(warnings))
-	for _, w := range warnings {
-		fmt.Fprintf(os.Stderr, "  - %s\n", w)
+	fmt.Fprintf(w, "Warning: %d item(s) could not be fully represented in the target HDF version:\n", len(warnings))
+	for _, warn := range warnings {
+		fmt.Fprintf(w, "  - %s\n", warn)
 	}
 }
 
