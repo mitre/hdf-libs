@@ -91,8 +91,43 @@
     },
     {
       "value": " =cmd",
-      "sanitized": " =cmd",
-      "why": "a leading space means the trigger is not first; Excel does not evaluate it"
+      "sanitized": "' =cmd",
+      "why": "OWASP: spreadsheets trim leading whitespace before evaluating, so a leading space does NOT save the trigger — the value must be neutralised"
+    },
+    {
+      "value": "\t=cmd",
+      "sanitized": "'\t=cmd",
+      "why": "a leading TAB is trimmed by the spreadsheet before formula evaluation, same bypass as a space"
+    },
+    {
+      "value": "\r=cmd",
+      "sanitized": "'\r=cmd",
+      "why": "a leading carriage return is trimmed likewise"
+    },
+    {
+      "value": "\n=cmd",
+      "sanitized": "'\n=cmd",
+      "why": "a leading line feed is trimmed likewise"
+    },
+    {
+      "value": "  \t @SUM(1)",
+      "sanitized": "'  \t @SUM(1)",
+      "why": "mixed leading whitespace run before a non-'=' trigger is still neutralised"
+    },
+    {
+      "value": "   plain",
+      "sanitized": "   plain",
+      "why": "leading whitespace with NO trigger after it must NOT be quoted — the guard only fires on a real trigger"
+    },
+    {
+      "value": "   ",
+      "sanitized": "   ",
+      "why": "an all-whitespace value has no trigger and is left untouched"
+    },
+    {
+      "value": " é=x",
+      "sanitized": " é=x",
+      "why": "leading space then a non-ASCII rune: the first non-whitespace char is the multi-byte rune, not a trigger, so it is not neutralised"
     },
     {
       "value": "0.5",
