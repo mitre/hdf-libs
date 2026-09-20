@@ -139,6 +139,8 @@ For more information: https://github.com/mitre/hdf-libs`,
 	cmd.AddCommand(NewSystemCmd())
 	cmd.AddCommand(NewPlanCmd())
 	cmd.AddCommand(NewLabelCmd())
+	cmd.AddCommand(NewTargetCmd())
+	cmd.AddCommand(NewPassthroughCmd())
 	cmd.AddCommand(NewGenerateCmd())
 	cmd.AddCommand(NewFetchCmd())
 	cmd.AddCommand(NewMCPCmd())
