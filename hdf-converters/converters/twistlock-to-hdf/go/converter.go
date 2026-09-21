@@ -344,8 +344,8 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 		"cveid": []interface{}{vuln.ID},
 	}
 	// Legacy: retain the cvss_base_score tag for one release so existing
-	// downstream queries keep working. Marked for removal in v3.4.0 (see
-	// CHANGELOG note in epic hdf-libs-8zn0).
+	// downstream queries keep working. Marked for removal in v3.4.0; the
+	// CHANGELOG carries the deprecation note.
 	if vuln.CVSS > 0 {
 		extras["cvss_base_score"] = vuln.CVSS
 	}
