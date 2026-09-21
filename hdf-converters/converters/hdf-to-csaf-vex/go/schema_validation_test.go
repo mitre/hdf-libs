@@ -1,9 +1,13 @@
 package hdftocsafvex
 
 import (
+	"bytes"
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
@@ -125,10 +129,9 @@ func TestConvertHDFToCSAFVEX_AdversarialCorpus(t *testing.T) {
 // type the HDF enum forbids but a typed decode accepts, carrying enrichment that
 // still produces output. CSAF constrains product_status with minProperties 1.
 func TestConvertHDFToCSAFVEX_OmitsEmptyProductStatus(t *testing.T) {
-	score := 9.8
 	doc := testhdf.Amendments("a", testhdf.Override("not-a-real-override-type", testCVE,
 		testhdf.OverrideStatus(hdf.Failed), testhdf.OverrideReason("accepted")))
-	doc.Overrides[0].Cvss = &hdf.Cvss{Version: hdf.The31, BaseScore: &score}
+	doc.Overrides[0].Cvss = completeCvss31(t)
 
 	input, err := json.Marshal(doc)
 	require.NoError(t, err)
@@ -216,4 +219,153 @@ func TestTextSinks_MatchSharedTable(t *testing.T) {
 			require.Equal(t, c.Want, reasonProse(c.Reason))
 		})
 	}
+}
+
+// cvssScoreCases is the shared table the TypeScript peer also reads, so the
+// completeness rule and the severity mapping are asserted against ONE
+// definition in both languages. See the table's $comment for data provenance.
+type cvssScoreCases struct {
+	Severity map[string]string `json:"severity"`
+	Cases    []struct {
+		Name    string          `json:"name"`
+		Why     string          `json:"why"`
+		CVE     string          `json:"cve"`
+		Product string          `json:"product"`
+		Cvss    hdf.Cvss        `json:"cvss"`
+		Want    json.RawMessage `json:"want"`
+		Warning *string         `json:"warning"`
+	} `json:"cases"`
+}
+
+// affectedPackageFor places a table product in the affectedPackages slot its
+// prefix names (purl or cpe), the structured product identity the exporter reads.
+func affectedPackageFor(product string) hdf.AffectedPackage {
+	p := product
+	if strings.HasPrefix(p, "cpe:") {
+		return hdf.AffectedPackage{Cpe: &p}
+	}
+	return hdf.AffectedPackage{Purl: &p}
+}
+
+func loadCvssScoreCases(t *testing.T) cvssScoreCases {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "fixtures", "cvss-score-cases.json"))
+	require.NoError(t, err)
+	var doc cvssScoreCases
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases, "shared table is empty — the run would pass vacuously")
+	// The table's own $comment would otherwise read as a sixth band.
+	delete(doc.Severity, "$comment")
+	require.NotEmpty(t, doc.Severity, "shared table is empty — the run would pass vacuously")
+	return doc
+}
+
+// completeCvss31 is the table's v31-complete block: the CVSS shape a test that
+// only needs a score to be emitted can rely on.
+func completeCvss31(t *testing.T) *hdf.Cvss {
+	t.Helper()
+	for _, c := range loadCvssScoreCases(t).Cases {
+		if c.Name == "v31-complete" {
+			cv := c.Cvss
+			return &cv
+		}
+	}
+	t.Fatal("shared table has no v31-complete case")
+	return nil
+}
+
+// TestCvssScores_MatchSharedTable holds the score export to the shared table:
+// legal HDF in, a CSAF-valid document out, exactly the table's score (or none,
+// with the table's warning), and — through the frozen goldens — the same bytes
+// from both languages. It captures the process logger, so it must not run in
+// parallel with anything that logs.
+func TestCvssScores_MatchSharedTable(t *testing.T) {
+	v := csafValidator(t)
+	hdfV := hdfAmendmentsValidator(t)
+	table := loadCvssScoreCases(t)
+
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	for _, c := range table.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			logs.Reset()
+			doc := testhdf.Amendments("a", testhdf.Override(hdf.OverrideTypeWaiver, c.CVE,
+				testhdf.OverrideStatus(hdf.Failed), testhdf.OverrideReason("accepted")))
+			doc.Overrides[0].AffectedPackages = []hdf.AffectedPackage{affectedPackageFor(c.Product)}
+			cv := c.Cvss
+			doc.Overrides[0].Cvss = &cv
+
+			input, err := json.Marshal(doc)
+			require.NoError(t, err)
+			hdfV.RequireValid(t, c.Name+" (input)", input)
+
+			out, err := ConvertHDFToCSAFVEX(input, "1.0.0")
+			require.NoError(t, err, c.Why)
+			v.RequireValid(t, c.Name, out)
+
+			var parsed struct {
+				Vulnerabilities []struct {
+					Scores []json.RawMessage `json:"scores"`
+				} `json:"vulnerabilities"`
+			}
+			require.NoError(t, json.Unmarshal(out, &parsed))
+			require.Len(t, parsed.Vulnerabilities, 1)
+			if string(c.Want) == "null" {
+				require.Empty(t, parsed.Vulnerabilities[0].Scores, c.Why)
+			} else {
+				require.Len(t, parsed.Vulnerabilities[0].Scores, 1, c.Why)
+				require.JSONEq(t, string(c.Want), string(parsed.Vulnerabilities[0].Scores[0]), c.Why)
+			}
+
+			if c.Warning == nil {
+				require.NotContains(t, logs.String(), "WARNING", c.Why)
+			} else {
+				require.Contains(t, logs.String(), "WARNING: "+*c.Warning, c.Why)
+			}
+
+			goldenPath := filepath.Join("..", "fixtures", "expected", "cvss-"+c.Name+".csaf-vex.json")
+			if os.Getenv("UPDATE_GOLDEN") == "1" {
+				require.NoError(t, os.WriteFile(goldenPath, out, 0o644))
+				return
+			}
+			golden, err := os.ReadFile(goldenPath)
+			require.NoError(t, err, "read golden %s (regenerate with UPDATE_GOLDEN=1)", goldenPath)
+			require.Equal(t, string(golden), string(out), "golden mismatch for %s", c.Name)
+		})
+	}
+}
+
+// TestCsafSeverity_MatchesSharedTable pins the band mapping to the shared table
+// and the table to the enum in the vendored FIRST.org schema, so neither the Go
+// nor the TypeScript mapping can drift from what CSAF actually accepts.
+func TestCsafSeverity_MatchesSharedTable(t *testing.T) {
+	table := loadCvssScoreCases(t)
+	for band, want := range table.Severity {
+		t.Run(band, func(t *testing.T) {
+			require.Equal(t, want, csafSeverity(hdf.CVSSSeverity(band)))
+		})
+	}
+
+	raw, err := os.ReadFile(filepath.Join(shared.GetConvertersDir(), "hdf-to-csaf-vex", "schemas", "cvss-v3.1.json"))
+	require.NoError(t, err)
+	var first struct {
+		Definitions struct {
+			SeverityType struct {
+				Enum []string `json:"enum"`
+			} `json:"severityType"`
+		} `json:"definitions"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &first))
+
+	got := make([]string, 0, len(table.Severity))
+	for _, v := range table.Severity {
+		got = append(got, v)
+	}
+	sort.Strings(got)
+	enum := append([]string(nil), first.Definitions.SeverityType.Enum...)
+	sort.Strings(enum)
+	require.Equal(t, enum, got, "the table's severity values must be exactly FIRST's severityType enum")
+	require.Equal(t, strings.ToUpper(strings.Join(enum, ",")), strings.Join(enum, ","), "FIRST's enum is uppercase")
 }

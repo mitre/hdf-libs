@@ -13,6 +13,18 @@
  * real difference — while a peer that emitted the same content as &#x9; survived
  * and compared unequal.
  *
+ * LIMIT, recorded deliberately (hdf-libs-5gri.37). The collapse is a regex, so
+ * it cannot tell a whitespace-only text node that is CONTENT from the
+ * indentation a pretty-printer emits. Whitespace that is an element's whole
+ * content is protected and survives; whitespace after a closing tag, a comment,
+ * CDATA or a self-closing element is treated as formatting and erased. A parser
+ * would not settle it either — XML has no notion of indentation, so a parser
+ * applies the same mixed-content heuristic and answers the same way. It is safe
+ * here because the HDF data model has no mixed content, and across all five XML
+ * goldens this normalizer reads, none of their whitespace-only text nodes is
+ * content. The last four rows of shared/xml-golden-cases.json pin the shapes
+ * this masks, so the limit is visible rather than discovered.
+ *
  * Mirrored by NormalizeXMLForGolden in shared/go/xmlgolden.go. The two must stay
  * in lockstep: if you change one, change the other.
  */

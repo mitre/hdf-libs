@@ -33,19 +33,31 @@
   "product_tree": {
     "full_product_names": [
       {
-        "name": "No product identity was recorded in the source amendment",
-        "product_id": "HDFPID-0001"
+        "name": "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*",
+        "product_id": "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*"
+        }
       }
     ]
   },
   "vulnerabilities": [
     {
-      "cve": "CVE-2021-44228",
+      "cve": "CVE-2024-21762",
       "product_status": {
         "known_affected": [
-          "HDFPID-0001"
+          "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*"
         ]
-      }
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "accepted",
+          "product_ids": [
+            "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*"
+          ]
+        }
+      ]
     }
   ]
 }

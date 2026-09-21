@@ -403,7 +403,12 @@ describe('convertHdfToCsafVex — cvss scores', () => {
     });
 
   it('keys the score by CVSS version (v4, v2)', () => {
-    const v4 = JSON.parse(convertHdfToCsafVex(cvssOverride({ version: '4.0', baseScore: 9.3, baseVector: 'CVSS:4.0/AV:N' }), TEST_VERSION));
+    const v4 = JSON.parse(convertHdfToCsafVex(cvssOverride({
+      version: '4.0',
+      baseScore: 9.3,
+      baseVector: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N',
+      baseSeverity: 'critical',
+    }), TEST_VERSION));
     expect(v4.vulnerabilities[0].scores[0].cvss_v4.version).toBe('4.0');
     const v2 = JSON.parse(convertHdfToCsafVex(cvssOverride({ version: '2.0', baseScore: 7.5, baseVector: 'AV:N/AC:L/Au:N/C:P/I:P/A:P' }), TEST_VERSION));
     expect(v2.vulnerabilities[0].scores[0].cvss_v2.version).toBe('2.0');
@@ -547,4 +552,18 @@ describe('convertHdfToCsafVex — golden parity', () => {
       );
     },
   );
+});
+
+// Mirrors TestConvertHDFToCSAFVEX_NamesTheAbsenceNotTheToken in Go.
+describe('hdf-to-csaf-vex unidentified product', () => {
+  it('names the absence in the human-readable field, keeping the compelled token', () => {
+    const doc = JSON.parse(convertHdfToCsafVex(loadInput('sec-vex-amendments.json'))) as {
+      product_tree: { full_product_names: { name: string; product_id: string }[] };
+    };
+    const entries = doc.product_tree.full_product_names.filter((p) => p.product_id === 'HDFPID-0001');
+    expect(entries.length, 'fixture has an override with no product identity').toBeGreaterThan(0);
+    for (const e of entries) {
+      expect(e.name).toBe('No product identity was recorded in the source amendment');
+    }
+  });
 });

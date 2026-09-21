@@ -16,6 +16,18 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
 /**
+ * Formats the vendored schemas assert that ajv-formats does not implement. ajv
+ * treats them as annotation-only, so a TypeScript schema test cannot see a
+ * violation of them; the Go peer can. Recorded, with both sides' verdicts, as
+ * tsAnnotationOnly[] in ../testdata/format-assertion-cases.json.
+ *
+ * Registering a name here overrides any real check ajv-formats might gain for
+ * it later, so if a release starts implementing one of these, drop it from the
+ * list rather than leaving the override in place.
+ */
+export const ANNOTATION_ONLY_FORMATS: readonly string[] = ['iri', 'iri-reference', 'idn-email'];
+
+/**
  * Compile a self-contained JSON Schema from a file path. For schemas that $ref
  * external schemas by URL, use loadSchemaValidatorWithResources.
  */
@@ -28,7 +40,10 @@ export function loadSchemaValidator(schemaPath: string): ValidateFunction {
  * $refs external schemas by URL (e.g. CycloneDX → SPDX/JSF) compiles offline.
  * `companions` maps each $ref URL exactly as it appears in the main schema to
  * the vendored file that satisfies it. strict:false — validate data against the
- * schema, not lint the external schema.
+ * schema, not lint the external schema — except that a format ajv cannot check
+ * fails compilation instead of being ignored, so it has to be acknowledged in
+ * ANNOTATION_ONLY_FORMATS and recorded in the shared table rather than quietly
+ * weakening every test that loads the schema.
  */
 export function loadSchemaValidatorWithResources(
   schemaPath: string,
@@ -37,10 +52,12 @@ export function loadSchemaValidatorWithResources(
   const schema = JSON.parse(readFileSync(schemaPath, 'utf-8')) as { $schema?: string };
   const dialect = typeof schema.$schema === 'string' ? schema.$schema : '';
   const modern = dialect.includes('2019-09') || dialect.includes('2020-12');
-  const ajv = modern
-    ? new Ajv2020({ allErrors: true, strict: false })
-    : new Ajv({ allErrors: true, strict: false });
+  // strictSchema:'log' makes an unknown format throw instead of being ignored;
+  // its other findings only lint the vendored schema, so the logger is off.
+  const options = { allErrors: true, strict: false, strictSchema: 'log', logger: false } as const;
+  const ajv = modern ? new Ajv2020(options) : new Ajv(options);
   addFormats(ajv);
+  for (const name of ANNOTATION_ONLY_FORMATS) ajv.addFormat(name, true);
   // ajv-formats follows the RFC 3339 note allowing a space where the T belongs;
   // HDF's canonical timestamp does not, and the Go peer rejects it. Requiring
   // the separator keeps the two validators on one answer — the vocabularies they

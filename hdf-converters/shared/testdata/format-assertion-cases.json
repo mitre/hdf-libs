@@ -1,11 +1,17 @@
 {
-  "$comment": "Pins the Go and TypeScript schema validators to one another on JSON Schema `format`. Both harnesses read this file, build the same one-property schema per case in each dialect, and must produce the recorded verdict. Only the formats the HDF schemas actually assert are listed — see formats[] — because those are the ones a converter test's input-validity guard depends on. Adding a format here is a deliberate act: it changes what every existing test accepts. A case states `valid` when the two libraries agree, or `go` and `ts` when they do not; see divergences[] for why any case does the latter.",
-  "formats": ["uuid", "date-time", "date", "uri", "uri-reference", "hostname", "ipv4", "ipv6"],
+  "$comment": "Pins the Go and TypeScript schema validators to one another on JSON Schema `format`. Both harnesses read this file, build the same one-property schema per case in each dialect, and must produce the recorded verdict. Only the formats the HDF schemas actually assert are listed — see formats[] — because those are the ones a converter test's input-validity guard depends on. Adding a format here is a deliberate act: it changes what every existing test accepts. A case states `valid` when the two libraries agree, or `go` and `ts` when they do not; see divergences[] for why any case does the latter. The formats in tsAnnotationOnly[] are ones ajv-formats does not implement: TypeScript registers them as annotation-only and accepts every value, so their rows always spell `go` and `ts` — `valid` there would dress one side's silence up as agreement.",
+  "formats": ["uuid", "date-time", "date", "uri", "uri-reference", "hostname", "ipv4", "ipv6", "iri", "iri-reference", "idn-email"],
+  "tsAnnotationOnly": ["iri", "iri-reference", "idn-email"],
   "divergences": [
     {
       "format": "uri-reference",
       "summary": "Go's libraries accept characters RFC 3986 excludes; ajv rejects them.",
       "detail": "santhosh-tekuri (2020-12) and gojsonschema (draft-07) both accept a space, '<', '|', '^' and backtick inside a uri-reference. ajv-formats rejects all five. Neither side is RFC 3986-exact: ajv accepts a double quote, which the RFC also excludes, and rejects malformed percent-encoding that a character-level check would pass. Matching one library to the other would import its idiosyncrasies rather than make either correct, so the divergence is recorded and tested instead — if a library upgrade changes either verdict, these cases fail and the next contributor sees this note. The seven other formats agree exactly, including uuid and date-time, the two that actually produced a false-green test."
+    },
+    {
+      "formats": ["iri", "iri-reference", "idn-email"],
+      "summary": "ajv-formats does not implement them; TypeScript registers them as annotation-only and asserts nothing, so only the Go harness can catch a violation.",
+      "detail": "ajv-formats 3.x ships no iri, iri-reference, idn-email or idn-hostname and points at the ajv-formats-draft2019 plugin, last published in 2022 on top of uri-js, the URI library ajv itself replaced with fast-uri — not a maintained implementation. Nor is Go's check RFC 3987: santhosh-tekuri aliases iri to its uri validator and iri-reference to uri-reference (net/url plus an IPv6-host check) and has no idn-email at all, so its 2020-12 path is as blind to idn-email as ajv; gojsonschema aliases iri and iri-reference to its URI checkers and idn-email to net/mail. Aliasing iri to ajv's own uri would reject the non-ASCII IRIs Go accepts (ajv's uri regex is ASCII-only), so the two harnesses would disagree while claiming to check the same thing. The gap is recorded instead: tsAnnotationOnly[] names the set, schema-validation.ts registers exactly that set as always-valid, and any other format ajv-formats lacks fails schema compilation until it is added here deliberately. A converter whose schema uses one of these — hdf-to-openvex (iri on every @id), hdf-to-cyclonedx-vex (iri-reference on url fields, idn-email on contacts) — says so in its TypeScript schema test: that suite's green proves nothing about IRI shape or address syntax."
     }
   ],
   "$resolved": "gojsonschema's built-in uuid and date-time checkers were wrong four ways — rejecting an uppercase uuid and a lowercase RFC 3339 t, rejecting a legal leap second, and accepting a bare date as a date-time. hdf-validators now replaces both at gojsonschema's process-global registry, so this harness's draft-07 path inherits the corrected behaviour whenever hdf-validators is linked (its own test binary imports it). The `goDraft07` field remains supported for a future case that needs it.",
@@ -55,6 +61,23 @@
     { "format": "ipv6", "valid": true, "value": "2001:db8::1" },
     { "format": "ipv6", "valid": true, "value": "::ffff:192.0.2.1" },
     { "format": "ipv6", "valid": false, "value": "2001:db8:::1" },
-    { "format": "ipv6", "valid": false, "value": "192.0.2.1" }
+    { "format": "ipv6", "valid": false, "value": "192.0.2.1" },
+
+    { "format": "iri", "go": true, "ts": true, "value": "https://example.com/advisories/GHSA-jfh8-c2jp-5v3q" },
+    { "format": "iri", "go": true, "ts": true, "value": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1", "why": "a purl, the product id shape OpenVEX documents actually carry" },
+    { "format": "iri", "go": true, "ts": true, "value": "https://example.com/ünïcödé", "why": "a legal IRI that is not a legal URI: ajv's uri check rejects it, which is why iri is not aliased to it" },
+    { "format": "iri", "go": false, "ts": true, "value": "HDFPID-0001", "why": "the bare product id hdf-to-openvex once minted: relative, so not an IRI. Only Go caught it" },
+    { "format": "iri", "go": false, "ts": true, "value": "" },
+
+    { "format": "iri-reference", "go": true, "ts": true, "value": "https://cyclonedx.org/" },
+    { "format": "iri-reference", "go": true, "ts": true, "value": "../sibling/doc.json" },
+    { "format": "iri-reference", "go": true, "ts": true, "value": "https://example.com/ünïcödé" },
+    { "format": "iri-reference", "go": true, "ts": true, "value": "", "why": "an empty reference is a legal same-document reference; neither side rejects it" },
+    { "format": "iri-reference", "go": false, "ts": true, "value": "https://exa mple.com/", "why": "a space in the host, unlike one in the path, is a parse error for net/url" },
+    { "format": "iri-reference", "go": false, "ts": true, "value": "a\\b", "why": "a backslash is the one character both Go libraries reject in a reference" },
+
+    { "format": "idn-email", "go": true, "ts": true, "value": "alice@example.com" },
+    { "format": "idn-email", "go": true, "ts": true, "value": "дмитрий@пример.рф", "why": "the internationalised address idn-email exists for; net/mail accepts it" },
+    { "format": "idn-email", "go": true, "ts": true, "goDraft07": false, "value": "not an email", "why": "santhosh-tekuri has no idn-email, so 2020-12 Go accepts it too; only gojsonschema — draft-07, the dialect CycloneDX 1.4 declares — rejects it" }
   ]
 }
