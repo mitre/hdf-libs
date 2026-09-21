@@ -2,6 +2,7 @@ package hdftoxccdf
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,7 +24,7 @@ func TestConvertHDFToXCCDF_SchemaValid(t *testing.T) {
 	v := xsdvalidate.New(t, filepath.Join(shared.GetConvertersDir(),
 		"hdf-to-xccdf", "schemas", "xccdf_1.2.xsd"))
 
-	for _, name := range []string{"minimal.json", "stig-rhel7.json"} {
+	for _, name := range []string{"minimal.json", "stig-rhel7.json", "multiline-rhel9.json"} {
 		t.Run(name, func(t *testing.T) {
 			input, err := os.ReadFile(filepath.Join("..", "fixtures", "input", name))
 			require.NoError(t, err)
@@ -32,6 +33,107 @@ func TestConvertHDFToXCCDF_SchemaValid(t *testing.T) {
 			v.RequireValid(t, name, out)
 		})
 	}
+}
+
+// multiline-rhel9.json is two requirements trimmed from a real RHEL 9 STIG scan:
+// multi-line description, check and fix text, code ending in a newline, and
+// result messages that begin and end with one. XCCDF carries all of it as
+// element text, and an XSD pass cannot show that the text survived, so each
+// value is parsed back out and compared byte-exact with its source.
+func TestConvertHDFToXCCDF_MultilineContentPreserved(t *testing.T) {
+	input, err := os.ReadFile(filepath.Join("..", "fixtures", "input", "multiline-rhel9.json"))
+	require.NoError(t, err)
+	hdfV := shared.NewSchemaValidator(t, filepath.Join("..", "..", "..", "..",
+		"hdf-validators", "go", "schemas", "hdf-results.schema.json"))
+	require.NoError(t, hdfV.Validate(input), "the fixture is not valid HDF")
+
+	var src struct {
+		Baselines []struct {
+			Requirements []struct {
+				ID           string `json:"id"`
+				Code         string `json:"code"`
+				Descriptions []struct {
+					Label string `json:"label"`
+					Data  string `json:"data"`
+				} `json:"descriptions"`
+				Results []struct {
+					Message string `json:"message"`
+				} `json:"results"`
+			} `json:"requirements"`
+		} `json:"baselines"`
+	}
+	require.NoError(t, json.Unmarshal(input, &src))
+	require.Len(t, src.Baselines, 1)
+
+	out, err := ConvertHDFToXCCDF(input, "1.0.0")
+	require.NoError(t, err)
+
+	type check struct {
+		System  string `xml:"system,attr"`
+		Content string `xml:"check-content"`
+	}
+	type rule struct {
+		ID          string  `xml:"id,attr"`
+		Description string  `xml:"description"`
+		Fixtext     string  `xml:"fixtext"`
+		Checks      []check `xml:"check"`
+	}
+	var doc struct {
+		Groups []struct {
+			Rules []rule `xml:"Rule"`
+		} `xml:"Group"`
+		Rules      []rule `xml:"Rule"`
+		TestResult struct {
+			RuleResults []struct {
+				Message string `xml:"message"`
+			} `xml:"rule-result"`
+		} `xml:"TestResult"`
+	}
+	require.NoError(t, xml.Unmarshal(out, &doc))
+
+	rules := map[string]rule{}
+	for _, r := range doc.Rules {
+		rules[r.ID] = r
+	}
+	for _, g := range doc.Groups {
+		for _, r := range g.Rules {
+			rules[r.ID] = r
+		}
+	}
+
+	var wantMessages, gotMessages []string
+	edgeWhitespace := false
+	for _, req := range src.Baselines[0].Requirements {
+		desc := map[string]string{}
+		for _, d := range req.Descriptions {
+			desc[d.Label] = d.Data
+		}
+		require.Contains(t, desc["check"], "\n", "%s: the fixture must keep its multi-line prose", req.ID)
+
+		r, ok := rules[sanitizeXCCDFID("xccdf_hdf_rule_"+req.ID+"_rule")]
+		require.True(t, ok, "%s: no Rule emitted", req.ID)
+		checks := map[string]string{}
+		for _, c := range r.Checks {
+			checks[c.System] = c.Content
+		}
+
+		assert.Equal(t, desc["default"], r.Description, "%s: description", req.ID)
+		assert.Equal(t, desc["fix"], r.Fixtext, "%s: fixtext", req.ID)
+		assert.Equal(t, desc["check"], checks["http://oval.mitre.org/XMLSchema/oval-definitions-5"], "%s: check text", req.ID)
+		assert.Equal(t, req.Code, checks["http://inspec.io/"], "%s: InSpec code", req.ID)
+
+		edgeWhitespace = edgeWhitespace || req.Code != strings.TrimSpace(req.Code)
+		for _, res := range req.Results {
+			wantMessages = append(wantMessages, res.Message)
+			edgeWhitespace = edgeWhitespace || res.Message != strings.TrimSpace(res.Message)
+		}
+	}
+	require.True(t, edgeWhitespace, "the fixture must keep its edge-whitespace values")
+
+	for _, rr := range doc.TestResult.RuleResults {
+		gotMessages = append(gotMessages, rr.Message)
+	}
+	assert.Equal(t, wantMessages, gotMessages, "result messages")
 }
 
 // XCCDF types Group/@id as groupIdType: an NCName that must also match

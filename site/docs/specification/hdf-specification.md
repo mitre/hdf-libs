@@ -29,6 +29,20 @@ Documents reference each other via URI strings: `systemRef`, `planRef`.
 - `generator` (optional on all documents): `{name, version}` of the producing tool.
 - `labels` (optional on most documents): `{key: value}` string map for flexible grouping. Well-known keys: `system`, `component`, `environment`, `region`, `team`.
 
+### Prose fields
+
+Every HDF prose field — `descriptions[].data`, `Requirement_Core.title` and `.code`, result `message` and `codeDesc`, override `reason`, and every `description`, `justification`, `explanation` and `summary` — is a plain JSON string. Line breaks are `\n` inside that string. There is no array-of-lines form, and none will be added.
+
+**Prose is carried verbatim.** Interior blank lines, CRLF, tabs, leading and trailing whitespace, and a trailing newline are all data. Nothing in HDF normalizes prose on ingest: a converter carries the source tool's text through unchanged, so prose survives a read-write round trip byte-for-byte. HDF normalizes *structure*, not words.
+
+The promise is possible because HDF is JSON. XML (XML 1.0 §2.11) and YAML (YAML 1.2.2 §5.4) both require a parser to fold line breaks to LF, so no format in those families can make it; JSON mandates no line-ending normalization at all, so `"a\r\nb"` and `"a\nb"` are distinct strings that both round-trip unchanged. It is worth stating because edge whitespace is frequently the tool's own output framing — a real InSpec result `message` begins and ends with a newline — and because each exporter would otherwise invent its own trim rule. SARIF 2.1.0 §3.3.2 is the precedent for saying it out loud: a producer "SHALL preserve the text artifact's line breaking convention (for example, `\n` or `\r\n`)".
+
+**HDF declares no markup.** Not per field, not per document; no markup or format property will be added. A prose value is whatever the source tool emitted. Real converter output in this repository carries plain text (InSpec, STIG), CommonMark (`cyclonedx`, `neuvector`, `snyk`, `sarif`) and raw HTML (`msft-secure-score`, `aws-config`, `netsparker`) in the same fields, and a merged multi-scanner document can hold all three inside one `descriptions[]` array. A consumer that renders HDF prose must therefore sanitize it and must not assume plain text; no HDF library renders prose itself.
+
+**Single-line labels versus prose.** Short single-line labels are exactly `descriptions[].label` (declared at five schema sites: `Requirement_Core.descriptions[]`, `Requirement_Description`, `Evaluated_Requirement.descriptions[]`, and both `Baseline_Requirement_Descriptions` declarations), `Milestone.title`, `Source.label`, `Per_Source_Summary.label`, `Annotation.label`, and `Scanner_Conflict.values[].sourceLabel`. Everything else listed above is prose and carries no length, line-break or whitespace constraint. `Requirement_Core.title` is prose despite its name: it is a pass-through of a foreign tool's free-text field (InSpec control titles, XCCDF element text, Graph API titles), and real emitted values contain line breaks and trailing spaces. `Baseline_Metadata.title` and `Requirement_Group.title` are prose for the same reason. `Milestone.title` is the only field that currently carries a single-line pattern (`minLength: 1` plus a pattern banning line breaks and edge whitespace), and that pattern is the precedent shape for any future label constraint.
+
+**Where normalization is legitimate.** Only at an export boundary whose own type forbids what HDF allows, and only for that target. `dev-docs/adr-0014-oscal-namespace-and-prose-carriage.md` §1.7.1 collapses line terminators and trims edge whitespace for OSCAL `StringDatatype` sinks, carrying the exact HDF value in the accompanying `remarks`; that rule is scoped to those sinks and is not generalized. An OSCAL `markup-multiline` home must pass `\n` through untouched, because a blank line is the paragraph delimiter there. A target that folds line endings by specification (XCCDF, or any other XML sink) returns LF-normalized prose — the target format's documented loss, stated per exporter, not an HDF rule.
+
 ### Cardinality invariants
 
 Several arrays in the schema declare `minItems: 1`:
@@ -42,7 +56,7 @@ Several arrays in the schema declare `minItems: 1`:
 | `Baseline_Requirement.descriptions` | minItems: 1 (must include label `default`) |
 | `Components` (system) | minItems: 1 |
 
-**Rationale.** An HDF Results document records the outcome of an assessment. A baseline with zero requirements (or a requirement with zero results) is structurally meaningless — it implies the producer claims an assessment happened but recorded no work. The cardinality invariants force producers to commit to a non-empty record, and let consumers (Heimdall app, `hdf query`, dashboards, downstream OSCAL exporters) safely access `baselines[0]`, `requirements[0].results[0]`, and `requirements[0].descriptions[0]` without defensive null-checking. Empty arrays would also be semantically ambiguous: clean scan? filter excluded everything? truncated input? converter bug? An explicit record disambiguates. The constraint matches peer formats — OSCAL `AssessmentResult` and InSpec profiles have equivalent non-empty-collection guarantees.
+**Rationale.** An HDF Results document records the outcome of an assessment. A baseline with zero requirements (or a requirement with zero results) is structurally meaningless — it implies the producer claims an assessment happened but recorded no work. The cardinality invariants force producers to commit to a non-empty record, and let consumers (Heimdall app, `hdf query`, dashboards, downstream OSCAL exporters) safely access `requirements[0].results[0]` and `requirements[0].descriptions[0]` without defensive null-checking. `baselines` itself carries no `minItems`: a results document may hold zero baselines, and a consumer indexing `baselines[0]` must check first. Empty arrays would also be semantically ambiguous: clean scan? filter excluded everything? truncated input? converter bug? An explicit record disambiguates. The constraint matches peer formats — OSCAL `AssessmentResult` and InSpec profiles have equivalent non-empty-collection guarantees.
 
 **Migration note.** Legacy HDF (the InSpec-ExecJSON-shaped output that the original Heimdall2 mappers produced) did **not** enforce these cardinality invariants. A clean Heimdall2 scan emitted `profiles[0].controls: []` and the consumer was expected to tolerate empty arrays. The v3 schema deliberately tightened the contract: producers MUST emit non-empty arrays, and clean scans MUST synthesize a `passed` placeholder per the convention below. Consumers reading v3 HDF can rely on first-element access being safe; producers translating from legacy HDF v2 (InSpec-shaped) data MUST add synthesis at the converter boundary.
 
@@ -632,7 +646,7 @@ Types: `email`, `username`, `system`, `agent`, `simple`, `other`. Use `email` fo
 ```json
 { "label": "default", "data": "The system must..." }
 ```
-Labels: `default` (required), `check`, `fix`, `rationale` (conventional).
+Labels: `default` (required), `check`, `fix`, `rationale` (conventional). `label` is a short single-line label; `data` is prose carried verbatim with no declared markup — see [Prose fields](#prose-fields).
 
 ### RequirementGroup
 ```json

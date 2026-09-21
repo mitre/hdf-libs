@@ -1,11 +1,13 @@
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
+import { amendments as sharedAmendments } from '@mitre/hdf-fixtures';
+import { loadSchemaValidator, assertSchemaValid, schemaErrors } from '../../../shared/typescript/schema-validation.js';
 import { amendmentsCorpus, runSchemaCorpus, jsonDocumentValidator } from '../../../shared/typescript/schema-corpus.js';
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
 import { readFileSync } from 'node:fs';
 import { convertHdfToOscalPoam } from './converter.js';
+import { convertOscalPoamToHdf } from '../../oscal-to-hdf/typescript/converter-poam.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // NIST OSCAL POA&M schemas (draft-07): 1.1.2, which the converter declares as
@@ -20,44 +22,14 @@ const validateHdfAmendments = loadSchemaValidator(
   join(__dirname, '..', '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-amendments.schema.json'),
 );
 
-const amendments = JSON.stringify({
-  name: 'test-poam',
-  overrides: [
-    {
-      type: 'poam',
-      requirementId: 'AC-1',
-      reason: 'Pending remediation',
-      status: 'failed',
-      appliedBy: { type: 'simple', identifier: 'admin@example.com' },
-      appliedAt: '2026-01-15T00:00:00Z',
-      expiresAt: '2027-01-15T00:00:00Z',
-    },
-  ],
-});
-
-const multiOverride = JSON.stringify({
-  name: 'multi',
-  systemRef: 'https://example.com/ssp.json',
-  overrides: [
-    {
-      type: 'poam',
-      requirementId: 'AC-1',
-      reason: 'r1',
-      status: 'failed',
-      appliedBy: { type: 'simple', identifier: 'a@example.com' },
-      appliedAt: '2026-01-15T00:00:00Z',
-      expiresAt: '2027-01-15T00:00:00Z',
-    },
-    {
-      type: 'poam',
-      requirementId: 'AC-2',
-      reason: 'r2',
-      status: 'failed',
-      appliedBy: { type: 'simple', identifier: 'b@example.com' },
-      appliedAt: '2026-01-15T00:00:00Z',
-      expiresAt: '2027-01-15T00:00:00Z',
-    },
-  ],
+const poamOverride = (requirementId: string, reason: string, identifier: string) => ({
+  type: 'poam',
+  requirementId,
+  reason,
+  status: 'failed',
+  appliedBy: { type: 'simple', identifier },
+  appliedAt: '2026-01-15T00:00:00Z',
+  expiresAt: '2099-12-31T00:00:00Z',
 });
 
 const MINIMAL_AMENDMENTS = readFileSync(
@@ -80,30 +52,52 @@ interface PoamOut {
   };
 }
 
-describe('hdf-to-oscal-poam output validates against every vendored NIST OSCAL POA&M schema', () => {
-  const cases: Array<[string, string]> = [
-    ['minimal poam override', amendments],
-    ['with system ref and multiple overrides', multiOverride],
-    ['empty requirementId', minimalAmendmentsWith({ requirementId: '' })],
-  ];
+// Mirrors the Go peer's case table case for case.
+const SCHEMA_CASES: Array<[string, string]> = [
+  [
+    'minimal poam override',
+    JSON.stringify({
+      name: 'test-poam',
+      overrides: [poamOverride('AC-1', 'Pending remediation', 'admin@example.com')],
+    }),
+  ],
+  [
+    'with system ref and multiple overrides',
+    JSON.stringify({
+      name: 'multi',
+      systemRef: 'https://example.com/ssp.json',
+      overrides: [poamOverride('AC-1', 'r1', 'a@example.com'), poamOverride('AC-2', 'r2', 'b@example.com')],
+    }),
+  ],
+  // The golden input is gated too, or the golden parity test freezes output no schema has judged.
+  ['uc-01-fixed-amendments.json', sharedAmendments.uc01Fixed.read()],
+];
 
+describe('hdf-to-oscal-poam output validates against every vendored NIST OSCAL POA&M schema', () => {
   describe.each(POAM_SCHEMAS)('%s', (file, v) => {
-    it.each(cases)('%s', async (label, input) => {
+    it.each(SCHEMA_CASES)('%s', async (label, input) => {
       const out = JSON.parse(await convertHdfToOscalPoam(input)) as unknown;
       assertSchemaValid(v, `${file}: ${label}`, out);
     });
   });
 });
 
-// HDF puts no minLength on requirementId, and OSCAL 1.2.x requires both titles to
-// be a non-empty single line. Mirrors the Go peer case for case.
+// OSCAL 1.2.x requires both titles to be a non-empty single line. HDF rejects an
+// empty requirementId but not a whitespace-only one, and the converter's input
+// guard is top-level only, so both still reach the fallback. The verdict is scoped
+// to requirementId because the shared fixture's appliedBy.name is undeclared,
+// which a 2020-12 validator also reports. Mirrors the Go peer case for case.
 describe('hdf-to-oscal-poam titles without a requirement id', () => {
   it.each([
-    ['empty requirementId falls back', '', 'Unidentified requirement'],
-    ['whitespace-only requirementId falls back', '   ', 'Unidentified requirement'],
-    ['a real requirementId is used verbatim', 'SV-001', 'SV-001'],
-  ])('%s', async (_name, requirementId, want) => {
-    const out = JSON.parse(await convertHdfToOscalPoam(minimalAmendmentsWith({ requirementId }))) as PoamOut;
+    ['empty requirementId falls back', '', 'Unidentified requirement', true],
+    ['whitespace-only requirementId falls back', '   ', 'Unidentified requirement', false],
+    ['a real requirementId is used verbatim', 'SV-001', 'SV-001', false],
+  ])('%s', async (_name, requirementId, want, hdfRejectsId) => {
+    const input = minimalAmendmentsWith({ requirementId });
+    const hdfErrors = schemaErrors(validateHdfAmendments, JSON.parse(input)) ?? '';
+    expect(hdfErrors.includes('/overrides/0/requirementId'), hdfErrors).toBe(hdfRejectsId);
+
+    const out = JSON.parse(await convertHdfToOscalPoam(input)) as PoamOut;
     for (const [file, v] of POAM_SCHEMAS) {
       assertSchemaValid(v, file, out);
     }
@@ -216,18 +210,12 @@ describe('hdf-to-oscal-poam corpus golden parity (TS↔Go)', () => {
 
 
 // OSCAL types prop/@name as TokenDatatype, while HDF puts no constraint on
-// amendments.labels keys. Mirrors the Go peer case for case. Every label key in
-// this package's converter fixtures is token-shaped today, so these are shapes real data has
-// not yet produced — but Kubernetes and OCI label keys are namespaced with '/',
-// which HDF permits and OSCAL rejects.
+// amendments.labels keys, so a label key cannot be a prop name. Labels are
+// label-key/label-value prop pairs, so every key shape — Kubernetes and OCI keys
+// namespaced with '/', and the empty key — is carried verbatim in a valid
+// document. Mirrors the Go peer case for case.
 describe('hdf-to-oscal-poam label keys', () => {
-  it.each([
-    ['app.kubernetes.io/name', 'app.kubernetes.io_name'],
-    ['env:prod', 'env_prod'],
-    ['2024-audit', '_2024-audit'],
-    ['com.redhat.component', 'com.redhat.component'],
-    ['', '_'],
-  ])('encodes %s to a token', async (key, want) => {
+  it.each(['app.kubernetes.io/name', 'env:prod', '2024-audit', 'com.redhat.component', ''])('carries the key %j verbatim', async (key) => {
     const input = JSON.stringify({
       name: 'a',
       overrides: [
@@ -253,15 +241,20 @@ describe('hdf-to-oscal-poam label keys', () => {
 
     const doc = JSON.parse(out) as {
       'plan-of-action-and-milestones': {
-        metadata: { props?: Array<{ name: string; value: string; remarks?: string }> };
+        metadata: { props?: Array<{ name: string; value: string; group?: string; remarks?: string }> };
       };
     };
-    const prop = doc['plan-of-action-and-milestones'].metadata.props?.find((p) => p.name === want);
-    expect(prop, `no metadata prop named ${want}`).toBeDefined();
-    expect(prop?.value).toBe('x');
-    // A rewritten name must keep the source key, or the label is lost; an empty
-    // key has no source text to preserve.
-    expect(prop?.remarks).toBe(key === '' || want === key ? undefined : key);
+    const props = doc['plan-of-action-and-milestones'].metadata.props ?? [];
+    const named = (name: string) => props.find((p) => p.name === name);
+    expect(named('label-value')).toMatchObject({ value: 'x', group: 'label-1' });
+    if (key === '') {
+      // An empty key is carried by empty-field.
+      expect(named('empty-field')).toMatchObject({ value: 'key', group: 'label-1' });
+      return;
+    }
+    const keyProp = named('label-key');
+    expect(keyProp).toMatchObject({ value: key, group: 'label-1' });
+    expect(keyProp?.remarks).toBeUndefined();
   });
 });
 
@@ -271,11 +264,12 @@ describe('hdf-to-oscal-poam label keys', () => {
 // which is why its padded form IS a real case here.
 //
 // OSCAL types many fields StringDatatype (^\S(.*\S)?$ — non-empty, no leading or
-// trailing whitespace), while hdf-amendments puts no minLength on the strings
-// that feed them. So an empty or padded value is valid HDF that yields a POA&M
-// the schema rejects, at exit 0. Six sinks were affected. Mirrors the Go peer
-// case for case, and asserts each input is valid HDF first so a test cannot
-// silently prove nothing by feeding input the schema rejects.
+// trailing whitespace), while hdf-amendments puts no minLength on most of the
+// strings that feed them. So an empty or padded value is valid HDF that yields a
+// POA&M the schema rejects, at exit 0. Six sinks were affected. An empty
+// requirementId is no longer valid HDF, so the title-fallback test covers it
+// instead. Mirrors the Go peer case for case, and asserts each input is valid HDF
+// first so a test cannot silently prove nothing by feeding input the schema rejects.
 describe('hdf-to-oscal-poam StringDatatype sinks', () => {
   const doc = (o: {
     root?: Record<string, unknown>;
@@ -303,7 +297,6 @@ describe('hdf-to-oscal-poam StringDatatype sinks', () => {
   it.each([
     ['empty identifier', { identifier: '' }],
     ['padded identifier', { identifier: '  analyst  ' }],
-    ['empty requirementId', { reqId: '' }],
     ['padded baselineRef', { override: { baselineRef: '  b  ' } }],
     ['empty label value', { root: { labels: { env: '' } } }],
     ['padded label value', { root: { labels: { env: '  p  ' } } }],
@@ -333,13 +326,13 @@ describe('hdf-to-oscal-poam StringDatatype sinks', () => {
     expect(parties[0]!.uuid, 'the party itself survives').toBeTruthy();
   });
 
-  // Two spellings of one identifier that trim alike are one person, and the
-  // emitted document must say so: keying the registry on the raw identifier
-  // would mint two parties bearing an identical name.
-  it('dedupes a padded identifier against its trimmed spelling', async () => {
+  // One party per distinct (identifier, type, description) triple: two spellings
+  // of an identifier are two identities, each returned exactly, while a repeated
+  // identity is one party.
+  it('keeps a padded identifier distinct from its trimmed spelling', async () => {
     const input = JSON.stringify({
       name: 'a',
-      overrides: ['analyst', '  analyst  '].map((identifier, i) => ({
+      overrides: ['analyst', '  analyst  ', 'analyst'].map((identifier, i) => ({
         requirementId: `AC-${i + 2}`,
         type: 'waiver',
         status: 'notApplicable',
@@ -351,13 +344,56 @@ describe('hdf-to-oscal-poam StringDatatype sinks', () => {
     });
     assertSchemaValid(validateHdfAmendments, 'test input', JSON.parse(input));
     const out = await convertHdfToOscalPoam(input);
+    assertSchemaValid(POAM_SCHEMAS[1][1], 'output', JSON.parse(out));
     const parties = (
       JSON.parse(out) as {
-        'plan-of-action-and-milestones': { metadata: { parties: Array<Record<string, unknown>> } };
+        'plan-of-action-and-milestones': {
+          metadata: { parties: Array<{ name?: string; props?: Array<{ name: string; value: string; remarks?: string }> }> };
+        };
       }
     )['plan-of-action-and-milestones'].metadata.parties;
 
-    expect(parties, 'one identity, one party').toHaveLength(1);
-    expect(parties[0]!.name).toBe('analyst');
+    expect(parties, 'two identities, two parties').toHaveLength(2);
+    expect(parties.map((p) => p.name), 'the party name is display text').toEqual(['analyst', 'analyst']);
+    const identifier = (p: (typeof parties)[number]) => {
+      const prop = p.props?.find((q) => q.name === 'identity-identifier');
+      return prop?.remarks ?? prop?.value;
+    };
+    expect(parties.map(identifier)).toEqual(['analyst', '  analyst  ']);
+  });
+});
+
+// Mirrors the Go TestConvertHDFToOSCALPOAM_MilestoneTitleCarriedExactly: OSCAL task
+// and remediation titles are not StringDatatype, and the HDF title pattern already
+// forbids line feeds, so a title with unusual whitespace is carried byte-exact.
+describe('hdf-to-oscal-poam milestone titles', () => {
+  it.each([
+    ['leading form feed', '\fX'],
+    ['trailing vertical tab', 'X\v'],
+    ['leading no-break space', '\u00a0X'],
+    ['leading byte order mark', '\ufeffX'],
+    ['line separator inside', 'A\u2028B'],
+  ])('carries a title with a %s exactly', async (_label, title) => {
+    const input = JSON.stringify({
+      name: 'a',
+      overrides: [{
+        requirementId: 'AC-2', type: 'poam', status: 'failed', reason: 'r',
+        appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+        appliedBy: { identifier: 'analyst', type: 'username' },
+        milestones: [{ title, description: 'd', estimatedCompletion: '2099-12-31T00:00:00Z', status: 'pending' }],
+      }],
+    });
+    assertSchemaValid(validateHdfAmendments, 'test input', JSON.parse(input));
+    const poam = await convertHdfToOscalPoam(input);
+    const out = JSON.parse(poam);
+    for (const [file, validateFile] of POAM_SCHEMAS) {
+      assertSchemaValid(validateFile, file, out);
+    }
+    const rem = out['plan-of-action-and-milestones'].risks[0].remediations[0];
+    expect(rem.tasks).toHaveLength(1);
+    expect(rem.title).toBe(title);
+    expect(rem.tasks[0].title).toBe(title);
+    const back = JSON.parse(await convertOscalPoamToHdf(poam));
+    expect(back.overrides[0].milestones[0].title).toBe(title);
   });
 });

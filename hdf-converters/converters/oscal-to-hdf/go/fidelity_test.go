@@ -57,7 +57,7 @@ func TestExpectedRequirementCount_MatchesConversionForEveryFixture(t *testing.T)
 			}
 			return len(a.Overrides), nil
 		}},
-		"assessment-results": {"distinct control ids across OSCAL results with findings", ExpectedAssessmentResultsRequirementCount, func(in []byte) (int, error) {
+		"assessment-results": {"distinct requirement ids across OSCAL results with findings", ExpectedAssessmentResultsRequirementCount, func(in []byte) (int, error) {
 			r, err := ConvertAssessmentResultsToHDF(in, "test")
 			if err != nil {
 				return 0, err

@@ -9,15 +9,15 @@
 
 - **`input/multi-status.openvex.json`** — synthesized to exercise every
   import path (`not_affected`, `fixed`, `affected`, `under_investigation`).
-  Validated against `openvex_json_schema.json` (the official
-  spec-repository schema, vendored below).
+  Validated against the vendored OpenVEX schema (see below).
 
 ## Spec schema
 
-`openvex_json_schema.json` is a verbatim copy of
-https://github.com/openvex/spec/blob/main/openvex_json_schema.json — the
-authoritative JSON Schema for OpenVEX 0.2.0. Stored here so fixture
-validity can be re-checked in CI without a network round-trip.
+The OpenVEX JSON Schema is vendored ONCE for this format, under the exporter
+that is gated on it: `../../hdf-to-openvex/schemas/openvex_json_schema.json`,
+with its source, pinned commit and SHA-256 in that directory's
+`provenance.json` and `provenance.txt`. Fixture validity can therefore be
+re-checked offline.
 
 To re-validate every fixture:
 
@@ -29,7 +29,7 @@ import addFormats from 'ajv-formats';
 import { readFileSync } from 'node:fs';
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats.default(ajv);
-const schema = JSON.parse(readFileSync('hdf-converters/converters/openvex-to-hdf/fixtures/openvex_json_schema.json', 'utf-8'));
+const schema = JSON.parse(readFileSync('hdf-converters/converters/hdf-to-openvex/schemas/openvex_json_schema.json', 'utf-8'));
 const validate = ajv.compile(schema);
 for (const f of ['spring-boot-log4j.openvex.json', 'multi-status.openvex.json']) {
   const p = `hdf-converters/converters/openvex-to-hdf/fixtures/input/${f}`;
