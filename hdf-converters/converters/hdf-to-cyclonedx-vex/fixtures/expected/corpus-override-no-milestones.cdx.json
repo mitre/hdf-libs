@@ -1,0 +1,34 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:a9513f85-b4b5-50d8-876e-6e15e17d2fc0",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2020-01-01T00:00:00Z",
+    "tools": [
+      {
+        "vendor": "mitre",
+        "name": "hdf-to-cyclonedx-vex",
+        "version": "1.0.0"
+      }
+    ],
+    "authors": [
+      {
+        "name": "test"
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "id": "CVE-2021-44228",
+      "source": {
+        "name": "NVD",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+      },
+      "analysis": {
+        "state": "exploitable",
+        "detail": "accepted"
+      }
+    }
+  ]
+}
