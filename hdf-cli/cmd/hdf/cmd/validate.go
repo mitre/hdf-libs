@@ -112,6 +112,20 @@ func runValidate(_ *cobra.Command, args []string) error {
 		displayName = "<stdin>"
 	}
 
+	// A legacy HDF v2 / InSpec exec-json document (profiles[]+platform) cannot be
+	// validated against the v3 schemas hdf validate knows, yet hdf convert detects
+	// it at 100% confidence. Redirect with an actionable message instead of the
+	// opaque "unrecognized" (auto-detect) or "baselines is required" (--type
+	// results) error — reusing the same detector/wording the convert path uses.
+	if looksLikeLegacyHDFv2(data) {
+		convertTarget := filename
+		if convertTarget == "-" {
+			convertTarget = "<file>"
+		}
+		fmt.Fprintf(os.Stderr, "✗ %s — this is a legacy HDF v2 (InSpec exec-json) document; hdf validate checks the current v3 schemas. Convert it first:\n  hdf convert %s --to hdf@3\n", displayName, convertTarget)
+		return &exitCodeError{code: 1, message: fmt.Sprintf("legacy HDF v2 (InSpec exec-json) document is not validatable as v3: %s", displayName)}
+	}
+
 	// Auto-detect document type if --type not provided
 	if schemaType == "" {
 		schemaType = detectHDFDocumentType(data)
