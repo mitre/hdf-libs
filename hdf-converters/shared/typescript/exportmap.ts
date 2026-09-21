@@ -271,7 +271,7 @@ const RAWNUM_RE = /"\\u0001(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\\u0001"/g;
  * it under UTF-8. Iterating the string yields whole code points (surrogate pairs
  * combined), so this comparator is correct for the full Unicode range.
  */
-function byCodePoint(a: string, b: string): number {
+export function byCodePoint(a: string, b: string): number {
   const ai = [...a];
   const bi = [...b];
   const n = Math.min(ai.length, bi.length);

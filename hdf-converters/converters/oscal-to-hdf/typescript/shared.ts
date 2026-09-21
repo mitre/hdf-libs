@@ -4,11 +4,14 @@
  * Mirrors the Go helpers in converters/oscal-to-hdf/go/shared.go.
  */
 
+import { SUPPORTED_NIST_REVISIONS, nistExists, normalizeNistId } from '@mitre/hdf-mappings';
 import { impactToSeverity as sharedImpactToSeverity, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { oscalSeverityFromHdf } from '../../../shared/typescript/converterutil.js';
 import type { Property, Part, Characterization, DocumentMetadata, Oscal } from './types.js';
+import { findVocabularyProp, vocabularyProp } from './vocabulary.js';
 
 const controlEnhancementRe = /^([a-z]{2}-\d+)\.(\d+)$/;
+// The OSCAL control id a SAP objective id or lowercased SAR target-id starts with, as in "ac-1.a.1_obj.1".
 const objectiveIDRe = /^([a-z]{2}-\d+(?:\.\d+)?)/;
 
 /**
@@ -40,7 +43,7 @@ export function controlIdsToNistTags(ids: string[]): string[] {
 }
 
 /**
- * Extracts the base control ID from a SAR objective ID.
+ * Extracts the base control ID from an assessment-plan objective ID.
  * "ac-1.a.1_obj.1" -> "ac-1"
  */
 export function extractControlIdFromObjectiveId(objectiveId: string): string {
@@ -194,20 +197,101 @@ export function extractMetadata(m: DocumentMetadata): MetadataInfo {
   };
 }
 
-/** Matches NIST 800-53 tags with enhancements like "AC-2 (3)". */
-const nistEnhancementReverseRe = /^([A-Z]{2}-\d+)\s*\((\d+)\)$/;
+/**
+ * Returns the canonical OSCAL id of the NIST control a target-id names, when the
+ * target, ignoring ASCII letter case, is a control ("ac-2", "ac-2.3"), optionally
+ * followed by dot-separated parts and an objective or statement suffix
+ * ("ac-2.3_obj.a", "au-1_smt.a", "ac-1.a.1_obj.1"), and NIST defines that control
+ * at any supported revision; otherwise undefined, including for a target shaped
+ * like a control NIST does not define. Mirrors Go's ConfirmedControlID.
+ */
+export function confirmedControlId(targetId: string): string | undefined {
+  const target = asciiLower(targetId);
+  const controlId = objectiveIDRe.exec(target)?.[0];
+  if (controlId === undefined || !isObjectiveOrStatementSuffix(target.slice(controlId.length))) {
+    return undefined;
+  }
+  const tag = controlIdToNistTag(controlId);
+  return SUPPORTED_NIST_REVISIONS.some((rev) => nistExists(tag, rev)) ? nistTagToControlId(tag) : undefined;
+}
+
+/** Lowercases only ASCII letters, so Go and TypeScript fold identically. */
+function asciiLower(s: string): string {
+  return s.replace(/[A-Z]/g, (c) => c.toLowerCase());
+}
 
 /**
- * Converts NIST 800-53 notation back to OSCAL control ID.
- * "AC-1" -> "ac-1", "AC-2 (3)" -> "ac-2.3", "SI-7 (1)" -> "si-7.1"
+ * Whether rest, what follows a control id in a lowercased target-id, is empty or
+ * names an objective or statement of that control: optional dot-separated
+ * letter-and-digit parts, then "_obj" or "_smt", alone or followed by non-empty
+ * dot-separated parts.
+ */
+function isObjectiveOrStatementSuffix(rest: string): boolean {
+  if (rest === '') {
+    return true;
+  }
+  const cut = rest.indexOf('_');
+  if (cut < 0) {
+    return false;
+  }
+  const parts = rest.slice(0, cut);
+  if (parts !== '') {
+    if (!parts.startsWith('.')) {
+      return false;
+    }
+    if (parts.slice(1).split('.').some((part) => part === '' || !isLowerAlphanumeric(part))) {
+      return false;
+    }
+  }
+  const [kind, ...after] = rest.slice(cut + 1).split('.');
+  return (kind === 'obj' || kind === 'smt') && !after.includes('');
+}
+
+function isLowerAlphanumeric(part: string): boolean {
+  return [...part].every((c) => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'));
+}
+
+/**
+ * Converts NIST 800-53 notation, in any spelling normalizeNistId accepts, to the
+ * OSCAL id of the control it names; a statement part names its control. Anything
+ * else is returned trimmed and lowercased.
+ * "AC-1" -> "ac-1", "ac-2 (3)" -> "ac-2.3", "AC-8 c 1" -> "ac-8"
  */
 export function nistTagToControlId(tag: string): string {
-  tag = tag.trim();
-  const m = nistEnhancementReverseRe.exec(tag);
-  if (m) {
-    return `${m[1]!.toLowerCase()}.${m[2]!}`;
+  return nistTagToControlRef(tag).controlId;
+}
+
+/**
+ * Converts NIST 800-53 notation to the OSCAL control id and, for a statement
+ * part, the OSCAL statement id ("AC-8 c 1" -> "ac-8", "ac-8_smt.c.1";
+ * "AC-2 (3) (a)" -> "ac-2.3", "ac-2.3_smt.a"). statementId is empty when the tag
+ * names a whole control. A tag that is not a NIST spelling is returned trimmed and
+ * lowercased as controlId. Mirrors Go's NistTagToControlRef.
+ */
+export function nistTagToControlRef(tag: string): { controlId: string; statementId: string } {
+  const trimmed = tag.trim();
+  const normalized = normalizeNistId(trimmed.split(/\s+/).join(' '));
+  if (normalized === undefined) {
+    return { controlId: trimmed.toLowerCase(), statementId: '' };
   }
-  return tag.toLowerCase();
+  // The normalized spelling is "AC-02", then space-separated padded numbers and
+  // lowercase statement letters. Only a number directly after the control is an
+  // enhancement; every NIST statement part begins with a letter.
+  const [head, ...parts] = normalized.split(' ');
+  const [family, number] = head!.split('-');
+  let controlId = `${family!.toLowerCase()}-${unpadNistNumber(number!)}`;
+  if (parts.length > 0 && parts[0]![0]! >= '0' && parts[0]![0]! <= '9') {
+    controlId += `.${unpadNistNumber(parts.shift()!)}`;
+  }
+  if (parts.length === 0) {
+    return { controlId, statementId: '' };
+  }
+  return { controlId, statementId: `${controlId}_smt.${parts.map(unpadNistNumber).join('.')}` };
+}
+
+/** Strips the zero normalizeNistId pads a one-digit number with. */
+function unpadNistNumber(part: string): string {
+  return part.length === 2 && part.startsWith('0') ? part.slice(1) : part;
 }
 
 /**
@@ -231,6 +315,26 @@ export function hdfStatusToOscalRiskStatus(status: string): string {
 
 /** OSCAL specification version used in reverse converter output documents. */
 export const OSCAL_VERSION = '1.1.2';
+
+/**
+ * Builds the description-label prop that marks an OSCAL prose home with the HDF
+ * description label whose text it carries.
+ */
+export function descriptionLabelProp(label: string): Property {
+  const prop = vocabularyProp('description-label', label);
+  if (!prop) {
+    throw new Error(`oscal: description label ${JSON.stringify(label)} yields no description-label prop`);
+  }
+  return prop;
+}
+
+/**
+ * Returns props' description-label, or '' when there is none; a
+ * description-label in any other namespace is foreign.
+ */
+export function descriptionLabel(props: Property[] | undefined): string {
+  return findVocabularyProp(props, 'description-label')?.value ?? '';
+}
 
 /**
  * Parses an OSCAL document from JSON input, validates the document type.
@@ -310,8 +414,7 @@ export function toKebabCase(title: string, fallback: string): string {
  *
  * Two different ids can encode to the same token ('a/b' and 'a:b' both yield
  * 'a_b'), which is why callers must also record the source id in the emitted
- * document — for SAR that is a prop on the finding, trimmed because OSCAL's
- * StringDatatype forbids a padded value.
+ * document — for SAR that is the finding's hdf-requirement-id prop.
  */
 export function oscalToken(s: string): string {
   if (s === '') return '';

@@ -77,6 +77,25 @@ const MULTILINE_FIXTURE = readFileSync(
   'utf-8',
 );
 
+// Every prose home at once: rationale in target.description, check and the
+// impact-0 fix in labelled evidence, the impact > 0 fix in a labelled remediation.
+const proseHomes = (impact: number): string =>
+  JSON.stringify({
+    baselines: [{
+      name: 'b',
+      requirements: [{
+        id: 'AC-11', impact, tags: { nist: ['AC-11'] },
+        descriptions: [
+          { label: 'default', data: 'd' },
+          { label: 'rationale', data: 'Why it matters,\n  across lines.\n' },
+          { label: 'check', data: '\n  Verify the setting.\n\n  If missing, this is a finding.\n' },
+          { label: 'fix', data: 'Set it:\n\n  $ sudo dconf update\n' },
+        ],
+        results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }],
+      }],
+    }],
+  });
+
 describe('hdf-to-oscal-sar output validates against every vendored NIST OSCAL AR schema', () => {
   const cases: Array<[string, string]> = [
     ['worst-case (all four defects)', WORST_CASE],
@@ -84,6 +103,8 @@ describe('hdf-to-oscal-sar output validates against every vendored NIST OSCAL AR
     ['minimal passed', minimal('passed')],
     ['minimal failed', minimal('failed')],
     ['real STIG multi-line code/check/fix', MULTILINE_FIXTURE],
+    ['multi-line rationale/check/fix, impact 0', proseHomes(0)],
+    ['multi-line rationale/check/fix, impact > 0', proseHomes(0.5)],
   ];
 
   describe.each(AR_VALIDATORS)('%s', (version, validator) => {
@@ -104,7 +125,7 @@ describe('hdf-to-oscal-sar output validates against every vendored NIST OSCAL AR
   // collapse, trim, or truncate it. Schema validity alone cannot catch that
   // (remarks are optional), so this walks every requirement in the real
   // multi-line fixture and compares the moved content back against the HDF source.
-  it('preserves multi-line content byte-exact in remarks and back-matter', async () => {
+  it('preserves multi-line content byte-exact in evidence, remediations and back-matter', async () => {
     interface FixtureReq {
       id: string;
       impact: number;
@@ -112,12 +133,21 @@ describe('hdf-to-oscal-sar output validates against every vendored NIST OSCAL AR
       descriptions?: Array<{ label: string; data: string }>;
     }
     interface OutFinding {
-      props?: Array<{ name: string; value: string; remarks?: string }>;
       links?: Array<{ href: string; rel?: string }>;
+      'related-observations'?: Array<{ 'observation-uuid': string }>;
+      'related-risks'?: Array<{ 'risk-uuid': string }>;
+    }
+    interface OutEvidence {
+      remarks?: string;
+      props?: Array<{ name: string; value: string; ns?: string }>;
     }
     interface OutDoc {
       'assessment-results': {
-        results: Array<{ findings: OutFinding[] }>;
+        results: Array<{
+          findings: OutFinding[];
+          observations: Array<{ uuid: string; 'relevant-evidence'?: OutEvidence[] }>;
+          risks?: Array<{ uuid: string; remediations?: Array<{ description: string }> }>;
+        }>;
         'back-matter': { resources: Array<{ uuid: string; base64: { value: string } }> };
       };
     }
@@ -127,22 +157,33 @@ describe('hdf-to-oscal-sar output validates against every vendored NIST OSCAL AR
     const resourceByHref = new Map(doc['back-matter'].resources.map((r) => [`#${r.uuid}`, r]));
 
     const reqs = hdfDoc.baselines[0].requirements;
-    const findings = doc.results[0].findings;
+    const result = doc.results[0]!;
+    const findings = result.findings;
     expect(findings).toHaveLength(reqs.length);
+    const obsByUuid = new Map(result.observations.map((o) => [o.uuid, o]));
+    const riskByUuid = new Map((result.risks ?? []).map((r) => [r.uuid, r]));
 
     reqs.forEach((req, i) => {
       const finding = findings[i];
       if (!finding) throw new Error(`missing finding for ${req.id}`);
-      const prop = (name: string) => finding.props?.find((p) => p.name === name);
+      expect(finding['related-observations'], req.id).toHaveLength(1);
+      const obs = obsByUuid.get(finding['related-observations']?.[0]?.['observation-uuid'] ?? '');
+      expect(obs, `${req.id}: related observation must resolve`).toBeDefined();
+      const labelled = (label: string) =>
+        (obs?.['relevant-evidence'] ?? []).filter((e) =>
+          (e.props ?? []).some((p) => p.name === 'description-label' && p.ns === 'https://mitre.github.io/hdf-libs/ns/oscal' && p.value === label));
 
       const check = req.descriptions?.find((d) => d.label === 'check')?.data;
       expect(check, `${req.id}: fixture must carry check text`).toBeTruthy();
-      expect(prop('check')?.remarks, `${req.id}: check text byte-exact in remarks`).toBe(check);
+      expect(labelled('check').map((e) => e.remarks), `${req.id}: check text byte-exact in evidence remarks`).toEqual([check]);
 
+      const fix = req.descriptions?.find((d) => d.label === 'fix')?.data;
+      expect(fix, `${req.id}: fixture must carry fix text`).toBeTruthy();
       if (req.impact <= 0) {
-        const fix = req.descriptions?.find((d) => d.label === 'fix')?.data;
-        expect(fix, `${req.id}: impact-0 fixture must carry fix text`).toBeTruthy();
-        expect(prop('fix')?.remarks, `${req.id}: impact-0 fix text byte-exact in remarks`).toBe(fix);
+        expect(labelled('fix').map((e) => e.remarks), `${req.id}: impact-0 fix text byte-exact in evidence remarks`).toEqual([fix]);
+      } else {
+        const risk = riskByUuid.get(finding['related-risks']?.[0]?.['risk-uuid'] ?? '');
+        expect(risk?.remediations?.[0]?.description, `${req.id}: fix text byte-exact in the remediation`).toBe(fix);
       }
 
       const codeLink = finding.links?.find((l) => l.rel === 'code');

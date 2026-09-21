@@ -195,6 +195,22 @@ describe('twistlock to HDF converter', async () => {
       const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
       expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.5);
     });
+
+    it('maps negligible to 0.0 like the Go twin and grype-to-hdf', async () => {
+      const input = JSON.stringify({
+        results: [{ vulnerabilities: [{ id: 'CVE-NEG', severity: 'negligible', description: 'desc' }] }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.0);
+    });
+
+    it('maps unimportant to 0.3 (Debian rated low tier), not the 0.5 default', async () => {
+      const input = JSON.stringify({
+        results: [{ vulnerabilities: [{ id: 'CVE-UNIMP', severity: 'unimportant', description: 'desc' }] }],
+      });
+      const hdf = JSON.parse(await convertTwistlockToHdf(input)) as HDFResults;
+      expect(hdf.baselines[0]!.requirements[0]!.impact).toBe(0.3);
+    });
   });
 
   describe('tags', async () => {
@@ -646,6 +662,9 @@ describe('unrated severity marker', () => {
           { id: 'CVE-2099-1002', severity: 'unknown', description: 'unknown severity' },
           { id: 'CVE-2099-1003', severity: 'moderate', description: 'rated severity' },
           { id: 'CVE-2099-1004', severity: 'info', description: 'zero-impact tier is rated' },
+          { id: 'CVE-2099-1005', severity: 'unassigned', description: 'unrated token' },
+          { id: 'CVE-2099-1006', severity: 'negligible', description: 'rated floor, not unrated' },
+          { id: 'CVE-2099-1007', severity: 'unimportant', description: 'rated low tier, not unrated' },
         ],
       }],
     });
@@ -655,9 +674,13 @@ describe('unrated severity marker', () => {
 
     expect(byId('CVE-2099-1001')?.tags?.['severity_rating']).toBe('unrated');
     expect(byId('CVE-2099-1002')?.tags?.['severity_rating']).toBe('unrated');
+    expect(byId('CVE-2099-1005')?.tags?.['severity_rating']).toBe('unrated');
     // Tag-only assertions: the zero-impact tier is RATED (no marker); impact is
     // deliberately not asserted here (tracked TS info/none impact-map gap).
+    // negligible and unimportant are RATED distro severities — no unrated marker.
     expect(byId('CVE-2099-1003')?.tags).not.toHaveProperty('severity_rating');
     expect(byId('CVE-2099-1004')?.tags).not.toHaveProperty('severity_rating');
+    expect(byId('CVE-2099-1006')?.tags).not.toHaveProperty('severity_rating');
+    expect(byId('CVE-2099-1007')?.tags).not.toHaveProperty('severity_rating');
   });
 });

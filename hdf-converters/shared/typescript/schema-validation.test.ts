@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const convDir = join(__dirname, '..', '..', 'converters');
 // OpenVEX 0.2.0 schema (draft 2020-12) + a known-valid document (a converter golden).
 const validate = loadSchemaValidator(
-  join(convDir, 'openvex-to-hdf', 'fixtures', 'openvex_json_schema.json'),
+  join(convDir, 'hdf-to-openvex', 'schemas', 'openvex_json_schema.json'),
 );
 const validDoc = JSON.parse(
   readFileSync(
@@ -106,9 +106,9 @@ describe('every vendored schema', () => {
   // Pinned so the exclusion cannot quietly widen into "ajv checks nothing".
   it('excludes only the known draft-04 family', () => {
     expect(skipped).toEqual([
-      'csaf-vex-to-hdf/csaf_json_schema.json',
-      'csaf-vex-to-hdf/cvss-v2.0.json',
-      'csaf-vex-to-hdf/cvss-v3.0.json',
+      'hdf-to-csaf-vex/csaf_json_schema.json',
+      'hdf-to-csaf-vex/cvss-v2.0.json',
+      'hdf-to-csaf-vex/cvss-v3.0.json',
       'sarif-to-hdf/sarif-schema-2.1.0.json',
     ]);
   });

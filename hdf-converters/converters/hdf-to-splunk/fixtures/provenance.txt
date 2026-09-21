@@ -26,10 +26,19 @@ yields `{"impact":0}` — so a test-generated input would pass against the very
 bug this fixture exists to catch. The file is also the channel that lets the Go
 golden and the TypeScript byte-identity check run on identical input.
 
-## Other fixtures in this directory
+## Shared SIEM corpus — `cve.json`, `compliance.json`, `override.json`, `riskadjust.json`, `negzero.json`
 
-`compliance`, `cve`, `override`, `riskadjust` and any siblings predate the
-per-directory provenance convention and are not yet documented here.
+These are byte-identical across `hdf-to-ecs`, `hdf-to-ocsf` and `hdf-to-splunk`
+(`cve.json` and `compliance.json` also under `hdf-to-asff`), and that is deliberate: the same HDF
+document fed to every SIEM exporter is what makes their outputs comparable. The 2026-09-14 fixture
+audit decided to keep the copies in place rather than promote them. The fixture policy's promotion
+rule speaks of "two or more workspace packages", and these are several converters inside one
+package, so the rule does not decide it; and the duplication is about 140 KB in total, not worth a
+new shared location. The risk that decision leaves is silent drift — one copy edited, the others
+not — so `shared/go/siem_corpus_test.go` pins every copy byte-identical. Change all of them or none.
+
+Origins: `negzero.json` is documented above. `compliance`, `cve`, `override` and `riskadjust`
+predate the per-directory provenance convention; their origin is not yet recorded here.
 
 ## Tool and version, read from the file itself (2026-09-20)
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { detectOscalDocumentType } from './detect.js';
 import { convertOscalCatalogToHdf } from './converter-catalog.js';
 import { convertOscalProfileToHdf } from './converter-profile.js';
@@ -9,7 +9,7 @@ import { convertOscalComponentToHdf } from './converter-component.js';
 import { convertOscalSspToHdf } from './converter-ssp.js';
 import { convertOscalSapToHdf } from './converter-sap.js';
 import { convertOscalPoamToHdf } from './converter-poam.js';
-import { convertOscalSarToHdf } from './converter-sar.js';
+import { convertOscalSarToHdf, sarRequirementId } from './converter-sar.js';
 import {
   controlIdToNistTag,
   controlIdsToNistTags,
@@ -22,10 +22,14 @@ import {
   extractRiskSeverity,
   extractMetadata,
   nistTagToControlId,
+  nistTagToControlRef,
+  confirmedControlId,
   impactToSeverity,
   hdfStatusToOscalRiskStatus,
   parseOscalDocument,
   toKebabCase,
+  descriptionLabelProp,
+  descriptionLabel,
 } from './shared.js';
 import {
   assertRequirementCount,
@@ -36,6 +40,7 @@ import type { HDFResults, HDFBaseline } from '@mitre/hdf-schema';
 import type { HDFSystem } from '@mitre/hdf-schema';
 import type { HDFPlan } from '@mitre/hdf-schema';
 import type { HDFAmendments } from '@mitre/hdf-schema';
+import type { Oscal } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
@@ -382,6 +387,52 @@ describe('convertOscalSspToHdf', () => {
     expect(system.name).toBeTruthy();
     expect(system.components).toBeDefined();
   });
+
+  it('should set componentId to each OSCAL component uuid, distinguishing same-title components', async () => {
+    const duplicateTitleComponentUuid = 'a3ca96ea-f853-4539-9db3-bf9694f7e0dc';
+    const doc = JSON.parse(loadFixture('ssp-example.json')) as Oscal;
+    const sourceComponents = doc['system-security-plan']!['system-implementation'].components;
+    const loggingServer = sourceComponents.find((c) => c.title === 'Logging Server');
+    expect(loggingServer).toBeDefined();
+    sourceComponents.push({ ...structuredClone(loggingServer!), uuid: duplicateTitleComponentUuid });
+
+    const system = JSON.parse(await convertOscalSspToHdf(JSON.stringify(doc))) as HDFSystem;
+
+    expect(system.components.map((c) => c.componentId)).toEqual(sourceComponents.map((c) => c.uuid));
+    const loggingServerIds = system.components
+      .filter((c) => c.name === 'Logging Server')
+      .map((c) => c.componentId);
+    expect(loggingServerIds).toEqual(['e00acdcf-911b-437d-a42f-b0b558cc4f03', duplicateTitleComponentUuid]);
+  });
+
+  it('should carry FedRAMP component uuids verbatim as componentId', async () => {
+    const input = loadFixture('ssp-fedramp.json');
+    const sourceUuids = (JSON.parse(input) as Oscal)['system-security-plan']!['system-implementation'].components.map(
+      (c) => c.uuid,
+    );
+    expect(sourceUuids).toContain('77A1614A-57B3-4B32-9FEE-613A6520EC58');
+
+    const system = JSON.parse(await convertOscalSspToHdf(input)) as HDFSystem;
+
+    expect(system.components.map((c) => c.componentId)).toEqual(sourceUuids);
+  });
+
+  it('should omit componentId when an OSCAL component has no uuid', async () => {
+    const doc = JSON.stringify({
+      'system-security-plan': {
+        uuid: 'd7456980-9277-4dcb-83cf-f8ff0442623b',
+        metadata: { title: 'SSP', version: '1', 'oscal-version': '1.1.2', 'last-modified': '2024-01-01T00:00:00Z' },
+        'system-implementation': {
+          components: [{ uuid: '', title: 'No UUID', type: 'software' }],
+        },
+      },
+    });
+
+    const system = JSON.parse(await convertOscalSspToHdf(doc)) as HDFSystem;
+
+    expect(system.components[0]!.name).toBe('No UUID');
+    expect(system.components[0]).not.toHaveProperty('componentId');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -665,6 +716,339 @@ describe('convertOscalSarToHdf', () => {
   });
 });
 
+describe('convertOscalSarToHdf prose homes', () => {
+  const NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+  // Builds a one-result SAR from raw findings, observations and risks, so each
+  // test states exactly the prose homes it reads.
+  const sarWithProse = (findings: unknown[], observations: unknown[], risks: unknown[]): string =>
+    JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: [{
+          uuid: '22222222-2222-4222-8222-222222222222', title: 'r', description: 'd', start: '2026-01-01T00:00:00Z',
+          'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+          findings, observations, risks,
+        }],
+      },
+    });
+
+  const finding = (uuid: string, extra: Record<string, unknown> = {}, targetDescription?: string) => ({
+    uuid, title: 't', description: `d-${uuid}`,
+    target: {
+      type: 'objective-id', 'target-id': 'ac-1', status: { state: 'not-satisfied' },
+      ...(targetDescription !== undefined ? { description: targetDescription } : {}),
+    },
+    ...extra,
+  });
+  const observation = (uuid: string, evidence?: unknown[]) => ({
+    uuid, description: 'observation prose', methods: ['TEST'], collected: '2026-01-01T00:00:00Z',
+    ...(evidence ? { 'relevant-evidence': evidence } : {}),
+  });
+  const label = (value: string, ns: string | null = NS) => [{ name: 'description-label', value, ...(ns !== null ? { ns } : {}) }];
+
+  const onlyRequirement = async (input: string) => {
+    const hdf = JSON.parse(await convertOscalSarToHdf(input)) as HDFResults;
+    expect(hdf.baselines).toHaveLength(1);
+    expect(hdf.baselines[0]!.requirements).toHaveLength(1);
+    return hdf.baselines[0]!.requirements[0]!;
+  };
+  const desc = (req: { descriptions?: Array<{ label: string; data: string }> }, l: string) =>
+    req.descriptions?.find((d) => d.label === l)?.data;
+
+  it('exports the description-label helpers', () => {
+    expect(descriptionLabelProp('check')).toEqual({ name: 'description-label', ns: NS, value: 'check' });
+    expect(descriptionLabel([{ name: 'other', ns: NS, value: 'x' }, descriptionLabelProp('fix')])).toBe('fix');
+    expect(descriptionLabel(label('fix', null))).toBe('');
+    expect(descriptionLabel(label('fix', 'https://example.org/ns/oscal'))).toBe('');
+    expect(descriptionLabel(undefined)).toBe('');
+    expect(() => descriptionLabelProp('')).toThrow('oscal: description label "" yields no description-label prop');
+  });
+
+  it('reads rationale from finding.target.description, not observation descriptions', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }] }, 'first\nconclusion\n'),
+      finding('f2'),
+      finding('f3', {}, 'second'),
+    ], [observation('o1')], []));
+    expect(desc(req, 'rationale')).toBe('first\nconclusion\n\nsecond');
+  });
+
+  it('emits no rationale when no target carries a description', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }] }),
+    ], [observation('o1')], []));
+    expect(desc(req, 'rationale')).toBeUndefined();
+  });
+
+  it('reads labelled evidence and fix remediations back exactly', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+    ], [observation('o1', [
+      { description: 'Check line', remarks: 'Check line\n  full check\n', props: label('check') },
+      { description: 'plain evidence' },
+    ])], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [
+        { uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'do\nthis', props: label('fix') },
+        { uuid: 'm2', lifecycle: 'accepted', title: 'waiver', description: 'accepted' },
+      ],
+    }]));
+    expect(desc(req, 'check')).toBe('Check line\n  full check\n');
+    expect(desc(req, 'fix')).toBe('do\nthis');
+    expect(desc(req, 'remediation')).toBe('waiver: accepted');
+    expect(desc(req, 'evidence')).toBe('plain evidence');
+  });
+
+  it('reads a labelled evidence entry without remarks from its description', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }, { 'observation-uuid': 'o1' }] }),
+    ], [observation('o1', [{ description: 'single-line fix', props: label('fix') }])], []));
+    expect(desc(req, 'fix')).toBe('single-line fix');
+    expect(desc(req, 'evidence')).toBeUndefined();
+    expect(desc(req, 'check')).toBeUndefined();
+  });
+
+  it('imports unlabelled or foreign-labelled evidence and remediations as before', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+    ], [observation('o1', [
+      { description: 'no label', remarks: 'remark one' },
+      { description: 'no ns', remarks: 'remark two', props: label('check', null) },
+      { description: 'other ns', props: label('fix', 'https://example.org/ns/oscal') },
+      { description: 'unknown value', props: label('rationale') },
+    ])], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [
+        { uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'patch it' },
+        { uuid: 'm2', lifecycle: 'recommendation', title: 'Vendor', description: 'upgrade', props: label('fix', null) },
+        { uuid: 'm3', lifecycle: 'recommendation', title: 'Checker', description: 'look', props: label('check') },
+      ],
+    }]));
+    expect(desc(req, 'check')).toBeUndefined();
+    expect(desc(req, 'fix')).toBeUndefined();
+    expect(desc(req, 'remediation')).toBe('Recommended fix: patch it\n\nVendor: upgrade\n\nChecker: look');
+    expect(desc(req, 'evidence')).toBe('no label\nno ns\nother ns\nunknown value');
+  });
+
+  it('joins labelled prose across merged findings in finding order', async () => {
+    const req = await onlyRequirement(sarWithProse([
+      finding('f1', { 'related-observations': [{ 'observation-uuid': 'o1' }], 'related-risks': [{ 'risk-uuid': 'r1' }] }),
+      finding('f2', {
+        'related-observations': [{ 'observation-uuid': 'o2' }, { 'observation-uuid': 'o1' }, { 'observation-uuid': 'missing' }],
+        'related-risks': [{ 'risk-uuid': 'r1' }, { 'risk-uuid': 'r2' }, { 'risk-uuid': 'missing' }],
+      }),
+    ], [
+      observation('o1', [{ description: 'c1', remarks: 'check one', props: label('check') }]),
+      observation('o2', [
+        { description: 'c2', remarks: 'check two', props: label('check') },
+        { description: 'f2', remarks: 'fix two', props: label('fix') },
+      ]),
+    ], [{
+      uuid: 'r1', title: 'Risk', description: 'rd', statement: 'rs', status: 'open',
+      remediations: [{ uuid: 'm1', lifecycle: 'recommendation', title: 'Recommended fix', description: 'fix one', props: label('fix') }],
+    }, { uuid: 'r2', title: 'Risk', description: 'rd', statement: 'rs', status: 'open' }]));
+    expect(desc(req, 'check')).toBe('check one\ncheck two');
+    expect(desc(req, 'fix')).toBe('fix one\nfix two');
+  });
+});
+
+describe('convertOscalSarToHdf requirement ids', () => {
+  const NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const sar = (findings: unknown[]): string =>
+    JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: [{
+          uuid: '22222222-2222-4222-8222-222222222222', title: 'r', description: 'd', start: '2026-01-01T00:00:00Z',
+          'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+          findings, observations: [], risks: [],
+        }],
+      },
+    });
+  // One finding per target id, each with its own uuid and title.
+  const sarFindings = (...targetIds: string[]): string =>
+    sar(targetIds.map((id, i) => ({
+      uuid: `f${i + 1}`, title: `Finding ${i + 1}`, description: 'd',
+      target: { type: 'objective-id', 'target-id': id, status: { state: 'satisfied' } },
+    })));
+  const requirementIds = (hdf: HDFResults): Record<string, number> =>
+    Object.fromEntries(hdf.baselines[0]!.requirements.map((r) => [r.id, r.results.length]));
+
+  const foreignNS = 'https://example.org/ns/oscal';
+  it.each([
+    ['objective groups under its control', 'ac-1.a.1_obj.1', undefined, 'AC-1'],
+    ['statement groups under its control', 'au-1_smt.a', undefined, 'AU-1'],
+    ['enhancement statement', 'cm-2.1_smt.c', undefined, 'CM-2 (1)'],
+    ['enhancement objective', 'ca-8.1_obj', undefined, 'CA-8 (1)'],
+    ['whole control', 'ac-2.3', undefined, 'AC-2 (3)'],
+    ['STIG rule id is verbatim', 'sv-230221r858734_rule', undefined, 'sv-230221r858734_rule'],
+    ['uppercase rule id is verbatim', 'SV-230221r858734_rule', undefined, 'SV-230221r858734_rule'],
+    ['uppercase look-alike of an unknown family is verbatim', 'SV-230221', undefined, 'SV-230221'],
+    ['uppercase control groups', 'AC-1', undefined, 'AC-1'],
+    ['uppercase objective groups under its control', 'AC-2.3_OBJ.A', undefined, 'AC-2 (3)'],
+    ['mixed-case part groups under its control', 'ac-1.A_obj', undefined, 'AC-1'],
+    ['zero-padded control groups canonically', 'ac-01_obj.a', undefined, 'AC-1'],
+    ['zero-padded enhancement groups canonically', 'ac-02.03_obj', undefined, 'AC-2 (3)'],
+    ['empty part after the suffix is verbatim', 'ac-1_obj.', undefined, 'ac-1_obj.'],
+    ['XCCDF rule id is verbatim', 'xccdf_org.ssgproject.content_rule_accounts_tmout', undefined, 'xccdf_org.ssgproject.content_rule_accounts_tmout'],
+    ['unconfirmed control is verbatim', 'zz-9_obj.1', undefined, 'zz-9_obj.1'],
+    ['HDF prop wins over a NIST target', 'ac-1', [{ name: 'hdf-requirement-id', ns: NS, value: 'SV-1' }], 'SV-1'],
+    ['HDF prop keeps a statement id', 'ac-8_smt.c.1', [{ name: 'hdf-requirement-id', ns: NS, value: 'AC-8 c 1' }], 'AC-8 c 1'],
+    ['HDF prop remarks hold the exact id', 'line_one_line_two', [{ name: 'hdf-requirement-id', ns: NS, value: 'line one line two', remarks: 'line one\nline two' }], 'line one\nline two'],
+    ['pre-ADR prop without ns is read', 'sv-1', [{ name: 'hdf-requirement-id', value: 'SV-1' }], 'SV-1'],
+    ["foreign-namespace prop is not HDF's", 'ac-1', [{ name: 'hdf-requirement-id', ns: foreignNS, value: 'SV-1' }], 'AC-1'],
+    ['empty HDF prop falls back to the target', 'ac-1', [{ name: 'hdf-requirement-id', ns: NS, value: '' }], 'AC-1'],
+  ])('sarRequirementId: %s', (_name, targetId, props, expected) => {
+    const f = { uuid: 'f', title: 't', description: 'd', props, target: { type: 'objective-id', 'target-id': targetId, status: { state: 'satisfied' } } };
+    expect(sarRequirementId(f as never)).toBe(expected);
+  });
+
+  it('sarRequirementId: empty target-id has no requirement id', () => {
+    const f = { uuid: 'f', title: 't', description: 'd', props: [{ name: 'hdf-requirement-id', ns: NS, value: 'SV-1' }], target: { type: 'objective-id', 'target-id': '', status: { state: 'satisfied' } } };
+    expect(sarRequirementId(f as never)).toBeUndefined();
+  });
+
+  it('groups foreign targets only under roster-confirmed controls, never merging look-alikes', async () => {
+    const input = sarFindings(
+      'sv-230221r858734_rule',
+      'ac-2.3_obj.a',
+      'sv-230221r991589_rule',
+      'xccdf_org.ssgproject.content_rule_accounts_tmout',
+      'ac-2.3_smt.b',
+      'xccdf_org.ssgproject.content_rule_audit_rules_login_events',
+      'au-1_smt.a',
+      'zz-9_obj.1',
+      'zz-9_obj.2',
+      'ac-2.3',
+    );
+    const hdf = JSON.parse(await convertOscalSarToHdf(input)) as HDFResults;
+    expectValidResults(hdf);
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs.map((r) => r.id)).toEqual([
+      'sv-230221r858734_rule',
+      'AC-2 (3)',
+      'sv-230221r991589_rule',
+      'xccdf_org.ssgproject.content_rule_accounts_tmout',
+      'xccdf_org.ssgproject.content_rule_audit_rules_login_events',
+      'AU-1',
+      'zz-9_obj.1',
+      'zz-9_obj.2',
+    ]);
+    expect(requirementIds(hdf)['AC-2 (3)']).toBe(3);
+    expect(reqs.find((r) => r.id === 'AC-2 (3)')!.tags.nist).toEqual(['AC-2 (3)']);
+    const sv = reqs.find((r) => r.id === 'sv-230221r858734_rule')!;
+    expect(sv.tags.nist).toEqual([]);
+    expect(sv.controlType).toBeUndefined();
+    expect(sv.title).toBe('Finding 1');
+  });
+
+  it('ignores letter case when grouping, keeping look-alikes verbatim and apart', async () => {
+    const hdf = JSON.parse(await convertOscalSarToHdf(
+      sarFindings('ac-2.3_obj.a', 'AC-2.3_OBJ.B', 'Ac-2.3', 'SV-230221r858734_rule', 'SV-230221', 'sv-230221', 'ac-1.A_obj'),
+    )) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(reqs.map((r) => r.id)).toEqual(['AC-2 (3)', 'SV-230221r858734_rule', 'SV-230221', 'sv-230221', 'AC-1']);
+    expect(requirementIds(hdf)['AC-2 (3)']).toBe(3);
+    expect(reqs[0]!.tags.nist).toEqual(['AC-2 (3)']);
+  });
+
+  it('groups zero-padded targets under the canonical control and tag', async () => {
+    const hdf = JSON.parse(await convertOscalSarToHdf(sarFindings('ac-01_obj.a', 'ac-1_obj.b', 'ac-02.03_obj', 'ac-2.3'))) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(requirementIds(hdf)).toEqual({ 'AC-1': 2, 'AC-2 (3)': 2 });
+    expect(reqs[0]!.id).toBe('AC-1');
+    expect(reqs.find((r) => r.id === 'AC-1')!.tags.nist).toEqual(['AC-1']);
+    expect(reqs.find((r) => r.id === 'AC-2 (3)')!.tags.nist).toEqual(['AC-2 (3)']);
+  });
+
+  it('quotes titles in warnings literally, matching Go', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = (uuid: string, title: string, findings?: unknown[]) => ({
+      uuid, title, description: 'd', start: '2026-01-01T00:00:00Z',
+      'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+      ...(findings ? { findings } : {}),
+    });
+    await convertOscalSarToHdf(JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: [
+          result('33333333-3333-4333-8333-333333333333', 'Q3 "annual" review'),
+          result('44444444-4444-4444-8444-444444444444', 'Q4 "final" review', [{
+            uuid: 'f1', title: 'say "hi"', description: 'd',
+            target: { type: 'objective-id', 'target-id': '', status: { state: 'satisfied' } },
+          }]),
+        ],
+      },
+    }));
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    expect(warnings).toContain('WARNING: Skipping assessment result "Q3 "annual" review": no findings (empty result set)');
+    expect(warnings).toContain('WARNING: Skipping finding "f1" titled "say "hi"": empty target-id');
+    expect(warnings).toContain('WARNING: Skipping assessment result "Q4 "final" review": no finding has a target-id');
+  });
+
+  it('drops findings beyond the cap with the same warning as Go', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const cap = 100_000;
+    const finding = (uuid: string, targetId: string) => ({
+      uuid, title: 't', description: 'd', target: { type: 'objective-id', 'target-id': targetId, status: { state: 'satisfied' } },
+    });
+    const findings = Array.from({ length: cap }, () => finding('f', 'ac-1'));
+    findings.push(finding('over', 'sv-1'));
+    const hdf = JSON.parse(await convertOscalSarToHdf(sar(findings))) as HDFResults;
+    expect(requirementIds(hdf)).toEqual({ 'AC-1': cap });
+    const truncations = warn.mock.calls.map((c) => c[0] as string).filter((w) => w.includes('Input truncated at'));
+    expect(truncations).toEqual(['WARNING: Input truncated at 100000 finding items (original: 100001)']);
+  }, 60_000);
+
+  it('reads the HDF requirement id prop ahead of the target and groups by it', async () => {
+    const prop = (value: string) => [{ name: 'hdf-requirement-id', ns: NS, value }];
+    const finding = (uuid: string, title: string, targetId: string, props?: unknown[]) => ({
+      uuid, title, description: 'd', ...(props ? { props } : {}),
+      target: { type: 'objective-id', 'target-id': targetId, status: { state: 'satisfied' } },
+    });
+    const hdf = JSON.parse(await convertOscalSarToHdf(sar([
+      finding('f1', 't1', 'sv-230221r858734_rule', prop('SV-230221r858734_rule')),
+      finding('f2', 't2', 'ac-8_smt.c.1', prop('AC-8 c 1')),
+      finding('f3', 't3', 'sv-230221r858734_rule', prop('SV-230221r858734_rule')),
+      finding('f4', '', 'ac-8.a_obj.1'),
+    ]))) as HDFResults;
+    const reqs = hdf.baselines[0]!.requirements;
+    expect(requirementIds(hdf)).toEqual({ 'SV-230221r858734_rule': 2, 'AC-8 c 1': 1, 'AC-8': 1 });
+    expect(reqs[0]!.id).toBe('SV-230221r858734_rule');
+    expect(reqs.find((r) => r.id === 'AC-8 c 1')!.tags.nist).toEqual(['AC-8']);
+    expect(reqs.find((r) => r.id === 'AC-8')!.title).toBe('AC-8');
+  });
+
+  it('skips a finding with an empty target-id with a warning, and a result left with none', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let hdf = JSON.parse(await convertOscalSarToHdf(sarFindings('', 'ac-1', ''))) as HDFResults;
+    expect(requirementIds(hdf)).toEqual({ 'AC-1': 1 });
+    let warnings = warn.mock.calls.map((c) => c[0] as string);
+    expect(warnings).toContain('WARNING: Skipping finding "f1" titled "Finding 1": empty target-id');
+    expect(warnings).toContain('WARNING: Skipping finding "f3" titled "Finding 3": empty target-id');
+    expect(warnings.some((w) => w.includes('"f2"'))).toBe(false);
+
+    warn.mockClear();
+    hdf = JSON.parse(await convertOscalSarToHdf(sarFindings(''))) as HDFResults;
+    expect(hdf.baselines).toEqual([]);
+    warnings = warn.mock.calls.map((c) => c[0] as string);
+    expect(warnings).toContain('WARNING: Skipping finding "f1" titled "Finding 1": empty target-id');
+    expect(warnings).toContain('WARNING: Skipping assessment result "r": no finding has a target-id');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Shared utilities
 // ---------------------------------------------------------------------------
@@ -903,16 +1287,33 @@ describe('OSCAL shared helpers', () => {
   });
 
   describe('nistTagToControlId', () => {
-    it('converts simple tag', () => {
-      expect(nistTagToControlId('AC-1')).toBe('ac-1');
+    const casesPath = join(__dirname, '..', 'go', 'testdata', 'nist-tag-control-id-cases.json');
+    const { cases } = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+      cases: Array<{ input: string; controlId: string; statementId: string }>;
+    };
+
+    it('has cases', () => {
+      expect(cases.length).toBeGreaterThan(0);
     });
 
-    it('converts enhancement tag', () => {
-      expect(nistTagToControlId('AC-2 (3)')).toBe('ac-2.3');
+    it.each(cases)('maps $input the same as the Go peer', ({ input, controlId, statementId }) => {
+      expect(nistTagToControlId(input)).toBe(controlId);
+      expect(nistTagToControlRef(input)).toEqual({ controlId, statementId });
+    });
+  });
+
+  describe('confirmedControlId', () => {
+    const casesPath = join(__dirname, '..', 'go', 'testdata', 'oscal-control-target-cases.json');
+    const { cases } = JSON.parse(readFileSync(casesPath, 'utf-8')) as {
+      cases: Array<{ input: string; controlId: string }>;
+    };
+
+    it('has cases', () => {
+      expect(cases.length).toBeGreaterThan(0);
     });
 
-    it('handles whitespace', () => {
-      expect(nistTagToControlId('  SI-7 (1)  ')).toBe('si-7.1');
+    it.each(cases)('confirms $input the same as the Go peer', ({ input, controlId }) => {
+      expect(confirmedControlId(input)).toBe(controlId === '' ? undefined : controlId);
     });
   });
 
@@ -1990,6 +2391,31 @@ describe('convertOscalSapToHdf edge cases', () => {
 // ---------------------------------------------------------------------------
 
 describe('convertOscalPoamToHdf edge cases', () => {
+  // Mirrors the Go TestConvertPOAMToHDF_PreADRDocument over the same hdf-cli v3.6.0
+  // export and v3.6.0 import (go/testdata/provenance.txt): a pre-ADR HDF POA&M imports through the pre-ADR
+  // mapping (ADR-0014 §4.3), except that an item with no impacted-control-id is
+  // skipped with a warning rather than named by its title or "unknown".
+  it('reads a pre-ADR HDF POA&M through the pre-ADR mapping', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const testdata = join(__dirname, '..', 'go', 'testdata');
+    const comparable = (doc: Record<string, unknown>) => {
+      delete doc.generator;
+      delete doc.integrity;
+      for (const o of doc.overrides as Array<Record<string, unknown>>) delete o.previousChecksum;
+      return doc;
+    };
+    const got = comparable(JSON.parse(await convertOscalPoamToHdf(readFileSync(join(testdata, 'poam-pre-adr.json'), 'utf-8'))));
+    expect(warn.mock.calls.map((c) => c[0] as string)).toContain(
+      'WARNING: Skipping poam-item "6f81f9fe-06ff-418f-b294-04e613bad22d" titled "": its pre-ADR risk has no impacted-control-id',
+    );
+    warn.mockRestore();
+    const want = comparable(JSON.parse(readFileSync(join(testdata, 'poam-pre-adr.v3.6.0-import.json'), 'utf-8')));
+    const overrides = want.overrides as Array<Record<string, unknown>>;
+    expect(overrides.at(-1)!.requirementId, 'the released importer named the id-less item unknown').toBe('unknown');
+    want.overrides = overrides.slice(0, -1);
+    expect(got).toStrictEqual(want);
+  });
+
   it('should throw on wrong document type', async () => {
     await expect(
       convertOscalPoamToHdf(JSON.stringify({ catalog: {} })),
@@ -2173,6 +2599,98 @@ describe('convertOscalPoamToHdf edge cases', () => {
     const amendments = JSON.parse(output) as HDFAmendments;
     // oscalStatusToHdf returns undefined for 'investigating', so falls through to default 'failed'
     expect(amendments.overrides[0]!.status).toBe('failed');
+  });
+
+  // Mirrors the Go peers: HDF's own constraints on an imported document
+  // (Evidence.data, Milestone.title, StandaloneOverride.requirementId) are not
+  // constraints a foreign OSCAL POA&M has to satisfy.
+  const HDF_NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+  const hdfProducedRiskProps = (extra: Array<Record<string, unknown>> = []) => ({
+    props: [
+      { name: 'override-type', ns: HDF_NS, value: 'waiver' },
+      { name: 'hdf-requirement-id', ns: HDF_NS, value: 'CVE-2021-44228' },
+      ...extra,
+    ],
+  });
+
+  it('skips an evidence observation that carries no payload', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const doc = poamDocWithDeadline(
+      {
+        uuid: 'item-1',
+        title: 'Finding',
+        'related-observations': [{ 'observation-uuid': 'obs-bare' }, { 'observation-uuid': 'obs-dangling' }, { 'observation-uuid': 'obs-href' }],
+      },
+      {
+        risk: hdfProducedRiskProps(),
+        top: {
+          observations: [
+            { uuid: 'obs-bare', description: 'Reviewed the change ticket', types: ['url'], collected: '2026-01-02T03:04:05Z' },
+            { uuid: 'obs-dangling', description: 'd', types: ['file'], collected: '2026-01-02T03:04:05Z', links: [{ href: '#missing', rel: 'evidence' }] },
+            { uuid: 'obs-href', description: 'd', types: ['url'], collected: '2026-01-02T03:04:05Z', 'relevant-evidence': [{ href: 'https://example.com/advisory' }] },
+          ],
+        },
+      },
+    );
+    const amendments = JSON.parse(await convertOscalPoamToHdf(doc)) as HDFAmendments;
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    warn.mockRestore();
+
+    expect(amendments.overrides[0]!.evidence).toHaveLength(1);
+    expect(amendments.overrides[0]!.evidence![0]!.data).toBe('https://example.com/advisory');
+    expect(warnings).toContain('WARNING: Skipping evidence observation "obs-bare": no relevant-evidence href and no evidence resource');
+    expect(warnings).toContain('WARNING: Skipping evidence observation "obs-dangling": no relevant-evidence href and no evidence resource');
+  });
+
+  it('drops a milestone title that is not the single line HDF carries', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const task = (uuid: string, title: string) => ({
+      uuid,
+      type: 'milestone',
+      title,
+      timing: { 'within-date-range': { start: '2026-01-01T00:00:00Z', end: '2099-12-31T00:00:00Z' } },
+    });
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'Finding' },
+      {
+        risk: {
+          ...hdfProducedRiskProps(),
+          remediations: [{
+            uuid: 'rem-1',
+            lifecycle: 'planned',
+            title: 'Fix',
+            description: 'Patch the web tier',
+            tasks: [task('t-ok', 'Deploy OpenSSH 9.8p1'), task('t-empty', ''), task('t-space', ' leading space'), task('t-wrapped', 'two\nlines')],
+          }],
+        },
+      },
+    );
+    const amendments = JSON.parse(await convertOscalPoamToHdf(doc)) as HDFAmendments;
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    warn.mockRestore();
+
+    const milestones = amendments.overrides[0]!.milestones!;
+    expect(milestones).toHaveLength(4);
+    expect(milestones[0]!.title).toBe('Deploy OpenSSH 9.8p1');
+    for (const ms of milestones.slice(1)) {
+      expect(ms.title).toBeUndefined();
+      expect(ms.description).toBe('Patch the web tier');
+    }
+    expect(warnings).toContain('WARNING: Dropping the title of task "t-empty": "" is not the single line Milestone.title is');
+    expect(warnings).toContain('WARNING: Dropping the title of task "t-space": " leading space" is not the single line Milestone.title is');
+    expect(warnings).toContain('WARNING: Dropping the title of task "t-wrapped": "two\\nlines" is not the single line Milestone.title is');
+  });
+
+  it('skips an HDF-produced risk that names no requirement, and fails when nothing is left', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'Some item' },
+      { risk: { props: [{ name: 'override-type', ns: HDF_NS, value: 'waiver' }] } },
+    );
+    await expect(convertOscalPoamToHdf(doc)).rejects.toThrow('no poam-item names a requirement');
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    warn.mockRestore();
+    expect(warnings).toContain('WARNING: Skipping poam-item "item-1" titled "Some item": its HDF-produced risk has no hdf-requirement-id');
   });
 });
 

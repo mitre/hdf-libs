@@ -1,0 +1,995 @@
+{
+  "$comment": "Shared HDF amendments -> OSCAL POA&M -> HDF round-trip cases (ADR-0014 §4.6), read by converters/hdf-to-oscal-poam/go/converter_test.go and converters/hdf-to-oscal-poam/typescript/converter.test.ts. Each 'amendments' is a valid HDF amendments document with timestamps in HDF canonical trimmed-UTC form; the round trip must return it exactly, apart from the fields listed in 'excluded'. The first case's overrides are the Standalone_Override schema examples verbatim, which both tests check against the schema. The remaining cases come from the card's Steps to Reproduce and the ADR-0014 Verification Strategy edge cases, built from the Evidence, External_Reference, Cvss, Affected_Package, Checksum and Signature schema examples.",
+  "excluded": {
+    "document": [
+      "integrity",
+      "signature",
+      "generator"
+    ],
+    "override": [
+      "signature",
+      "previousChecksum"
+    ]
+  },
+  "cases": [
+    {
+      "name": "Standalone_Override schema examples",
+      "why": "the seven examples of Standalone_Override in the HDF amendments schema, verbatim and in order (the card's Steps to Reproduce, steps 1-4)",
+      "amendments": {
+        "name": "Portal Q1 2026 Waivers",
+        "overrides": [
+          {
+            "type": "waiver",
+            "requirementId": "SV-257777",
+            "baselineRef": "RHEL9-STIG",
+            "status": "passed",
+            "reason": "Compensating control: session timeout set to 15 min",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2026-06-30T00:00:00Z",
+            "evidence": [
+              {
+                "type": "url",
+                "data": "https://jira.agency.gov/CYBER-4521",
+                "description": "ISSM approval with compensating control documentation"
+              }
+            ]
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "SV-258010",
+            "baselineRef": "RHEL9-STIG",
+            "status": "passed",
+            "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "assessor@agency.gov"
+            },
+            "appliedAt": "2026-04-14T10:00:00Z",
+            "expiresAt": "2026-10-14T00:00:00Z"
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "CVE-2026-12345",
+            "status": "notApplicable",
+            "reason": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "dev@org.gov"
+            },
+            "appliedAt": "2026-04-14T10:00:00Z",
+            "expiresAt": "2026-10-14T00:00:00Z"
+          },
+          {
+            "type": "riskAdjustment",
+            "requirementId": "SV-258020",
+            "baselineRef": "RHEL9-STIG",
+            "impact": {
+              "value": 0.3
+            },
+            "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "dev@org.gov"
+            },
+            "appliedAt": "2026-04-14T10:00:00Z",
+            "expiresAt": "2026-10-14T00:00:00Z"
+          },
+          {
+            "type": "poam",
+            "requirementId": "SV-258001",
+            "baselineRef": "RHEL9-STIG",
+            "status": "failed",
+            "reason": "Patch requires vendor release, expected Q2 2026",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "sysadmin@agency.gov"
+            },
+            "appliedAt": "2026-01-20T09:00:00Z",
+            "expiresAt": "2026-07-01T00:00:00Z",
+            "milestones": [
+              {
+                "description": "Vendor patch release",
+                "estimatedCompletion": "2026-04-15T00:00:00Z",
+                "status": "pending"
+              },
+              {
+                "description": "Apply patch to all servers",
+                "estimatedCompletion": "2026-05-01T00:00:00Z",
+                "status": "pending"
+              }
+            ]
+          },
+          {
+            "type": "inherited",
+            "requirementId": "SV-230368",
+            "baselineRef": "RHEL9-STIG",
+            "status": "notApplicable",
+            "reason": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+            "inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "issm@agency.gov"
+            },
+            "appliedAt": "2026-03-26T10:00:00Z",
+            "expiresAt": "2026-09-26T00:00:00Z"
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "CVE-2026-12345",
+            "status": "notApplicable",
+            "reason": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+            "justification": "vulnerable_code_not_present",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "secops@org.gov"
+            },
+            "appliedAt": "2026-05-01T10:00:00Z",
+            "expiresAt": "2027-05-01T00:00:00Z",
+            "affectedPackages": [
+              {
+                "purl": "pkg:npm/lodash@4.17.20"
+              },
+              {
+                "purl": "pkg:rpm/openssl@1.1.1k-2.el8",
+                "fixedInVersion": "1.1.1k-3.el8"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "one STIG rule in two baselines",
+      "why": "Steps to Reproduce step 5: a mixed-case non-NIST id must not be case-folded, and two overrides for one rule in different baselines must stay distinct and scoped. The step's empty requirementId is no longer valid HDF, so it is not a round-trip case.",
+      "amendments": {
+        "name": "RHEL 9 container host amendments",
+        "overrides": [
+          {
+            "type": "waiver",
+            "requirementId": "SV-230221r858734_rule",
+            "status": "passed",
+            "reason": "Host is decommissioned before the next assessment window",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "baselineRef": "RHEL 9 STIG"
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "SV-230221r858734_rule",
+            "status": "notApplicable",
+            "reason": "The container image does not ship the affected package",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "baselineRef": "Container SRG"
+          }
+        ]
+      }
+    },
+    {
+      "name": "every document field present",
+      "why": "the Document fields table: amendments-name, amendment-id, description in metadata remarks, systemRef, prepared-by and approved-by identities with a description, labels as key/value pairs in sorted key order (including a key OSCAL cannot hold as a token and an empty key and value, §1.7.3), and version",
+      "amendments": {
+        "name": "Portal Q1 2026 Waivers",
+        "amendmentId": "8f2b7c1e-4d3a-4b6e-9a1f-2c3d4e5f6a7b",
+        "description": "Waivers and POA&Ms for the portal production boundary.\n\nReviewed by the ISSM on 2026-01-10.",
+        "systemRef": "portal-prod.hdf-system.json",
+        "appliedBy": {
+          "type": "username",
+          "identifier": "jdoe",
+          "description": "Security Operations Analyst"
+        },
+        "approvedBy": {
+          "type": "email",
+          "identifier": "ao@agency.gov"
+        },
+        "labels": {
+          "environment": "production",
+          "app.kubernetes.io/name": "portal",
+          "ticket": "",
+          "": "unkeyed"
+        },
+        "version": "2026.1",
+        "overrides": [
+          {
+            "type": "waiver",
+            "requirementId": "SV-257777",
+            "status": "passed",
+            "reason": "Compensating control: session timeout set to 15 min",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "optional document fields absent",
+      "why": "OSCAL requires import-ssp and metadata version, so an absent systemRef and version are written as display fallbacks marked with absent-field and must come back absent (§1.7.4)",
+      "amendments": {
+        "name": "Portal Q1 2026 Waivers",
+        "overrides": [
+          {
+            "type": "waiver",
+            "requirementId": "SV-257777",
+            "status": "passed",
+            "reason": "Compensating control: session timeout set to 15 min",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "present but empty optional strings",
+      "why": "each optional string field that is present and empty comes back present and empty (§1.7.3), and an empty required string comes back empty (§4.4)",
+      "amendments": {
+        "name": "",
+        "systemRef": "",
+        "description": "",
+        "version": "",
+        "labels": {
+          "": ""
+        },
+        "appliedBy": {
+          "type": "simple",
+          "identifier": "",
+          "description": ""
+        },
+        "overrides": [
+          {
+            "type": "poam",
+            "requirementId": "SV-258001",
+            "status": "failed",
+            "reason": "",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "sysadmin@agency.gov",
+              "description": ""
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "baselineRef": "",
+            "milestones": [
+              {
+                "description": "",
+                "estimatedCompletion": "2026-04-15T00:00:00Z",
+                "status": "pending"
+              }
+            ],
+            "evidence": [
+              {
+                "type": "log",
+                "data": "[2025-12-14 10:00:15] INFO: Security scan completed",
+                "description": "",
+                "mimeType": "",
+                "encoding": ""
+              }
+            ],
+            "externalReferences": [
+              {
+                "sourceName": "cve",
+                "externalId": "",
+                "description": "",
+                "rel": "",
+                "mediaType": "",
+                "href": ""
+              }
+            ],
+            "affectedPackages": [
+              {
+                "name": "",
+                "version": "",
+                "ecosystem": "generic",
+                "fixedInVersion": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "identifier and identity edge cases",
+      "why": "Verification Strategy edge cases: whitespace-only and padded identifiers and values with line breaks keep their exact value in remarks (§1.7.1-§1.7.2); NIST enhancement and statement spellings return as written; distinct ids sharing a control-like prefix stay distinct; one party per distinct (identifier, type, description) triple",
+      "amendments": {
+        "name": "Identifier edge cases",
+        "overrides": [
+          {
+            "type": "waiver",
+            "requirementId": "   ",
+            "status": "passed",
+            "reason": "Whitespace-only requirement id",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          },
+          {
+            "type": "waiver",
+            "requirementId": " AC-2 ",
+            "status": "passed",
+            "reason": "Padded requirement id and baseline\nwith a line break in the reason",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "baselineRef": "  RHEL9-STIG\n"
+          },
+          {
+            "type": "waiver",
+            "requirementId": "AC-2 (3)",
+            "status": "passed",
+            "reason": "NIST enhancement, parenthesized",
+            "appliedBy": {
+              "type": "username",
+              "identifier": "jdoe"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          },
+          {
+            "type": "waiver",
+            "requirementId": "ac-2(3)",
+            "status": "passed",
+            "reason": "NIST enhancement, compact lowercase",
+            "appliedBy": {
+              "type": "simple",
+              "identifier": "jdoe"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          },
+          {
+            "type": "waiver",
+            "requirementId": "AC-8 c 1",
+            "status": "passed",
+            "reason": "NIST statement part",
+            "appliedBy": {
+              "type": "username",
+              "identifier": "jdoe",
+              "description": "Security Operations Analyst"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          },
+          {
+            "type": "waiver",
+            "requirementId": "SV-230221r858734_rule",
+            "status": "passed",
+            "reason": "STIG rule id",
+            "appliedBy": {
+              "type": "username",
+              "identifier": "  analyst  "
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          },
+          {
+            "type": "waiver",
+            "requirementId": "SV-230221r991589_rule",
+            "status": "passed",
+            "reason": "STIG rule id sharing the SV-230221 prefix",
+            "appliedBy": {
+              "type": "username",
+              "identifier": "analyst"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          },
+          {
+            "type": "waiver",
+            "requirementId": "xccdf_org.ssgproject.content_rule_accounts_tmout",
+            "status": "passed",
+            "reason": "SCAP rule id",
+            "appliedBy": {
+              "type": "username",
+              "identifier": ""
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "evidence of every type",
+      "why": "the Evidence table: the five Evidence schema examples, plus URI data for screenshot and file (carried in relevant-evidence href), non-URI data for url-less types (carried in a base64 back-matter resource, as-is only when encoding is base64), and absent description and capturedAt written as fallbacks marked absent-field",
+      "amendments": {
+        "name": "Evidence matrix",
+        "overrides": [
+          {
+            "type": "attestation",
+            "requirementId": "SV-257777",
+            "status": "passed",
+            "reason": "Firewall configuration reviewed",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "evidence": [
+              {
+                "type": "screenshot",
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                "description": "Screenshot showing firewall configuration with required ports blocked",
+                "mimeType": "image/png",
+                "encoding": "base64",
+                "size": 95,
+                "capturedAt": "2025-12-14T10:30:00Z",
+                "capturedBy": {
+                  "identifier": "security-auditor@example.com",
+                  "type": "email"
+                }
+              },
+              {
+                "type": "code",
+                "data": "# Nginx configuration\nserver {\n  listen 443 ssl;\n  ssl_protocols TLSv1.2 TLSv1.3;\n  ssl_ciphers HIGH:!aNULL:!MD5;\n}",
+                "description": "Server configuration showing TLS 1.2+ enforcement",
+                "mimeType": "text/plain",
+                "capturedAt": "2025-12-14T10:45:00Z"
+              },
+              {
+                "type": "log",
+                "data": "[2025-12-14 10:00:15] INFO: Security scan completed - 0 critical vulnerabilities found\n[2025-12-14 10:00:16] INFO: All required security patches applied\n[2025-12-14 10:00:17] INFO: System compliant with security baseline",
+                "description": "Security scan log output",
+                "mimeType": "text/plain",
+                "size": 256
+              },
+              {
+                "type": "url",
+                "data": "https://jira.example.com/browse/SEC-12345",
+                "description": "Link to security ticket documenting remediation work",
+                "capturedAt": "2025-12-14T11:00:00Z"
+              },
+              {
+                "type": "file",
+                "data": "UEsDBBQAAAAIAI1ZX1YhQp8FHgAAABIAAAAIAAAAdGVzdC50eHRLy8nPS8lQSgIAUmNEBhQAAAA=",
+                "description": "Compliance audit report PDF",
+                "mimeType": "application/pdf",
+                "encoding": "base64",
+                "size": 2048,
+                "capturedAt": "2025-12-14T12:00:00Z",
+                "capturedBy": {
+                  "identifier": "compliance-system",
+                  "type": "system"
+                }
+              },
+              {
+                "type": "screenshot",
+                "data": "https://evidence.agency.gov/screens/firewall-2026-01-15.png",
+                "description": "Screenshot hosted in the evidence store",
+                "mimeType": "image/png",
+                "capturedBy": {
+                  "type": "username",
+                  "identifier": "jdoe",
+                  "description": "Security Operations Analyst"
+                }
+              },
+              {
+                "type": "file",
+                "data": "s3://agency-evidence/audits/2026-q1/tls-report.pdf",
+                "mimeType": "application/pdf",
+                "size": 48213
+              },
+              {
+                "type": "other",
+                "data": "Interviewed the system owner; MFA is enforced at the IdP.\n"
+              },
+              {
+                "type": "url",
+                "data": "https://jira.agency.gov/CYBER-4521"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "milestones with titles and completion attribution",
+      "why": "the Milestone row: title exact in the remediation and task titles (including edge whitespace OSCAL StringDatatype would reject, since those titles are not StringDatatype), an untitled milestone written as the display text \"Milestone <n>\" marked absent-field and returned untitled, description exact in the remediation description, estimatedCompletion in task timing, status and completedAt in task props, completedBy through task responsible-roles naming a party",
+      "amendments": {
+        "name": "Patch POA&M",
+        "overrides": [
+          {
+            "type": "poam",
+            "requirementId": "SV-258001",
+            "status": "failed",
+            "reason": "Patch requires vendor release, expected Q2 2026",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "sysadmin@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "milestones": [
+              {
+                "description": "Vendor patch release",
+                "estimatedCompletion": "2026-04-15T00:00:00Z",
+                "status": "completed",
+                "completedAt": "2026-04-10T16:30:00Z",
+                "completedBy": {
+                  "type": "system",
+                  "identifier": "automated-scanner-01",
+                  "description": "Nightly compliance scan pipeline"
+                }
+              },
+              {
+                "title": "Patch staging, then production",
+                "description": "Apply patch to all servers.\nStaging first, then production.",
+                "estimatedCompletion": "2026-05-01T00:00:00Z",
+                "status": "inProgress",
+                "completedBy": {
+                  "type": "email",
+                  "identifier": "sysadmin@agency.gov"
+                }
+              },
+              {
+                "title": " Rescan and close POA&M item\f",
+                "description": "Rescan and close",
+                "estimatedCompletion": "2026-05-15T00:00:00Z",
+                "status": "pending"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "CVSS, impact and no status",
+      "why": "the cvss row over the Cvss schema examples (every Cvss field, all four versions), impact at both bounds through the shared number rule, and overrides with no status (risk status open, no override-status, and no status on import)",
+      "amendments": {
+        "name": "Risk adjustments",
+        "overrides": [
+          {
+            "type": "riskAdjustment",
+            "requirementId": "CVE-2024-21762",
+            "reason": "Exposed management interface",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "impact": {
+              "value": 1
+            },
+            "cvss": {
+              "version": "4.0",
+              "source": "CVE-2024-21762",
+              "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "threatVector": "E:A",
+              "threatScore": 9.3,
+              "environmentalVector": "MAV:N/CR:H/IR:H/AR:H",
+              "environmentalScore": 9.5,
+              "supplementalVector": "S:P/AU:N/V:C/RE:M",
+              "computedScore": 4.2,
+              "computedSeverity": "medium"
+            }
+          },
+          {
+            "type": "riskAdjustment",
+            "requirementId": "CVE-2024-3094",
+            "status": "passed",
+            "reason": "Not reachable in this deployment",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "impact": {
+              "value": 0
+            },
+            "cvss": {
+              "version": "3.1",
+              "source": "CVE-2024-3094",
+              "baseVector": "CVSS:3.1/AV:L/AC:H/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "baseScore": 6.7,
+              "baseSeverity": "medium",
+              "environmentalVector": "MAV:N/CR:H/IR:H/AR:H",
+              "environmentalScore": 9.0,
+              "computedScore": 9.0,
+              "computedSeverity": "critical"
+            }
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "CVE-2014-0160",
+            "status": "notApplicable",
+            "reason": "OpenSSL is not linked",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "cvss": {
+              "version": "2.0",
+              "source": "CVE-2014-0160",
+              "baseVector": "AV:N/AC:L/Au:N/C:P/I:N/A:N",
+              "baseScore": 5.0,
+              "baseSeverity": "medium"
+            }
+          },
+          {
+            "type": "operationalRequirement",
+            "requirementId": "SV-258020",
+            "reason": "Accepted for mission operations; finding unchanged",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "cvss": {
+              "version": "3.1",
+              "source": "CVE-2023-44487",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "threatVector": "E:U/RL:O/RC:C",
+              "threatScore": 5.5
+            }
+          },
+          {
+            "type": "riskAdjustment",
+            "requirementId": "CVE-2024-12345",
+            "reason": "Compensating WAF rule",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "impact": {
+              "value": 0.3
+            },
+            "cvss": {
+              "version": "3.1",
+              "source": "CVE-2024-12345",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "baseScore": 9.8,
+              "baseSeverity": "critical"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "external references",
+      "why": "the External reference table over the External_Reference schema examples: every field, including checksum, addedBy, addedAt, kind and an embedded document, each resource attached by a risk link",
+      "amendments": {
+        "name": "Log4Shell amendments",
+        "overrides": [
+          {
+            "type": "falsePositive",
+            "requirementId": "CVE-2021-44228",
+            "status": "notApplicable",
+            "reason": "log4j-core is not on the classpath",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "justification": "vulnerable_code_not_present",
+            "externalReferences": [
+              {
+                "sourceName": "cve",
+                "externalId": "CVE-2021-44228",
+                "rel": "definition"
+              },
+              {
+                "sourceName": "mitre-att&ck",
+                "externalId": "T1059",
+                "href": "https://attack.mitre.org/techniques/T1059/",
+                "rel": "canonical"
+              },
+              {
+                "sourceName": "stix",
+                "href": "https://cti.example.org/bundles/log4shell.json",
+                "rel": "investigate",
+                "mediaType": "application/json",
+                "checksum": {
+                  "algorithm": "sha256",
+                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                },
+                "addedBy": {
+                  "type": "email",
+                  "identifier": "analyst@agency.gov"
+                },
+                "addedAt": "2026-07-26T00:00:00Z"
+              },
+              {
+                "sourceName": "stix",
+                "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                "rel": "investigate",
+                "kind": "threat-intel",
+                "document": {
+                  "type": "vulnerability",
+                  "spec_version": "2.1",
+                  "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                  "name": "CVE-2021-44228",
+                  "external_references": [
+                    {
+                      "source_name": "cve",
+                      "external_id": "CVE-2021-44228"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "type": "waiver",
+            "requirementId": "SV-257777",
+            "status": "passed",
+            "reason": "Compensating control: session timeout set to 15 min",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "externalReferences": [
+              {
+                "sourceName": "stix",
+                "href": "https://cti.example.org/bundles/log4shell.json",
+                "rel": "investigate",
+                "mediaType": "application/json",
+                "checksum": {
+                  "algorithm": "sha512",
+                  "value": "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+                },
+                "addedBy": {
+                  "type": "email",
+                  "identifier": "ao@agency.gov"
+                },
+                "addedAt": "2026-07-26T12:00:00Z",
+                "kind": "x-agency-advisory",
+                "description": "Agency advisory <ADV-1> & bundle"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "component scope, inheritance and affected packages",
+      "why": "componentRef, inheritedFrom and affectedPackages over the Affected_Package schema examples, each package's props sharing one group in source order",
+      "amendments": {
+        "name": "Inherited and package-scoped amendments",
+        "overrides": [
+          {
+            "type": "inherited",
+            "requirementId": "SV-230368",
+            "status": "notApplicable",
+            "reason": "IA-2 is a common control provided by Keycloak SSO.",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "baselineRef": "RHEL9-STIG",
+            "componentRef": "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+            "inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "CVE-2021-44228",
+            "status": "notApplicable",
+            "reason": "Not present in the shipped images",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "componentRef": "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
+            "affectedPackages": [
+              {
+                "name": "openssl",
+                "version": "1.1.1k-7.el8_4",
+                "ecosystem": "rpm",
+                "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*",
+                "purl": "pkg:rpm/redhat/openssl@1.1.1k-7.el8_4?arch=x86_64",
+                "fixedInVersion": "1.1.1l"
+              },
+              {
+                "name": "lodash",
+                "version": "4.17.20",
+                "ecosystem": "npm",
+                "purl": "pkg:npm/lodash@4.17.20",
+                "fixedInVersion": "4.17.21"
+              },
+              {
+                "name": "requests",
+                "version": "2.28.1",
+                "ecosystem": "pypi"
+              },
+              {
+                "name": "org.apache.logging.log4j:log4j-core",
+                "version": "2.14.1",
+                "ecosystem": "maven",
+                "cpe": "cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*",
+                "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+                "fixedInVersion": "2.17.1"
+              },
+              {
+                "purl": "pkg:npm/lodash@4.17.20"
+              },
+              {
+                "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*"
+              }
+            ]
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "CVE-2021-44228",
+            "status": "notApplicable",
+            "reason": "Same CVE on a second component",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "componentRef": "6a5b4c3d-2e1f-4a0b-9c8d-7e6f5a4b3c2d"
+          }
+        ]
+      }
+    },
+    {
+      "name": "sub-second timestamps",
+      "why": "every timestamp field keeps its millisecond fraction in HDF canonical trimmed-UTC form",
+      "amendments": {
+        "name": "Sub-second timestamps",
+        "overrides": [
+          {
+            "type": "poam",
+            "requirementId": "SV-258001",
+            "status": "failed",
+            "reason": "Timestamps with fractions",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-03-26T10:00:00.123Z",
+            "expiresAt": "2099-12-31T00:00:00.5Z",
+            "milestones": [
+              {
+                "description": "Patch",
+                "estimatedCompletion": "2026-05-01T08:15:30.25Z",
+                "status": "completed",
+                "completedAt": "2026-04-30T23:59:59.999Z"
+              }
+            ],
+            "evidence": [
+              {
+                "type": "url",
+                "data": "https://jira.agency.gov/CYBER-4521",
+                "capturedAt": "2026-03-26T09:59:58.001Z"
+              }
+            ],
+            "externalReferences": [
+              {
+                "sourceName": "cve",
+                "externalId": "CVE-2024-3094",
+                "addedAt": "2026-03-26T09:00:00.75Z"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "excluded integrity fields",
+      "why": "the contract excludes the document integrity and signature, the importer-stamped generator, and each override signature and previousChecksum; nothing else may differ",
+      "amendments": {
+        "name": "Signed amendments",
+        "integrity": {
+          "algorithm": "sha256",
+          "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "signature": {
+          "type": "JsonWebSignature2020",
+          "created": "2025-12-14T10:00:00Z",
+          "creator": {
+            "identifier": "security-team@example.com",
+            "type": "email"
+          },
+          "signatureValue": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEYCIQDvKbtLRhWAa",
+          "proofPurpose": "attestation",
+          "verificationMethod": {
+            "type": "JsonWebKey2020",
+            "controller": "did:example:123456789abcdefghi",
+            "publicKeyJwk": {
+              "kty": "RSA",
+              "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtV",
+              "e": "AQAB"
+            }
+          }
+        },
+        "generator": {
+          "name": "hdf-cli",
+          "version": "3.6.0"
+        },
+        "overrides": [
+          {
+            "type": "waiver",
+            "requirementId": "SV-257777",
+            "status": "passed",
+            "reason": "Compensating control: session timeout set to 15 min",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "signature": {
+              "type": "Ed25519Signature2020",
+              "created": "2025-12-14T14:00:00Z",
+              "creator": {
+                "identifier": "automated-signer",
+                "type": "system",
+                "description": "Hardware security module (HSM) for automated attestations"
+              },
+              "signatureValue": "z58DAdFfa9SkqZMVMxABEBC59Ck6WibLZ",
+              "proofPurpose": "assertionMethod",
+              "verificationMethod": {
+                "type": "Ed25519VerificationKey2020",
+                "controller": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+                "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+              },
+              "challenge": "1f44d2f3-d16c-47a4-9f5f-1d6e8f4e3a2b",
+              "domain": "https://compliance.example.com"
+            }
+          },
+          {
+            "type": "falsePositive",
+            "requirementId": "SV-258010",
+            "status": "passed",
+            "reason": "Compensating control: session timeout set to 15 min",
+            "appliedBy": {
+              "type": "email",
+              "identifier": "ao@agency.gov"
+            },
+            "appliedAt": "2026-01-15T10:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z",
+            "previousChecksum": {
+              "algorithm": "sha256",
+              "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

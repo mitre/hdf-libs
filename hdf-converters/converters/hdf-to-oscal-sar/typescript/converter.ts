@@ -7,7 +7,7 @@
 
 import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
 import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
-import { hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
+import { emitConverterWarning, hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
   SecurityAssessmentResultsSAR,
@@ -22,14 +22,48 @@ import type {
   Property,
   Link,
   Resource,
+  RelevantEvidence,
+  RiskResponse,
 } from '../../oscal-to-hdf/typescript/types.js';
 import {
-  nistTagToControlId,
+  nistTagToControlRef,
   oscalString,
   oscalToken,
   impactToSeverity,
+  descriptionLabelProp,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
+import { pushVocabularyProp, vocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
+
+/** A reviewed-controls include-controls entry. */
+interface SelectControl {
+  'control-id': string;
+  'statement-ids'?: string[];
+}
+
+/**
+ * Adds a control, or one statement of it, to the reviewed-controls selection, one
+ * entry per control. A control selected whole carries no statement-ids, because
+ * listing any would narrow the selection to them. Mirrors Go's selectControl.
+ */
+function selectControl(controls: SelectControl[], index: Map<string, number>, controlId: string, statementId: string): void {
+  const i = index.get(controlId);
+  if (i === undefined) {
+    index.set(controlId, controls.length);
+    controls.push(statementId === '' ? { 'control-id': controlId } : { 'control-id': controlId, 'statement-ids': [statementId] });
+    return;
+  }
+  const selection = controls[i]!;
+  const statementIds = selection['statement-ids'];
+  if (statementIds === undefined) {
+    return;
+  }
+  if (statementId === '') {
+    delete selection['statement-ids'];
+  } else if (!statementIds.includes(statementId)) {
+    statementIds.push(statementId);
+  }
+}
 
 /** Root wrapper for the output JSON. */
 interface OscalSARDocument {
@@ -221,8 +255,8 @@ function baselineToResult(
 
   // baseline.version has no first-class SAR home; carry it as a result prop.
   const resultProps: Property[] = [];
-  if (baseline.version && baseline.version !== '') {
-    resultProps.push({ name: 'baseline-version', value: baseline.version });
+  if (typeof baseline.version === 'string') {
+    pushVocabularyProp(resultProps, 'baseline-version', baseline.version);
   }
 
   const findings: Finding[] = [];
@@ -232,8 +266,8 @@ function baselineToResult(
 
   // OSCAL requires result.reviewed-controls: the set of controls assessed.
   // Populate it from the control each requirement targets (deduped).
-  const includeControls: Array<{ 'control-id': string }> = [];
-  const seenControl = new Set<string>();
+  const includeControls: SelectControl[] = [];
+  const controlIndex = new Map<string, number>();
 
   for (const req of baseline.requirements) {
     // A finding is a claim about a specific control, and OSCAL types target-id as
@@ -243,7 +277,7 @@ function baselineToResult(
     // finding is dropped rather than carrying a fabricated identifier. Compute
     // the control id once so the guard and the reviewed-controls encoding below
     // cannot drift.
-    const nistId = nistTagToControlId(req.id ?? '');
+    const { controlId: nistId, statementId } = nistTagToControlRef(req.id ?? '');
     if (nistId === '') {
       continue;
     }
@@ -259,13 +293,13 @@ function baselineToResult(
     if (resource) {
       resources.push(resource);
     }
-    // Encoded identically to the finding's target-id: a finding that referenced a
-    // control absent from this list would validate while claiming to assess
-    // something the result never declares reviewing.
+    // Declares the control behind the finding's target (narrowed to its statement
+    // when the target is one): a finding whose control is absent from this list
+    // would validate while claiming to assess something the result never declares
+    // reviewing.
     const cid = oscalToken(nistId);
-    if (cid !== '' && !seenControl.has(cid)) {
-      seenControl.add(cid);
-      includeControls.push({ 'control-id': cid });
+    if (cid !== '') {
+      selectControl(includeControls, controlIndex, cid, statementId);
     }
   }
 
@@ -340,10 +374,10 @@ function requirementToFindingSet(
 ): { finding: Finding; observation: Observation | undefined; risk: IdentifiedRisk | undefined; resource: Resource | undefined } {
   // OSCAL types target-id as a token, and a requirement id is only token-shaped
   // when the source tool happens to number its rules that way. The source id is
-  // recorded in the hdf-requirement-id prop below (trimmed, because OSCAL forbids
-  // a padded string value), so the encoding does not lose which requirement this
-  // came from even though it is not injective.
-  const controlID = oscalToken(nistTagToControlId(req.id ?? ''));
+  // recorded exactly in the hdf-requirement-id prop below, so the encoding does
+  // not lose which requirement this came from even though it is not injective.
+  const { controlId, statementId } = nistTagToControlRef(req.id ?? '');
+  const [targetType, targetId] = statementId === '' ? ['objective-id', oscalToken(controlId)] : ['statement-id', statementId];
   // results/descriptions are optional and absent on real minimal HDF; normalize
   // to arrays so this converter matches the Go implementation, which ranges nil
   // slices safely rather than throwing.
@@ -354,36 +388,18 @@ function requirementToFindingSet(
   const { state, reason } = effectiveState(req);
   const findingDesc = extractDefaultDescription(descriptions);
 
-  // Build props from control mappings (nist/cci), non-default descriptions
-  // (check/fix/rationale), and v3.2 classification fields. OSCAL prop values
-  // are StringDatatype (no newlines, no edge whitespace), so prose-capable
-  // fields emit a single-line preview as the value and carry the full text in
-  // the prop's own remarks (markup-multiline).
   // The source requirement id. target-id carries an encoded form, because OSCAL
   // constrains it to a token and the encoding is not injective, so without this
-  // the identifier the source tool reported would be unrecoverable. Trimmed
-  // because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded value would itself
-  // be schema-invalid.
+  // the identifier the source tool reported would be unrecoverable.
   //
-  // OSCAL prop values must be non-empty strings, so skip any empty value
-  // (e.g. an empty source `code`) rather than emitting a schema-invalid value: ''.
-  // The source requirement id. target-id carries an encoded form, because OSCAL
-  // constrains it to a token, so without this the identifier the source tool
-  // reported would be unrecoverable — and the encoding is not injective in
-  // principle. Trimmed because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded
-  // value would itself be schema-invalid; nistTagToControlId trims for target-id
-  // too, so the two stay consistent.
-  const props: Property[] = [{ name: 'hdf-requirement-id', value: oscalString(req.id) }];
+  // Then control mappings (nist/cci) and v3.2 classification fields. Every prop
+  // goes through the vocabulary helper, which namespaces it and keeps the exact
+  // value in remarks when OSCAL's single-line StringDatatype cannot hold it.
+  const props: Property[] = [];
   const addProp = (name: string, value: string): void => {
-    if (value !== '') props.push({ name, value });
+    pushVocabularyProp(props, name, value);
   };
-  const addProseProp = (name: string, text: string): void => {
-    const preview = previewLine(text);
-    if (preview === '') return;
-    const p: Property = { name, value: preview };
-    if (preview !== text) p.remarks = text;
-    props.push(p);
-  };
+  addProp('hdf-requirement-id', req.id);
   const descriptionByLabel = (label: string): string => {
     const d = descriptions.find((x) => x.label === label);
     return d ? d.data : '';
@@ -396,14 +412,6 @@ function requirementToFindingSet(
   };
   pushTagValues('nist');
   pushTagValues('cci');
-  addProseProp('check', descriptionByLabel('check'));
-  addProseProp('rationale', descriptionByLabel('rationale'));
-  // fix text's OSCAL home is risk.remediations (built below when impact > 0,
-  // the reverse importer's read path). Only an impact-0 requirement, which
-  // emits no risk, carries it as a finding prop instead.
-  if (req.impact <= 0) {
-    addProseProp('fix', descriptionByLabel('fix'));
-  }
   if (req.controlType) addProp('control-type', req.controlType);
   if (req.verificationMethod) addProp('verification-method', req.verificationMethod);
   if (req.applicability) addProp('applicability', req.applicability);
@@ -434,7 +442,7 @@ function requirementToFindingSet(
       const o = r as { url?: unknown; uri?: unknown; ref?: unknown };
       if (typeof o.url === 'string') links.push({ href: o.url, rel: 'reference' });
       else if (typeof o.uri === 'string') links.push({ href: o.uri, rel: 'reference' });
-      else if (typeof o.ref === 'string') addProseProp('reference', o.ref);
+      else if (typeof o.ref === 'string') addProp('reference', o.ref);
     }
   }
 
@@ -457,6 +465,7 @@ function requirementToFindingSet(
     resource = {
       uuid: resourceUuid,
       title: `Check source code for ${req.id}`,
+      props: [vocabularyProp('type', 'evidence')!],
       base64: {
         value: encodeBase64Utf8(req.code),
         'media-type': 'text/plain',
@@ -476,9 +485,12 @@ function requirementToFindingSet(
     targetStatus.remarks = remarks;
   }
 
+  // The assessor's conclusion about the objective: rationale's OSCAL home.
+  const rationale = descriptionByLabel('rationale');
   const target = {
-    type: 'objective-id',
-    'target-id': controlID,
+    type: targetType,
+    'target-id': targetId,
+    ...(rationale !== '' ? { description: rationale } : {}),
     status: targetStatus,
   } as unknown as TargetClass;
 
@@ -513,6 +525,8 @@ function requirementToFindingSet(
       ...(relevantEvidence.length > 0 ? { 'relevant-evidence': relevantEvidence } : {}),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
+  } else {
+    warnUncarriedProse(req);
   }
 
   // Build risk from impact
@@ -563,8 +577,8 @@ function requirementToFindingSet(
 }
 
 /**
- * Reduces prose to a single line legal as an OSCAL StringDatatype prop value:
- * the first non-empty line, trimmed, truncated to 120 code points.
+ * Reduces prose to a single line for an OSCAL single-line field: the first
+ * non-empty line, trimmed, truncated to 120 code points.
  */
 function previewLine(text: string): string {
   for (let line of text.split('\n')) {
@@ -625,19 +639,20 @@ function overrideRemarks(req: EvaluatedRequirement): string {
 }
 
 /**
- * Collects the requirement's refs, evidence, and source location into OSCAL
- * observation relevant-evidence — the home the reverse SAR importer reads back
- * into HDF refs (via href) and evidence (via description).
+ * Collects the requirement's refs, evidence and source location, then its check
+ * (and impact-0 fix) prose, into OSCAL observation relevant-evidence — the home
+ * the reverse SAR importer reads back into HDF refs (via href), evidence (via
+ * description) and check/fix (via description-label).
  */
-function buildRelevantEvidence(req: EvaluatedRequirement): Array<{ href?: string; description: string }> {
-  const ev: Array<{ href?: string; description: string }> = [];
+function buildRelevantEvidence(req: EvaluatedRequirement): RelevantEvidence[] {
+  const ev: RelevantEvidence[] = [];
   for (const r of req.refs ?? []) {
     const o = r as { url?: unknown; uri?: unknown };
     if (typeof o.url === 'string' && o.url !== '') ev.push({ href: o.url, description: '' });
     else if (typeof o.uri === 'string' && o.uri !== '') ev.push({ href: o.uri, description: '' });
   }
   for (const e of req.evidence ?? []) {
-    const entry: { href?: string; description: string } = { description: e.description ?? '' };
+    const entry: RelevantEvidence = { description: e.description ?? '' };
     if (String(e.type) === 'url' && e.data) entry.href = e.data;
     if (entry.href || entry.description) ev.push(entry);
   }
@@ -645,7 +660,44 @@ function buildRelevantEvidence(req: EvaluatedRequirement): Array<{ href?: string
     const loc = sourceLocationText(req.sourceLocation);
     if (loc) ev.push({ description: 'Source location: ' + loc });
   }
+  // Labelled prose follows the entries above so their index positions are stable.
+  for (const label of observationProseLabels(req)) {
+    const text = descriptionText(req, label);
+    ev.push({ description: previewLine(text), props: [descriptionLabelProp(label)], remarks: text });
+  }
   return ev;
+}
+
+/** Data of the requirement's first description with the label, or ''. */
+function descriptionText(req: EvaluatedRequirement, label: string): string {
+  return (req.descriptions ?? []).find((d) => d.label === label)?.data ?? '';
+}
+
+/**
+ * Description labels whose text the requirement's observation carries as
+ * labelled evidence: check, and fix when impact is 0 (otherwise fix's home is
+ * the risk remediation). A description with no preview text carries nothing.
+ */
+function observationProseLabels(req: EvaluatedRequirement): string[] {
+  const candidates = req.impact <= 0 ? ['check', 'fix'] : ['check'];
+  return candidates.filter((label) => previewLine(descriptionText(req, label)) !== '');
+}
+
+/**
+ * Reports observation-scoped prose lost because a requirement with no results
+ * emits no observation.
+ */
+function warnUncarriedProse(req: EvaluatedRequirement): void {
+  const labels = observationProseLabels(req);
+  if (labels.length === 1) {
+    emitConverterWarning(
+      `hdf-to-oscal-sar: requirement ${JSON.stringify(req.id)} has no results, so no observation holds its ${labels[0]} description; it was not carried`,
+    );
+  } else if (labels.length > 1) {
+    emitConverterWarning(
+      `hdf-to-oscal-sar: requirement ${JSON.stringify(req.id)} has no results, so no observation holds its ${labels.join(' and ')} descriptions; they were not carried`,
+    );
+  }
 }
 
 /** Renders a source location as "ref:line", degrading to whichever is present. */
@@ -664,14 +716,21 @@ function severityToFacetValue(s: string): string {
 
 /**
  * Turns the requirement's fix description and any governing risk-acceptance
- * override into OSCAL risk remediations — the home the reverse importer reads
- * back as the HDF remediation description.
+ * override into OSCAL risk remediations. The reverse importer reads the
+ * labelled fix back as the HDF fix description and the rest as the remediation
+ * description.
  */
-function buildRemediations(req: EvaluatedRequirement): Array<Record<string, string>> {
-  const rems: Array<Record<string, string>> = [];
+function buildRemediations(req: EvaluatedRequirement): RiskResponse[] {
+  const rems: RiskResponse[] = [];
   const fix = (req.descriptions ?? []).find((d) => d.label === 'fix');
   if (fix && fix.data) {
-    rems.push({ uuid: crypto.randomUUID(), lifecycle: 'recommendation', title: 'Recommended fix', description: fix.data });
+    rems.push({
+      uuid: crypto.randomUUID(),
+      lifecycle: 'recommendation',
+      title: 'Recommended fix',
+      description: fix.data,
+      props: [descriptionLabelProp('fix')],
+    });
   }
   const overrides = req.statusOverrides ?? [];
   if (req.disposition && overrides.length > 0) {

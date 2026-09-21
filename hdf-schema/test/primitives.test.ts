@@ -802,11 +802,11 @@ describe('Primitive Schema Validation', () => {
       it('should validate screenshot evidence with all fields', () => {
         const valid = {
           type: 'screenshot',
-          data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
           description: 'Screenshot showing compliant configuration',
           mimeType: 'image/png',
           encoding: 'base64',
-          size: 1024,
+          size: 70,
           capturedAt: '2025-12-07T15:30:00Z',
           capturedBy: {
             identifier: 'auditor@example.com',
@@ -848,11 +848,11 @@ describe('Primitive Schema Validation', () => {
       it('should validate file evidence', () => {
         const valid = {
           type: 'file',
-          data: 'base64-encoded-file-content',
+          data: 'c3NoOgogIGNpcGhlcnM6IGFlczI1Ni1nY21Ab3BlbnNzaC5jb20K',
           description: 'Configuration file',
           mimeType: 'application/yaml',
           encoding: 'base64',
-          size: 2048,
+          size: 39,
         };
         expect(validate(valid)).toBe(true);
       });
@@ -900,6 +900,47 @@ describe('Primitive Schema Validation', () => {
           type: 'screenshot',
         };
         expect(validate(invalid)).toBe(false);
+      });
+
+      it('should reject evidence with empty data', () => {
+        expect(validate({ type: 'log', data: '' })).toBe(false);
+      });
+
+      // Under encoding base64, data must match OSCAL's Base64Datatype pattern, so
+      // valid HDF evidence stays exportable as valid OSCAL.
+      it.each([
+        ['non-base64 text', 'not base64!'],
+        ['a data: URI', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='],
+        ['a URL', 'https://evidence.example.com/screenshots/firewall.png'],
+        ['base64 wrapped across lines', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ\nAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='],
+        ['padding only', '=='],
+        ['too much padding', 'aGk==='],
+        ['padding before the end', 'aG==k'],
+        ['a trailing line feed', 'aGk=\n'],
+      ])('should reject base64-encoded evidence whose data is %s', (_label, data) => {
+        expect(validate({ type: 'screenshot', data, mimeType: 'image/png', encoding: 'base64' })).toBe(false);
+      });
+
+      it.each([
+        ['a PNG', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='],
+        ['unpadded data', 'aGk'],
+        ['base64 with + and /', 'ab+/'],
+      ])('should accept base64-encoded evidence whose data is %s', (_label, data) => {
+        const valid = { type: 'file', data, encoding: 'base64' };
+        expect(validate(valid), JSON.stringify(validate.errors)).toBe(true);
+      });
+
+      it.each([
+        ['absent', undefined],
+        ['utf-8', 'utf-8'],
+        ['Base64 in another case', 'Base64'],
+      ])('should not apply the base64 pattern when encoding is %s', (_label, encoding) => {
+        const evidence = {
+          type: 'url',
+          data: 'https://evidence.example.com/screenshots/firewall.png',
+          ...(encoding === undefined ? {} : { encoding }),
+        };
+        expect(validate(evidence), JSON.stringify(validate.errors)).toBe(true);
       });
 
       it('should reject evidence with invalid type', () => {
@@ -964,6 +1005,50 @@ describe('Primitive Schema Validation', () => {
           },
         };
         expect(validate(valid)).toBe(true);
+      });
+
+      it('should validate a milestone with a title', () => {
+        const valid = {
+          title: 'Deploy OpenSSH 9.8p1',
+          description: 'Upgrade OpenSSH on all RHEL 9 web tier hosts to 9.8p1 and restart sshd during the maintenance window',
+          estimatedCompletion: '2026-04-15T00:00:00Z',
+          status: 'pending',
+        };
+        expect(validate(valid), JSON.stringify(validate.errors)).toBe(true);
+      });
+
+      // The title shape is OSCAL's StringDatatype as its XSD defines it: no line
+      // breaks, and no space, tab, CR or LF at either end.
+      it.each([
+        ['empty', ''],
+        ['a line feed', 'Deploy\npatch'],
+        ['a carriage return', 'Deploy\rpatch'],
+        ['a trailing line feed', 'Deploy patch\n'],
+        ['a leading space', ' Deploy patch'],
+        ['a trailing tab', 'Deploy patch\t'],
+        ['only whitespace', '   '],
+        ['null', null],
+      ])('should reject a milestone title that is %s', (_label, title) => {
+        const invalid = {
+          title,
+          description: 'Test milestone',
+          estimatedCompletion: '2026-04-15T00:00:00Z',
+          status: 'pending',
+        };
+        expect(validate(invalid)).toBe(false);
+      });
+
+      it.each([
+        ['a single character', 'X'],
+        ['inner spaces', 'Apply vendor patch  RHSA-2026:1234'],
+      ])('should accept a milestone title with %s', (_label, title) => {
+        const valid = {
+          title,
+          description: 'Test milestone',
+          estimatedCompletion: '2026-04-15T00:00:00Z',
+          status: 'pending',
+        };
+        expect(validate(valid), JSON.stringify(validate.errors)).toBe(true);
       });
 
       it('should reject completed milestone with explicit null completedBy', () => {
@@ -1910,11 +1995,11 @@ describe('Primitive Schema Validation', () => {
           evidence: [
             {
               type: 'screenshot',
-              data: 'base64-screenshot-data',
+              data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
               description: 'Configuration interface screenshot',
               mimeType: 'image/png',
               encoding: 'base64',
-              size: 2048,
+              size: 70,
               capturedAt: '2025-12-07T15:30:00Z',
               capturedBy: {
                 identifier: 'auditor@example.com',

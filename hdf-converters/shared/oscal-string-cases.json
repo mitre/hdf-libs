@@ -1,0 +1,39 @@
+{
+  "$comment": "Shared table for the ADR-0014 \u00A71.7 prop value rules, read by converters/oscal-to-hdf/go/vocabulary_test.go and converters/oscal-to-hdf/typescript/vocabulary.test.ts. 'in' is the HDF value; 'value' is the prop value the emit helper writes, or null when it writes no prop (an empty value is \u00A71.7.3, decided by the caller); 'remarks' is the exact HDF value the prop carries when normalization changed it, or null. Normalization replaces each maximal run of CR, LF, U+2028 and U+2029 with one space, then trims ECMAScript \\s whitespace; a value with nothing left becomes _. 'ecmascriptWhitespace' lists every code point ECMAScript \\s matches (WhiteSpace plus LineTerminator); each language checks its trim set against it over the whole code-point range, which is what keeps Go from using strings.TrimSpace (it trims U+0085 and keeps U+FEFF) and pins the TypeScript regex to this Unicode version.",
+  "ecmascriptWhitespace": [
+    "U+0009", "U+000A", "U+000B", "U+000C", "U+000D", "U+0020", "U+00A0", "U+1680",
+    "U+2000", "U+2001", "U+2002", "U+2003", "U+2004", "U+2005", "U+2006", "U+2007",
+    "U+2008", "U+2009", "U+200A", "U+2028", "U+2029", "U+202F", "U+205F", "U+3000",
+    "U+FEFF"
+  ],
+  "cases": [
+    { "name": "a value OSCAL can hold is unchanged", "in": "SV-230221r858734_rule", "value": "SV-230221r858734_rule", "remarks": null },
+    { "name": "interior spaces and tabs are kept", "in": "a b\tc", "value": "a b\tc", "remarks": null },
+    { "name": "leading and trailing spaces are trimmed", "in": "  AC-2  ", "value": "AC-2", "remarks": "  AC-2  " },
+    { "name": "LF becomes one space", "in": "first\nsecond", "value": "first second", "remarks": "first\nsecond" },
+    { "name": "CRLF is one run and becomes one space", "in": "first\r\nsecond", "value": "first second", "remarks": "first\r\nsecond" },
+    { "name": "a lone CR becomes one space", "in": "first\rsecond", "value": "first second", "remarks": "first\rsecond" },
+    { "name": "blank lines are one run", "in": "first\n\n\nsecond", "value": "first second", "remarks": "first\n\n\nsecond" },
+    { "name": "a space between line terminators ends the run", "in": "first\n \nsecond", "value": "first   second", "remarks": "first\n \nsecond" },
+    { "name": "U+2028 LINE SEPARATOR becomes one space", "in": "first\u2028second", "value": "first second", "remarks": "first\u2028second" },
+    { "name": "U+2029 PARAGRAPH SEPARATOR becomes one space", "in": "first\u2029second", "value": "first second", "remarks": "first\u2029second" },
+    { "name": "mixed line terminators are one run", "in": "first\r\n\u2028\u2029\nsecond", "value": "first second", "remarks": "first\r\n\u2028\u2029\nsecond" },
+    { "name": "a trailing newline is removed", "in": "Verify the setting.\n", "value": "Verify the setting.", "remarks": "Verify the setting.\n" },
+    { "name": "line terminators and spaces at both edges are removed", "in": "\n  text  \r\n", "value": "text", "remarks": "\n  text  \r\n" },
+    { "name": "U+0085 NEXT LINE inside a value is kept: it is not an OSCAL line terminator", "in": "first\u0085second", "value": "first\u0085second", "remarks": null },
+    { "name": "U+0085 NEXT LINE at the edges is kept: it is not ECMAScript whitespace", "in": "\u0085text\u0085", "value": "\u0085text\u0085", "remarks": null },
+    { "name": "U+FEFF at the start is trimmed: it is ECMAScript whitespace", "in": "\uFEFFtext", "value": "text", "remarks": "\uFEFFtext" },
+    { "name": "NBSP at the edges is trimmed", "in": "\u00A0text\u00A0", "value": "text", "remarks": "\u00A0text\u00A0" },
+    { "name": "NBSP inside a value is kept", "in": "10\u00A0days", "value": "10\u00A0days", "remarks": null },
+    { "name": "vertical tab and form feed at the edges are trimmed", "in": "\u000Btext\f", "value": "text", "remarks": "\u000Btext\f" },
+    { "name": "every Unicode space separator at the edges is trimmed", "in": "\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000text\u3000", "value": "text", "remarks": "\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000text\u3000" },
+    { "name": "U+200B ZERO WIDTH SPACE is not whitespace", "in": "\u200Btext\u200B", "value": "\u200Btext\u200B", "remarks": null },
+    { "name": "U+180E MONGOLIAN VOWEL SEPARATOR is not whitespace", "in": "\u180Etext\u180E", "value": "\u180Etext\u180E", "remarks": null },
+    { "name": "a character outside the Basic Multilingual Plane is kept", "in": "\uD83D\uDD12 locked", "value": "\uD83D\uDD12 locked", "remarks": null },
+    { "name": "a whitespace-only value becomes _", "in": "   ", "value": "_", "remarks": "   " },
+    { "name": "a value of line terminators only becomes _", "in": "\n\r\n", "value": "_", "remarks": "\n\r\n" },
+    { "name": "a value of mixed whitespace only becomes _", "in": "\t\u00A0\uFEFF\u3000\u2028", "value": "_", "remarks": "\t\u00A0\uFEFF\u3000\u2028" },
+    { "name": "a value that is already _ is unchanged", "in": "_", "value": "_", "remarks": null },
+    { "name": "an empty value writes no prop", "in": "", "value": null, "remarks": null }
+  ]
+}
