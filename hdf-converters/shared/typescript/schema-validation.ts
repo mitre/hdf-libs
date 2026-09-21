@@ -20,6 +20,10 @@ import addFormats from 'ajv-formats';
  * treats them as annotation-only, so a TypeScript schema test cannot see a
  * violation of them; the Go peer can. Recorded, with both sides' verdicts, as
  * tsAnnotationOnly[] in ../testdata/format-assertion-cases.json.
+ *
+ * Registering a name here overrides any real check ajv-formats might gain for
+ * it later, so if a release starts implementing one of these, drop it from the
+ * list rather than leaving the override in place.
  */
 export const ANNOTATION_ONLY_FORMATS: readonly string[] = ['iri', 'iri-reference', 'idn-email'];
 

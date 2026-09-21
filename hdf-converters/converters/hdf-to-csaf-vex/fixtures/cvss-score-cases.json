@@ -1,7 +1,7 @@
 {
   "$comment": "Shared table for the hdf-to-csaf-vex CVSS score export, read by both converters/hdf-to-csaf-vex/go/schema_validation_test.go and converters/hdf-to-csaf-vex/typescript/schema-validation.test.ts, so the completeness rule and the severity mapping are asserted against ONE definition in both languages. Each case is an HDF Cvss block as it sits on an override for `cve` whose single affectedPackages entry carries `product` as its purl or cpe; `want` is the CSAF scores[] entry the exporter must emit, or null when the block cannot satisfy the FIRST.org schema CSAF binds its version to, in which case `warning` is the message the exporter must log instead (null when the block is enrichment-only and is skipped silently). Every emitting case is additionally validated against the vendored CSAF schema, and the full output of every case is frozen as expected/cvss-<name>.csaf-vex.json by Go and asserted byte-identical by TypeScript. Data provenance: CVE-2021-44228 (Log4Shell) carries the CVSS 3.1 (10.0 CRITICAL) and CVSS 2.0 (9.3 HIGH) base vectors NVD publishes for it, against log4j-core 2.14.1, a vulnerable release; CVE-2017-5638 (Apache Struts S2-045) carries NVD's CVSS 3.0 (10.0 CRITICAL) against struts2-core 2.3.31, the last vulnerable 2.3 release; the CVSS 4.0 vector is the HDF schema's own Cvss example for CVE-2024-21762 (FortiOS SSL VPN, 7.4.2 affected per FG-IR-24-015) with its base score computed by hdf-utilities computeCvss40Score, which is parity-tested against FIRST's 4.0 reference vectors (9.3, not the 9.8 the schema example lists, which is that CVE's 3.1 score). Every vector validates under hdf-utilities validateCvssVector for its version, and every 3.1 score was recomputed with computeCvssScore.",
   "severity": {
-    "$comment": "HDF Cvss_Severity to the FIRST.org severityType enum (cvss-v3.0.json, cvss-v3.1.json and cvss-v4.0.json). The five bands are the same; FIRST spells them uppercase. CVSS 2.0 defines no qualitative severity, so cvss_v2 carries none. The tests also check these values against the enum in the vendored cvss-v3.1.json, so this table cannot drift from the schema either.",
+    "$comment": "HDF Cvss_Severity to the FIRST.org severityType enum (cvss-v3.0.json and cvss-v3.1.json, both vendored beside this file; 4.0 is held to the same enum from FIRST's published cvss-v4.0.json, which is NOT vendored here). The five bands are the same; FIRST spells them uppercase. CVSS 2.0 defines no qualitative severity, so cvss_v2 carries none. The tests also check these values against the enum in the vendored cvss-v3.1.json, so this table cannot drift from the schema either.",
     "none": "NONE",
     "low": "LOW",
     "medium": "MEDIUM",
@@ -161,7 +161,7 @@
     },
     {
       "name": "v40-complete",
-      "why": "a complete 4.0 block is keyed cvss_v4 with the same four-field rule and uppercase enum as 3.x (cvss-v4.0.json)",
+      "why": "a complete 4.0 block is keyed cvss_v4 with the same four-field rule and uppercase enum as 3.x. NOTE: no cvss-v4.0.json is vendored, and CSAF 2.0 defines only cvss_v2 and cvss_v3 under scores[] (cvss_v4 arrived in CSAF 2.1), so this rule is enforced by this table and the code against FIRST's published 4.0 schema, not by the schema-validation test",
       "cve": "CVE-2024-21762",
       "product": "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*",
       "cvss": {
