@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -449,10 +450,8 @@ func TestFilter_MatchCarriesIndices(t *testing.T) {
 // baseline name carries many baselines and (name, id) repeats, the indices are
 // unique even though the names are not.
 func TestFilter_IndicesDistinguishRepeatedKeys(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("..", "testdata", "duplicate-baselines.json"))
-	require.NoError(t, err)
 	var results hdf.HDFResults
-	require.NoError(t, json.Unmarshal(data, &results))
+	require.NoError(t, json.Unmarshal(fixtures.Results.DuplicateBaselines, &results))
 	matches := Filter(context.Background(), results, Options{StatusOf: testStatusOf})
 	require.Len(t, matches, 94, "the Prisma fixture holds 94 requirements across 16 baselines")
 	seenKey := map[string]int{}

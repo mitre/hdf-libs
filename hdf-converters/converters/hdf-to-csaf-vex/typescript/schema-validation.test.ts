@@ -43,7 +43,7 @@ const sparseOverride = () =>
 describe('hdf-to-csaf-vex output validates against the OASIS CSAF v2.0 schema', () => {
   // Exactly the golden parity inputs, so no frozen golden escapes the schema.
   it.each([
-    ['sec-vex-amendments.json', () => readFileSync(join(__dirname, '..', 'fixtures', 'input', 'sec-vex-amendments.json'), 'utf-8')],
+    ['sec-vex-amendments.json', () => sharedAmendments.multiCve.read()],
     ['uc-01-fixed-amendments.json', () => sharedAmendments.uc01Fixed.read()],
   ])('%s', (name, load) => {
     assertSchemaValid(validate, name, JSON.parse(convertHdfToCsafVex(load(), TEST_VERSION)));

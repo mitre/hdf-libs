@@ -7,20 +7,32 @@ import (
 	"testing"
 	"time"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// loadMergeFixture reads one of the shared merge fixtures — committed copies of
-// real converter expected output (gosec real, ZAP webgoat, grype tensorflow).
-// test/merge.test.ts reads the SAME files and asserts the SAME expectations, so
-// the two Merge implementations are held to one cross-language contract.
+// loadMergeFixture reads one of the merge fixtures — committed copies of real
+// converter expected output. merge-grype/merge-zap live in the shared corpus
+// (@mitre/hdf-fixtures), read here and by hdf-cli's MCP tests; merge-gosec is
+// still local to this package. test/merge.test.ts reads the SAME files and
+// asserts the SAME expectations, so the two Merge implementations are held to
+// one cross-language contract.
 func loadMergeFixture(t *testing.T, name string) hdf.HDFResults {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "testdata", name))
-	require.NoError(t, err)
+	var data []byte
+	switch name {
+	case "merge-grype.json":
+		data = fixtures.Results.MergeGrype
+	case "merge-zap.json":
+		data = fixtures.Results.MergeZap
+	default:
+		var err error
+		data, err = os.ReadFile(filepath.Join("..", "testdata", name))
+		require.NoError(t, err)
+	}
 	var results hdf.HDFResults
 	require.NoError(t, json.Unmarshal(data, &results))
 	return results

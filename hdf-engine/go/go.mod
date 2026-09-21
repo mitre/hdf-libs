@@ -4,6 +4,7 @@ go 1.26.6
 
 require (
 	github.com/dlclark/regexp2 v1.12.0
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.6.0
 	github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 v3.6.0
@@ -28,3 +29,5 @@ replace github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3 => ../../hdf-schema/t
 replace github.com/mitre/hdf-libs/hdf-utilities/go/v3 => ../../hdf-utilities/go
 
 replace github.com/mitre/hdf-libs/hdf-parsers/go/v3 => ../../hdf-parsers/go
+
+replace github.com/mitre/hdf-libs/hdf-fixtures/v3 => ../../hdf-fixtures
