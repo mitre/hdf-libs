@@ -156,7 +156,8 @@ Never fabricate fixture data. Every converter fixture must be one of:
 
 1. Real tool output from an actual run or public CI pipeline
 2. Copied/adapted from heimdall2 (`~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/`) or SAF CLI (`~/repos/saf/test/sample_data/`)
-3. Validated against the format's official schema (JSON Schema, XSD, etc.) with proof logged in a comment or commit message
+3. Validated against the format's official schema (JSON Schema, XSD, etc.), which is vendored beside the fixtures and recorded in `provenance.json`; the validation result goes in the directory's `provenance.txt`, not only in a commit message
+4. Synthetic by construction — the `empty.*` no-findings input, which converts to nothing and is asserted by its own test; the snapshot harness exempts it by name
 
 If no real data source exists and no schema exists to validate against, **stop and ask** — do not invent data. A converter tested against fabricated fixtures is untrusted: the fixture determines whether the converter works on real data; if the fixture is fake, the test proves nothing.
 
