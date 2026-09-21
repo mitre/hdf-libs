@@ -343,9 +343,9 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 	extras := map[string]interface{}{
 		"cveid": []interface{}{vuln.ID},
 	}
-	// Legacy: retain the cvss_base_score tag for one release so existing
-	// downstream queries keep working. Marked for removal in v3.4.0; the
-	// CHANGELOG carries the deprecation note.
+	// Legacy: retain the cvss_base_score tag so existing downstream queries keep
+	// working. Removing it drops a tag consumers may key on, so the removal is
+	// deferred to the next major (v4.0.0) rather than shipped in a minor.
 	if vuln.CVSS > 0 {
 		extras["cvss_base_score"] = vuln.CVSS
 	}
