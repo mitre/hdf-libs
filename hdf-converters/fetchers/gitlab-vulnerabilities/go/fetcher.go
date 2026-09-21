@@ -29,13 +29,19 @@ const (
 	fetchTimeout = 10 * time.Minute
 	// maxResponseSize caps each GraphQL response body.
 	maxResponseSize = 25 * 1024 * 1024
-	// maxPages bounds every pagination loop (vulnerabilities and projects).
-	maxPages = 200
+	// maxPages bounds every pagination loop (vulnerabilities, projects and
+	// nested histories). At the default page size it admits 12500 findings.
+	maxPages = 500
 	// pageSize is the default `first:` argument. GitLab caps GraphQL query
-	// complexity at 250 for authenticated requests; the full Vulnerability node
-	// selection at first:100 scores 276 and is rejected, while 50 fits with
-	// room to spare. Fields are never dropped to fit — the page shrinks instead.
-	pageSize = 50
+	// complexity at 250 for authenticated requests and the full Vulnerability
+	// node selection costs roughly 1.1 per finding, so 25 scores 214 and keeps
+	// headroom for the next field the converter needs. Fields are never dropped
+	// to fit — the page shrinks instead.
+	pageSize = 25
+	// historyPageSize is the `first:` argument for the follow-up query that
+	// completes a truncated nested history. That query selects one finding, so
+	// it can afford a page the hot query cannot.
+	historyPageSize = 100
 	// graphqlPath is GitLab's GraphQL endpoint.
 	graphqlPath = "/api/graphql"
 	toolName    = "GitLab"
@@ -51,9 +57,13 @@ var pageQuery string
 //go:embed queries/group.graphql
 var groupQuery string
 
-// Params holds parameters for a Vulnerability Report fetch. Exactly one of
+//go:embed queries/history.graphql
+var historyQuery string
+
+// GitLabVulnerabilitiesParams holds parameters for a Vulnerability Report
+// fetch. Exactly one of
 // Project or Group is required.
-type Params struct {
+type GitLabVulnerabilitiesParams struct {
 	// URL is the GitLab instance base URL (required).
 	URL string
 	// Project is the full path of one project (namespace/project).
@@ -82,14 +92,15 @@ type Params struct {
 }
 
 // Fetcher reads the Vulnerability Report for one project or a whole group.
-type Fetcher struct {
+type GitLabVulnerabilitiesFetcher struct {
 	client *http.Client
-	params Params
+	params GitLabVulnerabilitiesParams
 }
 
-// NewFetcher creates a fetcher after validating the server URL and the
+// NewGitLabVulnerabilitiesFetcher creates a fetcher after validating the
+// server URL and the
 // project/group selection. The token is resolved at fetch time.
-func NewFetcher(params Params, tlsOpts shared.TLSOptions) (*Fetcher, error) {
+func NewGitLabVulnerabilitiesFetcher(params GitLabVulnerabilitiesParams, tlsOpts shared.TLSOptions) (*GitLabVulnerabilitiesFetcher, error) {
 	if err := validateParams(params); err != nil {
 		return nil, err
 	}
@@ -102,22 +113,20 @@ func NewFetcher(params Params, tlsOpts shared.TLSOptions) (*Fetcher, error) {
 	// follow one keeps the token on the host the user named; the 3xx then
 	// fails as a non-200 response.
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	return &Fetcher{client: client, params: params}, nil
+	return &GitLabVulnerabilitiesFetcher{client: client, params: params}, nil
 }
 
-// NewFetcherWithClient creates a fetcher with an injected HTTP client. Use
-// this when the caller controls TLS/auth/transport (proxies, MFA, vaults,
-// mocked clients in tests). Redirect handling is the caller's responsibility
-// too: the default constructor refuses redirects so the token never follows
-// one to another host.
-func NewFetcherWithClient(params Params, client *http.Client) (*Fetcher, error) {
+// NewGitLabVulnerabilitiesFetcherWithClient creates a fetcher with an injected
+// HTTP client, for callers that own TLS, auth and transport. Refusing redirects
+// so the token never follows one to another host becomes their job too.
+func NewGitLabVulnerabilitiesFetcherWithClient(params GitLabVulnerabilitiesParams, client *http.Client) (*GitLabVulnerabilitiesFetcher, error) {
 	if err := validateParams(params); err != nil {
 		return nil, err
 	}
-	return &Fetcher{client: client, params: params}, nil
+	return &GitLabVulnerabilitiesFetcher{client: client, params: params}, nil
 }
 
-func validateParams(p Params) error {
+func validateParams(p GitLabVulnerabilitiesParams) error {
 	if p.URL == "" {
 		return fmt.Errorf("%s: URL is required", errPrefix)
 	}
@@ -136,28 +145,37 @@ func validateParams(p Params) error {
 	return nil
 }
 
-func (f *Fetcher) pageSize() int {
+func (f *GitLabVulnerabilitiesFetcher) pageSize() int {
 	if f.params.PageSize > 0 {
 		return f.params.PageSize
 	}
 	return pageSize
 }
 
-func (f *Fetcher) maxPages() int {
+func (f *GitLabVulnerabilitiesFetcher) maxPages() int {
 	if f.params.MaxPages > 0 {
 		return f.params.MaxPages
 	}
 	return maxPages
 }
 
-func (f *Fetcher) maxResponseSize() int64 {
+func (f *GitLabVulnerabilitiesFetcher) maxResponseSize() int64 {
 	if f.params.MaxResponseSize != 0 {
 		return f.params.MaxResponseSize
 	}
 	return maxResponseSize
 }
 
-func (f *Fetcher) now() time.Time {
+// filters reports the selection this fetch narrowed to, or nil when it asked
+// for everything.
+func (f *GitLabVulnerabilitiesFetcher) filters() *converter.Filters {
+	if len(f.params.States) == 0 && len(f.params.ReportTypes) == 0 {
+		return nil
+	}
+	return &converter.Filters{States: f.params.States, ReportTypes: f.params.ReportTypes}
+}
+
+func (f *GitLabVulnerabilitiesFetcher) now() time.Time {
 	if f.params.Clock != nil {
 		return f.params.Clock().UTC()
 	}
@@ -194,7 +212,7 @@ func (e graphqlError) tolerable() bool {
 	return ok && field == "currentLicense"
 }
 
-func (f *Fetcher) post(ctx context.Context, token, query string, variables map[string]any) (json.RawMessage, error) {
+func (f *GitLabVulnerabilitiesFetcher) post(ctx context.Context, token, query string, variables map[string]any) (json.RawMessage, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -263,7 +281,7 @@ type probeData struct {
 	Project *converter.Project `json:"project"`
 }
 
-func (f *Fetcher) probe(ctx context.Context, token, fullPath string) (*probeData, error) {
+func (f *GitLabVulnerabilitiesFetcher) probe(ctx context.Context, token, fullPath string) (*probeData, error) {
 	data, err := f.post(ctx, token, probeQuery, map[string]any{"fullPath": fullPath})
 	if err != nil {
 		return nil, err
@@ -283,8 +301,10 @@ func (f *Fetcher) probe(ctx context.Context, token, fullPath string) (*probeData
 
 // --- Pages ---
 
+// pageData keeps Project a pointer so a null project is an error rather than a
+// zero value that would read as "this project has no vulnerabilities".
 type pageData struct {
-	Project struct {
+	Project *struct {
 		FullPath  string `json:"fullPath"`
 		Pipelines *struct {
 			Nodes []json.RawMessage `json:"nodes"`
@@ -299,7 +319,138 @@ type pageData struct {
 	} `json:"project"`
 }
 
-func (f *Fetcher) pageVariables(fullPath, ref string, after *string, withPipeline bool) map[string]any {
+// nestedConnection is one of a vulnerability's own connections as the page
+// query returns it, with enough of pageInfo to tell a complete list from a
+// truncated one.
+type nestedConnection struct {
+	PageInfo struct {
+		HasNextPage bool    `json:"hasNextPage"`
+		EndCursor   *string `json:"endCursor"`
+	} `json:"pageInfo"`
+	Nodes []json.RawMessage `json:"nodes"`
+}
+
+type nodeHistories struct {
+	ID                string           `json:"id"`
+	StateTransitions  nestedConnection `json:"stateTransitions"`
+	SeverityOverrides nestedConnection `json:"severityOverrides"`
+}
+
+type historyData struct {
+	Vulnerability *nodeHistories `json:"vulnerability"`
+}
+
+// completeHistories replaces every node whose nested history GitLab truncated
+// with one carrying the whole connection. The page query keeps its nested
+// pages small to stay inside the complexity limit, and both connections are
+// oldest-first, so a truncated list hides the newest transition — the very one
+// the converter reads as the governing decision.
+func (f *GitLabVulnerabilitiesFetcher) completeHistories(ctx context.Context, token string, nodes []json.RawMessage) error {
+	for i, raw := range nodes {
+		var h nodeHistories
+		if err := json.Unmarshal(raw, &h); err != nil {
+			return fmt.Errorf("%s: invalid vulnerability node: %w", errPrefix, err)
+		}
+		if !h.StateTransitions.PageInfo.HasNextPage && !h.SeverityOverrides.PageInfo.HasNextPage {
+			continue
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		transitions, err := f.drainHistory(ctx, token, h.ID, transitionsField, h.StateTransitions)
+		if err != nil {
+			return err
+		}
+		overrides, err := f.drainHistory(ctx, token, h.ID, overridesField, h.SeverityOverrides)
+		if err != nil {
+			return err
+		}
+		patched, err := patchHistories(raw, transitions, overrides)
+		if err != nil {
+			return err
+		}
+		nodes[i] = patched
+	}
+	return nil
+}
+
+const (
+	transitionsField = "stateTransitions"
+	overridesField   = "severityOverrides"
+)
+
+// drainHistory pages one connection to its end, starting from what the page
+// query already returned.
+func (f *GitLabVulnerabilitiesFetcher) drainHistory(ctx context.Context, token, id, field string, have nestedConnection) ([]json.RawMessage, error) {
+	nodes := append([]json.RawMessage(nil), have.Nodes...)
+	hasNext, after := have.PageInfo.HasNextPage, have.PageInfo.EndCursor
+	for page := 0; hasNext; page++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if page >= f.maxPages() {
+			return nil, fmt.Errorf("%s: the %s of %s exceeded the maximum page limit (%d); refusing to return a partial history", errPrefix, field, id, f.maxPages())
+		}
+		if after == nil || *after == "" {
+			return nil, fmt.Errorf("%s: GitLab reported more %s for %s but no cursor to fetch them", errPrefix, field, id)
+		}
+		vars := map[string]any{
+			"id":               id,
+			"first":            historyPageSize,
+			"transitionsAfter": nil,
+			"overridesAfter":   nil,
+			"withTransitions":  field == transitionsField,
+			"withOverrides":    field == overridesField,
+		}
+		if field == transitionsField {
+			vars["transitionsAfter"] = after
+		} else {
+			vars["overridesAfter"] = after
+		}
+		data, err := f.post(ctx, token, historyQuery, vars)
+		if err != nil {
+			return nil, err
+		}
+		var hd historyData
+		if err := json.Unmarshal(data, &hd); err != nil {
+			return nil, fmt.Errorf("%s: invalid %s response: %w", errPrefix, field, err)
+		}
+		if hd.Vulnerability == nil {
+			return nil, fmt.Errorf("%s: asked for the %s of %s and GitLab returned no vulnerability", errPrefix, field, id)
+		}
+		conn := hd.Vulnerability.StateTransitions
+		if field == overridesField {
+			conn = hd.Vulnerability.SeverityOverrides
+		}
+		nodes = append(nodes, conn.Nodes...)
+		hasNext, after = conn.PageInfo.HasNextPage, conn.PageInfo.EndCursor
+	}
+	return nodes, nil
+}
+
+// patchHistories rewrites the two connections with their complete node lists.
+// The node is re-marshalled from a map, so a repaired node's keys come out
+// sorted rather than in GitLab's order; only the ordering differs.
+func patchHistories(raw json.RawMessage, transitions, overrides []json.RawMessage) (json.RawMessage, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return nil, fmt.Errorf("%s: invalid vulnerability node: %w", errPrefix, err)
+	}
+	for field, complete := range map[string][]json.RawMessage{transitionsField: transitions, overridesField: overrides} {
+		body, err := json.Marshal(map[string][]json.RawMessage{"nodes": complete})
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to reassemble %s: %w", errPrefix, field, err)
+		}
+		fields[field] = body
+	}
+	out, err := json.Marshal(fields)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to reassemble vulnerability node: %w", errPrefix, err)
+	}
+	return out, nil
+}
+
+func (f *GitLabVulnerabilitiesFetcher) pageVariables(fullPath, ref string, after *string, withPipeline bool) map[string]any {
 	vars := map[string]any{
 		"fullPath":     fullPath,
 		"ref":          ref,
@@ -322,8 +473,12 @@ func (f *Fetcher) pageVariables(fullPath, ref string, after *string, withPipelin
 // converter.Envelope with the vulnerability nodes kept as raw JSON so
 // nothing GitLab returned is re-shaped in transit.
 type envelope struct {
-	Metadata        converter.Metadata `json:"metadata"`
-	Project         projectBlock       `json:"project"`
+	Metadata converter.Metadata `json:"metadata"`
+	Project  projectBlock       `json:"project"`
+	// Filters records the selection this fetch asked for. Without it a zero-row
+	// filtered result is indistinguishable from a project with no findings,
+	// because the ingestion signals it would be judged against are unfiltered.
+	Filters         *converter.Filters `json:"filters,omitempty"`
 	Vulnerabilities []json.RawMessage  `json:"vulnerabilities"`
 	FetchedAt       string             `json:"fetchedAt"`
 }
@@ -335,7 +490,7 @@ type projectBlock struct {
 	LatestDefaultBranchPipeline json.RawMessage `json:"latestDefaultBranchPipeline"`
 }
 
-func (f *Fetcher) fetchProject(ctx context.Context, token, fullPath string) ([]byte, error) {
+func (f *GitLabVulnerabilitiesFetcher) fetchProject(ctx context.Context, token, fullPath string) ([]byte, error) {
 	p, err := f.probe(ctx, token, fullPath)
 	if err != nil {
 		return nil, err
@@ -348,8 +503,9 @@ func (f *Fetcher) fetchProject(ctx context.Context, token, fullPath string) ([]b
 	env := envelope{
 		Metadata:        p.Metadata,
 		Project:         projectBlock{Project: *p.Project, LatestDefaultBranchPipeline: json.RawMessage("null")},
+		Filters:         f.filters(),
 		Vulnerabilities: make([]json.RawMessage, 0),
-		FetchedAt:       f.now().Format("2006-01-02T15:04:05Z"),
+		FetchedAt:       f.now().Format(time.RFC3339),
 	}
 
 	var after *string
@@ -368,6 +524,12 @@ func (f *Fetcher) fetchProject(ctx context.Context, token, fullPath string) ([]b
 		if err := json.Unmarshal(data, &pd); err != nil {
 			return nil, fmt.Errorf("%s: invalid page response: %w", errPrefix, err)
 		}
+		if pd.Project == nil {
+			return nil, fmt.Errorf("%s: page %d of %s came back with no project; access may have changed mid-fetch", errPrefix, page+1, fullPath)
+		}
+		if pd.Project.FullPath != fullPath {
+			return nil, fmt.Errorf("%s: asked for %s but page %d described %s", errPrefix, fullPath, page+1, pd.Project.FullPath)
+		}
 		if page == 0 && pd.Project.Pipelines != nil && len(pd.Project.Pipelines.Nodes) > 0 {
 			env.Project.LatestDefaultBranchPipeline = pd.Project.Pipelines.Nodes[0]
 		}
@@ -379,6 +541,10 @@ func (f *Fetcher) fetchProject(ctx context.Context, token, fullPath string) ([]b
 			return nil, fmt.Errorf("%s: GitLab reported another page of %s but no cursor to fetch it", errPrefix, fullPath)
 		}
 		after = pd.Project.Vulnerabilities.PageInfo.EndCursor
+	}
+
+	if err := f.completeHistories(ctx, token, env.Vulnerabilities); err != nil {
+		return nil, err
 	}
 
 	out, err := json.Marshal(env)
@@ -401,7 +567,7 @@ func (f *Fetcher) fetchProject(ctx context.Context, token, fullPath string) ([]b
 
 // Fetch reads one project's Vulnerability Report and returns the assembled
 // envelope. In group mode use FetchGroup.
-func (f *Fetcher) Fetch(ctx context.Context) ([]byte, error) {
+func (f *GitLabVulnerabilitiesFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	if f.params.Project == "" {
 		return nil, fmt.Errorf("%s: Fetch needs a project; use FetchGroup for a group", errPrefix)
 	}
@@ -429,7 +595,7 @@ type GroupResult struct {
 // FetchGroup reads the Vulnerability Report of every non-archived project in
 // the group (subgroups included unless excluded) and returns one result per
 // project, in the order GitLab listed them.
-func (f *Fetcher) FetchGroup(ctx context.Context) ([]GroupResult, error) {
+func (f *GitLabVulnerabilitiesFetcher) FetchGroup(ctx context.Context) ([]GroupResult, error) {
 	if f.params.Group == "" {
 		return nil, fmt.Errorf("%s: FetchGroup needs a group; use Fetch for a project", errPrefix)
 	}
@@ -473,7 +639,7 @@ type groupData struct {
 	} `json:"group"`
 }
 
-func (f *Fetcher) listProjects(ctx context.Context, token string) ([]string, error) {
+func (f *GitLabVulnerabilitiesFetcher) listProjects(ctx context.Context, token string) ([]string, error) {
 	var paths []string
 	var after *string
 	for page := 0; ; page++ {
@@ -545,7 +711,7 @@ type ProjectDiagnosis struct {
 
 // Verify performs the probe only — no vulnerabilities are downloaded — and
 // reports the tier and ingestion diagnosis. It backs the CLI --check flag.
-func (f *Fetcher) Verify(ctx context.Context) (*Diagnosis, error) {
+func (f *GitLabVulnerabilitiesFetcher) Verify(ctx context.Context) (*Diagnosis, error) {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, fetchTimeout)
@@ -610,7 +776,7 @@ func (d *Diagnosis) String() string {
 	return b.String()
 }
 
-func (f *Fetcher) token() (string, error) {
+func (f *GitLabVulnerabilitiesFetcher) token() (string, error) {
 	apiURL, err := shared.ValidateAndBuildAPIURL(f.params.URL, graphqlPath, toolName)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", errPrefix, err)

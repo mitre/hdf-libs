@@ -10,10 +10,8 @@
             "ref": "main",
             "status": "SUCCESS",
             "createdAt": "2026-09-20T19:38:48Z",
-            "finishedAt": "2026-09-20T19:38:56Z",
             "securityReportSummary": {
               "sast": {
-                "vulnerabilitiesCount": 0,
                 "scans": {
                   "nodes": [
                     {

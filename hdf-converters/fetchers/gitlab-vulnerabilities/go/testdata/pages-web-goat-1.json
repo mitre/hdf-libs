@@ -10,11 +10,9 @@
             "ref": "main",
             "status": "SUCCESS",
             "createdAt": "2026-09-20T19:22:49Z",
-            "finishedAt": "2026-09-20T19:22:59Z",
             "securityReportSummary": {
               "sast": null,
               "secretDetection": {
-                "vulnerabilitiesCount": 0,
                 "scans": {
                   "nodes": [
                     {

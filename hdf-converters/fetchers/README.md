@@ -66,8 +66,8 @@ config file (gitlab and gitlab-vulnerabilities: `GITLAB_TOKEN`, `GLAB_TOKEN`,
 glab config; defectdojo: `DEFECTDOJO_API_TOKEN`; sonarqube: `SONARQUBE_TOKEN`;
 splunk: `SPLUNK_TOKEN`). It never accepts a token as a parameter, never logs
 it, and never lets it into an error message. This is the deliberate Go
-convention (ruling 2026-09-20); the auth-agnostic rule below is the TypeScript
-convention, where the caller supplies a pre-authenticated transport instead.
+convention; the auth-agnostic rule below is the TypeScript convention, where
+the caller supplies a pre-authenticated transport instead.
 Note that the injection constructor hands the caller control of transport and
 TLS only: the token is still resolved from the environment in both
 constructors.

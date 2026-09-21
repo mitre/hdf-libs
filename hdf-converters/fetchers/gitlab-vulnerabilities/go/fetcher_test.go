@@ -67,7 +67,12 @@ func replayServer(t *testing.T, project string, pages []string, calls *[]recorde
 			assert.Equal(t, project, req.Variables["fullPath"])
 			idx := 0
 			if after, _ := req.Variables["after"].(string); after != "" {
-				idx = 1
+				for i, name := range pages {
+					if endCursorOf(t, testdata(t, name)) == after {
+						idx = i + 1
+						break
+					}
+				}
 			}
 			require.Less(t, idx, len(pages), "unexpected extra page request")
 			_, _ = w.Write(testdata(t, pages[idx]))
@@ -94,17 +99,17 @@ func operationName(query string) string {
 func TestFetch_PaginatesAndAssemblesEnvelope(t *testing.T) {
 	var calls []recordedRequest
 	var hits int32
-	srv := replayServer(t, "security-demo/juice-shop", []string{"pages-juice-shop-1.json", "pages-juice-shop-2.json"}, &calls, &hits)
+	srv := replayServer(t, "security-demo/juice-shop", []string{"pages-juice-shop-1.json", "pages-juice-shop-2.json", "pages-juice-shop-3.json", "pages-juice-shop-4.json"}, &calls, &hits)
 	defer srv.Close()
 	t.Setenv("GITLAB_TOKEN", testToken)
 
-	f, err := NewFetcher(Params{URL: srv.URL, Project: "security-demo/juice-shop", PageSize: 50, Clock: fixedClock}, shared.TLSOptions{})
+	f, err := NewGitLabVulnerabilitiesFetcher(GitLabVulnerabilitiesParams{URL: srv.URL, Project: "security-demo/juice-shop", PageSize: 50, Clock: fixedClock}, shared.TLSOptions{})
 	require.NoError(t, err)
 
 	data, err := f.Fetch(context.Background())
 	require.NoError(t, err)
 
-	require.Len(t, calls, 3, "one probe, then one request per page")
+	require.Len(t, calls, 5, "one probe, then one request per page")
 	assert.Equal(t, "VulnerabilityReportProbe", calls[0].operation)
 	assert.Equal(t, "VulnerabilityReportPage", calls[1].operation)
 	assert.Equal(t, "master", calls[1].variables["ref"], "the default branch from the probe drives the pipeline lookup")
@@ -129,15 +134,15 @@ func TestFetch_PaginatesAndAssemblesEnvelope(t *testing.T) {
 
 	var env converter.Envelope
 	require.NoError(t, json.Unmarshal(data, &env))
-	assert.Len(t, env.Vulnerabilities, 97, "both pages concatenated")
+	assert.Len(t, env.Vulnerabilities, 100, "every page concatenated")
 	assert.Equal(t, "security-demo/juice-shop", env.Project.FullPath)
 	assert.Equal(t, "gid://gitlab/Project/1", env.Project.ID)
 	assert.True(t, env.Metadata.Enterprise)
 	assert.Equal(t, "18.9.1-ee", env.Metadata.Version)
 	require.NotNil(t, env.Project.VulnerabilityStatistic)
-	assert.Equal(t, 89, env.Project.VulnerabilityStatistic.Total)
+	assert.Equal(t, 177, env.Project.VulnerabilityStatistic.Total)
 	require.NotNil(t, env.Project.LatestDefaultBranchPipeline, "page 1 carries the latest default-branch pipeline")
-	assert.Equal(t, "5", env.Project.LatestDefaultBranchPipeline.IID)
+	assert.Equal(t, "8", env.Project.LatestDefaultBranchPipeline.IID)
 	assert.Equal(t, "2026-09-20T19:50:18Z", env.FetchedAt)
 
 	// The assembled bytes are exactly what the converter consumes.

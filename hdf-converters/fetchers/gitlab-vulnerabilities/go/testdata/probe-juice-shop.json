@@ -46,21 +46,23 @@
         ],
         "enabled": [
           "SAST",
+          "DEPENDENCY_SCANNING",
           "SECRET_DETECTION"
         ],
         "pipelineRun": [
           "SAST",
+          "DEPENDENCY_SCANNING",
           "SECRET_DETECTION"
         ]
       },
       "vulnerabilityStatistic": {
-        "total": 89,
-        "critical": 36,
-        "high": 1,
-        "medium": 50,
-        "low": 2,
+        "total": 177,
+        "critical": 43,
+        "high": 42,
+        "medium": 78,
+        "low": 4,
         "info": 0,
-        "unknown": 0
+        "unknown": 10
       }
     }
   }
