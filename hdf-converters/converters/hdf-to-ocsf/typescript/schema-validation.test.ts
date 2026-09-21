@@ -22,17 +22,14 @@ const validators: Record<number, ReturnType<typeof loadSchemaValidator>> = {
 // rather than tolerated: a new violation fails, and so does fixing one, so it
 // cannot drift either way.
 //
-// cloud and osint are not base members of either class: in the OCSF metaschema
-// (1.8.0 and 1.9.0 alike) each is contributed by the profile of the same name
-// and required only under that profile. The vendored export was taken with every
-// profile enabled, so it requires both; the converter applies neither profile and
-// HDF carries no OSINT indicators to populate one honestly. Reconciling the two
-// is a schema-vendoring decision, not a mapping fix.
+// It is empty, and that is the point: the converter's output conforms to both
+// vendored class schemas. Keep it that way — if a change makes this test fail,
+// fix the output rather than adding an entry here.
 //
 // The key includes params.additionalProperty so an additionalProperties error
 // names the offending member, matching gojsonschema. Keying on the message alone
 // collapses every extra member into one entry and hides a newly added one.
-const KNOWN_VIOLATIONS = ['2002|required|cloud', '2002|required|osint', '2003|required|cloud', '2003|required|osint'].sort();
+const KNOWN_VIOLATIONS: string[] = [];
 
 function violations(out: string): Set<string> {
   const seen = new Set<string>();

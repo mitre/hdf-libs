@@ -40,18 +40,10 @@ func classSchemas(t *testing.T) map[float64]*gojsonschema.Schema {
 // tolerated: a new violation fails this test, and fixing one fails it too, so the
 // list cannot drift in either direction without someone noticing.
 //
-// cloud and osint are not base members of either class: in the OCSF metaschema
-// (1.8.0 and 1.9.0 alike) each is contributed by the profile of the same name
-// and required only under that profile. The vendored export was taken with every
-// profile enabled, so it requires both; the converter applies neither profile and
-// HDF carries no OSINT indicators to populate one honestly. Reconciling the two
-// is a schema-vendoring decision, not a mapping fix.
-var knownViolations = map[string]bool{
-	"2002|required|cloud is required": true,
-	"2002|required|osint is required": true,
-	"2003|required|cloud is required": true,
-	"2003|required|osint is required": true,
-}
+// It is empty, and that is the point: the converter's output conforms to both
+// vendored class schemas. Keep it that way — if a change makes this test fail,
+// fix the output rather than adding an entry here.
+var knownViolations = map[string]bool{}
 
 // violationsFor validates one NDJSON document set and returns the distinct
 // violation keys it produced.
