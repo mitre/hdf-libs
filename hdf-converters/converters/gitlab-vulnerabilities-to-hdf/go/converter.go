@@ -20,7 +20,6 @@ import (
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
-	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cwe"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -40,8 +39,34 @@ const (
 type Envelope struct {
 	Metadata        Metadata        `json:"metadata"`
 	Project         Project         `json:"project"`
+	Filters         *Filters        `json:"filters,omitempty"`
 	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
 	FetchedAt       string          `json:"fetchedAt"`
+}
+
+// Filters is the selection the fetch narrowed to. It is what tells a zero-row
+// result apart from a project with no findings, because the ingestion signals
+// an empty report is judged against are unfiltered.
+type Filters struct {
+	States      []string `json:"states,omitempty"`
+	ReportTypes []string `json:"reportTypes,omitempty"`
+}
+
+// Active reports whether the fetch narrowed the result at all.
+func (f *Filters) Active() bool {
+	return f != nil && (len(f.States) > 0 || len(f.ReportTypes) > 0)
+}
+
+// Describe renders the selection for an operator reading the output.
+func (f *Filters) Describe() string {
+	var parts []string
+	if len(f.States) > 0 {
+		parts = append(parts, "states "+strings.Join(f.States, ", "))
+	}
+	if len(f.ReportTypes) > 0 {
+		parts = append(parts, "report types "+strings.Join(f.ReportTypes, ", "))
+	}
+	return strings.Join(parts, "; ")
 }
 
 // Metadata is GraphQL `metadata { enterprise version }`.
@@ -98,14 +123,12 @@ type Pipeline struct {
 	Ref                   string                     `json:"ref"`
 	Status                string                     `json:"status"`
 	CreatedAt             string                     `json:"createdAt"`
-	FinishedAt            string                     `json:"finishedAt"`
 	SecurityReportSummary map[string]*SummarySection `json:"securityReportSummary"`
 }
 
 // SummarySection is one report type's ingestion summary.
 type SummarySection struct {
-	VulnerabilitiesCount int `json:"vulnerabilitiesCount"`
-	Scans                struct {
+	Scans struct {
 		Nodes []Scan `json:"nodes"`
 	} `json:"scans"`
 }
@@ -217,6 +240,7 @@ type CVSSEntry struct {
 // depends on Typename.
 type Location struct {
 	Typename         string      `json:"__typename"`
+	Description      string      `json:"description"`
 	File             string      `json:"file"`
 	StartLine        *string     `json:"startLine"`
 	EndLine          *string     `json:"endLine"`
@@ -298,6 +322,15 @@ func parseInput(input []byte) (*Envelope, error) {
 	if !env.Metadata.Enterprise {
 		return nil, fmt.Errorf("%s: GitLab Community Edition has no Vulnerability Report; use the gitlab (CI artifact) converter instead", converterName)
 	}
+	// A nil slice decodes identically from an absent field, an explicit null and
+	// an empty array. Only the last is an empty report, so check the raw JSON.
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(input, &fields); err != nil {
+		return nil, fmt.Errorf("%s: invalid envelope JSON: %w", converterName, err)
+	}
+	if raw, ok := fields["vulnerabilities"]; !ok || len(bytes.TrimSpace(raw)) == 0 || bytes.TrimSpace(raw)[0] != '[' {
+		return nil, fmt.Errorf("%s: envelope has no vulnerabilities array; an absent or null list is a malformed envelope, not an empty report", converterName)
+	}
 	return &env, nil
 }
 
@@ -351,9 +384,10 @@ func IngestionError(env *Envelope) error {
 			case "":
 				failed = append(failed, reportType+": status unknown")
 			default:
+				notes := append(append([]string(nil), scan.Errors...), scan.Warnings...)
 				desc := reportType + ": " + scan.Status
-				if len(scan.Errors) > 0 {
-					desc += " (" + strings.Join(scan.Errors, "; ") + ")"
+				if len(notes) > 0 {
+					desc += " (" + strings.Join(notes, "; ") + ")"
 				}
 				failed = append(failed, desc)
 			}
@@ -420,7 +454,11 @@ func ConvertGitlabVulnerabilitiesToHDF(input []byte, converterVersion string) (*
 		if err := IngestionError(env); err != nil {
 			return nil, err
 		}
-		baselines = noFindingsBaselines(env, fetchedAt, resultsChecksum)
+		if env.Filters.Active() {
+			baselines = filteredNoMatchBaselines(env, fetchedAt, resultsChecksum)
+		} else {
+			baselines = noFindingsBaselines(env, fetchedAt, resultsChecksum)
+		}
 	} else {
 		baselines = findingBaselines(env, fetchedAt, resultsChecksum)
 	}
@@ -515,6 +553,31 @@ func noFindingsBaselines(env *Envelope, fetchedAt time.Time, checksum *hdf.Check
 	}}
 }
 
+// filteredNoMatchBaselines renders "nothing matched what you asked for",
+// deliberately not the no-findings wording: this describes the selection, not
+// the project.
+func filteredNoMatchBaselines(env *Envelope, fetchedAt time.Time, checksum *hdf.Checksum) []hdf.EvaluatedBaseline {
+	selection := env.Filters.Describe()
+	req := shared.BuildNoFindingsRequirement(
+		"gitlab-vulnerability-report-no-match",
+		fmt.Sprintf("No vulnerability in the GitLab Vulnerability Report for %s matches the requested selection (%s). This describes the selection only, not the project's overall posture.",
+			env.Project.FullPath, selection),
+		fetchedAt,
+	)
+	req.Tags["gitlab/filtered"] = true
+	req.Tags["gitlab/filterStates"] = hdfutil.StringsToInterfaces(env.Filters.States)
+	req.Tags["gitlab/filterReportTypes"] = hdfutil.StringsToInterfaces(env.Filters.ReportTypes)
+	title := "No matching findings"
+	summary := "Filtered selection: " + selection
+	return []hdf.EvaluatedBaseline{{
+		Name:            sourceName,
+		Title:           &title,
+		Summary:         &summary,
+		Requirements:    []hdf.EvaluatedRequirement{req},
+		ResultsChecksum: checksum,
+	}}
+}
+
 // summaryKeyToReportType maps a securityReportSummary key (camelCase) to the
 // VulnerabilityReportType enum spelling.
 func summaryKeyToReportType(key string) string {
@@ -547,9 +610,8 @@ func reportTypeLabel(reportType string) string {
 	return reportType
 }
 
-// buildComponent is the provenance the issue asked the fetcher to pre-fill:
-// the repository the report describes, the branch it reflects and the commit
-// its latest default-branch pipeline scanned.
+// buildComponent describes the repository the report covers: the branch it
+// reflects and the commit its latest default-branch pipeline scanned.
 func buildComponent(p Project) hdf.Component {
 	c := hdf.Component{
 		Name: p.FullPath,
@@ -590,6 +652,7 @@ func convertVulnerability(v *Vulnerability, project Project, fetchedAt time.Time
 		Refs:               buildRefs(v),
 		Code:               &code,
 		SourceLocation:     buildSourceLocation(v.Location),
+		Cvss:               buildCvss(v),
 		VerificationMethod: shared.DeriveVerificationMethod(&code),
 		Results: []hdf.RequirementResult{{
 			Status:    rawStatus(v),
@@ -622,12 +685,27 @@ func rawStatus(v *Vulnerability) hdf.ResultStatus {
 
 // severityPair returns the scanner's original severity and the current one.
 // GitLab's `severity` already reflects human overrides, so the original is
-// recovered from the oldest override when there is one.
+// recovered from the earliest override. The connection's order is not part of
+// GitLab's contract, so the earliest is found by timestamp rather than assumed
+// to be first.
 func severityPair(v *Vulnerability) (original, current string) {
 	current = v.Severity
 	original = current
-	if n := len(v.SeverityOverrides.Nodes); n > 0 && v.SeverityOverrides.Nodes[0].OriginalSeverity != "" {
-		original = v.SeverityOverrides.Nodes[0].OriginalSeverity
+	var earliest time.Time
+	found := false
+	for _, o := range v.SeverityOverrides.Nodes {
+		if o.OriginalSeverity == "" {
+			continue
+		}
+		at := hdfutil.ParseTimestamp(o.CreatedAt)
+		switch {
+		case !found:
+			original, earliest, found = o.OriginalSeverity, at, true
+		case at.IsZero():
+			// An undated change never outranks a dated one.
+		case earliest.IsZero() || at.Before(earliest):
+			original, earliest = o.OriginalSeverity, at
+		}
 	}
 	return original, current
 }
@@ -642,6 +720,86 @@ func resultStartTime(v *Vulnerability, fetchedAt time.Time) time.Time {
 		return ts
 	}
 	return fetchedAt
+}
+
+// buildCvss maps every vendor assessment GitLab attached to the finding. The
+// entries are ordered as GitLab returned them, and GitLab's own severity band
+// is preferred over one derived from the score.
+func buildCvss(v *Vulnerability) []hdf.Cvss {
+	if len(v.CVSS) == 0 {
+		return nil
+	}
+	source := cveIdentifier(v.Identifiers)
+	out := make([]hdf.Cvss, 0, len(v.CVSS))
+	for _, e := range v.CVSS {
+		entry := shared.BuildCvss(shared.CvssInput{
+			Version:    cvssVersion(e),
+			BaseScore:  e.BaseScore,
+			BaseVector: e.Vector,
+			Source:     source,
+		})
+		if sev := cvssSeverity(e.Severity); sev != nil {
+			entry.BaseSeverity = sev
+		}
+		if e.OverallScore != nil {
+			score := *e.OverallScore
+			entry.ComputedScore = &score
+			computed := shared.CvssSeverityFromScore(score)
+			entry.ComputedSeverity = &computed
+		}
+		out = append(out, entry)
+	}
+	return out
+}
+
+// cvssVersion prefers the vector's own prefix and falls back to GitLab's
+// numeric version field, which is a float and so cannot name 3.1 exactly
+// without the comparison ladder below.
+func cvssVersion(e CVSSEntry) hdf.Version {
+	fallback := hdf.The31
+	switch {
+	case e.Version >= 4:
+		fallback = hdf.The40
+	case e.Version >= 3.1:
+		fallback = hdf.The31
+	case e.Version >= 3:
+		fallback = hdf.The30
+	case e.Version >= 2:
+		fallback = hdf.The20
+	}
+	return shared.CvssVersionFromVector(e.Vector, fallback)
+}
+
+// cvssSeverity maps GitLab's CvssSeverity enum; an unknown value yields nil so
+// the score-derived band stands instead of an invented one.
+func cvssSeverity(s string) *hdf.CVSSSeverity {
+	var out hdf.CVSSSeverity
+	switch strings.ToUpper(s) {
+	case "CRITICAL":
+		out = hdf.CVSSSeverityCritical
+	case "HIGH":
+		out = hdf.CVSSSeverityHigh
+	case "MEDIUM":
+		out = hdf.CVSSSeverityMedium
+	case "LOW":
+		out = hdf.CVSSSeverityLow
+	case "NONE":
+		out = hdf.None
+	default:
+		return nil
+	}
+	return &out
+}
+
+// cveIdentifier is what the schema's cvss[].source names: the advisory the
+// scores belong to, not the scanner that reported them.
+func cveIdentifier(identifiers []Identifier) string {
+	for _, id := range identifiers {
+		if strings.EqualFold(id.ExternalType, "cve") && id.ExternalID != "" {
+			return id.ExternalID
+		}
+	}
+	return ""
 }
 
 func buildDescriptions(v *Vulnerability) []hdf.Description {
@@ -661,7 +819,7 @@ func buildDescriptions(v *Vulnerability) []hdf.Description {
 func buildTags(v *Vulnerability, project Project, original, current string) map[string]interface{} {
 	nist := buildNistTags(v.Identifiers)
 	tags := shared.BuildNISTCCITagsWithExtras(nist, cci.NISTToCCI(nist), collectIdentifierExtras(v.Identifiers))
-	shared.MarkUnratedSeverity(tags, current)
+	shared.MarkUnratedSeverity(tags, original)
 
 	tags["gitlab/id"] = v.ID
 	tags["gitlab/uuid"] = v.UUID
@@ -723,23 +881,13 @@ func scannerTag(s *Scanner) interface{} {
 }
 
 func buildNistTags(identifiers []Identifier) []string {
-	seen := map[string]bool{}
-	var controls []string
+	var cwes []string
 	for _, id := range identifiers {
-		if !strings.EqualFold(id.ExternalType, "cwe") || id.ExternalID == "" {
-			continue
-		}
-		for _, ctrl := range cwe.NISTControls(id.ExternalID) {
-			if !seen[ctrl] {
-				seen[ctrl] = true
-				controls = append(controls, ctrl)
-			}
+		if strings.EqualFold(id.ExternalType, "cwe") && id.ExternalID != "" {
+			cwes = append(cwes, id.ExternalID)
 		}
 	}
-	if len(controls) > 0 {
-		return controls
-	}
-	return shared.DefaultStaticAnalysisNIST
+	return shared.MapCWEToNIST(cwes, shared.DefaultStaticAnalysisNIST)
 }
 
 func collectIdentifierExtras(identifiers []Identifier) map[string]interface{} {
@@ -787,18 +935,25 @@ func buildRefs(v *Vulnerability) []hdf.Reference {
 	return refs
 }
 
-// buildVulnCode renders the raw node as indented JSON for requirement.code,
-// preserving source key order so it is byte-identical to the TypeScript twin's
-// JSON.stringify(node, null, 2).
+// buildVulnCode renders the node as canonical JSON. Echoing the source layout
+// instead would make the twins disagree: one language's parser spells 3.0 where
+// the other spells 3.
 func buildVulnCode(v *Vulnerability) string {
 	if len(v.raw) == 0 {
 		return "{}"
 	}
-	var buf bytes.Buffer
-	if err := json.Indent(&buf, v.raw, "", "  "); err != nil {
+	var node interface{}
+	if err := json.Unmarshal(v.raw, &node); err != nil {
 		return "{}"
 	}
-	return buf.String()
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(node); err != nil {
+		return "{}"
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 func buildSourceLocation(loc *Location) *hdf.SourceLocation {
@@ -835,7 +990,12 @@ func buildCodeDesc(v *Vulnerability) string {
 	}
 	var parts []string
 	switch loc.Typename {
-	case "VulnerabilityLocationSast", "VulnerabilityLocationSecretDetection", "VulnerabilityLocationCoverageFuzzing", "VulnerabilityLocationGeneric":
+	case "VulnerabilityLocationGeneric":
+		// The generic location has one field and none of the file/line shape.
+		if loc.Description != "" {
+			parts = append(parts, "Location: "+loc.Description)
+		}
+	case "VulnerabilityLocationSast", "VulnerabilityLocationSecretDetection", "VulnerabilityLocationCoverageFuzzing":
 		if loc.File != "" {
 			parts = append(parts, "File: "+loc.File)
 		}
@@ -951,12 +1111,10 @@ func dismissalDecision(reason string) (decision, bool) {
 	}
 }
 
-// buildStatusOverrides replays the full state history: one override per
-// transition into a mapped state, oldest first. A revert (a transition back to
-// DETECTED) creates no override; it closes the previous one by setting its
-// expiry to the revert time, so the ladder stops it governing while the record
-// stays intact. When GitLab returned no history for a triaged finding, the
-// single governing override is synthesized from the current-state fields.
+// buildStatusOverrides replays the state history, one override per transition
+// into a mapped state. A revert creates no override of its own; it expires the
+// previous one at the revert time, so the record survives while the ladder
+// stops honouring it.
 func buildStatusOverrides(v *Vulnerability, fetchedAt time.Time) []hdf.StatusOverride {
 	scannerResolved := v.State == "RESOLVED" && v.ResolvedOnDefaultBranch
 	var overrides []hdf.StatusOverride
@@ -982,12 +1140,31 @@ func buildStatusOverrides(v *Vulnerability, fetchedAt time.Time) []hdf.StatusOve
 			return overrides
 		}
 	}
-	// No usable history for the current state: synthesize it.
+	// The history does not end at the current state, so it is stale, truncated
+	// or out of order. The current state wins: close what the history left open
+	// before synthesizing, or a decision GitLab has already moved past would
+	// keep governing the requirement.
+	closeOpenOverrides(overrides, firstTime(fetchedAt, v.UpdatedAt))
 	if d, ok := decisionFor(v.State, v.DismissalReason, scannerResolved); ok {
 		at, by := currentDecisionProvenance(v, fetchedAt)
 		overrides = append(overrides, newOverride(v, d, at, v.StateComment, by))
 	}
 	return overrides
+}
+
+// closeOpenOverrides brings every expiry back to at, never earlier than the
+// override's own appliedAt so the record stays internally consistent.
+func closeOpenOverrides(overrides []hdf.StatusOverride, at time.Time) {
+	for i := range overrides {
+		if !overrides[i].ExpiresAt.After(at) {
+			continue
+		}
+		if at.Before(overrides[i].AppliedAt) {
+			overrides[i].ExpiresAt = overrides[i].AppliedAt
+			continue
+		}
+		overrides[i].ExpiresAt = at
+	}
 }
 
 func currentDecisionProvenance(v *Vulnerability, fetchedAt time.Time) (time.Time, *User) {

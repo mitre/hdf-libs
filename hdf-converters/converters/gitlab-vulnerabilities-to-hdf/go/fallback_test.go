@@ -33,7 +33,7 @@ func TestConvert_DecisionWithoutTimestamp_IsDatedAtFetchTime(t *testing.T) {
 	require.NoError(t, err)
 	req := requirementByGID(t, result, "1")
 	require.Len(t, req.StatusOverrides, 1)
-	assert.Equal(t, "2026-09-20T19:50:18Z", stamp(req.StatusOverrides[0].AppliedAt))
-	assert.Equal(t, "2027-09-20T19:50:18Z", stamp(req.StatusOverrides[0].ExpiresAt))
-	assert.Equal(t, "2026-09-20T19:50:18Z", stamp(req.Results[0].StartTime), "the result time takes the same fallback")
+	assert.Equal(t, "2026-09-21T02:31:44Z", stamp(req.StatusOverrides[0].AppliedAt))
+	assert.Equal(t, "2027-09-21T02:31:44Z", stamp(req.StatusOverrides[0].ExpiresAt))
+	assert.Equal(t, "2026-09-21T02:31:44Z", stamp(req.Results[0].StartTime), "the result time takes the same fallback")
 }

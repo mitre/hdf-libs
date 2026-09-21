@@ -41,7 +41,8 @@ func TestConvert_MappingRows(t *testing.T) {
 	rows := []mappingRow{
 		{gid: "43", state: "DETECTED", rawStatus: hdf.Failed},
 		{gid: "97", state: "CONFIRMED", rawStatus: hdf.Failed},
-		{gid: "72", state: "RESOLVED", rawStatus: hdf.Failed, overrideType: overrideTypePtr(hdf.Attestation), overrideTo: statusPtr(hdf.Passed), effective: statusPtr(hdf.Passed), appliedAt: "2026-09-20T19:27:19Z", comment: "Fixed by validating redirect targets against an allow-list."},
+		{gid: "91", state: "RESOLVED", rawStatus: hdf.Failed, overrideType: overrideTypePtr(hdf.Attestation), overrideTo: statusPtr(hdf.Passed), effective: statusPtr(hdf.Passed), appliedAt: "2026-09-21T02:20:22Z", comment: "Reviewed with the application team and fixed in the 20.2.1 branch; the default branch scan has not picked up the fix yet."},
+		{gid: "100", state: "RESOLVED", rawStatus: hdf.Passed},
 		{gid: "50", state: "DISMISSED", reason: "FALSE_POSITIVE", rawStatus: hdf.Failed, overrideType: overrideTypePtr(hdf.FalsePositive), overrideTo: statusPtr(hdf.NotApplicable), effective: statusPtr(hdf.NotApplicable), appliedAt: "2026-09-20T19:27:19Z", comment: "The flagged value is a documented demo credential, not a real secret."},
 		{gid: "1", state: "DISMISSED", reason: "ACCEPTABLE_RISK", rawStatus: hdf.Failed, overrideType: overrideTypePtr(hdf.OverrideTypeWaiver), overrideTo: statusPtr(hdf.Passed), effective: statusPtr(hdf.Passed), appliedAt: "2026-09-20T19:27:19Z", comment: "Outbound requests are restricted by the egress proxy; residual risk accepted by the product owner."},
 		{gid: "94", state: "DISMISSED", reason: "MITIGATING_CONTROL", rawStatus: hdf.Failed, overrideType: overrideTypePtr(hdf.OverrideTypeWaiver), overrideTo: statusPtr(hdf.Passed), justification: justificationPtr(hdf.InlineMitigationsAlreadyExist), effective: statusPtr(hdf.Passed), appliedAt: "2026-09-20T19:27:20Z", comment: "Request body size is capped by the reverse proxy, bounding the loop."},
@@ -150,56 +151,59 @@ func TestConvert_SeverityOverride_IsImpactOnlyRiskAdjustment(t *testing.T) {
 }
 
 // The automatic falsePositive flag and the scanner-side resolved flag are
-// heuristics, not decisions: they are carried as tags on every requirement
-// and never produce an override. The recorded corpus has neither set, which
-// is itself pinned so a future re-record that flips one is noticed.
+// heuristics, not decisions: they are carried as tags on every requirement and
+// never produce an override. The recorded corpus has exactly one finding the
+// scanner stopped reporting and no automatic false positive, which is pinned
+// so a future re-record that flips either is noticed.
 func TestConvert_HeuristicFlags_AreTagsOnly(t *testing.T) {
 	result := convertFixture(t, "triaged.json")
-	seen := 0
+	seen, resolvedOnBranch := 0, 0
 	for _, b := range result.Baselines {
 		for _, r := range b.Requirements {
 			seen++
 			assert.Equal(t, false, r.Tags["gitlab/falsePositive"], r.ID)
-			assert.Equal(t, false, r.Tags["gitlab/resolvedOnDefaultBranch"], r.ID)
 			assert.Equal(t, true, r.Tags["gitlab/presentOnDefaultBranch"], r.ID)
+			if r.Tags["gitlab/resolvedOnDefaultBranch"] == true {
+				resolvedOnBranch++
+			}
 		}
 	}
-	assert.Equal(t, 97, seen)
+	assert.Equal(t, 100, seen)
+	assert.Equal(t, 1, resolvedOnBranch)
 }
 
-// A finding GitLab itself no longer detects and a human marked resolved is a
-// genuine pass at the raw level, with no override to attest it. The recorded
-// corpus has no such finding, so this row is exercised on a recorded node
-// with the two flags GitLab would set, asserting the branch rather than the
-// data.
+// Finding 100 is a finding the scanner stopped reporting and a human then
+// marked resolved: a genuine pass at the raw level, with no override needed to
+// attest it.
 func TestConvert_ResolvedOnDefaultBranch_IsRawPassedWithoutOverride(t *testing.T) {
-	input := readInput(t, "triaged.json")
-	var env map[string]any
-	require.NoError(t, json.Unmarshal(input, &env))
-	vulns := env["vulnerabilities"].([]any)
-	var kept []any
-	for _, v := range vulns {
-		node := v.(map[string]any)
-		if node["id"] == "gid://gitlab/Vulnerability/72" {
-			node["resolvedOnDefaultBranch"] = true
-			node["presentOnDefaultBranch"] = false
-			kept = append(kept, node)
-		}
-	}
-	require.Len(t, kept, 1)
-	env["vulnerabilities"] = kept
-	modified, err := json.Marshal(env)
-	require.NoError(t, err)
+	req := requirementByGID(t, convertFixture(t, "triaged.json"), "100")
 
-	result, err := ConvertGitlabVulnerabilitiesToHDF(modified, testVersion)
-	require.NoError(t, err)
-	req := requirementByGID(t, result, "72")
 	assert.Equal(t, hdf.Passed, req.Results[0].Status)
-	assert.Empty(t, req.StatusOverrides)
+	assert.Empty(t, req.StatusOverrides, "scanner evidence needs no attestation")
 	assert.Nil(t, req.Disposition)
+	assert.Nil(t, req.EffectiveStatus)
 	assert.Equal(t, true, req.Tags["gitlab/resolvedOnDefaultBranch"])
 	assert.Equal(t, "RESOLVED", req.Tags["gitlab/state"])
 	assert.Equal(t, "sec-reviewer", req.Tags["gitlab/resolvedBy"])
+}
+
+// GitLab reverts a resolution itself when a later scan re-detects the finding.
+// The attestation stays in the record, closed at the revert, and the
+// requirement reads as failed again.
+func TestConvert_ScannerRevertedResolution_ExpiresTheAttestation(t *testing.T) {
+	req := requirementByGID(t, convertFixture(t, "triaged.json"), "72")
+
+	assert.Equal(t, "DETECTED", req.Tags["gitlab/state"])
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+	require.Len(t, req.StatusOverrides, 1, "the resolution is kept as history")
+	o := req.StatusOverrides[0]
+	assert.Equal(t, hdf.Attestation, o.Type)
+	assert.Equal(t, "Fixed by validating redirect targets against an allow-list.", o.Reason)
+	assert.Equal(t, "2026-09-20T19:27:19Z", stamp(o.AppliedAt))
+	assert.Equal(t, "2026-09-21T02:04:51Z", stamp(o.ExpiresAt), "expired at the re-detection, not a year later")
+	assert.Nil(t, req.Disposition, "nothing non-expired governs")
+	require.NotNil(t, req.EffectiveStatus)
+	assert.Equal(t, hdf.Failed, *req.EffectiveStatus)
 }
 
 // When GitLab returns a triaged state but no transition history, the
@@ -256,9 +260,12 @@ func TestConvert_InconsistentHistory_IsFlaggedAndCurrentStateWins(t *testing.T) 
 	req := requirementByGID(t, result, "85")
 	assert.Equal(t, true, req.Tags["gitlab/stateHistoryInconsistent"])
 	require.Len(t, req.StatusOverrides, 1, "the historical dismissal is kept as history")
-	assert.Equal(t, hdf.OverrideTypeWaiver, req.StatusOverrides[0].Type)
+	o := req.StatusOverrides[0]
+	assert.Equal(t, hdf.OverrideTypeWaiver, o.Type)
+	assert.Equal(t, "2026-09-21T02:19:29Z", stamp(o.ExpiresAt), "the superseded dismissal is closed at the last state change, not left open")
 	require.NotNil(t, req.EffectiveStatus)
-	assert.Equal(t, hdf.NotApplicable, *req.EffectiveStatus, "the historical override has not expired, so it still governs the ladder")
+	assert.Equal(t, hdf.Failed, *req.EffectiveStatus, "CONFIRMED is the current state, so the stale dismissal no longer governs")
+	assert.Nil(t, req.Disposition, "no non-expired override remains to dispose the finding")
 }
 
 func TestConvert_DecisionWithoutAuthor_IsAttributedToTheSystem(t *testing.T) {
@@ -268,7 +275,7 @@ func TestConvert_DecisionWithoutAuthor_IsAttributedToTheSystem(t *testing.T) {
 	var kept []any
 	for _, v := range env["vulnerabilities"].([]any) {
 		node := v.(map[string]any)
-		if node["id"] == "gid://gitlab/Vulnerability/72" {
+		if node["id"] == "gid://gitlab/Vulnerability/91" {
 			node["stateTransitions"] = map[string]any{"nodes": []any{}}
 			node["resolvedBy"] = nil
 			node["stateComment"] = nil
@@ -281,7 +288,7 @@ func TestConvert_DecisionWithoutAuthor_IsAttributedToTheSystem(t *testing.T) {
 
 	result, err := ConvertGitlabVulnerabilitiesToHDF(modified, testVersion)
 	require.NoError(t, err)
-	req := requirementByGID(t, result, "72")
+	req := requirementByGID(t, result, "91")
 	require.Len(t, req.StatusOverrides, 1)
 	o := req.StatusOverrides[0]
 	assert.Equal(t, hdf.IdentityTypeSystem, o.AppliedBy.Type)

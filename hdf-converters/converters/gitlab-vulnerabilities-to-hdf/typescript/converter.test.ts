@@ -88,21 +88,26 @@ describe('gitlab-vulnerabilities-to-hdf triage mapping', () => {
   });
 
   it('attests a human resolution the scanner has not yet confirmed', async () => {
-    const req = requirementByGID(await convert('triaged.json'), '72');
+    const req = requirementByGID(await convert('triaged.json'), '91');
     expect(req.results[0]!.status).toBe(ResultStatus.Failed);
     expect(req.statusOverrides![0]!.type).toBe(OverrideType.Attestation);
     expect(req.effectiveStatus).toBe(ResultStatus.Passed);
     expect(req.tags['gitlab/resolvedOnDefaultBranch']).toBe(false);
   });
 
+  it('expires the attestation when a later scan re-detects the finding', async () => {
+    const req = requirementByGID(await convert('triaged.json'), '72');
+    expect(req.tags['gitlab/state']).toBe('DETECTED');
+    expect(req.results[0]!.status).toBe(ResultStatus.Failed);
+    expect(req.statusOverrides).toHaveLength(1);
+    expect(req.statusOverrides![0]!.type).toBe(OverrideType.Attestation);
+    expect(String(req.statusOverrides![0]!.expiresAt)).toBe('2026-09-21T02:04:51Z');
+    expect(req.disposition).toBeUndefined();
+    expect(req.effectiveStatus).toBe(ResultStatus.Failed);
+  });
+
   it('treats a resolution the scanner has confirmed as a raw pass with no override', async () => {
-    const env = JSON.parse(loadFixture('triaged.json'));
-    const node = env.vulnerabilities.find((v: { id: string }) => v.id === 'gid://gitlab/Vulnerability/72');
-    node.resolvedOnDefaultBranch = true;
-    node.presentOnDefaultBranch = false;
-    env.vulnerabilities = [node];
-    const result = parseJSON<HDFResults>(await convertGitlabVulnerabilitiesToHdf(JSON.stringify(env)));
-    const req = requirementByGID(result, '72');
+    const req = requirementByGID(await convert('triaged.json'), '100');
     expect(req.results[0]!.status).toBe(ResultStatus.Passed);
     expect(req.statusOverrides).toBeUndefined();
     expect(req.disposition).toBeUndefined();
@@ -120,8 +125,8 @@ describe('gitlab-vulnerabilities-to-hdf triage mapping', () => {
     env.vulnerabilities = [node];
     const result = parseJSON<HDFResults>(await convertGitlabVulnerabilitiesToHdf(JSON.stringify(env)));
     const o = requirementByGID(result, '1').statusOverrides![0]!;
-    expect(String(o.appliedAt)).toBe('2026-09-20T19:50:18Z');
-    expect(String(o.expiresAt)).toBe('2027-09-20T19:50:18Z');
+    expect(String(o.appliedAt)).toBe('2026-09-21T02:31:44Z');
+    expect(String(o.expiresAt)).toBe('2027-09-21T02:31:44Z');
   });
 
   it('flags a history that disagrees with the current state and lets the current state win', async () => {
@@ -135,7 +140,9 @@ describe('gitlab-vulnerabilities-to-hdf triage mapping', () => {
     expect(req.tags['gitlab/state']).toBe('CONFIRMED');
     expect(req.statusOverrides).toHaveLength(1);
     expect(req.statusOverrides![0]!.type).toBe(OverrideType.Waiver);
-    expect(req.effectiveStatus).toBe(ResultStatus.NotApplicable);
+    expect(String(req.statusOverrides![0]!.expiresAt)).toBe('2026-09-21T02:19:29Z');
+    expect(req.effectiveStatus).toBe(ResultStatus.Failed);
+    expect(req.disposition).toBeUndefined();
   });
 
   it('emits no override for DETECTED or CONFIRMED findings', async () => {
@@ -179,15 +186,15 @@ describe('gitlab-vulnerabilities-to-hdf document', () => {
   it('groups by report type and pre-fills repository provenance', async () => {
     const result = await convert('triaged.json');
     expect(result.baselines.map((b) => b.name)).toEqual(['GitLab Vulnerability Report: SAST', 'GitLab Vulnerability Report: Secret Detection']);
-    expect(result.baselines.map((b) => b.requirements.length)).toEqual([94, 3]);
+    expect(result.baselines.map((b) => b.requirements.length)).toEqual([97, 3]);
     expect(result.tool).toEqual({ name: 'GitLab Vulnerability Report', version: '18.9.1-ee' });
-    expect(String(result.timestamp)).toBe('2026-09-20T19:50:18Z');
+    expect(String(result.timestamp)).toBe('2026-09-21T02:31:44Z');
     expect(result.components).toEqual([{
       name: 'security-demo/juice-shop',
       type: 'repository',
       url: 'https://gitlab.example.com/security-demo/juice-shop',
       branch: 'master',
-      commit: '556a44e4001434ea7a242f29ede789565066082d',
+      commit: '359de365164ddd2aef60a48f4687d153bf9adb44',
       labels: { 'gitlab/project-id': 'gid://gitlab/Project/1', 'gitlab/full-path': 'security-demo/juice-shop' },
     }]);
   });

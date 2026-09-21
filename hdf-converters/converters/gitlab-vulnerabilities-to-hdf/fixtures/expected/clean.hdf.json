@@ -12,7 +12,7 @@
           "results": [
             {
               "codeDesc": "GitLab Vulnerability Report for security-demo/web-goat lists zero Secret Detection vulnerabilities after a successful scan ingestion.",
-              "startTime": "2026-09-20T19:42:17Z",
+              "startTime": "2026-09-21T02:31:44Z",
               "status": "passed"
             }
           ],
@@ -24,7 +24,7 @@
       ],
       "resultsChecksum": {
         "algorithm": "sha256",
-        "value": "c900112c19418d78113fa90c153e8a919804008200469887343e91aea0f12522"
+        "value": "97c6cf2b7841cff52d6935c2e2fd30ef10172fe93461e7628b4ddb6b5f35c8ae"
       },
       "name": "GitLab Vulnerability Report",
       "summary": "Ingested scanner types: secretDetection",
@@ -48,7 +48,7 @@
     "name": "gitlab-vulnerabilities-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-20T19:42:17Z",
+  "timestamp": "2026-09-21T02:31:44Z",
   "tool": {
     "name": "GitLab Vulnerability Report",
     "version": "18.9.1-ee"

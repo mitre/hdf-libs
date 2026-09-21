@@ -147,7 +147,7 @@ func TestFixtures_TriagedCoversEveryStateAndDismissalReason(t *testing.T) {
 	assert.True(t, multiTransition, "triaged.json needs a vulnerability with a revert-and-re-dismiss history (3+ transitions)")
 	assert.True(t, severityOverride, "triaged.json needs a vulnerability with a severity override")
 	require.NotNil(t, env.Project.VulnerabilityStatistic, "an ingested project carries a vulnerability statistic")
-	assert.Equal(t, []string{"SUCCEEDED", "SUCCEEDED"}, scanStatuses(env))
+	assert.Equal(t, []string{"SUCCEEDED", "SUCCEEDED", "SUCCEEDED"}, scanStatuses(env))
 	assert.True(t, env.Metadata.Enterprise)
 	assert.NotEmpty(t, env.FetchedAt)
 }

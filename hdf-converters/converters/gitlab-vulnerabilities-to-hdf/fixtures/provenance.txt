@@ -15,23 +15,33 @@ test corpus in `hdf-converters/fetchers/gitlab-vulnerabilities/go/testdata/`.
 
 Scrub applied to every file, and nothing else: the recording account's
 username and display name were replaced with `sec-reviewer` / `Security
-Reviewer`, and the instance URL scheme was normalized to https on the
-`gitlab.example.com` placeholder host. Ids, uuids, timestamps, comments and
+Reviewer`, every `publicEmail` was nulled, and the instance URL scheme was
+normalized to https on the `gitlab.example.com` placeholder host. Ids, uuids, timestamps, comments and
 structure are as GitLab returned them.
 
 ## `input/`
 
 ### `triaged.json`
-Project `security-demo/juice-shop`: the OWASP Juice Shop source at v20.2.0
-scanned on its default branch by the GitLab SAST template (Semgrep 1.145.0)
-and Secret Detection template (Gitleaks 8.30.0), 97 vulnerabilities ingested.
-Triaged by hand in the GitLab UI/API to cover every state and dismissal
-reason: 3 CONFIRMED, 2 RESOLVED (one before the fix landed, so
-`resolvedOnDefaultBranch` is false), one DISMISSED per reason
-(FALSE_POSITIVE, ACCEPTABLE_RISK, MITIGATING_CONTROL, USED_IN_TESTS,
-NOT_APPLICABLE), one finding dismissed, reverted and re-dismissed (three
-state transitions), two findings reverted and re-confirmed, and one severity
-override (MEDIUM to LOW). Every decision carries its own statement.
+Project `security-demo/juice-shop`, fetched with `--report-type
+SAST,SECRET_DETECTION`: the OWASP Juice Shop source at v20.2.0 scanned on its
+default branch by the GitLab SAST template (Semgrep 1.145.0) and Secret
+Detection template (Gitleaks 8.30.0), 100 vulnerabilities ingested.
+Triaged through the GitLab API to cover every state and dismissal reason:
+3 CONFIRMED, 2 RESOLVED (one whose finding the scanner no longer reports, so
+`resolvedOnDefaultBranch` is true, and one it still reports, so it is false),
+one DISMISSED per reason (FALSE_POSITIVE, ACCEPTABLE_RISK,
+MITIGATING_CONTROL, USED_IN_TESTS, NOT_APPLICABLE), one finding dismissed,
+reverted and re-dismissed (three state transitions), two findings reverted
+and re-confirmed, two whose resolution GitLab itself reverted when a later
+scan re-detected them, and one severity override (MEDIUM to LOW). Every
+decision carries its own statement.
+
+### `dependency-scanning.json`
+The same project fetched with `--report-type DEPENDENCY_SCANNING`, first page
+only (25 of 77). Its npm lockfile was committed so the Gemnasium analyzer
+could resolve the tree. These are the findings that carry CVSS vectors and
+scores, CVE and GHSA identifiers, and the dependency-scanning location shape;
+the SAST and secret-detection findings above carry none of those.
 
 ### `clean.json`
 Project `security-demo/web-goat`: an otherwise empty repository whose Secret

@@ -36,7 +36,7 @@ func TestConvert_Document_BaselinesPerReportTypeAndProvenance(t *testing.T) {
 	sast, secrets := result.Baselines[0], result.Baselines[1]
 	assert.Equal(t, "GitLab Vulnerability Report: SAST", sast.Name)
 	assert.Equal(t, "Scanner: Semgrep", *sast.Summary)
-	assert.Len(t, sast.Requirements, 94)
+	assert.Len(t, sast.Requirements, 97)
 	assert.Equal(t, "GitLab Vulnerability Report: Secret Detection", secrets.Name)
 	assert.Equal(t, "Scanner: Gitleaks", *secrets.Summary)
 	assert.Len(t, secrets.Requirements, 3)
@@ -51,7 +51,7 @@ func TestConvert_Document_BaselinesPerReportTypeAndProvenance(t *testing.T) {
 	require.NotNil(t, result.Tool.Version)
 	assert.Equal(t, "18.9.1-ee", *result.Tool.Version)
 	require.NotNil(t, result.Timestamp)
-	assert.Equal(t, "2026-09-20T19:50:18Z", stamp(*result.Timestamp), "document timestamp is the fetch time")
+	assert.Equal(t, "2026-09-21T02:31:44Z", stamp(*result.Timestamp), "document timestamp is the fetch time")
 
 	require.Len(t, result.Components, 1)
 	c := result.Components[0]
@@ -59,7 +59,7 @@ func TestConvert_Document_BaselinesPerReportTypeAndProvenance(t *testing.T) {
 	assert.Equal(t, "security-demo/juice-shop", c.Name)
 	assert.Equal(t, "https://gitlab.example.com/security-demo/juice-shop", *c.URL)
 	assert.Equal(t, "master", *c.Branch)
-	assert.Equal(t, "556a44e4001434ea7a242f29ede789565066082d", *c.Commit)
+	assert.Equal(t, "359de365164ddd2aef60a48f4687d153bf9adb44", *c.Commit)
 	assert.Equal(t, map[string]string{"gitlab/project-id": "gid://gitlab/Project/1", "gitlab/full-path": "security-demo/juice-shop"}, c.Labels)
 }
 
@@ -84,12 +84,17 @@ func TestConvert_Requirement_IdentityCodeLocationAndTags(t *testing.T) {
 	var want bytes.Buffer
 	for _, raw := range env.Vulnerabilities {
 		if strings.Contains(string(raw), `"gid://gitlab/Vulnerability/50"`) {
-			require.NoError(t, json.Indent(&want, raw, "", "  "))
+			var node interface{}
+			require.NoError(t, json.Unmarshal(raw, &node))
+			enc := json.NewEncoder(&want)
+			enc.SetEscapeHTML(false)
+			enc.SetIndent("", "  ")
+			require.NoError(t, enc.Encode(node))
 			break
 		}
 	}
 	require.NotNil(t, req.Code)
-	assert.Equal(t, want.String(), *req.Code)
+	assert.Equal(t, strings.TrimSuffix(want.String(), "\n"), *req.Code, "the whole node, canonically rendered")
 	require.NotNil(t, req.VerificationMethod)
 	assert.Equal(t, hdf.VerificationMethodEnumAutomated, *req.VerificationMethod)
 
@@ -97,7 +102,7 @@ func TestConvert_Requirement_IdentityCodeLocationAndTags(t *testing.T) {
 	assert.Equal(t, "lib/insecurity.ts", *req.SourceLocation.Ref)
 	assert.InDelta(t, 54, *req.SourceLocation.Line, 0)
 	assert.Equal(t, "File: lib/insecurity.ts | Line: 54", req.Results[0].CodeDesc)
-	assert.Equal(t, "2026-09-19T20:47:38Z", stamp(req.Results[0].StartTime), "result time is the latest detecting pipeline's")
+	assert.Equal(t, "2026-09-21T02:18:19Z", stamp(req.Results[0].StartTime), "result time is the latest detecting pipeline's")
 
 	// CWE-798 has no NIST mapping in the table, so the static-analysis default applies.
 	assert.Equal(t, []any{"SA-11", "RA-5"}, req.Tags["nist"])
@@ -107,7 +112,7 @@ func TestConvert_Requirement_IdentityCodeLocationAndTags(t *testing.T) {
 	assert.Equal(t, []any{"79"}, xss.Tags["cwe"])
 	assert.Equal(t, "SAST", req.Tags["gitlab/reportType"])
 	assert.Equal(t, map[string]interface{}{"name": "Semgrep", "vendor": "GitLab", "externalId": "semgrep"}, req.Tags["gitlab/scanner"])
-	assert.Equal(t, map[string]interface{}{"iid": "5", "sha": "556a44e4001434ea7a242f29ede789565066082d", "ref": "master", "createdAt": "2026-09-19T20:47:38Z"}, req.Tags["gitlab/latestDetectedPipeline"])
+	assert.Equal(t, map[string]interface{}{"iid": "8", "sha": "359de365164ddd2aef60a48f4687d153bf9adb44", "ref": "master", "createdAt": "2026-09-21T02:18:19Z"}, req.Tags["gitlab/latestDetectedPipeline"])
 	assert.Equal(t, "security-demo/juice-shop", req.Tags["gitlab/project"])
 	assert.Equal(t, "2026-09-19T21:20:50Z", req.Tags["gitlab/detectedAt"])
 	assert.Equal(t, "2026-09-20T19:27:19Z", req.Tags["gitlab/dismissedAt"])
@@ -152,7 +157,7 @@ func TestConvert_CleanReport_OneNoFindingsRequirementPerIngestedType(t *testing.
 	assert.Equal(t, "gitlab-vulnerability-report-no-findings-secret_detection", r.ID)
 	assert.Equal(t, hdf.Passed, r.Results[0].Status)
 	assert.Equal(t, "GitLab Vulnerability Report for security-demo/web-goat lists zero Secret Detection vulnerabilities after a successful scan ingestion.", r.Results[0].CodeDesc)
-	assert.Equal(t, "2026-09-20T19:42:17Z", stamp(r.Results[0].StartTime), "no-findings time is the fetch time")
+	assert.Equal(t, "2026-09-21T02:31:44Z", stamp(r.Results[0].StartTime), "no-findings time is the fetch time")
 	assert.Equal(t, "security-demo/web-goat", result.Components[0].Name)
 	assert.Equal(t, "main", *result.Components[0].Branch)
 }
@@ -227,7 +232,8 @@ func TestExpectedRequirementCount_MatchesConversionForEveryFixture(t *testing.T)
 		}
 		assert.Equal(t, expected, produced, name)
 	}
-	assert.Equal(t, 97, mustCount(t, readInput(t, "triaged.json")))
+	assert.Equal(t, 100, mustCount(t, readInput(t, "triaged.json")))
+	assert.Equal(t, 25, mustCount(t, readInput(t, "dependency-scanning.json")))
 	assert.Equal(t, 1, mustCount(t, readInput(t, "clean.json")))
 }
 

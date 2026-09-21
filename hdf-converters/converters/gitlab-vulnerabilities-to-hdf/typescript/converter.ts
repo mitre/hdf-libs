@@ -21,12 +21,15 @@ import {
   type Reference,
   type RequirementResult,
   ResultStatus,
+  type Cvss,
+  CVSSSeverity,
   type SourceLocation,
   type StatusOverride,
   TargetType,
+  Version as CvssVersion,
   severityToImpact,
 } from '@mitre/hdf-schema';
-import { getCweNistControl, nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
+import { nistToCci, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import { parseJSON, parseTimestamp, computeEffectiveStatus, governingOverrideIndex } from '@mitre/hdf-utilities';
 import {
   buildHdfResults,
@@ -37,9 +40,11 @@ import {
   deriveVerificationMethod,
   inputChecksum,
   limitArrayWithWarning,
+  mapCWEToNIST,
   markUnratedSeverity,
   validateInputSize,
 } from '../../../shared/typescript/converterutil.js';
+import { buildCvss as buildCvssEntry, cvssSeverityFromScore, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import { requirementStatusInput } from '../../../shared/typescript/status.js';
 
 const CONVERTER_NAME = 'gitlab-vulnerabilities';
@@ -51,8 +56,30 @@ const GENERATOR_NAME = 'gitlab-vulnerabilities-to-hdf';
 export interface Envelope {
   metadata?: Metadata;
   project?: Project;
+  filters?: Filters;
   vulnerabilities?: Vulnerability[];
   fetchedAt?: string;
+}
+
+/**
+ * The selection the fetch narrowed to. It is what tells a zero-row result apart
+ * from a project with no findings, because the ingestion signals an empty
+ * report is judged against are unfiltered.
+ */
+export interface Filters {
+  states?: string[];
+  reportTypes?: string[];
+}
+
+function filtersActive(f: Filters | undefined): boolean {
+  return !!f && ((f.states?.length ?? 0) > 0 || (f.reportTypes?.length ?? 0) > 0);
+}
+
+function describeFilters(f: Filters): string {
+  const parts: string[] = [];
+  if (f.states?.length) parts.push(`states ${f.states.join(', ')}`);
+  if (f.reportTypes?.length) parts.push(`report types ${f.reportTypes.join(', ')}`);
+  return parts.join('; ');
 }
 
 interface Metadata {
@@ -82,12 +109,10 @@ interface Pipeline {
   ref?: string;
   status?: string;
   createdAt?: string;
-  finishedAt?: string;
   securityReportSummary?: Record<string, SummarySection | null> | null;
 }
 
 interface SummarySection {
-  vulnerabilitiesCount?: number;
   scans?: { nodes?: Scan[] };
 }
 
@@ -113,6 +138,7 @@ interface Identifier {
 
 interface Location {
   __typename?: string;
+  description?: string;
   file?: string;
   startLine?: string | null;
   endLine?: string | null;
@@ -179,11 +205,22 @@ export interface Vulnerability {
   primaryIdentifier?: Identifier | null;
   identifiers?: Identifier[];
   links?: Array<{ name?: string | null; url?: string }>;
+  cvss?: CvssEntry[];
   location?: Location | null;
   initialDetectedPipeline?: PipelineRef | null;
   latestDetectedPipeline?: PipelineRef | null;
   stateTransitions?: { nodes?: Transition[] };
   severityOverrides?: { nodes?: SeverityChange[] };
+}
+
+/** One vendor's CVSS assessment. GitLab types `version` as a GraphQL Float. */
+interface CvssEntry {
+  vendor?: string;
+  vector?: string;
+  version?: number;
+  baseScore?: number | null;
+  overallScore?: number | null;
+  severity?: string;
 }
 
 // --- Parsing ---
@@ -207,6 +244,11 @@ function parseInput(input: string): Envelope {
   }
   if (!env.metadata?.enterprise) {
     throw new Error(`${CONVERTER_NAME}: GitLab Community Edition has no Vulnerability Report; use the gitlab (CI artifact) converter instead`);
+  }
+  // An absent field and an explicit null both read as "no vulnerabilities";
+  // only an array is an empty report.
+  if (!Array.isArray(env.vulnerabilities)) {
+    throw new Error(`${CONVERTER_NAME}: envelope has no vulnerabilities array; an absent or null list is a malformed envelope, not an empty report`);
   }
   return env;
 }
@@ -248,7 +290,8 @@ function ingestionError(env: Envelope): Error | undefined {
           break;
         default: {
           let desc = `${reportType}: ${scan.status}`;
-          if (scan.errors && scan.errors.length > 0) desc += ` (${scan.errors.join('; ')})`;
+          const notes = [...(scan.errors ?? []), ...(scan.warnings ?? [])];
+          if (notes.length > 0) desc += ` (${notes.join('; ')})`;
           failed.push(desc);
         }
       }
@@ -285,7 +328,9 @@ export async function convertGitlabVulnerabilitiesToHdf(input: string, converter
   if (vulnerabilities.length === 0) {
     const err = ingestionError(env);
     if (err) throw err;
-    baselines = noFindingsBaselines(project, fetchedAt, resultsChecksum);
+    baselines = filtersActive(env.filters)
+      ? filteredNoMatchBaselines(env.filters!, project, fetchedAt, resultsChecksum)
+      : noFindingsBaselines(project, fetchedAt, resultsChecksum);
   } else {
     baselines = findingBaselines(vulnerabilities, project, fetchedAt, resultsChecksum);
   }
@@ -349,6 +394,29 @@ function noFindingsBaselines(project: Project, fetchedAt: Date, checksum: Checks
   }];
 }
 
+/**
+ * Renders "nothing matched what you asked for", deliberately not the
+ * no-findings wording: this describes the selection, not the project.
+ */
+function filteredNoMatchBaselines(filters: Filters, project: Project, fetchedAt: Date, checksum: Checksum): EvaluatedBaseline[] {
+  const selection = describeFilters(filters);
+  const req = buildNoFindingsRequirement(
+    'gitlab-vulnerability-report-no-match',
+    `No vulnerability in the GitLab Vulnerability Report for ${project.fullPath} matches the requested selection (${selection}). This describes the selection only, not the project's overall posture.`,
+    fetchedAt,
+  );
+  req.tags['gitlab/filtered'] = true;
+  req.tags['gitlab/filterStates'] = filters.states ?? [];
+  req.tags['gitlab/filterReportTypes'] = filters.reportTypes ?? [];
+  return [{
+    name: SOURCE_NAME,
+    title: 'No matching findings',
+    summary: `Filtered selection: ${selection}`,
+    requirements: [req],
+    resultsChecksum: checksum,
+  }];
+}
+
 function summaryKeyToReportType(key: string): string {
   return key.replace(/([A-Z])/g, '_$1').toUpperCase();
 }
@@ -370,9 +438,8 @@ function reportTypeLabel(reportType: string): string {
   return REPORT_TYPE_LABELS[reportType] ?? reportType;
 }
 
-// The provenance the issue asked the fetcher to pre-fill: the repository the
-// report describes, the branch it reflects and the commit its latest
-// default-branch pipeline scanned.
+// Describes the repository the report covers: the branch it reflects and the
+// commit its latest default-branch pipeline scanned.
 function buildComponent(project: Project): Component {
   const c: Component = {
     name: project.fullPath ?? '',
@@ -392,7 +459,7 @@ function buildComponent(project: Project): Component {
 
 function convertVulnerability(v: Vulnerability, project: Project, fetchedAt: Date): EvaluatedRequirement {
   const { original, current } = severityPair(v);
-  const code = JSON.stringify(v, null, 2);
+  const code = buildVulnCode(v);
   const tags = buildTags(v, project, original, current);
 
   const result: RequirementResult = {
@@ -414,6 +481,8 @@ function convertVulnerability(v: Vulnerability, project: Project, fetchedAt: Dat
   if (refs.length > 0) req.refs = refs;
   const sourceLocation = buildSourceLocation(v.location);
   if (sourceLocation) req.sourceLocation = sourceLocation;
+  const cvss = buildCvss(v);
+  if (cvss.length > 0) req.cvss = cvss;
   const verificationMethod = deriveVerificationMethod(code);
   if (verificationMethod !== undefined) req.verificationMethod = verificationMethod;
   const controlType = deriveControlTypeFromTags((tags.nist as string[]) ?? []);
@@ -435,17 +504,58 @@ function rawStatus(v: Vulnerability): ResultStatus {
   return ResultStatus.Failed;
 }
 
-// GitLab's `severity` already reflects human overrides, so the scanner's
-// original is recovered from the oldest override when there is one.
+/**
+ * GitLab's `severity` already reflects human overrides, so the original comes
+ * from the earliest one. The connection's order is not part of GitLab's
+ * contract, so the earliest is found by timestamp rather than by position.
+ */
 function severityPair(v: Vulnerability): { original: string; current: string } {
   const current = v.severity ?? '';
-  const first = v.severityOverrides?.nodes?.[0];
-  const original = first?.originalSeverity ? first.originalSeverity : current;
+  let original = current;
+  let earliest: Date | null | undefined;
+  let found = false;
+  for (const o of v.severityOverrides?.nodes ?? []) {
+    if (!o.originalSeverity) continue;
+    const at = parseTimestamp(o.createdAt ?? '');
+    if (!found) {
+      original = o.originalSeverity;
+      earliest = at;
+      found = true;
+      continue;
+    }
+    // An undated change never outranks a dated one.
+    if (!at) continue;
+    if (!earliest || at < earliest) {
+      original = o.originalSeverity;
+      earliest = at;
+    }
+  }
   return { original, current };
 }
 
 function resultStartTime(v: Vulnerability, fetchedAt: Date): Date {
   return firstTime(v.latestDetectedPipeline?.createdAt, v.detectedAt) ?? fetchedAt;
+}
+
+/**
+ * Renders the node as canonical JSON. Echoing the source layout instead would
+ * make the twins disagree: one language's parser spells 3.0 where the other
+ * spells 3.
+ */
+function buildVulnCode(v: Vulnerability): string {
+  return JSON.stringify(sortKeysDeep(v), null, 2);
+}
+
+function sortKeysDeep(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      out[key] = sortKeysDeep((value as Record<string, unknown>)[key]);
+    }
+    return out;
+  }
+  return value;
 }
 
 function buildDescriptions(v: Vulnerability): Description[] {
@@ -457,7 +567,7 @@ function buildDescriptions(v: Vulnerability): Description[] {
 function buildTags(v: Vulnerability, project: Project, original: string, current: string): Record<string, unknown> {
   const nist = buildNistTags(v.identifiers ?? []);
   const tags = buildNistCciTags(nist, nistToCci(nist), collectIdentifierExtras(v.identifiers ?? []));
-  markUnratedSeverity(tags, current);
+  markUnratedSeverity(tags, original);
 
   const transitions = v.stateTransitions?.nodes ?? [];
   tags['gitlab/id'] = v.id ?? '';
@@ -501,19 +611,76 @@ function pipelineTag(p: PipelineRef | null | undefined): Record<string, string> 
 }
 
 function buildNistTags(identifiers: Identifier[]): string[] {
-  const seen = new Set<string>();
-  const controls: string[] = [];
-  for (const id of identifiers) {
-    if ((id.externalType ?? '').toLowerCase() !== 'cwe' || !id.externalId) continue;
-    const cweId = parseInt(id.externalId.replace(/^CWE-/i, ''), 10);
-    if (Number.isNaN(cweId)) continue;
-    const control = getCweNistControl(cweId);
-    if (control && !seen.has(control)) {
-      seen.add(control);
-      controls.push(control);
+  const cwes = identifiers
+    .filter((id) => (id.externalType ?? '').toLowerCase() === 'cwe' && !!id.externalId)
+    .map((id) => id.externalId!);
+  return mapCWEToNIST(cwes, DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
+}
+
+/**
+ * Maps every vendor assessment GitLab attached to the finding, in the order
+ * GitLab returned them. GitLab's own severity band is preferred over one
+ * derived from the score.
+ */
+function buildCvss(v: Vulnerability): Cvss[] {
+  const entries = v.cvss ?? [];
+  if (entries.length === 0) return [];
+  const source = cveIdentifier(v.identifiers ?? []);
+  return entries.map((e) => {
+    const entry = buildCvssEntry({
+      version: cvssVersion(e),
+      baseScore: e.baseScore,
+      baseVector: e.vector,
+      source,
+    });
+    const sev = cvssSeverity(e.severity);
+    if (sev) entry.baseSeverity = sev;
+    if (typeof e.overallScore === 'number' && Number.isFinite(e.overallScore)) {
+      entry.computedScore = e.overallScore;
+      entry.computedSeverity = cvssSeverityFromScore(e.overallScore);
     }
+    return entry;
+  });
+}
+
+/**
+ * Prefers the vector's own prefix and falls back to GitLab's numeric version
+ * field, which is a Float and so cannot name 3.1 exactly without the ladder.
+ */
+function cvssVersion(e: CvssEntry): CvssVersion {
+  const n = e.version ?? 0;
+  let fallback = CvssVersion.The31;
+  if (n >= 4) fallback = CvssVersion.The40;
+  else if (n >= 3.1) fallback = CvssVersion.The31;
+  else if (n >= 3) fallback = CvssVersion.The30;
+  else if (n >= 2) fallback = CvssVersion.The20;
+  return cvssVersionFromVector(e.vector, fallback);
+}
+
+/**
+ * Maps GitLab's CvssSeverity enum; an unknown value yields undefined so the
+ * score-derived band stands instead of an invented one.
+ */
+function cvssSeverity(s: string | undefined): CVSSSeverity | undefined {
+  switch ((s ?? '').toUpperCase()) {
+    case 'CRITICAL': return CVSSSeverity.Critical;
+    case 'HIGH': return CVSSSeverity.High;
+    case 'MEDIUM': return CVSSSeverity.Medium;
+    case 'LOW': return CVSSSeverity.Low;
+    case 'NONE': return CVSSSeverity.None;
+    default: return undefined;
   }
-  return controls.length > 0 ? controls : DEFAULT_STATIC_ANALYSIS_NIST_TAGS;
+}
+
+/**
+ * What the schema's cvss[].source names: the advisory the scores belong to,
+ * not the scanner that reported them.
+ */
+function cveIdentifier(identifiers: Identifier[]): string {
+  for (const id of identifiers) {
+    if ((id.externalType ?? '').toLowerCase() === 'cve' && id.externalId) return id.externalId;
+  }
+  return '';
 }
 
 function collectIdentifierExtras(identifiers: Identifier[]): Record<string, unknown> {
@@ -565,10 +732,13 @@ function buildCodeDesc(v: Vulnerability): string {
   if (!loc) return `Report type: ${v.reportType ?? ''}`;
   const parts: string[] = [];
   switch (loc.__typename) {
+    case 'VulnerabilityLocationGeneric':
+      // The generic location has one field and none of the file/line shape.
+      if (loc.description) parts.push(`Location: ${loc.description}`);
+      break;
     case 'VulnerabilityLocationSast':
     case 'VulnerabilityLocationSecretDetection':
     case 'VulnerabilityLocationCoverageFuzzing':
-    case 'VulnerabilityLocationGeneric':
       if (loc.file) parts.push(`File: ${loc.file}`);
       if (loc.startLine) {
         if (loc.endLine && loc.endLine !== loc.startLine) parts.push(`Line: ${loc.startLine}-${loc.endLine}`);
@@ -667,12 +837,28 @@ function buildStatusOverrides(v: Vulnerability, fetchedAt: Date): StatusOverride
   if (transitions.length > 0 && transitions[transitions.length - 1]!.toState === v.state) {
     return overrides;
   }
+  // The history does not end at the current state, so it is stale, truncated
+  // or out of order. The current state wins: close what the history left open
+  // before synthesizing, or a decision GitLab has already moved past would
+  // keep governing the requirement.
+  closeOpenOverrides(overrides, firstTime(v.updatedAt) ?? fetchedAt);
   const d = decisionFor(v.state, v.dismissalReason, scannerResolved);
   if (d) {
     const { at, by } = currentDecisionProvenance(v);
     overrides.push(newOverride(v, d, at ?? fetchedAt, v.stateComment, by));
   }
   return overrides;
+}
+
+/**
+ * Brings every expiry back to `at`, never earlier than the override's own
+ * appliedAt so the record stays internally consistent.
+ */
+function closeOpenOverrides(overrides: StatusOverride[], at: Date): void {
+  for (const o of overrides) {
+    if (o.expiresAt <= at) continue;
+    o.expiresAt = at < o.appliedAt ? o.appliedAt : at;
+  }
 }
 
 function currentDecisionProvenance(v: Vulnerability): { at: Date | undefined; by: User | null | undefined } {

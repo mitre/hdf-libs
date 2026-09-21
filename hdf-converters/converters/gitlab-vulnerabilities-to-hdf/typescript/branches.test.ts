@@ -45,6 +45,8 @@ describe('gitlab-vulnerabilities-to-hdf location variants', () => {
     ['container scanning', { location: { __typename: 'VulnerabilityLocationContainerScanning', image: 'registry/app:1.0', operatingSystem: 'debian:12', dependency: { package: { name: 'openssl' } } } }, 'Image: registry/app:1.0 | OS: debian:12 | Package: openssl'],
     ['dast', { location: { __typename: 'VulnerabilityLocationDast', hostname: 'https://app.example.com', path: '/login', requestMethod: 'POST', param: 'user' } }, 'URL: https://app.example.com/login | Method: POST | Param: user'],
     ['known variant with nothing to say', { location: { __typename: 'VulnerabilityLocationSast' } }, 'Report type: SAST'],
+    ['generic carries only a description', { location: { __typename: 'VulnerabilityLocationGeneric', description: 'runtime configuration' } }, 'Location: runtime configuration'],
+    ['generic with no description', { reportType: 'GENERIC', location: { __typename: 'VulnerabilityLocationGeneric' } }, 'Report type: GENERIC'],
     ['unknown variant falls back to JSON', { location: { __typename: 'VulnerabilityLocationFuture', file: 'x' } }, 'Location: {"__typename":"VulnerabilityLocationFuture","file":"x"}'],
   ])('%s', async (_name, fields, want) => {
     const req = await convertOne(fields as Partial<Vulnerability>);
@@ -233,5 +235,75 @@ describe('gitlab-vulnerabilities-to-hdf input guards', () => {
     ['bad fetchedAt', JSON.stringify(envelope({ fetchedAt: 'yesterday' })), /fetchedAt "yesterday" is not a valid timestamp/],
   ])('rejects %s', async (_name, input, want) => {
     await expect(convertGitlabVulnerabilitiesToHdf(input)).rejects.toThrow(want);
+  });
+});
+
+describe('filtered results', () => {
+  it('does not read a filtered zero-match as a clean report', async () => {
+    const result = await convert(envelope({ filters: { states: ['DISMISSED'], reportTypes: ['DAST'] } }));
+    expect(result.baselines).toHaveLength(1);
+    const b = result.baselines[0]!;
+    expect(b.title).toBe('No matching findings');
+    expect(b.summary).toBe('Filtered selection: states DISMISSED; report types DAST');
+    const r = b.requirements[0]!;
+    expect(r.id).toBe('gitlab-vulnerability-report-no-match');
+    expect(r.results[0]!.codeDesc).toContain('matches the requested selection (states DISMISSED; report types DAST)');
+    expect(r.results[0]!.codeDesc).toContain('describes the selection only');
+    expect(r.tags['gitlab/filtered']).toBe(true);
+    expect(r.tags['gitlab/filterStates']).toEqual(['DISMISSED']);
+    expect(r.tags['gitlab/filterReportTypes']).toEqual(['DAST']);
+  });
+
+  it('keeps the clean-report wording when nothing narrowed the fetch', async () => {
+    for (const filters of [undefined, {}, { states: [] }]) {
+      const result = await convert(envelope({ filters }));
+      expect(result.baselines[0]!.title).toBe('No findings');
+    }
+  });
+
+  it('describes a single-dimension selection without a separator', async () => {
+    const result = await convert(envelope({ filters: { states: ['DETECTED', 'CONFIRMED'] } }));
+    expect(result.baselines[0]!.summary).toBe('Filtered selection: states DETECTED, CONFIRMED');
+  });
+});
+
+describe('malformed envelopes', () => {
+  it('rejects an absent or null vulnerabilities list as malformed, not empty', async () => {
+    const base = { metadata: { enterprise: true }, project: { fullPath: 'a/b' }, fetchedAt: FETCHED_AT };
+    for (const body of [base, { ...base, vulnerabilities: null }, { ...base, vulnerabilities: {} }]) {
+      await expect(convertGitlabVulnerabilitiesToHdf(JSON.stringify(body))).rejects.toThrow('no vulnerabilities array');
+    }
+  });
+});
+
+describe('cvss', () => {
+  it('maps every vendor assessment, preferring GitLab own severity band', async () => {
+    const req = await convertOne({
+      identifiers: [{ externalType: 'cwe', externalId: '327' }, { externalType: 'cve', externalId: 'CVE-2023-46233' }],
+      cvss: [
+        { vendor: 'GitHub', vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N', version: 3.1, baseScore: 9.1, overallScore: 7.5, severity: 'CRITICAL' },
+        { vendor: 'NVD', version: 2, baseScore: 4.3, severity: 'not-an-enum' },
+      ],
+    });
+    expect(req.cvss).toHaveLength(2);
+    expect(req.cvss![0]).toEqual({
+      version: '3.1',
+      baseScore: 9.1,
+      baseSeverity: 'critical',
+      baseVector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N',
+      source: 'CVE-2023-46233',
+      computedScore: 7.5,
+      computedSeverity: 'high',
+    });
+    expect(req.cvss![1]).toEqual({ version: '2.0', baseScore: 4.3, baseSeverity: 'medium', source: 'CVE-2023-46233' });
+  });
+
+  it('omits cvss entirely when GitLab attached none', async () => {
+    expect((await convertOne({})).cvss).toBeUndefined();
+  });
+
+  it('lets the vector prefix outrank the numeric version', async () => {
+    const req = await convertOne({ cvss: [{ vector: 'CVSS:4.0/AV:N', version: 2, baseScore: 1 }] });
+    expect(req.cvss![0]!.version).toBe('4.0');
   });
 });
