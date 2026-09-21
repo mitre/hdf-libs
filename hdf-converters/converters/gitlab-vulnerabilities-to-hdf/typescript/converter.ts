@@ -594,6 +594,9 @@ function buildTags(v: Vulnerability, project: Project, original: string, current
   tags['gitlab/initialDetectedPipeline'] = pipelineTag(v.initialDetectedPipeline);
   tags['gitlab/latestDetectedPipeline'] = pipelineTag(v.latestDetectedPipeline);
   tags['gitlab/scanner'] = v.scanner ? { name: v.scanner.name ?? '', vendor: v.scanner.vendor ?? '', externalId: v.scanner.externalId ?? '' } : null;
+  tags['gitlab/primaryIdentifier'] = v.primaryIdentifier
+    ? { externalType: v.primaryIdentifier.externalType ?? '', externalId: v.primaryIdentifier.externalId ?? '', name: v.primaryIdentifier.name ?? '' }
+    : null;
   tags['gitlab/stateTransitionCount'] = transitions.length;
   if (transitions.length > 0 && transitions[transitions.length - 1]!.toState !== v.state) {
     tags['gitlab/stateHistoryInconsistent'] = true;

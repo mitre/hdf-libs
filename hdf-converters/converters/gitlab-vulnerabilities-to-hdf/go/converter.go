@@ -845,6 +845,7 @@ func buildTags(v *Vulnerability, project Project, original, current string) map[
 	tags["gitlab/initialDetectedPipeline"] = pipelineTag(v.InitialDetectedPipeline)
 	tags["gitlab/latestDetectedPipeline"] = pipelineTag(v.LatestDetectedPipeline)
 	tags["gitlab/scanner"] = scannerTag(v.Scanner)
+	tags["gitlab/primaryIdentifier"] = identifierTag(v.PrimaryIdentifier)
 	tags["gitlab/stateTransitionCount"] = len(v.StateTransitions.Nodes)
 	if len(v.StateTransitions.Nodes) > 0 && v.StateTransitions.Nodes[len(v.StateTransitions.Nodes)-1].ToState != v.State {
 		tags["gitlab/stateHistoryInconsistent"] = true
@@ -871,6 +872,15 @@ func pipelineTag(p *PipelineRef) interface{} {
 		return nil
 	}
 	return map[string]interface{}{"iid": p.IID, "sha": p.SHA, "ref": p.Ref, "createdAt": p.CreatedAt}
+}
+
+// identifierTag keeps which identifier GitLab treats as primary, which the
+// flat identifier lists cannot express.
+func identifierTag(id *Identifier) interface{} {
+	if id == nil {
+		return nil
+	}
+	return map[string]interface{}{"externalType": id.ExternalType, "externalId": id.ExternalID, "name": id.Name}
 }
 
 func scannerTag(s *Scanner) interface{} {

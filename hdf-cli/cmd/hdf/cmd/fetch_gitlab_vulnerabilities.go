@@ -62,8 +62,9 @@ The API token is resolved in this order:
   1. GITLAB_TOKEN environment variable
   2. GLAB_TOKEN environment variable
   3. glab CLI config file (~/.config/glab-cli/config.yml)
-It needs the read_api scope (or api) and at least Developer access to the
-projects; passing credentials as flags is intentionally unsupported.
+The token needs read access to the API (read_api, or api) and at least
+Developer access to the projects; passing credentials as flags is
+intentionally unsupported.
 
 With --group, every non-archived project in the group (subgroups included
 by default) is fetched and one HDF file per project is written to --out-dir,

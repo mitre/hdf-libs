@@ -76,6 +76,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "1e3d279c-f379-42e4-8c1b-e6586af91b95",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-1e3d279c-f379-42e4-8c1b-e6586af91b95"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -211,6 +216,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "3b9d7d09-acc4-431c-8eeb-51d8175458f0",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-3b9d7d09-acc4-431c-8eeb-51d8175458f0"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -359,6 +369,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "4774cd67-936f-419e-8533-ae5cfe7db9f9",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-4774cd67-936f-419e-8533-ae5cfe7db9f9"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -521,6 +536,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "b6491a85-b4a2-4553-b7de-a8fe8f21b106",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-b6491a85-b4a2-4553-b7de-a8fe8f21b106"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -647,6 +667,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "7664b07b-053c-45f5-888a-aef42274b483",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-7664b07b-053c-45f5-888a-aef42274b483"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -791,6 +816,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "ff1cbf8e-cccf-4e61-9b00-aad8145ed71c",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-ff1cbf8e-cccf-4e61-9b00-aad8145ed71c"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -926,6 +956,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "1521d2a1-dec6-4907-bf06-393a3f82f635",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-1521d2a1-dec6-4907-bf06-393a3f82f635"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -1059,6 +1094,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "d8d3745b-ac49-4331-a071-bc2dd383870f",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-d8d3745b-ac49-4331-a071-bc2dd383870f"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -1219,6 +1259,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "2e1bbe66-50e2-46a9-9ba6-d3a19ce24b42",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-2e1bbe66-50e2-46a9-9ba6-d3a19ce24b42"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -1358,6 +1403,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "83c93824-8eda-49c7-a92e-6f2578615bfc",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-83c93824-8eda-49c7-a92e-6f2578615bfc"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -1491,6 +1541,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "2611cb9c-4167-41db-b867-e43467f2de1f",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-2611cb9c-4167-41db-b867-e43467f2de1f"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -1627,6 +1682,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "d6566a9a-8052-4ef7-a1f8-460d41d663f0",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-d6566a9a-8052-4ef7-a1f8-460d41d663f0"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -1766,6 +1826,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "96fcb42c-b1ad-4972-ad2e-1ec9b8ae87a6",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-96fcb42c-b1ad-4972-ad2e-1ec9b8ae87a6"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -1902,6 +1967,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "6467a90d-0a50-447e-99cc-f5af3fac8783",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-6467a90d-0a50-447e-99cc-f5af3fac8783"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -2043,6 +2113,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "ca4f7d80-4b87-47cc-8389-e60920e08f56",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-ca4f7d80-4b87-47cc-8389-e60920e08f56"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -2172,6 +2247,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "8d5814e8-7502-4240-87d4-af783a49f81a",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-8d5814e8-7502-4240-87d4-af783a49f81a"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -2313,6 +2393,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "473998fc-fda6-4f3c-a008-2a54f14559d2",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-473998fc-fda6-4f3c-a008-2a54f14559d2"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -2429,6 +2514,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "366ce0f4-5978-43e6-ad5f-2213820d2d74",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-366ce0f4-5978-43e6-ad5f-2213820d2d74"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -2550,6 +2640,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "8a14274f-d06f-4109-ae71-e949c5547551",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-8a14274f-d06f-4109-ae71-e949c5547551"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -2682,6 +2777,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "8b4675ff-99d2-4cc5-8061-be22a7c8342f",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-8b4675ff-99d2-4cc5-8061-be22a7c8342f"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -2822,6 +2922,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "2316554e-4c53-4765-9ac1-48a4ae9e835f",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-2316554e-4c53-4765-9ac1-48a4ae9e835f"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -3015,6 +3120,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "024de607-3eda-4d5e-bf7f-fd28bf38a38f",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-024de607-3eda-4d5e-bf7f-fd28bf38a38f"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -3150,6 +3260,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "d78fe1a1-19bb-4034-850b-66bc4b155789",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-d78fe1a1-19bb-4034-850b-66bc4b155789"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -3280,6 +3395,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "6f1611a3-8721-4301-b0c8-884f8238a760",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-6f1611a3-8721-4301-b0c8-884f8238a760"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,
@@ -3416,6 +3536,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "24e4d317-2d46-4ab0-817a-7de101f5d203",
+              "externalType": "gemnasium",
+              "name": "Gemnasium-24e4d317-2d46-4ab0-817a-7de101f5d203"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "DEPENDENCY_SCANNING",
             "gitlab/resolvedAt": null,

@@ -51,6 +51,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -145,6 +150,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -261,6 +271,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": "2026-09-21T02:20:22Z",
@@ -355,6 +370,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -449,6 +469,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -543,6 +568,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -637,6 +667,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -731,6 +766,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -825,6 +865,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -919,6 +964,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1012,6 +1062,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1106,6 +1161,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1220,6 +1280,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-redirect-rule-express_open_redirect",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-redirect-rule-express_open_redirect"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1314,6 +1379,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1408,6 +1478,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1502,6 +1577,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1596,6 +1676,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1690,6 +1775,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1784,6 +1874,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1878,6 +1973,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -1972,6 +2072,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2066,6 +2171,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2160,6 +2270,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2254,6 +2369,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2348,6 +2468,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2442,6 +2567,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2536,6 +2666,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2630,6 +2765,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2724,6 +2864,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2817,6 +2962,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -2911,6 +3061,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3005,6 +3160,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3098,6 +3258,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3191,6 +3356,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3308,6 +3478,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-eval-with-expression",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-eval-with-expression"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3424,6 +3599,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-jwt-rule-hardcoded_jwt_secret",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-jwt-rule-hardcoded_jwt_secret"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3520,6 +3700,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-eval-with-expression",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-eval-with-expression"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3635,6 +3820,11 @@
             },
             "gitlab/originalSeverity": "HIGH",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-ssrf-rule-node_ssrf",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-ssrf-rule-node_ssrf"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3728,6 +3918,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3821,6 +4016,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -3914,6 +4114,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": "2026-09-21T02:20:22Z",
@@ -4031,6 +4236,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4127,6 +4337,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4243,6 +4458,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4336,6 +4556,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4455,6 +4680,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-regexp",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-regexp"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4589,6 +4819,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-headers-rule-express_cors",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-headers-rule-express_cors"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4685,6 +4920,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4778,6 +5018,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4874,6 +5119,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -4967,6 +5217,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5063,6 +5318,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5159,6 +5419,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5252,6 +5517,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5345,6 +5615,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5441,6 +5716,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5535,6 +5815,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5632,6 +5917,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-regexp",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-regexp"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5726,6 +6016,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5822,6 +6117,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -5918,6 +6218,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6014,6 +6319,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6110,6 +6420,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6207,6 +6522,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-possible-timing-attacks",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-possible-timing-attacks"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6303,6 +6623,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6399,6 +6724,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6492,6 +6822,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6585,6 +6920,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6681,6 +7021,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6774,6 +7119,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6870,6 +7220,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -6966,6 +7321,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7062,6 +7422,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7155,6 +7520,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-traversal-rule-express_lfr",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-traversal-rule-express_lfr"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7251,6 +7621,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7345,6 +7720,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7438,6 +7818,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7535,6 +7920,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-possible-timing-attacks",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-possible-timing-attacks"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7631,6 +8021,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7727,6 +8122,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7823,6 +8223,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -7916,6 +8321,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8009,6 +8419,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8105,6 +8520,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8201,6 +8621,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8295,6 +8720,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8388,6 +8818,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8481,6 +8916,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8577,6 +9017,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8674,6 +9119,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-possible-timing-attacks",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-possible-timing-attacks"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8770,6 +9220,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8866,6 +9321,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -8959,6 +9419,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -9055,6 +9520,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-fs-filename"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -9148,6 +9618,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "externalType": "semgrep_id",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -9244,6 +9719,11 @@
             },
             "gitlab/originalSeverity": "LOW",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-non-literal-require",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-non-literal-require"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -9366,6 +9846,11 @@
             },
             "gitlab/originalSeverity": "MEDIUM",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "eslint.detect-possible-timing-attacks",
+              "externalType": "semgrep_id",
+              "name": "eslint.detect-possible-timing-attacks"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SAST",
             "gitlab/resolvedAt": null,
@@ -9468,6 +9953,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "RSA private key",
+              "externalType": "gitleaks_rule_id",
+              "name": "Gitleaks rule ID RSA private key"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SECRET_DETECTION",
             "gitlab/resolvedAt": null,
@@ -9549,6 +10039,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "RSA private key",
+              "externalType": "gitleaks_rule_id",
+              "name": "Gitleaks rule ID RSA private key"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SECRET_DETECTION",
             "gitlab/resolvedAt": null,
@@ -9630,6 +10125,11 @@
             },
             "gitlab/originalSeverity": "CRITICAL",
             "gitlab/presentOnDefaultBranch": true,
+            "gitlab/primaryIdentifier": {
+              "externalId": "RSA private key",
+              "externalType": "gitleaks_rule_id",
+              "name": "Gitleaks rule ID RSA private key"
+            },
             "gitlab/project": "security-demo/juice-shop",
             "gitlab/reportType": "SECRET_DETECTION",
             "gitlab/resolvedAt": null,
