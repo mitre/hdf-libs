@@ -153,6 +153,29 @@ func TestBaselineName(t *testing.T) {
 	}
 }
 
+// A directory (or SBOM) scan emits source.target as a bare string, not the image
+// object. It must convert without error and surface that string as the target
+// name — the Go twin used to hard-fail unmarshalling it.
+func TestConvertGrypeToHDF_DirectoryScan(t *testing.T) {
+	input := loadFixture(t, "input/directory_scan.json")
+	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)
+	if err != nil {
+		t.Fatalf("directory scan must convert without error; got %v", err)
+	}
+	if got := hdfResults.Baselines[0].Name; got != "." {
+		t.Errorf("baseline name should be the string target %q; got %q", ".", got)
+	}
+	if len(hdfResults.Components) != 1 {
+		t.Fatalf("expected one component; got %d", len(hdfResults.Components))
+	}
+	if got := hdfResults.Components[0].Name; got != "." {
+		t.Errorf("component name should be the string target %q (not the 'Grype Scan' fallback); got %q", ".", got)
+	}
+	if hdfResults.Components[0].Type != hdf.Artifact {
+		t.Errorf("a directory scan is an artifact component; got %v", hdfResults.Components[0].Type)
+	}
+}
+
 func TestMatchesConvertedToRequirements(t *testing.T) {
 	input := loadFixture(t, "input/amazon.json")
 	hdfResults, err := ConvertGrypeToHDF(input, testConverterVersion)

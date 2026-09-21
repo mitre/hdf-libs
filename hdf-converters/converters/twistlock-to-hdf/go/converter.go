@@ -81,13 +81,20 @@ type TwistlockDistribution struct {
 }
 
 // getImpact maps Twistlock severity strings to HDF impact values.
-// Includes "important" (alias for critical) and "moderate" (alias for medium)
-// which appear in some Twistlock outputs. Maps critical to 0.9 (not standard 1.0).
-
+// Twistlock passes distro-feed severities through, so beyond its own tiers it
+// emits Red Hat's "important"/"moderate" and Debian's "unimportant"/"negligible";
+// the standard levels (critical=0.9, high, medium, low, info) come from the shared
+// map. "negligible" is the 0.0 floor, matching grype-to-hdf's convention.
+// "unimportant" is Debian's lowest *rated* severity (a deliberate "not worth a
+// security update" judgment, not an absent rating), so it maps to the nearest
+// standard rated tier, low (0.3) — distinct from negligible's no-impact floor and
+// from the unrated unknown/unassigned tokens.
+// Keep this table identical to the TypeScript twin's TWISTLOCK_ALIASES.
 var twistlockAliases = map[string]float64{
-	"critical":  0.9,
-	"important": 0.9,
-	"moderate":  0.5,
+	"important":   0.9,
+	"moderate":    0.5,
+	"unimportant": 0.3,
+	"negligible":  0.0,
 }
 
 func getImpact(severity string) float64 {
@@ -337,8 +344,8 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 		"cveid": []interface{}{vuln.ID},
 	}
 	// Legacy: retain the cvss_base_score tag for one release so existing
-	// downstream queries keep working. Marked for removal in v3.4.0 (see
-	// CHANGELOG note in epic hdf-libs-8zn0).
+	// downstream queries keep working. Marked for removal in v3.4.0; the
+	// CHANGELOG carries the deprecation note.
 	if vuln.CVSS > 0 {
 		extras["cvss_base_score"] = vuln.CVSS
 	}
