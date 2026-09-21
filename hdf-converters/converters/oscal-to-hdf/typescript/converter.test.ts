@@ -2600,6 +2600,98 @@ describe('convertOscalPoamToHdf edge cases', () => {
     // oscalStatusToHdf returns undefined for 'investigating', so falls through to default 'failed'
     expect(amendments.overrides[0]!.status).toBe('failed');
   });
+
+  // Mirrors the Go peers: HDF's own constraints on an imported document
+  // (Evidence.data, Milestone.title, StandaloneOverride.requirementId) are not
+  // constraints a foreign OSCAL POA&M has to satisfy.
+  const HDF_NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+  const hdfProducedRiskProps = (extra: Array<Record<string, unknown>> = []) => ({
+    props: [
+      { name: 'override-type', ns: HDF_NS, value: 'waiver' },
+      { name: 'hdf-requirement-id', ns: HDF_NS, value: 'CVE-2021-44228' },
+      ...extra,
+    ],
+  });
+
+  it('skips an evidence observation that carries no payload', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const doc = poamDocWithDeadline(
+      {
+        uuid: 'item-1',
+        title: 'Finding',
+        'related-observations': [{ 'observation-uuid': 'obs-bare' }, { 'observation-uuid': 'obs-dangling' }, { 'observation-uuid': 'obs-href' }],
+      },
+      {
+        risk: hdfProducedRiskProps(),
+        top: {
+          observations: [
+            { uuid: 'obs-bare', description: 'Reviewed the change ticket', types: ['url'], collected: '2026-01-02T03:04:05Z' },
+            { uuid: 'obs-dangling', description: 'd', types: ['file'], collected: '2026-01-02T03:04:05Z', links: [{ href: '#missing', rel: 'evidence' }] },
+            { uuid: 'obs-href', description: 'd', types: ['url'], collected: '2026-01-02T03:04:05Z', 'relevant-evidence': [{ href: 'https://example.com/advisory' }] },
+          ],
+        },
+      },
+    );
+    const amendments = JSON.parse(await convertOscalPoamToHdf(doc)) as HDFAmendments;
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    warn.mockRestore();
+
+    expect(amendments.overrides[0]!.evidence).toHaveLength(1);
+    expect(amendments.overrides[0]!.evidence![0]!.data).toBe('https://example.com/advisory');
+    expect(warnings).toContain('WARNING: Skipping evidence observation "obs-bare": no relevant-evidence href and no evidence resource');
+    expect(warnings).toContain('WARNING: Skipping evidence observation "obs-dangling": no relevant-evidence href and no evidence resource');
+  });
+
+  it('drops a milestone title that is not the single line HDF carries', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const task = (uuid: string, title: string) => ({
+      uuid,
+      type: 'milestone',
+      title,
+      timing: { 'within-date-range': { start: '2026-01-01T00:00:00Z', end: '2099-12-31T00:00:00Z' } },
+    });
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'Finding' },
+      {
+        risk: {
+          ...hdfProducedRiskProps(),
+          remediations: [{
+            uuid: 'rem-1',
+            lifecycle: 'planned',
+            title: 'Fix',
+            description: 'Patch the web tier',
+            tasks: [task('t-ok', 'Deploy OpenSSH 9.8p1'), task('t-empty', ''), task('t-space', ' leading space'), task('t-wrapped', 'two\nlines')],
+          }],
+        },
+      },
+    );
+    const amendments = JSON.parse(await convertOscalPoamToHdf(doc)) as HDFAmendments;
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    warn.mockRestore();
+
+    const milestones = amendments.overrides[0]!.milestones!;
+    expect(milestones).toHaveLength(4);
+    expect(milestones[0]!.title).toBe('Deploy OpenSSH 9.8p1');
+    for (const ms of milestones.slice(1)) {
+      expect(ms.title).toBeUndefined();
+      expect(ms.description).toBe('Patch the web tier');
+    }
+    expect(warnings).toContain('WARNING: Dropping the title of task "t-empty": "" is not the single line Milestone.title is');
+    expect(warnings).toContain('WARNING: Dropping the title of task "t-space": " leading space" is not the single line Milestone.title is');
+    expect(warnings).toContain('WARNING: Dropping the title of task "t-wrapped": "two\\nlines" is not the single line Milestone.title is');
+  });
+
+  it('skips an HDF-produced risk that names no requirement, and fails when nothing is left', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const doc = poamDocWithDeadline(
+      { uuid: 'item-1', title: 'Some item' },
+      { risk: { props: [{ name: 'override-type', ns: HDF_NS, value: 'waiver' }] } },
+    );
+    await expect(convertOscalPoamToHdf(doc)).rejects.toThrow('no poam-item names a requirement');
+    const warnings = warn.mock.calls.map((c) => c[0] as string);
+    warn.mockRestore();
+    expect(warnings).toContain('WARNING: Skipping poam-item "item-1" titled "Some item": its HDF-produced risk has no hdf-requirement-id');
+  });
 });
 
 // ---------------------------------------------------------------------------

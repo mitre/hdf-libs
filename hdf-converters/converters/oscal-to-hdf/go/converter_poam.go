@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -79,13 +80,16 @@ func poamToHDFAmendments(poam *PlanOfActionAndMilestones, rawInput []byte, conve
 			return nil, err
 		}
 		if !identified {
-			log.Printf("WARNING: Skipping poam-item \"%s\" titled \"%s\": its pre-ADR risk has no impacted-control-id", item.UUID, item.Title)
 			continue
 		}
 		if hdfProducedRisk(item, riskMap) != nil {
 			hdfProduced = true
 		}
 		overrides = append(overrides, override)
+	}
+
+	if len(overrides) == 0 {
+		return nil, fmt.Errorf("oscal-poam-to-hdf: no poam-item names a requirement; every one of the %d items was skipped", len(limitedPOAMItems))
 	}
 
 	// Tamper-evidence must not depend on which route authored the document.
@@ -212,10 +216,14 @@ func overrideTypeRisk(item *POAMItem, riskMap map[string]*Risk, legacy bool) *Ri
 func poamItemToOverride(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones) (override hdf.StandaloneOverride, identified bool, err error) {
 	risk := hdfProducedRisk(item, riskMap)
 	var requirementID string
-	if risk == nil {
-		if requirementID, identified = foreignRequirementID(item, riskMap); !identified {
+	if risk != nil {
+		if _, ok := hdfRequirementID(risk); !ok {
+			log.Printf("WARNING: Skipping poam-item \"%s\" titled \"%s\": its HDF-produced risk has no hdf-requirement-id", item.UUID, item.Title)
 			return hdf.StandaloneOverride{}, false, nil
 		}
+	} else if requirementID, identified = foreignRequirementID(item, riskMap); !identified {
+		log.Printf("WARNING: Skipping poam-item \"%s\" titled \"%s\": its pre-ADR risk has no impacted-control-id", item.UUID, item.Title)
+		return hdf.StandaloneOverride{}, false, nil
 	}
 
 	appliedAt, expiresAt, err := poamItemSchedule(item, riskMap, poam)
@@ -252,8 +260,8 @@ func hdfOverride(item *POAMItem, risk *Risk, poam *PlanOfActionAndMilestones, ap
 	if m, ok := FindVocabularyProp(props, "override-type"); ok {
 		override.Type = hdf.OverrideType(m.Value)
 	}
-	if m, ok := FindVocabularyProp(props, "hdf-requirement-id"); ok {
-		override.RequirementID = m.Value
+	if id, ok := hdfRequirementID(risk); ok {
+		override.RequirementID = id
 	}
 	if m, ok := FindVocabularyProp(props, "override-status"); ok {
 		status := hdf.ResultStatus(m.Value)
@@ -387,6 +395,10 @@ func documentIdentity(poam *PlanOfActionAndMilestones, roleID string) *hdf.Ident
 	return &hdf.Identity{Type: hdf.Simple, Identifier: partyUUID}
 }
 
+// milestoneTitlePattern mirrors the schema's Milestone.title pattern: an OSCAL
+// task title is markup-line, which a foreign producer may wrap or pad.
+var milestoneTitlePattern = regexp.MustCompile("^[^ \t\n\r]([^\n\r]*[^ \t\n\r])?$")
+
 // hdfMilestones reads each planned remediation task of an HDF-produced risk as a
 // milestone whose description is the remediation description.
 func hdfMilestones(risk *Risk, poam *PlanOfActionAndMilestones) []hdf.Milestone {
@@ -406,7 +418,11 @@ func hdfMilestones(risk *Risk, poam *PlanOfActionAndMilestones) []hdf.Milestone 
 			}
 			ms := hdf.Milestone{Description: rem.Description, EstimatedCompletion: eta, Status: hdf.Pending}
 			if !HasFieldMarker(task.Props, "absent-field", "title", "") {
-				ms.Title = hdfutil.Ptr(task.Title)
+				if milestoneTitlePattern.MatchString(task.Title) {
+					ms.Title = hdfutil.Ptr(task.Title)
+				} else {
+					log.Printf("WARNING: Dropping the title of task \"%s\": %q is not the single line Milestone.title is", task.UUID, task.Title)
+				}
 			}
 			if m, ok := FindVocabularyProp(task.Props, "milestone-status"); ok {
 				ms.Status = hdf.MilestoneStatus(m.Value)
@@ -501,15 +517,24 @@ func cvssFacets(facets []Facet) bool {
 	return true
 }
 
-// itemEvidence reads the evidence observations an HDF-produced item lists.
+// itemEvidence reads the evidence observations an HDF-produced item lists. An
+// observation with no payload is not an HDF evidence item (ADR-0014 §4.6 gives
+// Evidence.data no other home) and Evidence.data is required and non-empty, so
+// a foreign observation listed alongside the exported ones is skipped.
 func itemEvidence(item *POAMItem, poam *PlanOfActionAndMilestones) []hdf.Evidence {
 	var evidence []hdf.Evidence
 	for _, ro := range item.RelatedObservations {
 		for i := range poam.Observations {
-			if poam.Observations[i].UUID == ro.ObservationUUID {
-				evidence = append(evidence, observationEvidence(&poam.Observations[i], poam))
-				break
+			obs := &poam.Observations[i]
+			if obs.UUID != ro.ObservationUUID {
+				continue
 			}
+			if ev := observationEvidence(obs, poam); ev.Data != "" {
+				evidence = append(evidence, ev)
+			} else {
+				log.Printf("WARNING: Skipping evidence observation \"%s\": no relevant-evidence href and no evidence resource", obs.UUID)
+			}
+			break
 		}
 	}
 	return evidence
@@ -648,10 +673,7 @@ func riskReferences(risk *Risk, poam *PlanOfActionAndMilestones) []hdf.ExternalR
 func poamItemSchedule(item *POAMItem, riskMap map[string]*Risk, poam *PlanOfActionAndMilestones) (appliedAt, expiresAt time.Time, err error) {
 	label := extractRequirementIDFromPOAMItem(item, riskMap)
 	if risk := hdfProducedRisk(item, riskMap); risk != nil {
-		label = ""
-		if m, ok := FindVocabularyProp(risk.Props, "hdf-requirement-id"); ok {
-			label = m.Value
-		}
+		label, _ = hdfRequirementID(risk)
 		if entry := overrideAppliedEntry(risk); entry != nil {
 			appliedAt = hdfutil.ParseTimestamp(entry.Start)
 		}
@@ -687,11 +709,23 @@ func foreignRequirementID(item *POAMItem, riskMap map[string]*Risk) (id string, 
 // identifiedItem reports whether the conversion imports an item rather than
 // skipping it for want of a requirement id.
 func identifiedItem(item *POAMItem, riskMap map[string]*Risk) bool {
-	if hdfProducedRisk(item, riskMap) != nil {
-		return true
+	if risk := hdfProducedRisk(item, riskMap); risk != nil {
+		_, ok := hdfRequirementID(risk)
+		return ok
 	}
 	_, identified := foreignRequirementID(item, riskMap)
 	return identified
+}
+
+// hdfRequirementID reads the requirement id an HDF-produced risk carries. An
+// absent or empty prop names no requirement, and StandaloneOverride.requirementId
+// is required and non-empty, so the item is skipped rather than imported unusable.
+func hdfRequirementID(risk *Risk) (string, bool) {
+	m, ok := FindVocabularyProp(risk.Props, "hdf-requirement-id")
+	if !ok || m.Value == "" {
+		return "", false
+	}
+	return m.Value, true
 }
 
 // extractRequirementIDFromPOAMItem extracts a requirement ID from a foreign

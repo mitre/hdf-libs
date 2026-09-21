@@ -89,12 +89,13 @@ export async function convertOscalPoamToHdf(input: string): Promise<string> {
   let hdfProduced = false;
   for (const item of poam['poam-items']) {
     const override = poamItemToOverride(item, riskMap, poam);
-    if (!override) {
-      emitConverterWarning(`Skipping poam-item "${item.uuid}" titled "${item.title}": its pre-ADR risk has no impacted-control-id`);
-      continue;
-    }
+    if (!override) continue;
     if (hdfProducedRisk(item, riskMap)) hdfProduced = true;
     overrides.push(override);
+  }
+
+  if (overrides.length === 0) {
+    throw new Error(`oscal-poam-to-hdf: no poam-item names a requirement; every one of the ${poam['poam-items'].length} items was skipped`);
   }
 
   // Tamper-evidence must not depend on which route authored the document.
@@ -200,10 +201,19 @@ function poamItemToOverride(
   poam: PlanOfActionAndMilestonesPOAM,
 ): StandaloneOverride | undefined {
   const risk = hdfProducedRisk(item, riskMap);
-  if (risk) return hdfOverride(item, risk, riskMap, poam);
+  if (risk) {
+    if (hdfRequirementId(risk) === undefined) {
+      emitConverterWarning(`Skipping poam-item "${item.uuid}" titled "${item.title}": its HDF-produced risk has no hdf-requirement-id`);
+      return undefined;
+    }
+    return hdfOverride(item, risk, riskMap, poam);
+  }
 
   const requirementId = foreignRequirementId(item, riskMap);
-  if (requirementId === undefined) return undefined;
+  if (requirementId === undefined) {
+    emitConverterWarning(`Skipping poam-item "${item.uuid}" titled "${item.title}": its pre-ADR risk has no impacted-control-id`);
+    return undefined;
+  }
   const milestones = extractMilestones(item, riskMap);
   return {
     type: OverrideType.Poam,
@@ -219,6 +229,15 @@ function poamItemToOverride(
 }
 
 /**
+ * The requirement id an HDF-produced risk carries. An absent or empty prop names
+ * no requirement, and StandaloneOverride.requirementId is required and non-empty,
+ * so the item is skipped rather than imported unusable.
+ */
+function hdfRequirementId(risk: IdentifiedRisk): string | undefined {
+  return findVocabularyProp(risk.props, 'hdf-requirement-id')?.value || undefined;
+}
+
+/**
  * Reads every override field from its ADR-0014 §4.6 home on an HDF-produced risk.
  * An absent prop is an absent field: nothing is derived from titles or uuids.
  */
@@ -229,7 +248,7 @@ function hdfOverride(
   poam: PlanOfActionAndMilestonesPOAM,
 ): StandaloneOverride {
   const props = risk.props;
-  const requirementId = findVocabularyProp(props, 'hdf-requirement-id')?.value ?? '';
+  const requirementId = hdfRequirementId(risk) ?? '';
   const entry = overrideAppliedEntry(risk);
   const appliedAt = (entry && parseTimestamp(String(entry.start))) || poamItemAppliedAt(poam, requirementId);
   const override: StandaloneOverride = {
@@ -338,6 +357,12 @@ function documentIdentity(poam: PlanOfActionAndMilestonesPOAM, roleId: string): 
   return partyIdentity(poam, partyUuid) ?? { type: IdentityType.Simple, identifier: partyUuid };
 }
 
+/**
+ * Mirrors the schema's Milestone.title pattern: an OSCAL task title is
+ * markup-line, which a foreign producer may wrap or pad.
+ */
+const MILESTONE_TITLE_PATTERN = /^[^ \t\n\r]([^\n\r]*[^ \t\n\r])?$/;
+
 /** Reads each planned remediation task of an HDF-produced risk as a milestone whose description is the remediation description. */
 function hdfMilestones(risk: IdentifiedRisk, poam: PlanOfActionAndMilestonesPOAM): HdfMilestone[] {
   const milestones: HdfMilestone[] = [];
@@ -353,7 +378,11 @@ function hdfMilestones(risk: IdentifiedRisk, poam: PlanOfActionAndMilestonesPOAM
         estimatedCompletion,
         status: (status?.value as MilestoneStatus | undefined) ?? MilestoneStatus.Pending,
       };
-      if (!hasFieldMarker(task.props, 'absent-field', 'title', '')) ms.title = task.title;
+      if (!hasFieldMarker(task.props, 'absent-field', 'title', '')) {
+        const title = task.title ?? '';
+        if (MILESTONE_TITLE_PATTERN.test(title)) ms.title = title;
+        else emitConverterWarning(`Dropping the title of task "${task.uuid}": ${JSON.stringify(title)} is not the single line Milestone.title is`);
+      }
       const completedAt = findVocabularyProp(task.props, 'completed-at');
       const completedAtDate = completedAt && parseTimestamp(completedAt.value);
       if (completedAtDate) ms.completedAt = completedAtDate;
@@ -403,12 +432,23 @@ function riskCvss(risk: IdentifiedRisk): Cvss | undefined {
   return undefined;
 }
 
-/** Reads the evidence observations an HDF-produced item lists. */
+/**
+ * Reads the evidence observations an HDF-produced item lists. An observation with
+ * no payload is not an HDF evidence item (ADR-0014 §4.6 gives Evidence.data no
+ * other home) and Evidence.data is required and non-empty, so a foreign
+ * observation listed alongside the exported ones is skipped.
+ */
 function itemEvidence(item: POAMItem, poam: PlanOfActionAndMilestonesPOAM): Evidence[] {
   const evidence: Evidence[] = [];
   for (const ro of item['related-observations'] ?? []) {
     const obs = (poam.observations ?? []).find((o) => o.uuid === ro['observation-uuid']);
-    if (obs) evidence.push(observationEvidence(obs, poam));
+    if (!obs) continue;
+    const ev = observationEvidence(obs, poam);
+    if (ev.data === '') {
+      emitConverterWarning(`Skipping evidence observation "${obs.uuid}": no relevant-evidence href and no evidence resource`);
+      continue;
+    }
+    evidence.push(ev);
   }
   return evidence;
 }

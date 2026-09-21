@@ -273,6 +273,119 @@ func TestConvertPOAMToHDF_PreADRDocument(t *testing.T) {
 	assert.Empty(t, logs.String(), "the count path skips silently")
 }
 
+// captureLogs redirects the standard logger for the duration of the test.
+func captureLogs(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	return &logs
+}
+
+// An observation a foreign tool added to an HDF-produced item's
+// related-observations carries no Evidence.data, which HDF requires non-empty.
+func TestItemEvidence_SkipsObservationWithNoPayload(t *testing.T) {
+	logs := captureLogs(t)
+
+	poam := &PlanOfActionAndMilestones{
+		Observations: []Observation{
+			{UUID: "obs-bare", Description: "Reviewed the change ticket", Types: []string{"url"}, Collected: "2026-01-02T03:04:05Z"},
+			{UUID: "obs-dangling", Types: []string{"file"}, Links: []Link{{Href: "#missing", Rel: "evidence"}}},
+			{UUID: "obs-href", Types: []string{"url"}, RelevantEvidence: []RelevantEvidence{{Href: "https://example.com/advisory"}}},
+		},
+	}
+	item := &POAMItem{RelatedObservations: []RelatedRef{
+		{ObservationUUID: "obs-bare"}, {ObservationUUID: "obs-dangling"}, {ObservationUUID: "obs-href"},
+	}}
+
+	evidence := itemEvidence(item, poam)
+
+	require.Len(t, evidence, 1, "only the observation carrying a payload is evidence")
+	assert.Equal(t, "https://example.com/advisory", evidence[0].Data)
+	assert.Contains(t, logs.String(), `WARNING: Skipping evidence observation "obs-bare": no relevant-evidence href and no evidence resource`)
+	assert.Contains(t, logs.String(), `WARNING: Skipping evidence observation "obs-dangling": no relevant-evidence href and no evidence resource`)
+}
+
+// A foreign task title need not be the single line HDF's Milestone.title is.
+func TestHDFMilestones_DropsATitleHDFCannotCarry(t *testing.T) {
+	logs := captureLogs(t)
+
+	task := func(uuid, title string) Task {
+		return Task{UUID: uuid, Title: title, Timing: &Timing{WithinDateRange: &DateRange{End: "2099-12-31T00:00:00Z"}}}
+	}
+	risk := &Risk{Remediations: []Remediation{{Lifecycle: "planned", Description: "Patch the web tier", Tasks: []Task{
+		task("t-ok", "Deploy OpenSSH 9.8p1"),
+		task("t-empty", ""),
+		task("t-space", " leading space"),
+		task("t-wrapped", "two\nlines"),
+	}}}}
+
+	milestones := hdfMilestones(risk, &PlanOfActionAndMilestones{})
+
+	require.Len(t, milestones, 4, "the milestone is kept; only the title HDF cannot carry is dropped")
+	require.NotNil(t, milestones[0].Title)
+	assert.Equal(t, "Deploy OpenSSH 9.8p1", *milestones[0].Title)
+	for _, ms := range milestones[1:] {
+		assert.Nil(t, ms.Title)
+		assert.Equal(t, "Patch the web tier", ms.Description)
+	}
+	assert.Contains(t, logs.String(), `WARNING: Dropping the title of task "t-empty": ""`)
+	assert.Contains(t, logs.String(), `WARNING: Dropping the title of task "t-space": " leading space"`)
+	assert.Contains(t, logs.String(), `WARNING: Dropping the title of task "t-wrapped": "two\nlines"`)
+}
+
+// An HDF-produced risk whose hdf-requirement-id was stripped names no
+// requirement, and StandaloneOverride.requirementId must be non-empty.
+func TestPoamItemToOverride_SkipsHDFProducedRiskWithNoRequirementID(t *testing.T) {
+	logs := captureLogs(t)
+
+	poam := &PlanOfActionAndMilestones{
+		Metadata: Metadata{LastModified: "2026-01-02T03:04:05Z"},
+		Risks: []Risk{{
+			UUID:     "r1",
+			Deadline: "2099-12-31T00:00:00Z",
+			Props:    []Property{{Name: "override-type", Ns: hdfNS, Value: "waiver"}},
+		}},
+	}
+	item := &POAMItem{UUID: "i1", Title: "Some item", RelatedRisks: []RelatedRef{{RiskUUID: "r1"}}}
+	riskMap := buildRiskMap(poam.Risks)
+
+	_, identified, err := poamItemToOverride(item, riskMap, poam)
+
+	require.NoError(t, err)
+	assert.False(t, identified)
+	assert.Contains(t, logs.String(), `WARNING: Skipping poam-item "i1" titled "Some item": its HDF-produced risk has no hdf-requirement-id`)
+
+	logs.Reset()
+	assert.False(t, identifiedItem(item, riskMap), "the fidelity count agrees with the skip")
+	assert.Empty(t, logs.String(), "the count path skips silently")
+}
+
+// HDFAmendments.overrides is required and non-empty, so a POA&M whose every item
+// is skipped is a failed conversion, not an empty success.
+func TestConvertPOAMToHDF_FailsWhenNoItemNamesARequirement(t *testing.T) {
+	captureLogs(t)
+
+	input, err := json.Marshal(map[string]any{"plan-of-action-and-milestones": map[string]any{
+		"uuid":     "11111111-1111-4111-8111-111111111111",
+		"metadata": map[string]any{"title": "Nothing to import", "last-modified": "2026-01-02T03:04:05Z", "version": "1.0", "oscal-version": "1.1.2"},
+		"risks": []any{map[string]any{
+			"uuid": "r1", "title": "r", "description": "d", "status": "open", "deadline": "2099-12-31T00:00:00Z",
+			"props": []any{map[string]any{"name": "override-type", "ns": hdfNS, "value": "waiver"}},
+		}},
+		"poam-items": []any{map[string]any{
+			"uuid": "i1", "title": "Some item", "description": "d",
+			"related-risks": []any{map[string]any{"risk-uuid": "r1"}},
+		}},
+	}})
+	require.NoError(t, err)
+
+	_, err = ConvertPOAMToHDF(input, "1.0.0")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no poam-item names a requirement")
+}
+
 // preADRComparable decodes an amendments document without the fields a converter
 // stamps or derives from bytes the comparison does not share: generator,
 // integrity and each override's previousChecksum.
