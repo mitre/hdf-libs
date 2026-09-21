@@ -553,3 +553,17 @@ describe('convertHdfToCsafVex — golden parity', () => {
     },
   );
 });
+
+// Mirrors TestConvertHDFToCSAFVEX_NamesTheAbsenceNotTheToken in Go.
+describe('hdf-to-csaf-vex unidentified product', () => {
+  it('names the absence in the human-readable field, keeping the compelled token', () => {
+    const doc = JSON.parse(convertHdfToCsafVex(loadInput('sec-vex-amendments.json'))) as {
+      product_tree: { full_product_names: { name: string; product_id: string }[] };
+    };
+    const entries = doc.product_tree.full_product_names.filter((p) => p.product_id === 'HDFPID-0001');
+    expect(entries.length, 'fixture has an override with no product identity').toBeGreaterThan(0);
+    for (const e of entries) {
+      expect(e.name).toBe('No product identity was recorded in the source amendment');
+    }
+  });
+});

@@ -35,7 +35,18 @@ const GO_ZERO_TIME = new Date('0001-01-01T00:00:00Z');
 
 const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
+// Kept where the sibling hdf-to-cyclonedx-vex exporter dropped its own: this
+// document declares category csaf_vex, whose profile makes product_tree
+// mandatory, product_status buckets cannot be empty, and scores[] requires
+// products. product_id is a document-local token by spec. Omitting would still
+// pass the vendored schema, which does not encode the profile. See the Go peer
+// and hdf-libs-5gri.39.
 const DEFAULT_PRODUCT_ID = 'HDFPID-0001';
+
+// What a human reads where the token above is what the profile requires. CSAF
+// requires a name on every full_product_name, and repeating the token there made
+// an invented identifier look like one a vendor had assigned. Mirrors the Go peer.
+const DEFAULT_PRODUCT_NAME = 'No product identity was recorded in the source amendment';
 
 interface CSAFVexDocument {
   document: {
@@ -185,7 +196,7 @@ export function convertHdfToCsafVex(input: string, converterVersion: string): st
   const doc = buildDocument(amendments, converterVersion);
   doc.vulnerabilities = vulnerabilities;
   doc.product_tree.full_product_names =
-    names.length > 0 ? names : [{ name: DEFAULT_PRODUCT_ID, product_id: DEFAULT_PRODUCT_ID }];
+    names.length > 0 ? names : [{ name: DEFAULT_PRODUCT_NAME, product_id: DEFAULT_PRODUCT_ID }];
 
   return JSON.stringify(doc, null, 2);
 }
@@ -242,7 +253,7 @@ function productEntriesFor(o: StandaloneOverride): CsafFullProductName[] {
       .filter(Boolean);
     if (parts.length > 0) return parts.map((p) => ({ name: p, product_id: p }));
   }
-  return [{ name: DEFAULT_PRODUCT_ID, product_id: DEFAULT_PRODUCT_ID }];
+  return [{ name: DEFAULT_PRODUCT_NAME, product_id: DEFAULT_PRODUCT_ID }];
 }
 
 /** product_tree entries for the synthesized fixed-version products. */

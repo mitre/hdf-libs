@@ -34,7 +34,23 @@ var productsRegexp = regexp.MustCompile(`(?m)^Products:\s*(.+)$`)
 
 // defaultProductID is used when an HDF override lacks both a componentRef
 // and a recoverable product hint in the reason field.
+//
+// The sibling hdf-to-cyclonedx-vex exporter stopped minting one of these, but
+// CSAF cannot: this document declares category csaf_vex, whose profile makes
+// product_tree mandatory, product_status buckets cannot be empty (products_t
+// minItems 1), and a CVSS score cannot exist without product ids (scores[]
+// requires products). product_id is a document-local token by spec, not an
+// identifier of anything in the world. Dropping it would still pass the
+// vendored JSON Schema, which does not encode the profile — a silent
+// regression. What the human-readable name should say instead is an open
+// question on hdf-libs-5gri.39.
 const defaultProductID = "HDFPID-0001"
+
+// defaultProductName is what a human reads where the token above is what the
+// profile requires. CSAF requires a name on every full_product_name, and
+// repeating the token there made an invented identifier look like one a vendor
+// had assigned. A sentence cannot be mistaken for a product.
+const defaultProductName = "No product identity was recorded in the source amendment"
 
 // CSAFVexDocument is the export envelope. Field shapes mirror the CSAF
 // 2.0 schema closely enough that the output validates.
@@ -277,7 +293,7 @@ func ConvertHDFToCSAFVEX(input []byte, converterVersion string) ([]byte, error) 
 	sort.Slice(names, func(i, j int) bool { return names[i].ProductID < names[j].ProductID })
 	doc.ProductTree.FullProductNames = names
 	if len(doc.ProductTree.FullProductNames) == 0 {
-		doc.ProductTree.FullProductNames = []FullProductName{{Name: defaultProductID, ProductID: defaultProductID}}
+		doc.ProductTree.FullProductNames = []FullProductName{{Name: defaultProductName, ProductID: defaultProductID}}
 	}
 
 	return marshalIndentPlain(doc)
@@ -412,7 +428,7 @@ func productEntriesFor(o *hdf.StandaloneOverride) []FullProductName {
 			return out
 		}
 	}
-	return []FullProductName{{Name: defaultProductID, ProductID: defaultProductID}}
+	return []FullProductName{{Name: defaultProductName, ProductID: defaultProductID}}
 }
 
 // fixedProductEntriesFor returns product_tree entries for the synthesized
