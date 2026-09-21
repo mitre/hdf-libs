@@ -23,9 +23,7 @@ published on the docs site.
   2. `Exec_JSON_Control.source_location` — also accepts a bare `string`.
   3. `Reference` — also accepts an empty `{}`.
   4. `Exec_JSON_Control` — `impact` is no longer required.
-  Verified against 157 real Heimdall-sourced v2 docs: all 157 validate. These are
-  a temporary local fork; the correct long-term fix is to update Heimdall's
-  inspecjs schema upstream and drop the deviations (follow-up card). Do not add
+  Verified against 157 real Heimdall-sourced v2 docs: all 157 validate. Do not add
   further deviations without the same real-data justification and a `$comment`.
 
 `testdata/inspec-exec-json-valid.json` is a real HDF v2 document:
