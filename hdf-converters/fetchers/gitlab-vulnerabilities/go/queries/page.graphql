@@ -1,0 +1,53 @@
+query VulnerabilityReportPage($fullPath: ID!, $ref: String!, $first: Int!, $after: String, $withPipeline: Boolean!, $state: [VulnerabilityState!], $reportType: [VulnerabilityReportType!]) {
+  project(fullPath: $fullPath) {
+    fullPath
+    pipelines(ref: $ref, first: 1) @include(if: $withPipeline) {
+      nodes {
+        iid sha ref status createdAt
+        securityReportSummary {
+          sast { scans { nodes { name status errors warnings } } }
+          secretDetection { scans { nodes { name status errors warnings } } }
+          dependencyScanning { scans { nodes { name status errors warnings } } }
+          containerScanning { scans { nodes { name status errors warnings } } }
+          dast { scans { nodes { name status errors warnings } } }
+          coverageFuzzing { scans { nodes { name status errors warnings } } }
+          apiFuzzing { scans { nodes { name status errors warnings } } }
+          clusterImageScanning { scans { nodes { name status errors warnings } } }
+        }
+      }
+    }
+    vulnerabilities(first: $first, after: $after, sort: severity_desc, state: $state, reportType: $reportType) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        id uuid title description severity reportType state
+        detectedAt confirmedAt dismissedAt resolvedAt updatedAt
+        falsePositive presentOnDefaultBranch resolvedOnDefaultBranch
+        dismissalReason stateComment
+        confirmedBy { username name publicEmail }
+        dismissedBy { username name publicEmail }
+        resolvedBy  { username name publicEmail }
+        solution vulnerabilityPath webUrl
+        scanner { name vendor externalId reportType }
+        primaryIdentifier { externalType externalId name url }
+        identifiers { externalType externalId name url }
+        links { name url }
+        cvss { vendor vector version baseScore overallScore severity }
+        location {
+          __typename
+          ... on VulnerabilityLocationSast { file startLine endLine blobPath vulnerableClass vulnerableMethod }
+          ... on VulnerabilityLocationSecretDetection { file startLine endLine blobPath }
+          ... on VulnerabilityLocationDependencyScanning { file blobPath dependency { version package { name } } }
+          ... on VulnerabilityLocationContainerScanning { image operatingSystem dependency { version package { name } } }
+          ... on VulnerabilityLocationClusterImageScanning { image operatingSystem dependency { version package { name } } }
+          ... on VulnerabilityLocationCoverageFuzzing { file startLine endLine blobPath vulnerableClass vulnerableMethod }
+          ... on VulnerabilityLocationGeneric { description }
+          ... on VulnerabilityLocationDast { hostname path param requestMethod }
+        }
+        initialDetectedPipeline { iid sha ref createdAt }
+        latestDetectedPipeline  { iid sha ref createdAt }
+        stateTransitions(first: 20) { pageInfo { hasNextPage endCursor } nodes { fromState toState createdAt comment dismissalReason author { username name publicEmail } } }
+        severityOverrides(first: 20) { pageInfo { hasNextPage endCursor } nodes { originalSeverity newSeverity createdAt author { username name publicEmail } } }
+      }
+    }
+  }
+}

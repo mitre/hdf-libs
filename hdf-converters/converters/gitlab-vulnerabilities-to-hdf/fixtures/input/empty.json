@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "enterprise": true,
+    "version": "18.9.1-ee"
+  },
+  "project": {
+    "id": "gid://gitlab/Project/3",
+    "fullPath": "security-demo/empty-app",
+    "name": "empty-app",
+    "webUrl": "https://gitlab.example.com/security-demo/empty-app",
+    "archived": false,
+    "repository": {
+      "rootRef": "main"
+    },
+    "securityScanners": {
+      "available": [
+        "SAST",
+        "SAST_ADVANCED",
+        "SAST_IAC",
+        "DAST",
+        "DEPENDENCY_SCANNING",
+        "CONTAINER_SCANNING",
+        "SECRET_DETECTION",
+        "COVERAGE_FUZZING",
+        "API_FUZZING",
+        "CLUSTER_IMAGE_SCANNING"
+      ],
+      "enabled": [],
+      "pipelineRun": []
+    },
+    "vulnerabilityStatistic": null,
+    "latestDefaultBranchPipeline": null
+  },
+  "vulnerabilities": [],
+  "fetchedAt": "2026-09-21T02:31:45Z"
+}

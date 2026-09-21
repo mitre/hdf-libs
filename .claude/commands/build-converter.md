@@ -1151,7 +1151,7 @@ For HDF-from converters (hdf → something), follow the existing `converter_hdf_
 
 ## Step 5b — Live Fetch Mode (API-pull converters only)
 
-If the source is a live API rather than a static export file (aws-config, sonarqube, splunk, gitlab, aws-securityhub, and similar), the fetcher is built with the **`/build-fetcher`** skill — not here. Fetchers now live in `hdf-converters/fetchers/<tool>/{go,typescript}/` (next to their converter), are dual-language, and follow the two-constructor Go convention + auth-agnostic TS contract documented in `hdf-converters/fetchers/README.md`.
+If the source is a live API rather than a static export file (aws-config, sonarqube, splunk, gitlab, aws-securityhub, and similar), the fetcher is built with the **`/build-fetcher`** skill — not here. Fetchers now live in `hdf-converters/fetchers/<tool>/{go,typescript}/` (next to their converter), are dual-language, and follow the two-constructor Go convention + auth-agnostic TS contract documented in `site/docs/contributing/writing-a-fetcher.md` (`hdf-converters/fetchers/README.md` holds the in-tree inventory).
 
 Build the converter first (this skill); then build the fetcher that feeds it (`/build-fetcher`).
 

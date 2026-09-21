@@ -5,6 +5,7 @@ package shared
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -138,6 +139,40 @@ func RunSnapshotTestsMasking(t *testing.T, converterName string, convertFn Conve
 	runSnapshotTests(t, converterName, convertFn, nil, maskStartTime, extraMask)
 }
 
+// snapshotInputName maps a golden's stem to the input fixture that feeds it.
+// A golden is named "<stem>.hdf.json" and its input is the file in inputDir
+// carrying that stem, whatever extension the source format uses. A stem that
+// matches more than one input is ambiguous, so it fails rather than guessing
+// which one the golden was built from.
+//
+// The older form, in which the golden repeated the input's whole filename
+// ("sample.nessus.hdf.json"), still resolves while the corpus is migrated to
+// the stem form. A stem with no file on disk is returned unchanged so a
+// SnapshotInputResolver still gets its turn.
+func snapshotInputName(inputDir, stem string) (string, error) {
+	if info, err := os.Stat(filepath.Join(inputDir, stem)); err == nil && !info.IsDir() {
+		return stem, nil
+	}
+	// An unreadable input directory is not an error here: the golden's input
+	// may come from a resolver instead, so ranging over no entries hands the
+	// stem back unchanged and lets that path run.
+	entries, _ := os.ReadDir(inputDir)
+	var matches []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasPrefix(e.Name(), stem+".") {
+			matches = append(matches, e.Name())
+		}
+	}
+	if len(matches) == 1 {
+		return matches[0], nil
+	}
+	if len(matches) > 1 {
+		return stem, fmt.Errorf("golden %s.hdf.json matches %d input fixtures (%s); give each input its own stem so the golden names exactly one",
+			stem, len(matches), strings.Join(matches, ", "))
+	}
+	return stem, nil
+}
+
 func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, resolveInput SnapshotInputResolver, maskStartTime []string, extraMask []string) {
 	t.Helper()
 
@@ -145,7 +180,7 @@ func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, r
 	// converter synthesizes (source carries no scan time), so it must be masked;
 	// the sentinel "*" masks every fixture. Fixtures NOT listed have startTime
 	// asserted against the input-derived value — a masked-but-derivable startTime
-	// is a hidden wrong-time bug (the u6j3 axis).
+	// is a hidden wrong-time bug.
 	syntheticStartTime := make(map[string]bool, len(maskStartTime))
 	for _, name := range maskStartTime {
 		syntheticStartTime[name] = true
@@ -167,16 +202,18 @@ func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, r
 			continue
 		}
 
-		// Expected file: "sample.nessus.hdf.json" → input file: "sample.nessus"
+		// Expected file: "sample.hdf.json" → input file: "sample.nessus"
 		expectedName := entry.Name()
-		inputName := strings.TrimSuffix(expectedName, ".hdf.json")
-		if inputName == expectedName {
+		stem := strings.TrimSuffix(expectedName, ".hdf.json")
+		if stem == expectedName {
 			misnamed = append(misnamed, expectedName)
 			continue
 		}
+		inputName, inputErr := snapshotInputName(inputDir, stem)
 		asserted++
 
 		t.Run(inputName, func(t *testing.T) {
+			require.NoError(t, inputErr, "golden %s", expectedName)
 			expectedPath := filepath.Join(expectedDir, expectedName)
 
 			var inputData []byte
@@ -224,15 +261,15 @@ func runSnapshotTests(t *testing.T, converterName string, convertFn ConvertFn, r
 		})
 	}
 
-	// A golden only gets asserted if it is named "<input>.hdf.json". Anything
+	// A golden only gets asserted if it is named "<stem>.hdf.json". Anything
 	// else is dead weight the suite would skip in silence, leaving the test
 	// green while it proves nothing — fail loudly instead.
 	if len(misnamed) > 0 {
-		t.Errorf("%s: golden(s) %v are not named <input>.hdf.json, so no subtest asserts them; rename them or delete them",
+		t.Errorf("%s: golden(s) %v are not named <stem>.hdf.json, so no subtest asserts them; rename them or delete them",
 			converterName, misnamed)
 	}
 	if asserted == 0 {
-		t.Fatalf("%s: snapshot suite registered zero subtests — no golden in %s matched the <input>.hdf.json convention",
+		t.Fatalf("%s: snapshot suite registered zero subtests — no golden in %s matched the <stem>.hdf.json convention",
 			converterName, expectedDir)
 	}
 }

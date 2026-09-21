@@ -27,6 +27,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Dependency-Track | `convertDeptrackToHdf` | JSON |
 | Fortify | `convertFortifyToHdf` | XML |
 | GitLab Security Report | `convertGitlabToHdf` | JSON |
+| GitLab Vulnerability Report (fetcher envelope, triage state preserved) | `convertGitlabVulnerabilitiesToHdf` | JSON |
 | Gosec | `convertGosecToHdf` | JSON |
 | Grype | `convertGrypeToHdf` | JSON |
 | Hipcheck | `convertHipcheckToHdf` | JSON |

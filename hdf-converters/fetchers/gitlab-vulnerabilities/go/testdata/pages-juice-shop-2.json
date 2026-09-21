@@ -1,0 +1,2832 @@
+{
+  "data": {
+    "project": {
+      "fullPath": "security-demo/juice-shop",
+      "vulnerabilities": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJzZXZlcml0eSI6Im1lZGl1bSIsInZ1bG5lcmFiaWxpdHlfaWQiOiI4MCJ9"
+        },
+        "nodes": [
+          {
+            "id": "gid://gitlab/Vulnerability/39",
+            "uuid": "a1ed5a74-ce6f-5eed-90f9-9f7754370d96",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/39",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/39",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/likeProductReviews.ts",
+              "startLine": "18",
+              "endLine": "60",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/likeProductReviews.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/36",
+            "uuid": "ad4b965a-207f-57bb-851e-c934eedb3f42",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/36",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/36",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/delivery.ts",
+              "startLine": "34",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/delivery.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/32",
+            "uuid": "b149a487-887f-5e38-8cad-8b47c6f44934",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/32",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/32",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/dataErasure.ts",
+              "startLine": "34",
+              "endLine": "39",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/dataErasure.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/31",
+            "uuid": "b626061e-9137-515e-a719-79e7524e1b84",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/31",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/31",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "data/static/codefixes/chatbotPromptInjectionChallenge_2_correct.ts",
+              "startLine": "8",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/data/static/codefixes/chatbotPromptInjectionChallenge_2_correct.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/28",
+            "uuid": "ba94de5b-c381-515d-a469-f668fec01b7c",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in MongoDB $where operator can result in NoSQL JavaScript Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/28",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/28",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_js_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in MongoDB $where operator can result in NoSQL JavaScript Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_js_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/trackOrder.ts",
+              "startLine": "15",
+              "endLine": "27",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/trackOrder.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/25",
+            "uuid": "bf05e08f-9939-50aa-8f90-6d9f80f427c2",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/25",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/25",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/securityQuestion.ts",
+              "startLine": "13",
+              "endLine": "29",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/securityQuestion.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/22",
+            "uuid": "cb995ca5-8e08-5935-97f2-7647df5b19c0",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/22",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/22",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/resetPassword.ts",
+              "startLine": "35",
+              "endLine": "40",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/resetPassword.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/15",
+            "uuid": "dc50d38b-0355-5776-b464-34b6baab2bed",
+            "title": "Deserialization of Untrusted Data",
+            "description": "User controlled data in 'yaml.load()' function can result in Remote Code Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/15",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/15",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+                "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "502",
+                "name": "CWE-502",
+                "url": "https://cwe.mitre.org/data/definitions/502.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A08:2021",
+                "name": "A08:2021 - Software and Data Integrity Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A8:2017",
+                "name": "A8:2017 - Insecure Deserialization",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "User controlled data in 'yaml.load()' function can result in Remote Code Injection.",
+                "name": "NodeJS Scan ID javascript-eval-rule-yaml_deserialize",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/vulnCodeFixes.ts",
+              "startLine": "81",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/vulnCodeFixes.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/14",
+            "uuid": "df098ef7-7961-5314-8814-a38ae59bb106",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/14",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/14",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/wallet.ts",
+              "startLine": "23",
+              "endLine": "24",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/wallet.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/12",
+            "uuid": "e1dd008e-f0c1-5322-8cc7-1d3e63cf3c30",
+            "title": "Improper neutralization of special elements in data query logic",
+            "description": "Untrusted user input in findOne() function can result in NoSQL Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/12",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/12",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "name": "nodejs_scan.javascript-database-rule-node_nosqli_injection",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "943",
+                "name": "CWE-943",
+                "url": "https://cwe.mitre.org/data/definitions/943.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in findOne() function can result in NoSQL Injection.",
+                "name": "NodeJS Scan ID javascript-database-rule-node_nosqli_injection",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/order.ts",
+              "startLine": "35",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/order.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/5",
+            "uuid": "ef834c49-5e46-557c-ab28-da556ccea0cf",
+            "title": "Deserialization of Untrusted Data",
+            "description": "User controlled data in 'yaml.load()' function can result in Remote Code Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/5",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/5",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+                "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "502",
+                "name": "CWE-502",
+                "url": "https://cwe.mitre.org/data/definitions/502.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A08:2021",
+                "name": "A08:2021 - Software and Data Integrity Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A8:2017",
+                "name": "A8:2017 - Insecure Deserialization",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "User controlled data in 'yaml.load()' function can result in Remote Code Injection.",
+                "name": "NodeJS Scan ID javascript-eval-rule-yaml_deserialize",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/vulnCodeSnippet.ts",
+              "startLine": "90",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/vulnCodeSnippet.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/2",
+            "uuid": "fb285488-3068-5c6d-8f77-b2c639d3f3ac",
+            "title": "Deserialization of Untrusted Data",
+            "description": "User controlled data in 'yaml.load()' function can result in Remote Code Injection.\n",
+            "severity": "CRITICAL",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/2",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/2",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+                "name": "nodejs_scan.javascript-eval-rule-yaml_deserialize",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "502",
+                "name": "CWE-502",
+                "url": "https://cwe.mitre.org/data/definitions/502.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A08:2021",
+                "name": "A08:2021 - Software and Data Integrity Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A8:2017",
+                "name": "A8:2017 - Insecure Deserialization",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "User controlled data in 'yaml.load()' function can result in Remote Code Injection.",
+                "name": "NodeJS Scan ID javascript-eval-rule-yaml_deserialize",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "lib/scripts/lintConfig.ts",
+              "startLine": "22",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/lib/scripts/lintConfig.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/53",
+            "uuid": "773f6240-c6e4-557d-8b4f-f0f4653f5458",
+            "title": "Improper neutralization of directives in dynamically evaluated code ('Eval Injection')",
+            "description": "The application was found calling the `eval` function OR Function()\n  constructor OR setTimeout() OR setInterval() methods. If the\n\n  variables or strings or functions passed to these methods contains user-supplied input, an adversary could attempt to execute arbitrary\n\n  JavaScript\n\n  code. This could lead to a full system compromise in Node applications or Cross-site Scripting\n\n  (XSS) in web applications.\n\n\n  To remediate this issue, remove all calls to above methods and consider alternative methods for\n\n  executing\n\n  the necessary business logic. There is almost no safe method of calling `eval` or other above stated sinks with\n\n  user-supplied input.\n\n  Instead, consider alternative methods such as using property accessors to dynamically access\n\n  values.\n\n\n  Example using property accessors to dynamically access an object's property:\n\n  ```\n\n  // Define an object\n\n  const obj = {key1: 'value1', key2: 'value2'};\n\n  // Get key dynamically from user input\n\n  const key = getUserInput();\n\n  // Check if the key exists in our object and return it, or a default empty string\n\n  const value = (obj.hasOwnProperty(key)) ? obj[key] : '';\n\n  // Work with the value\n\n  ```\n\n\n  For more information on why not to use `eval`, and alternatives see:\n\n  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_eval!\n\n  Other References:\n\n  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function\n\n  - https://developer.mozilla.org/en-US/docs/Web/API/setTimeout\n\n  - https://developer.mozilla.org/en-US/docs/Web/API/setInterval\n",
+            "severity": "HIGH",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/53",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/53",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-eval-with-expression",
+              "name": "eslint.detect-eval-with-expression",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-eval-with-expression"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-eval-with-expression",
+                "name": "eslint.detect-eval-with-expression",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-eval-with-expression"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "95",
+                "name": "CWE-95",
+                "url": "https://cwe.mitre.org/data/definitions/95.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-eval-with-expression",
+                "name": "ESLint rule ID/detect-eval-with-expression",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/captcha.ts",
+              "startLine": "22",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/captcha.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjQ4In0"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "RESOLVED",
+                  "createdAt": "2026-09-20T19:27:19Z",
+                  "comment": "Replaced eval with a safe expression parser.",
+                  "dismissalReason": null,
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                },
+                {
+                  "fromState": "RESOLVED",
+                  "toState": "DETECTED",
+                  "createdAt": "2026-09-21T02:04:51Z",
+                  "comment": null,
+                  "dismissalReason": null,
+                  "author": null
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/50",
+            "uuid": "7d15c752-ab8a-5710-9f9c-d4936f767c19",
+            "title": "Use of hard-coded credentials",
+            "description": "Hardcoded JWT secret or private key was found. Hardcoding secrets like JWT signing keys poses a significant security risk. \nIf the source code ends up in a public repository or is compromised, the secret is exposed. Attackers could then use the secret to \ngenerate forged tokens and access the system. Store it properly in an environment variable.\n\nHere are some recommended safe ways to access JWT secrets:\n  - Use environment variables to store the secret and access it in code instead of hardcoding. This keeps it out of source control.\n  - Use a secrets management service to securely store and tightly control access to the secret. Applications can request the secret at runtime.\n  - For local development, use a .env file that is gitignored and access the secret from process.env.\n\nsample code snippet of accessing JWT secret from env variables\n```\n const token = jwt.sign(payload, process.env.SECRET, { algorithm: 'HS256' });\n```\n",
+            "severity": "HIGH",
+            "reportType": "SAST",
+            "state": "DISMISSED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": "2026-09-20T19:27:19Z",
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": "FALSE_POSITIVE",
+            "stateComment": "The flagged value is a documented demo credential, not a real secret.",
+            "confirmedBy": null,
+            "dismissedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/50",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/50",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-jwt-rule-hardcoded_jwt_secret",
+              "name": "nodejs_scan.javascript-jwt-rule-hardcoded_jwt_secret",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-jwt-rule-hardcoded_jwt_secret",
+                "name": "nodejs_scan.javascript-jwt-rule-hardcoded_jwt_secret",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "798",
+                "name": "CWE-798",
+                "url": "https://cwe.mitre.org/data/definitions/798.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Hardcoded JWT secret was found. Store it properly in an environment variable.",
+                "name": "NodeJS Scan ID javascript-jwt-rule-hardcoded_jwt_secret",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "lib/insecurity.ts",
+              "startLine": "54",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/lib/insecurity.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjYifQ"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "DISMISSED",
+                  "createdAt": "2026-09-20T19:27:19Z",
+                  "comment": "The flagged value is a documented demo credential, not a real secret.",
+                  "dismissalReason": "FALSE_POSITIVE",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/29",
+            "uuid": "b9433636-e5f3-5670-997f-23738eed3539",
+            "title": "Improper neutralization of directives in dynamically evaluated code ('Eval Injection')",
+            "description": "The application was found calling the `eval` function OR Function()\n  constructor OR setTimeout() OR setInterval() methods. If the\n\n  variables or strings or functions passed to these methods contains user-supplied input, an adversary could attempt to execute arbitrary\n\n  JavaScript\n\n  code. This could lead to a full system compromise in Node applications or Cross-site Scripting\n\n  (XSS) in web applications.\n\n\n  To remediate this issue, remove all calls to above methods and consider alternative methods for\n\n  executing\n\n  the necessary business logic. There is almost no safe method of calling `eval` or other above stated sinks with\n\n  user-supplied input.\n\n  Instead, consider alternative methods such as using property accessors to dynamically access\n\n  values.\n\n\n  Example using property accessors to dynamically access an object's property:\n\n  ```\n\n  // Define an object\n\n  const obj = {key1: 'value1', key2: 'value2'};\n\n  // Get key dynamically from user input\n\n  const key = getUserInput();\n\n  // Check if the key exists in our object and return it, or a default empty string\n\n  const value = (obj.hasOwnProperty(key)) ? obj[key] : '';\n\n  // Work with the value\n\n  ```\n\n\n  For more information on why not to use `eval`, and alternatives see:\n\n  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#never_use_eval!\n\n  Other References:\n\n  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/Function\n\n  - https://developer.mozilla.org/en-US/docs/Web/API/setTimeout\n\n  - https://developer.mozilla.org/en-US/docs/Web/API/setInterval\n",
+            "severity": "HIGH",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/29",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/29",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-eval-with-expression",
+              "name": "eslint.detect-eval-with-expression",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-eval-with-expression"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-eval-with-expression",
+                "name": "eslint.detect-eval-with-expression",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-eval-with-expression"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "95",
+                "name": "CWE-95",
+                "url": "https://cwe.mitre.org/data/definitions/95.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-eval-with-expression",
+                "name": "ESLint rule ID/detect-eval-with-expression",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/userProfile.ts",
+              "startLine": "65",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/userProfile.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/1",
+            "uuid": "fd4ff5a8-6d7d-5567-a300-0b626dde0800",
+            "title": "Server-side request forgery (SSRF)",
+            "description": "This application allows user-controlled URLs to be passed directly to HTTP client libraries. \nThis can result in Server-Side Request Forgery (SSRF).\nSSRF refers to an attack where the attacker can abuse functionality on \nthe server to force it to make requests to other internal systems within your \ninfrastructure that are not directly exposed to the internet. \nThis allows the attacker to access internal resources they do not have direct access to.\n\nSome risks of SSRF are:\n\n- Access and manipulation of internal databases, APIs, or administrative panels\n- Ability to scan internal network architecture and services\n- Can be used to pivot attacks into the internal network\n- Circumvent network segregation and firewall rules\n\nTo avoid this, try using hardcoded HTTP request calls or a whitelisting object to \ncheck whether the user input is trying to access allowed resources or not.\n\nHere is an example:\n```\nvar whitelist = [\n  \"https://example.com\", \n  \"https://example.com/sample\"\n]\n\napp.get('/ssrf/node-ssrf/axios/safe/3', function (req, res) {\n  if(whitelist.includes(req.query.url)){\n      axios.get(url, {})\n          .then(function (response) {\n              console.log(response);\n          })\n          .catch(function (response) {\n              console.log(response);  \n          })\n  }\n});\n``` \nFor more information on SSRF see OWASP:\nhttps://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html\n",
+            "severity": "HIGH",
+            "reportType": "SAST",
+            "state": "DISMISSED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": "2026-09-20T19:27:19Z",
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": "ACCEPTABLE_RISK",
+            "stateComment": "Outbound requests are restricted by the egress proxy; residual risk accepted by the product owner.",
+            "confirmedBy": null,
+            "dismissedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/1",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/1",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-ssrf-rule-node_ssrf",
+              "name": "nodejs_scan.javascript-ssrf-rule-node_ssrf",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-ssrf-rule-node_ssrf",
+                "name": "nodejs_scan.javascript-ssrf-rule-node_ssrf",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "918",
+                "name": "CWE-918",
+                "url": "https://cwe.mitre.org/data/definitions/918.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "User controlled URL in http client libraries can result in Server Side Request Forgery (SSRF).",
+                "name": "NodeJS Scan ID javascript-ssrf-rule-node_ssrf",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/profileImageUrlUpload.ts",
+              "startLine": "24",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/profileImageUrlUpload.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjcifQ"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "DISMISSED",
+                  "createdAt": "2026-09-20T19:27:19Z",
+                  "comment": "Outbound requests are restricted by the egress proxy; residual risk accepted by the product owner.",
+                  "dismissalReason": "ACCEPTABLE_RISK",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/187",
+            "uuid": "89bcdb12-bacf-5119-bd6c-ee4a4915df67",
+            "title": "Improper neutralization of input during web page generation ('Cross-site Scripting')",
+            "description": "This application accepts user input directly from the client side without validation. \nThis could lead to Cross Site Scripting (XSS) if the input contains malicious script code and \nthe application server does not properly escape or sanitize the output.  \nConsider encoding input data before sending it to the client side.  \n\n```\n// safe method of sending user input data\nrouter.get('/safe/1', (req, res) => {\n  var name = encodeURI(req.query.name); \n  res.send(name);\n})\n```\n\nXSS is an attack that exploits a web application or system to treat user input as markup or script code. \nIt is important to encode the data depending on the specific context in which it is used. \n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:19:29Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/187",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/187",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+                "name": "nodejs_scan.javascript-xss-rule-express_xss",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "79",
+                "name": "CWE-79",
+                "url": "https://cwe.mitre.org/data/definitions/79.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A7:2017",
+                "name": "A7:2017 - Cross-Site Scripting (XSS)",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+                "name": "NodeJS Scan ID javascript-xss-rule-express_xss",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/chat.ts",
+              "startLine": "259",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/chat.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/101",
+            "uuid": "9dc0abce-85da-5503-b22a-593bc60a0011",
+            "title": "Improper neutralization of input during web page generation ('Cross-site Scripting')",
+            "description": "This application accepts user input directly from the client side without validation. \nThis could lead to Cross Site Scripting (XSS) if the input contains malicious script code and \nthe application server does not properly escape or sanitize the output.  \nConsider encoding input data before sending it to the client side.  \n\n```\n// safe method of sending user input data\nrouter.get('/safe/1', (req, res) => {\n  var name = encodeURI(req.query.name); \n  res.send(name);\n})\n```\n\nXSS is an attack that exploits a web application or system to treat user input as markup or script code. \nIt is important to encode the data depending on the specific context in which it is used. \n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:09Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/101",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/101",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+                "name": "nodejs_scan.javascript-xss-rule-express_xss",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "79",
+                "name": "CWE-79",
+                "url": "https://cwe.mitre.org/data/definitions/79.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A7:2017",
+                "name": "A7:2017 - Cross-Site Scripting (XSS)",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+                "name": "NodeJS Scan ID javascript-xss-rule-express_xss",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/chat.ts",
+              "startLine": "241",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/chat.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/100",
+            "uuid": "e400044c-ec75-5ef6-9897-3b795f7d7385",
+            "title": "Improper neutralization of input during web page generation ('Cross-site Scripting')",
+            "description": "This application accepts user input directly from the client side without validation. \nThis could lead to Cross Site Scripting (XSS) if the input contains malicious script code and \nthe application server does not properly escape or sanitize the output.  \nConsider encoding input data before sending it to the client side.  \n\n```\n// safe method of sending user input data\nrouter.get('/safe/1', (req, res) => {\n  var name = encodeURI(req.query.name); \n  res.send(name);\n})\n```\n\nXSS is an attack that exploits a web application or system to treat user input as markup or script code. \nIt is important to encode the data depending on the specific context in which it is used. \n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "RESOLVED",
+            "detectedAt": "2026-09-21T02:04:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": "2026-09-21T02:20:22Z",
+            "updatedAt": "2026-09-21T02:20:22Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": true,
+            "dismissalReason": null,
+            "stateComment": "Template escaping was added upstream and the scanner no longer reports this path; closing as fixed.",
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/100",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/100",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+                "name": "nodejs_scan.javascript-xss-rule-express_xss",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "79",
+                "name": "CWE-79",
+                "url": "https://cwe.mitre.org/data/definitions/79.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A7:2017",
+                "name": "A7:2017 - Cross-Site Scripting (XSS)",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+                "name": "NodeJS Scan ID javascript-xss-rule-express_xss",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/dataExport.ts",
+              "startLine": "108",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14/routes/dataExport.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "6",
+              "sha": "54b9745b487b9e5e4721ab678dd9f352aab2a96e",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:03:40Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjQ5In0"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "RESOLVED",
+                  "createdAt": "2026-09-21T02:20:22Z",
+                  "comment": "Template escaping was added upstream and the scanner no longer reports this path; closing as fixed.",
+                  "dismissalReason": null,
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/94",
+            "uuid": "02964cc3-0e06-58de-8b5d-027a8b89af6b",
+            "title": "Unchecked input for loop condition",
+            "description": "This application is looping over user controlled objects, which can lead to a layer 7 denial of service vulnerability.\n\nA layer 7 denial of service attack refers to overloading the application layer of the OSI model, typically layer 7. \nThis can happen when user-controlled input such as objects, arrays, strings, etc. are iterated or looped over without proper validation or limits in place.\n\nFor example, if a user can control the size of an array or object passed into the application, \nthey could create an extremely large input that gets looped over. This would consume excessive CPU cycles or memory, \npotentially crashing or slowing down the application.\n\nTo prevent this, limits should be set on the number of iterations, input sizes, recursion depth, etc.\n\nSample case of secure array looped over with user-controlled input\n```\n// Potential DoS if req.body.list.length is large.\napp.post('/dos/layer7-object-dos/for-loop/1', function (req, res) {\n    var list = req.body.list;\n    for (let i = 0; i <= 10; i++) {\n        if(!list[i]){\n          // return;\n        }  \n    }\n    res.send(\"res\")\n});\n```\n\nImplementing protections against layer 7 denial of service attacks is important for securing modern web applications and APIs.\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DISMISSED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": "2026-09-20T19:27:20Z",
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": "MITIGATING_CONTROL",
+            "stateComment": "Request body size is capped by the reverse proxy, bounding the loop.",
+            "confirmedBy": null,
+            "dismissedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/94",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/94",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+                "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "606",
+                "name": "CWE-606",
+                "url": "https://cwe.mitre.org/data/definitions/606.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A05:2021",
+                "name": "A05:2021 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A6:2017",
+                "name": "A6:2017 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Layer7 Denial of Service. Looping over user controlled objects can result in DoS.",
+                "name": "NodeJS Scan ID javascript-dos-rule-layer7_object_dos",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/likeProductReviews.ts",
+              "startLine": "47",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/likeProductReviews.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjgifQ"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "DISMISSED",
+                  "createdAt": "2026-09-20T19:27:20Z",
+                  "comment": "Request body size is capped by the reverse proxy, bounding the loop.",
+                  "dismissalReason": "MITIGATING_CONTROL",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/90",
+            "uuid": "119d2068-8036-5f99-8687-43b67a4a289c",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/90",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/90",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/videoHandler.ts",
+              "startLine": "29",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/videoHandler.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/88",
+            "uuid": "14611b8e-5a2d-5637-b848-b9ae98cfa439",
+            "title": "Use of cryptographically weak pseudo-random number generator (PRNG)",
+            "description": "This rule identifies use of cryptographically weak random number generators.\nUsing cryptographically weak random number generators like `crypto.pseudoRandomBytes()` \nand `Math.random()` for security-critical tasks can expose systems to significant \nvulnerabilities. Attackers might predict the generated random numbers, compromising \nthe integrity and confidentiality of cryptographic operations. This could lead to \nbreaches where sensitive data is accessed or manipulated, authentication mechanisms \nare bypassed, or secure communications are intercepted, ultimately undermining the \nsecurity of the entire system or application.\n\nMitigation strategy:\nReplace the use of these cryptographically weak random number generators with \n`crypto.randomBytes()`, a method provided by Node.js's `crypto` module that \ngenerates cryptographically secure random numbers. This method should be used \nfor all operations requiring secure randomness, such as generating keys, tokens, \nor any cryptographic material.\n\nSecure Code Example:\n```\nconst crypto = require('crypto');\nconst secureBytes = crypto.randomBytes(256);\nconsole.log(`Secure random bytes: ${secureBytes.toString('hex')}`);\n```\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DISMISSED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": "2026-09-20T19:27:20Z",
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": "USED_IN_TESTS",
+            "stateComment": "Only reachable from the coding-challenge sandbox, which is not shipped to production.",
+            "confirmedBy": null,
+            "dismissedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/88",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/88",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "crypto.pseudoRandomBytes()/Math.random() is a cryptographically weak random number generator.",
+                "name": "NodeJS Scan ID javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "frontend/src/app/coding-challenge-page/components/coding-challenge-fix-it/coding-challenge-fix-it.component.ts",
+              "startLine": "120",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/frontend/src/app/coding-challenge-page/components/coding-challenge-fix-it/coding-challenge-fix-it.component.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjkifQ"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "DISMISSED",
+                  "createdAt": "2026-09-20T19:27:20Z",
+                  "comment": "Only reachable from the coding-challenge sandbox, which is not shipped to production.",
+                  "dismissalReason": "USED_IN_TESTS",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/86",
+            "uuid": "1b663c5f-315e-5126-9728-4c690aa969f7",
+            "title": "Use of cryptographically weak pseudo-random number generator (PRNG)",
+            "description": "This rule identifies use of cryptographically weak random number generators.\nUsing cryptographically weak random number generators like `crypto.pseudoRandomBytes()` \nand `Math.random()` for security-critical tasks can expose systems to significant \nvulnerabilities. Attackers might predict the generated random numbers, compromising \nthe integrity and confidentiality of cryptographic operations. This could lead to \nbreaches where sensitive data is accessed or manipulated, authentication mechanisms \nare bypassed, or secure communications are intercepted, ultimately undermining the \nsecurity of the entire system or application.\n\nMitigation strategy:\nReplace the use of these cryptographically weak random number generators with \n`crypto.randomBytes()`, a method provided by Node.js's `crypto` module that \ngenerates cryptographically secure random numbers. This method should be used \nfor all operations requiring secure randomness, such as generating keys, tokens, \nor any cryptographic material.\n\nSecure Code Example:\n```\nconst crypto = require('crypto');\nconst secureBytes = crypto.randomBytes(256);\nconsole.log(`Secure random bytes: ${secureBytes.toString('hex')}`);\n```\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/86",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/86",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "crypto.pseudoRandomBytes()/Math.random() is a cryptographically weak random number generator.",
+                "name": "NodeJS Scan ID javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "frontend/src/app/Services/conversation-storage.service.ts",
+              "startLine": "17",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/frontend/src/app/Services/conversation-storage.service.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/85",
+            "uuid": "1d886196-da58-5cca-a679-409e08fc0638",
+            "title": "Regular expression with non-literal value",
+            "description": "The `RegExp` constructor was called with a non-literal value. If an adversary were able to\nsupply a malicious regex, they could cause a Regular Expression Denial of Service (ReDoS)\nagainst the application. In Node applications, this could cause the entire application to no\nlonger be responsive to other users' requests.\n\nTo remediate this issue, never allow user-supplied regular expressions. Instead, the regular \nexpression should be  hardcoded. If this is not possible, consider using an alternative regular\nexpression engine such as [node-re2](https://www.npmjs.com/package/re2). RE2 is a safe alternative \nthat does not support backtracking, which is what leads to ReDoS.\n\nExample using re2 which does not support backtracking (Note: it is still recommended to\nnever use user-supplied input):\n```\n// Import the re2 module\nconst RE2 = require('re2');\n\nfunction match(userSuppliedRegex, userInput) {\n    // Create a RE2 object with the user supplied regex, this is relatively safe\n    // due to RE2 not supporting backtracking which can be abused to cause long running\n    // queries\n    var re = new RE2(userSuppliedRegex);\n    // Execute the regular expression against some userInput\n    var result = re.exec(userInput);\n    // Work with the result\n}\n```\n\nFor more information on Regular Expression DoS see:\n- https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DISMISSED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": "2026-09-20T19:27:20Z",
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": "NOT_APPLICABLE",
+            "stateComment": "The regular expression source is a build-time constant, not user input.",
+            "confirmedBy": null,
+            "dismissedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/85",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/85",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-regexp",
+              "name": "eslint.detect-non-literal-regexp",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-regexp"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-regexp",
+                "name": "eslint.detect-non-literal-regexp",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-regexp"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "185",
+                "name": "CWE-185",
+                "url": "https://cwe.mitre.org/data/definitions/185.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-regexp",
+                "name": "ESLint rule ID/detect-non-literal-regexp",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "lib/codingChallenges.ts",
+              "startLine": "76",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/lib/codingChallenges.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjEwIn0"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "DISMISSED",
+                  "createdAt": "2026-09-20T19:27:20Z",
+                  "comment": "The regular expression source is a build-time constant, not user input.",
+                  "dismissalReason": "NOT_APPLICABLE",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/80",
+            "uuid": "30ae1f65-92d3-5de1-a3b8-be5c589b81bb",
+            "title": "Origin validation error",
+            "description": "Access-Control-Allow-Origin response header is set to \"*\". This will disable CORS Same Origin Policy restrictions.\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DISMISSED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": "2026-09-20T19:27:20Z",
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": "FALSE_POSITIVE",
+            "stateComment": "Second review: the origin check compares against a fixed constant; scanner pattern is a false match.",
+            "confirmedBy": null,
+            "dismissedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/80",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/80",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-headers-rule-express_cors",
+              "name": "nodejs_scan.javascript-headers-rule-express_cors",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-headers-rule-express_cors",
+                "name": "nodejs_scan.javascript-headers-rule-express_cors",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "346",
+                "name": "CWE-346",
+                "url": "https://cwe.mitre.org/data/definitions/346.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A05:2021",
+                "name": "A05:2021 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A6:2017",
+                "name": "A6:2017 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Access-Control-Allow-Origin response header is set to \"*\". This will disable CORS Same Origin Policy restrictions.",
+                "name": "NodeJS Scan ID javascript-headers-rule-express_cors",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "server.ts",
+              "startLine": "182",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/server.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjEzIn0"
+              },
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "DISMISSED",
+                  "createdAt": "2026-09-20T19:27:20Z",
+                  "comment": "Initial triage: accepted pending review.",
+                  "dismissalReason": "ACCEPTABLE_RISK",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                },
+                {
+                  "fromState": "DISMISSED",
+                  "toState": "DETECTED",
+                  "createdAt": "2026-09-20T19:27:20Z",
+                  "comment": "Reopened: acceptance was premature, needs a second look.",
+                  "dismissalReason": null,
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                },
+                {
+                  "fromState": "DETECTED",
+                  "toState": "DISMISSED",
+                  "createdAt": "2026-09-20T19:27:20Z",
+                  "comment": "Second review: the origin check compares against a fixed constant; scanner pattern is a false match.",
+                  "dismissalReason": "FALSE_POSITIVE",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          }
+        ]
+      }
+    }
+  },
+  "extensions": {
+    "disabled_filters": []
+  }
+}

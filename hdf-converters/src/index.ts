@@ -102,6 +102,9 @@ export { convertHdfToXml } from '../converters/hdf-to-xml/typescript/index.js';
 // GitLab Security Report to HDF converter
 export { convertGitlabToHdf } from '../converters/gitlab-to-hdf/typescript/index.js';
 
+// GitLab Vulnerability Report (GraphQL envelope) to HDF converter
+export { convertGitlabVulnerabilitiesToHdf } from '../converters/gitlab-vulnerabilities-to-hdf/typescript/index.js';
+
 // Trivy to HDF converter (router: native JSON + delegation)
 export { convertTrivyToHdf } from '../converters/trivy-to-hdf/typescript/index.js';
 

@@ -29,6 +29,7 @@ The CLI is **Go only, by design.** Most packages in this monorepo ship a TypeScr
     - [fetch aws-securityhub](#fetch-aws-securityhub) -- AWS Security Hub ASFF findings
     - [fetch defectdojo](#fetch-defectdojo) -- DefectDojo findings
     - [fetch gitlab](#fetch-gitlab) -- GitLab CI/CD security artifacts
+    - [fetch gitlab-vulnerabilities](#fetch-gitlab-vulnerabilities) -- GitLab Vulnerability Report with triage state (Ultimate)
     - [fetch sonarqube](#fetch-sonarqube) -- SonarQube issues
     - [fetch splunk](#fetch-splunk) -- Splunk HDF events
   - [mcp](#mcp) -- Run the HDF MCP server (stdio transport)
@@ -868,6 +869,41 @@ EXAMPLES
   hdf fetch gitlab --project 42 --job semgrep-sast --format raw | jq '.vulnerabilities | length'
 ```
 
+#### fetch gitlab-vulnerabilities
+
+Fetch a project's GitLab **Vulnerability Report** over GraphQL and convert to HDF. Unlike `fetch gitlab`, which downloads the raw report one CI job wrote, this reads the deduplicated, persisted, triaged view GitLab Ultimate maintains: each finding's state, dismissal reason and statement, who decided and when, and the full state history. Dismissals become attributed, expiring HDF overrides; the scanner's raw result is never rewritten. The mapping and the empty-report semantics are documented in the [GitLab Vulnerability Report guide](https://mitre.github.io/hdf-libs/guides/gitlab-vulnerability-report).
+
+Token is resolved from: `GITLAB_TOKEN` env var, `GLAB_TOKEN` env var, or glab CLI config (`glab auth login`). It needs the `read_api` scope and Developer access to the projects. The Vulnerability Report requires GitLab Ultimate; on Free or Premium the API answers with an empty list, so the command refuses to write a document for a report that was never populated and names the reason instead.
+
+With `--group`, every non-archived project in the group (subgroups included by default) is fetched and one file per project is written to `--out-dir`, named after the project path with `/` replaced by `__`. A project that cannot be fetched is reported on stderr and the command exits non-zero after the others are written.
+
+```
+USAGE
+  hdf fetch gitlab-vulnerabilities [output] [flags]
+
+FLAGS
+  -u, --url string              GitLab instance URL (default "https://gitlab.com")
+      --project string          Project full path (namespace/project); exclusive with --group
+      --group string            Group full path; fetches every non-archived project in it
+      --include-subgroups       With --group, include projects of subgroups (default true)
+      --state string            Comma-separated states: DETECTED, CONFIRMED, DISMISSED, RESOLVED (default: all)
+      --report-type string      Comma-separated report types: SAST, DAST, DEPENDENCY_SCANNING, ... (default: all)
+      --format string           Output format: hdf or raw (default "hdf")
+  -o, --output string           Output file path with --project (default: stdout)
+      --out-dir string          Output directory with --group; one file per project
+      --max-pages int           Maximum pages per project or group listing (default 200)
+      --max-response-size int   Max response size in bytes per request (default 25MB, -1 for no limit)
+      --check                   Run the probe only and print the tier and ingestion diagnosis
+
+EXAMPLES
+  hdf fetch gitlab-vulnerabilities --project my-org/my-project -o output.json
+  hdf fetch gitlab-vulnerabilities --url https://gitlab.example.com --group my-org --out-dir ./hdf/
+  hdf fetch gitlab-vulnerabilities --project my-org/my-project --state DETECTED,CONFIRMED -o open.json
+  hdf fetch gitlab-vulnerabilities --project my-org/my-project --state DISMISSED -o dismissed.json
+  hdf fetch gitlab-vulnerabilities --project my-org/my-project --check
+  hdf fetch gitlab-vulnerabilities --project my-org/my-project --format raw | jq '.vulnerabilities | length'
+```
+
 #### fetch sonarqube
 
 Fetch SonarQube project issues and convert to HDF.
@@ -1005,6 +1041,7 @@ These flags apply to all commands.
 | `deptrack` | `dependency-track` | Dependency-Track vulnerability audit (JSON) |
 | `fortify` | | Micro Focus Fortify SAST (FVDL XML) |
 | `gitlab` | `gitlab-sast`, `gitlab-dast` | GitLab CI/CD security scan reports (JSON) |
+| `gitlab-vulnerabilities` | — | GitLab Vulnerability Report envelope from `hdf fetch gitlab-vulnerabilities` (JSON; triage state preserved) |
 | `gosec` | | gosec Go security checker (JSON or SARIF) |
 | `grype` | | Anchore Grype vulnerability scan (JSON) |
 | `hipcheck` | | MITRE Hipcheck supply-chain risk report (`hc check --format json`) |

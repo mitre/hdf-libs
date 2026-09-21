@@ -1,0 +1,9 @@
+query GroupProjects($fullPath: ID!, $first: Int!, $after: String, $includeSubgroups: Boolean!) {
+  group(fullPath: $fullPath) {
+    id fullPath name webUrl
+    projects(includeSubgroups: $includeSubgroups, includeArchived: false, first: $first, after: $after) {
+      pageInfo { hasNextPage endCursor }
+      nodes { id fullPath archived }
+    }
+  }
+}
