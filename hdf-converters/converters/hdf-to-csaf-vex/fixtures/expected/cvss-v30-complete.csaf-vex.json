@@ -33,19 +33,44 @@
   "product_tree": {
     "full_product_names": [
       {
-        "name": "No product identity was recorded in the source amendment",
-        "product_id": "HDFPID-0001"
+        "name": "pkg:maven/org.apache.struts/struts2-core@2.3.31",
+        "product_id": "pkg:maven/org.apache.struts/struts2-core@2.3.31",
+        "product_identification_helper": {
+          "purl": "pkg:maven/org.apache.struts/struts2-core@2.3.31"
+        }
       }
     ]
   },
   "vulnerabilities": [
     {
-      "cve": "CVE-2021-44228",
+      "cve": "CVE-2017-5638",
       "product_status": {
         "known_affected": [
-          "HDFPID-0001"
+          "pkg:maven/org.apache.struts/struts2-core@2.3.31"
         ]
-      }
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "accepted",
+          "product_ids": [
+            "pkg:maven/org.apache.struts/struts2-core@2.3.31"
+          ]
+        }
+      ],
+      "scores": [
+        {
+          "products": [
+            "pkg:maven/org.apache.struts/struts2-core@2.3.31"
+          ],
+          "cvss_v3": {
+            "version": "3.0",
+            "vectorString": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "baseScore": 10,
+            "baseSeverity": "CRITICAL"
+          }
+        }
+      ]
     }
   ]
 }

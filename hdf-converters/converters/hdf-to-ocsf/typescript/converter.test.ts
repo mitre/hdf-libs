@@ -245,34 +245,40 @@ describe('hdf-to-ocsf converter', () => {
     }
   });
 
-  it('routes the fix description to remediation homes (+ fix_available), skipping "n/a"', () => {
+  it('routes the fix description to per-vuln remediation on 2002 and top-level on 2003, skipping "n/a"', () => {
     const objs = lines(convertHdfToOcsf(input('cve.json'), VERSION));
-    // req1: real fix text -> top-level remediation + per-vuln remediation + fix_available
-    expect(obj(objs[0].remediation).desc).toBe('Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.');
+    // req1: real fix text -> per-vuln remediation + fix_available; class 2002 has no top-level remediation
+    expect(objs[0].remediation).toBeUndefined();
     const vuln = obj((objs[0].vulnerabilities as unknown[])[0]);
     expect(obj(vuln.remediation).desc).toBe('Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.');
     expect(vuln.fix_available).toBe(true);
     // req3 (portmapper): fix == "n/a" -> no remediation anywhere
-    const last = objs[2];
-    expect(last.remediation).toBeUndefined();
-    const lastVuln = obj((last.vulnerabilities as unknown[])[0]);
+    const lastVuln = obj((objs[2].vulnerabilities as unknown[])[0]);
     expect(lastVuln.remediation).toBeUndefined();
     expect(lastVuln.fix_available).toBeUndefined();
-    // compliance findings also carry top-level remediation from their fix text
+    // compliance findings carry top-level remediation from their fix text
     const comp = lines(convertHdfToOcsf(input('compliance.json'), VERSION))[0];
     expect(obj(comp.remediation).desc).toContain('banner-message-enable=true');
   });
 
-  it('surfaces raw code -> raw_data, message -> message, and codeDesc/message/status -> evidences[]', () => {
+  it('surfaces raw code -> raw_data and message -> message on both classes, evidences[] on 2003 only', () => {
     const o = lines(convertHdfToOcsf(input('cve.json'), VERSION))[0];
     expect(String(o.raw_data)).toContain('"PluginID": "156888"');
     expect(String(o.message)).toContain('Installed version : 1.11.0_12');
-    const ev = o.evidences as Record<string, unknown>[];
+    // class 2002 has no evidences member; the per-result evidence stays verbatim in unmapped
+    expect(o.evidences).toBeUndefined();
+    const kept = obj((obj(obj(o.unmapped).hdf_requirement).results as unknown[])[0]);
+    expect(String(kept.codeDesc)).toContain('January 2022 CPU advisory');
+    expect(String(kept.message)).toContain('Installed version');
+    expect(kept.status).toBe('failed');
+
+    const c = lines(convertHdfToOcsf(input('compliance.json'), VERSION))[0];
+    const ev = c.evidences as Record<string, unknown>[];
     expect(ev).toHaveLength(1);
     const data = obj(ev[0].data);
-    expect(String(data.code_desc)).toContain('January 2022 CPU advisory');
-    expect(String(data.message)).toContain('Installed version');
+    expect(data.code_desc).toBe('XCCDF rule xccdf_mil.disa.stig_rule_SV-204393r603261_rule');
     expect(data.status).toBe('failed');
+    expect(data.message, 'a null result message is not emitted').toBeUndefined();
   });
 
   it('emits ALL refs[].url as references[], not just the first', () => {

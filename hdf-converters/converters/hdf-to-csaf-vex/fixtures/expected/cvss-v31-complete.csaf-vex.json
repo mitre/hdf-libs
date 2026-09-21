@@ -33,8 +33,11 @@
   "product_tree": {
     "full_product_names": [
       {
-        "name": "No product identity was recorded in the source amendment",
-        "product_id": "HDFPID-0001"
+        "name": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+        "product_id": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+        "product_identification_helper": {
+          "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"
+        }
       }
     ]
   },
@@ -43,9 +46,31 @@
       "cve": "CVE-2021-44228",
       "product_status": {
         "known_affected": [
-          "HDFPID-0001"
+          "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"
         ]
-      }
+      },
+      "threats": [
+        {
+          "category": "impact",
+          "details": "accepted",
+          "product_ids": [
+            "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"
+          ]
+        }
+      ],
+      "scores": [
+        {
+          "products": [
+            "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"
+          ],
+          "cvss_v3": {
+            "version": "3.1",
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "baseScore": 10,
+            "baseSeverity": "CRITICAL"
+          }
+        }
+      ]
     }
   ]
 }

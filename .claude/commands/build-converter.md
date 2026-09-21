@@ -186,8 +186,8 @@ ls ~/repos/saf/test/sample_data/
 ### Fixture validation requirement
 
 Every fixture MUST satisfy at least one of:
-1. **Provenance documented** — commit message states exactly where the data came from (repo URL, file path, or how it was generated)
-2. **Schema-validated** — validated against the format's official schema (JSON Schema, XSD, OpenAPI spec) with the validation command logged in the commit message or a comment in the test file
+1. **Provenance documented** — the converter's `fixtures/provenance.txt` states exactly where the data came from (repo URL and path, or how it was generated) and what the file says about the tool and version that produced it; the shared test in `hdf-converters/shared/go/schemaload_test.go` requires the record to exist. The `/fixtures` skill (`.claude/skills/fixtures/SKILL.md`) is the full procedure
+2. **Schema-validated** — validated against the format's official schema (JSON Schema, XSD), which is vendored beside the fixtures and recorded in `provenance.json` with its source URL and SHA-256; the validation result is recorded in `provenance.txt`, and authored fixtures get a schema-validation test (see `gitlab-to-hdf/go/schema_validation_test.go`)
 
 If the format has an official schema, validate against it even if the data is real. Common schemas:
 - **SARIF**: `https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json`
@@ -1238,7 +1238,7 @@ cat output.json | head -40
 ## Done Checklist
 
 **All converters:**
-- [ ] Fixtures sourced from real tool output or validated against format schema — provenance documented in commit message
+- [ ] Fixtures sourced from real tool output or validated against the format schema — provenance recorded in `fixtures/provenance.txt` (and `provenance.json` for any vendored schema) per the `/fixtures` skill
 - [ ] No fabricated fixtures — every fixture is either from a real run, a public repo, heimdall2/SAF CLI samples, or schema-validated
 - [ ] **Go:** Unit tests written and passing (`go/converter_test.go`)
 - [ ] **Go:** Implementation complete (`go/converter.go`)

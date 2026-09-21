@@ -6,18 +6,49 @@ exports for the two event classes this converter emits — Vulnerability Finding
 (`class_uid` 2002) and Compliance Finding (`class_uid` 2003), both under the
 Findings category (2).
 
-- **Source:** `https://schema.ocsf.io/schema/classes/vulnerability_finding` and
-  `https://schema.ocsf.io/schema/classes/compliance_finding`, requested with
-  `Accept: application/json`
+- **Source:** `https://schema.ocsf.io/schema/classes/vulnerability_finding?profiles=`
+  and `https://schema.ocsf.io/schema/classes/compliance_finding?profiles=`,
+  requested with `Accept: application/json`. The empty `profiles` parameter is
+  load-bearing; see "Why no profiles" below.
 - **OCSF version:** **1.9.0** (`https://schema.ocsf.io/api/version` → `{"version":"1.9.0"}`)
 - **`$id`:** `https://schema.ocsf.io/schema/classes/{vulnerability,compliance}_finding`
 - **JSON Schema draft:** draft-07
 - **Self-contained:** yes — no external `$ref`s. 2002 resolves 123 unique local
   refs against 123 `$defs`; 2003 resolves 141 against 141 `$defs`.
 - **SHA-256:**
-  - `8029415ae1440899f5aaeba85a74c3494cef8b0f9a4f9614578fe5f32554ea01` (2002)
-  - `2f6e79a02e08e9e394584ec684c50304e61b15e7579abe853f0f9ac725f09c67` (2003)
-- **Retrieved:** 2026-09-09
+  - `8a540c96b43e4e0f437f75a718b056395aec32d2098a1f5ac6e195f4f9244bff` (2002)
+  - `0d03b361acf2bdc94169f8bf7ace0498e5a873155868a1ba11fae256e2d8daf9` (2003)
+- **Retrieved:** 2026-09-20
+
+## Why no profiles
+
+An OCSF profile is an optional overlay that adds attributes to a class, and an
+event opts into one by naming it in `metadata.profiles[]`. Attributes a profile
+contributes are required only of events that declare it. `cloud` and `osint` are
+exactly that: in the metaschema for both 1.8.0 and 1.9.0, each carries
+`"profiles": ["cloud"]` / `["osint"]` and neither is a base member of either
+class.
+
+`schema.ocsf.io` defaults to exporting with **every** profile enabled, and the
+first vendoring (2026-09-09) took that default. The result demanded `cloud` and
+`osint` of every event, so this converter's output was recorded as
+non-conformant on four counts that were never real: it declares no profile, HDF
+carries no OSINT indicators at all, and it knows a cloud provider only when the
+component is a cloud account. Neither could have been populated without
+inventing data.
+
+Requesting `?profiles=` selects the class as OCSF defines it with no overlay,
+which is the document this converter actually emits. Under these schemas the
+pinned violation set in `../go/schema_validation_test.go` and its TypeScript peer
+is **empty**, with no change to the converter. The profile-less export does not
+merely drop the requirement — it does not define `cloud` or `osint` at all, so a
+document carrying either would now be rejected as an unknown member, which is
+the correct reading: an event may not carry a profile's attributes without
+declaring the profile.
+
+If this converter ever populates `cloud` for cloud-account components, it must
+declare `metadata.profiles: ["cloud"]` and this vendoring must move to
+`?profiles=cloud` in the same change.
 
 ## Why 1.9.0 when the converter declares 1.8.0
 

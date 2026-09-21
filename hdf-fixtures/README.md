@@ -45,8 +45,7 @@ them via the materialize-to-tmp-file helper in `converter_test.go`).
 
 ## Fixture provenance
 
-All fixtures here are **real tool output**, never fabricated — a converter
-tested against invented data proves nothing about real data.
+Fixtures here are **real tool output**, or a schema-valid document derived from one, never invented data — a converter tested against invented data proves nothing about real data. The one hand-authored file, `results/minimal.json`, exists to be the smallest schema-valid HDF Results document and is validated as such; it asserts nothing about any tool's output shape.
 
 ### `results/` — HDF Results docs
 

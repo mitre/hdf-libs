@@ -152,14 +152,16 @@ Quick reference: `hdf convert <file> -o <output>` (auto-detects format) or `hdf 
 
 ## Fixture Integrity
 
-Never fabricate fixture data. A fixture counts as real in exactly two cases:
+Never fabricate fixture data. A fixture is **real** in exactly two cases:
 
 1. **We generated it by running another published tool** — an actual run, a public CI pipeline, or one of this repo's own converters fed an input that itself qualifies.
 2. **We took it from someone else's published example or sample set** — [heimdall2](https://github.com/mitre/heimdall2/tree/master/libs/hdf-converters/sample_jsons), [SAF CLI](https://github.com/mitre/saf/tree/main/test/sample_data), or a format's upstream spec/example repository.
 
-Anything else is fabrication, including hand-assembling a document out of real strings: the assembly itself can be wrong even when every string inside it is genuine. **Schema validation is not a third source.** Validating against the format's official schema (JSON Schema, XSD, etc.) is a check on a fixture that already qualifies under (1) or (2), and the proof belongs in the fixture's `provenance.txt` or the commit message — it never establishes that a document we built ourselves is real.
+Prefer a real fixture always. Where none exists for a case that has to be covered, a **schema-confirmed** fixture is the acceptable fallback: a document adapted or built for that case and then validated against the format's official schema (JSON Schema, XSD), with the validation result recorded in the fixture's `provenance.txt`. It is not real, the record says so plainly, and it proves one thing only — that the shape is one the format admits.
 
-If no real data source exists, **stop and ask** — do not invent data. A converter tested against fabricated fixtures is untrusted: the fixture determines whether the converter works on real data; if the fixture is fake, the test proves nothing. Where no real source exists for some case, record the coverage gap instead of filling it.
+What is blocked is the third case: a document we assembled that **nothing confirms at all**, with no run behind it and no schema it was checked against. That includes hand-assembling a document out of real strings, because the assembly can be wrong even when every string inside it is genuine. If the format publishes no schema and no real source exists, **stop and ask**, and record the coverage gap rather than filling it with something nothing vouches for.
+
+A converter tested against fabricated fixtures is untrusted: the fixture determines whether the converter works on real data; if the fixture is fake, the test proves nothing.
 
 **Trimming a real document is allowed** — by dropping whole elements only (a requirement, a POA&M item, a product branch). Never edit a string inside a kept element, and never add, remove or convert whitespace or line endings to make a test pass.
 
@@ -177,6 +179,8 @@ HDF prose is carried verbatim (`site/docs/specification/hdf-specification.md`, C
 - **Provenance.** In the converter's `fixtures/provenance.txt` (or the `hdf-fixtures/README.md` row when shared), record: the source artifact with its canonical URL or upstream path and pinned version/commit; the **sha256 of the source as retrieved** (not of the trimmed fixture); the retrieval date; exactly what the trim dropped, stated as "whole elements dropped, no string edited"; and a field map naming which source string landed in which HDF field. The worked precedent for the fixture and its tests is `hdf-converters/converters/hdf-to-xccdf/fixtures/input/multiline-rhel9.json` (two requirements trimmed from a real RHEL 9 STIG scan) with the byte-exact assertions in that converter's `go/schema_validation_test.go` and `typescript/schema-validation.test.ts`.
 
 **Recorded limit — the amendments family.** No published source puts edge whitespace or CRLF into an HDF amendments document, so that coverage does not exist and must not be faked. No published tool emits HDF amendments directly either (SAF CLI's `convert:ckl2poam` runs the other way, to an eMASS xlsx workbook that nothing reads back). A genuinely real amendments fixture *is* reachable through our own importer fed a published OSCAL POA&M — NIST's `usnistgov/oscal-content`, `examples/poam/json/ifa_plan-of-action-and-milestones.json`, via `hdf convert --from oscal-poam`, after the one permitted whole-element drop of the poam-item whose `related-risk` dangles in NIST's own example. Its multi-line prose does not reach HDF today, because the two multi-line fields (`risks[].statement`, `observations[].remarks`) are not carried by `oscal-to-hdf`; until they are, the family's multi-line coverage comes from the VEX inputs' `reason` field alone.
+
+The procedure that applies this policy when a fixture is added — builder or file, sourcing, schema vendoring, the `provenance.txt` / `provenance.json` record, trimming, goldens and `no-golden.txt`, local versus shared — is the `/fixtures` skill (`.claude/skills/fixtures/SKILL.md`). Every `fixtures/` directory must carry a provenance record; `hdf-converters/shared/go/schemaload_test.go` enforces it.
 
 ### Where fixtures live: local vs shared
 

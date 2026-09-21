@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
+import type { Cvss, CVSSSeverity } from '@mitre/hdf-schema';
 import { amendments as sharedAmendments } from '@mitre/hdf-fixtures';
 import {
   loadSchemaValidator,
@@ -14,7 +15,7 @@ import {
   runSchemaCorpus,
   jsonDocumentValidator,
 } from '../../../shared/typescript/schema-corpus.js';
-import { convertHdfToCsafVex, referenceSummary, reasonProse } from './converter.js';
+import { convertHdfToCsafVex, referenceSummary, reasonProse, csafSeverity } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEST_VERSION = '1.0.0';
@@ -111,7 +112,7 @@ describe('hdf-to-csaf-vex against the adversarial corpus', () => {
 describe('hdf-to-csaf-vex product_status', () => {
   it('is omitted rather than emitted empty for an unknown override type', () => {
     const o = testhdf.override('not-a-real-override-type', CVE, { status: 'failed', reason: 'accepted' });
-    o.cvss = { version: '3.1', baseScore: 9.8 } as never;
+    o.cvss = completeCvss31();
     const input = JSON.stringify(testhdf.amendments('a', o));
 
     const doc = JSON.parse(convertHdfToCsafVex(input, TEST_VERSION)) as {
@@ -167,4 +168,95 @@ describe('hdf-to-csaf-vex CSAF text sinks match the shared table', () => {
       expect(reasonProse(c.reason)).toBe(c.want);
     },
   );
+});
+
+// The shared table the Go peer also reads, so the completeness rule and the
+// severity mapping are asserted against ONE definition in both languages. See
+// the table's $comment for data provenance.
+interface CvssScoreCase {
+  name: string;
+  why: string;
+  cve: string;
+  product: string;
+  cvss: Cvss;
+  want: Record<string, unknown> | null;
+  warning: string | null;
+}
+interface CvssScoreTable {
+  severity: Record<string, string>;
+  cases: CvssScoreCase[];
+}
+
+const cvssFixtures = join(__dirname, '..', 'fixtures');
+const cvssTable = JSON.parse(readFileSync(join(cvssFixtures, 'cvss-score-cases.json'), 'utf-8')) as CvssScoreTable;
+// The table's own $comment would otherwise read as a sixth band.
+delete cvssTable.severity.$comment;
+
+// The table's v31-complete block: the CVSS shape a test that only needs a score
+// to be emitted can rely on.
+function completeCvss31(): Cvss {
+  const c = cvssTable.cases.find((x) => x.name === 'v31-complete');
+  if (!c) throw new Error('shared table has no v31-complete case');
+  return c.cvss;
+}
+
+// Legal HDF in, a CSAF-valid document out, exactly the table's score (or none,
+// with the table's warning), and — through the goldens Go froze — the same bytes
+// from both languages.
+describe('hdf-to-csaf-vex CVSS scores match the shared table', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('reads a non-empty table', () => {
+    expect(cvssTable.cases.length).toBeGreaterThan(0);
+    expect(Object.keys(cvssTable.severity).length).toBeGreaterThan(0);
+  });
+
+  it.each(cvssTable.cases.map((c) => [c.name, c] as const))('%s', (name, c) => {
+    const o = testhdf.override('waiver', c.cve, { status: 'failed', reason: 'accepted' });
+    // The structured product identity the exporter reads, in the slot its prefix names.
+    o.affectedPackages = [c.product.startsWith('cpe:') ? { cpe: c.product } : { purl: c.product }];
+    o.cvss = c.cvss;
+    const input = JSON.stringify(testhdf.amendments('a', o));
+    assertSchemaValid(validateHdfAmendments, `${name} (input)`, JSON.parse(input));
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const out = convertHdfToCsafVex(input, TEST_VERSION);
+    const doc = JSON.parse(out) as { vulnerabilities: { scores?: unknown[] }[] };
+    assertSchemaValid(validate, name, doc);
+
+    expect(doc.vulnerabilities).toHaveLength(1);
+    if (c.want === null) {
+      expect(doc.vulnerabilities[0].scores, c.why).toBeUndefined();
+    } else {
+      expect(doc.vulnerabilities[0].scores, c.why).toEqual([c.want]);
+    }
+
+    const warnings = warn.mock.calls.map((args) => String(args[0]));
+    if (c.warning === null) {
+      expect(warnings, c.why).toEqual([]);
+    } else {
+      expect(warnings, c.why).toEqual([`WARNING: ${c.warning}`]);
+    }
+
+    const golden = readFileSync(join(cvssFixtures, 'expected', `cvss-${name}.csaf-vex.json`), 'utf-8');
+    expect(out).toBe(golden);
+  });
+});
+
+// The band mapping is pinned to the shared table and the table to the enum in
+// the vendored FIRST.org schema, so neither language's mapping can drift from
+// what CSAF actually accepts.
+describe('hdf-to-csaf-vex CSAF severity matches the shared table', () => {
+  it.each(Object.entries(cvssTable.severity))('%s', (band, want) => {
+    expect(csafSeverity(band as CVSSSeverity)).toBe(want);
+  });
+
+  it('uses exactly the FIRST.org severityType enum', () => {
+    const first = JSON.parse(readFileSync(join(csafSchemas, 'cvss-v3.1.json'), 'utf-8')) as {
+      definitions: { severityType: { enum: string[] } };
+    };
+    const enumValues = [...first.definitions.severityType.enum].sort();
+    expect([...Object.values(cvssTable.severity)].sort()).toEqual(enumValues);
+    expect(enumValues.join(',')).toBe(enumValues.join(',').toUpperCase());
+  });
 });

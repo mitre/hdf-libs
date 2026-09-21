@@ -13,12 +13,13 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import { loadSchemaValidator } from './schema-validation.js';
+import { ANNOTATION_ONLY_FORMATS, loadSchemaValidator } from './schema-validation.js';
 
 /**
  * A case states `valid` when the libraries agree, or `go` and `ts` when they do
- * not. `goDraft07` narrows the Go side only and is irrelevant here, since ajv
- * serves both dialects.
+ * not; a format ajv cannot check always spells both, so `valid` never dresses
+ * ajv's silence up as agreement. `goDraft07` narrows the Go side only and is
+ * irrelevant here, since ajv serves both dialects.
  */
 interface FormatCase {
   format: string;
@@ -44,7 +45,8 @@ const table = JSON.parse(
   ),
 ) as {
   formats: string[];
-  cases: Array<{ format: string; valid: boolean; value: string; why?: string }>;
+  tsAnnotationOnly: string[];
+  cases: FormatCase[];
 };
 
 const DIALECTS = [
@@ -73,6 +75,35 @@ function validatorFor(format: string, dialect: string) {
 describe('format assertion is pinned across languages', () => {
   it('covers every format the table declares', () => {
     expect(new Set(table.cases.map((c) => c.format))).toEqual(new Set(table.formats));
+  });
+
+  // ajv-formats implements none of these, so TypeScript schema tests cannot see
+  // a violation of them and Go can. The helper registers them as annotation-only
+  // rather than letting ajv ignore them: the set is then a decision this table
+  // records, not a warning nobody reads.
+  describe('formats ajv-formats does not implement', () => {
+    it('are exactly the ones the helper registers as annotation-only', () => {
+      expect([...ANNOTATION_ONLY_FORMATS].sort()).toEqual([...table.tsAnnotationOnly].sort());
+    });
+
+    it.each(table.tsAnnotationOnly)('%s: ajv accepts every row and Go rejects at least one', (format) => {
+      const rows = table.cases.filter((c) => c.format === format);
+      expect(rows.length, `${format} has no rows`).toBeGreaterThan(0);
+      for (const r of rows) {
+        expect(r.ts, `${format} ${JSON.stringify(r.value)} must spell ts: true — ajv never judges it`).toBe(true);
+      }
+      expect(
+        rows.some((r) => r.go === false || r.goDraft07 === false),
+        `${format} needs a row Go rejects, or the gap is asserted rather than demonstrated`,
+      ).toBe(true);
+    });
+
+    // A format neither ajv-formats nor the list above knows must fail loudly:
+    // the alternative is what this file exists to prevent — a schema assertion
+    // that validates nothing while the suite stays green.
+    it.each(DIALECTS)('%s refuses a format not acknowledged here', (dialect) => {
+      expect(() => validatorFor('idn-hostname', dialect)).toThrow(/unknown format "idn-hostname"/);
+    });
   });
 
   for (const dialect of DIALECTS) {
