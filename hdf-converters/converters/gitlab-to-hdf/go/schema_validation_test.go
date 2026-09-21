@@ -7,21 +7,14 @@ import (
 	"sort"
 	"testing"
 
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/stretchr/testify/require"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 // Every input fixture must satisfy the GitLab report schema for the type and
 // version it declares. The fixtures are authored here, so this is the fixture
 // policy's validation requirement made mechanical: a document a real GitLab
 // pipeline would reject is not evidence that the converter handles real data.
-func absPath(t *testing.T, p string) string {
-	t.Helper()
-	abs, err := filepath.Abs(p)
-	require.NoError(t, err)
-	return abs
-}
-
 func TestGitLabFixturesValidateAgainstDeclaredSchema(t *testing.T) {
 	inputs, err := filepath.Glob(filepath.Join("..", "fixtures", "input", "*.json"))
 	require.NoError(t, err)
@@ -46,13 +39,7 @@ func TestGitLabFixturesValidateAgainstDeclaredSchema(t *testing.T) {
 			_, statErr := os.Stat(schemaPath)
 			require.NoError(t, statErr, "no vendored schema for scan.type %q at version %s — vendor it with provenance", header.Scan.Type, header.Version)
 
-			schema, err := gojsonschema.NewSchema(gojsonschema.NewReferenceLoader("file://" + absPath(t, schemaPath)))
-			require.NoError(t, err)
-			result, err := schema.Validate(gojsonschema.NewBytesLoader(raw))
-			require.NoError(t, err)
-			for _, e := range result.Errors() {
-				t.Errorf("%s: %s", e.Field(), e.Description())
-			}
+			shared.NewSchemaValidator(t, schemaPath).RequireValid(t, filepath.Base(path), raw)
 		})
 	}
 }
