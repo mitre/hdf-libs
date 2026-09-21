@@ -64,6 +64,7 @@ the Go and TS tests are authoritative.
 
 A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
 
+None to record: the inputs are HDF documents (this repository's own schema), not the output of an external producer tool, so no fixture here carries a tool/version string. The shared-corpus fixtures this converter now consumes — `amendments/multi-cve-amendments.json` and `amendments/uc-01-fixed-amendments.json` — carry their source, declared generator, and validation record in `hdf-fixtures/README.md`.
 
 ## Schema
 

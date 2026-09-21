@@ -43,6 +43,10 @@ The promise is possible because HDF is JSON. XML (XML 1.0 §2.11) and YAML (YAML
 
 **Where normalization is legitimate.** Only at an export boundary whose own type forbids what HDF allows, and only for that target. `dev-docs/adr-0014-oscal-namespace-and-prose-carriage.md` §1.7.1 collapses line terminators and trims edge whitespace for OSCAL `StringDatatype` sinks, carrying the exact HDF value in the accompanying `remarks`; that rule is scoped to those sinks and is not generalized. An OSCAL `markup-multiline` home must pass `\n` through untouched, because a blank line is the paragraph delimiter there. A target that folds line endings by specification (XCCDF, or any other XML sink) returns LF-normalized prose — the target format's documented loss, stated per exporter, not an HDF rule.
 
+### Evidence data encoding
+
+`Evidence` carries supporting material on a requirement or override; its `data` field is required and must be non-empty (`minLength: 1`). The `encoding` field names how to read `data` — `utf-8` for the raw text of a `code`/`log` entry, the URL string for a `url` entry, or `base64` for a `screenshot`/`file`. When `encoding` is exactly `base64` (lowercase), `data` must be **bare base64** matching OSCAL's `Base64Datatype` (`^[0-9A-Za-z+/]+={0,2}$`): no `data:` URI prefix, no surrounding URL, and no line breaks. A file or screenshot is therefore the raw base64 of its bytes; a link to an external artifact is a `url` entry, not a `base64` body. *(data non-emptiness and the bare-base64 rule tightened in v3.7.0)*
+
 ### Cardinality invariants
 
 Several arrays in the schema declare `minItems: 1`:
