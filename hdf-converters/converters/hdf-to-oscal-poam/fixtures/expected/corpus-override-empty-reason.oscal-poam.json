@@ -1,6 +1,6 @@
 {
   "plan-of-action-and-milestones": {
-    "uuid": "28bba4b0-488c-4580-80c2-6ef3f822588d",
+    "uuid": "49b6a87b-9cc8-4e92-ba05-f1d77d8e8de5",
     "metadata": {
       "title": "a",
       "last-modified": "2020-01-01T00:00:00Z",
@@ -8,9 +8,38 @@
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "ae4f1a39-36bb-40b4-ae5f-6ee14b890075",
+          "uuid": "137efa82-ccd8-45cc-a1e2-a0391ae39d2d",
           "type": "person",
-          "name": "test"
+          "name": "test",
+          "props": [
+            {
+              "name": "identity-identifier",
+              "value": "test",
+              "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+            },
+            {
+              "name": "identity-type",
+              "value": "simple",
+              "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+            }
+          ]
+        }
+      ],
+      "props": [
+        {
+          "name": "amendments-name",
+          "value": "a",
+          "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+        },
+        {
+          "name": "absent-field",
+          "value": "systemRef",
+          "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+        },
+        {
+          "name": "absent-field",
+          "value": "version",
+          "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
         }
       ]
     },
@@ -19,18 +48,25 @@
     },
     "risks": [
       {
-        "uuid": "067b67e4-bd58-46da-b347-30111dcd0d63",
+        "uuid": "a70505ba-e4de-4892-859a-c495853517c9",
         "title": "CVE-2021-44228",
         "description": "No rationale was recorded for the waiver override applied to CVE-2021-44228.",
         "statement": "No rationale was recorded for the waiver override applied to CVE-2021-44228.",
         "props": [
           {
-            "name": "impacted-control-id",
-            "value": "cve-2021-44228"
+            "name": "hdf-requirement-id",
+            "value": "CVE-2021-44228",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
           },
           {
             "name": "override-type",
-            "value": "waiver"
+            "value": "waiver",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+          },
+          {
+            "name": "override-status",
+            "value": "failed",
+            "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
           }
         ],
         "status": "open",
@@ -38,7 +74,17 @@
         "risk-log": {
           "entries": [
             {
-              "uuid": "44c888fd-6ae4-4a78-927c-9cc557599145",
+              "uuid": "e2216c0f-e49f-4a5e-a3d1-3da2a6f63b50",
+              "title": "Override applied",
+              "start": "2020-01-01T00:00:00Z",
+              "logged-by": [
+                {
+                  "party-uuid": "137efa82-ccd8-45cc-a1e2-a0391ae39d2d"
+                }
+              ]
+            },
+            {
+              "uuid": "ee07bfae-cc48-4203-9ec3-bdef799eb3ad",
               "title": "Scheduled review",
               "description": "Amendment expiration date",
               "start": "2099-12-31T00:00:00Z",
@@ -50,12 +96,12 @@
     ],
     "poam-items": [
       {
-        "uuid": "45a18680-b74d-44c3-a4e1-a9f0f179f219",
+        "uuid": "43ed9955-bff5-4a93-83d5-cc5990e0ec3b",
         "title": "CVE-2021-44228",
         "description": "",
         "related-risks": [
           {
-            "risk-uuid": "067b67e4-bd58-46da-b347-30111dcd0d63"
+            "risk-uuid": "a70505ba-e4de-4892-859a-c495853517c9"
           }
         ]
       }

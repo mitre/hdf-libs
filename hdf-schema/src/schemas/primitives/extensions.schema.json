@@ -178,7 +178,7 @@
           "evidence": [
             {
               "type": "screenshot",
-              "data": "base64-encoded-screenshot-data-here",
+              "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
               "description": "Screenshot showing firewall configuration",
               "mimeType": "image/png",
               "encoding": "base64",

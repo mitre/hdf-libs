@@ -13,13 +13,11 @@ import {
 import { convertHdfToOpenVex } from './converter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// OpenVEX v0.2.0 schema (draft 2020-12). Vendored under openvex-to-hdf/fixtures.
+// OpenVEX v0.2.0 schema (draft 2020-12). See ../schemas/provenance.txt.
 // Every @id in it is `format: iri`, which ajv-formats does not implement, so a
 // green run here says nothing about @id shape — a bare token passes. The Go peer
 // asserts it; see shared/testdata/format-assertion-cases.json (tsAnnotationOnly).
-const validate = loadSchemaValidator(
-  join(__dirname, '..', '..', 'openvex-to-hdf', 'fixtures', 'openvex_json_schema.json'),
-);
+const validate = loadSchemaValidator(join(__dirname, '..', 'schemas', 'openvex_json_schema.json'));
 /** The HDF schema the converter's own inputs must satisfy. */
 const validateHdfAmendments = loadSchemaValidator(
   join(__dirname, '..', '..', '..', '..', 'hdf-validators', 'go', 'schemas', 'hdf-amendments.schema.json'),

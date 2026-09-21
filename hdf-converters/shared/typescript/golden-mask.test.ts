@@ -33,6 +33,14 @@ describe('maskVolatileJson', () => {
     expect(linked).not.toEqual(unlinked);
   });
 
+  it('gives a "#<uuid>" fragment reference the ordinal of the uuid it names', () => {
+    expect(
+      mask(
+        '{"a":{"href":"#11111111-1111-1111-1111-111111111111"},"b":{"uuid":"11111111-1111-1111-1111-111111111111"},"c":"#SV-1"}',
+      ),
+    ).toEqual({ a: { href: '#uuid-1' }, b: { uuid: 'uuid-1' }, c: '#SV-1' });
+  });
+
   it('blanks the volatile keys it is given', () => {
     expect(mask('{"last-modified":"2026-07-12T00:00:00Z","title":"keep me"}', ['last-modified'])).toEqual({
       'last-modified': '(normalized)',

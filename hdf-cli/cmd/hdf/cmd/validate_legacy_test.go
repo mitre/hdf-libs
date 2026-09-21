@@ -65,3 +65,55 @@ func TestValidateLegacyInSpecExecJSON_ForcedTypeRedirects(t *testing.T) {
 		t.Errorf("should name the version mismatch, not only the v3 schema error; stderr=%s", stderr)
 	}
 }
+
+// --schema-ver 2 validates a legacy Heimdall/InSpec exec-json doc as valid HDF v2
+// (the userbase's existing docs are validatable, not just convertible).
+func TestValidateSchemaVer2_ValidatesLegacyInSpec(t *testing.T) {
+	path := writeLegacyInSpec(t)
+	stdout, stderr, err := executeCommand("validate", path, "--schema-ver", "2")
+	if err != nil {
+		t.Fatalf("--schema-ver 2 should validate a legacy exec-json doc; err=%v stderr=%s", err, stderr)
+	}
+	if !strings.Contains(stdout, "valid HDF v2") {
+		t.Errorf("expected a v2 success line; stdout=%s", stdout)
+	}
+}
+
+// --schema-ver 2 rejects a malformed v2 doc at the same rigor as v3 (field errors).
+func TestValidateSchemaVer2_RejectsMalformed(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bad-v2.json")
+	if err := os.WriteFile(path, []byte(`{"profiles": "not-an-array"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := executeCommand("validate", path, "--schema-ver", "2")
+	if err == nil {
+		t.Fatal("a malformed v2 doc must fail --schema-ver 2 validation")
+	}
+}
+
+// Only major versions are accepted; a minor/patch is rejected with a clear error.
+func TestValidateSchemaVer_RejectsMinorVersion(t *testing.T) {
+	path := writeLegacyInSpec(t)
+	_, stderr, err := executeCommand("validate", path, "--schema-ver", "3.4.1")
+	if err == nil {
+		t.Fatal("--schema-ver 3.4.1 must be rejected (majors only)")
+	}
+	if !strings.Contains(err.Error()+stderr, "major") {
+		t.Errorf("error should explain only majors are allowed; err=%v stderr=%s", err, stderr)
+	}
+}
+
+// Default (no flag) on a legacy doc now offers BOTH --schema-ver 2 and convert.
+func TestValidateDefault_LegacyDocOffersSchemaVer2(t *testing.T) {
+	path := writeLegacyInSpec(t)
+	_, stderr, err := executeCommand("validate", path)
+	if err == nil {
+		t.Fatal("a legacy doc under the default (v3) should still fail")
+	}
+	if !strings.Contains(stderr, "--schema-ver 2") {
+		t.Errorf("default-path message should offer --schema-ver 2; stderr=%s", stderr)
+	}
+	if !strings.Contains(stderr, "hdf convert") {
+		t.Errorf("default-path message should still offer convert; stderr=%s", stderr)
+	}
+}

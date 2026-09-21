@@ -24,7 +24,7 @@ const testCVE = "CVE-2021-44228"
 // alongside it and registered as companions so it compiles offline.
 func csafValidator(t *testing.T) *shared.SchemaValidator {
 	t.Helper()
-	base := filepath.Join(shared.GetConvertersDir(), "csaf-vex-to-hdf", "fixtures")
+	base := filepath.Join("..", "schemas")
 	return shared.NewSchemaValidatorWithResources(t,
 		filepath.Join(base, "csaf_json_schema.json"),
 		map[string]string{
@@ -49,11 +49,10 @@ func hdfAmendmentsValidator(t *testing.T) *shared.SchemaValidator {
 func TestConvertHDFToCSAFVEX_SchemaValid(t *testing.T) {
 	v := csafValidator(t)
 
-	for _, name := range []string{"sec-vex-amendments.json"} {
+	// Exactly the TestGoldenParity inputs, so no frozen golden escapes the schema.
+	for _, name := range []string{"sec-vex-amendments.json", "uc-01-fixed-amendments.json"} {
 		t.Run(name, func(t *testing.T) {
-			input, err := os.ReadFile(filepath.Join("..", "fixtures", "input", name))
-			require.NoError(t, err)
-			out, err := ConvertHDFToCSAFVEX(input, "1.0.0")
+			out, err := ConvertHDFToCSAFVEX(loadInput(t, name), "1.0.0")
 			require.NoError(t, err)
 			v.RequireValid(t, name, out)
 		})
@@ -349,7 +348,7 @@ func TestCsafSeverity_MatchesSharedTable(t *testing.T) {
 		})
 	}
 
-	raw, err := os.ReadFile(filepath.Join(shared.GetConvertersDir(), "csaf-vex-to-hdf", "fixtures", "cvss-v3.1.json"))
+	raw, err := os.ReadFile(filepath.Join(shared.GetConvertersDir(), "hdf-to-csaf-vex", "schemas", "cvss-v3.1.json"))
 	require.NoError(t, err)
 	var first struct {
 		Definitions struct {

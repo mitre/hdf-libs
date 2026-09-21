@@ -486,6 +486,18 @@ describe('grype-to-hdf scan-target component', () => {
     expect(c.integrity).toBeUndefined();
     expect(c.labels).toBeUndefined();
   });
+
+  // A real directory/SBOM scan emits source.target as a bare STRING, not an
+  // object. The name must be that string, not the "Grype Scan" fallback the TS
+  // twin silently produced before.
+  it('names the artifact after a bare-string source.target (directory scan)', async () => {
+    const result = parseJSON<HDFResults>(await convertGrypeToHdf(loadFixture('directory_scan.json')));
+    expect(result.baselines[0]!.name).toBe('.');
+    expect(result.components).toHaveLength(1);
+    const c = result.components![0]!;
+    expect(c.type).toBe('artifact');
+    expect(c.name).toBe('.');
+  });
 });
 
 describe('grype-to-hdf sha512 manifest digest (fpx5 regression)', () => {

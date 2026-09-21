@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
 import type { Cvss, CVSSSeverity } from '@mitre/hdf-schema';
+import { amendments as sharedAmendments } from '@mitre/hdf-fixtures';
 import {
   loadSchemaValidator,
   loadSchemaValidatorWithResources,
@@ -22,12 +23,12 @@ const CVE = 'CVE-2021-44228';
 
 // OASIS CSAF v2.0 (draft 2020-12). The schema $refs the FIRST.org CVSS schemas
 // by URL; those are vendored alongside it and registered as companions so it
-// compiles offline. Shared with the reverse importer rather than re-vendored.
-const csafFixtures = join(__dirname, '..', '..', 'csaf-vex-to-hdf', 'fixtures');
-const validate = loadSchemaValidatorWithResources(join(csafFixtures, 'csaf_json_schema.json'), {
-  'https://www.first.org/cvss/cvss-v2.0.json': join(csafFixtures, 'cvss-v2.0.json'),
-  'https://www.first.org/cvss/cvss-v3.0.json': join(csafFixtures, 'cvss-v3.0.json'),
-  'https://www.first.org/cvss/cvss-v3.1.json': join(csafFixtures, 'cvss-v3.1.json'),
+// compiles offline. See ../schemas/provenance.txt.
+const csafSchemas = join(__dirname, '..', 'schemas');
+const validate = loadSchemaValidatorWithResources(join(csafSchemas, 'csaf_json_schema.json'), {
+  'https://www.first.org/cvss/cvss-v2.0.json': join(csafSchemas, 'cvss-v2.0.json'),
+  'https://www.first.org/cvss/cvss-v3.0.json': join(csafSchemas, 'cvss-v3.0.json'),
+  'https://www.first.org/cvss/cvss-v3.1.json': join(csafSchemas, 'cvss-v3.1.json'),
 });
 
 // The HDF schema the converter's inputs must themselves satisfy, so an input
@@ -40,9 +41,12 @@ const sparseOverride = () =>
   testhdf.override('waiver', CVE, { status: 'failed', reason: 'accepted' });
 
 describe('hdf-to-csaf-vex output validates against the OASIS CSAF v2.0 schema', () => {
-  it('sec-vex-amendments.json', () => {
-    const input = readFileSync(join(__dirname, '..', 'fixtures', 'input', 'sec-vex-amendments.json'), 'utf-8');
-    assertSchemaValid(validate, 'sec-vex-amendments.json', JSON.parse(convertHdfToCsafVex(input, TEST_VERSION)));
+  // Exactly the golden parity inputs, so no frozen golden escapes the schema.
+  it.each([
+    ['sec-vex-amendments.json', () => readFileSync(join(__dirname, '..', 'fixtures', 'input', 'sec-vex-amendments.json'), 'utf-8')],
+    ['uc-01-fixed-amendments.json', () => sharedAmendments.uc01Fixed.read()],
+  ])('%s', (name, load) => {
+    assertSchemaValid(validate, name, JSON.parse(convertHdfToCsafVex(load(), TEST_VERSION)));
   });
 
   const sparse: Array<[string, () => unknown]> = [
@@ -248,7 +252,7 @@ describe('hdf-to-csaf-vex CSAF severity matches the shared table', () => {
   });
 
   it('uses exactly the FIRST.org severityType enum', () => {
-    const first = JSON.parse(readFileSync(join(csafFixtures, 'cvss-v3.1.json'), 'utf-8')) as {
+    const first = JSON.parse(readFileSync(join(csafSchemas, 'cvss-v3.1.json'), 'utf-8')) as {
       definitions: { severityType: { enum: string[] } };
     };
     const enumValues = [...first.definitions.severityType.enum].sort();

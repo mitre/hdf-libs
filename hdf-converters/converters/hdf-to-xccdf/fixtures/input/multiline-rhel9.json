@@ -1,0 +1,143 @@
+{
+  "baselines": [
+    {
+      "name": "redhat-enterprise-linux-9-stig-baseline",
+      "version": "2.4.0",
+      "title": "redhat-enterprise-linux-9-stig-baseline",
+      "maintainer": "MITRE SAF Team",
+      "summary": "InSpec profile aligned to DISA STIG for RHEL9",
+      "license": "Apache-2.0",
+      "copyright": "MITRE",
+      "parentBaseline": "wrapper",
+      "requirements": [
+        {
+          "id": "SV-257781",
+          "title": "The graphical display manager must not be the default target on RHEL 9 unless approved.",
+          "impact": 0.5,
+          "tags": {
+            "check_id": "C-61522r925328_chk",
+            "severity": "medium",
+            "gid": "V-257781",
+            "rid": "SV-257781r991589_rule",
+            "stig_id": "RHEL-09-211030",
+            "gtitle": "SRG-OS-000480-GPOS-00227",
+            "fix_id": "F-61446r925329_fix",
+            "documentable": null,
+            "cci": [
+              "CCI-000366"
+            ],
+            "nist": [
+              "CM-6 b"
+            ],
+            "host": null
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Unnecessary service packages must not be installed to decrease the attack surface of the system. Graphical display managers have a long history of security vulnerabilities and must not be used, unless approved and documented."
+            },
+            {
+              "label": "check",
+              "data": "Verify that RHEL 9 is configured to boot to the command line:\n\n$ systemctl get-default\n\nmulti-user.target\n\nIf the system default target is not set to \"multi-user.target\" and the information system security officer (ISSO) lacks a documented requirement for a graphical user interface, this is a finding."
+            },
+            {
+              "label": "fix",
+              "data": "Document the requirement for a graphical user interface with the ISSO or set the default target to multi-user with the following command:\n\n$ sudo systemctl set-default multi-user.target"
+            }
+          ],
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "graphical.target is expected to cmp == \"multi-user.target\"",
+              "startTime": "2026-03-25T22:45:50-04:00",
+              "runTime": 0.000282,
+              "message": "\nexpected: multi-user.target\n     got: graphical.target\n\n(compared using `cmp` matcher)\n"
+            }
+          ],
+          "code": "control 'SV-257781' do\n  title 'The graphical display manager must not be the default target on RHEL 9 unless approved.'\n  desc 'Unnecessary service packages must not be installed to decrease the attack surface of the system. Graphical display managers have a long history of security vulnerabilities and must not be used, unless approved and documented.'\n  desc 'check', 'Verify that RHEL 9 is configured to boot to the command line:\n\n$ systemctl get-default\n\nmulti-user.target\n\nIf the system default target is not set to \"multi-user.target\" and the information system security officer (ISSO) lacks a documented requirement for a graphical user interface, this is a finding.'\n  desc 'fix', 'Document the requirement for a graphical user interface with the ISSO or set the default target to multi-user with the following command:\n\n$ sudo systemctl set-default multi-user.target'\n  impact 0.5\n  tag check_id: 'C-61522r925328_chk'\n  tag severity: 'medium'\n  tag gid: 'V-257781'\n  tag rid: 'SV-257781r991589_rule'\n  tag stig_id: 'RHEL-09-211030'\n  tag gtitle: 'SRG-OS-000480-GPOS-00227'\n  tag fix_id: 'F-61446r925329_fix'\n  tag 'documentable'\n  tag cci: ['CCI-000366']\n  tag nist: ['CM-6 b']\n  tag 'host'\n\n  only_if('This requirement is Not Applicable inside the container', impact: 0.0) {\n    !virtualization.system.eql?('docker')\n  }\n\n  if input('gui_required')\n    impact 0.0\n    describe 'skip' do\n      skip 'A GUI is indicated as a requirement for this system. This control is Not Applicable.'\n    end\n  else\n    get_default = command('systemctl get-default').stdout.strip\n\n    describe get_default do\n      it { should cmp 'multi-user.target' }\n    end\n  end\nend\n",
+          "sourceLocation": {
+            "ref": "redhat-enterprise-linux-9-stig-baseline/controls/SV-257781.rb",
+            "line": 1.0
+          }
+        },
+        {
+          "id": "SV-257786",
+          "title": "RHEL 9 debug-shell systemd service must be disabled.",
+          "impact": 0.5,
+          "tags": {
+            "severity": "medium",
+            "gtitle": "SRG-OS-000324-GPOS-00125",
+            "gid": "V-257786",
+            "rid": "SV-257786r1044834_rule",
+            "stig_id": "RHEL-09-211055",
+            "fix_id": "F-61451r943025_fix",
+            "cci": [
+              "CCI-000366",
+              "CCI-002235"
+            ],
+            "nist": [
+              "CM-6 b",
+              "AC-6 (10)"
+            ],
+            "host": null
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "The debug-shell requires no authentication and provides root\nprivileges to anyone who has physical access to the machine.  While this\nfeature is disabled by default, masking it adds an additional layer of\nassurance that it will not be enabled via a dependency in systemd.  This also\nprevents attackers with physical access from trivially bypassing security on\nthe machine through valid troubleshooting configurations and gaining root\naccess when the system is rebooted."
+            },
+            {
+              "label": "check",
+              "data": "Verify RHEL 9 is configured to mask the debug-shell systemd service with the following command:\n\n$ sudo systemctl status debug-shell.service\n\ndebug-shell.service\nLoaded: masked (Reason: Unit debug-shell.service is masked.)\nActive: inactive (dead)\n\nIf the \"debug-shell.service\" is loaded and not masked, this is a finding."
+            },
+            {
+              "label": "fix",
+              "data": "Configure RHEL 9 to mask the debug-shell systemd service with the following command:\n\n$ sudo systemctl disable --now debug-shell.service\n$ sudo systemctl mask --now debug-shell.service"
+            }
+          ],
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "Service debug-shell.service params.LoadState is expected to eq \"masked\"",
+              "startTime": "2026-03-25T22:45:51-04:00",
+              "runTime": 0.003828,
+              "message": "\nexpected: \"masked\"\n     got: \"loaded\"\n\n(compared using ==)\n",
+              "exception": "RSpec::Core::MultipleExceptionError"
+            },
+            {
+              "status": "failed",
+              "codeDesc": "Service debug-shell.service params.LoadState is expected to eq \"not-found\"",
+              "startTime": "2026-03-25T22:45:51-04:00",
+              "runTime": 0.001741,
+              "message": "\nexpected: \"not-found\"\n     got: \"loaded\"\n\n(compared using ==)\n",
+              "exception": "RSpec::Core::MultipleExceptionError"
+            }
+          ],
+          "code": "control 'SV-257786' do\n  title 'RHEL 9 debug-shell systemd service must be disabled.'\n  desc 'The debug-shell requires no authentication and provides root\nprivileges to anyone who has physical access to the machine.  While this\nfeature is disabled by default, masking it adds an additional layer of\nassurance that it will not be enabled via a dependency in systemd.  This also\nprevents attackers with physical access from trivially bypassing security on\nthe machine through valid troubleshooting configurations and gaining root\naccess when the system is rebooted.'\n  desc 'check', 'Verify RHEL 9 is configured to mask the debug-shell systemd service with the following command:\n\n$ sudo systemctl status debug-shell.service\n\ndebug-shell.service\nLoaded: masked (Reason: Unit debug-shell.service is masked.)\nActive: inactive (dead)\n\nIf the \"debug-shell.service\" is loaded and not masked, this is a finding.'\n  desc 'fix', 'Configure RHEL 9 to mask the debug-shell systemd service with the following command:\n\n$ sudo systemctl disable --now debug-shell.service\n$ sudo systemctl mask --now debug-shell.service'\n  impact 0.5\n  tag severity: 'medium'\n  tag gtitle: 'SRG-OS-000324-GPOS-00125'\n  tag gid: 'V-257786'\n  tag rid: 'SV-257786r1044834_rule'\n  tag stig_id: 'RHEL-09-211055'\n  tag fix_id: 'F-61451r943025_fix'\n  tag cci: ['CCI-000366', 'CCI-002235']\n  tag nist: ['CM-6 b', 'AC-6 (10)']\n  tag 'host'\n\n  only_if('This control is Not Applicable to containers', impact: 0.0) {\n    !virtualization.system.eql?('docker')\n  }\n\n  d = systemd_service('debug-shell.service')\n\n  describe.one do\n    describe d do\n      its('params.LoadState') { should eq 'masked' }\n    end\n    describe d do\n      its('params.LoadState') { should eq 'not-found' }\n    end\n  end\nend\n",
+          "sourceLocation": {
+            "ref": "redhat-enterprise-linux-9-stig-baseline/controls/SV-257786.rb",
+            "line": 1.0
+          }
+        }
+      ],
+      "groups": [
+        {
+          "id": "controls/SV-257781.rb",
+          "requirements": [
+            "SV-257781"
+          ]
+        },
+        {
+          "id": "controls/SV-257786.rb",
+          "requirements": [
+            "SV-257786"
+          ]
+        }
+      ],
+      "depends": []
+    }
+  ],
+  "statistics": {
+    "duration": 62.847732
+  }
+}

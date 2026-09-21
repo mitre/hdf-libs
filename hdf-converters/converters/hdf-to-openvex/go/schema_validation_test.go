@@ -18,8 +18,7 @@ import (
 
 func openvexValidator(t *testing.T) *shared.SchemaValidator {
 	t.Helper()
-	return shared.NewSchemaValidator(t, filepath.Join(shared.GetConvertersDir(),
-		"openvex-to-hdf", "fixtures", "openvex_json_schema.json"))
+	return shared.NewSchemaValidator(t, filepath.Join("..", "schemas", "openvex_json_schema.json"))
 }
 
 func amendmentsValidator(t *testing.T) *shared.SchemaValidator {
@@ -29,8 +28,8 @@ func amendmentsValidator(t *testing.T) *shared.SchemaValidator {
 }
 
 // TestConvertHDFToOpenVEX_SchemaValid gates the converter output on the OpenVEX
-// v0.2.0 JSON schema (draft 2020-12). See the vendored schema under
-// openvex-to-hdf/fixtures. The shared table cases run here too: the conditional
+// v0.2.0 JSON schema (draft 2020-12). See ../schemas/provenance.txt for its
+// pinned upstream ref. The shared table cases run here too: the conditional
 // requirements they probe are schema rules, so the schema is what must judge them.
 func TestConvertHDFToOpenVEX_SchemaValid(t *testing.T) {
 	v := openvexValidator(t)

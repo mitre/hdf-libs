@@ -402,6 +402,25 @@ func TestConvertHDFToXCCDF_RawStatusWhenNoOverride(t *testing.T) {
 	assert.Contains(t, string(out), "<result>fail</result>")
 }
 
+// XCCDF requires severity on every message (xccdf_1.2.xsd messageType). An
+// error-status result is the checking engine reporting a fault; every other
+// message is diagnostic output from the check itself.
+func TestConvertHDFToXCCDF_MessageCarriesSeverity(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[
+		{"id":"SV-1","impact":0.5,"title":"req","tags":{},
+		 "descriptions":[{"label":"default","data":"d"}],
+		 "results":[{"status":"failed","codeDesc":"c","message":"check output","startTime":"2026-01-01T00:00:00Z"}]},
+		{"id":"SV-2","impact":0.5,"title":"req","tags":{},
+		 "descriptions":[{"label":"default","data":"d"}],
+		 "results":[{"status":"error","codeDesc":"c","message":"engine fault","startTime":"2026-01-01T00:00:00Z"}]}
+	]}]}`)
+	out, err := ConvertHDFToXCCDF(input, "test")
+	require.NoError(t, err)
+	result := string(out)
+	assert.Contains(t, result, `<message severity="info">check output</message>`)
+	assert.Contains(t, result, `<message severity="error">engine fault</message>`)
+}
+
 // TestGoldenParity asserts whole-output equality against frozen golden XCCDF
 // documents built from the converter's real HDF inputs. The TypeScript test
 // asserts the SAME files under the SAME normalization, so the two

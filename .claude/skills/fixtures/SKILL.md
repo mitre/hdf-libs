@@ -23,14 +23,18 @@ If a builder expresses it, stop here and write the test.
 
 ## 2. Where the file comes from
 
-In order of preference. Record which one applies in the provenance record (step 4), not only in the commit message.
+Two tiers, and the record has to say which one applies (step 4), not just the commit message.
+
+**Real** — prefer this always:
 
 1. **Real output** from an actual run or a public CI pipeline. Say which tool, which run, when.
-2. **A copy from heimdall2 or SAF CLI** (`~/repos/heimdall2/libs/hdf-converters/...`, `~/repos/saf/test/sample_data/`). Record the upstream path and whether the copy is byte-identical. Any modification (sanitization, truncation) is stated with what changed and why.
-3. **Adapted**: a real document as the base, the minimum edits the case needs, then validated against the format's schema with the result recorded. Adapted from a real file, never from nothing.
-4. **Synthetic by construction** is allowed for exactly one thing: the `empty.*` no-findings input, which the harness treats specially. Say so in the record.
+2. **A copy from a published example or sample set** — heimdall2, SAF CLI, or the format's own spec/example repository. Record the upstream path and whether the copy is byte-identical or what changed.
 
-If none of these is available and no schema exists to validate against, stop and ask. Do not invent a document. A fixture that is not real does not test the converter against real data; it tests it against the author's idea of the format, which is the thing most likely to be wrong.
+**Schema-confirmed** — the fallback, only where no real source exists for a case that has to be covered:
+
+3. A document adapted from a real base, or built for the case, then validated against the format's official schema with the result recorded. It is **not real**; say so in the record. It proves the shape is one the format admits, nothing more. The `empty.*` no-findings input lives here: it is synthetic, it validates, and the harness treats it specially.
+
+**Blocked**: a document nothing confirms — no run behind it, no schema it was checked against. Hand-assembling one out of real strings counts, because the assembly can be wrong even when every string in it is genuine. If the format publishes no schema and no real source exists, stop and ask, and record the coverage gap rather than filling it with something nothing vouches for.
 
 ## 3. Does the format publish a schema?
 

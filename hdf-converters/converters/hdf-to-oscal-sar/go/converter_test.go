@@ -1,10 +1,13 @@
 package hdftooscalsar
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	oscal "github.com/mitre/hdf-libs/hdf-converters/v3/converters/oscal-to-hdf/go"
@@ -181,9 +184,6 @@ func TestConvertHDFToOSCALSAR_FieldCoverage(t *testing.T) {
 		return ""
 	}
 	assert.Equal(t, "CCI-000012", propVal("cci"))
-	// Single-line prose keeps its full text as the prop value (no remarks needed).
-	assert.Equal(t, "check text", propVal("check"))
-	assert.Equal(t, "rationale text", propVal("rationale"))
 	assert.Equal(t, "technical", propVal("control-type"))
 	assert.Equal(t, "automated", propVal("verification-method"))
 	assert.Equal(t, "required", propVal("applicability"))
@@ -221,11 +221,316 @@ func TestConvertHDFToOSCALSAR_FieldCoverage(t *testing.T) {
 	// url/uri refs are also emitted as observation relevant-evidence so they
 	// round-trip through the reverse importer (which ignores finding.links).
 	require.Len(t, doc.AssessmentResults.Results[0].Observations, 1)
-	var evHrefs []string
-	for _, e := range doc.AssessmentResults.Results[0].Observations[0].RelevantEvidence {
-		evHrefs = append(evHrefs, e.Href)
+	ev := doc.AssessmentResults.Results[0].Observations[0].RelevantEvidence
+	require.GreaterOrEqual(t, len(ev), 2)
+	assert.Equal(t, "https://example.gov/a", ev[0].Href)
+	assert.Equal(t, "https://example.gov/b", ev[1].Href)
+}
+
+// sarDoc converts HDF input to SAR and decodes it.
+func sarDoc(t *testing.T, input []byte) oscal.AssessmentResults {
+	t.Helper()
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	return doc.AssessmentResults
+}
+
+// propsNamed returns every prop on the list with the given name.
+func propsNamed(props []oscal.Property, name string) []oscal.Property {
+	var out []oscal.Property
+	for _, p := range props {
+		if p.Name == name {
+			out = append(out, p)
+		}
 	}
-	assert.Equal(t, []string{"https://example.gov/a", "https://example.gov/b"}, evHrefs)
+	return out
+}
+
+// labelledEvidence returns the relevant-evidence entries carrying the HDF
+// description-label prop with the given value.
+func labelledEvidence(obs *oscal.Observation, label string) []oscal.RelevantEvidence {
+	var out []oscal.RelevantEvidence
+	for _, e := range obs.RelevantEvidence {
+		for _, p := range e.Props {
+			if p == oscal.DescriptionLabelProp(label) {
+				out = append(out, e)
+			}
+		}
+	}
+	return out
+}
+
+// hdfDescription returns the data of the first description with the label.
+func hdfDescription(req *hdf.EvaluatedRequirement, label string) (string, bool) {
+	for _, d := range req.Descriptions {
+		if d.Label == label {
+			return d.Data, true
+		}
+	}
+	return "", false
+}
+
+const multilineRationale = "Without session locks, an unattended session\n  can be used by anyone.\n\nThis matters for shared terminals.\n"
+const multilineCheck = "\n  Verify the setting:\n\n  $ sudo grep lock /etc/dconf/db/local.d/*\n\n  If it is missing, this is a finding.\n"
+const multilineFix = "Configure the lock:\n\n  $ sudo dconf update\n"
+
+func proseRequirementInput(impact string) []byte {
+	return []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-11", "impact": ` + impact + `, "tags": { "nist": ["AC-11"] },
+			"descriptions": [
+				{ "label": "default", "data": "d" },
+				{ "label": "rationale", "data": ` + jsonString(multilineRationale) + ` },
+				{ "label": "check", "data": ` + jsonString(multilineCheck) + ` },
+				{ "label": "fix", "data": ` + jsonString(multilineFix) + ` }
+			],
+			"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}]}]
+	}`)
+}
+
+func jsonString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
+// rationale's home is finding.target.description, the assessor's conclusion
+// about the objective, carried in full rather than as a preview prop.
+func TestConvertHDFToOSCALSAR_RationaleInTargetDescription(t *testing.T) {
+	sar := sarDoc(t, proseRequirementInput("0.5"))
+	f := sar.Results[0].Findings[0]
+	assert.Equal(t, multilineRationale, f.Target.Description)
+	assert.Empty(t, propsNamed(f.Props, "rationale"), "no rationale prop may remain")
+}
+
+func TestConvertHDFToOSCALSAR_NoRationaleLeavesTargetDescriptionEmpty(t *testing.T) {
+	sar := sarDoc(t, minimalHDFResults(hdf.Failed))
+	assert.Empty(t, sar.Results[0].Findings[0].Target.Description)
+}
+
+func TestConvertHDFToOSCALSAR_CheckInRelevantEvidence(t *testing.T) {
+	sar := sarDoc(t, proseRequirementInput("0.5"))
+	f := sar.Results[0].Findings[0]
+	assert.Empty(t, propsNamed(f.Props, "check"), "no check prop may remain")
+
+	require.Len(t, sar.Results[0].Observations, 1)
+	obs := &sar.Results[0].Observations[0]
+	require.Len(t, f.RelatedObservations, 1)
+	assert.Equal(t, obs.UUID, f.RelatedObservations[0].ObservationUUID)
+
+	checks := labelledEvidence(obs, "check")
+	require.Len(t, checks, 1)
+	assert.Equal(t, "Verify the setting:", checks[0].Description, "description is the single-line preview")
+	assert.Equal(t, multilineCheck, checks[0].Remarks, "remarks carries the full text")
+	assert.Empty(t, checks[0].Href)
+	assert.Equal(t, []oscal.Property{{
+		Name: "description-label", Ns: "https://mitre.github.io/hdf-libs/ns/oscal", Value: "check",
+	}}, checks[0].Props)
+}
+
+func TestConvertHDFToOSCALSAR_CheckPreviewTruncatesLongLine(t *testing.T) {
+	long := strings.Repeat("abcdefghij", 20)
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"AC-1","impact":0.5,
+		"descriptions":[{"label":"check","data":"` + long + `"}],
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}]}`)
+	sar := sarDoc(t, input)
+	checks := labelledEvidence(&sar.Results[0].Observations[0], "check")
+	require.Len(t, checks, 1)
+	assert.Equal(t, long[:117]+"...", checks[0].Description)
+	assert.Equal(t, long, checks[0].Remarks)
+}
+
+func TestConvertHDFToOSCALSAR_WhitespaceOnlyCheckOmitted(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"AC-1","impact":0.5,
+		"descriptions":[{"label":"check","data":"  \n "}],
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}]}`)
+	sar := sarDoc(t, input)
+	assert.Empty(t, sar.Results[0].Observations[0].RelevantEvidence)
+}
+
+func TestConvertHDFToOSCALSAR_ImpactZeroFixInRelevantEvidence(t *testing.T) {
+	sar := sarDoc(t, proseRequirementInput("0"))
+	f := sar.Results[0].Findings[0]
+	assert.Empty(t, propsNamed(f.Props, "fix"), "no fix prop may remain")
+	assert.Empty(t, sar.Results[0].Risks, "impact 0 emits no risk")
+
+	fixes := labelledEvidence(&sar.Results[0].Observations[0], "fix")
+	require.Len(t, fixes, 1)
+	assert.Equal(t, "Configure the lock:", fixes[0].Description)
+	assert.Equal(t, multilineFix, fixes[0].Remarks)
+	assert.Equal(t, []oscal.Property{{
+		Name: "description-label", Ns: "https://mitre.github.io/hdf-libs/ns/oscal", Value: "fix",
+	}}, fixes[0].Props)
+}
+
+func TestConvertHDFToOSCALSAR_FixRemediationLabelled(t *testing.T) {
+	sar := sarDoc(t, proseRequirementInput("0.5"))
+	f := sar.Results[0].Findings[0]
+	assert.Empty(t, propsNamed(f.Props, "fix"), "no fix prop may remain")
+	assert.Empty(t, labelledEvidence(&sar.Results[0].Observations[0], "fix"),
+		"impact > 0 carries fix in the risk, not in evidence")
+
+	require.Len(t, sar.Results[0].Risks, 1)
+	rems := sar.Results[0].Risks[0].Remediations
+	require.Len(t, rems, 1)
+	assert.Equal(t, "recommendation", rems[0].Lifecycle)
+	assert.Equal(t, multilineFix, rems[0].Description)
+	assert.Equal(t, []oscal.Property{{
+		Name: "description-label", Ns: "https://mitre.github.io/hdf-libs/ns/oscal", Value: "fix",
+	}}, rems[0].Props)
+}
+
+func TestConvertHDFToOSCALSAR_AcceptedRemediationUnlabelled(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"AC-1","impact":0.7,
+		"descriptions":[{"label":"fix","data":"patch"}],
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}],
+		"disposition":"falsePositive",
+		"statusOverrides":[{"type":"falsePositive","status":"passed","reason":"r",
+			"appliedBy":{"type":"simple","identifier":"jdoe"},
+			"appliedAt":"2026-01-02T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z"}]}]}]}`)
+	sar := sarDoc(t, input)
+	rems := sar.Results[0].Risks[0].Remediations
+	require.Len(t, rems, 2)
+	assert.Equal(t, "accepted", rems[1].Lifecycle)
+	assert.Empty(t, rems[1].Props, "only the fix remediation carries description-label")
+}
+
+func TestConvertHDFToOSCALSAR_CodeResourceTypedEvidence(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"AC-1","impact":0.5,
+		"code":"control 'AC-1' do end",
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}]}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	require.NotNil(t, doc.AssessmentResults.BackMatter)
+	res := doc.AssessmentResults.BackMatter.Resources[0]
+	assert.Equal(t, []oscal.Property{{Name: "type", Value: "evidence"}}, res.Props)
+
+	var raw struct {
+		AR struct {
+			BackMatter struct {
+				Resources []map[string]json.RawMessage `json:"resources"`
+			} `json:"back-matter"`
+		} `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(output, &raw))
+	var props []map[string]any
+	require.NoError(t, json.Unmarshal(raw.AR.BackMatter.Resources[0]["props"], &props))
+	assert.Equal(t, []map[string]any{{"name": "type", "value": "evidence"}}, props,
+		"the NIST type prop carries no ns")
+
+	links := doc.AssessmentResults.Results[0].Findings[0].Links
+	assert.Equal(t, []oscal.Link{{Href: "#" + res.UUID, Rel: "code"}}, links)
+}
+
+// The labelled prose entries follow the entries emitted before them existed, so
+// refs, evidence and source location keep their index positions.
+func TestConvertHDFToOSCALSAR_LabelledProseAppendedAfterExistingEvidence(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"AC-1","impact":0,
+		"descriptions":[{"label":"check","data":"check it"},{"label":"fix","data":"fix it"}],
+		"refs":[{"url":"https://example.gov/evidence"}],
+		"evidence":[{"type":"log","data":"saw the thing","description":"log excerpt"}],
+		"sourceLocation":{"ref":"controls/ac-1.rb","line":42},
+		"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}]}`)
+	sar := sarDoc(t, input)
+	assert.Equal(t, []oscal.RelevantEvidence{
+		{Href: "https://example.gov/evidence"},
+		{Description: "log excerpt"},
+		{Description: "Source location: controls/ac-1.rb:42"},
+		{Description: "check it", Props: []oscal.Property{oscal.DescriptionLabelProp("check")}, Remarks: "check it"},
+		{Description: "fix it", Props: []oscal.Property{oscal.DescriptionLabelProp("fix")}, Remarks: "fix it"},
+	}, sar.Results[0].Observations[0].RelevantEvidence)
+}
+
+// captureWarnings converts input and returns everything the converter logged.
+func captureWarnings(t *testing.T, input []byte) string {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(prev)
+	_, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	return buf.String()
+}
+
+// A requirement with no results has no observation, so check and the impact-0
+// fix have no home; the loss is reported rather than silent.
+func TestConvertHDFToOSCALSAR_WarnsWhenProseHasNoObservation(t *testing.T) {
+	const withResults = `,"results":[{"status":"failed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]`
+	req := func(impact, descriptions, results string) []byte {
+		return []byte(`{"baselines":[{"name":"b","requirements":[{"id":"SV-230221","impact":` + impact +
+			`,"descriptions":[` + descriptions + `]` + results + `}]}]}`)
+	}
+	const check = `{"label":"check","data":"check it"}`
+	const fix = `{"label":"fix","data":"fix it"}`
+	const def = `{"label":"default","data":"d"}`
+
+	for _, tc := range []struct {
+		name  string
+		input []byte
+		want  string
+	}{
+		{"check only", req("0.5", check+","+fix, ""),
+			`WARNING: hdf-to-oscal-sar: requirement "SV-230221" has no results, so no observation holds its check description; it was not carried`},
+		{"impact-0 fix only", req("0", fix, ""),
+			`WARNING: hdf-to-oscal-sar: requirement "SV-230221" has no results, so no observation holds its fix description; it was not carried`},
+		{"check and impact-0 fix", req("0", check+","+fix, ""),
+			`WARNING: hdf-to-oscal-sar: requirement "SV-230221" has no results, so no observation holds its check and fix descriptions; they were not carried`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out := captureWarnings(t, tc.input)
+			assert.Equal(t, 1, strings.Count(out, "WARNING"), out)
+			assert.Contains(t, out, tc.want)
+		})
+	}
+
+	quoted := captureWarnings(t, []byte(`{"baselines":[{"name":"b","requirements":[{"id":"AC-1 \"x\"","impact":0.5,"descriptions":[`+check+`]}]}]}`))
+	assert.Contains(t, quoted, `requirement "AC-1 \"x\"" has no results`, "the id is quoted with escapes")
+
+	for _, tc := range []struct {
+		name  string
+		input []byte
+	}{
+		{"with results", req("0", check+","+fix, withResults)},
+		{"no prose", req("0", def, "")},
+		{"impact > 0 fix only", req("0.5", fix, "")},
+		{"whitespace-only check", req("0", `{"label":"check","data":"  \n "}`, "")},
+	} {
+		t.Run("silent/"+tc.name, func(t *testing.T) {
+			assert.Empty(t, captureWarnings(t, tc.input))
+		})
+	}
+}
+
+// HDF → SAR → HDF returns rationale, check and fix exactly, on both fix paths,
+// without echoing the labelled homes into remediation or evidence descriptions.
+func TestConvertHDFToOSCALSAR_ProseRoundTripsExactly(t *testing.T) {
+	for _, impact := range []string{"0", "0.5"} {
+		t.Run("impact "+impact, func(t *testing.T) {
+			output, err := ConvertHDFToOSCALSAR(proseRequirementInput(impact), "1.0.0")
+			require.NoError(t, err)
+			back, err := oscal.ConvertAssessmentResultsToHDF(output, "1.0.0")
+			require.NoError(t, err)
+			req := &back.Baselines[0].Requirements[0]
+
+			for label, want := range map[string]string{
+				"rationale": multilineRationale, "check": multilineCheck, "fix": multilineFix,
+			} {
+				got, ok := hdfDescription(req, label)
+				require.True(t, ok, "%s description must round-trip", label)
+				assert.Equal(t, want, got, "%s must round-trip exactly", label)
+			}
+			_, hasRemediation := hdfDescription(req, "remediation")
+			assert.False(t, hasRemediation, "a labelled fix remediation is not a remediation description")
+			_, hasEvidence := hdfDescription(req, "evidence")
+			assert.False(t, hasEvidence, "labelled evidence entries are not evidence descriptions")
+		})
+	}
 }
 
 // a1: the finding target state must reflect effectiveStatus (post-override
@@ -351,6 +656,25 @@ func TestConvertHDFToOSCALSAR_EnrichmentSurfaced(t *testing.T) {
 	assert.Equal(t, "critical", facet.Value)
 }
 
+// FedRAMP owns the impact facet, and its rev5 SAR template and extensions
+// registry name the system https://fedramp.gov, so that URI is kept deliberately.
+func TestConvertHDFToOSCALSAR_ImpactFacetUsesFedRAMPSystem(t *testing.T) {
+	input := []byte(`{
+		"baselines": [{ "name": "b", "requirements": [{
+			"id": "AC-1", "impact": 0.7, "tags": { "nist": ["AC-1"] },
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}]}]
+	}`)
+	output, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+	var doc oscalSARDocument
+	require.NoError(t, json.Unmarshal(output, &doc))
+	require.Len(t, doc.AssessmentResults.Results[0].Risks, 1)
+	assert.Equal(t, []oscal.Facet{{Name: "impact", System: "https://fedramp.gov", Value: "high"}},
+		doc.AssessmentResults.Results[0].Risks[0].Characterizations[0].Facets)
+}
+
 // a4/a5: evidence, sourceLocation, and refs land in observation
 // relevant-evidence and round-trip back to HDF via the reverse importer.
 func TestConvertHDFToOSCALSAR_RelevantEvidenceRoundTrips(t *testing.T) {
@@ -391,8 +715,8 @@ func TestConvertHDFToOSCALSAR_RelevantEvidenceRoundTrips(t *testing.T) {
 	assert.Equal(t, "https://example.gov/evidence", *req.Refs[0].URL)
 }
 
-// a6: the fix description becomes a risk remediation (round-trips as the HDF
-// remediation description), not merely a prop.
+// a6: the fix description becomes a risk remediation and round-trips as the HDF
+// fix description.
 func TestConvertHDFToOSCALSAR_FixBecomesRemediation(t *testing.T) {
 	input := []byte(`{
 		"baselines": [{ "name": "b", "requirements": [{
@@ -413,16 +737,11 @@ func TestConvertHDFToOSCALSAR_FixBecomesRemediation(t *testing.T) {
 	assert.Equal(t, "recommendation", rems[0].Lifecycle)
 	assert.Equal(t, "apply the patch", rems[0].Description)
 
-	// Round-trips into the HDF remediation description.
 	hdfResults, err := oscal.ConvertAssessmentResultsToHDF(output, "1.0.0")
 	require.NoError(t, err)
-	var remediationDesc string
-	for _, d := range hdfResults.Baselines[0].Requirements[0].Descriptions {
-		if d.Label == "remediation" {
-			remediationDesc = d.Data
-		}
-	}
-	assert.Contains(t, remediationDesc, "apply the patch")
+	fix, ok := hdfDescription(&hdfResults.Baselines[0].Requirements[0], "fix")
+	require.True(t, ok)
+	assert.Equal(t, "apply the patch", fix)
 }
 
 // a7: externalReferences with an href become finding links.
@@ -706,6 +1025,109 @@ func TestConvertHDFToOSCALSAR_RoundTrip(t *testing.T) {
 	assert.NotEmpty(t, doc.AssessmentResults.UUID)
 	assert.Equal(t, oscal.OscalVersion, doc.AssessmentResults.Metadata.OscalVersion)
 	assert.NotNil(t, doc.AssessmentResults.ImportAP)
+
+	// The import groups the fixture's objective and statement targets under their
+	// NIST controls in first-seen order, one result per finding.
+	require.Len(t, hdfResults.Baselines, 1)
+	assert.Equal(t, []requirementShape{
+		{"AC-1", 3}, {"AU-1", 1}, {"RA-5", 1}, {"CM-2 (1)", 1}, {"AT-2", 1}, {"CA-8 (1)", 1},
+	}, requirementShapes(&hdfResults.Baselines[0]))
+
+	// Step 3: SAR -> HDF again. The exporter writes one finding per requirement,
+	// and every requirement id comes back exactly.
+	back, err := oscal.ConvertAssessmentResultsToHDF(sarOutput, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Baselines, 1)
+	assert.Equal(t, []requirementShape{
+		{"AC-1", 1}, {"AU-1", 1}, {"RA-5", 1}, {"CM-2 (1)", 1}, {"AT-2", 1}, {"CA-8 (1)", 1},
+	}, requirementShapes(&back.Baselines[0]))
+}
+
+// requirementShape is a requirement's id and how many results it carries.
+type requirementShape struct {
+	ID      string
+	Results int
+}
+
+func requirementShapes(b *hdf.EvaluatedBaseline) []requirementShape {
+	shapes := make([]requirementShape, 0, len(b.Requirements))
+	for i := range b.Requirements {
+		shapes = append(shapes, requirementShape{b.Requirements[i].ID, len(b.Requirements[i].Results)})
+	}
+	return shapes
+}
+
+// hdfRequirementsDoc builds a one-baseline HDF Results document whose
+// requirements carry the given ids, each with one result of the given status.
+func hdfRequirementsDoc(ids, statuses []string) []byte {
+	reqs := make([]string, 0, len(ids))
+	for i, id := range ids {
+		reqs = append(reqs, `{
+			"id": `+jsonString(id)+`, "impact": 0.5, "tags": {},
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "`+statuses[i]+`", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}`)
+	}
+	return []byte(`{ "baselines": [{ "name": "b", "requirements": [` + strings.Join(reqs, ",") + `] }] }`)
+}
+
+// Distinct scanner rule ids that share a NIST-looking or dotted prefix must not
+// merge on the way back: each comes back as its own requirement, byte-exact.
+func TestConvertHDFToOSCALSAR_RuleIDsRoundTripExactly(t *testing.T) {
+	ids := []string{
+		"SV-230221r858734_rule",
+		"SV-230221r991589_rule",
+		"xccdf_org.ssgproject.content_rule_accounts_tmout",
+		"xccdf_org.ssgproject.content_rule_audit_rules_login_events",
+	}
+	statuses := []string{"failed", "passed", "failed", "passed"}
+	sar, err := ConvertHDFToOSCALSAR(hdfRequirementsDoc(ids, statuses), "1.0.0")
+	require.NoError(t, err)
+
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Baselines, 1)
+	reqs := back.Baselines[0].Requirements
+	require.Len(t, reqs, len(ids))
+	for i, id := range ids {
+		assert.Equal(t, id, reqs[i].ID)
+		require.Len(t, reqs[i].Results, 1, "requirement %s", id)
+		assert.Equal(t, hdf.ResultStatus(statuses[i]), reqs[i].Results[0].Status, "requirement %s", id)
+	}
+}
+
+// Every requirement id survives HDF -> SAR -> HDF exactly: NIST ids in any
+// spelling (not re-spelled as the control they target), mixed-case and non-NIST
+// ids, and ids OSCAL's StringDatatype cannot hold.
+func TestConvertHDFToOSCALSAR_RequirementIDsRoundTripExactly(t *testing.T) {
+	ids := []string{
+		"AC-2 (3)",
+		"ac-2(4)",
+		"AC-8 c 1",
+		"CM-2 (1)",
+		"AC-1",
+		"MixedCase_Rule-7",
+		"sv-230221r858734_rule",
+		"pkg:npm/lodash@4.17.20",
+		"1.1.1.1",
+		"  leading and trailing  ",
+		"line one\nline two",
+	}
+	statuses := make([]string, len(ids))
+	for i := range statuses {
+		statuses[i] = "passed"
+	}
+	sar, err := ConvertHDFToOSCALSAR(hdfRequirementsDoc(ids, statuses), "1.0.0")
+	require.NoError(t, err)
+
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Baselines, 1)
+	want := make([]requirementShape, 0, len(ids))
+	for _, id := range ids {
+		want = append(want, requirementShape{id, 1})
+	}
+	assert.Equal(t, want, requirementShapes(&back.Baselines[0]))
 }
 
 func TestConvertHDFToOSCALSAR_ValidJSON(t *testing.T) {
@@ -821,4 +1243,79 @@ func TestConvertHDFToOSCALSAR_StaleStoredStatusIgnored(t *testing.T) {
 	status := doc.AssessmentResults.Results[0].Findings[0].Target.Status
 	assert.Equal(t, "not-satisfied", status.State)
 	assert.Empty(t, status.Reason)
+}
+
+// TestConvertHDFToOSCALSAR_NISTRequirementIDControlReferences pins the OSCAL
+// references a NIST requirement id produces in any spelling: the control id in
+// reviewed-controls, and the finding target, which names a statement for a
+// statement-part id. A control selected whole is not narrowed by statement-ids.
+func TestConvertHDFToOSCALSAR_NISTRequirementIDControlReferences(t *testing.T) {
+	ids := []string{
+		"ac-2 (3)", "AC-2 (3)", "Ac-2(3)", "AC-2 (3) (a)",
+		"AC-8 c 1", "AC-8 c 2", "AC-08 c 01",
+		"Si-2", "SC-7 a", "SC-7",
+		"SV-257778",
+	}
+	reqs := make([]map[string]any, 0, len(ids))
+	for _, id := range ids {
+		reqs = append(reqs, map[string]any{
+			"id": id, "impact": 0, "tags": map[string]any{},
+			"descriptions": []map[string]any{{"label": "default", "data": "d"}},
+			"results":      []map[string]any{{"status": "passed", "codeDesc": "c", "startTime": "2020-01-01T00:00:00Z"}},
+		})
+	}
+	input, err := json.Marshal(map[string]any{"baselines": []map[string]any{{"name": "b", "requirements": reqs}}})
+	require.NoError(t, err)
+
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc struct {
+		AR struct {
+			Results []struct {
+				ReviewedControls struct {
+					ControlSelections []struct {
+						IncludeControls []map[string]any `json:"include-controls"`
+					} `json:"control-selections"`
+				} `json:"reviewed-controls"`
+				Findings []struct {
+					Target struct {
+						Type     string `json:"type"`
+						TargetID string `json:"target-id"`
+					} `json:"target"`
+				} `json:"findings"`
+			} `json:"results"`
+		} `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.Len(t, doc.AR.Results, 1)
+	res := doc.AR.Results[0]
+
+	require.Len(t, res.ReviewedControls.ControlSelections, 1)
+	assert.Equal(t, []map[string]any{
+		{"control-id": "ac-2.3"},
+		{"control-id": "ac-8", "statement-ids": []any{"ac-8_smt.c.1", "ac-8_smt.c.2"}},
+		{"control-id": "si-2"},
+		{"control-id": "sc-7"},
+		{"control-id": "sv-257778"},
+	}, res.ReviewedControls.ControlSelections[0].IncludeControls)
+
+	type target struct{ typ, id string }
+	want := []target{
+		{"objective-id", "ac-2.3"}, {"objective-id", "ac-2.3"}, {"objective-id", "ac-2.3"}, {"statement-id", "ac-2.3_smt.a"},
+		{"statement-id", "ac-8_smt.c.1"}, {"statement-id", "ac-8_smt.c.2"}, {"statement-id", "ac-8_smt.c.1"},
+		{"objective-id", "si-2"}, {"statement-id", "sc-7_smt.a"}, {"objective-id", "sc-7"},
+		{"objective-id", "sv-257778"},
+	}
+	got := make([]target, 0, len(res.Findings))
+	for _, f := range res.Findings {
+		got = append(got, target{f.Target.Type, f.Target.TargetID})
+	}
+	assert.Equal(t, want, got)
+
+	for _, file := range arSchemaFiles {
+		t.Run(file, func(t *testing.T) {
+			requireValidAR(t, arSchemaFor(t, file), "NIST requirement ids", input)
+		})
+	}
 }
