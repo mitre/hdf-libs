@@ -97,6 +97,7 @@ Examples:
 	cmd.AddCommand(newFetchAWSSecurityHubCmd())
 	cmd.AddCommand(newFetchDefectDojoCmd())
 	cmd.AddCommand(newFetchGitlabCmd())
+	cmd.AddCommand(newFetchGitlabVulnerabilitiesCmd())
 	cmd.AddCommand(newFetchSonarqubeCmd())
 	cmd.AddCommand(newFetchSplunkCmd())
 
