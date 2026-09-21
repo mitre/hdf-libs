@@ -54,7 +54,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.6.0
+VERSION=3.7.0
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -65,7 +65,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${V
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.6.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 

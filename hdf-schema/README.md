@@ -189,6 +189,12 @@ All schemas use **JSON Schema draft/2020-12**.
 Interactive schema reference documentation is published at:
 **<https://mitre.github.io/hdf-libs/schemas/>**
 
+### What's new in v3.7.0
+
+- **`Milestone.title` — optional single-line label.** A short label on each POA&M `Milestone`, suitable where a consumer needs a title (for example an OSCAL POA&M remediation or task). It is optional and does not replace `description`, which remains the full milestone text; a consumer needing a title where none is supplied derives one. The value carries the project's single-line-label constraint — `minLength: 1` plus a pattern (OSCAL's `StringDatatype`, spelled with explicit character classes so ECMA-262 and Go regexp engines agree) banning line breaks and leading/trailing whitespace.
+- **`Evidence.data` tightened.** `data` now requires `minLength: 1` (an empty evidence body no longer validates), and when `encoding` is exactly `base64` (lowercase) the data must be bare base64 matching `^[0-9A-Za-z+/]+={0,2}$` (OSCAL's `Base64Datatype`): no `data:` URI prefix, URL, or line breaks. **Tightening:** a v3.6.x document with an empty `data`, or with a `base64`-encoded value that carries a `data:` prefix or line breaks, now fails validation — strip the prefix/whitespace or correct the encoding label.
+- **Compatibility.** `Milestone.title` is additive and optional, so a v3.6.x document validates unchanged under v3.7.0. The `Evidence.data` change is a validation tightening, not a structural one: documents whose evidence bodies were already non-empty and (for `base64`) bare validate cleanly; the rest must be corrected. A v3.7.0 document carrying `Milestone.title` will not validate against the v3.6.x schemas, which reject unevaluated properties; strip the field or validate against v3.7.0.
+
 ### What's new in v3.6.0
 
 - **`preAmendmentChecksum` on the Results root.** Optional `Checksum` recording the document's hash as it stood immediately before the most recent amendment application, written by `hdf amend apply`. It covers the results file's raw bytes as read, not a canonical form, and records only the most recent application rather than accumulating. Distinct from the override-level `previousChecksum`, which chains amendments to one another over a canonical form. This is the only structural change in v3.6.0; everything else below is description-level.
