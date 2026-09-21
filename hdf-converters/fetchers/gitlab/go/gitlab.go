@@ -56,7 +56,7 @@ type GitLabFetcher struct {
 // NewGitLabFetcher creates a fetcher after validating the server URL.
 // The token is resolved at Fetch time from environment variables or glab CLI config.
 func NewGitLabFetcher(params GitLabParams, tlsOpts shared.TLSOptions) (*GitLabFetcher, error) {
-	if err := validateGitLabURL(params.URL); err != nil {
+	if _, err := gitlabBaseURL(params.URL); err != nil {
 		return nil, err
 	}
 	client, err := shared.NewHTTPClient(tlsOpts)
@@ -74,7 +74,7 @@ func NewGitLabFetcher(params GitLabParams, tlsOpts shared.TLSOptions) (*GitLabFe
 // configuration in the application layer rather than relying on default
 // discovery via TLSOptions.
 func NewGitLabFetcherWithClient(params GitLabParams, client *http.Client) (*GitLabFetcher, error) {
-	if err := validateGitLabURL(params.URL); err != nil {
+	if _, err := gitlabBaseURL(params.URL); err != nil {
 		return nil, err
 	}
 	return &GitLabFetcher{
@@ -83,42 +83,19 @@ func NewGitLabFetcherWithClient(params GitLabParams, client *http.Client) (*GitL
 	}, nil
 }
 
-// validateGitLabURL ensures the URL parses and uses only http or https.
-func validateGitLabURL(rawURL string) error {
+// gitlabBaseURL is the SSRF guard every fetcher shares: http/https only, and
+// the URL rebuilt from scheme and host alone so userinfo, path and query in a
+// user-supplied base can never reach the request.
+func gitlabBaseURL(rawURL string) (*url.URL, error) {
 	if rawURL == "" {
-		return fmt.Errorf("GitLab URL is required")
+		return nil, fmt.Errorf("GitLab URL is required")
 	}
-	if _, err := buildGitLabBaseURL(rawURL); err != nil {
-		return err
-	}
-	return nil
-}
-
-// buildGitLabBaseURL validates the base URL and returns a safe URL with scheme checked.
-func buildGitLabBaseURL(rawURL string) (*url.URL, error) {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, fmt.Errorf("invalid GitLab URL: %w", err)
-	}
-	// SSRF prevention: only allow http/https schemes
-	var scheme string
-	switch parsed.Scheme {
-	case "https":
-		scheme = "https"
-	case "http":
-		scheme = "http"
-	default:
-		return nil, fmt.Errorf("invalid GitLab URL scheme %q: must use http or https", parsed.Scheme)
-	}
-	return &url.URL{
-		Scheme: scheme,
-		Host:   parsed.Host,
-	}, nil
+	return shared.ValidateAndBuildAPIURL(rawURL, "", "GitLab")
 }
 
 // Fetch downloads the artifact from GitLab and returns the raw bytes.
 func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
-	baseURL, err := buildGitLabBaseURL(f.params.URL)
+	baseURL, err := gitlabBaseURL(f.params.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +154,7 @@ func (f *GitLabFetcher) Fetch(ctx context.Context) ([]byte, error) {
 	req.Header.Set("PRIVATE-TOKEN", token)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured GitLab server; scheme validated in buildGitLabBaseURL
+	resp, err := f.client.Do(req) //#nosec G704 -- host is user-configured GitLab server; scheme validated by the shared guard in gitlabBaseURL
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
