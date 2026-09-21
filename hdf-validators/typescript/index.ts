@@ -1,6 +1,11 @@
 import Ajv, { type ValidateFunction, type ErrorObject } from 'ajv';
 import addFormats from 'ajv-formats';
 
+// Pinned HDF v2 (Heimdall/InSpec exec-json) schema — sourced from heimdall2
+// inspecjs (see ../go/legacy/PROVENANCE.md). Byte-identical to the Go-embedded
+// copy at ../go/legacy/exec-json.schema.json, pinned by a parity test.
+import legacyV2Schema from './legacy-exec-json.schema.json';
+
 // Named JS-object schema imports — the schemas are inlined into
 // @mitre/hdf-schema's dist/index.js at build time, so downstream consumers
 // never see raw JSON imports. Works uniformly in raw Node ESM, Vite/Nuxt,
@@ -273,6 +278,28 @@ function createResult(validator: ValidateFunction, data: unknown): ValidationRes
 export function validateResults(data: unknown): ValidationResult {
   const validator = getResultsValidator();
   return createResult(validator, data);
+}
+
+// Legacy HDF v2 (Heimdall/InSpec exec-json) uses its own Ajv instance: the pinned
+// exec-json schema is self-contained and unrelated to the HDF v3 schemas, so it
+// stays isolated from the shared HDF validator.
+let legacyV2Validator: ValidateFunction | null = null;
+function getLegacyV2Validator(): ValidateFunction {
+  if (!legacyV2Validator) {
+    const v2ajv = new Ajv({ allErrors: true, verbose: true, strict: false, validateSchema: false });
+    addFormats(v2ajv);
+    legacyV2Validator = v2ajv.compile(legacyV2Schema);
+  }
+  return legacyV2Validator;
+}
+
+/**
+ * Validate a legacy HDF v2 document — the Heimdall/InSpec exec-json shape
+ * (profiles[] + platform) SAF converters emit — against the pinned exec-json
+ * schema, at the same Ajv rigor as the v3 validators.
+ */
+export function validateLegacyV2(data: unknown): ValidationResult {
+  return createResult(getLegacyV2Validator(), data);
 }
 
 /**
