@@ -34,6 +34,7 @@ func newFetchGitlabVulnerabilitiesCmd() *cobra.Command {
 		format           string
 		outputPath       string
 		outDir           string
+		pageSize         int
 		maxPages         int
 		maxResponseSize  int64
 		check            bool
@@ -116,13 +117,14 @@ Output defaults to stdout when no output path is given.`,
 				return err
 			}
 
-			f, err := gitlabvuln.NewFetcher(gitlabvuln.Params{
+			f, err := gitlabvuln.NewGitLabVulnerabilitiesFetcher(gitlabvuln.GitLabVulnerabilitiesParams{
 				URL:              serverURL,
 				Project:          project,
 				Group:            group,
 				ExcludeSubgroups: !includeSubgroups,
 				States:           stateList,
 				ReportTypes:      typeList,
+				PageSize:         pageSize,
 				MaxPages:         maxPages,
 				MaxResponseSize:  maxResponseSize,
 			}, fetchTLSOptions(cmd))
@@ -153,7 +155,10 @@ Output defaults to stdout when no output path is given.`,
 			if err != nil {
 				return err
 			}
-			return writeConvertOutput(output, outputPath)
+			if format == fetchFormatRaw {
+				return writeConvertOutput(output, outputPath)
+			}
+			return writeValidatedHDFOutput(cmd, output, outputPath)
 		},
 	}
 
@@ -166,9 +171,11 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().StringVar(&format, "format", "hdf", "Output format: hdf (convert to HDF) or raw (fetched envelope)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file path with --project (default: stdout)")
 	cmd.Flags().StringVar(&outDir, "out-dir", "", "Output directory with --group; one file per project")
-	cmd.Flags().IntVar(&maxPages, "max-pages", 0, "Maximum pages per project or group listing (default: 200)")
+	cmd.Flags().IntVar(&pageSize, "page-size", 0, "Findings requested per GraphQL page (default: 25, sized to GitLab's query complexity cap)")
+	cmd.Flags().IntVar(&maxPages, "max-pages", 0, "Maximum pages per project, group listing or finding history (default: 500)")
 	cmd.Flags().Int64Var(&maxResponseSize, "max-response-size", 0, "Maximum response size in bytes per request (default: 25MB, -1 for no limit)")
 	cmd.Flags().BoolVar(&check, "check", false, "Run the probe only and print the tier and ingestion diagnosis")
+	addNoValidateFlag(cmd)
 
 	return cmd
 }
@@ -217,10 +224,10 @@ func renderGitlabVulnerabilities(raw []byte, format string) ([]byte, error) {
 	return output, nil
 }
 
-// runGitlabVulnerabilitiesGroup writes one file per project and reports every
-// project that could not be fetched; the exit status is non-zero when any
-// failed so a sweep never looks complete when it is not.
-func runGitlabVulnerabilitiesGroup(cmd *cobra.Command, f *gitlabvuln.Fetcher, format, outDir string) error {
+// runGitlabVulnerabilitiesGroup writes one file per project through the shared
+// bulk runner, so a group sweep honours --fail-fast and --json and reports
+// failures the same way bulk convert does.
+func runGitlabVulnerabilitiesGroup(cmd *cobra.Command, f *gitlabvuln.GitLabVulnerabilitiesFetcher, format, outDir string) error {
 	results, err := f.FetchGroup(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to fetch GitLab group: %w", err)
@@ -228,33 +235,25 @@ func runGitlabVulnerabilitiesGroup(cmd *cobra.Command, f *gitlabvuln.Fetcher, fo
 	if err := os.MkdirAll(outDir, 0o750); err != nil { // #nosec G301 -- CLI creates the user-requested directory
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	failed := 0
+	byPath := make(map[string]gitlabvuln.GroupResult, len(results))
+	paths := make([]string, 0, len(results))
 	for _, r := range results {
+		byPath[r.FullPath] = r
+		paths = append(paths, r.FullPath)
+	}
+	return runBulk(paths, "group fetch", "fetched", func(fullPath string) error {
+		r := byPath[fullPath]
 		if r.Err != nil {
-			failed++
-			fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", r.FullPath, r.Err)
-			continue
+			return r.Err
 		}
 		output, err := renderGitlabVulnerabilities(r.Envelope, format)
 		if err != nil {
-			failed++
-			fmt.Fprintf(cmd.ErrOrStderr(), "%s: %v\n", r.FullPath, err)
-			continue
+			return err
 		}
-		name := strings.ReplaceAll(r.FullPath, "/", "__")
+		target := filepath.Join(outDir, strings.ReplaceAll(fullPath, "/", "__"))
 		if format == fetchFormatRaw {
-			name += ".json"
-		} else {
-			name += ".hdf.json"
+			return writeConvertOutput(output, target+".json")
 		}
-		target := filepath.Join(outDir, name)
-		if err := os.WriteFile(target, output, 0o600); err != nil {
-			return fmt.Errorf("failed to write %s: %w", target, err)
-		}
-		printDebug("Wrote %s", target)
-	}
-	if failed > 0 {
-		return fmt.Errorf("%d of %d projects failed; see stderr for each", failed, len(results))
-	}
-	return nil
+		return writeValidatedHDFOutput(cmd, output, target+".hdf.json")
+	})
 }

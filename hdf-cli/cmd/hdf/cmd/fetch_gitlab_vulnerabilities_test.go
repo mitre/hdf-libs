@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,9 +23,36 @@ func gvTestdata(t *testing.T, name string) []byte {
 	return data
 }
 
+func gvPageAfter(t *testing.T, name, after string) []byte {
+	t.Helper()
+	for i := 1; i < 100; i++ {
+		page := gvTestdata(t, fmt.Sprintf("pages-%s-%d.json", name, i))
+		var p struct {
+			Data struct {
+				Project struct {
+					Vulnerabilities struct {
+						PageInfo struct {
+							EndCursor string `json:"endCursor"`
+						} `json:"pageInfo"`
+					} `json:"vulnerabilities"`
+				} `json:"project"`
+			} `json:"data"`
+		}
+		require.NoError(t, json.Unmarshal(page, &p))
+		if p.Data.Project.Vulnerabilities.PageInfo.EndCursor == after {
+			return gvTestdata(t, fmt.Sprintf("pages-%s-%d.json", name, i+1))
+		}
+	}
+	t.Fatalf("no recorded page for %s follows cursor %q", name, after)
+	return nil
+}
+
 // gvServer replays the recorded probe, page and group responses for the
 // security-demo group, keyed by GraphQL operation name and the fullPath /
 // after variables.
+//
+// gvPageAfter follows the recorded cursor chain so a replay walks however many
+// pages were recorded, rather than assuming two.
 func gvServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +72,7 @@ func gvServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write(gvTestdata(t, "probe-"+name+".json"))
 		case strings.Contains(req.Query, "query VulnerabilityReportPage"):
 			if after, _ := req.Variables["after"].(string); after != "" {
-				_, _ = w.Write(gvTestdata(t, "pages-"+name+"-2.json"))
+				_, _ = w.Write(gvPageAfter(t, name, after))
 				return
 			}
 			_, _ = w.Write(gvTestdata(t, "pages-"+name+"-1.json"))
@@ -88,9 +116,13 @@ func TestFetchGitlabVulnerabilitiesCmd_GroupWritesOneFilePerProject(t *testing.T
 	defer srv.Close()
 	outDir := filepath.Join(t.TempDir(), "hdf")
 
-	out, err := runFetchGV(t, "--url", srv.URL, "--group", "security-demo", "--out-dir", outDir)
+	var err error
+	out := captureStderr(t, func() {
+		_, err = runFetchGV(t, "--url", srv.URL, "--group", "security-demo", "--out-dir", outDir)
+	})
 	require.Error(t, err, "two of the four recorded projects cannot be fetched, so the run must not exit clean")
-	assert.Contains(t, err.Error(), "2 of 4 projects failed")
+	assert.Contains(t, out, "security-demo/unscanned-app: error")
+	assert.Contains(t, out, "security-demo/juice-shop: ok")
 	assert.Contains(t, out, "security-demo/unscanned-app")
 	assert.Contains(t, out, "REPORT_ERROR")
 	assert.Contains(t, out, "security-demo/empty-app")
@@ -121,8 +153,8 @@ func TestFetchGitlabVulnerabilitiesCmd_GroupWritesOneFilePerProject(t *testing.T
 	}
 	require.NoError(t, json.Unmarshal(juice, &doc))
 	assert.Equal(t, "security-demo/juice-shop", doc.Components[0].Name)
-	assert.Equal(t, "556a44e4001434ea7a242f29ede789565066082d", doc.Components[0].Commit)
-	assert.Equal(t, 97, len(doc.Baselines[0].Requirements)+len(doc.Baselines[1].Requirements))
+	assert.Equal(t, "359de365164ddd2aef60a48f4687d153bf9adb44", doc.Components[0].Commit)
+	assert.Equal(t, 100, len(doc.Baselines[0].Requirements)+len(doc.Baselines[1].Requirements))
 }
 
 func TestFetchGitlabVulnerabilitiesCmd_GroupAllSucceedExitsClean(t *testing.T) {
@@ -142,7 +174,7 @@ func TestFetchGitlabVulnerabilitiesCmd_GroupAllSucceedExitsClean(t *testing.T) {
 			_, _ = w.Write(gvTestdata(t, "probe-"+name+".json"))
 		default:
 			if after, _ := req.Variables["after"].(string); after != "" {
-				_, _ = w.Write(gvTestdata(t, "pages-"+name+"-2.json"))
+				_, _ = w.Write(gvPageAfter(t, name, after))
 				return
 			}
 			_, _ = w.Write(gvTestdata(t, "pages-"+name+"-1.json"))
@@ -248,7 +280,7 @@ func TestFetchGitlabVulnerabilitiesCmd_Check(t *testing.T) {
 
 	out, err := runFetchGV(t, "--url", srv.URL, "--project", "security-demo/juice-shop", "--check")
 	require.NoError(t, err)
-	assert.Contains(t, out, "Vulnerability Report populated (89 open)")
+	assert.Contains(t, out, "Vulnerability Report populated (177 open)")
 
 	out, err = runFetchGV(t, "--url", srv.URL, "--project", "security-demo/empty-app", "--check")
 	require.NoError(t, err, "--check reports the diagnosis; it does not fail on a never-populated report")
