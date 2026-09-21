@@ -18,12 +18,18 @@ No counterpart in either upstream. Introduced by this repository in
 `feat(hdf-to-asff): add HDF Results to ASFF converter (#154)`; no upstream source is recorded, so it was
 most likely authored here for that change.
 SAF does carry samples for this tool under `test/sample_data/asff`, none matching.
+Byte-identical to the `compliance.json` under `hdf-to-ecs`, `hdf-to-ocsf` and `hdf-to-splunk` on purpose —
+one shared SIEM input corpus, kept as copies by the 2026-09-14 fixture audit (see those directories'
+records for the reasoning) and pinned identical by `shared/go/siem_corpus_test.go`.
 
 ### `cve.json`
 No counterpart in either upstream. Introduced by this repository in
 `feat(hdf-to-asff): add HDF Results to ASFF converter (#154)`; no upstream source is recorded, so it was
 most likely authored here for that change.
 SAF does carry samples for this tool under `test/sample_data/asff`, none matching.
+Byte-identical to the `cve.json` under `hdf-to-ecs`, `hdf-to-ocsf` and `hdf-to-splunk` on purpose —
+one shared SIEM input corpus, kept as copies by the 2026-09-14 fixture audit (see those directories'
+records for the reasoning) and pinned identical by `shared/go/siem_corpus_test.go`.
 
 ## `expected/`
 

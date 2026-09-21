@@ -74,6 +74,7 @@ const DOCS_ORDER = {
     // Writing a mapper only comes up while writing a converter, so it follows it.
     'writing-a-converter',
     'using-mappings-in-converters',
+    'writing-a-fetcher',
   ],
 };
 
