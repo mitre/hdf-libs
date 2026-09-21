@@ -12,3 +12,16 @@ Source tool: **Snyk CLI** (`snyk test --json`).
 Sanitization: the `org` field is set to `demo-org` (the live scan's org is a real Snyk org). Scans run in a container so paths are neutral (`/project`, the public git URL). No credentials, tokens, or machine identifiers are present.
 
 Refresh: `snyk auth <token>` then re-run the commands above against the current `snyk-labs/nodejs-goof`, re-trim, set `org` to `demo-org`, and regenerate goldens with `go test ./converters/snyk-to-hdf/go/... -run TestSnapshots -update`.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — `snyk test --json`; the Snyk CLI writes no version into the result, so its version is not determinable from file content.
+- `minimal.json` — `snyk test --json`; the Snyk CLI writes no version into the result, so its version is not determinable from file content.
+- `nodejs-goof-local.json` — `snyk test --json`; the Snyk CLI writes no version into the result, so its version is not determinable from file content.
+- `nodejs-goof-remote.json` — `snyk test --json`; the Snyk CLI writes no version into the result, so its version is not determinable from file content.
+
+## Schema
+
+Snyk publishes no schema for `snyk test --json` output that was located (snyk/cli repository; CLI docs) (2026-09-20).

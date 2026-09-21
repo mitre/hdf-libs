@@ -1,0 +1,10 @@
+{
+  "schemas": [
+    {
+      "file": "asset-reporting-format_1.1.0.xsd",
+      "source": "https://csrc.nist.gov/schema/asset-reporting-format/1.1/asset-reporting-format_1.1.0.xsd",
+      "sha256": "f9e6061935ad305e707d7e1a7462c308ab75f3f716ef0e0dcf46fc810becd939",
+      "retrieved": "2026-09-20"
+    }
+  ]
+}

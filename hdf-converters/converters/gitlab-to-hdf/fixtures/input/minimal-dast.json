@@ -4,17 +4,30 @@
     "analyzer": {
       "id": "dast",
       "name": "DAST",
-      "version": "3.0.0"
+      "version": "3.0.0",
+      "vendor": {
+        "name": "GitLab"
+      }
     },
     "scanner": {
       "id": "zaproxy",
       "name": "ZAProxy",
-      "version": "2.14.0"
+      "version": "2.14.0",
+      "vendor": {
+        "name": "OWASP"
+      }
     },
     "start_time": "2024-02-20T14:00:00",
     "end_time": "2024-02-20T14:15:00",
     "status": "success",
-    "type": "dast"
+    "type": "dast",
+    "scanned_resources": [
+      {
+        "method": "GET",
+        "type": "url",
+        "url": "https://app.example.com/search"
+      }
+    ]
   },
   "vulnerabilities": [
     {

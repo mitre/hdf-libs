@@ -1,0 +1,10 @@
+{
+  "schemas": [
+    {
+      "file": "detailedreport.xsd",
+      "source": "https://analysiscenter.veracode.com/resource/detailedreport.xsd",
+      "sha256": "9d7057bbaf6709057ac48c9d108da92796eea00714ce88cf8fcc07c581470b6d",
+      "retrieved": "2026-09-20"
+    }
+  ]
+}

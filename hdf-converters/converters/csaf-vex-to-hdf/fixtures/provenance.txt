@@ -62,3 +62,13 @@ produce the same HDF state).
 the round-trip HDF Amendments output for visual diff review. They do not
 gate the test suite; the in-memory Go and TypeScript tests are
 authoritative.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `2022-evd-uc-01-a-001.json` — CSAF 2.0; `document.tracking.generator.engine`: Secvisogram 1.11.0.
+- `2022-evd-uc-01-f-001.json` — CSAF 2.0; `document.tracking.generator.engine`: Secvisogram 1.11.0.
+- `2022-evd-uc-01-na-001.json` — CSAF 2.0; `document.tracking.generator.engine`: Secvisogram 1.11.0.
+- `2022-evd-uc-01-ui-001.json` — CSAF 2.0; `document.tracking.generator.engine`: Secvisogram 1.11.0.
+- `sec-vex-2022-0001.json` — CSAF 2.0; `document.tracking.generator.engine`: Secvisogram 1.14.0.

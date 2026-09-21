@@ -68,3 +68,14 @@ round-trip and shape assertions in the Go and TS tests are what pin behaviour
 there. The `corpus-*.cdx.json` goldens are different: they are frozen by Go and
 asserted byte-for-byte by TypeScript, so they do gate the suite in both
 languages. Regenerate them with UPDATE_GOLDEN=1 and read the diff.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `case1-fixed-amendments.json` — an HDF document produced by `cyclonedx-vex-to-hdf` dev (tool=None None).
+- `case1-not_affected-amendments.json` — an HDF document produced by `cyclonedx-vex-to-hdf` dev (tool=None None).
+
+## Schema
+
+The inputs are HDF documents; their schema is this repository's own (`hdf-schema`), and every input is validated by the converter tests through `hdf-validators`. The exporter's target-format schema, where one is vendored, lives under this converter's `schemas/` directory with its own `provenance.json`.

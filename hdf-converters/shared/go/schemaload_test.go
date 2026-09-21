@@ -25,17 +25,20 @@ import (
 // developer debugging a converter years from now can find the reference it was
 // built against:
 //
-//   - provenance.json — there IS a machine-readable schema. Lists each schema
-//     file with its source URL and the SHA-256 of the file as vendored here.
-//   - provenance.txt  — there is NO schema. Free prose explaining that, and
-//     where the fixtures came from. Content is not asserted: the file's
-//     existence is the signal, because prose is not machine-checkable.
+//   - provenance.json — the machine-checkable part: every file vendored from
+//     upstream (a schema, or reference data such as a required-members
+//     extract), with its source URL and the SHA-256 of the file as vendored.
+//   - provenance.txt  — the prose part: where the fixtures came from, what each
+//     says about the tool and version that produced it, and where the format's
+//     schema lives if it is vendored elsewhere or does not exist. Content is
+//     not asserted: the file's existence is the signal.
 //
-// json wins when both are present; the txt then carries supplementary context.
+// A fixtures directory whose format publishes a schema carries BOTH; one whose
+// format does not carries only the prose, which says so.
 //
-// WHAT THIS DOES NOT VERIFY: everything inside a provenance.txt. A directory
-// with no schema is trusted prose by construction. Do not read a green run as
-// evidence that those descriptions are accurate or current.
+// WHAT THIS DOES NOT VERIFY: everything inside a provenance.txt. Prose is
+// trusted by construction. Do not read a green run as evidence that those
+// descriptions are accurate or current.
 
 type provenanceEntry struct {
 	File           string `json:"file"`
@@ -289,12 +292,21 @@ func TestSchemaLoadEveryFixtureDirectoryRecordsProvenance(t *testing.T) {
 	assert.Greater(t, checked, 50, "too few fixture directories found for this to be meaningful")
 }
 
+// goCannotCompile pins the vendored schemas gojsonschema rejects for reasons of
+// its own, not the schema's: each is compiled by the TypeScript sweep (ajv)
+// instead. Pinned as an exact set so the exclusion cannot quietly widen; a
+// listed schema that starts compiling fails here too, so the list cannot rot.
+var goCannotCompile = map[string]string{
+	"spdx-vex-to-hdf/spdx-json-schema-3.0.1.json": "uses ECMAScript regex syntax that Go's RE2 rejects (\"pattern must be a valid regex\")",
+}
+
 // A schema nobody can compile is not ground truth. Kept separate from provenance
 // because ajv and gojsonschema do not accept exactly the same documents, so the
 // TypeScript peer asserts the same property over the same tree -- minus the
-// draft-04 CVSS family, which ajv 8 cannot load at all and which this side
-// therefore covers alone.
+// draft-04 family, which ajv 8 cannot load at all and which this side therefore
+// covers alone, and plus goCannotCompile, which ajv covers alone.
 func TestSchemaLoadEveryVendoredSchemaCompiles(t *testing.T) {
+	seen := map[string]bool{}
 	for dir, files := range schemaBearingDirs(t) {
 		for _, f := range files {
 			raw, err := os.ReadFile(filepath.Join(dir, f)) // #nosec G304 -- repo-relative
@@ -305,11 +317,20 @@ func TestSchemaLoadEveryVendoredSchemaCompiles(t *testing.T) {
 			if classifyVendored(f, raw) != jsonSchema {
 				continue
 			}
-			t.Run(filepath.Base(filepath.Dir(dir))+"/"+f, func(t *testing.T) {
+			label := filepath.Base(filepath.Dir(dir)) + "/" + f
+			t.Run(label, func(t *testing.T) {
 				_, schemaErr := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(raw))
+				if why, listed := goCannotCompile[label]; listed {
+					seen[label] = true
+					require.Error(t, schemaErr, "listed as uncompilable in Go (%s) but it compiled — remove it from goCannotCompile", why)
+					return
+				}
 				require.NoError(t, schemaErr, "vendored schema does not compile")
 			})
 		}
+	}
+	for label := range goCannotCompile {
+		assert.True(t, seen[label], "goCannotCompile names %s, which the walk did not find", label)
 	}
 }
 

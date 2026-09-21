@@ -9,3 +9,14 @@ regenerate current output. This fixture is a durable, real capture and does not
 go stale in a way that breaks the converter (the Xray response shape is stable).
 Refresh only if the Xray export schema materially changes, sourcing from a real
 Xray instance or the heimdall2 upstream sample.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — JFrog Xray API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `jfrog_xray_sample.json` — JFrog Xray API response body; the service version is not part of the response, so its version is not determinable from file content.
+
+## Schema
+
+The fixture is a REST response body; no published OpenAPI description for Xray was located (2026-09-20).

@@ -4,12 +4,18 @@
     "analyzer": {
       "id": "semgrep",
       "name": "Semgrep",
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "vendor": {
+        "name": "GitLab"
+      }
     },
     "scanner": {
       "id": "semgrep",
       "name": "Semgrep",
-      "version": "1.34.0"
+      "version": "1.34.0",
+      "vendor": {
+        "name": "Semgrep"
+      }
     },
     "start_time": "2024-03-10T08:00:00",
     "end_time": "2024-03-10T08:05:00",
@@ -73,7 +79,13 @@
       "description": "Sensitive information is written to debug logs that may be accessible to unauthorized users.",
       "severity": "Info",
       "solution": "Remove or guard debug logging statements that expose sensitive data.",
-      "identifiers": [],
+      "identifiers": [
+        {
+          "type": "semgrep_id",
+          "name": "python.lang.security.audit.logging.debug-log.debug-log",
+          "value": "python.lang.security.audit.logging.debug-log.debug-log"
+        }
+      ],
       "location": {
         "file": "src/auth/login.py",
         "start_line": 55,

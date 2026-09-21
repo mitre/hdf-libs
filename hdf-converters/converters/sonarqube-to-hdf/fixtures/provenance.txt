@@ -32,3 +32,18 @@ fold (rules whose descriptions reference `OWASP Top 10 2017 - Category A#`).
 `empty.json` are small hand-curated documents exercising specific parser paths
 (legacy vs MQR severity modes, SonarQube 26+ `descriptionSections`, and the
 zero-findings placeholder). They carry no OWASP data.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — SonarQube web API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `minimal.json` — SonarQube web API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `mqr-divergent.json` — SonarQube web API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `mqr.json` — SonarQube web API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `sq26-owasp.json` — SonarQube web API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `sq26-with-sections.json` — SonarQube web API response body; the service version is not part of the response, so its version is not determinable from file content.
+
+## Schema
+
+The fixture is an `api/issues/search` response body; no published OpenAPI description for SonarQube's web API v1 was located (its API is documented interactively per server), and the search was not exhaustive (2026-09-20).

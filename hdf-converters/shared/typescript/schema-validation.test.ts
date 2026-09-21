@@ -109,6 +109,7 @@ describe('every vendored schema', () => {
       'hdf-to-csaf-vex/csaf_json_schema.json',
       'hdf-to-csaf-vex/cvss-v2.0.json',
       'hdf-to-csaf-vex/cvss-v3.0.json',
+      'sarif-to-hdf/sarif-schema-2.1.0.json',
     ]);
   });
 

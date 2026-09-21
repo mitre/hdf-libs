@@ -1,0 +1,6 @@
+# Inputs in fixtures/input/ that intentionally have no fixtures/expected/<name>.hdf.json golden.
+# One per line, as <input> — <reason>. The snapshot harness in both languages requires every
+# input to have a golden or a line here, and fails on a line that names a missing input, an
+# input that has a golden, or no reason. The empty.* convention needs no line.
+
+no-actionable.spdx.json — converts to an error by design: no actionable statements; TestConvertSPDXVEX_NoActionableStatementsErrors and its TS twin

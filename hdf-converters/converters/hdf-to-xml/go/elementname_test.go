@@ -8,12 +8,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
-
-	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,32 +63,58 @@ func TestXMLElementNameMatchesSharedTable(t *testing.T) {
 	}
 }
 
-// Encoding is not injective, so the question is not whether collisions can exist
-// but whether they exist for the keys this repo actually produces. Scans every
-// tag key in every converter fixture.
-func TestXMLElementNameNoCollisionsAcrossRealFixtureKeys(t *testing.T) {
-	keys := collectFixtureTagKeys(t)
-	require.Greater(t, len(keys), 100, "the fixture scan found too few keys to be meaningful")
+type elementNameShape struct {
+	Key       string `json:"key"`
+	Name      string `json:"name"`
+	Rewritten bool   `json:"rewritten"`
+	Source    string `json:"source"`
+}
 
-	seen := make(map[string]string, len(keys))
-	for _, key := range keys {
-		name, _ := xmlElementName(key)
-		if prior, dup := seen[name]; dup {
-			t.Errorf("tag keys %q and %q both encode to %q", prior, key, name)
-			continue
-		}
-		seen[name] = key
+func loadElementNameShapes(t *testing.T) []elementNameShape {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "xml-element-name-cases.json"))
+	require.NoError(t, err)
+
+	var table struct {
+		RealShapes []elementNameShape `json:"realShapes"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.RealShapes, "an empty table would pass vacuously")
+	return table.RealShapes
+}
+
+// Encoding is not injective — every character outside [A-Za-z0-9._-] folds to
+// "_" — and a collision is tolerable because a rewritten key is emitted with a
+// name attribute carrying the original. What real content needs is that each
+// key SHAPE real converters emit encodes as recorded: one representative per
+// shape, from the shared table, not a scan of every fixture in the repo, which
+// made every converter's fixtures load-bearing for this one.
+func TestXMLElementNameRealShapesEncodeAsRecorded(t *testing.T) {
+	for _, r := range loadElementNameShapes(t) {
+		t.Run(r.Key, func(t *testing.T) {
+			name, rewritten := xmlElementName(r.Key)
+			assert.Equal(t, r.Name, name, "a %s key encoded differently from the table", r.Source)
+			assert.Equal(t, r.Rewritten, rewritten, r.Source)
+		})
 	}
 }
 
 // Every encoded name must be one an XML parser accepts, which is the property
-// the encoder exists to guarantee.
+// the encoder exists to guarantee — over every key the shared table knows,
+// real and hostile alike, plus a few that stress the start-character rule.
 func TestXMLElementNameAlwaysParses(t *testing.T) {
-	keys := append(collectFixtureTagKeys(t), "800-53", "a<b", "my tag", "", "café")
+	var keys []string
+	for _, c := range loadElementNameCases(t) {
+		keys = append(keys, c.Key)
+	}
+	for _, r := range loadElementNameShapes(t) {
+		keys = append(keys, r.Key)
+	}
+	keys = append(keys, "800-53", "a<b", "my tag", "", "café", "1", "-", ".", "$ref", "a/b/c")
 	for _, key := range keys {
 		name, _ := xmlElementName(key)
 		doc := []byte("<" + name + ">v</" + name + ">")
-		require.NoError(t, xmlWellFormed(doc), "key %q encoded to unparseable name %q", key, name)
+		assert.NoError(t, xmlWellFormed(doc), "key %q encoded to unparseable name %q", key, name)
 	}
 }
 
@@ -109,27 +132,6 @@ func xmlWellFormed(doc []byte) error {
 			return err
 		}
 	}
-}
-
-// collectFixtureTagKeys gathers every HDF tag key across every converter's
-// fixtures, so the collision and parse checks run against the keys real
-// converters emit rather than shapes chosen to pass.
-func collectFixtureTagKeys(t *testing.T) []string {
-	t.Helper()
-
-	seen := map[string]bool{}
-	require.NoError(t, shared.ForEachFixtureTags(func(tags map[string]interface{}) {
-		for key := range tags {
-			seen[key] = true
-		}
-	}))
-
-	keys := make([]string, 0, len(seen))
-	for k := range seen {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 // Two keys encoding to one element name must yield two elements, each at its own

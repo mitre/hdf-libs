@@ -79,5 +79,58 @@
       "passthrough": false,
       "why": "astral code point: one character, so one underscore — the TS regex needs the u flag to match Go's rune-wise Map"
     }
+  ],
+  "$commentRealShapes": "realShapes: one representative gid per shape that reaches tags.gid. xccdf-results-to-hdf is the only converter that writes tags.gid (Group/@id verbatim); the other shapes arrive through InSpec profile passthrough (legacyhdf-to-hdf, splunk-to-hdf). Both languages assert the encoder leaves each untouched (passthrough, or prefix + gid verbatim), which is what makes encoding collision-free for real content without sampling it. Add a row when a converter starts emitting a new shape.",
+  "realShapes": [
+    {
+      "gid": "V-230221",
+      "shape": "DISA STIG group id",
+      "source": "CKL, CKLB, InSpec results, XCCDF results (tags.gid)"
+    },
+    {
+      "gid": "V-1",
+      "shape": "DISA STIG group id, short",
+      "source": "legacy STIGs"
+    },
+    {
+      "gid": "SV-230221r743913_rule",
+      "shape": "DISA STIG rule id used as a gid",
+      "source": "XCCDF Rule/@id; reaches tags.gid only when an InSpec profile puts it there (legacyhdf passthrough)"
+    },
+    {
+      "gid": "SV-86603r1_rule",
+      "shape": "DISA STIG rule id, older revision form",
+      "source": "XCCDF Rule/@id; reaches tags.gid only through InSpec profile passthrough"
+    },
+    {
+      "gid": "xccdf_mil.disa.stig_group_V-230221",
+      "shape": "conforming DISA group id",
+      "source": "XCCDF results, passes through"
+    },
+    {
+      "gid": "xccdf_org.ssgproject.content_group_dns_server_protection",
+      "shape": "SSG group name",
+      "source": "ComplianceAsCode benchmarks, passes through"
+    },
+    {
+      "gid": "xccdf_org.cisecurity.benchmarks_group_1.1.1",
+      "shape": "conforming CIS group id",
+      "source": "CIS XCCDF benchmarks (the published id form), passes through"
+    },
+    {
+      "gid": "1.1.1",
+      "shape": "CIS recommendation number",
+      "source": "CIS benchmarks"
+    },
+    {
+      "gid": "CCE-27253-1",
+      "shape": "CCE identifier",
+      "source": "OpenSCAP ident, normally tags.cce; reaches tags.gid only through InSpec profile passthrough"
+    },
+    {
+      "gid": "RHEL-08-010000",
+      "shape": "DISA STIG id used as a gid",
+      "source": "XCCDF Rule/@version (the STIG id); reaches tags.gid only through InSpec profile passthrough"
+    }
   ]
 }
