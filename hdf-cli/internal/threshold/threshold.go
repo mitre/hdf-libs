@@ -33,7 +33,8 @@ var keyVocabulary = strings.NewReplacer(
 	"not found in type hdfengine.ComplianceBound", "is not a known compliance field",
 )
 
-// Decode parses a threshold spec, rejecting any key the schema does not define.
+// Decode parses a threshold spec, rejecting any key the schema does not define
+// and any spec that is not a single YAML document.
 // Input may be YAML or JSON, since YAML is a superset — the MCP tool passes a
 // JSON-marshalled inline object through the same path as a YAML file. An empty
 // input decodes to a zero config rather than erroring; callers reject that via
@@ -45,7 +46,48 @@ func Decode(raw []byte) (*hdfengine.ThresholdConfig, error) {
 	if err := decoder.Decode(&config); err != nil && !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("%s", keyVocabulary.Replace(err.Error()))
 	}
+	if err := rejectSecondDocument(decoder); err != nil {
+		return nil, err
+	}
 	return &config, nil
+}
+
+// rejectSecondDocument reports a spec whose stream carries another document with
+// content in it. Decode reads exactly one document, so bounds written after a
+// `---` were parsed by nobody — KnownFields cannot see them, because strictness
+// applies within a document and not across a stream. A separator that introduces
+// nothing (a bare trailing `---`, a repeated one, or a comment-only tail) decodes
+// to a null scalar and is left alone: it discards nothing an author wrote, and
+// rejecting it would break specs that are legal YAML and common in the wild.
+func rejectSecondDocument(decoder *yaml.Decoder) error {
+	for {
+		var doc yaml.Node
+		err := decoder.Decode(&doc)
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("%s", keyVocabulary.Replace(err.Error()))
+		}
+		if documentIsEmpty(&doc) {
+			continue
+		}
+		return fmt.Errorf(
+			"a threshold spec must be a single document: the content at line %d follows a '---' separator, "+
+				"so it would never be evaluated — merge it into the first document or split it into its own spec",
+			doc.Line)
+	}
+}
+
+// documentIsEmpty reports a document carrying no content. yaml.v3 renders a bare
+// separator and a comment-only tail identically: a document node wrapping a
+// null-tagged scalar whose value is empty.
+func documentIsEmpty(doc *yaml.Node) bool {
+	if len(doc.Content) != 1 {
+		return len(doc.Content) == 0
+	}
+	inner := doc.Content[0]
+	return inner.Kind == yaml.ScalarNode && inner.Tag == "!!null" && inner.Value == ""
 }
 
 // AssertionCount reports how many bounds a spec actually asserts, counting every
