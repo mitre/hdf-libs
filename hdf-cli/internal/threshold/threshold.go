@@ -33,61 +33,77 @@ var keyVocabulary = strings.NewReplacer(
 	"not found in type hdfengine.ComplianceBound", "is not a known compliance field",
 )
 
-// Decode parses a threshold spec, rejecting any key the schema does not define
-// and any spec that is not a single YAML document.
-// Input may be YAML or JSON, since YAML is a superset — the MCP tool passes a
-// JSON-marshalled inline object through the same path as a YAML file. An empty
-// input decodes to a zero config rather than erroring; callers reject that via
-// AssertionCount, which reports the more useful reason.
-func Decode(raw []byte) (*hdfengine.ThresholdConfig, error) {
-	var config hdfengine.ThresholdConfig
+// Spec is one threshold policy together with where it came from. A run may apply
+// several, so a violation has to be able to name the policy that produced it.
+type Spec struct {
+	Config *hdfengine.ThresholdConfig
+	Label  string
+}
+
+// DecodeAll parses every document in a spec stream into its own policy, rejecting
+// any key the schema does not define in ANY of them. Input may be YAML or JSON,
+// since YAML is a superset — the MCP tool passes a JSON-marshalled inline object
+// through the same path as a YAML file.
+//
+// Several documents are a CONJUNCTION: each is evaluated separately and the
+// violations are unioned. They are returned separately rather than merged
+// because merging two documents that bound the same key would need a precedence
+// rule nobody asked for, while evaluating both needs none — the stricter bound
+// simply fails on its own terms.
+//
+// source names the origin for labelling: a file path, or a flag name for inline
+// input. A stream holding one document takes the bare source as its label; a
+// stream holding several takes source#1, source#2, …, 1-based because that is how
+// a person counts documents in a file. A separator introducing no document — a
+// bare trailing ---, a repeated one, a comment-only tail — is not a policy and
+// yields no spec, so nothing an author wrote is invented or discarded.
+//
+// An empty stream yields no specs. Reporting that as "asserts nothing" belongs to
+// the caller, which knows how many other specs the run carries.
+func DecodeAll(raw []byte, source string) ([]Spec, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(raw))
 	decoder.KnownFields(true)
-	if err := decoder.Decode(&config); err != nil && !errors.Is(err, io.EOF) {
-		return nil, fmt.Errorf("%s", keyVocabulary.Replace(err.Error()))
-	}
-	if err := rejectSecondDocument(decoder); err != nil {
-		return nil, err
-	}
-	return &config, nil
-}
 
-// rejectSecondDocument reports a spec whose stream carries another document with
-// content in it. Decode reads exactly one document, so bounds written after a
-// `---` were parsed by nobody — KnownFields cannot see them, because strictness
-// applies within a document and not across a stream. A separator that introduces
-// nothing (a bare trailing `---`, a repeated one, or a comment-only tail) decodes
-// to a null scalar and is left alone: it discards nothing an author wrote, and
-// rejecting it would break specs that are legal YAML and common in the wild.
-func rejectSecondDocument(decoder *yaml.Decoder) error {
+	var specs []Spec
 	for {
-		var doc yaml.Node
-		err := decoder.Decode(&doc)
+		// A pointer target distinguishes a document carrying no content, which
+		// decodes to nil, from one that is present but empty (`{}`), which
+		// allocates. The second is a policy the author wrote and asserts
+		// nothing; the first was never a policy at all.
+		var config *hdfengine.ThresholdConfig
+		err := decoder.Decode(&config)
 		if errors.Is(err, io.EOF) {
-			return nil
+			break
 		}
 		if err != nil {
-			return fmt.Errorf("%s", keyVocabulary.Replace(err.Error()))
+			return nil, fmt.Errorf("%s: %s", labelAt(source, len(specs)+1), keyVocabulary.Replace(err.Error()))
 		}
-		if documentIsEmpty(&doc) {
+		if config == nil {
 			continue
 		}
-		return fmt.Errorf(
-			"a threshold spec must be a single document: the content at line %d follows a '---' separator, "+
-				"so it would never be evaluated — merge it into the first document or split it into its own spec",
-			doc.Line)
+		specs = append(specs, Spec{Config: config, Label: source})
 	}
+
+	// The index is only useful when there is something to disambiguate, so the
+	// single-document case — which is nearly every spec — keeps the bare source.
+	if len(specs) > 1 {
+		for i := range specs {
+			specs[i].Label = fmt.Sprintf("%s#%d", source, i+1)
+		}
+	}
+	return specs, nil
 }
 
-// documentIsEmpty reports a document carrying no content. yaml.v3 renders a bare
-// separator and a comment-only tail identically: a document node wrapping a
-// null-tagged scalar whose value is empty.
-func documentIsEmpty(doc *yaml.Node) bool {
-	if len(doc.Content) != 1 {
-		return len(doc.Content) == 0
+// labelAt names the nth policy of a stream, 1-based. The index counts POLICIES
+// rather than documents, so a file padded with separators does not report its one
+// policy as #3. A stream still being read cannot know whether more policies
+// follow, so the first takes the bare source; DecodeAll indexes it afterwards if
+// others turn up.
+func labelAt(source string, n int) string {
+	if n <= 1 {
+		return source
 	}
-	inner := doc.Content[0]
-	return inner.Kind == yaml.ScalarNode && inner.Tag == "!!null" && inner.Value == ""
+	return fmt.Sprintf("%s#%d", source, n)
 }
 
 // AssertionCount reports how many bounds a spec actually asserts, counting every

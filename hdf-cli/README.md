@@ -143,12 +143,17 @@ USAGE
   hdf validate threshold <results.json> [flags]
 
 FLAGS
-  -T, --template string   Threshold YAML template file
-  -I, --inline string     Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+  -T, --template stringArray   Threshold YAML template file (repeatable; every spec must pass)
+  -I, --inline stringArray     Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
 
 EXAMPLES
   hdf validate threshold results.json -T threshold.yaml
   hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+
+  # Several specs are a conjunction: every one is evaluated, the run fails if any
+  # fails, and the violation names which. -T and -I may be combined, and one file
+  # may hold several YAML documents (reported as policy.yaml#1, policy.yaml#2).
+  hdf validate threshold results.json -T baseline.yaml -T repo-specific.yaml
 ```
 
 ### list
