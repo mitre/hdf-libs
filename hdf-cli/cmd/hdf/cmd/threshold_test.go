@@ -936,3 +936,97 @@ func TestValidateThreshold_InlineBothSpellingsIsRefused(t *testing.T) {
 	require.Error(t, err, "a spec naming one bucket twice must be refused, not silently resolved")
 	assert.Contains(t, err.Error(), "pre-3.7 spelling")
 }
+
+// A dotted path with junk appended used to be accepted and acted on by its
+// three-segment prefix: `failed.total.max.foo` asserted `failed.total.max` and
+// said nothing about `foo`. It could not misroute a bound, but it is the last
+// place the inline grammar quietly tolerated input it does not understand, and
+// a spec must never mean something other than what was written.
+func TestParseInlineThreshold_RejectsOverlongPath(t *testing.T) {
+	for name, path := range map[string]string{
+		"status total":    "failed.total.max.foo",
+		"status severity": "failed.high.max.bar",
+		"compliance":      "compliance.min.extra",
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := parseInlineThreshold("{" + path + ": 0}")
+			require.Error(t, err, "an over-long path must be rejected, not truncated to its prefix")
+			assert.Contains(t, err.Error(), path, "the error must name the offending path")
+			// A typo and a run of junk need different guidance, so the message
+			// must not read as though a segment were merely unrecognized.
+			assert.Contains(t, strings.ToLower(err.Error()), "too many segments")
+		})
+	}
+}
+
+// The counterpart to the rejection above: every shape the grammar does define
+// must still parse, AND land on the bound it names. Enumerated rather than
+// sampled, because a bound on the segment count is exactly the kind of fix that
+// takes valid paths with it — and asserting the routing, not merely that the
+// parse succeeded, is what makes the sweep able to fail.
+func TestParseInlineThreshold_AcceptsEveryLegalPathShape(t *testing.T) {
+	statusSection := map[string]func(*ThresholdConfig) *hdfengine.ThresholdSeverity{
+		"passed":    func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Passed },
+		"failed":    func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Failed },
+		"skipped":   func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Skipped },
+		"error":     func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Error },
+		"no_impact": func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.NoImpact },
+	}
+	severityBound := map[string]func(*hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound{
+		"critical":      func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Critical },
+		"high":          func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.High },
+		"medium":        func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Medium },
+		"low":           func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Low },
+		"informational": func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Informational },
+		"none":          func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.None },
+		"total":         func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Total },
+	}
+
+	// The sweep reads knownSeverityFields, so it would shrink in silence with the
+	// vocabulary it is meant to cover. Pin the size: a value removed here has to
+	// be removed deliberately.
+	require.Len(t, knownSeverityFields, 6, "severity vocabulary changed; update this sweep deliberately")
+	for _, severity := range knownSeverityFields {
+		require.Contains(t, severityBound, severity, "sweep is missing an accessor for %q", severity)
+	}
+
+	for _, bound := range []string{"min", "max"} {
+		t.Run("compliance."+bound, func(t *testing.T) {
+			cfg, err := parseInlineThreshold("{compliance." + bound + ": 80}")
+			require.NoError(t, err)
+			require.NotNil(t, cfg.Compliance)
+			got := cfg.Compliance.Min
+			if bound == "max" {
+				got = cfg.Compliance.Max
+			}
+			require.NotNil(t, got, "compliance.%s must populate that field, not the other one", bound)
+			assert.InDelta(t, 80.0, *got, 0.0001)
+		})
+		for status, section := range statusSection {
+			// "total" is handled by its own branch in setThresholdValue and
+			// belongs in the sweep alongside the severity names.
+			for _, severity := range append(append([]string{}, knownSeverityFields...), "total") {
+				path := status + "." + severity + "." + bound
+				t.Run(path, func(t *testing.T) {
+					cfg, err := parseInlineThreshold("{" + path + ": 1}")
+					require.NoError(t, err, "a legal path shape must still parse")
+
+					ts := section(cfg)
+					require.NotNil(t, ts, "%s must populate the %s section", path, status)
+					b := severityBound[severity](ts)
+					require.NotNil(t, b, "%s must populate the %s bound", path, severity)
+
+					if bound == "max" {
+						require.NotNil(t, b.Max, "%s must set max", path)
+						assert.Equal(t, 1, *b.Max)
+						assert.Nil(t, b.Min, "%s must not also set min", path)
+					} else {
+						require.NotNil(t, b.Min, "%s must set min", path)
+						assert.Equal(t, 1, *b.Min)
+						assert.Nil(t, b.Max, "%s must not also set max", path)
+					}
+				})
+			}
+		}
+	}
+}
