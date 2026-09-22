@@ -63,6 +63,51 @@ const testResultsForThreshold = `{
 	"version": "2.0.0"
 }`
 
+// A document with no failed requirement, distinct from testResultsForThreshold
+// in baseline name and in every id. Bulk tests need a genuine pass/fail PAIR:
+// the same file passed twice cannot distinguish a gate that read both arguments
+// from one that read the first and stopped.
+const testResultsNoFailures = `{
+	"baselines": [{
+		"name": "threshold-test-clean",
+		"requirements": [
+			{
+				"id": "SV-101",
+				"title": "Passed High",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.7,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SV-102",
+				"title": "Passed Medium",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.5,
+				"severity": "medium",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			}
+		],
+		"supports": [],
+		"groups": []
+	}],
+	"platform": {"name": "test", "release": "1.0"},
+	"statistics": {"duration": 1.0},
+	"version": "2.0.0"
+}`
+
+// writeResultsAt writes a document into a caller-chosen directory under a
+// caller-chosen name, so a bulk test controls the ORDER files reach the gate —
+// which is the whole property the fail-fast and process-everything tests assert.
+func writeResultsAt(t *testing.T, dir, name, body string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, []byte(body), 0o644))
+	return path
+}
+
 func writeTestResults(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -687,23 +732,64 @@ func TestValidateThreshold_InlineAcceptsEverySeverityField(t *testing.T) {
 // take more than one file — `convert` and `validate` already do. The template
 // is parsed once and applied per file.
 func TestValidateThreshold_AcceptsMultipleFiles(t *testing.T) {
-	resultsPath := writeTestResults(t)
-	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
-	require.NoError(t, os.WriteFile(thresholdFile, []byte("failed:\n  total:\n    max: 5\n"), 0o644))
+	dir := t.TempDir()
+	first := writeResultsAt(t, dir, "first.json", testResultsForThreshold)
+	second := writeResultsAt(t, dir, "second.json", testResultsNoFailures)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 5\n")
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath, resultsPath, "-T", thresholdFile)
+	_, stderr, err := executeCommand("validate", "threshold", first, second, "-T", thresholdFile)
 	assert.NoError(t, err)
+	// Distinct files, both named in the output: passing the same path twice
+	// cannot tell a gate that read both from one that read the first and stopped.
+	assert.Contains(t, stderr, first)
+	assert.Contains(t, stderr, second)
 }
 
 // One failing document among several must fail the whole invocation — a gate
 // that passes because most files were fine is not a gate.
 func TestValidateThreshold_MultipleFilesFailIfAnyViolates(t *testing.T) {
-	resultsPath := writeTestResults(t)
-	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
-	require.NoError(t, os.WriteFile(thresholdFile, []byte("failed:\n  total:\n    max: 0\n"), 0o644))
+	dir := t.TempDir()
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	violating := writeResultsAt(t, dir, "violating.json", testResultsForThreshold)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 0\n")
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath, resultsPath, "-T", thresholdFile)
+	// The mixed case the name describes: one document passes, one does not.
+	// Two violating files would fail whatever the loop did with either.
+	for name, order := range map[string][]string{
+		"violator first": {violating, clean},
+		"violator last":  {clean, violating},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, _, err := executeCommand(append(append([]string{"validate", "threshold"}, order...), "-T", thresholdFile)...)
+			require.Error(t, err, "one violating document must fail the whole invocation")
+		})
+	}
+}
+
+// The default is POSIX-style: process every file, report at the end. A gate that
+// stopped at the first violation would hide every later one, so a contributor
+// would fix one finding per CI run.
+func TestValidateThreshold_ProcessesEveryFileByDefault(t *testing.T) {
+	dir := t.TempDir()
+	violating := writeResultsAt(t, dir, "violating.json", testResultsForThreshold)
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", violating, clean, "-T", thresholdFile)
+	require.Error(t, err, "the violating document must still fail the run")
+	assert.Contains(t, stderr, clean+": ok", "the file after the violation must still be processed")
+}
+
+// -F is the opposite contract, and it is the one a slow pipeline relies on.
+func TestValidateThreshold_FailFastStopsAtTheFirstViolation(t *testing.T) {
+	dir := t.TempDir()
+	violating := writeResultsAt(t, dir, "violating.json", testResultsForThreshold)
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", violating, clean, "-T", thresholdFile, "-F")
 	require.Error(t, err)
+	assert.NotContains(t, stderr, clean, "with -F the run must abort before reaching the second file")
 }
 
 // Zero files must be an error, not a vacuous pass: an unmatched shell glob
