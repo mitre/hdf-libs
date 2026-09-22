@@ -1030,3 +1030,22 @@ func TestParseInlineThreshold_AcceptsEveryLegalPathShape(t *testing.T) {
 		}
 	}
 }
+
+// The multi-document hole is closed in threshold.Decode so both surfaces inherit
+// it. This is the CLI half of that claim; the MCP half is asserted in
+// internal/mcp/tools. A spec whose second document was silently discarded could
+// gate on bounds nobody was enforcing.
+func TestValidateThreshold_RejectsMultiDocumentTemplate(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	multiDoc := writeResultsAt(t, dir, "multi.yaml", "failed:\n  total:\n    max: 5\n---\nfaild:\n  total:\n    max: 0\n")
+
+	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", multiDoc)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "single document")
+
+	// A leading separator is legal and must survive the fix.
+	leading := writeResultsAt(t, dir, "leading.yaml", "---\nfailed:\n  total:\n    max: 5\n")
+	_, _, err = executeCommand("validate", "threshold", resultsPath, "-T", leading)
+	assert.NoError(t, err)
+}

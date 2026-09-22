@@ -114,3 +114,54 @@ func TestAssertionCount_CountsControlsAndNilConfig(t *testing.T) {
 		t.Errorf("nil config = %d, want 0", got)
 	}
 }
+
+// A threshold spec is one policy, but yaml.Decoder.Decode reads exactly one
+// document — so bounds written after a second `---` were parsed by nobody and
+// dropped without a word. KnownFields cannot catch it: strictness applies
+// within a document, not across a stream.
+func TestDecode_RejectsMultiDocumentSpec(t *testing.T) {
+	for name, spec := range map[string]string{
+		"second document is a typo":    "failed:\n  total:\n    max: 0\n---\nfaild:\n  total:\n    max: 5\n",
+		"second document is valid":     "failed:\n  total:\n    max: 0\n---\npassed:\n  total:\n    min: 1\n",
+		"content after a blank line":   "failed:\n  total:\n    max: 0\n---\n\npassed:\n  total:\n    min: 1\n",
+		"second document is empty map": "failed:\n  total:\n    max: 0\n---\n{}\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := Decode([]byte(spec)); err == nil {
+				t.Fatal("a spec carrying a second document must be rejected, not silently truncated")
+			} else if !strings.Contains(err.Error(), "single document") {
+				t.Errorf("error = %q, want it to say the spec must be a single document", err.Error())
+			}
+		})
+	}
+}
+
+// Separators that introduce no second document stay legal. A leading `---` is
+// how many generated and hand-edited templates begin, so rejecting it is the
+// obvious way to break every real spec while closing the hole above. Measured
+// with yaml.v3: a bare trailing `---`, a repeated one, and a comment-only tail
+// each decode to a null-tagged scalar carrying no value — nothing the author
+// wrote is discarded, so there is nothing to report.
+func TestDecode_AcceptsSeparatorsCarryingNoSecondDocument(t *testing.T) {
+	for name, spec := range map[string]string{
+		"leading separator":       "---\nfailed:\n  total:\n    max: 0\n",
+		"trailing separator":      "failed:\n  total:\n    max: 0\n---\n",
+		"two trailing separators": "failed:\n  total:\n    max: 0\n---\n---\n",
+		"comment after separator": "failed:\n  total:\n    max: 0\n---\n# nothing here\n",
+		"explicit end marker":     "failed:\n  total:\n    max: 0\n...\n",
+		"both ends":               "---\nfailed:\n  total:\n    max: 0\n---\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg, err := Decode([]byte(spec))
+			if err != nil {
+				t.Fatalf("Decode() = %v, want the spec accepted", err)
+			}
+			if cfg.Failed == nil || cfg.Failed.Total == nil || cfg.Failed.Total.Max == nil {
+				t.Fatalf("the first document must still be the one evaluated; got %+v", cfg)
+			}
+			if *cfg.Failed.Total.Max != 0 {
+				t.Errorf("failed.total.max = %d, want 0", *cfg.Failed.Total.Max)
+			}
+		})
+	}
+}

@@ -882,3 +882,32 @@ func TestCompliance_GroupByBaseline_SameNamedBaselinesStayDistinct(t *testing.T)
 		}
 	}
 }
+
+// The MCP half of the single-document rule (the CLI half lives in
+// cmd/hdf/cmd/threshold_test.go). Both surfaces reach threshold.Decode, so a
+// spec truncated at the first `---` would have answered "gate passed" from
+// bounds that were never read.
+func TestResolveThreshold_RejectsMultiDocumentSpec(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	if err := os.WriteFile(filepath.Join(root, "multi.yaml"),
+		[]byte("failed:\n  total:\n    max: 0\n---\nfaild:\n  total:\n    max: 5\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, e := resolveThreshold(&thresholdInput{Path: "multi.yaml"})
+	if e == nil {
+		t.Fatalf("a multi-document spec must be rejected; got cfg=%+v", cfg)
+	}
+	if e.Code != mcperr.SchemaInvalid {
+		t.Errorf("code = %v, want SCHEMA_INVALID", e.Code)
+	}
+	// resolveThreshold reports the decoder's reason in Details["error"]; the
+	// message itself stays generic across every parse failure. The reason has to
+	// survive, or the caller is told only that the spec "did not parse" and has
+	// no way to learn that a second document is what went wrong.
+	detail, _ := e.Details["error"].(string)
+	if !strings.Contains(detail, "single document") {
+		t.Errorf("details must say the spec has to be a single document, got %q (message %q)", detail, e.Message)
+	}
+}
