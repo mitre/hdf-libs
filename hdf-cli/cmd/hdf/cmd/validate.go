@@ -136,11 +136,7 @@ func runValidate(_ *cobra.Command, args []string) error {
 
 	printDebug("Read %d bytes", len(data))
 
-	// Determine display name for output
-	displayName := filename
-	if filename == "-" {
-		displayName = "<stdin>"
-	}
+	displayName := displayNameFor(filename)
 
 	// v2 selected: validate against the pinned legacy (Heimdall/InSpec exec-json)
 	// schema at the same rigor as v3, rather than the v3 schemas.

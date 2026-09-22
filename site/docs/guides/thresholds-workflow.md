@@ -56,7 +56,7 @@ hdf validate threshold results.json -T threshold.yaml
 
 ```
 Agent-attributed overrides: 0
-All thresholds passed
+✓ results.json passed all thresholds
 ```
 
 Exit code 0. When a bound is breached, the command names which one and exits 1:
@@ -67,9 +67,10 @@ hdf validate threshold results.json -I "{failed.total.max: 0}"
 
 ```
 Agent-attributed overrides: 0
-FAIL: failed.total: 1 exceeds maximum 0
+✗ results.json — 1 threshold violation
 
-1 threshold violation(s)
+  Violations:
+    failed.total: 1 exceeds maximum 0
 ```
 
 `-I` takes bounds inline instead of from a file. It is useful for a one-off check or for trying a bound before committing it; a real gate belongs in a file, under review, next to the code it governs.
@@ -82,10 +83,45 @@ hdf validate threshold results.json -I "{compliance.min: 80}"
 
 ```
 Agent-attributed overrides: 0
-FAIL: compliance 25.00% is below minimum 80.00%
+✗ results.json — 1 threshold violation
 
-1 threshold violation(s)
+  Violations:
+    compliance 25.00% is below minimum 80.00%
 ```
+
+## Apply more than one threshold
+
+`-T` and `-I` are repeatable, and they may be combined. Every spec is evaluated against the document and the run fails if any of them fails, so an org-wide baseline and a repo-specific overlay compose without anyone hand-merging YAML:
+
+```bash
+hdf validate threshold results.json -T baseline.yaml -T repo.yaml
+```
+
+```
+Agent-attributed overrides: 0
+✗ results.json — 1 threshold violation
+
+  Violations:
+    [baseline.yaml] failed.critical: 2 exceeds maximum 0
+```
+
+The specs are never merged into one policy. Each is evaluated on its own and the violations are pooled, so two specs bounding the same key need no precedence rule — the stricter one simply fails on its own terms. A violation names the spec it came from, and so does a pass:
+
+```
+✓ results.json passed all 2 thresholds
+    baseline.yaml
+    repo.yaml
+```
+
+A single file may also hold several policies, separated by `---`. Those are named by file and position, counting policies from 1 — `policy.yaml#1`, `policy.yaml#2` — so no threshold document is obliged to carry a name. A separator introducing no document, such as a trailing `---` or a comment, is not a policy and is ignored.
+
+An inline spec names itself by its own text, because that is what you typed:
+
+```
+    [-I '{failed.total.max: 0}'] failed.total: 1 exceeds maximum 0
+```
+
+`-F` operates on files, not specs: every spec is always evaluated against a document, so one run shows every policy it broke, and `-F` decides only whether the next document is read.
 
 ## Examples
 
