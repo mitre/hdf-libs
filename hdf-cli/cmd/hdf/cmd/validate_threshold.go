@@ -206,6 +206,9 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 
 	switch segments[0] {
 	case "compliance":
+		if len(segments) > 2 {
+			return errTooManySegments(segments, 2, "compliance.min")
+		}
 		if config.Compliance == nil {
 			config.Compliance = &ComplianceBound{}
 		}
@@ -223,6 +226,9 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 		ts := getOrCreateStatusSeverity(config, segments[0])
 		if len(segments) < 3 {
 			return fmt.Errorf("threshold path %q needs three segments (e.g. 'passed.high.min')", strings.Join(segments, "."))
+		}
+		if len(segments) > 3 {
+			return errTooManySegments(segments, 3, "passed.high.min")
 		}
 		var bound *ThresholdBound
 		if segments[1] == "total" {
@@ -254,6 +260,15 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 	default:
 		return fmt.Errorf("unknown threshold category %q", segments[0])
 	}
+}
+
+// errTooManySegments reports a path longer than its branch consumes. It is kept
+// distinct from the "unknown segment" errors on purpose: a typo and a run of
+// trailing junk need different guidance, and a caller told only that something
+// was unrecognized will hunt for a misspelling that is not there.
+func errTooManySegments(segments []string, want int, example string) error {
+	return fmt.Errorf("threshold path %q has too many segments: %q takes %d (e.g. %q)",
+		strings.Join(segments, "."), segments[0], want, example)
 }
 
 // getOrCreateStatusSeverity returns the ThresholdSeverity for a status,
