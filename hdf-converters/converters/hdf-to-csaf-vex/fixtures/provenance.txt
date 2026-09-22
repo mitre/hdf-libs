@@ -8,10 +8,9 @@ round-trip test natural: convert CSAF → HDF (via csaf-vex-to-hdf) → CSAF
 (via this converter) and assert that consumer-action-bearing fields
 survive.
 
-- `sec-vex-amendments.json` — HDF form of `sec-vex-2022-0001.json`
-  (Secvisogram's Log4Shell statement). Three CVEs, all `not_affected`
-  with `component_not_present` justification flags. Exercises the
-  multi-CVE known_not_affected export path.
+- The multi-CVE known_not_affected export path is exercised by the shared
+  `@mitre/hdf-fixtures` fixture `amendments/multi-cve-amendments.json` (see
+  hdf-fixtures/README.md); this converter no longer keeps a local copy.
 - `uc-01-fixed-amendments.json` — HDF form of `2022-evd-uc-01-f-001.json`
   (an open POA&M imported from a VEX `fixed` statement). Exercises the
   "supplier said fixed, system not yet verified" path: the export must
@@ -65,7 +64,7 @@ the Go and TS tests are authoritative.
 
 A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
 
-- `sec-vex-amendments.json` — an HDF document produced by `csaf-vex-to-hdf` dev (tool=None None).
+None to record: the inputs are HDF documents (this repository's own schema), not the output of an external producer tool, so no fixture here carries a tool/version string. The shared-corpus fixtures this converter now consumes — `amendments/multi-cve-amendments.json` and `amendments/uc-01-fixed-amendments.json` — carry their source, declared generator, and validation record in `hdf-fixtures/README.md`.
 
 ## Schema
 

@@ -53,6 +53,9 @@ Fixtures here are **real tool output**, or a schema-valid document derived from 
 |------|--------|-----------|
 | `inspec-multilayered.json` | InSpec runner, multi-overlay scan | hdf-extension-graph TS + Go tests + hdf-parsers parser parity test. The bug-exhibiting fixture for `hdf-libs-2nm0` — bare timestamps that broke parsers before #83/#828d landed. Moved from `hdf-extension-graph/test/fixtures/multilayered-inspec.json`. |
 | `minimal.json` | Hand-crafted minimal valid HDF Results doc | hdf-to-xml converter (TS + Go) + hdf-parsers integration test + hdf-validators integration test. The smallest schema-valid HDF Results document — single baseline, one passing requirement. Moved from `hdf-converters/converters/hdf-to-xml/fixtures/input/minimal.json`. |
+| `duplicate-baselines.json` | Prisma Cloud HDF results (`prisma-to-hdf`) — 16 baselines, 94 requirements, repeated (name, id) keys. Constructed for merge/correlation testing, PR #362. | hdf-engine TS + Go (filter/query index-uniqueness) + hdf-cli MCP tools (inspect/aggregate/compliance). Moved from `hdf-engine/testdata/duplicate-baselines.json` and `hdf-cli/internal/mcp/tools/testdata/duplicate-baselines.json`. |
+| `merge-grype.json` | Grype HDF results (`grype-to-hdf`, Grype 0.79.3) — one baseline, duplicate requirement ids. Constructed for merge/correlation testing, PR #362. | hdf-engine TS + Go (merge parity) + hdf-cli MCP tools (query correlation, multi-source). Moved from `hdf-engine/testdata/merge-grype.json` and `hdf-cli/internal/mcp/tools/testdata/grype-duplicate-ids.json`. |
+| `merge-zap.json` | OWASP ZAP HDF results (`zap-to-hdf`, ZAP 2.7.0) — four baselines/components, no ids. Constructed for merge/correlation testing, PR #362. | hdf-engine TS + Go (merge parity) + hdf-cli MCP tools (inspect, sources, query multi-source) + hdf-cli MCP evals (sources validation). Moved from `hdf-engine/testdata/merge-zap.json` and `hdf-cli/internal/mcp/tools/testdata/zap-webgoat.json`. |
 
 ### `baseline/` — HDF Baseline docs
 
@@ -80,7 +83,6 @@ runner config.
 | `container-scan.json` | Generic container scan, `-05:00` offset | same |
 | `three-layer-overlay.json` | Three-layer overlay chain, `+00:00` offset | same |
 | `wrapper.json` | InSpec wrapper-profile structure | legacyhdf-to-hdf converter (TS + Go) + hdf-parsers flatten integration test |
-| `three-layer-rhel7.json` | Three-layer RHEL7 overlay (was `Three_Layer_RHEL7_Overlay_Example.json`) | hdf-parsers flatten integration test. Moved from `hdf-schema/test/fixtures/`. |
 
 ## Validation gate
 

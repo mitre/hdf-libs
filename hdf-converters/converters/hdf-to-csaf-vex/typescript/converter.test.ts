@@ -14,10 +14,12 @@ import { convertHdfToCsafVex, productIDsFor, stripProductsLine } from './convert
 
 const TEST_VERSION = 'test';
 
-// uc-01-fixed-amendments.json lives in the shared corpus (hdf-to-oscal-poam
-// consumes it too); the other inputs are local to this converter.
+// Both amendments inputs live in the shared corpus: uc-01-fixed-amendments.json
+// (hdf-to-oscal-poam consumes it too) and sec-vex-amendments.json (the
+// multi-cve-amendments.json doc, shared with the VEX output-count anchors).
 function loadInput(name: string): string {
   if (name === 'uc-01-fixed-amendments.json') return sharedAmendments.uc01Fixed.read();
+  if (name === 'sec-vex-amendments.json') return sharedAmendments.multiCve.read();
   return readFileSync(join(__dirname, '..', 'fixtures', 'input', name), 'utf-8');
 }
 

@@ -1,6 +1,6 @@
-# Heimdall Data Format (HDF) v3.6.0 Specification
+# Heimdall Data Format (HDF) v3.7.0 Specification
 
-**Version**: 3.6.0
+**Version**: 3.7.0
 **Schema**: JSON Schema draft 2020-12
 **License**: Apache-2.0 | The MITRE Corporation
 
@@ -42,6 +42,10 @@ The promise is possible because HDF is JSON. XML (XML 1.0 §2.11) and YAML (YAML
 **Single-line labels versus prose.** Short single-line labels are exactly `descriptions[].label` (declared at five schema sites: `Requirement_Core.descriptions[]`, `Requirement_Description`, `Evaluated_Requirement.descriptions[]`, and both `Baseline_Requirement_Descriptions` declarations), `Milestone.title`, `Source.label`, `Per_Source_Summary.label`, `Annotation.label`, and `Scanner_Conflict.values[].sourceLabel`. Everything else listed above is prose and carries no length, line-break or whitespace constraint. `Requirement_Core.title` is prose despite its name: it is a pass-through of a foreign tool's free-text field (InSpec control titles, XCCDF element text, Graph API titles), and real emitted values contain line breaks and trailing spaces. `Baseline_Metadata.title` and `Requirement_Group.title` are prose for the same reason. `Milestone.title` is the only field that currently carries a single-line pattern (`minLength: 1` plus a pattern banning line breaks and edge whitespace), and that pattern is the precedent shape for any future label constraint.
 
 **Where normalization is legitimate.** Only at an export boundary whose own type forbids what HDF allows, and only for that target. `dev-docs/adr-0014-oscal-namespace-and-prose-carriage.md` §1.7.1 collapses line terminators and trims edge whitespace for OSCAL `StringDatatype` sinks, carrying the exact HDF value in the accompanying `remarks`; that rule is scoped to those sinks and is not generalized. An OSCAL `markup-multiline` home must pass `\n` through untouched, because a blank line is the paragraph delimiter there. A target that folds line endings by specification (XCCDF, or any other XML sink) returns LF-normalized prose — the target format's documented loss, stated per exporter, not an HDF rule.
+
+### Evidence data encoding
+
+`Evidence` carries supporting material on a requirement or override; its `data` field is required and must be non-empty (`minLength: 1`). The `encoding` field names how to read `data` — `utf-8` for the raw text of a `code`/`log` entry, the URL string for a `url` entry, or `base64` for a `screenshot`/`file`. When `encoding` is exactly `base64` (lowercase), `data` must be **bare base64** matching OSCAL's `Base64Datatype` (`^[0-9A-Za-z+/]+={0,2}$`): no `data:` URI prefix, no surrounding URL, and no line breaks. A file or screenshot is therefore the raw base64 of its bytes; a link to an external artifact is a `url` entry, not a `base64` body. *(data non-emptiness and the bare-base64 rule tightened in v3.7.0)*
 
 ### Cardinality invariants
 
@@ -89,7 +93,7 @@ Reference helper implementations: `shared.BuildNoFindingsRequirement` (Go) and `
 
 Assessment findings from running security checks against target systems.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.7.0`
 
 ### Top-Level Fields
 
@@ -236,7 +240,7 @@ The system element that was assessed. Components are polymorphic — each has a 
 
 Security requirements without results (before assessment).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.7.0`
 
 Shares the baseline metadata fields with Evaluated_Baseline but uses `Baseline_Requirement` (no results, no effectiveStatus) instead of `Evaluated_Requirement`. The evaluation-only fields of Evaluated_Baseline (`description`, `statusMessage`, `parentBaseline`, `originalChecksum`, `resultsChecksum`, `extensions`) are not defined on a Baseline document.
 
@@ -288,7 +292,7 @@ A security requirement before assessment. Shares `Requirement_Core` with Evaluat
 
 Describes a system under assessment. A system document defines the authorization boundary, including what components make up the system, its security categorization (FIPS 199), and its authorization status (ATO). This corresponds to a FedRAMP system or an OSCAL SSP's system characteristics. Results and amendments reference the system via `systemRef` to establish which system the assessment applies to.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.7.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -349,7 +353,7 @@ Declares a control's designation within the system — whether it is common (pro
 
 Assessment plan defining what to assess and how. A plan document describes the scope, methodology, and schedule for an upcoming security assessment. It references the system under test via `systemRef` and lists the individual assessments to be performed. This corresponds to an OSCAL SAP (Security Assessment Plan) or a FedRAMP test plan.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.7.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -385,7 +389,7 @@ A single assessment within a plan — defines which baseline to run against whic
 
 Status overrides applied after assessment (waivers, attestations, POAMs).
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-amendments/v3.7.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -434,7 +438,7 @@ A deliberate change to an assessed requirement's compliance status. Waivers gran
 
 Diff between two or more assessment documents. A comparison captures how compliance posture changed between scans, across environments, or between baseline versions. The `comparisonMode` indicates the type of analysis (temporal drift, fleet comparison, baseline evolution, etc.). Each requirement diff records whether a control is new, absent, fixed, regressed, or unchanged. Comparisons are produced by `hdf diff` and consumed by dashboards to show trend data.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-comparison/v3.7.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -462,7 +466,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 
 Bundles references to assessment artifacts for audit and compliance submission. An evidence package collects results, baselines, amendments, system descriptions, and supporting materials (screenshots, logs, SBOMs) into a single auditable unit. This corresponds to a FedRAMP security package or an OSCAL POA&M submission bundle. The `completenessCheck` field validates that all expected artifacts are present.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.7.0`
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -515,7 +519,7 @@ A reference to external native-format evidence (a log or telemetry corpus, or an
 
 A single continuous-monitoring event describing how one requirement's posture changed between two same-target results scans. Producers (`hdf events derive`) emit an NDJSON stream of these events; a batch replays onto a seed results document to reassemble a reconciled state (`hdf events apply`) or folds into a `systemDrift` comparison (`hdf events fold`). The unit is the *requirement*, keyed by `(systemRef, componentId, requirementId)` with a per-key integer `sequence` as the sole ordering authority. The [SIEM export guide](../guides/siem-export.md) documents the change-event projections to OCSF and SARIF.
 
-**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.6.0`
+**Schema ID**: `https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.7.0`
 
 Envelope (CloudEvents-grounded dedup + ordering):
 

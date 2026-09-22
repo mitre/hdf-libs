@@ -4,6 +4,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 import * as testhdf from '@mitre/hdf-schema/testhdf';
+import { results as sharedResults } from '@mitre/hdf-fixtures';
 import {
   filter,
   parseImpactFilter,
@@ -225,8 +226,7 @@ describe('match indices — parity with go/filter_test.go TestFilter_MatchCarrie
   });
 
   it('indices are unique where (baseline name, id) is not — real Prisma output', () => {
-    const dupPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'duplicate-baselines.json');
-    const dup = JSON.parse(readFileSync(dupPath, 'utf-8')) as HDFResults;
+    const dup = JSON.parse(sharedResults.duplicateBaselines.read()) as HDFResults;
     const matches = filter(dup, { statusOf: testStatusOf });
     expect(matches).toHaveLength(94);
     const positions = new Set(matches.map((m) => `${m.baselineIndex}:${m.index}`));

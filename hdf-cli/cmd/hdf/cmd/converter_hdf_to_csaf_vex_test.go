@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,9 +19,7 @@ func TestHDFToCSAFVEXConverter_ProducesCSAFVexEnvelope(t *testing.T) {
 	converter, err := GetConverter("hdf-amendments", "csaf-vex")
 	require.NoError(t, err)
 
-	path := converterFixturePath(t, "hdf-to-csaf-vex", "input/sec-vex-amendments.json")
-	input, err := os.ReadFile(path)
-	require.NoError(t, err)
+	input := fixtures.Amendments.MultiCVE
 
 	output, err := converter.Convert(input)
 	require.NoError(t, err)

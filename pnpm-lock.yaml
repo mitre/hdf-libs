@@ -143,6 +143,9 @@ importers:
         specifier: workspace:^
         version: link:../hdf-utilities
     devDependencies:
+      '@mitre/hdf-fixtures':
+        specifier: workspace:^
+        version: link:../hdf-fixtures
       '@mitre/hdf-validators':
         specifier: workspace:^
         version: link:../hdf-validators

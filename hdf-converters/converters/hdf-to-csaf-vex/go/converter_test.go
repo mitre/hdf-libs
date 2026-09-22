@@ -25,12 +25,16 @@ func mustTime(t *testing.T, s string) time.Time {
 
 const testVersion = "test"
 
-// uc-01-fixed-amendments.json lives in the shared corpus (hdf-to-oscal-poam
-// consumes it too); the other inputs are local to this converter.
+// Both amendments inputs live in the shared corpus: uc-01-fixed-amendments.json
+// (hdf-to-oscal-poam consumes it too) and sec-vex-amendments.json (the
+// multi-cve-amendments.json doc, shared with the VEX output-count anchors).
 func loadInput(t *testing.T, name string) []byte {
 	t.Helper()
-	if name == "uc-01-fixed-amendments.json" {
+	switch name {
+	case "uc-01-fixed-amendments.json":
 		return fixtures.Amendments.UC01Fixed
+	case "sec-vex-amendments.json":
+		return fixtures.Amendments.MultiCVE
 	}
 	data, err := os.ReadFile(filepath.Join("..", "fixtures", "input", name))
 	require.NoError(t, err)

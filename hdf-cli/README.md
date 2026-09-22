@@ -54,7 +54,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.6.0
+VERSION=3.7.0
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -65,7 +65,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${V
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.6.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.0_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -106,8 +106,11 @@ USAGE
   hdf validate <file> [flags]
 
 FLAGS
-  -t, --type string    Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event
-  -q, --quiet          Suppress output on success (exit code only)
+  -t, --type string          Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event
+      --schema-ver string    HDF major schema version to validate against: 2 (legacy Heimdall/InSpec exec-json) or 3 (default, latest). Accepts 'hdf@2'/'hdf@3'; majors only.
+  -q, --quiet                Suppress output on success (exit code only)
+
+Legacy HDF v2 documents (the InSpec exec-json profiles[]/platform shape SAF converters emit) can be validated directly with `--schema-ver 2`, rather than converting to v3 first.
 
 EXAMPLES
   hdf validate results.json
@@ -979,7 +982,7 @@ These flags apply to all commands.
 | `--json` | | `false` | Output in JSON format |
 | `--debug` | `-d` | `false` | Enable debug output |
 | `--fail-fast` | `-F` | `false` | Abort on first file that fails instead of continuing |
-| `--max-size` | | `50` | Maximum input file size in MB |
+| `--max-size` | | `256` | Maximum input file size in MB |
 | `--no-follow-symlinks` | | `false` | Refuse to read symlinked files |
 | `--no-headers` | | `false` | Suppress column headers in table output |
 | `--schema-dir` | | | Load schemas from a directory instead of the embedded copies |

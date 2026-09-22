@@ -318,9 +318,9 @@ function buildRequirement(
   const cciTags = nistToCci(nist);
 
   const extras: Record<string, unknown> = { cveid: [vuln.id] };
-  // Legacy: retain the cvss_base_score tag for one release so existing
-  // downstream queries keep working. Marked for removal in v3.4.0; the
-  // CHANGELOG carries the deprecation note.
+  // Legacy: retain the cvss_base_score tag so existing downstream queries keep
+  // working. Removing it drops a tag consumers may key on, so the removal is
+  // deferred to the next major (v4.0.0) rather than shipped in a minor.
   if (typeof vuln.cvss === 'number' && vuln.cvss > 0) {
     extras['cvss_base_score'] = vuln.cvss;
   }
