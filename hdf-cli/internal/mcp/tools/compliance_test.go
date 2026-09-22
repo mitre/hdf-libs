@@ -774,15 +774,18 @@ func TestResolveThreshold_AcceptsValidSpec(t *testing.T) {
 	if e != nil {
 		t.Fatalf("valid spec must resolve, got %v", e)
 	}
-	if cfg == nil || cfg.Failed == nil || cfg.Failed.Total == nil || cfg.Failed.Total.Max == nil {
-		t.Fatalf("valid spec lost its bound: %+v", cfg)
+	if len(cfg) != 1 {
+		t.Fatalf("got %d policies, want 1", len(cfg))
+	}
+	if cfg[0].Config.Failed == nil || cfg[0].Config.Failed.Total == nil || cfg[0].Config.Failed.Total.Max == nil {
+		t.Fatalf("valid spec lost its bound: %+v", cfg[0].Config)
 	}
 
 	inline, e2 := resolveThreshold(&thresholdInput{Inline: map[string]any{"compliance": map[string]any{"min": 80}}})
 	if e2 != nil {
 		t.Fatalf("valid inline spec must resolve, got %v", e2)
 	}
-	if inline == nil || inline.Compliance == nil || inline.Compliance.Min == nil {
+	if len(inline) != 1 || inline[0].Config.Compliance == nil || inline[0].Config.Compliance.Min == nil {
 		t.Fatalf("valid inline spec lost its bound: %+v", inline)
 	}
 }
@@ -883,31 +886,58 @@ func TestCompliance_GroupByBaseline_SameNamedBaselinesStayDistinct(t *testing.T)
 	}
 }
 
-// The MCP half of the single-document rule (the CLI half lives in
-// cmd/hdf/cmd/threshold_test.go). Both surfaces reach threshold.Decode, so a
-// spec truncated at the first `---` would have answered "gate passed" from
-// bounds that were never read.
-func TestResolveThreshold_RejectsMultiDocumentSpec(t *testing.T) {
+// The MCP half of the multi-policy rule (the CLI half lives in
+// cmd/hdf/cmd/threshold_test.go). Both surfaces reach threshold.DecodeAll, so a
+// file holding several policies is a conjunction here too. This replaces the
+// single-document rejection that shipped in 3.7: the documents after the first
+// now have a defined meaning, so they are evaluated rather than refused. What
+// must never come back is the silent truncation both rules existed to prevent.
+func TestResolveThreshold_MultiDocumentSpecIsAConjunction(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("HDF_MCP_ROOT", root)
 
 	if err := os.WriteFile(filepath.Join(root, "multi.yaml"),
+		[]byte("failed:\n  total:\n    max: 0\n---\npassed:\n  total:\n    min: 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	specs, e := resolveThreshold(&thresholdInput{Path: "multi.yaml"})
+	if e != nil {
+		t.Fatalf("a multi-document spec must resolve to several policies, got %v", e)
+	}
+	if len(specs) != 2 {
+		t.Fatalf("got %d policies, want 2", len(specs))
+	}
+	if specs[0].Label != "multi.yaml#1" || specs[1].Label != "multi.yaml#2" {
+		t.Errorf("labels = %q, %q; want multi.yaml#1, multi.yaml#2", specs[0].Label, specs[1].Label)
+	}
+	// Strictness still reaches every document: a typo in the second is no longer
+	// unreachable, which is what made the truncation dangerous.
+	if err := os.WriteFile(filepath.Join(root, "typo.yaml"),
 		[]byte("failed:\n  total:\n    max: 0\n---\nfaild:\n  total:\n    max: 5\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	cfg, e := resolveThreshold(&thresholdInput{Path: "multi.yaml"})
+	if _, te := resolveThreshold(&thresholdInput{Path: "typo.yaml"}); te == nil {
+		t.Error("a typo in the second document must still be rejected")
+	} else if te.Code != mcperr.SchemaInvalid {
+		t.Errorf("code = %v, want SCHEMA_INVALID", te.Code)
+	}
+}
+
+// A policy asserting nothing passes every document. Among several it would ride
+// along on its neighbours' bounds, so it fails the call and is named.
+func TestResolveThreshold_EmptyPolicyAmongSeveralIsNamed(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	if err := os.WriteFile(filepath.Join(root, "mixed.yaml"),
+		[]byte("failed:\n  total:\n    max: 0\n---\nfailed: {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, e := resolveThreshold(&thresholdInput{Path: "mixed.yaml"})
 	if e == nil {
-		t.Fatalf("a multi-document spec must be rejected; got cfg=%+v", cfg)
+		t.Fatal("a policy asserting nothing must be refused")
 	}
-	if e.Code != mcperr.SchemaInvalid {
-		t.Errorf("code = %v, want SCHEMA_INVALID", e.Code)
-	}
-	// resolveThreshold reports the decoder's reason in Details["error"]; the
-	// message itself stays generic across every parse failure. The reason has to
-	// survive, or the caller is told only that the spec "did not parse" and has
-	// no way to learn that a second document is what went wrong.
-	detail, _ := e.Details["error"].(string)
-	if !strings.Contains(detail, "single document") {
-		t.Errorf("details must say the spec has to be a single document, got %q (message %q)", detail, e.Message)
+	if !strings.Contains(e.Message, "mixed.yaml#2") {
+		t.Errorf("message = %q, want it to name the empty policy", e.Message)
 	}
 }

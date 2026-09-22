@@ -562,15 +562,22 @@ func TestValidateThreshold_InlineZeroFail(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed.high")
 }
 
-func TestValidateThreshold_InlineAndTemplateMutuallyExclusive(t *testing.T) {
-	resultsPath := writeTestResults(t)
-	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
-	require.NoError(t, os.WriteFile(thresholdFile, []byte("compliance:\n  min: 50\n"), 0o644))
+// -T and -I were mutually exclusive while a run could hold only one policy.
+// Under conjunction there is nothing to conflict over — a committed baseline file
+// and a one-off inline tightening are just two policies — so the combination is
+// now accepted. This test replaces the exclusion it supersedes.
+func TestValidateThreshold_InlineAndTemplateCombine(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "compliance:\n  min: 50\n")
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath,
-		"-T", thresholdFile, "-I", "{compliance.min: 50}")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "mutually exclusive")
+	// The file passes and the inline spec does not, so a run that quietly kept
+	// only one of them would report the wrong verdict whichever it kept.
+	_, stderr, err := executeCommand("validate", "threshold", resultsPath,
+		"-T", thresholdFile, "-I", "{failed.total.max: 0}")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "-I '{failed.total.max: 0}'",
+		"the violation must name the inline spec it came from, spec text and all")
 }
 
 func TestGenerateThreshold_MissingInput(t *testing.T) {
@@ -1031,21 +1038,179 @@ func TestParseInlineThreshold_AcceptsEveryLegalPathShape(t *testing.T) {
 	}
 }
 
-// The multi-document hole is closed in threshold.Decode so both surfaces inherit
-// it. This is the CLI half of that claim; the MCP half is asserted in
-// internal/mcp/tools. A spec whose second document was silently discarded could
-// gate on bounds nobody was enforcing.
-func TestValidateThreshold_RejectsMultiDocumentTemplate(t *testing.T) {
+// A leading separator is legal YAML that yields one document, and generated and
+// hand-edited templates carry it. It was the obvious casualty of the 3.7
+// multi-document rejection, and it is the same casualty of getting the
+// conjunction's document counting wrong, so it stays pinned.
+func TestValidateThreshold_LeadingSeparatorIsOnePolicy(t *testing.T) {
 	dir := t.TempDir()
 	resultsPath := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
-	multiDoc := writeResultsAt(t, dir, "multi.yaml", "failed:\n  total:\n    max: 5\n---\nfaild:\n  total:\n    max: 0\n")
-
-	_, _, err := executeCommand("validate", "threshold", resultsPath, "-T", multiDoc)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "single document")
-
-	// A leading separator is legal and must survive the fix.
 	leading := writeResultsAt(t, dir, "leading.yaml", "---\nfailed:\n  total:\n    max: 5\n")
-	_, _, err = executeCommand("validate", "threshold", resultsPath, "-T", leading)
-	assert.NoError(t, err)
+
+	_, stderr, err := executeCommand("validate", "threshold", resultsPath, "-T", leading)
+	require.NoError(t, err)
+	assert.NotContains(t, stderr, "specs", "one policy must not report itself as several")
+	assert.NotContains(t, stderr, leading, "a lone policy needs no attribution")
+}
+
+// Repeating -T was accepted before this and silently kept only the LAST value,
+// because both flags were registered with cobra's StringVarP. Two policies, and
+// the verdict decided by argument order: the strict one was discarded without a
+// word when it came first. Every spec must now be applied, in any order.
+func TestValidateThreshold_AppliesEverySpecAsAConjunction(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	strict := writeResultsAt(t, dir, "strict.yaml", "failed:\n  total:\n    max: 0\n")
+	loose := writeResultsAt(t, dir, "loose.yaml", "failed:\n  total:\n    max: 500\n")
+
+	for name, order := range map[string][]string{
+		"strict first": {"-T", strict, "-T", loose},
+		"loose first":  {"-T", loose, "-T", strict},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, stderr, err := executeCommand(append([]string{"validate", "threshold", results}, order...)...)
+			require.Error(t, err, "the strict spec is violated, so the run fails whatever the order")
+			assert.Contains(t, stderr, "strict.yaml", "the violation must name the spec that produced it")
+			assert.NotContains(t, stderr, "["+loose+"]", "the loose spec passed and must not be blamed")
+			assert.NotContains(t, stderr, "maximum 500", "the loose bound is satisfied, so it must produce no violation")
+		})
+	}
+}
+
+// A single file may hold several policies. Attribution is the file plus the
+// policy's index, 1-based — no name field is required of a threshold document.
+func TestValidateThreshold_MultiDocumentFileIsAConjunction(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	both := writeResultsAt(t, dir, "policy.yaml",
+		"failed:\n  total:\n    max: 0\n---\nfailed:\n  total:\n    max: 500\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", both)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "policy.yaml#1", "the failing document must be named by file and index")
+}
+
+// StringSliceVar would split on commas, and an inline spec IS comma-separated —
+// it would shred a multi-entry spec into fragments. StringArrayVar is the right
+// cobra pattern here, and this is the test that tells them apart.
+func TestValidateThreshold_InlineIsRepeatableAndNotCommaSplit(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	// Each spec carries two comma-separated entries; both specs pass.
+	_, _, err := executeCommand("validate", "threshold", results,
+		"-I", "{compliance.min: 1}, {failed.total.max: 500}",
+		"-I", "{passed.total.min: 1}, {skipped.total.max: 500}")
+	require.NoError(t, err, "a multi-entry inline spec must survive being passed twice")
+
+	// And a violation in the second spec is still caught and attributed.
+	_, stderr, err := executeCommand("validate", "threshold", results,
+		"-I", "{compliance.min: 1}, {failed.total.max: 500}",
+		"-I", "{failed.total.max: 0}")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "-I '{failed.total.max: 0}'",
+		"an inline spec is named by echoing the spec itself, not by a bare flag name")
+}
+
+// A green gate that does not say which policies ran is the same false green this
+// epic exists to kill, so the pass path is attributed too.
+func TestValidateThreshold_PassOutputNamesEverySpec(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	first := writeResultsAt(t, dir, "first.yaml", "failed:\n  total:\n    max: 500\n")
+	second := writeResultsAt(t, dir, "second.yaml", "passed:\n  total:\n    min: 1\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", first, "-T", second)
+	require.NoError(t, err)
+	assert.Contains(t, stderr, first)
+	assert.Contains(t, stderr, second)
+	assert.Contains(t, stderr, "2 specs")
+}
+
+// One spec is the overwhelmingly common case and its output must not grow a
+// label it does not need.
+func TestValidateThreshold_SingleSpecOutputIsUnlabelled(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	only := writeResultsAt(t, dir, "only.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", only)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "FAIL: failed.total")
+	assert.NotContains(t, stderr, only, "a lone spec needs no attribution")
+}
+
+// An empty spec passes every document. Among several it would ride along on its
+// neighbours' bounds, so it must fail the run and say which one it was.
+func TestValidateThreshold_EmptySpecAmongSeveralIsNamed(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	asserting := writeResultsAt(t, dir, "asserting.yaml", "failed:\n  total:\n    max: 500\n")
+	empty := writeResultsAt(t, dir, "empty.yaml", "failed: {}\n")
+
+	_, _, err := executeCommand("validate", "threshold", results, "-T", asserting, "-T", empty)
+	require.Error(t, err, "a spec asserting nothing must fail the run, not ride along")
+	assert.Contains(t, err.Error(), "empty.yaml")
+}
+
+// Bulk is M results files x N specs, and a failure has to name BOTH halves. The
+// label lives inside the violation string rather than only in the printed line
+// precisely so it survives into the error, which is all runBulk keeps per file —
+// a later refactor that moved the label into the print would pass every other
+// test and silently break this one.
+func TestValidateThreshold_BulkNamesBothTheFileAndTheSpec(t *testing.T) {
+	dir := t.TempDir()
+	first := writeResultsAt(t, dir, "first.json", testResultsForThreshold)
+	second := writeResultsAt(t, dir, "second.json", testResultsNoFailures)
+	strict := writeResultsAt(t, dir, "strict.yaml", "failed:\n  total:\n    max: 0\n")
+	loose := writeResultsAt(t, dir, "loose.yaml", "failed:\n  total:\n    max: 500\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", first, second, "-T", strict, "-T", loose)
+	require.Error(t, err)
+	assert.Contains(t, stderr, first, "the bulk report must name the failing file")
+	assert.Contains(t, stderr, "["+strict+"]", "and the spec within it that failed")
+	assert.NotContains(t, stderr, "["+loose+"]", "the satisfied spec must not be blamed")
+}
+
+// -F governs FILES, not specs: every spec is always evaluated against a document
+// so one run shows every policy it broke, and -F decides only whether the NEXT
+// document is read. Asserted because the two are easy to conflate.
+func TestValidateThreshold_FailFastDoesNotStopAtTheFirstFailingSpec(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	failsOnCount := writeResultsAt(t, dir, "count.yaml", "failed:\n  total:\n    max: 0\n")
+	failsOnCompliance := writeResultsAt(t, dir, "compliance.yaml", "compliance:\n  min: 99\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results,
+		"-T", failsOnCount, "-T", failsOnCompliance, "-F")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "["+failsOnCount+"]")
+	assert.Contains(t, stderr, "["+failsOnCompliance+"]",
+		"-F must not stop at the first failing spec within a document")
+	assert.Contains(t, stderr, "2 threshold violation(s)")
+}
+
+// The legacy `none` spelling is normalized per document, so two policies in one
+// file may each use a different spelling. Setting both in ONE policy is still
+// refused; that is a collision, this is not.
+func TestValidateThreshold_SpellingsDoNotCollideAcrossDocuments(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	spellings := writeResultsAt(t, dir, "spellings.yaml",
+		"no_impact:\n  none:\n    max: 1\n---\nno_impact:\n  informational:\n    max: 1\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spellings)
+	require.NoError(t, err, "each document normalizes on its own; only one policy naming both spellings collides")
+	assert.Contains(t, stderr, "All thresholds passed (2 specs)")
+}
+
+// The StringSlice trap applies to -T as well: a template path containing a comma
+// would be split into two unreadable paths.
+func TestValidateThreshold_TemplatePathMayContainAComma(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	comma := writeResultsAt(t, dir, "a,b.yaml", "failed:\n  total:\n    max: 500\n")
+
+	_, _, err := executeCommand("validate", "threshold", results, "-T", comma)
+	require.NoError(t, err, "a comma in a path must not split the flag value")
 }

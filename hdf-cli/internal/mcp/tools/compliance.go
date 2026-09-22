@@ -147,13 +147,24 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 		}
 
 		if in.Threshold != nil {
-			cfg, therr := resolveThreshold(in.Threshold)
+			specs, therr := resolveThreshold(in.Threshold)
 			if therr != nil {
 				return toolError(therr), errorComplianceOutput(), nil
 			}
-			if cfg != nil {
+			if len(specs) > 0 {
 				controlMap := hdfengine.MapControlIDsByStatus(results, shared.RequirementEffectiveStatus)
-				failures := hdfengine.ValidateThresholds(cfg, counts, out.Compliance, controlMap)
+				var failures []string
+				for _, spec := range specs {
+					for _, failure := range hdfengine.ValidateThresholds(spec.Config, counts, out.Compliance, controlMap) {
+						// Attribute only when there is something to
+						// disambiguate, so the ordinary single-policy verdict
+						// reads exactly as it did before.
+						if len(specs) > 1 {
+							failure = "[" + spec.Label + "] " + failure
+						}
+						failures = append(failures, failure)
+					}
+				}
 				out.ThresholdVerdict = &thresholdVerdict{Pass: len(failures) == 0, Failures: failures}
 			}
 		}
@@ -404,10 +415,15 @@ func nistFamilies(req hdf.EvaluatedRequirement) []string {
 	return families
 }
 
-// resolveThreshold turns the {path|inline} threshold union into a parsed engine
-// config. YAML parsing covers JSON too (JSON is a subset), so a .json or .yaml
+// resolveThreshold turns the {path|inline} threshold union into parsed engine
+// policies. YAML parsing covers JSON too (JSON is a subset), so a .json or .yaml
 // path and an inline object all funnel through one decoder.
-func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Error) {
+//
+// A path may hold several YAML documents, which are a conjunction: each is
+// evaluated and the failures are unioned, exactly as `hdf validate threshold`
+// treats them. The inline form stays a single object because its shape is part of
+// this tool's declared input schema; widening that is a separate change.
+func resolveThreshold(t *thresholdInput) ([]threshold.Spec, *mcperr.Error) {
 	if t == nil {
 		return nil, nil
 	}
@@ -417,8 +433,10 @@ func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Er
 	}
 
 	var raw []byte
+	source := "threshold"
 	switch {
 	case t.Path != "":
+		source = t.Path
 		confined, err := hdfutil.SafePath(mcpRoot(), t.Path)
 		if err != nil {
 			return nil, mcperr.New(mcperr.PathDenied, "threshold path resolves outside HDF_MCP_ROOT", map[string]any{"path": t.Path})
@@ -443,18 +461,30 @@ func resolveThreshold(t *thresholdInput) (*hdfengine.ThresholdConfig, *mcperr.Er
 
 	// Shared with `hdf validate threshold` so the two surfaces cannot drift:
 	// a spec this tool accepts must be one the CLI gate would accept too.
-	cfg, err := threshold.Decode(raw)
+	specs, err := threshold.DecodeAll(raw, source)
 	if err != nil {
 		return nil, mcperr.New(mcperr.SchemaInvalid, "threshold spec did not parse", map[string]any{"error": err.Error()}).
 			WithNextCall("provide a valid threshold spec (compliance/passed/failed bounds), inline or by path")
 	}
 	// A spec asserting no bounds passes every document, so answering with a
-	// verdict from it would report a check that never happened.
-	if threshold.AssertionCount(cfg) == 0 {
+	// verdict from it would report a check that never happened. Among several,
+	// the empty one is named: it would otherwise ride along on its neighbours.
+	if len(specs) == 0 {
 		return nil, mcperr.New(mcperr.SchemaInvalid, threshold.ErrNoAssertions.Error(), nil).
 			WithNextCall("provide a threshold spec that asserts at least one bound (e.g. failed.total.max)")
 	}
-	return cfg, nil
+	for _, spec := range specs {
+		if threshold.AssertionCount(spec.Config) > 0 {
+			continue
+		}
+		message := threshold.ErrNoAssertions.Error()
+		if len(specs) > 1 {
+			message = spec.Label + ": " + message
+		}
+		return nil, mcperr.New(mcperr.SchemaInvalid, message, nil).
+			WithNextCall("provide a threshold spec that asserts at least one bound (e.g. failed.total.max)")
+	}
+	return specs, nil
 }
 
 // boundComplianceResponse enforces the 2k cap: the grouped rollup and the
