@@ -1047,10 +1047,11 @@ func TestValidateThreshold_LeadingSeparatorIsOnePolicy(t *testing.T) {
 	resultsPath := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
 	leading := writeResultsAt(t, dir, "leading.yaml", "---\nfailed:\n  total:\n    max: 5\n")
 
-	_, stderr, err := executeCommand("validate", "threshold", resultsPath, "-T", leading)
+	stdout, _, err := executeCommand("validate", "threshold", resultsPath, "-T", leading)
 	require.NoError(t, err)
-	assert.NotContains(t, stderr, "specs", "one policy must not report itself as several")
-	assert.NotContains(t, stderr, leading, "a lone policy needs no attribution")
+	assert.Contains(t, stdout, "passed all thresholds")
+	assert.NotContains(t, stdout, "thresholds\n    ", "one policy must not list itself as several")
+	assert.NotContains(t, stdout, leading, "a lone policy needs no attribution")
 }
 
 // Repeating -T was accepted before this and silently kept only the LAST value,
@@ -1120,11 +1121,12 @@ func TestValidateThreshold_PassOutputNamesEverySpec(t *testing.T) {
 	first := writeResultsAt(t, dir, "first.yaml", "failed:\n  total:\n    max: 500\n")
 	second := writeResultsAt(t, dir, "second.yaml", "passed:\n  total:\n    min: 1\n")
 
-	_, stderr, err := executeCommand("validate", "threshold", results, "-T", first, "-T", second)
+	stdout, _, err := executeCommand("validate", "threshold", results, "-T", first, "-T", second)
 	require.NoError(t, err)
-	assert.Contains(t, stderr, first)
-	assert.Contains(t, stderr, second)
-	assert.Contains(t, stderr, "2 specs")
+	assert.Contains(t, stdout, "✓", "the pass verdict carries the same mark as hdf validate")
+	assert.Contains(t, stdout, "passed all 2 thresholds")
+	assert.Contains(t, stdout, first)
+	assert.Contains(t, stdout, second)
 }
 
 // One spec is the overwhelmingly common case and its output must not grow a
@@ -1136,7 +1138,11 @@ func TestValidateThreshold_SingleSpecOutputIsUnlabelled(t *testing.T) {
 
 	_, stderr, err := executeCommand("validate", "threshold", results, "-T", only)
 	require.Error(t, err)
-	assert.Contains(t, stderr, "FAIL: failed.total")
+	assert.Contains(t, stderr, "✗ "+results, "the failure verdict names the document, as hdf validate does")
+	// The trailing newline is load-bearing: "1 threshold violations" contains
+	// "1 threshold violation", so without it the assertion cannot fail.
+	assert.Contains(t, stderr, "1 threshold violation\n", "singular for one, not \"violation(s)\"")
+	assert.Contains(t, stderr, "failed.total")
 	assert.NotContains(t, stderr, only, "a lone spec needs no attribution")
 }
 
@@ -1187,7 +1193,7 @@ func TestValidateThreshold_FailFastDoesNotStopAtTheFirstFailingSpec(t *testing.T
 	assert.Contains(t, stderr, "["+failsOnCount+"]")
 	assert.Contains(t, stderr, "["+failsOnCompliance+"]",
 		"-F must not stop at the first failing spec within a document")
-	assert.Contains(t, stderr, "2 threshold violation(s)")
+	assert.Contains(t, stderr, "2 threshold violations")
 }
 
 // The legacy `none` spelling is normalized per document, so two policies in one
@@ -1199,9 +1205,9 @@ func TestValidateThreshold_SpellingsDoNotCollideAcrossDocuments(t *testing.T) {
 	spellings := writeResultsAt(t, dir, "spellings.yaml",
 		"no_impact:\n  none:\n    max: 1\n---\nno_impact:\n  informational:\n    max: 1\n")
 
-	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spellings)
+	stdout, _, err := executeCommand("validate", "threshold", results, "-T", spellings)
 	require.NoError(t, err, "each document normalizes on its own; only one policy naming both spellings collides")
-	assert.Contains(t, stderr, "All thresholds passed (2 specs)")
+	assert.Contains(t, stdout, "passed all 2 thresholds")
 }
 
 // The StringSlice trap applies to -T as well: a template path containing a comma

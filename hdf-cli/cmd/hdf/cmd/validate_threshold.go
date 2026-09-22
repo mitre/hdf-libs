@@ -26,7 +26,8 @@ defined in a YAML threshold template or an inline specification.
 
 -T and -I are repeatable and may be combined, and one -T file may hold several
 YAML documents. Every spec is evaluated and the run fails if any of them fails;
-a violation names the spec it came from.
+a violation names the spec it came from. -F stops after the first failing FILE,
+never at the first failing spec within one.
 
 Exit code 0 if all thresholds pass, exit code 1 on any violation.
 Use with 'hdf generate threshold' to create threshold templates.
@@ -178,29 +179,58 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 		}
 	}
 	if len(violations) > 0 {
+		// Mirrors `hdf validate`'s verdict shape: a ✗ headline on stderr naming
+		// the document and why, a blank line, then an indented block of the
+		// specifics. The two commands answer the same kind of question about the
+		// same kind of file, so they should not read differently.
+		fmt.Fprintf(os.Stderr, "✗ %s — %d threshold %s\n", displayNameFor(file), len(violations), plural("violation", len(violations)))
+		fmt.Fprintf(os.Stderr, "\n  Violations:\n")
 		for _, violation := range violations {
-			fmt.Fprintf(os.Stderr, "FAIL: %s\n", violation)
+			fmt.Fprintf(os.Stderr, "    %s\n", violation)
 		}
-		fmt.Fprintf(os.Stderr, "\n%d threshold violation(s)\n", len(violations))
 		return &exitCodeError{
 			code:    1,
 			message: fmt.Sprintf("threshold validation failed: %s", violations[0]),
 		}
 	}
 
-	if !quiet {
+	// ✓ goes to stdout and ✗ to stderr, as in `hdf validate` — which means the
+	// mark must be suppressed under --json, or a caller piping stdout to jq gets
+	// a line of prose before the document. `hdf validate` emits a JSON verdict
+	// here; this command has never emitted one, so --json stdout stays empty
+	// rather than growing a surface this card did not design.
+	if !jsonOutput && !quiet {
 		if len(specs) > 1 {
 			// Name them: a green gate that does not say which policies ran is the
 			// same false green as one that asserted nothing.
+			fmt.Printf("✓ %s passed all %d thresholds\n", displayNameFor(file), len(specs))
 			for _, spec := range specs {
-				fmt.Fprintf(os.Stderr, "PASS: %s\n", spec.Label)
+				fmt.Printf("    %s\n", spec.Label)
 			}
-			fmt.Fprintf(os.Stderr, "All thresholds passed (%d specs)\n", len(specs))
 		} else {
-			fmt.Fprintf(os.Stderr, "All thresholds passed\n")
+			fmt.Printf("✓ %s passed all thresholds\n", displayNameFor(file))
 		}
 	}
 	return nil
+}
+
+// displayNameFor names a document in a verdict line, spelling stdin `<stdin>`
+// rather than printing a bare dash. Shared with `hdf validate` so the two
+// commands cannot drift apart on how they name the file they are talking about.
+func displayNameFor(file string) string {
+	if file == "" || file == "-" {
+		return "<stdin>"
+	}
+	return file
+}
+
+// plural is the count-aware noun the verdict line needs. "violation(s)" reads as
+// a template nobody finished.
+func plural(noun string, n int) string {
+	if n == 1 {
+		return noun
+	}
+	return noun + "s"
 }
 
 // parseInlineThreshold parses SAF CLI-compatible inline threshold format:
