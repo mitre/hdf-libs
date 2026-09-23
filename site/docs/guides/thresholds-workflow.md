@@ -56,7 +56,7 @@ hdf validate threshold results.json -T threshold.yaml
 
 ```
 Agent-attributed overrides: 0
-All thresholds passed
+✓ results.json passed all thresholds
 ```
 
 Exit code 0. When a bound is breached, the command names which one and exits 1:
@@ -67,9 +67,10 @@ hdf validate threshold results.json -I "{failed.total.max: 0}"
 
 ```
 Agent-attributed overrides: 0
-FAIL: failed.total: 1 exceeds maximum 0
+✗ results.json — 1 threshold violation
 
-1 threshold violation(s)
+  Violations:
+    failed.total: 1 exceeds maximum 0
 ```
 
 `-I` takes bounds inline instead of from a file. It is useful for a one-off check or for trying a bound before committing it; a real gate belongs in a file, under review, next to the code it governs.
@@ -82,10 +83,97 @@ hdf validate threshold results.json -I "{compliance.min: 80}"
 
 ```
 Agent-attributed overrides: 0
-FAIL: compliance 25.00% is below minimum 80.00%
+✗ results.json — 1 threshold violation
 
-1 threshold violation(s)
+  Violations:
+    compliance 25.00% is below minimum 80.00%
 ```
+
+## Apply more than one threshold
+
+`-T` and `-I` are repeatable, and they may be combined. Every spec is evaluated against the document and the run fails if any of them fails, so an org-wide baseline and a repo-specific overlay compose without anyone hand-merging YAML:
+
+```bash
+hdf validate threshold results.json -T baseline.yaml -T repo.yaml
+```
+
+```
+Agent-attributed overrides: 0
+✗ results.json — 1 threshold violation
+
+  Violations:
+    [baseline.yaml] failed.critical: 2 exceeds maximum 0
+```
+
+The specs are never merged into one policy. Each is evaluated on its own and the violations are pooled, so two specs bounding the same key need no precedence rule — the stricter one simply fails on its own terms. A violation names the spec it came from, and so does a pass:
+
+```
+✓ results.json passed all 2 thresholds
+    baseline.yaml
+    repo.yaml
+```
+
+A single file may also hold several policies, separated by `---`. Those are named by file and position, counting policies from 1 — `policy.yaml#1`, `policy.yaml#2` — so no threshold document is obliged to carry a name. A separator introducing no document, such as a trailing `---` or a comment, is not a policy and is ignored.
+
+An inline spec names itself by its own text, because that is what you typed:
+
+```
+    [-I '{failed.total.max: 0}'] failed.total: 1 exceeds maximum 0
+```
+
+`-F` operates on files, not specs: every spec is always evaluated against a document, so one run shows every policy it broke, and `-F` decides only whether the next document is read.
+
+## Rules: policies the grid cannot express
+
+The bounds above are a fixed grid — five statuses by five severities, plus compliance. It can say "no failing criticals". It cannot say "nothing still failing without a remediation plan", because it has no way to talk about amendments.
+
+A `rules:` section adds that. A rule is a filter predicate plus a bound:
+
+```yaml
+rules:
+  - name: nothing fails without a plan
+    where:
+      status: [failed]
+      poams: none-valid
+    max: 0
+```
+
+```
+✗ results.json — 1 threshold violation
+
+  Violations:
+    nothing fails without a plan: 1 matched, maximum 0
+```
+
+The predicate is the filter vocabulary `hdf query` already speaks, so a gate can be prototyped with a query and pasted into a spec. Values within a field OR together; different fields AND. Rules sit beside the grid rather than replacing it — both are bounds in one policy, and every one must hold.
+
+`status` is the EFFECTIVE status, so amendments are already applied when a rule sees the document. That is what makes the example above express the whole posture in one line: a requirement suppressed by a waiver is no longer `failed`, so the rule asks only about findings nobody has adjudicated. Either something is suppressed by an override that records an owner and an expiry, or it carries a live POA&M, or it fails the gate.
+
+`poams: none-valid` deliberately covers "no POA&M", "an empty list" and "only lapsed ones" as one condition, because a plan that has expired is not a plan.
+
+A rule bounds a count, not a percentage — `compliance` remains the only percentage bound — and it evaluates over the whole document. To narrow it to one baseline, say so in the predicate with `baseline`.
+
+### A predicate that can never match is refused
+
+A value outside its vocabulary returns nothing for every document, so a rule built on one passes forever while looking like a gate:
+
+```
+$ hdf validate threshold results.json -I '{rules: [{name: r, where: {status: [faild]}, max: 0}]}'
+Error: failed to parse inline threshold: -I: r: status "faild" is not a known value
+(expected one of: passed, failed, notApplicable, notReviewed, error)
+```
+
+A predicate that merely matches nothing *today* is a healthy gate and is accepted — rejecting it would fail a working policy the day its findings are fixed. The distinction is whether the value names something, not whether anything currently has it.
+
+### Inline and file are the same language
+
+Anything expressible in a file is expressible with `-I`, because a structured inline spec goes through the same decoder a file does:
+
+```bash
+hdf validate threshold results.json -I '{rules: [{name: no failures, where: {status: [failed]}, max: 0}]}'
+```
+
+The dotted SAF form (`-I "{failed.total.max: 0}"`) still works and is told apart by its keys: a top-level key carrying a `.` is the dotted form, anything else is a structured spec.
 
 ## Examples
 

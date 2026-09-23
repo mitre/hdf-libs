@@ -16,11 +16,14 @@ import {
   mapControlIDs,
   mapControlIDsByStatus,
   calculateCompliance,
+  type StatusCounts,
   validateThresholds,
   overallStatus,
   deriveSeverity,
   type ThresholdConfig,
 } from '../src/compliance.js';
+import { evaluateRules, evaluate, PREDICATE_FIELDS, type ThresholdRule } from '../src/rules.js';
+import { ruleRefusal } from '../src/compliance.js';
 import type { Severity } from '@mitre/hdf-schema';
 
 // Shared cross-language fixture (also read by go/compliance_test.go), so both
@@ -275,5 +278,111 @@ describe('agent-override detective surface — parity with go/compliance_test.go
     );
     expect(counts.error.total).toBe(1);
     expect(counts.noImpact.total).toBe(0);
+  });
+});
+
+// The shared cross-language contract for threshold rules. go/rules_test.go reads
+// the SAME file and runs the SAME cases, so the two evaluators cannot drift. The
+// reference clock lives in the file, which keeps expiry a property of the fixture
+// rather than of the day the suite runs.
+interface RuleCases {
+  now: string;
+  predicateFields: string[];
+  refusalByCount: Record<string, string>;
+  fixture: HDFResults;
+  cases: { name: string; rules: ThresholdRule[]; expect: string[] }[];
+}
+
+const rulePath = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'threshold-rule-cases.json');
+const ruleTable = JSON.parse(readFileSync(rulePath, 'utf-8')) as RuleCases;
+
+// A StatusCounts carrying a single failed requirement, for the grid half of the
+// refusal test. Built here rather than counted from a document so the test is
+// about ordering, not about counting.
+function oneFailedCount(): StatusCounts {
+  const zero = { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 };
+  return {
+    passed: { ...zero },
+    failed: { ...zero, total: 1 },
+    skipped: { ...zero },
+    error: { ...zero },
+    noImpact: { ...zero },
+  };
+}
+
+describe('threshold rules (parity with go/rules.go)', () => {
+  it('has cases to run', () => {
+    expect(ruleTable.cases.length).toBeGreaterThan(0);
+  });
+
+  for (const c of ruleTable.cases) {
+    it(c.name, () => {
+      const got = evaluateRules({ rules: c.rules }, ruleTable.fixture, {
+        now: ruleTable.now,
+        statusOf: effectiveStatusOf(false),
+      });
+      expect(got).toEqual(c.expect);
+    });
+  }
+
+  // Go maps predicate fields onto the filter explicitly while TypeScript spreads
+  // the object, so a field added to one language reaches the filter there and
+  // silently does nothing in the other. Both definitions are pinned to one list.
+  it('the predicate surface matches the shared table', () => {
+    expect(ruleTable.predicateFields.length).toBeGreaterThan(0);
+    expect([...PREDICATE_FIELDS].sort()).toEqual(ruleTable.predicateFields.slice().sort());
+  });
+
+  // The refusal is user-facing text emitted by both languages, so its wording
+  // lives in the shared table rather than in two hand-written copies — which is
+  // how the two had already drifted apart in text and position.
+  it('the refusal wording matches the shared table', () => {
+    expect(Object.keys(ruleTable.refusalByCount).length).toBeGreaterThan(0);
+    for (const [count, want] of Object.entries(ruleTable.refusalByCount)) {
+      expect(ruleRefusal(Number(count))).toBe(want);
+    }
+  });
+
+  // Silently skipping rules would report a passing gate over policy nobody
+  // applied — the false green reached through a caller not yet taught about them.
+  it('validateThresholds refuses a rules-bearing config, appending after the grid', () => {
+    const violations = validateThresholds(
+      {
+        failed: { total: { max: 0 } },
+        rules: [{ name: 'x', where: { status: ['failed'] }, max: 0 }],
+      },
+      oneFailedCount(),
+      100,
+      []
+    );
+    expect(violations).toHaveLength(2);
+    expect(violations[0]).toBe('failed.total: 1 exceeds maximum 0');
+    expect(violations[1]).toBe(ruleRefusal(1));
+  });
+
+  // evaluate is the entry point a surface should call: grid and rules together,
+  // so a consumer cannot half-apply a policy. Its absence in TypeScript was the
+  // blocking finding of this card's first review.
+  it('evaluate applies the grid and the rules together', () => {
+    const statusOf = effectiveStatusOf(false);
+    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
+    const violations = evaluate(
+      {
+        failed: { total: { max: 0 } },
+        rules: [
+          { name: 'nothing fails without a plan', where: { status: ['failed'], poams: 'none-valid' }, max: 0 },
+        ],
+      },
+      {
+        results: ruleTable.fixture,
+        counts,
+        compliance: calculateCompliance(counts),
+        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
+        now: ruleTable.now,
+        statusOf,
+      }
+    );
+    expect(violations).toContain('nothing fails without a plan: 1 matched, maximum 0');
+    expect(violations).toContain('failed.total: 2 exceeds maximum 0');
   });
 });

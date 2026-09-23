@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/threshold"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 
@@ -14,8 +16,8 @@ import (
 
 func newValidateThresholdCmd() *cobra.Command {
 	var (
-		templateFile   string
-		templateInline string
+		templateFiles   []string
+		templateInlines []string
 	)
 
 	cmd := &cobra.Command{
@@ -23,6 +25,11 @@ func newValidateThresholdCmd() *cobra.Command {
 		Short: "Validate HDF results against compliance thresholds",
 		Long: `Validate that an HDF results file meets compliance thresholds
 defined in a YAML threshold template or an inline specification.
+
+-T and -I are repeatable and may be combined, and one -T file may hold several
+YAML documents. Every spec is evaluated and the run fails if any of them fails;
+a violation names the spec it came from. -F stops after the first failing FILE,
+never at the first failing spec within one.
 
 Exit code 0 if all thresholds pass, exit code 1 on any violation.
 Use with 'hdf generate threshold' to create threshold templates.
@@ -33,14 +40,17 @@ Designed for CI/CD compliance gates.`,
 
   # Inline (for CI one-liners)
   hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
-  hdf validate threshold results.json -I "{passed.high.min: 20}, {failed.critical.max: 0}"`,
+  hdf validate threshold results.json -I "{passed.high.min: 20}, {failed.critical.max: 0}"
+
+  # Several specs: an org-wide baseline plus a repo-specific overlay. Both must pass.
+  hdf validate threshold results.json -T baseline.yaml -T repo.yaml`,
 		// A gate applies one policy to a directory of documents, so this takes
 		// many files. MinimumNArgs rather than ArbitraryArgs: an unmatched shell
 		// glob must be an error, never a vacuous pass.
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			// The template is the same for every file, so resolve it once.
-			config, cfgErr := resolveThresholdConfig(templateFile, templateInline)
+			specs, cfgErr := resolveThresholdSpecs(templateFiles, templateInlines)
 			if cfgErr != nil {
 				return cfgErr
 			}
@@ -51,100 +61,220 @@ Designed for CI/CD compliance gates.`,
 			}
 			if len(files) > 1 {
 				return runBulk(files, "threshold validation", "passed thresholds", func(file string) error {
-					return runValidateThresholdFile(file, config)
+					return runValidateThresholdFile(file, specs)
 				})
 			}
-			return runValidateThresholdFile(files[0], config)
+			return runValidateThresholdFile(files[0], specs)
 		},
 	}
 
-	cmd.Flags().StringVarP(&templateFile, "template", "T", "", "Threshold YAML template file")
-	cmd.Flags().StringVarP(&templateInline, "inline", "I", "", `Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")`)
+	// StringArray, not StringSlice: StringSlice splits its value on commas, and an
+	// inline spec is itself comma-separated, so it would arrive shredded into
+	// fragments. Repeating either flag adds a policy; every policy must pass.
+	cmd.Flags().StringArrayVarP(&templateFiles, "template", "T", nil, "Threshold YAML template file (repeatable; every spec must pass)")
+	cmd.Flags().StringArrayVarP(&templateInlines, "inline", "I", nil, `Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")`)
 
 	return cmd
 }
 
-// resolveThresholdConfig turns the -T/-I flag pair into a parsed, non-vacuous
-// threshold config. Separated from the per-file work because the policy is the
-// same for every document in a bulk run — parsing it once also means a broken
-// template fails before any file is read.
-func resolveThresholdConfig(templateFile, templateInline string) (*ThresholdConfig, error) {
-	if templateFile == "" && templateInline == "" {
+// resolveThresholdSpecs turns the -T/-I flags into parsed, non-vacuous policies.
+// Separated from the per-file work because the policy set is the same for every
+// document in a bulk run — parsing once also means a broken spec fails before any
+// file is read.
+//
+// Several policies are a CONJUNCTION: each is evaluated against the document and
+// the violations are unioned. They are never merged, because two specs bounding
+// the same key would need a precedence rule nobody asked for; evaluated
+// separately, the stricter one simply fails on its own terms. -T and -I may be
+// combined for the same reason — a committed baseline plus a one-off tightening
+// are just two policies, and nothing about them conflicts.
+func resolveThresholdSpecs(templateFiles, templateInlines []string) ([]threshold.Spec, error) {
+	if len(templateFiles) == 0 && len(templateInlines) == 0 {
 		return nil, fmt.Errorf("either --template (-T) or --inline (-I) is required")
 	}
-	if templateFile != "" && templateInline != "" {
-		return nil, fmt.Errorf("--template (-T) and --inline (-I) are mutually exclusive")
-	}
 
-	var config ThresholdConfig
-	if templateFile != "" {
+	var specs []threshold.Spec
+	for _, file := range templateFiles {
 		// allowEmpty: an empty template is still size-capped, but must reach the
 		// "asserts nothing" content check rather than being rejected as empty here.
-		templateData, readErr := readInputFileAllowEmpty(templateFile)
+		templateData, readErr := readInputFileAllowEmpty(file)
 		if readErr != nil {
 			return nil, fmt.Errorf("failed to read threshold template: %w", readErr)
 		}
-		parsed, decodeErr := threshold.Decode(templateData)
+		parsed, decodeErr := threshold.DecodeAll(templateData, file)
 		if decodeErr != nil {
 			return nil, fmt.Errorf("failed to parse threshold YAML: %w", decodeErr)
 		}
-		config = *parsed
-	} else {
-		parsed, parseErr := parseInlineThreshold(templateInline)
+		specs = append(specs, parsed...)
+	}
+	for _, inline := range templateInlines {
+		parsed, parseErr := decodeInline(inline)
 		if parseErr != nil {
 			return nil, parseErr
 		}
-		config = *parsed
+		for _, spec := range parsed {
+			spec.Label = inlineLabel(inline)
+			specs = append(specs, spec)
+		}
 	}
 
-	// A template that asserts nothing passes every document, so reporting
-	// success would be a green gate that checked nothing — the same false
-	// green a misspelled key used to produce.
-	if threshold.AssertionCount(&config) == 0 {
+	// A spec that asserts nothing passes every document, so reporting success
+	// would be a green gate that checked nothing — the same false green a
+	// misspelled key used to produce. Among several it is worse, because it rides
+	// along on its neighbours' bounds, so the offender is named.
+	if len(specs) == 0 {
 		return nil, threshold.ErrNoAssertions
 	}
-	return &config, nil
+	for _, spec := range specs {
+		if threshold.AssertionCount(spec.Config) > 0 {
+			continue
+		}
+		if len(specs) == 1 {
+			return nil, threshold.ErrNoAssertions
+		}
+		return nil, fmt.Errorf("%s: %w", spec.Label, threshold.ErrNoAssertions)
+	}
+	return specs, nil
 }
 
-// runValidateThresholdFile applies an already-parsed threshold to one document.
-func runValidateThresholdFile(file string, config *ThresholdConfig) error {
+// decodeInline turns one -I value into policies. Anything expressible in a
+// threshold file is expressible inline, because a structured spec goes through
+// the SAME decoder a file does rather than through a second grammar; the dotted
+// SAF form remains for the shape it was designed for.
+//
+// The two are told apart by their keys, not by trying one and falling back:
+// the dotted form's top-level keys carry a "." (failed.total.max), a structured
+// spec's do not (failed, rules, compliance). Guessing by fallback would diagnose
+// a structured typo with the dotted grammar's error and send the author looking
+// for a mistake they did not make.
+func decodeInline(inline string) ([]threshold.Spec, error) {
+	if inlineIsDotted(inline) {
+		parsed, err := parseInlineThreshold(inline)
+		if err != nil {
+			return nil, err
+		}
+		return []threshold.Spec{{Config: parsed}}, nil
+	}
+	specs, err := threshold.DecodeAll([]byte(inline), "-I")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse inline threshold: %w", err)
+	}
+	return specs, nil
+}
+
+// inlineIsDotted reports whether a -I value is the dotted SAF form. A value that
+// is not a YAML mapping at all is dotted too: "{a.b: 1}, {c.d: 2}" is two flow
+// mappings separated by a comma, which YAML does not accept as one document.
+func inlineIsDotted(inline string) bool {
+	var probe map[string]interface{}
+	if err := yaml.Unmarshal([]byte(inline), &probe); err != nil {
+		return true
+	}
+	for key := range probe {
+		if strings.Contains(key, ".") {
+			return true
+		}
+	}
+	return len(probe) == 0
+}
+
+// inlineLabel names an inline spec by echoing the spec back. A file's documents
+// are named by path and index because their content is not on the command line;
+// an inline spec's content IS what the author typed, so quoting it identifies the
+// policy exactly and an index would add nothing. It is not truncated: shortening
+// a policy's identity to keep a line tidy defeats the point of naming it.
+func inlineLabel(inline string) string {
+	return fmt.Sprintf("-I '%s'", inline)
+}
+
+// runValidateThresholdFile applies every parsed policy to one document.
+func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 	data, err := readInputFile(file)
 	if err != nil {
 		return err
 	}
 
-	counts, err := countControlsByStatusSeverity(data)
+	// One parse, one resolver: the grid's counts and the rules' filtering cannot
+	// disagree about what "failed" means on this document.
+	input, err := thresholdInputFor(data)
 	if err != nil {
 		return err
 	}
-
-	compliance := hdfengine.CalculateCompliance(counts)
 
 	if !quiet {
 		fmt.Fprintln(os.Stderr, agentOverrideReadout(countAgentOverrides(data)))
 	}
 
-	controlMap, mapErr := mapControlIDs(data)
-	if mapErr != nil {
-		return mapErr
-	}
-
-	violations := hdfengine.ValidateThresholds(config, counts, compliance, controlMap)
-	if len(violations) > 0 {
-		for _, v := range violations {
-			fmt.Fprintf(os.Stderr, "FAIL: %s\n", v)
+	var violations []string
+	for _, spec := range specs {
+		// Evaluate, not ValidateThresholds: the grid alone cannot apply a rule,
+		// and returning its verdict over a rules-bearing policy would report a
+		// passing gate over policy nobody applied.
+		for _, violation := range hdfengine.Evaluate(spec.Config, input) {
+			// Attribute only when there is something to disambiguate, so the
+			// single-policy output — nearly every run — is unchanged. The label
+			// goes into the violation STRING rather than only the printed line,
+			// so it survives into the error and therefore into the bulk summary,
+			// which reports the first violation per file.
+			if len(specs) > 1 {
+				violation = fmt.Sprintf("[%s] %s", spec.Label, violation)
+			}
+			violations = append(violations, violation)
 		}
-		fmt.Fprintf(os.Stderr, "\n%d threshold violation(s)\n", len(violations))
+	}
+	if len(violations) > 0 {
+		// Mirrors `hdf validate`'s verdict shape: a ✗ headline on stderr naming
+		// the document and why, a blank line, then an indented block of the
+		// specifics. The two commands answer the same kind of question about the
+		// same kind of file, so they should not read differently.
+		fmt.Fprintf(os.Stderr, "✗ %s — %d threshold %s\n", displayNameFor(file), len(violations), plural("violation", len(violations)))
+		fmt.Fprintf(os.Stderr, "\n  Violations:\n")
+		for _, violation := range violations {
+			fmt.Fprintf(os.Stderr, "    %s\n", violation)
+		}
 		return &exitCodeError{
 			code:    1,
 			message: fmt.Sprintf("threshold validation failed: %s", violations[0]),
 		}
 	}
 
-	if !quiet {
-		fmt.Fprintf(os.Stderr, "All thresholds passed\n")
+	// ✓ goes to stdout and ✗ to stderr, as in `hdf validate` — which means the
+	// mark must be suppressed under --json, or a caller piping stdout to jq gets
+	// a line of prose before the document. `hdf validate` emits a JSON verdict
+	// here; this command has never emitted one, so --json stdout stays empty
+	// rather than growing a surface this card did not design.
+	if !jsonOutput && !quiet {
+		if len(specs) > 1 {
+			// Name them: a green gate that does not say which policies ran is the
+			// same false green as one that asserted nothing.
+			fmt.Printf("✓ %s passed all %d thresholds\n", displayNameFor(file), len(specs))
+			for _, spec := range specs {
+				fmt.Printf("    %s\n", spec.Label)
+			}
+		} else {
+			fmt.Printf("✓ %s passed all thresholds\n", displayNameFor(file))
+		}
 	}
 	return nil
+}
+
+// displayNameFor names a document in a verdict line, spelling stdin `<stdin>`
+// rather than printing a bare dash. Shared with `hdf validate` so the two
+// commands cannot drift apart on how they name the file they are talking about.
+func displayNameFor(file string) string {
+	if file == "" || file == "-" {
+		return "<stdin>"
+	}
+	return file
+}
+
+// plural is the count-aware noun the verdict line needs. "violation(s)" reads as
+// a template nobody finished.
+func plural(noun string, n int) string {
+	if n == 1 {
+		return noun
+	}
+	return noun + "s"
 }
 
 // parseInlineThreshold parses SAF CLI-compatible inline threshold format:
@@ -206,6 +336,9 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 
 	switch segments[0] {
 	case "compliance":
+		if len(segments) > 2 {
+			return errTooManySegments(segments, 2, "compliance.min")
+		}
 		if config.Compliance == nil {
 			config.Compliance = &ComplianceBound{}
 		}
@@ -223,6 +356,9 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 		ts := getOrCreateStatusSeverity(config, segments[0])
 		if len(segments) < 3 {
 			return fmt.Errorf("threshold path %q needs three segments (e.g. 'passed.high.min')", strings.Join(segments, "."))
+		}
+		if len(segments) > 3 {
+			return errTooManySegments(segments, 3, "passed.high.min")
 		}
 		var bound *ThresholdBound
 		if segments[1] == "total" {
@@ -254,6 +390,15 @@ func setThresholdValue(config *ThresholdConfig, segments []string, val float64) 
 	default:
 		return fmt.Errorf("unknown threshold category %q", segments[0])
 	}
+}
+
+// errTooManySegments reports a path longer than its branch consumes. It is kept
+// distinct from the "unknown segment" errors on purpose: a typo and a run of
+// trailing junk need different guidance, and a caller told only that something
+// was unrecognized will hunt for a misspelling that is not there.
+func errTooManySegments(segments []string, want int, example string) error {
+	return fmt.Errorf("threshold path %q has too many segments: %q takes %d (e.g. %q)",
+		strings.Join(segments, "."), segments[0], want, example)
 }
 
 // getOrCreateStatusSeverity returns the ThresholdSeverity for a status,

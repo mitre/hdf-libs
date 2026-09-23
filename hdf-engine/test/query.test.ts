@@ -12,10 +12,23 @@ import {
   tagContains,
   tagMatchesGlob,
   matchesGlob,
+  validPoamFilter,
+  validDisposition,
+  DISPOSITION_VALUES,
+  POAM_VALID,
+  POAM_NONE_VALID,
   type FilterOptions,
   type Match,
 } from '../src/query.js';
 import { globToRegex, safeGlobMatch } from '../src/safematch.js';
+import { computeEffectiveStatus } from '@mitre/hdf-utilities';
+import {
+  validStatus,
+  validSeverity,
+  normalizeFilterValue,
+  STATUS_VALUES,
+  SEVERITY_VALUES,
+} from '../src/vocabulary.js';
 
 // Shared cross-language fixture at hdf-engine/testdata (also read by
 // go/filter_test.go), so both filter implementations run the same input.
@@ -51,6 +64,15 @@ describe('hdf-engine filter — cross-language parity with go/filter.go', () => 
   const cases: { name: string; opts: FilterOptions; want: string[] }[] = [
     { name: 'no filters', opts: {}, want: ['SV-100001', 'SV-100002', 'SV-230221', 'SV-230222', 'SV-230223'] },
     { name: 'status single', opts: { status: ['failed'] }, want: ['SV-230221'] },
+    // testStatusOf returns the CLI's display vocabulary (not_applicable), while a
+    // spec names the schema's (notApplicable). Both sides of the comparison
+    // canonicalize, which is what reconciles them; without the actual-side half
+    // this selects nothing.
+    {
+      name: 'status canonical against a display-vocabulary resolver',
+      opts: { status: ['notApplicable'] },
+      want: ['SV-230223'],
+    },
     { name: 'status OR', opts: { status: ['failed', 'passed'] }, want: ['SV-230221', 'SV-230222'] },
     { name: 'severity single', opts: { severity: ['critical'] }, want: ['SV-230221'] },
     { name: 'severity OR', opts: { severity: ['high', 'medium'] }, want: ['SV-230222', 'SV-230223'] },
@@ -233,5 +255,178 @@ describe('match indices — parity with go/filter_test.go TestFilter_MatchCarrie
     expect(positions.size).toBe(94);
     const repeated = matches.filter((m) => m.baseline === 'Prisma Cloud Scan' && m.id === '60522-redhat-RHEL7-high');
     expect(repeated).toHaveLength(6);
+  });
+});
+
+// The shared cross-language contract for the amendment filters. go/filter_test.go
+// reads the SAME file and runs the SAME cases, so disposition and poams cannot
+// drift between the two implementations. The reference clock lives in the file,
+// which is what keeps "expired" a property of the fixture rather than of the day
+// the suite runs.
+interface AmendmentCases {
+  now: string;
+  dispositionValues: string[];
+  fixture: HDFResults;
+  cases: {
+    name: string;
+    options: { status?: string[]; disposition?: string[]; poams?: string };
+    effectiveStatus?: boolean;
+    expect: string[];
+  }[];
+}
+
+const amendmentPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'testdata',
+  'amendment-filter-cases.json'
+);
+const amendments = JSON.parse(readFileSync(amendmentPath, 'utf-8')) as AmendmentCases;
+
+// A governing waiver has to move a requirement off 'failed' before a status
+// filter sees it, or a policy keyed on status blames findings somebody already
+// adjudicated. Mirrors effectiveStatusOf in go/compliance_test.go.
+function amendmentEffectiveStatusOf(req: EvaluatedRequirement): string {
+  return computeEffectiveStatus({
+    impact: req.impact,
+    overrides: (req.statusOverrides ?? []).map((o) => ({
+      appliedAt: o.appliedAt,
+      expiresAt: o.expiresAt,
+      status: o.status as string | undefined,
+    })),
+    resultStatuses: (req.results ?? []).map((r) => String(r.status)),
+  });
+}
+
+describe('amendment filters — disposition and poams (parity with go/filter.go)', () => {
+  it('has cases to run', () => {
+    expect(amendments.cases.length).toBeGreaterThan(0);
+  });
+
+  for (const c of amendments.cases) {
+    it(c.name, () => {
+      const got = ids(
+        filter(amendments.fixture, {
+          ...c.options,
+          now: amendments.now,
+          statusOf: c.effectiveStatus ? amendmentEffectiveStatusOf : testStatusOf,
+        })
+      );
+      expect(got.slice().sort()).toEqual(c.expect.slice().sort());
+    });
+  }
+});
+
+describe('amendment vocabularies match the shared table', () => {
+  it('disposition values are the schema enum, in both languages', () => {
+    expect(amendments.dispositionValues.length).toBeGreaterThan(0);
+    expect([...DISPOSITION_VALUES].sort()).toEqual(amendments.dispositionValues.slice().sort());
+    for (const value of amendments.dispositionValues) {
+      expect(validDisposition(value)).toBe(true);
+    }
+  });
+
+  it('refuses a typo rather than letting it match nothing', () => {
+    for (const bad of ['', 'waver', 'riskadjustmnet', 'suppressed', 'none']) {
+      expect(validDisposition(bad)).toBe(false);
+    }
+  });
+});
+
+describe('validPoamFilter', () => {
+  it('accepts only the two values the filter understands', () => {
+    for (const ok of ['valid', 'none-valid', '  NONE-VALID  ']) {
+      expect(validPoamFilter(ok)).toBe(true);
+    }
+    // 'absent' and 'present' are deliberately absent: collapsing presence and
+    // expiry into one concept is the point, so a presence-only spelling would
+    // exist only to be chosen by mistake.
+    for (const bad of ['', 'absent', 'present', 'expired', 'none']) {
+      expect(validPoamFilter(bad)).toBe(false);
+    }
+  });
+});
+
+// The closed vocabularies and their aliases, read from the same file
+// go/vocabulary_test.go reads, so the two languages cannot disagree about a legal
+// value or about which spellings mean the same thing.
+interface VocabularyCases {
+  statusValues: string[];
+  severityValues: string[];
+  dispositionValues: string[];
+  poamsValues: string[];
+  aliases: { field: string; spelling: string; means: string }[];
+  rejected: { field: string; spelling: string }[];
+}
+
+const vocabPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'testdata',
+  'filter-vocabulary-cases.json'
+);
+const vocab = JSON.parse(readFileSync(vocabPath, 'utf-8')) as VocabularyCases;
+
+function validatorFor(field: string): ((s: string) => boolean) | undefined {
+  return { status: validStatus, severity: validSeverity, disposition: validDisposition, poams: validPoamFilter }[
+    field
+  ];
+}
+
+describe('filter vocabularies (parity with go/vocabulary.go)', () => {
+  it('accepts every value the shared table lists', () => {
+    const byField: Record<string, string[]> = {
+      status: vocab.statusValues,
+      severity: vocab.severityValues,
+      disposition: vocab.dispositionValues,
+      poams: vocab.poamsValues,
+    };
+    const declared: Record<string, readonly string[]> = {
+      status: STATUS_VALUES,
+      severity: SEVERITY_VALUES,
+      disposition: DISPOSITION_VALUES,
+      poams: [POAM_VALID, POAM_NONE_VALID],
+    };
+    for (const [field, values] of Object.entries(byField)) {
+      expect(values.length).toBeGreaterThan(0);
+      const valid = validatorFor(field)!;
+      for (const value of values) expect(valid(value), `${field}: ${value}`).toBe(true);
+      // Compared BOTH ways: iterating the table only proves the validator
+      // accepts what is listed, so an extra or renamed member in the language's
+      // own list would be invisible.
+      expect([...declared[field]!].sort(), field).toEqual(values.slice().sort());
+    }
+  });
+
+  it('normalizes every alias onto the value it names', () => {
+    expect(vocab.aliases.length).toBeGreaterThan(0);
+    for (const alias of vocab.aliases) {
+      expect(validatorFor(alias.field)!(alias.spelling), alias.spelling).toBe(true);
+      expect(normalizeFilterValue(alias.field, alias.spelling)).toBe(alias.means);
+    }
+  });
+
+  it('refuses a value outside the vocabulary', () => {
+    for (const bad of vocab.rejected) {
+      expect(validatorFor(bad.field)!(bad.spelling), bad.spelling).toBe(false);
+    }
+  });
+
+  // The point is not that a validator accepts an alias but that the FILTER
+  // selects the same requirements for it.
+  it('an alias selects exactly what its canonical spelling selects', () => {
+    const schemaStatus = (c: EvaluatedRequirement) =>
+      c.results && c.results.length > 0 ? String(c.results[0]!.status) : 'notReviewed';
+    for (const alias of vocab.aliases) {
+      // Disposition needs a document carrying a governing override, which the
+      // query fixture has none of; the amendment fixture exists for that.
+      const subject = alias.field === 'disposition' ? amendments.fixture : results;
+      const aliasIds = ids(
+        filter(subject, { [alias.field]: [alias.spelling], statusOf: schemaStatus })
+      );
+      const canonIds = ids(filter(subject, { [alias.field]: [alias.means], statusOf: schemaStatus }));
+      expect(canonIds.length, `${alias.means} must select something`).toBeGreaterThan(0);
+      expect(aliasIds, `${alias.spelling} vs ${alias.means}`).toEqual(canonIds);
+    }
   });
 });

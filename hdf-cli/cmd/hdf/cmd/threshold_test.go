@@ -63,6 +63,51 @@ const testResultsForThreshold = `{
 	"version": "2.0.0"
 }`
 
+// A document with no failed requirement, distinct from testResultsForThreshold
+// in baseline name and in every id. Bulk tests need a genuine pass/fail PAIR:
+// the same file passed twice cannot distinguish a gate that read both arguments
+// from one that read the first and stopped.
+const testResultsNoFailures = `{
+	"baselines": [{
+		"name": "threshold-test-clean",
+		"requirements": [
+			{
+				"id": "SV-101",
+				"title": "Passed High",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.7,
+				"severity": "high",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			},
+			{
+				"id": "SV-102",
+				"title": "Passed Medium",
+				"descriptions": [{"label": "default", "data": "test"}],
+				"impact": 0.5,
+				"severity": "medium",
+				"tags": {},
+				"results": [{"status": "passed", "codeDesc": "check", "startTime": "2024-01-01T00:00:00Z"}]
+			}
+		],
+		"supports": [],
+		"groups": []
+	}],
+	"platform": {"name": "test", "release": "1.0"},
+	"statistics": {"duration": 1.0},
+	"version": "2.0.0"
+}`
+
+// writeResultsAt writes a document into a caller-chosen directory under a
+// caller-chosen name, so a bulk test controls the ORDER files reach the gate —
+// which is the whole property the fail-fast and process-everything tests assert.
+func writeResultsAt(t *testing.T, dir, name, body string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	require.NoError(t, os.WriteFile(path, []byte(body), 0o644))
+	return path
+}
+
 func writeTestResults(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -517,15 +562,22 @@ func TestValidateThreshold_InlineZeroFail(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed.high")
 }
 
-func TestValidateThreshold_InlineAndTemplateMutuallyExclusive(t *testing.T) {
-	resultsPath := writeTestResults(t)
-	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
-	require.NoError(t, os.WriteFile(thresholdFile, []byte("compliance:\n  min: 50\n"), 0o644))
+// -T and -I were mutually exclusive while a run could hold only one policy.
+// Under conjunction there is nothing to conflict over — a committed baseline file
+// and a one-off inline tightening are just two policies — so the combination is
+// now accepted. This test replaces the exclusion it supersedes.
+func TestValidateThreshold_InlineAndTemplateCombine(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "compliance:\n  min: 50\n")
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath,
-		"-T", thresholdFile, "-I", "{compliance.min: 50}")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "mutually exclusive")
+	// The file passes and the inline spec does not, so a run that quietly kept
+	// only one of them would report the wrong verdict whichever it kept.
+	_, stderr, err := executeCommand("validate", "threshold", resultsPath,
+		"-T", thresholdFile, "-I", "{failed.total.max: 0}")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "-I '{failed.total.max: 0}'",
+		"the violation must name the inline spec it came from, spec text and all")
 }
 
 func TestGenerateThreshold_MissingInput(t *testing.T) {
@@ -687,23 +739,64 @@ func TestValidateThreshold_InlineAcceptsEverySeverityField(t *testing.T) {
 // take more than one file — `convert` and `validate` already do. The template
 // is parsed once and applied per file.
 func TestValidateThreshold_AcceptsMultipleFiles(t *testing.T) {
-	resultsPath := writeTestResults(t)
-	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
-	require.NoError(t, os.WriteFile(thresholdFile, []byte("failed:\n  total:\n    max: 5\n"), 0o644))
+	dir := t.TempDir()
+	first := writeResultsAt(t, dir, "first.json", testResultsForThreshold)
+	second := writeResultsAt(t, dir, "second.json", testResultsNoFailures)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 5\n")
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath, resultsPath, "-T", thresholdFile)
+	_, stderr, err := executeCommand("validate", "threshold", first, second, "-T", thresholdFile)
 	assert.NoError(t, err)
+	// Distinct files, both named in the output: passing the same path twice
+	// cannot tell a gate that read both from one that read the first and stopped.
+	assert.Contains(t, stderr, first)
+	assert.Contains(t, stderr, second)
 }
 
 // One failing document among several must fail the whole invocation — a gate
 // that passes because most files were fine is not a gate.
 func TestValidateThreshold_MultipleFilesFailIfAnyViolates(t *testing.T) {
-	resultsPath := writeTestResults(t)
-	thresholdFile := filepath.Join(t.TempDir(), "threshold.yaml")
-	require.NoError(t, os.WriteFile(thresholdFile, []byte("failed:\n  total:\n    max: 0\n"), 0o644))
+	dir := t.TempDir()
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	violating := writeResultsAt(t, dir, "violating.json", testResultsForThreshold)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 0\n")
 
-	_, _, err := executeCommand("validate", "threshold", resultsPath, resultsPath, "-T", thresholdFile)
+	// The mixed case the name describes: one document passes, one does not.
+	// Two violating files would fail whatever the loop did with either.
+	for name, order := range map[string][]string{
+		"violator first": {violating, clean},
+		"violator last":  {clean, violating},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, _, err := executeCommand(append(append([]string{"validate", "threshold"}, order...), "-T", thresholdFile)...)
+			require.Error(t, err, "one violating document must fail the whole invocation")
+		})
+	}
+}
+
+// The default is POSIX-style: process every file, report at the end. A gate that
+// stopped at the first violation would hide every later one, so a contributor
+// would fix one finding per CI run.
+func TestValidateThreshold_ProcessesEveryFileByDefault(t *testing.T) {
+	dir := t.TempDir()
+	violating := writeResultsAt(t, dir, "violating.json", testResultsForThreshold)
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", violating, clean, "-T", thresholdFile)
+	require.Error(t, err, "the violating document must still fail the run")
+	assert.Contains(t, stderr, clean+": ok", "the file after the violation must still be processed")
+}
+
+// -F is the opposite contract, and it is the one a slow pipeline relies on.
+func TestValidateThreshold_FailFastStopsAtTheFirstViolation(t *testing.T) {
+	dir := t.TempDir()
+	violating := writeResultsAt(t, dir, "violating.json", testResultsForThreshold)
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	thresholdFile := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", violating, clean, "-T", thresholdFile, "-F")
 	require.Error(t, err)
+	assert.NotContains(t, stderr, clean, "with -F the run must abort before reaching the second file")
 }
 
 // Zero files must be an error, not a vacuous pass: an unmatched shell glob
@@ -849,4 +942,329 @@ func TestValidateThreshold_InlineBothSpellingsIsRefused(t *testing.T) {
 		"-I", "{no_impact.none.max: 1}, {no_impact.informational.max: 2}")
 	require.Error(t, err, "a spec naming one bucket twice must be refused, not silently resolved")
 	assert.Contains(t, err.Error(), "pre-3.7 spelling")
+}
+
+// A dotted path with junk appended used to be accepted and acted on by its
+// three-segment prefix: `failed.total.max.foo` asserted `failed.total.max` and
+// said nothing about `foo`. It could not misroute a bound, but it is the last
+// place the inline grammar quietly tolerated input it does not understand, and
+// a spec must never mean something other than what was written.
+func TestParseInlineThreshold_RejectsOverlongPath(t *testing.T) {
+	for name, path := range map[string]string{
+		"status total":    "failed.total.max.foo",
+		"status severity": "failed.high.max.bar",
+		"compliance":      "compliance.min.extra",
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := parseInlineThreshold("{" + path + ": 0}")
+			require.Error(t, err, "an over-long path must be rejected, not truncated to its prefix")
+			assert.Contains(t, err.Error(), path, "the error must name the offending path")
+			// A typo and a run of junk need different guidance, so the message
+			// must not read as though a segment were merely unrecognized.
+			assert.Contains(t, strings.ToLower(err.Error()), "too many segments")
+		})
+	}
+}
+
+// The counterpart to the rejection above: every shape the grammar does define
+// must still parse, AND land on the bound it names. Enumerated rather than
+// sampled, because a bound on the segment count is exactly the kind of fix that
+// takes valid paths with it — and asserting the routing, not merely that the
+// parse succeeded, is what makes the sweep able to fail.
+func TestParseInlineThreshold_AcceptsEveryLegalPathShape(t *testing.T) {
+	statusSection := map[string]func(*ThresholdConfig) *hdfengine.ThresholdSeverity{
+		"passed":    func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Passed },
+		"failed":    func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Failed },
+		"skipped":   func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Skipped },
+		"error":     func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.Error },
+		"no_impact": func(c *ThresholdConfig) *hdfengine.ThresholdSeverity { return c.NoImpact },
+	}
+	severityBound := map[string]func(*hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound{
+		"critical":      func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Critical },
+		"high":          func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.High },
+		"medium":        func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Medium },
+		"low":           func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Low },
+		"informational": func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Informational },
+		"none":          func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.None },
+		"total":         func(s *hdfengine.ThresholdSeverity) *hdfengine.ThresholdBound { return s.Total },
+	}
+
+	// The sweep reads knownSeverityFields, so it would shrink in silence with the
+	// vocabulary it is meant to cover. Pin the size: a value removed here has to
+	// be removed deliberately.
+	require.Len(t, knownSeverityFields, 6, "severity vocabulary changed; update this sweep deliberately")
+	for _, severity := range knownSeverityFields {
+		require.Contains(t, severityBound, severity, "sweep is missing an accessor for %q", severity)
+	}
+
+	for _, bound := range []string{"min", "max"} {
+		t.Run("compliance."+bound, func(t *testing.T) {
+			cfg, err := parseInlineThreshold("{compliance." + bound + ": 80}")
+			require.NoError(t, err)
+			require.NotNil(t, cfg.Compliance)
+			got := cfg.Compliance.Min
+			if bound == "max" {
+				got = cfg.Compliance.Max
+			}
+			require.NotNil(t, got, "compliance.%s must populate that field, not the other one", bound)
+			assert.InDelta(t, 80.0, *got, 0.0001)
+		})
+		for status, section := range statusSection {
+			// "total" is handled by its own branch in setThresholdValue and
+			// belongs in the sweep alongside the severity names.
+			for _, severity := range append(append([]string{}, knownSeverityFields...), "total") {
+				path := status + "." + severity + "." + bound
+				t.Run(path, func(t *testing.T) {
+					cfg, err := parseInlineThreshold("{" + path + ": 1}")
+					require.NoError(t, err, "a legal path shape must still parse")
+
+					ts := section(cfg)
+					require.NotNil(t, ts, "%s must populate the %s section", path, status)
+					b := severityBound[severity](ts)
+					require.NotNil(t, b, "%s must populate the %s bound", path, severity)
+
+					if bound == "max" {
+						require.NotNil(t, b.Max, "%s must set max", path)
+						assert.Equal(t, 1, *b.Max)
+						assert.Nil(t, b.Min, "%s must not also set min", path)
+					} else {
+						require.NotNil(t, b.Min, "%s must set min", path)
+						assert.Equal(t, 1, *b.Min)
+						assert.Nil(t, b.Max, "%s must not also set max", path)
+					}
+				})
+			}
+		}
+	}
+}
+
+// A leading separator is legal YAML that yields one document, and generated and
+// hand-edited templates carry it. It was the obvious casualty of the 3.7
+// multi-document rejection, and it is the same casualty of getting the
+// conjunction's document counting wrong, so it stays pinned.
+func TestValidateThreshold_LeadingSeparatorIsOnePolicy(t *testing.T) {
+	dir := t.TempDir()
+	resultsPath := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	leading := writeResultsAt(t, dir, "leading.yaml", "---\nfailed:\n  total:\n    max: 5\n")
+
+	stdout, _, err := executeCommand("validate", "threshold", resultsPath, "-T", leading)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "passed all thresholds")
+	assert.NotContains(t, stdout, "thresholds\n    ", "one policy must not list itself as several")
+	assert.NotContains(t, stdout, leading, "a lone policy needs no attribution")
+}
+
+// Repeating -T was accepted before this and silently kept only the LAST value,
+// because both flags were registered with cobra's StringVarP. Two policies, and
+// the verdict decided by argument order: the strict one was discarded without a
+// word when it came first. Every spec must now be applied, in any order.
+func TestValidateThreshold_AppliesEverySpecAsAConjunction(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	strict := writeResultsAt(t, dir, "strict.yaml", "failed:\n  total:\n    max: 0\n")
+	loose := writeResultsAt(t, dir, "loose.yaml", "failed:\n  total:\n    max: 500\n")
+
+	for name, order := range map[string][]string{
+		"strict first": {"-T", strict, "-T", loose},
+		"loose first":  {"-T", loose, "-T", strict},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, stderr, err := executeCommand(append([]string{"validate", "threshold", results}, order...)...)
+			require.Error(t, err, "the strict spec is violated, so the run fails whatever the order")
+			assert.Contains(t, stderr, "strict.yaml", "the violation must name the spec that produced it")
+			assert.NotContains(t, stderr, "["+loose+"]", "the loose spec passed and must not be blamed")
+			assert.NotContains(t, stderr, "maximum 500", "the loose bound is satisfied, so it must produce no violation")
+		})
+	}
+}
+
+// A single file may hold several policies. Attribution is the file plus the
+// policy's index, 1-based — no name field is required of a threshold document.
+func TestValidateThreshold_MultiDocumentFileIsAConjunction(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	both := writeResultsAt(t, dir, "policy.yaml",
+		"failed:\n  total:\n    max: 0\n---\nfailed:\n  total:\n    max: 500\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", both)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "policy.yaml#1", "the failing document must be named by file and index")
+}
+
+// StringSliceVar would split on commas, and an inline spec IS comma-separated —
+// it would shred a multi-entry spec into fragments. StringArrayVar is the right
+// cobra pattern here, and this is the test that tells them apart.
+func TestValidateThreshold_InlineIsRepeatableAndNotCommaSplit(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	// Each spec carries two comma-separated entries; both specs pass.
+	_, _, err := executeCommand("validate", "threshold", results,
+		"-I", "{compliance.min: 1}, {failed.total.max: 500}",
+		"-I", "{passed.total.min: 1}, {skipped.total.max: 500}")
+	require.NoError(t, err, "a multi-entry inline spec must survive being passed twice")
+
+	// And a violation in the second spec is still caught and attributed.
+	_, stderr, err := executeCommand("validate", "threshold", results,
+		"-I", "{compliance.min: 1}, {failed.total.max: 500}",
+		"-I", "{failed.total.max: 0}")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "-I '{failed.total.max: 0}'",
+		"an inline spec is named by echoing the spec itself, not by a bare flag name")
+}
+
+// A green gate that does not say which policies ran is the same false green this
+// epic exists to kill, so the pass path is attributed too.
+func TestValidateThreshold_PassOutputNamesEverySpec(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	first := writeResultsAt(t, dir, "first.yaml", "failed:\n  total:\n    max: 500\n")
+	second := writeResultsAt(t, dir, "second.yaml", "passed:\n  total:\n    min: 1\n")
+
+	stdout, _, err := executeCommand("validate", "threshold", results, "-T", first, "-T", second)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "✓", "the pass verdict carries the same mark as hdf validate")
+	assert.Contains(t, stdout, "passed all 2 thresholds")
+	assert.Contains(t, stdout, first)
+	assert.Contains(t, stdout, second)
+}
+
+// One spec is the overwhelmingly common case and its output must not grow a
+// label it does not need.
+func TestValidateThreshold_SingleSpecOutputIsUnlabelled(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	only := writeResultsAt(t, dir, "only.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", only)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "✗ "+results, "the failure verdict names the document, as hdf validate does")
+	// The trailing newline is load-bearing: "1 threshold violations" contains
+	// "1 threshold violation", so without it the assertion cannot fail.
+	assert.Contains(t, stderr, "1 threshold violation\n", "singular for one, not \"violation(s)\"")
+	assert.Contains(t, stderr, "failed.total")
+	assert.NotContains(t, stderr, only, "a lone spec needs no attribution")
+}
+
+// An empty spec passes every document. Among several it would ride along on its
+// neighbours' bounds, so it must fail the run and say which one it was.
+func TestValidateThreshold_EmptySpecAmongSeveralIsNamed(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	asserting := writeResultsAt(t, dir, "asserting.yaml", "failed:\n  total:\n    max: 500\n")
+	empty := writeResultsAt(t, dir, "empty.yaml", "failed: {}\n")
+
+	_, _, err := executeCommand("validate", "threshold", results, "-T", asserting, "-T", empty)
+	require.Error(t, err, "a spec asserting nothing must fail the run, not ride along")
+	assert.Contains(t, err.Error(), "empty.yaml")
+}
+
+// Bulk is M results files x N specs, and a failure has to name BOTH halves. The
+// label lives inside the violation string rather than only in the printed line
+// precisely so it survives into the error, which is all runBulk keeps per file —
+// a later refactor that moved the label into the print would pass every other
+// test and silently break this one.
+func TestValidateThreshold_BulkNamesBothTheFileAndTheSpec(t *testing.T) {
+	dir := t.TempDir()
+	first := writeResultsAt(t, dir, "first.json", testResultsForThreshold)
+	second := writeResultsAt(t, dir, "second.json", testResultsNoFailures)
+	strict := writeResultsAt(t, dir, "strict.yaml", "failed:\n  total:\n    max: 0\n")
+	loose := writeResultsAt(t, dir, "loose.yaml", "failed:\n  total:\n    max: 500\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", first, second, "-T", strict, "-T", loose)
+	require.Error(t, err)
+	assert.Contains(t, stderr, first, "the bulk report must name the failing file")
+	assert.Contains(t, stderr, "["+strict+"]", "and the spec within it that failed")
+	assert.NotContains(t, stderr, "["+loose+"]", "the satisfied spec must not be blamed")
+}
+
+// -F governs FILES, not specs: every spec is always evaluated against a document
+// so one run shows every policy it broke, and -F decides only whether the NEXT
+// document is read. Asserted because the two are easy to conflate.
+func TestValidateThreshold_FailFastDoesNotStopAtTheFirstFailingSpec(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	failsOnCount := writeResultsAt(t, dir, "count.yaml", "failed:\n  total:\n    max: 0\n")
+	failsOnCompliance := writeResultsAt(t, dir, "compliance.yaml", "compliance:\n  min: 99\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results,
+		"-T", failsOnCount, "-T", failsOnCompliance, "-F")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "["+failsOnCount+"]")
+	assert.Contains(t, stderr, "["+failsOnCompliance+"]",
+		"-F must not stop at the first failing spec within a document")
+	assert.Contains(t, stderr, "2 threshold violations")
+}
+
+// The legacy `none` spelling is normalized per document, so two policies in one
+// file may each use a different spelling. Setting both in ONE policy is still
+// refused; that is a collision, this is not.
+func TestValidateThreshold_SpellingsDoNotCollideAcrossDocuments(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	spellings := writeResultsAt(t, dir, "spellings.yaml",
+		"no_impact:\n  none:\n    max: 1\n---\nno_impact:\n  informational:\n    max: 1\n")
+
+	stdout, _, err := executeCommand("validate", "threshold", results, "-T", spellings)
+	require.NoError(t, err, "each document normalizes on its own; only one policy naming both spellings collides")
+	assert.Contains(t, stdout, "passed all 2 thresholds")
+}
+
+// The StringSlice trap applies to -T as well: a template path containing a comma
+// would be split into two unreadable paths.
+func TestValidateThreshold_TemplatePathMayContainAComma(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	comma := writeResultsAt(t, dir, "a,b.yaml", "failed:\n  total:\n    max: 500\n")
+
+	_, _, err := executeCommand("validate", "threshold", results, "-T", comma)
+	require.NoError(t, err, "a comma in a path must not split the flag value")
+}
+
+// Anything expressible in a threshold file must be expressible inline. The
+// inline form is not a second grammar: a structured spec goes through the SAME
+// strict decoder a file does, and the dotted SAF form remains for the shape it
+// was designed for.
+func TestValidateThreshold_InlineAcceptsAnythingAFileAccepts(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	t.Run("a rule, which the dotted grammar cannot express at all", func(t *testing.T) {
+		_, stderr, err := executeCommand("validate", "threshold", results,
+			"-I", "{rules: [{name: no failures, where: {status: [failed]}, max: 0}]}")
+		require.Error(t, err, "the fixture has a failed requirement")
+		assert.Contains(t, stderr, "no failures: 1 matched, maximum 0")
+	})
+
+	t.Run("a structured grid spec", func(t *testing.T) {
+		_, stderr, err := executeCommand("validate", "threshold", results,
+			"-I", "{failed: {total: {max: 0}}}")
+		require.Error(t, err)
+		assert.Contains(t, stderr, "failed.total")
+	})
+
+	t.Run("the dotted SAF form still works", func(t *testing.T) {
+		_, _, err := executeCommand("validate", "threshold", results, "-I", "{failed.total.max: 500}")
+		assert.NoError(t, err)
+	})
+}
+
+// A typo in a STRUCTURED inline spec must be diagnosed as a structured spec. It
+// would otherwise fail the strict decode, fall through to the dotted parser,
+// fail there too, and report "invalid inline threshold entry" — sending the
+// author to look for a mistake they did not make.
+func TestValidateThreshold_InlineTypoIsDiagnosedInTheRightGrammar(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	_, _, err := executeCommand("validate", "threshold", results, "-I", "{faild: {total: {max: 0}}}")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is not a known threshold category",
+		"a structured spec must be diagnosed by the strict decoder")
+	assert.NotContains(t, err.Error(), "invalid inline threshold entry")
+
+	// And a dotted-form typo still reports the dotted grammar's error.
+	_, _, err = executeCommand("validate", "threshold", results, "-I", "{failed.totl.max: 0}")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown severity field")
 }

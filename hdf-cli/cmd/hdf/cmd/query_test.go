@@ -478,3 +478,97 @@ func TestQueryCommand_JSONRows_CarryPosition(t *testing.T) {
 	assert.Equal(t, float64(2), rows[2]["index"])
 	assert.Equal(t, "Query Test Baseline", rows[2]["baseline"])
 }
+
+// An unrecognized --poams value must be refused before any document is read. A
+// value that merely matched nothing would report a clean run over a filter the
+// user believed was applied — the false green the threshold epic exists to kill,
+// reached through a filter value instead of a spec key.
+func TestQueryPoams_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, bad := range []string{"absent", "present", "expired", "none"} {
+		t.Run(bad, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, "--poams", bad)
+			require.Error(t, err, "%q must be refused, not silently match nothing", bad)
+			assert.Contains(t, err.Error(), "none-valid", "the error must name the legal values")
+		})
+	}
+}
+
+// And the two legal values reach the filter. The fixture carries no POA&M, so
+// none-valid selects every requirement and valid selects none — the latter
+// failing with the ordinary no-match error rather than the validation one, which
+// is what distinguishes "reached the filter and matched nothing" from "refused
+// before the document was read".
+func TestQueryPoams_LegalValuesReachTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--poams", "none-valid")
+	assert.NoError(t, err, "no requirement in the fixture carries a POA&M, so all of them are none-valid")
+
+	_, _, err = executeCommand("query", resultsPath, "--poams", "valid")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no matching requirements")
+	assert.NotContains(t, err.Error(), "unknown --poams value")
+}
+
+// A --disposition typo must be refused, not matched against nothing. Override_Type
+// is a closed seven-value enum, so "waver" cannot be a legitimate zero-match — and
+// a filter that reports a clean run over a predicate that never applied is the
+// false green this vocabulary exists to avoid.
+func TestQueryDisposition_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, bad := range []string{"waver", "riskadjustmnet", "suppressed", "none"} {
+		t.Run(bad, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, "--disposition", bad)
+			require.Error(t, err, "%q must be refused, not silently match nothing", bad)
+			assert.Contains(t, err.Error(), "unknown --disposition value")
+			assert.Contains(t, err.Error(), "riskAdjustment", "the error must name the legal values")
+		})
+	}
+}
+
+// A legal value reaches the filter; the fixture carries no overrides, so it
+// matches nothing and fails with the ordinary no-match error rather than the
+// validation one. That is what distinguishes the two outcomes.
+func TestQueryDisposition_LegalValueReachesTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	_, _, err := executeCommand("query", resultsPath, "--disposition", "waiver")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no matching requirements")
+	assert.NotContains(t, err.Error(), "unknown --disposition value")
+}
+
+// The claim in the CHANGELOG and the README is that an unrecognized --status or
+// --severity is refused rather than matched against nothing. This is the test
+// that makes the claim true: a filter reporting a clean run over a predicate
+// that never applied is the false green this vocabulary exists to prevent.
+func TestQueryStatusAndSeverity_UnknownValuesAreRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for flag, bad := range map[string]string{"--status": "faild", "--severity": "crit"} {
+		t.Run(flag, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, flag, bad)
+			require.Error(t, err, "%s %q must be refused, not silently match nothing", flag, bad)
+			assert.Contains(t, err.Error(), "unknown "+flag+" value")
+		})
+	}
+}
+
+// And every spelling the engine normalizes reaches the filter through the CLI,
+// so a saved command line keeps working and the two surfaces agree.
+func TestQueryStatusAndSeverity_AcceptedSpellingsReachTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, spelling := range []string{"not_applicable", "notApplicable", "NOTAPPLICABLE"} {
+		_, _, err := executeCommand("query", resultsPath, "--status", spelling)
+		// The fixture carries a notApplicable requirement, so every spelling of
+		// it must select something rather than erroring or matching nothing.
+		assert.NoError(t, err, "%q must select the same requirements as its canonical spelling", spelling)
+	}
+	// The pre-3.7 severity spelling still names informational on this surface
+	// too. Asserted as SELECTION, not as the absence of a validation error: the
+	// fixture's impact-0 requirement derives to informational, so if the alias
+	// stopped resolving this would exit 1 with "No matching requirements found"
+	// and an assertion about the error text would not notice.
+	stdout, _, err := executeCommand("query", resultsPath, "--severity", "none")
+	require.NoError(t, err, "the pre-3.7 spelling must still select the informational requirement")
+	assert.Contains(t, stdout, "SV-004", "and select the same one its canonical spelling does")
+}

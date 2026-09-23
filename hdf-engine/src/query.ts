@@ -4,7 +4,9 @@
 // runs both over the same fixture).
 
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
+import { governingStatusOverrideIndex, parseTimestamp } from '@mitre/hdf-utilities';
 import { deriveSeverity } from './compliance.js';
+import { normalizeKey, normalizeFilterValue } from './vocabulary.js';
 import { safeGlobMatch } from './safematch.js';
 
 /**
@@ -23,6 +25,21 @@ export interface FilterOptions {
   tag?: string[];
   search?: string;
   baseline?: string;
+  /**
+   * The TYPE of the override that governs the requirement (waiver,
+   * falsePositive, riskAdjustment, …), OR across values. Resolved through the
+   * same governing-override rule effective status uses rather than read from the
+   * stored disposition field, which is an output cache.
+   */
+  disposition?: string[];
+  /**
+   * Remediation-plan validity: 'valid' for a requirement carrying a POA&M still
+   * in force, 'none-valid' for one carrying none, an empty list, or only lapsed
+   * ones. Absence and expiry are one concept on purpose.
+   */
+  poams?: string;
+  /** RFC3339 reference clock for expiry; undefined means now. */
+  now?: string;
   limit?: number;
   count?: boolean;
   statusOf?: (control: EvaluatedRequirement) => string;
@@ -94,14 +111,42 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
 function buildFilters(options: FilterOptions): FilterFunc[] {
   const filters: FilterFunc[] = [];
 
+  // Compared through normalizeKey so the CLI's display spelling and the schema's
+  // camelCase are one value: a filter copied from `hdf query` and a rule written
+  // against the schema must select the same requirements.
   if (options.status && options.status.length > 0) {
-    const statuses = options.status.map((s) => s.toLowerCase());
-    filters.push((_c, s) => statuses.includes(s.toLowerCase()));
+    const statuses = options.status.map((s) => normalizeKey(normalizeFilterValue('status', s)));
+    // BOTH sides go through the same alias map: the injected resolver may speak
+    // the CLI's display vocabulary while the spec speaks the schema's.
+    filters.push((_c, s) => statuses.includes(normalizeKey(normalizeFilterValue('status', s))));
   }
 
+  // Normalized the same way, and through the alias map as well, so the pre-3.7
+  // 'none' spelling keeps naming the informational severity on every surface
+  // rather than only in the CLI.
   if (options.severity && options.severity.length > 0) {
-    const severities = options.severity.map((s) => s.toLowerCase());
-    filters.push((_c, _s, severity) => severities.includes(severity));
+    const severities = options.severity.map((s) => normalizeKey(normalizeFilterValue('severity', s)));
+    filters.push((_c, _s, severity) =>
+      severities.includes(normalizeKey(normalizeFilterValue('severity', severity)))
+    );
+  }
+
+  // Disposition (OR across values). A requirement with no governing override
+  // matches nothing, which is what makes "waived" and "not waived" opposites.
+  if (options.disposition && options.disposition.length > 0) {
+    const wanted = options.disposition.map((d) => normalizeKey(normalizeFilterValue('disposition', d)));
+    filters.push((c) => {
+      const governing = governingDisposition(c, options.now);
+      return governing !== '' && wanted.includes(normalizeKey(normalizeFilterValue('disposition', governing)));
+    });
+  }
+
+  // POA&M validity. An unrecognized value matches NOTHING rather than silently
+  // degrading, matching the impact filter's posture — callers validate with
+  // validPoamFilter and reject before filtering.
+  if (options.poams) {
+    const wantValid = poamFilterWantsValid(options.poams);
+    filters.push((c) => wantValid !== undefined && hasValidPoam(c, options.now) === wantValid);
   }
 
   if (options.impact) {
@@ -250,4 +295,99 @@ export function tagMatchesGlob(tags: Record<string, unknown>, key: string, patte
 /** matchesGlob reports whether s matches the glob pattern (case-insensitive). */
 export function matchesGlob(s: string, pattern: string): boolean {
   return safeGlobMatch(s, pattern);
+}
+
+/**
+ * The closed vocabulary the disposition filter accepts: the schema's
+ * Override_Type enum. A value outside it can only ever match nothing, which
+ * would report a clean run over a filter the caller believed was applied.
+ * Parity: DispositionValues in go/filter.go, pinned by the shared case table.
+ * Membership is not pinned to the schema: an eighth override type would be
+ * silently unfilterable in both languages until someone adds it here.
+ */
+export const DISPOSITION_VALUES = [
+  'waiver',
+  'attestation',
+  'poam',
+  'inherited',
+  'falsePositive',
+  'riskAdjustment',
+  'operationalRequirement',
+] as const;
+
+/**
+ * Reports whether s names an override type. Callers validate with this and
+ * reject, rather than letting a typo match nothing and pass — the same contract
+ * validPoamFilter provides for the other amendment filter.
+ */
+// Re-exported from vocabulary.ts, where all four validators share one canonical()
+// rather than this one inferring "is an alias" from "the normalizer changed it".
+export { validDisposition } from './vocabulary.js';
+
+/**
+ * The two values the poams filter accepts. 'none-valid' covers a requirement
+ * with no POA&M, with an empty list, and with only lapsed ones: a plan that has
+ * expired is not a plan, and splitting the two cases would create a value whose
+ * only use is to be chosen by mistake.
+ */
+export const POAM_VALID = 'valid';
+export const POAM_NONE_VALID = 'none-valid';
+
+/**
+ * Reports whether s is a POA&M validity value the filter understands. Callers
+ * validate with this and reject, rather than letting an unrecognized value match
+ * nothing and pass.
+ */
+export function validPoamFilter(s: string): boolean {
+  return poamFilterWantsValid(s) !== undefined;
+}
+
+function poamFilterWantsValid(s: string): boolean | undefined {
+  switch (s.trim().toLowerCase()) {
+    case POAM_VALID:
+      return true;
+    case POAM_NONE_VALID:
+      return false;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * The type of the override that governs the requirement, or '' when none does.
+ * The index comes from the shared governing-override rule — most recently
+ * applied, non-expired, carrying a status — so disposition and effective status
+ * can never disagree about which override is in force.
+ */
+function governingDisposition(control: EvaluatedRequirement, now?: string): string {
+  const overrides = control.statusOverrides ?? [];
+  const index = governingStatusOverrideIndex(
+    // The schema types render timestamps as Date; the shared helper takes the
+    // RFC3339 strings they came from, so convert rather than widening it.
+    overrides.map((o) => ({
+      status: o.status,
+      appliedAt: new Date(o.appliedAt).toISOString(),
+      expiresAt: new Date(o.expiresAt).toISOString(),
+    })),
+    now
+  );
+  return index < 0 ? '' : (overrides[index]?.type ?? '');
+}
+
+/**
+ * Whether the requirement carries a POA&M still in force. expiresAt is required
+ * by the schema, so a POA&M always has a deadline to judge; one exactly at the
+ * reference instant has passed, matching how an override's expiry is judged.
+ */
+// Note the inverted zero: hdfutil treats an override with no expiresAt as never
+// expiring, while a POA&M without a deadline is treated as already lapsed. The
+// schema requires poams[].expiresAt so it should not arise, but the two
+// same-shaped fields mean opposite things when empty.
+function hasValidPoam(control: EvaluatedRequirement, now?: string): boolean {
+  // parseTimestamp returns null on an unparseable value; falling back to the
+  // wall clock there is wrong in the other direction, so an unusable reference
+  // is treated as no reference and the caller's own validation catches it.
+  const parsed = now ? parseTimestamp(now) : null;
+  const ref = parsed ? parsed.getTime() : Date.now();
+  return (control.poams ?? []).some((poam) => new Date(poam.expiresAt).getTime() > ref);
 }

@@ -14,6 +14,8 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -774,15 +776,18 @@ func TestResolveThreshold_AcceptsValidSpec(t *testing.T) {
 	if e != nil {
 		t.Fatalf("valid spec must resolve, got %v", e)
 	}
-	if cfg == nil || cfg.Failed == nil || cfg.Failed.Total == nil || cfg.Failed.Total.Max == nil {
-		t.Fatalf("valid spec lost its bound: %+v", cfg)
+	if len(cfg) != 1 {
+		t.Fatalf("got %d policies, want 1", len(cfg))
+	}
+	if cfg[0].Config.Failed == nil || cfg[0].Config.Failed.Total == nil || cfg[0].Config.Failed.Total.Max == nil {
+		t.Fatalf("valid spec lost its bound: %+v", cfg[0].Config)
 	}
 
 	inline, e2 := resolveThreshold(&thresholdInput{Inline: map[string]any{"compliance": map[string]any{"min": 80}}})
 	if e2 != nil {
 		t.Fatalf("valid inline spec must resolve, got %v", e2)
 	}
-	if inline == nil || inline.Compliance == nil || inline.Compliance.Min == nil {
+	if len(inline) != 1 || inline[0].Config.Compliance == nil || inline[0].Config.Compliance.Min == nil {
 		t.Fatalf("valid inline spec lost its bound: %+v", inline)
 	}
 }
@@ -880,5 +885,164 @@ func TestCompliance_GroupByBaseline_SameNamedBaselinesStayDistinct(t *testing.T)
 		if *g.BaselineIndex == 9 && g.Counts["failed"]["total"] != 11 {
 			t.Errorf("baseline 9 failed total = %d, want 11", g.Counts["failed"]["total"])
 		}
+	}
+}
+
+// The MCP half of the multi-policy rule (the CLI half lives in
+// cmd/hdf/cmd/threshold_test.go). Both surfaces reach threshold.DecodeAll, so a
+// file holding several policies is a conjunction here too. This replaces the
+// single-document rejection that shipped in 3.7: the documents after the first
+// now have a defined meaning, so they are evaluated rather than refused. What
+// must never come back is the silent truncation both rules existed to prevent.
+func TestResolveThreshold_MultiDocumentSpecIsAConjunction(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	if err := os.WriteFile(filepath.Join(root, "multi.yaml"),
+		[]byte("failed:\n  total:\n    max: 0\n---\npassed:\n  total:\n    min: 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	specs, e := resolveThreshold(&thresholdInput{Path: "multi.yaml"})
+	if e != nil {
+		t.Fatalf("a multi-document spec must resolve to several policies, got %v", e)
+	}
+	if len(specs) != 2 {
+		t.Fatalf("got %d policies, want 2", len(specs))
+	}
+	if specs[0].Label != "multi.yaml#1" || specs[1].Label != "multi.yaml#2" {
+		t.Errorf("labels = %q, %q; want multi.yaml#1, multi.yaml#2", specs[0].Label, specs[1].Label)
+	}
+	// Strictness still reaches every document: a typo in the second is no longer
+	// unreachable, which is what made the truncation dangerous.
+	if err := os.WriteFile(filepath.Join(root, "typo.yaml"),
+		[]byte("failed:\n  total:\n    max: 0\n---\nfaild:\n  total:\n    max: 5\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, te := resolveThreshold(&thresholdInput{Path: "typo.yaml"}); te == nil {
+		t.Error("a typo in the second document must still be rejected")
+	} else if te.Code != mcperr.SchemaInvalid {
+		t.Errorf("code = %v, want SCHEMA_INVALID", te.Code)
+	}
+}
+
+// A policy asserting nothing passes every document. Among several it would ride
+// along on its neighbours' bounds, so it fails the call and is named.
+func TestResolveThreshold_EmptyPolicyAmongSeveralIsNamed(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	if err := os.WriteFile(filepath.Join(root, "mixed.yaml"),
+		[]byte("failed:\n  total:\n    max: 0\n---\nfailed: {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, e := resolveThreshold(&thresholdInput{Path: "mixed.yaml"})
+	if e == nil {
+		t.Fatal("a policy asserting nothing must be refused")
+	}
+	if !strings.Contains(e.Message, "mixed.yaml#2") {
+		t.Errorf("message = %q, want it to name the empty policy", e.Message)
+	}
+}
+
+// The MCP surface must inherit rules exactly as the CLI does — both reach
+// threshold.DecodeAll and both evaluate through hdfengine.Evaluate. Asserting it
+// on this surface as well is what the card means by "verified on each": a
+// structural argument that the shared decoder makes them agree is not evidence
+// that they do.
+func TestCompliance_RulesAreEvaluatedAndCanNeverMatchIsRefused(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HDF_MCP_ROOT", root)
+
+	if err := os.WriteFile(filepath.Join(root, "rule.yaml"),
+		[]byte("rules:\n  - name: no failures\n    where:\n      status: [failed]\n    max: 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	specs, e := resolveThreshold(&thresholdInput{Path: "rule.yaml"})
+	if e != nil {
+		t.Fatalf("a rules-bearing spec must resolve, got %v", e)
+	}
+	if len(specs) != 1 || len(specs[0].Config.Rules) != 1 {
+		t.Fatalf("got %d specs with %d rules, want 1 and 1", len(specs), len(specs[0].Config.Rules))
+	}
+
+	// And the rule actually produces a verdict rather than the refusal the
+	// grid-only path would emit.
+	results := resultsWithOneFailure()
+	statusOf := shared.RequirementEffectiveStatus
+	counts := hdfengine.CountControlsByStatus(results, statusOf)
+	failures := hdfengine.Evaluate(specs[0].Config, hdfengine.ThresholdInput{
+		Results:    results,
+		Counts:     counts,
+		Compliance: hdfengine.CalculateCompliance(counts),
+		ControlMap: hdfengine.MapControlIDsByStatus(results, statusOf),
+		StatusOf:   statusOf,
+	})
+	if len(failures) != 1 || !strings.Contains(failures[0], "no failures: 1 matched, maximum 0") {
+		t.Errorf("failures = %v, want the rule's own violation", failures)
+	}
+
+	// A predicate that can never match is refused here too, at decode.
+	if err := os.WriteFile(filepath.Join(root, "bad.yaml"),
+		[]byte("rules:\n  - name: r\n    where:\n      status: [faild]\n    max: 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, be := resolveThreshold(&thresholdInput{Path: "bad.yaml"})
+	if be == nil {
+		t.Fatal("a predicate that can never match must be refused on this surface too")
+	}
+	if be.Code != mcperr.SchemaInvalid {
+		t.Errorf("code = %v, want SCHEMA_INVALID", be.Code)
+	}
+	if detail, _ := be.Details["error"].(string); !strings.Contains(detail, `"faild"`) {
+		t.Errorf("details must name the offending value, got %q", detail)
+	}
+}
+
+// resultsWithOneFailure is a minimal schema-shaped document with a single failed
+// requirement, for asserting a rule produces a verdict.
+func resultsWithOneFailure() hdf.HDFResults {
+	return hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{
+		Name: "rules",
+		Requirements: []hdf.EvaluatedRequirement{{
+			ID:      "FAILING",
+			Impact:  0.7,
+			Results: []hdf.RequirementResult{{Status: "failed"}},
+		}},
+	}}}
+}
+
+// Through the HANDLER, not its ingredients. The test above exercises
+// resolveThreshold and Evaluate separately and re-assembles the input by hand,
+// which is testing the parts rather than the dish: the handler could revert to
+// the grid-only path — silently reporting a refusal instead of running the
+// policy — and that test would stay green. This one goes red if it does.
+func TestHdfCompliance_ThresholdRulesThroughTheHandler(t *testing.T) {
+	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
+
+	_, out := callCompliance(t, complianceInput{
+		Source: handle.Source{Path: path},
+		Threshold: &thresholdInput{Inline: map[string]any{
+			"rules": []any{map[string]any{
+				"name":  "no failures",
+				"where": map[string]any{"status": []any{"failed"}},
+				"max":   0,
+			}},
+		}},
+	})
+	if out.ThresholdVerdict == nil {
+		t.Fatal("a rules-bearing spec must produce a verdict")
+	}
+	if out.ThresholdVerdict.Pass {
+		t.Errorf("the fixture has failing requirements, so the rule must fail: %+v", out.ThresholdVerdict)
+	}
+	joined := strings.Join(out.ThresholdVerdict.Failures, "\n")
+	if !strings.Contains(joined, "no failures:") || !strings.Contains(joined, "maximum 0") {
+		t.Errorf("failures = %v, want the rule's own violation", out.ThresholdVerdict.Failures)
+	}
+	// The refusal is what the grid-only path emits for a rules-bearing spec.
+	// Seeing it here means the handler is not applying the policy at all.
+	if strings.Contains(joined, "cannot apply") {
+		t.Errorf("the handler reported the grid-only refusal instead of evaluating the rule: %v",
+			out.ThresholdVerdict.Failures)
 	}
 }

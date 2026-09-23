@@ -310,7 +310,12 @@ func TestAEdgeCases(t *testing.T) {
 func TestAInvalidInputs(t *testing.T) {
 	runCLITests(t, []cliTest{
 		{name: "validate nonexistent file", args: []string{"validate", "nonexistent.json"}, wantErr: true, wantErrMsg: "file not found"},
-		{name: "query with invalid status", args: []string{"query", "--status", "invalid", testFixturePath(t, "minimal-v2.json")}},
+		// This case used to assert that an invalid status did NOT error: it
+		// matched nothing and exited clean, which reads as a filter that ran and
+		// found nothing rather than one that never applied. Status is a closed
+		// vocabulary, so it is now refused.
+		{name: "query with invalid status", args: []string{"query", "--status", "invalid", testFixturePath(t, "minimal-v2.json")},
+			wantErr: true, wantErrMsg: "unknown --status value"},
 	})
 }
 

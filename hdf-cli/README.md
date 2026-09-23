@@ -143,12 +143,23 @@ USAGE
   hdf validate threshold <results.json> [flags]
 
 FLAGS
-  -T, --template string   Threshold YAML template file
-  -I, --inline string     Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+  -T, --template stringArray   Threshold YAML template file (repeatable; every spec must pass)
+  -I, --inline stringArray     Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
 
 EXAMPLES
   hdf validate threshold results.json -T threshold.yaml
   hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+
+  # Several specs are a conjunction: every one is evaluated, the run fails if any
+  # fails, and the violation names which. -T and -I may be combined, and one file
+  # may hold several YAML documents (reported as policy.yaml#1, policy.yaml#2).
+  hdf validate threshold results.json -T baseline.yaml -T repo-specific.yaml
+
+  # A rule is a filter predicate plus a bound, for policies the status x severity
+  # grid cannot express. -I accepts anything a file accepts, so this is the same
+  # language either way.
+  hdf validate threshold results.json \
+    -I "{rules: [{name: nothing fails without a plan, where: {status: [failed], poams: none-valid}, max: 0}]}"
 ```
 
 ### list
@@ -223,13 +234,27 @@ FLAGS
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
       --id string              Filter by requirement ID, STIG ID, GID, or group title
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
+      --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
+                               not_applicable and notApplicable are one value; the pre-3.7 severity
+                               "none" still names informational.
+      --disposition stringArray  Filter by the governing override's type (repeatable, OR logic): waiver,
+                               falsePositive, riskAdjustment, attestation, operationalRequirement,
+                               inherited, poam
+      --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
+                               none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description
   -p, --baseline string        Filter by profile name
   -c, --count                  Show only the count of matching controls
   -l, --limit int              Limit number of results (0 = unlimited)
 
-Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`) OR their own
-values together; different filter types combine with AND.
+Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`,
+`--disposition`) OR their own values together; different filter types combine with AND.
+
+`--status` reports EFFECTIVE status, so a requirement with a governing waiver is
+already off `failed` before the filter sees it. `--disposition` names the type of
+the override doing that, and `--poams` reports whether a remediation plan is still
+in force — `none-valid` deliberately covers "no POA&M", "an empty list" and "only
+lapsed ones" as one condition, because a plan that has expired is not a plan.
 
 EXAMPLES
   hdf query results.json --status failed
@@ -239,6 +264,8 @@ EXAMPLES
   hdf query results.json --id V-230221
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password policy"
+  hdf query results.json --disposition waiver --severity critical
+  hdf query results.json --status failed --poams none-valid
   hdf query results.json --impact ">0.5" --status failed
   hdf query results.json --status failed --count
   hdf query results.json --limit 20 --status failed

@@ -3,6 +3,8 @@ package threshold
 import (
 	"strings"
 	"testing"
+
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 )
 
 // The specs below are the contract both surfaces enforce. `hdf validate
@@ -10,6 +12,24 @@ import (
 // routes — a YAML file and a JSON-marshalled inline object — so proving the
 // behavior here is what makes the two surfaces agree by construction rather
 // than by two implementations that happen to match today.
+
+// decodeOne parses a stream expected to hold exactly one policy and returns it.
+// Most specs are a single document; the tests that care about several use
+// DecodeAll directly.
+func decodeOne(t *testing.T, spec string) (*hdfengine.ThresholdConfig, error) {
+	t.Helper()
+	specs, err := DecodeAll([]byte(spec), "spec.yaml")
+	if err != nil {
+		return nil, err
+	}
+	if len(specs) > 1 {
+		t.Fatalf("got %d policies, want at most 1", len(specs))
+	}
+	if len(specs) == 0 {
+		return &hdfengine.ThresholdConfig{}, nil
+	}
+	return specs[0].Config, nil
+}
 
 func TestDecode_RejectsUnknownKeyAtEveryLevel(t *testing.T) {
 	for name, tc := range map[string]struct{ spec, wants string }{
@@ -19,7 +39,7 @@ func TestDecode_RejectsUnknownKeyAtEveryLevel(t *testing.T) {
 		"compliance": {"compliance:\n  mn: 80\n", "is not a known compliance field"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := Decode([]byte(tc.spec))
+			_, err := decodeOne(t, tc.spec)
 			if err == nil {
 				t.Fatal("unknown key must be rejected")
 			}
@@ -37,7 +57,7 @@ func TestDecode_RejectsUnknownKeyAtEveryLevel(t *testing.T) {
 
 func TestDecode_AcceptsJSONAsWellAsYAML(t *testing.T) {
 	// The MCP inline route marshals its object to JSON and decodes it here.
-	cfg, err := Decode([]byte(`{"failed":{"total":{"max":0}}}`))
+	cfg, err := decodeOne(t, `{"failed":{"total":{"max":0}}}`)
 	if err != nil {
 		t.Fatalf("JSON spec must decode, got %v", err)
 	}
@@ -45,7 +65,7 @@ func TestDecode_AcceptsJSONAsWellAsYAML(t *testing.T) {
 		t.Errorf("assertion count = %d, want 1", AssertionCount(cfg))
 	}
 
-	if _, err := Decode([]byte(`{"faild":{"total":{"max":0}}}`)); err == nil {
+	if _, err := decodeOne(t, `{"faild":{"total":{"max":0}}}`); err == nil {
 		t.Error("an unknown key must be rejected in JSON too")
 	}
 }
@@ -71,7 +91,7 @@ error:
 no_impact:
   total: { max: 1000 }
 `
-	cfg, err := Decode([]byte(spec))
+	cfg, err := decodeOne(t, spec)
 	if err != nil {
 		t.Fatalf("every documented key must decode, got %v", err)
 	}
@@ -91,7 +111,7 @@ func TestAssertionCount_ZeroForSpecsThatAssertNothing(t *testing.T) {
 		"empty controls": "failed:\n  total:\n    controls: []\n",
 	} {
 		t.Run(name, func(t *testing.T) {
-			cfg, err := Decode([]byte(spec))
+			cfg, err := decodeOne(t, spec)
 			if err != nil {
 				t.Fatalf("spec must parse (it is well-formed), got %v", err)
 			}
@@ -103,7 +123,7 @@ func TestAssertionCount_ZeroForSpecsThatAssertNothing(t *testing.T) {
 }
 
 func TestAssertionCount_CountsControlsAndNilConfig(t *testing.T) {
-	cfg, err := Decode([]byte("failed:\n  total:\n    controls: [\"V-1\", \"V-2\"]\n"))
+	cfg, err := decodeOne(t, "failed:\n  total:\n    controls: [\"V-1\", \"V-2\"]\n")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,5 +132,258 @@ func TestAssertionCount_CountsControlsAndNilConfig(t *testing.T) {
 	}
 	if got := AssertionCount(nil); got != 0 {
 		t.Errorf("nil config = %d, want 0", got)
+	}
+}
+
+// A spec stream holding several documents used to be truncated at the first and
+// then, from 3.7, rejected outright. Both were stop-gaps for the same hole: the
+// documents after the first had no defined meaning. They do now — a conjunction —
+// so they are kept and evaluated. This test replaces the rejection it supersedes;
+// what must never come back is the silent truncation both of them prevented.
+func TestDecodeAll_KeepsEveryDocumentItUsedToRejectOrDrop(t *testing.T) {
+	for name, tc := range map[string]struct {
+		spec string
+		want int
+	}{
+		"two policies":          {"failed:\n  total:\n    max: 0\n---\npassed:\n  total:\n    min: 1\n", 2},
+		"content after blanks":  {"failed:\n  total:\n    max: 0\n---\n\npassed:\n  total:\n    min: 1\n", 2},
+		"three policies":        {"failed:\n  total:\n    max: 0\n---\npassed:\n  total:\n    min: 1\n---\nskipped:\n  total:\n    max: 2\n", 3},
+		"empty map is a policy": {"failed:\n  total:\n    max: 0\n---\n{}\n", 2},
+	} {
+		t.Run(name, func(t *testing.T) {
+			specs, err := DecodeAll([]byte(tc.spec), "policy.yaml")
+			if err != nil {
+				t.Fatalf("DecodeAll() = %v, want %d policies", err, tc.want)
+			}
+			if len(specs) != tc.want {
+				t.Fatalf("got %d policies, want %d", len(specs), tc.want)
+			}
+		})
+	}
+}
+
+// Separators that introduce no second document stay legal. A leading `---` is
+// how many generated and hand-edited templates begin, so rejecting it is the
+// obvious way to break every real spec while closing the hole above. Measured
+// with yaml.v3: a bare trailing `---`, a repeated one, and a comment-only tail
+// each decode to a null-tagged scalar carrying no value — nothing the author
+// wrote is discarded, so there is nothing to report.
+func TestDecode_AcceptsSeparatorsCarryingNoSecondDocument(t *testing.T) {
+	for name, spec := range map[string]string{
+		"leading separator":       "---\nfailed:\n  total:\n    max: 0\n",
+		"trailing separator":      "failed:\n  total:\n    max: 0\n---\n",
+		"two trailing separators": "failed:\n  total:\n    max: 0\n---\n---\n",
+		"comment after separator": "failed:\n  total:\n    max: 0\n---\n# nothing here\n",
+		"explicit end marker":     "failed:\n  total:\n    max: 0\n...\n",
+		"both ends":               "---\nfailed:\n  total:\n    max: 0\n---\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg, err := decodeOne(t, spec)
+			if err != nil {
+				t.Fatalf("DecodeAll() = %v, want the spec accepted", err)
+			}
+			if cfg.Failed == nil || cfg.Failed.Total == nil || cfg.Failed.Total.Max == nil {
+				t.Fatalf("the first document must still be the one evaluated; got %+v", cfg)
+			}
+			if *cfg.Failed.Total.Max != 0 {
+				t.Errorf("failed.total.max = %d, want 0", *cfg.Failed.Total.Max)
+			}
+		})
+	}
+}
+
+// A spec stream may now hold several policies, evaluated as a conjunction. Each
+// one is returned separately with a label, because a violation has to be able to
+// name the policy it came from once a run applies more than one.
+func TestDecodeAll_ReturnsOneSpecPerDocument(t *testing.T) {
+	specs, err := DecodeAll([]byte("failed:\n  total:\n    max: 0\n---\npassed:\n  total:\n    min: 1\n"), "policy.yaml")
+	if err != nil {
+		t.Fatalf("DecodeAll() = %v, want two specs", err)
+	}
+	if len(specs) != 2 {
+		t.Fatalf("got %d specs, want 2", len(specs))
+	}
+	// 1-based, because a person counting documents in a file starts at one.
+	if specs[0].Label != "policy.yaml#1" || specs[1].Label != "policy.yaml#2" {
+		t.Errorf("labels = %q, %q; want policy.yaml#1, policy.yaml#2", specs[0].Label, specs[1].Label)
+	}
+	if specs[0].Config.Failed == nil || specs[0].Config.Failed.Total == nil {
+		t.Errorf("first spec lost its bounds: %+v", specs[0].Config)
+	}
+	if specs[1].Config.Passed == nil || specs[1].Config.Passed.Total == nil {
+		t.Errorf("second spec lost its bounds: %+v", specs[1].Config)
+	}
+	// Documents stay separate. Merging two policies that bound the same key has
+	// no defensible answer; evaluating both does.
+	if specs[0].Config.Passed != nil || specs[1].Config.Failed != nil {
+		t.Error("documents were merged into one another")
+	}
+}
+
+// The common case must not grow an index it does not need.
+func TestDecodeAll_SingleDocumentCarriesNoIndex(t *testing.T) {
+	for name, spec := range map[string]string{
+		"plain":              "failed:\n  total:\n    max: 0\n",
+		"leading separator":  "---\nfailed:\n  total:\n    max: 0\n",
+		"trailing separator": "failed:\n  total:\n    max: 0\n---\n",
+		"comment tail":       "failed:\n  total:\n    max: 0\n---\n# nothing here\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			specs, err := DecodeAll([]byte(spec), "policy.yaml")
+			if err != nil {
+				t.Fatalf("DecodeAll() = %v", err)
+			}
+			if len(specs) != 1 {
+				t.Fatalf("got %d specs, want 1 — a separator carrying no document is not a policy", len(specs))
+			}
+			if specs[0].Label != "policy.yaml" {
+				t.Errorf("label = %q, want the bare source with no index", specs[0].Label)
+			}
+		})
+	}
+}
+
+// Strictness has to reach EVERY document. Before specs were decoded one by one,
+// a key typed into the second document was unreachable: the decoder stopped at
+// the first, so the typo was never seen by anything.
+func TestDecodeAll_EnforcesKnownKeysInEveryDocument(t *testing.T) {
+	_, err := DecodeAll([]byte("failed:\n  total:\n    max: 0\n---\nfaild:\n  total:\n    max: 5\n"), "policy.yaml")
+	if err == nil {
+		t.Fatal("a typo in the second document must be rejected")
+	}
+	if !strings.Contains(err.Error(), "is not a known threshold category") {
+		t.Errorf("error = %q, want it to name the unknown category", err.Error())
+	}
+	// The message must say WHICH document, or a spec with many policies gives no
+	// way to find the offending one.
+	if !strings.Contains(err.Error(), "policy.yaml#2") {
+		t.Errorf("error = %q, want it to name policy.yaml#2", err.Error())
+	}
+}
+
+// An empty stream yields no specs at all; callers report "asserts nothing"
+// rather than this layer inventing an empty policy that passes everything.
+func TestDecodeAll_EmptyInputYieldsNoSpecs(t *testing.T) {
+	for name, spec := range map[string]string{"empty": "", "separator only": "---\n", "comment only": "# nothing\n"} {
+		t.Run(name, func(t *testing.T) {
+			specs, err := DecodeAll([]byte(spec), "policy.yaml")
+			if err != nil {
+				t.Fatalf("DecodeAll() = %v", err)
+			}
+			if len(specs) != 0 {
+				t.Errorf("got %d specs, want none", len(specs))
+			}
+		})
+	}
+}
+
+// A spec whose only content is rules asserts plenty. Counting only grid bounds
+// reported it as "asserts nothing" and told the author to add a bound they had
+// already written — the guard firing on the very spec it exists to protect.
+func TestAssertionCount_CountsRuleBounds(t *testing.T) {
+	zero := 0
+	rulesOnly := &hdfengine.ThresholdConfig{Rules: []hdfengine.ThresholdRule{{
+		Name:  "nothing fails without a plan",
+		Where: hdfengine.RulePredicate{Status: []string{"failed"}, Poams: "none-valid"},
+		Max:   &zero,
+	}}}
+	if got := AssertionCount(rulesOnly); got != 1 {
+		t.Errorf("AssertionCount() = %d, want 1 — a rules-only spec asserts a bound", got)
+	}
+
+	// A rule bounding nothing still asserts nothing, so the guard keeps working
+	// for the case it was written for.
+	boundless := &hdfengine.ThresholdConfig{Rules: []hdfengine.ThresholdRule{{
+		Name:  "asserts nothing",
+		Where: hdfengine.RulePredicate{Status: []string{"failed"}},
+	}}}
+	if got := AssertionCount(boundless); got != 0 {
+		t.Errorf("AssertionCount() = %d, want 0 — a rule with neither min nor max bounds nothing", got)
+	}
+}
+
+// A predicate naming a value outside its vocabulary can only ever match nothing,
+// so a rule built on one is a gate that passes forever while looking like a
+// gate. That is the same false green a misspelled key produces, reached through
+// a value instead of a key, and it has to be refused at decode.
+func TestDecodeAll_RejectsAPredicateThatCanNeverMatch(t *testing.T) {
+	for name, tc := range map[string]struct{ spec, wants string }{
+		"status": {
+			"rules:\n  - name: r\n    where: {status: [faild]}\n    max: 0\n",
+			`"faild"`,
+		},
+		"severity": {
+			"rules:\n  - name: r\n    where: {severity: [crit]}\n    max: 0\n",
+			`"crit"`,
+		},
+		"disposition": {
+			"rules:\n  - name: r\n    where: {disposition: [waver]}\n    max: 0\n",
+			`"waver"`,
+		},
+		"poams": {
+			"rules:\n  - name: r\n    where: {poams: absent}\n    max: 0\n",
+			`"absent"`,
+		},
+		"impact": {
+			"rules:\n  - name: r\n    where: {impact: \">>7\"}\n    max: 0\n",
+			`">>7"`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := DecodeAll([]byte(tc.spec), "policy.yaml")
+			if err == nil {
+				t.Fatal("a predicate that can never match must be refused")
+			}
+			if !strings.Contains(err.Error(), tc.wants) {
+				t.Errorf("error = %q, want it to name the offending value %s", err.Error(), tc.wants)
+			}
+			// The rule has to be identifiable, or a spec with several gives no way
+			// to find the offending one.
+			if !strings.Contains(err.Error(), "r") {
+				t.Errorf("error = %q, want it to name the rule", err.Error())
+			}
+		})
+	}
+}
+
+// A predicate that is merely unsatisfied TODAY is a healthy gate, not a broken
+// spec. Rejecting it would fail a working policy the day its findings are fixed.
+func TestDecodeAll_AcceptsAPredicateThatMatchesNothingToday(t *testing.T) {
+	spec := "rules:\n  - name: no criticals\n    where: {status: [failed], severity: [critical]}\n    max: 0\n"
+	if _, err := DecodeAll([]byte(spec), "policy.yaml"); err != nil {
+		t.Fatalf("DecodeAll() = %v, want a legal predicate accepted", err)
+	}
+}
+
+// Every spelling the engine normalizes must survive decode, or the vocabulary is
+// closed in one place and open in another.
+func TestDecodeAll_AcceptsEveryAcceptedSpelling(t *testing.T) {
+	for _, spelling := range []string{"not_applicable", "notApplicable", "NOTAPPLICABLE"} {
+		spec := "rules:\n  - name: r\n    where: {status: [" + spelling + "]}\n    max: 0\n"
+		if _, err := DecodeAll([]byte(spec), "policy.yaml"); err != nil {
+			t.Errorf("DecodeAll(%q) = %v, want it accepted", spelling, err)
+		}
+	}
+}
+
+// A typo inside a rule must read in the spec's vocabulary like every other typo,
+// not leak the Go type that happened to reject it.
+func TestDecodeAll_RuleKeyTypoReadsInTheSpecsVocabulary(t *testing.T) {
+	for name, tc := range map[string]struct{ spec, wants string }{
+		"predicate field": {"rules:\n  - where: {stats: [failed]}\n    max: 0\n", "is not a known predicate field"},
+		"rule field":      {"rules:\n  - wher: {status: [failed]}\n    max: 0\n", "is not a known rule field"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := DecodeAll([]byte(tc.spec), "policy.yaml")
+			if err == nil {
+				t.Fatal("an unknown key must be rejected")
+			}
+			if !strings.Contains(err.Error(), tc.wants) {
+				t.Errorf("error = %q, want %q", err.Error(), tc.wants)
+			}
+			if strings.Contains(err.Error(), "hdfengine.") {
+				t.Errorf("error leaks a Go type name: %q", err.Error())
+			}
+		})
 	}
 }

@@ -23,6 +23,26 @@ export { detect, type HdfDocType } from './detect.js';
 // Query engine (peer of hdf-engine/go/filter.go).
 export { filter, type FilterOptions, type Match } from './query.js';
 
+// Threshold rules: a filter predicate plus a bound, for the policies the fixed
+// status x severity grid cannot express.
+export {
+  evaluateRules,
+  evaluate,
+  type ThresholdInput,
+  type ThresholdRule,
+  type RulePredicate,
+  type RuleOptions,
+} from './rules.js';
+export { validateGrid, ruleRefusal } from './compliance.js';
+export {
+  validStatus,
+  validSeverity,
+  normalizeFilterValue,
+  normalizeKey,
+  STATUS_VALUES,
+  SEVERITY_VALUES,
+} from './vocabulary.js';
+
 // Document loader core (peer of hdf-engine/go/loader.go).
 export { load, detectFormat, type InputFormat, type LoadResult } from './loader.js';
 
