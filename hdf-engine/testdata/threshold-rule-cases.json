@@ -1,5 +1,5 @@
 {
-  "$comment": "Threshold rules: a predicate plus a bound, evaluated by filtering the document and counting the matches. go/compliance_test.go and test/compliance.test.ts read THIS file and run THESE cases, so the two evaluators are held to one contract. 'now' is the injected reference clock, so POA&M and override expiry are properties of the fixture rather than of the day the suite runs. The fixture deliberately includes a requirement whose governing waiver moves it off 'failed', because the point of keying rules on status is that amendments are already applied when a rule sees the document. Note the passing count is TWO, not one: WAIVED-CRITICAL's governing waiver sets its status to passed, which is the whole reason rules key on effective status. refusalByCount pins the wording and the singular/plural of the message a grid-only evaluation emits for a rules-bearing spec; both languages assert against it rather than against their own copy.",
+  "$comment": "Threshold rules: a predicate plus a bound, evaluated by filtering the document and counting the matches. go/compliance_test.go and test/compliance.test.ts read THIS file and run THESE cases, so the two evaluators are held to one contract. 'now' is the injected reference clock, so POA&M and override expiry are properties of the fixture rather than of the day the suite runs. The fixture deliberately includes a requirement whose governing waiver moves it off 'failed', because the point of keying rules on status is that amendments are already applied when a rule sees the document. Note the passing count is TWO, not one: WAIVED-CRITICAL's governing waiver sets its status to passed, which is the whole reason rules key on effective status. refusalByCount pins the wording and the singular/plural of the message a grid-only evaluation emits for a rules-bearing spec; both languages assert against it rather than against their own copy. predicateFields pins the predicate surface in one place. Go maps predicate fields onto the filter explicitly while TypeScript spreads ...where, so a field added to one language reaches the filter there and silently does nothing in the other; both suites assert their own definition against this list, so adding a field means updating all three or a test goes red.",
   "now": "2026-01-01T00:00:00Z",
   "fixture": {
     "baselines": [
@@ -265,5 +265,18 @@
   "refusalByCount": {
     "1": "this spec declares 1 rule, which this evaluation path cannot apply; the tool must evaluate rules against the document, not against counts alone",
     "2": "this spec declares 2 rules, which this evaluation path cannot apply; the tool must evaluate rules against the document, not against counts alone"
-  }
+  },
+  "predicateFields": [
+    "status",
+    "severity",
+    "impact",
+    "cci",
+    "nist",
+    "id",
+    "tag",
+    "search",
+    "baseline",
+    "disposition",
+    "poams"
+  ]
 }

@@ -301,3 +301,89 @@ func TestAssertionCount_CountsRuleBounds(t *testing.T) {
 		t.Errorf("AssertionCount() = %d, want 0 — a rule with neither min nor max bounds nothing", got)
 	}
 }
+
+// A predicate naming a value outside its vocabulary can only ever match nothing,
+// so a rule built on one is a gate that passes forever while looking like a
+// gate. That is the same false green a misspelled key produces, reached through
+// a value instead of a key, and it has to be refused at decode.
+func TestDecodeAll_RejectsAPredicateThatCanNeverMatch(t *testing.T) {
+	for name, tc := range map[string]struct{ spec, wants string }{
+		"status": {
+			"rules:\n  - name: r\n    where: {status: [faild]}\n    max: 0\n",
+			`"faild"`,
+		},
+		"severity": {
+			"rules:\n  - name: r\n    where: {severity: [crit]}\n    max: 0\n",
+			`"crit"`,
+		},
+		"disposition": {
+			"rules:\n  - name: r\n    where: {disposition: [waver]}\n    max: 0\n",
+			`"waver"`,
+		},
+		"poams": {
+			"rules:\n  - name: r\n    where: {poams: absent}\n    max: 0\n",
+			`"absent"`,
+		},
+		"impact": {
+			"rules:\n  - name: r\n    where: {impact: \">>7\"}\n    max: 0\n",
+			`">>7"`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := DecodeAll([]byte(tc.spec), "policy.yaml")
+			if err == nil {
+				t.Fatal("a predicate that can never match must be refused")
+			}
+			if !strings.Contains(err.Error(), tc.wants) {
+				t.Errorf("error = %q, want it to name the offending value %s", err.Error(), tc.wants)
+			}
+			// The rule has to be identifiable, or a spec with several gives no way
+			// to find the offending one.
+			if !strings.Contains(err.Error(), "r") {
+				t.Errorf("error = %q, want it to name the rule", err.Error())
+			}
+		})
+	}
+}
+
+// A predicate that is merely unsatisfied TODAY is a healthy gate, not a broken
+// spec. Rejecting it would fail a working policy the day its findings are fixed.
+func TestDecodeAll_AcceptsAPredicateThatMatchesNothingToday(t *testing.T) {
+	spec := "rules:\n  - name: no criticals\n    where: {status: [failed], severity: [critical]}\n    max: 0\n"
+	if _, err := DecodeAll([]byte(spec), "policy.yaml"); err != nil {
+		t.Fatalf("DecodeAll() = %v, want a legal predicate accepted", err)
+	}
+}
+
+// Every spelling the engine normalizes must survive decode, or the vocabulary is
+// closed in one place and open in another.
+func TestDecodeAll_AcceptsEveryAcceptedSpelling(t *testing.T) {
+	for _, spelling := range []string{"not_applicable", "notApplicable", "NOTAPPLICABLE"} {
+		spec := "rules:\n  - name: r\n    where: {status: [" + spelling + "]}\n    max: 0\n"
+		if _, err := DecodeAll([]byte(spec), "policy.yaml"); err != nil {
+			t.Errorf("DecodeAll(%q) = %v, want it accepted", spelling, err)
+		}
+	}
+}
+
+// A typo inside a rule must read in the spec's vocabulary like every other typo,
+// not leak the Go type that happened to reject it.
+func TestDecodeAll_RuleKeyTypoReadsInTheSpecsVocabulary(t *testing.T) {
+	for name, tc := range map[string]struct{ spec, wants string }{
+		"predicate field": {"rules:\n  - where: {stats: [failed]}\n    max: 0\n", "is not a known predicate field"},
+		"rule field":      {"rules:\n  - wher: {status: [failed]}\n    max: 0\n", "is not a known rule field"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := DecodeAll([]byte(tc.spec), "policy.yaml")
+			if err == nil {
+				t.Fatal("an unknown key must be rejected")
+			}
+			if !strings.Contains(err.Error(), tc.wants) {
+				t.Errorf("error = %q, want %q", err.Error(), tc.wants)
+			}
+			if strings.Contains(err.Error(), "hdfengine.") {
+				t.Errorf("error leaks a Go type name: %q", err.Error())
+			}
+		})
+	}
+}

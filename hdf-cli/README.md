@@ -154,6 +154,12 @@ EXAMPLES
   # fails, and the violation names which. -T and -I may be combined, and one file
   # may hold several YAML documents (reported as policy.yaml#1, policy.yaml#2).
   hdf validate threshold results.json -T baseline.yaml -T repo-specific.yaml
+
+  # A rule is a filter predicate plus a bound, for policies the status x severity
+  # grid cannot express. -I accepts anything a file accepts, so this is the same
+  # language either way.
+  hdf validate threshold results.json \
+    -I "{rules: [{name: nothing fails without a plan, where: {status: [failed], poams: none-valid}, max: 0}]}"
 ```
 
 ### list
@@ -228,6 +234,9 @@ FLAGS
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
       --id string              Filter by requirement ID, STIG ID, GID, or group title
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
+      --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
+                               not_applicable and notApplicable are one value; the pre-3.7 severity
+                               "none" still names informational.
       --disposition stringArray  Filter by the governing override's type (repeatable, OR logic): waiver,
                                falsePositive, riskAdjustment, attestation, operationalRequirement,
                                inherited, poam

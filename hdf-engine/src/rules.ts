@@ -14,6 +14,26 @@ import {
 } from './compliance.js';
 
 /**
+ * The predicate surface, in one place. Go maps these onto the filter explicitly
+ * while TypeScript spreads them, so a field known to one language and not the
+ * other is silently inert on one side; the shared case table pins this list, and
+ * the assertion below stops the interface drifting away from it.
+ */
+export const PREDICATE_FIELDS = [
+  'status',
+  'severity',
+  'impact',
+  'cci',
+  'nist',
+  'id',
+  'tag',
+  'search',
+  'baseline',
+  'disposition',
+  'poams',
+] as const;
+
+/**
  * The vocabulary a rule may name. It is deliberately the filter engine's own
  * vocabulary rather than a second one: a rule and an `hdf query` invocation then
  * mean the same thing. Values within a field OR; fields AND.
@@ -150,3 +170,11 @@ export function evaluate(config: ThresholdConfig, input: ThresholdInput): string
     evaluateRules(config, input.results, { now: input.now, statusOf: input.statusOf })
   );
 }
+
+// Compile-time guard: a field added to RulePredicate and not to PREDICATE_FIELDS
+// would reach the TypeScript filter through the spread and never reach Go, which
+// is the drift the shared field list exists to prevent. This fails the build
+// rather than waiting for a test nobody wrote.
+type UnlistedPredicateField = Exclude<keyof RulePredicate, (typeof PREDICATE_FIELDS)[number]>;
+const _everyPredicateFieldIsListed: UnlistedPredicateField extends never ? true : never = true;
+void _everyPredicateFieldIsListed;

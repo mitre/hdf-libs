@@ -31,6 +31,8 @@ var keyVocabulary = strings.NewReplacer(
 	"not found in type hdfengine.ThresholdSeverity", "is not a known severity field",
 	"not found in type hdfengine.ThresholdBound", "is not a known bound",
 	"not found in type hdfengine.ComplianceBound", "is not a known compliance field",
+	"not found in type hdfengine.ThresholdRule", "is not a known rule field",
+	"not found in type hdfengine.RulePredicate", "is not a known predicate field",
 )
 
 // Spec is one threshold policy together with where it came from. A run may apply
@@ -81,6 +83,9 @@ func DecodeAll(raw []byte, source string) ([]Spec, error) {
 		if config == nil {
 			continue
 		}
+		if err := validateRules(config.Rules, labelAt(source, len(specs)+1)); err != nil {
+			return nil, err
+		}
 		specs = append(specs, Spec{Config: config, Label: source})
 	}
 
@@ -92,6 +97,52 @@ func DecodeAll(raw []byte, source string) ([]Spec, error) {
 		}
 	}
 	return specs, nil
+}
+
+// validateRules refuses a predicate that can never match. A value outside its
+// vocabulary returns nothing for every document, so a rule built on one is a
+// gate that passes forever while looking like a gate — the same false green a
+// misspelled key produces, reached through a value instead of a key.
+//
+// A predicate that merely matches nothing TODAY is a healthy gate and is
+// accepted: rejecting it would fail a working policy the day its findings are
+// fixed. The distinction is whether the value NAMES something, not whether
+// anything currently has it.
+func validateRules(rules []hdfengine.ThresholdRule, label string) error {
+	for i, rule := range rules {
+		name := rule.Name
+		if name == "" {
+			name = fmt.Sprintf("rule %d", i+1)
+		}
+		check := func(field string, values []string, valid func(string) bool, legal []string) error {
+			for _, value := range values {
+				if valid(value) {
+					continue
+				}
+				return fmt.Errorf("%s: %s: %s %q is not a known value (expected one of: %s)",
+					label, name, field, value, strings.Join(legal, ", "))
+			}
+			return nil
+		}
+		for _, bad := range []error{
+			check("status", rule.Where.Status, hdfengine.ValidStatus, hdfengine.StatusValues),
+			check("severity", rule.Where.Severity, hdfengine.ValidSeverity, hdfengine.SeverityValues),
+			check("disposition", rule.Where.Disposition, hdfengine.ValidDisposition, hdfengine.DispositionValues),
+		} {
+			if bad != nil {
+				return bad
+			}
+		}
+		if rule.Where.Poams != "" && !hdfengine.ValidPoamFilter(rule.Where.Poams) {
+			return fmt.Errorf("%s: %s: poams %q is not a known value (expected one of: %s, %s)",
+				label, name, rule.Where.Poams, hdfengine.PoamValid, hdfengine.PoamNoneValid)
+		}
+		if rule.Where.Impact != "" && !hdfengine.ValidImpactFilter(rule.Where.Impact) {
+			return fmt.Errorf("%s: %s: impact %q is not a comparison (expected e.g. \">=0.7\")",
+				label, name, rule.Where.Impact)
+		}
+	}
+	return nil
 }
 
 // labelAt names the nth policy of a stream, 1-based. The index counts POLICIES

@@ -96,6 +96,11 @@ func TestFilter_AllNineFilters(t *testing.T) {
 	}{
 		{"no filters", Options{}, []string{"SV-100001", "SV-100002", "SV-230221", "SV-230222", "SV-230223"}},
 		{"status single", Options{Status: []string{"failed"}}, []string{"SV-230221"}},
+		// testStatusOf returns the CLI's display vocabulary (not_applicable),
+		// while a spec names the schema's (notApplicable). Both sides of the
+		// comparison canonicalize, which is what reconciles them; without the
+		// actual-side half this selects nothing.
+		{"status canonical against a display-vocabulary resolver", Options{Status: []string{"notApplicable"}}, []string{"SV-230223"}},
 		{"status OR", Options{Status: []string{"failed", "passed"}}, []string{"SV-230221", "SV-230222"}},
 		{"severity single", Options{Severity: []string{"critical"}}, []string{"SV-230221"}},
 		{"severity OR", Options{Severity: []string{"high", "medium"}}, []string{"SV-230222", "SV-230223"}},

@@ -166,6 +166,23 @@ type ThresholdInput struct {
 	StatusOf   func(control hdf.EvaluatedRequirement) string
 }
 
+// NewThresholdInput derives everything an evaluation needs from ONE resolver.
+// Building the counts, the control listing and the rules' status from the same
+// function is the difference between a gate that cannot disagree with itself and
+// one that merely happens not to: the struct's fields are independently settable,
+// so two call sites hand-assembling it is two chances to pair a grid counted one
+// way with rules filtered another.
+func NewThresholdInput(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequirement) string) ThresholdInput {
+	counts := CountControlsByStatus(results, statusOf)
+	return ThresholdInput{
+		Results:    results,
+		Counts:     counts,
+		Compliance: CalculateCompliance(counts),
+		ControlMap: MapControlIDsByStatus(results, statusOf),
+		StatusOf:   statusOf,
+	}
+}
+
 // Evaluate applies a whole policy — the grid and the rules — and returns every
 // violation. This is the entry point a surface should call: ValidateThresholds
 // evaluates the grid alone and refuses a config carrying rules, so a caller

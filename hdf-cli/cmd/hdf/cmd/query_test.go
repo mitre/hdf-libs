@@ -537,3 +537,38 @@ func TestQueryDisposition_LegalValueReachesTheFilter(t *testing.T) {
 	assert.Contains(t, err.Error(), "no matching requirements")
 	assert.NotContains(t, err.Error(), "unknown --disposition value")
 }
+
+// The claim in the CHANGELOG and the README is that an unrecognized --status or
+// --severity is refused rather than matched against nothing. This is the test
+// that makes the claim true: a filter reporting a clean run over a predicate
+// that never applied is the false green this vocabulary exists to prevent.
+func TestQueryStatusAndSeverity_UnknownValuesAreRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for flag, bad := range map[string]string{"--status": "faild", "--severity": "crit"} {
+		t.Run(flag, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, flag, bad)
+			require.Error(t, err, "%s %q must be refused, not silently match nothing", flag, bad)
+			assert.Contains(t, err.Error(), "unknown "+flag+" value")
+		})
+	}
+}
+
+// And every spelling the engine normalizes reaches the filter through the CLI,
+// so a saved command line keeps working and the two surfaces agree.
+func TestQueryStatusAndSeverity_AcceptedSpellingsReachTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, spelling := range []string{"not_applicable", "notApplicable", "NOTAPPLICABLE"} {
+		_, _, err := executeCommand("query", resultsPath, "--status", spelling)
+		// The fixture carries a notApplicable requirement, so every spelling of
+		// it must select something rather than erroring or matching nothing.
+		assert.NoError(t, err, "%q must select the same requirements as its canonical spelling", spelling)
+	}
+	// The pre-3.7 severity spelling still names informational on this surface
+	// too. Asserted as SELECTION, not as the absence of a validation error: the
+	// fixture's impact-0 requirement derives to informational, so if the alias
+	// stopped resolving this would exit 1 with "No matching requirements found"
+	// and an assertion about the error text would not notice.
+	stdout, _, err := executeCommand("query", resultsPath, "--severity", "none")
+	require.NoError(t, err, "the pre-3.7 spelling must still select the informational requirement")
+	assert.Contains(t, stdout, "SV-004", "and select the same one its canonical spelling does")
+}

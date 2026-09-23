@@ -143,14 +143,22 @@ func Filter(ctx context.Context, results hdf.HDFResults, opts Options) []Match {
 func buildFilters(opts Options) []filterFunc {
 	var filters []filterFunc
 
-	// Status filter (OR across values)
+	// Status filter (OR across values). Compared through normalizeKey so the
+	// CLI's display spelling and the schema's camelCase are one value: a filter
+	// copied from `hdf query` and a rule written against the schema must select
+	// the same requirements, or ji20j's decision 2 is not true.
 	if len(opts.Status) > 0 {
 		statuses := make([]string, len(opts.Status))
 		for i, s := range opts.Status {
-			statuses[i] = strings.ToLower(s)
+			statuses[i] = normalizeKey(NormalizeFilterValue("status", s))
 		}
 		filters = append(filters, func(_ hdf.EvaluatedRequirement, s, _ string) bool {
-			s = strings.ToLower(s)
+			// BOTH sides go through the same alias map. The resolver a caller
+			// injects may speak the CLI's display vocabulary (not_applicable)
+			// while the spec speaks the schema's (notApplicable); canonicalizing
+			// the actual value as well as the requested one is what reconciles
+			// them without fuzzily stripping punctuation out of typos.
+			s = normalizeKey(NormalizeFilterValue("status", s))
 			for _, status := range statuses {
 				if s == status {
 					return true
@@ -160,13 +168,16 @@ func buildFilters(opts Options) []filterFunc {
 		})
 	}
 
-	// Severity filter (OR across values)
+	// Severity filter (OR across values). Normalized the same way, and through
+	// the alias map as well, so the pre-3.7 "none" spelling keeps naming the
+	// informational severity on every surface rather than only in the CLI.
 	if len(opts.Severity) > 0 {
 		severities := make([]string, len(opts.Severity))
 		for i, s := range opts.Severity {
-			severities[i] = strings.ToLower(s)
+			severities[i] = normalizeKey(NormalizeFilterValue("severity", s))
 		}
 		filters = append(filters, func(_ hdf.EvaluatedRequirement, _, severity string) bool {
+			severity = normalizeKey(NormalizeFilterValue("severity", severity))
 			for _, sev := range severities {
 				if severity == sev {
 					return true
@@ -182,7 +193,7 @@ func buildFilters(opts Options) []filterFunc {
 	if len(opts.Disposition) > 0 {
 		wanted := make([]string, len(opts.Disposition))
 		for i, d := range opts.Disposition {
-			wanted[i] = strings.ToLower(d)
+			wanted[i] = normalizeKey(NormalizeFilterValue("disposition", d))
 		}
 		filters = append(filters, func(control hdf.EvaluatedRequirement, _, _ string) bool {
 			governing := governingDisposition(control, opts.Now)
@@ -190,7 +201,7 @@ func buildFilters(opts Options) []filterFunc {
 				return false
 			}
 			for _, want := range wanted {
-				if strings.ToLower(governing) == want {
+				if normalizeKey(NormalizeFilterValue("disposition", governing)) == want {
 					return true
 				}
 			}
@@ -423,12 +434,7 @@ var DispositionValues = []string{
 // with this and reject, rather than letting a typo match nothing and pass — the
 // same contract ValidPoamFilter provides for the other amendment filter.
 func ValidDisposition(s string) bool {
-	for _, known := range DispositionValues {
-		if strings.EqualFold(strings.TrimSpace(s), known) {
-			return true
-		}
-	}
-	return false
+	return canonical(DispositionValues, dispositionAliases, s) != ""
 }
 
 // PoamValid and PoamNoneValid are the two values the poams filter accepts.
