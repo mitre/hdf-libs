@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -38,6 +39,23 @@ type Options struct {
 	Tag      []string
 	Search   string
 	Baseline string
+	// Disposition selects by the TYPE of the override that governs the
+	// requirement (waiver, falsePositive, riskAdjustment, …), OR across values.
+	// It is resolved through the same governing-override rule effective status
+	// uses rather than read from the stored disposition field, which is an
+	// output cache: a reader that trusted the cache would disagree with the
+	// status it is filtering alongside.
+	Disposition []string
+	// Poams selects by remediation-plan validity: "valid" for a requirement
+	// carrying a POA&M that is still in force, "none-valid" for one carrying
+	// none, an empty list, or only lapsed ones. Absence and expiry are one
+	// concept on purpose — nobody wants to know a plan exists without caring
+	// whether it is still current, so a presence-only test would exist only to
+	// mislead.
+	Poams string
+	// Now is the reference clock for expiry. Zero means time.Now(), matching
+	// hdfutil's convention, so a test pins the date and production does not.
+	Now      time.Time
 	Limit    int
 	Count    bool
 	StatusOf func(control hdf.EvaluatedRequirement) string
@@ -155,6 +173,38 @@ func buildFilters(opts Options) []filterFunc {
 				}
 			}
 			return false
+		})
+	}
+
+	// Disposition filter (OR across values). Matches the governing override's
+	// type; a requirement with no governing override matches nothing, which is
+	// what makes "waived" and "not waived" answerable as opposites.
+	if len(opts.Disposition) > 0 {
+		wanted := make([]string, len(opts.Disposition))
+		for i, d := range opts.Disposition {
+			wanted[i] = strings.ToLower(d)
+		}
+		filters = append(filters, func(control hdf.EvaluatedRequirement, _, _ string) bool {
+			governing := governingDisposition(control, opts.Now)
+			if governing == "" {
+				return false
+			}
+			for _, want := range wanted {
+				if strings.ToLower(governing) == want {
+					return true
+				}
+			}
+			return false
+		})
+	}
+
+	// POA&M validity filter. A malformed value matches NOTHING rather than
+	// silently degrading, matching the impact filter's posture — callers
+	// validate with ValidPoamFilter and reject before filtering.
+	if opts.Poams != "" {
+		wantValid, known := poamFilterWantsValid(opts.Poams)
+		filters = append(filters, func(control hdf.EvaluatedRequirement, _, _ string) bool {
+			return known && hasValidPoam(control, opts.Now) == wantValid
 		})
 	}
 
@@ -348,4 +398,111 @@ func tagMatchesGlob(tags map[string]any, key, pattern string) bool {
 // timeout-protected). Thin wrapper kept for readability at call sites.
 func matchesGlob(s, pattern string) bool {
 	return safeGlobMatch(s, pattern)
+}
+
+// DispositionValues is the closed vocabulary the disposition filter accepts: the
+// schema's Override_Type enum. A value outside it can only ever match nothing,
+// which would report a clean run over a filter the caller believed was applied.
+//
+// Naming the generated constants pins their VALUES — a rename to risk_adjustment
+// fails to compile — but not the membership: an eighth override type added to the
+// schema would be silently unfilterable here, because codegen emits constants and
+// not a slice to range over. Closing that needs an assertion against the bundled
+// schema's enum.
+var DispositionValues = []string{
+	string(hdf.OverrideTypeWaiver),
+	string(hdf.Attestation),
+	string(hdf.Poam),
+	string(hdf.Inherited),
+	string(hdf.FalsePositive),
+	string(hdf.RiskAdjustment),
+	string(hdf.OperationalRequirement),
+}
+
+// ValidDisposition reports whether s names an override type. Callers validate
+// with this and reject, rather than letting a typo match nothing and pass — the
+// same contract ValidPoamFilter provides for the other amendment filter.
+func ValidDisposition(s string) bool {
+	for _, known := range DispositionValues {
+		if strings.EqualFold(strings.TrimSpace(s), known) {
+			return true
+		}
+	}
+	return false
+}
+
+// PoamValid and PoamNoneValid are the two values the poams filter accepts.
+// "none-valid" covers a requirement with no POA&M, with an empty list, and with
+// only lapsed ones: a plan that has expired is not a plan, and splitting the two
+// cases would create a value whose only use is to be chosen by mistake.
+const (
+	PoamValid     = "valid"
+	PoamNoneValid = "none-valid"
+)
+
+// ValidPoamFilter reports whether s is a POA&M validity value the filter
+// understands. Callers validate with this and reject, rather than letting an
+// unrecognized value match nothing and pass.
+func ValidPoamFilter(s string) bool {
+	_, known := poamFilterWantsValid(s)
+	return known
+}
+
+func poamFilterWantsValid(s string) (wantValid, known bool) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case PoamValid:
+		return true, true
+	case PoamNoneValid:
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+// governingDisposition returns the type of the override that governs the
+// requirement, or "" when none does. The index comes from the shared
+// governing-override rule — most recently applied, non-expired, carrying a
+// status — so disposition and effective status can never disagree about which
+// override is in force.
+func governingDisposition(control hdf.EvaluatedRequirement, ref time.Time) string {
+	i := hdfutil.GoverningStatusOverrideIndex(statusOverrideInputs(control.StatusOverrides), ref)
+	if i < 0 {
+		return ""
+	}
+	return string(control.StatusOverrides[i].Type)
+}
+
+// hasValidPoam reports whether the requirement carries a POA&M that is still in
+// force. expiresAt is required by the schema, so a POA&M always has a deadline
+// to judge; one exactly at the reference instant has passed, matching how an
+// override's expiry is judged.
+func hasValidPoam(control hdf.EvaluatedRequirement, ref time.Time) bool {
+	if ref.IsZero() {
+		ref = time.Now()
+	}
+	for _, poam := range control.Poams {
+		if poam.ExpiresAt.After(ref) {
+			return true
+		}
+	}
+	return false
+}
+
+// statusOverrideInputs maps schema overrides onto the shared helper's neutral
+// shape. It is the sixth copy of this mapping in the repo, not the second —
+// hdf-converters/shared/go/status.go and .../exportmap, hdf-diff/go/status.go and
+// .../effective_checksum.go, and compliance_test.go in this package all carry it.
+// The cause is structural: hdfutil owns the neutral shape but cannot take a schema
+// type (it is a schema-free leaf), and the modules that hold both sides depend on
+// hdfutil rather than on each other. Consolidating needs a schema-typed adapter
+// every one of them can reach, which is a repo-wide change and not this card's.
+func statusOverrideInputs(overrides []hdf.StatusOverride) []hdfutil.StatusOverrideInput {
+	inputs := make([]hdfutil.StatusOverrideInput, len(overrides))
+	for i, o := range overrides {
+		inputs[i] = hdfutil.StatusOverrideInput{AppliedAt: o.AppliedAt, ExpiresAt: o.ExpiresAt}
+		if o.Status != nil {
+			inputs[i].Status = string(*o.Status)
+		}
+	}
+	return inputs
 }
