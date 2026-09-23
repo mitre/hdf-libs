@@ -81,6 +81,9 @@ type ThresholdConfig struct {
 	Skipped    *ThresholdSeverity `yaml:"skipped,omitempty" json:"skipped,omitempty"`
 	Error      *ThresholdSeverity `yaml:"error,omitempty" json:"error,omitempty"`
 	NoImpact   *ThresholdSeverity `yaml:"no_impact,omitempty" json:"no_impact,omitempty"`
+	// Rules are the additive half: a filter predicate plus a bound, for the
+	// policies the fixed grid above cannot express. See rules.go.
+	Rules []ThresholdRule `yaml:"rules,omitempty" json:"rules,omitempty"`
 }
 
 // CountControlsByStatusSeverity counts a result set's requirements by their
@@ -276,6 +279,20 @@ func CalculateCompliance(counts *StatusCounts) float64 {
 // compliance, returning a list of human-readable violation messages (empty when
 // all pass).
 func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
+	violations := validateGrid(config, counts, compliance, controlMap)
+	// A config carrying rules cannot be judged by the grid alone. Returning the
+	// grid's verdict as though the rules were satisfied would report a passing
+	// gate over policy nobody applied, so the caller is told to use Evaluate
+	// rather than quietly getting half an answer.
+	if config != nil && len(config.Rules) > 0 {
+		violations = append(violations, ruleRefusal(len(config.Rules)))
+	}
+	return violations
+}
+
+// validateGrid is the status × severity half of a policy, shared by
+// ValidateThresholds and Evaluate.
+func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
 	var violations []string
 
 	// Every construction path lands here, so the legacy spelling is resolved
