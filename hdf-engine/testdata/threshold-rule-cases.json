@@ -1,0 +1,269 @@
+{
+  "$comment": "Threshold rules: a predicate plus a bound, evaluated by filtering the document and counting the matches. go/compliance_test.go and test/compliance.test.ts read THIS file and run THESE cases, so the two evaluators are held to one contract. 'now' is the injected reference clock, so POA&M and override expiry are properties of the fixture rather than of the day the suite runs. The fixture deliberately includes a requirement whose governing waiver moves it off 'failed', because the point of keying rules on status is that amendments are already applied when a rule sees the document. Note the passing count is TWO, not one: WAIVED-CRITICAL's governing waiver sets its status to passed, which is the whole reason rules key on effective status. refusalByCount pins the wording and the singular/plural of the message a grid-only evaluation emits for a rules-bearing spec; both languages assert against it rather than against their own copy.",
+  "now": "2026-01-01T00:00:00Z",
+  "fixture": {
+    "baselines": [
+      {
+        "name": "rules",
+        "requirements": [
+          {
+            "id": "NO-PLAN",
+            "title": "Failing with no remediation plan",
+            "impact": 0.9,
+            "severity": "critical",
+            "tags": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "PLANNED",
+            "title": "Failing with a plan still in force",
+            "impact": 0.9,
+            "severity": "critical",
+            "tags": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "WAIVED-CRITICAL",
+            "title": "Critical suppressed by a governing waiver",
+            "impact": 0.9,
+            "severity": "critical",
+            "tags": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "compensating control in place",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "CLEAN",
+            "title": "Passing, no amendment",
+            "impact": 0.5,
+            "severity": "medium",
+            "tags": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "passed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ]
+          }
+        ],
+        "supports": [],
+        "groups": []
+      }
+    ],
+    "platform": {
+      "name": "test",
+      "release": "1.0"
+    },
+    "statistics": {
+      "duration": 1.0
+    },
+    "version": "2.0.0"
+  },
+  "cases": [
+    {
+      "name": "the motivating policy: nothing still failing without a current plan",
+      "rules": [
+        {
+          "name": "nothing fails without a plan",
+          "where": {
+            "status": [
+              "failed"
+            ],
+            "poams": "none-valid"
+          },
+          "max": 0
+        }
+      ],
+      "expect": [
+        "nothing fails without a plan: 1 matched, maximum 0"
+      ]
+    },
+    {
+      "name": "a satisfied rule produces nothing",
+      "rules": [
+        {
+          "name": "waived criticals stay rare",
+          "where": {
+            "disposition": [
+              "waiver"
+            ]
+          },
+          "max": 3
+        }
+      ],
+      "expect": []
+    },
+    {
+      "name": "a rule with no name is identified by its predicate",
+      "rules": [
+        {
+          "where": {
+            "status": [
+              "failed"
+            ],
+            "poams": "none-valid"
+          },
+          "max": 0
+        }
+      ],
+      "expect": [
+        "rule {poams: none-valid, status: failed}: 1 matched, maximum 0"
+      ]
+    },
+    {
+      "name": "min bounds are supported, and a governing waiver counts as passed",
+      "rules": [
+        {
+          "name": "at least three passing",
+          "where": {
+            "status": [
+              "passed"
+            ]
+          },
+          "min": 3
+        }
+      ],
+      "expect": [
+        "at least three passing: 2 matched, minimum 3"
+      ]
+    },
+    {
+      "name": "several rules each report separately",
+      "rules": [
+        {
+          "name": "no unplanned failures",
+          "where": {
+            "status": [
+              "failed"
+            ],
+            "poams": "none-valid"
+          },
+          "max": 0
+        },
+        {
+          "name": "no waivers at all",
+          "where": {
+            "disposition": [
+              "waiver"
+            ]
+          },
+          "max": 0
+        }
+      ],
+      "expect": [
+        "no unplanned failures: 1 matched, maximum 0",
+        "no waivers at all: 1 matched, maximum 0"
+      ]
+    },
+    {
+      "name": "rules see EFFECTIVE status, so a governing waiver is already applied",
+      "rules": [
+        {
+          "name": "no failing criticals",
+          "where": {
+            "status": [
+              "failed"
+            ],
+            "severity": [
+              "critical"
+            ]
+          },
+          "max": 0
+        }
+      ],
+      "expect": [
+        "no failing criticals: 2 matched, maximum 0"
+      ]
+    },
+    {
+      "name": "an unnamed rule with a multi-value field joins them with a pipe",
+      "rules": [
+        {
+          "where": {
+            "status": [
+              "failed",
+              "error"
+            ],
+            "severity": [
+              "critical"
+            ]
+          },
+          "max": 0
+        }
+      ],
+      "expect": [
+        "rule {severity: critical, status: failed|error}: 2 matched, maximum 0"
+      ]
+    }
+  ],
+  "refusalByCount": {
+    "1": "this spec declares 1 rule, which this evaluation path cannot apply; the tool must evaluate rules against the document, not against counts alone",
+    "2": "this spec declares 2 rules, which this evaluation path cannot apply; the tool must evaluate rules against the document, not against counts alone"
+  }
+}

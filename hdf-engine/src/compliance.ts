@@ -5,6 +5,7 @@
 
 import type { HDFResults, EvaluatedRequirement, RequirementResult, Severity } from '@mitre/hdf-schema';
 import { worstStatus, impactToSeverity } from '@mitre/hdf-utilities';
+import type { ThresholdRule } from './rules.js';
 
 /** Threshold status-key constants (SAF CLI-compatible keys). */
 export const THRESHOLD_PASSED = 'passed';
@@ -66,6 +67,11 @@ export interface ThresholdConfig {
   skipped?: ThresholdSeverity;
   error?: ThresholdSeverity;
   noImpact?: ThresholdSeverity;
+  /**
+   * The additive half: a filter predicate plus a bound, for the policies the
+   * fixed grid above cannot express. See rules.ts.
+   */
+  rules?: ThresholdRule[];
 }
 
 function newSeverityCounts(): SeverityCounts {
@@ -314,6 +320,41 @@ function normalizeLegacySeverity(config: ThresholdConfig): string[] {
  * compliance, returning human-readable violation messages (empty when all pass).
  */
 export function validateThresholds(
+  config: ThresholdConfig,
+  counts: StatusCounts,
+  compliance: number,
+  controlMap: ControlIDMapping[],
+): string[] {
+  const violations = validateGrid(config, counts, compliance, controlMap);
+  // A config carrying rules cannot be judged by the grid alone. Returning the
+  // grid's verdict as though the rules were satisfied would report a passing
+  // gate over policy nobody applied, so the caller is told rather than quietly
+  // getting half an answer. Appended, not prepended, so the two languages order
+  // violations alike. Parity: ValidateThresholds in go/compliance.go.
+  if (config.rules && config.rules.length > 0) {
+    violations.push(ruleRefusal(config.rules.length));
+  }
+  return violations;
+}
+
+/**
+ * ruleRefusal is what a caller is told when a policy carries rules the path it
+ * used cannot evaluate. It reaches end users, so it names the spec and what to do
+ * about it rather than an internal function. Parity: ruleRefusal in go/rules.go.
+ */
+export function ruleRefusal(count: number): string {
+  const noun = count === 1 ? 'rule' : 'rules';
+  return (
+    `this spec declares ${count} ${noun}, which this evaluation path cannot apply; ` +
+    `the tool must evaluate rules against the document, not against counts alone`
+  );
+}
+
+/**
+ * validateGrid is the status x severity half of a policy, shared by
+ * validateThresholds and evaluate. Parity: validateGrid in go/compliance.go.
+ */
+export function validateGrid(
   config: ThresholdConfig,
   counts: StatusCounts,
   compliance: number,

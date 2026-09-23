@@ -114,6 +114,18 @@ func AssertionCount(config *hdfengine.ThresholdConfig) int {
 		return 0
 	}
 	count := 0
+	// A rule is a bound like any other: a spec whose only content is rules
+	// asserts plenty, and reporting it as asserting nothing would tell the author
+	// to add a bound they already wrote. A rule with neither min nor max asserts
+	// nothing, and is counted as nothing.
+	for _, rule := range config.Rules {
+		if rule.Min != nil {
+			count++
+		}
+		if rule.Max != nil {
+			count++
+		}
+	}
 	if config.Compliance != nil {
 		if config.Compliance.Min != nil {
 			count++
