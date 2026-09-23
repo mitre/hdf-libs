@@ -207,6 +207,12 @@ jobs:
           workdir: hdf-cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pin goreleaser's version to the tag that triggered this run.
+          # Without it goreleaser derives the version from `git describe`,
+          # which is ambiguous when a stable tag shares a commit with its rc
+          # (v3.7.0 and v3.7.0-rc.1 on one commit made the v3.7.0 release ship
+          # binaries named 3.7.0-rc.1).
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
 
       # SLSA Build L2 provenance for every artifact listed in checksums.txt
       # (archives + SBOMs). Consumers verify with:
