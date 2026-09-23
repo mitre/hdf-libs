@@ -1,0 +1,353 @@
+{
+  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass \u2014 both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations.",
+  "now": "2026-01-01T00:00:00Z",
+  "fixture": {
+    "baselines": [
+      {
+        "name": "amendments",
+        "requirements": [
+          {
+            "id": "PLAIN",
+            "title": "No amendment of any kind",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "WAIVED",
+            "title": "Governing waiver, still in force",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "compensating control in place",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "WAIVER-LAPSED",
+            "title": "Waiver that has expired and no longer governs",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "compensating control, since lapsed",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "FALSE-POSITIVE",
+            "title": "Non-expiring false positive",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "falsePositive",
+                "status": "passed",
+                "reason": "scanner misidentified the package",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-CURRENT",
+            "title": "Failing with a plan that is still in force",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-LAPSED",
+            "title": "Failing with a plan whose deadline has passed",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation was scheduled and the date passed",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-EMPTY",
+            "title": "Failing with an empty poams array, which means the same as none",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [],
+            "tags": {}
+          },
+          {
+            "id": "POAM-MIDWINDOW",
+            "title": "Plan that is live at the injected clock and lapsed at the wall clock",
+            "impact": 0.7,
+            "tags": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "deadline chosen to fall between the injected clock and any real wall clock",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2026-06-01T00:00:00Z"
+              }
+            ]
+          }
+        ],
+        "supports": [],
+        "groups": []
+      }
+    ],
+    "platform": {
+      "name": "test",
+      "release": "1.0"
+    },
+    "statistics": {
+      "duration": 1.0
+    },
+    "version": "2.0.0"
+  },
+  "cases": [
+    {
+      "name": "disposition waiver excludes a lapsed waiver",
+      "options": {
+        "disposition": [
+          "waiver"
+        ]
+      },
+      "expect": [
+        "WAIVED"
+      ]
+    },
+    {
+      "name": "disposition ORs across values",
+      "options": {
+        "disposition": [
+          "waiver",
+          "falsePositive"
+        ]
+      },
+      "expect": [
+        "WAIVED",
+        "FALSE-POSITIVE"
+      ]
+    },
+    {
+      "name": "disposition is case-insensitive, as the status filter already is",
+      "options": {
+        "disposition": [
+          "FALSEPOSITIVE"
+        ]
+      },
+      "expect": [
+        "FALSE-POSITIVE"
+      ]
+    },
+    {
+      "name": "a disposition nothing carries matches nothing",
+      "options": {
+        "disposition": [
+          "riskAdjustment"
+        ]
+      },
+      "expect": []
+    },
+    {
+      "name": "poams valid honours the INJECTED clock, not the wall clock",
+      "options": {
+        "poams": "valid"
+      },
+      "expect": [
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW"
+      ]
+    },
+    {
+      "name": "poams none-valid collapses absent, empty and lapsed",
+      "options": {
+        "poams": "none-valid"
+      },
+      "expect": [
+        "PLAIN",
+        "WAIVED",
+        "WAIVER-LAPSED",
+        "FALSE-POSITIVE",
+        "POAM-LAPSED",
+        "POAM-EMPTY"
+      ]
+    },
+    {
+      "name": "an unrecognized poams value matches nothing rather than degrading",
+      "options": {
+        "poams": "absent"
+      },
+      "expect": []
+    },
+    {
+      "name": "the motivating policy: still failing after amendments, with no current plan",
+      "options": {
+        "status": [
+          "failed"
+        ],
+        "poams": "none-valid"
+      },
+      "effectiveStatus": true,
+      "expect": [
+        "PLAIN",
+        "WAIVER-LAPSED",
+        "POAM-LAPSED",
+        "POAM-EMPTY"
+      ]
+    }
+  ],
+  "dispositionValues": [
+    "waiver",
+    "attestation",
+    "poam",
+    "inherited",
+    "falsePositive",
+    "riskAdjustment",
+    "operationalRequirement"
+  ]
+}

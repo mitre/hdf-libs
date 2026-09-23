@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -463,4 +464,99 @@ func TestFilter_IndicesDistinguishRepeatedKeys(t *testing.T) {
 		seenPos[pos] = true
 	}
 	assert.Equal(t, 6, seenKey["Prisma Cloud Scan\x0060522-redhat-RHEL7-high"], "the (name,id) key repeats six times in this fixture")
+}
+
+// amendmentCases is the shared cross-language contract for the disposition and
+// poams filters: test/query.test.ts reads the SAME file and runs the SAME cases,
+// so the two implementations cannot drift. The reference clock lives in the file
+// too, which is what keeps "expired" a property of the fixture rather than of
+// the day the suite runs.
+type amendmentCases struct {
+	Now               string         `json:"now"`
+	DispositionValues []string       `json:"dispositionValues"`
+	Fixture           hdf.HDFResults `json:"fixture"`
+	Cases             []struct {
+		Name    string `json:"name"`
+		Options struct {
+			Status      []string `json:"status"`
+			Disposition []string `json:"disposition"`
+			Poams       string   `json:"poams"`
+		} `json:"options"`
+		EffectiveStatus bool     `json:"effectiveStatus"`
+		Expect          []string `json:"expect"`
+	} `json:"cases"`
+}
+
+func loadAmendmentCases(t *testing.T) amendmentCases {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "amendment-filter-cases.json"))
+	require.NoError(t, err)
+	var table amendmentCases
+	require.NoError(t, json.Unmarshal(data, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+	return table
+}
+
+// The amendments layer is reachable as a filter: disposition names the governing
+// override's type, and poams reports whether a remediation plan is still in
+// force. Both are resolved through the shared governing-override rule rather
+// than from the stored output-cache fields, so a filter and the status it runs
+// alongside cannot disagree.
+func TestFilterAmendmentVocabulary(t *testing.T) {
+	table := loadAmendmentCases(t)
+	now, err := time.Parse(time.RFC3339, table.Now)
+	require.NoError(t, err)
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			opts := Options{
+				Status:      tc.Options.Status,
+				Disposition: tc.Options.Disposition,
+				Poams:       tc.Options.Poams,
+				Now:         now,
+				StatusOf:    testStatusOf,
+			}
+			if tc.EffectiveStatus {
+				// A governing waiver has to move a requirement off "failed"
+				// before a status filter sees it, or a policy keyed on status
+				// blames findings somebody already adjudicated.
+				opts.StatusOf = effectiveStatusOf(false)
+			}
+			assert.ElementsMatch(t, tc.Expect, ids(Filter(context.Background(), table.Fixture, opts)))
+		})
+	}
+}
+
+// The two amendment vocabularies are closed, and the shared table is what keeps
+// the Go and TypeScript lists from drifting apart or from the schema enum.
+func TestAmendmentVocabulariesMatchTheSharedTable(t *testing.T) {
+	table := loadAmendmentCases(t)
+	require.NotEmpty(t, table.DispositionValues, "an empty list would pass vacuously")
+	assert.ElementsMatch(t, table.DispositionValues, DispositionValues)
+	for _, value := range table.DispositionValues {
+		assert.True(t, ValidDisposition(value), "%q is in the table and must be accepted", value)
+	}
+}
+
+// A typo must be refused rather than matching nothing: a disposition that names
+// no override type can only ever return an empty set, which reads as a clean run
+// over a filter the caller believed was applied.
+func TestValidDisposition(t *testing.T) {
+	for _, ok := range []string{"waiver", "FALSEPOSITIVE", "  riskAdjustment  "} {
+		assert.True(t, ValidDisposition(ok), "%q must be accepted", ok)
+	}
+	for _, bad := range []string{"", "waver", "riskadjustmnet", "suppressed", "none"} {
+		assert.False(t, ValidDisposition(bad), "%q must be rejected", bad)
+	}
+}
+
+// ValidPoamFilter is what a caller uses to reject an unrecognized value up front
+// instead of letting it match nothing and report a passing gate.
+func TestValidPoamFilter(t *testing.T) {
+	for _, ok := range []string{"valid", "none-valid", "  NONE-VALID  "} {
+		assert.True(t, ValidPoamFilter(ok), "%q must be accepted", ok)
+	}
+	for _, bad := range []string{"", "absent", "present", "expired", "none"} {
+		assert.False(t, ValidPoamFilter(bad), "%q must be rejected", bad)
+	}
 }

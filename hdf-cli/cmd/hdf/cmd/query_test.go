@@ -478,3 +478,62 @@ func TestQueryCommand_JSONRows_CarryPosition(t *testing.T) {
 	assert.Equal(t, float64(2), rows[2]["index"])
 	assert.Equal(t, "Query Test Baseline", rows[2]["baseline"])
 }
+
+// An unrecognized --poams value must be refused before any document is read. A
+// value that merely matched nothing would report a clean run over a filter the
+// user believed was applied — the false green the threshold epic exists to kill,
+// reached through a filter value instead of a spec key.
+func TestQueryPoams_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, bad := range []string{"absent", "present", "expired", "none"} {
+		t.Run(bad, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, "--poams", bad)
+			require.Error(t, err, "%q must be refused, not silently match nothing", bad)
+			assert.Contains(t, err.Error(), "none-valid", "the error must name the legal values")
+		})
+	}
+}
+
+// And the two legal values reach the filter. The fixture carries no POA&M, so
+// none-valid selects every requirement and valid selects none — the latter
+// failing with the ordinary no-match error rather than the validation one, which
+// is what distinguishes "reached the filter and matched nothing" from "refused
+// before the document was read".
+func TestQueryPoams_LegalValuesReachTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--poams", "none-valid")
+	assert.NoError(t, err, "no requirement in the fixture carries a POA&M, so all of them are none-valid")
+
+	_, _, err = executeCommand("query", resultsPath, "--poams", "valid")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no matching requirements")
+	assert.NotContains(t, err.Error(), "unknown --poams value")
+}
+
+// A --disposition typo must be refused, not matched against nothing. Override_Type
+// is a closed seven-value enum, so "waver" cannot be a legitimate zero-match — and
+// a filter that reports a clean run over a predicate that never applied is the
+// false green this vocabulary exists to avoid.
+func TestQueryDisposition_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, bad := range []string{"waver", "riskadjustmnet", "suppressed", "none"} {
+		t.Run(bad, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, "--disposition", bad)
+			require.Error(t, err, "%q must be refused, not silently match nothing", bad)
+			assert.Contains(t, err.Error(), "unknown --disposition value")
+			assert.Contains(t, err.Error(), "riskAdjustment", "the error must name the legal values")
+		})
+	}
+}
+
+// A legal value reaches the filter; the fixture carries no overrides, so it
+// matches nothing and fails with the ordinary no-match error rather than the
+// validation one. That is what distinguishes the two outcomes.
+func TestQueryDisposition_LegalValueReachesTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	_, _, err := executeCommand("query", resultsPath, "--disposition", "waiver")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no matching requirements")
+	assert.NotContains(t, err.Error(), "unknown --disposition value")
+}

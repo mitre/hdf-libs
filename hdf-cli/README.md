@@ -228,13 +228,24 @@ FLAGS
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
       --id string              Filter by requirement ID, STIG ID, GID, or group title
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
+      --disposition stringArray  Filter by the governing override's type (repeatable, OR logic): waiver,
+                               falsePositive, riskAdjustment, attestation, operationalRequirement,
+                               inherited, poam
+      --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
+                               none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description
   -p, --baseline string        Filter by profile name
   -c, --count                  Show only the count of matching controls
   -l, --limit int              Limit number of results (0 = unlimited)
 
-Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`) OR their own
-values together; different filter types combine with AND.
+Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`,
+`--disposition`) OR their own values together; different filter types combine with AND.
+
+`--status` reports EFFECTIVE status, so a requirement with a governing waiver is
+already off `failed` before the filter sees it. `--disposition` names the type of
+the override doing that, and `--poams` reports whether a remediation plan is still
+in force — `none-valid` deliberately covers "no POA&M", "an empty list" and "only
+lapsed ones" as one condition, because a plan that has expired is not a plan.
 
 EXAMPLES
   hdf query results.json --status failed
@@ -244,6 +255,8 @@ EXAMPLES
   hdf query results.json --id V-230221
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password policy"
+  hdf query results.json --disposition waiver --severity critical
+  hdf query results.json --status failed --poams none-valid
   hdf query results.json --impact ">0.5" --status failed
   hdf query results.json --status failed --count
   hdf query results.json --limit 20 --status failed

@@ -12,10 +12,14 @@ import {
   tagContains,
   tagMatchesGlob,
   matchesGlob,
+  validPoamFilter,
+  validDisposition,
+  DISPOSITION_VALUES,
   type FilterOptions,
   type Match,
 } from '../src/query.js';
 import { globToRegex, safeGlobMatch } from '../src/safematch.js';
+import { computeEffectiveStatus } from '@mitre/hdf-utilities';
 
 // Shared cross-language fixture at hdf-engine/testdata (also read by
 // go/filter_test.go), so both filter implementations run the same input.
@@ -233,5 +237,94 @@ describe('match indices — parity with go/filter_test.go TestFilter_MatchCarrie
     expect(positions.size).toBe(94);
     const repeated = matches.filter((m) => m.baseline === 'Prisma Cloud Scan' && m.id === '60522-redhat-RHEL7-high');
     expect(repeated).toHaveLength(6);
+  });
+});
+
+// The shared cross-language contract for the amendment filters. go/filter_test.go
+// reads the SAME file and runs the SAME cases, so disposition and poams cannot
+// drift between the two implementations. The reference clock lives in the file,
+// which is what keeps "expired" a property of the fixture rather than of the day
+// the suite runs.
+interface AmendmentCases {
+  now: string;
+  dispositionValues: string[];
+  fixture: HDFResults;
+  cases: {
+    name: string;
+    options: { status?: string[]; disposition?: string[]; poams?: string };
+    effectiveStatus?: boolean;
+    expect: string[];
+  }[];
+}
+
+const amendmentPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'testdata',
+  'amendment-filter-cases.json'
+);
+const amendments = JSON.parse(readFileSync(amendmentPath, 'utf-8')) as AmendmentCases;
+
+// A governing waiver has to move a requirement off 'failed' before a status
+// filter sees it, or a policy keyed on status blames findings somebody already
+// adjudicated. Mirrors effectiveStatusOf in go/compliance_test.go.
+function amendmentEffectiveStatusOf(req: EvaluatedRequirement): string {
+  return computeEffectiveStatus({
+    impact: req.impact,
+    overrides: (req.statusOverrides ?? []).map((o) => ({
+      appliedAt: o.appliedAt,
+      expiresAt: o.expiresAt,
+      status: o.status as string | undefined,
+    })),
+    resultStatuses: (req.results ?? []).map((r) => String(r.status)),
+  });
+}
+
+describe('amendment filters — disposition and poams (parity with go/filter.go)', () => {
+  it('has cases to run', () => {
+    expect(amendments.cases.length).toBeGreaterThan(0);
+  });
+
+  for (const c of amendments.cases) {
+    it(c.name, () => {
+      const got = ids(
+        filter(amendments.fixture, {
+          ...c.options,
+          now: amendments.now,
+          statusOf: c.effectiveStatus ? amendmentEffectiveStatusOf : testStatusOf,
+        })
+      );
+      expect(got.slice().sort()).toEqual(c.expect.slice().sort());
+    });
+  }
+});
+
+describe('amendment vocabularies match the shared table', () => {
+  it('disposition values are the schema enum, in both languages', () => {
+    expect(amendments.dispositionValues.length).toBeGreaterThan(0);
+    expect([...DISPOSITION_VALUES].sort()).toEqual(amendments.dispositionValues.slice().sort());
+    for (const value of amendments.dispositionValues) {
+      expect(validDisposition(value)).toBe(true);
+    }
+  });
+
+  it('refuses a typo rather than letting it match nothing', () => {
+    for (const bad of ['', 'waver', 'riskadjustmnet', 'suppressed', 'none']) {
+      expect(validDisposition(bad)).toBe(false);
+    }
+  });
+});
+
+describe('validPoamFilter', () => {
+  it('accepts only the two values the filter understands', () => {
+    for (const ok of ['valid', 'none-valid', '  NONE-VALID  ']) {
+      expect(validPoamFilter(ok)).toBe(true);
+    }
+    // 'absent' and 'present' are deliberately absent: collapsing presence and
+    // expiry into one concept is the point, so a presence-only spelling would
+    // exist only to be chosen by mistake.
+    for (const bad of ['', 'absent', 'present', 'expired', 'none']) {
+      expect(validPoamFilter(bad)).toBe(false);
+    }
   });
 });
