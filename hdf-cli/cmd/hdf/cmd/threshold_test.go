@@ -1220,3 +1220,51 @@ func TestValidateThreshold_TemplatePathMayContainAComma(t *testing.T) {
 	_, _, err := executeCommand("validate", "threshold", results, "-T", comma)
 	require.NoError(t, err, "a comma in a path must not split the flag value")
 }
+
+// Anything expressible in a threshold file must be expressible inline. The
+// inline form is not a second grammar: a structured spec goes through the SAME
+// strict decoder a file does, and the dotted SAF form remains for the shape it
+// was designed for.
+func TestValidateThreshold_InlineAcceptsAnythingAFileAccepts(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	t.Run("a rule, which the dotted grammar cannot express at all", func(t *testing.T) {
+		_, stderr, err := executeCommand("validate", "threshold", results,
+			"-I", "{rules: [{name: no failures, where: {status: [failed]}, max: 0}]}")
+		require.Error(t, err, "the fixture has a failed requirement")
+		assert.Contains(t, stderr, "no failures: 1 matched, maximum 0")
+	})
+
+	t.Run("a structured grid spec", func(t *testing.T) {
+		_, stderr, err := executeCommand("validate", "threshold", results,
+			"-I", "{failed: {total: {max: 0}}}")
+		require.Error(t, err)
+		assert.Contains(t, stderr, "failed.total")
+	})
+
+	t.Run("the dotted SAF form still works", func(t *testing.T) {
+		_, _, err := executeCommand("validate", "threshold", results, "-I", "{failed.total.max: 500}")
+		assert.NoError(t, err)
+	})
+}
+
+// A typo in a STRUCTURED inline spec must be diagnosed as a structured spec. It
+// would otherwise fail the strict decode, fall through to the dotted parser,
+// fail there too, and report "invalid inline threshold entry" — sending the
+// author to look for a mistake they did not make.
+func TestValidateThreshold_InlineTypoIsDiagnosedInTheRightGrammar(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	_, _, err := executeCommand("validate", "threshold", results, "-I", "{faild: {total: {max: 0}}}")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "is not a known threshold category",
+		"a structured spec must be diagnosed by the strict decoder")
+	assert.NotContains(t, err.Error(), "invalid inline threshold entry")
+
+	// And a dotted-form typo still reports the dotted grammar's error.
+	_, _, err = executeCommand("validate", "threshold", results, "-I", "{failed.totl.max: 0}")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown severity field")
+}

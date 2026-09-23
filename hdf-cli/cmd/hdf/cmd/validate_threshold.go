@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/threshold"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 
@@ -106,11 +108,14 @@ func resolveThresholdSpecs(templateFiles, templateInlines []string) ([]threshold
 		specs = append(specs, parsed...)
 	}
 	for _, inline := range templateInlines {
-		parsed, parseErr := parseInlineThreshold(inline)
+		parsed, parseErr := decodeInline(inline)
 		if parseErr != nil {
 			return nil, parseErr
 		}
-		specs = append(specs, threshold.Spec{Config: parsed, Label: inlineLabel(inline)})
+		for _, spec := range parsed {
+			spec.Label = inlineLabel(inline)
+			specs = append(specs, spec)
+		}
 	}
 
 	// A spec that asserts nothing passes every document, so reporting success
@@ -132,6 +137,47 @@ func resolveThresholdSpecs(templateFiles, templateInlines []string) ([]threshold
 	return specs, nil
 }
 
+// decodeInline turns one -I value into policies. Anything expressible in a
+// threshold file is expressible inline, because a structured spec goes through
+// the SAME decoder a file does rather than through a second grammar; the dotted
+// SAF form remains for the shape it was designed for.
+//
+// The two are told apart by their keys, not by trying one and falling back:
+// the dotted form's top-level keys carry a "." (failed.total.max), a structured
+// spec's do not (failed, rules, compliance). Guessing by fallback would diagnose
+// a structured typo with the dotted grammar's error and send the author looking
+// for a mistake they did not make.
+func decodeInline(inline string) ([]threshold.Spec, error) {
+	if inlineIsDotted(inline) {
+		parsed, err := parseInlineThreshold(inline)
+		if err != nil {
+			return nil, err
+		}
+		return []threshold.Spec{{Config: parsed}}, nil
+	}
+	specs, err := threshold.DecodeAll([]byte(inline), "-I")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse inline threshold: %w", err)
+	}
+	return specs, nil
+}
+
+// inlineIsDotted reports whether a -I value is the dotted SAF form. A value that
+// is not a YAML mapping at all is dotted too: "{a.b: 1}, {c.d: 2}" is two flow
+// mappings separated by a comma, which YAML does not accept as one document.
+func inlineIsDotted(inline string) bool {
+	var probe map[string]interface{}
+	if err := yaml.Unmarshal([]byte(inline), &probe); err != nil {
+		return true
+	}
+	for key := range probe {
+		if strings.Contains(key, ".") {
+			return true
+		}
+	}
+	return len(probe) == 0
+}
+
 // inlineLabel names an inline spec by echoing the spec back. A file's documents
 // are named by path and index because their content is not on the command line;
 // an inline spec's content IS what the author typed, so quoting it identifies the
@@ -148,25 +194,23 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 		return err
 	}
 
-	counts, err := countControlsByStatusSeverity(data)
+	// One parse, one resolver: the grid's counts and the rules' filtering cannot
+	// disagree about what "failed" means on this document.
+	input, err := thresholdInputFor(data)
 	if err != nil {
 		return err
 	}
-
-	compliance := hdfengine.CalculateCompliance(counts)
 
 	if !quiet {
 		fmt.Fprintln(os.Stderr, agentOverrideReadout(countAgentOverrides(data)))
 	}
 
-	controlMap, mapErr := mapControlIDs(data)
-	if mapErr != nil {
-		return mapErr
-	}
-
 	var violations []string
 	for _, spec := range specs {
-		for _, violation := range hdfengine.ValidateThresholds(spec.Config, counts, compliance, controlMap) {
+		// Evaluate, not ValidateThresholds: the grid alone cannot apply a rule,
+		// and returning its verdict over a rules-bearing policy would report a
+		// passing gate over policy nobody applied.
+		for _, violation := range hdfengine.Evaluate(spec.Config, input) {
 			// Attribute only when there is something to disambiguate, so the
 			// single-policy output — nearly every run — is unchanged. The label
 			// goes into the violation STRING rather than only the printed line,

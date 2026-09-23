@@ -152,10 +152,15 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 				return toolError(therr), errorComplianceOutput(), nil
 			}
 			if len(specs) > 0 {
-				controlMap := hdfengine.MapControlIDsByStatus(results, shared.RequirementEffectiveStatus)
+				// One resolver for the counts, the control listing and the rules,
+				// so the grid and a rule cannot disagree about what "failed" means
+				// on this document. Evaluate rather than ValidateThresholds: the
+				// grid alone cannot apply a rule, and returning its verdict over a
+				// rules-bearing policy would report a pass over policy nobody ran.
+				input := hdfengine.NewThresholdInput(results, shared.RequirementEffectiveStatus)
 				var failures []string
 				for _, spec := range specs {
-					for _, failure := range hdfengine.ValidateThresholds(spec.Config, counts, out.Compliance, controlMap) {
+					for _, failure := range hdfengine.Evaluate(spec.Config, input) {
 						// Attribute only when there is something to
 						// disambiguate, so the ordinary single-policy verdict
 						// reads exactly as it did before.

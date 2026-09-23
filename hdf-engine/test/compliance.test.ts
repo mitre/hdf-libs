@@ -22,7 +22,7 @@ import {
   deriveSeverity,
   type ThresholdConfig,
 } from '../src/compliance.js';
-import { evaluateRules, evaluate, type ThresholdRule } from '../src/rules.js';
+import { evaluateRules, evaluate, PREDICATE_FIELDS, type ThresholdRule } from '../src/rules.js';
 import { ruleRefusal } from '../src/compliance.js';
 import type { Severity } from '@mitre/hdf-schema';
 
@@ -287,6 +287,7 @@ describe('agent-override detective surface — parity with go/compliance_test.go
 // rather than of the day the suite runs.
 interface RuleCases {
   now: string;
+  predicateFields: string[];
   refusalByCount: Record<string, string>;
   fixture: HDFResults;
   cases: { name: string; rules: ThresholdRule[]; expect: string[] }[];
@@ -323,6 +324,14 @@ describe('threshold rules (parity with go/rules.go)', () => {
       expect(got).toEqual(c.expect);
     });
   }
+
+  // Go maps predicate fields onto the filter explicitly while TypeScript spreads
+  // the object, so a field added to one language reaches the filter there and
+  // silently does nothing in the other. Both definitions are pinned to one list.
+  it('the predicate surface matches the shared table', () => {
+    expect(ruleTable.predicateFields.length).toBeGreaterThan(0);
+    expect([...PREDICATE_FIELDS].sort()).toEqual(ruleTable.predicateFields.slice().sort());
+  });
 
   // The refusal is user-facing text emitted by both languages, so its wording
   // lives in the shared table rather than in two hand-written copies — which is

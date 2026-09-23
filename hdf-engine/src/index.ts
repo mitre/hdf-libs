@@ -34,6 +34,14 @@ export {
   type RuleOptions,
 } from './rules.js';
 export { validateGrid, ruleRefusal } from './compliance.js';
+export {
+  validStatus,
+  validSeverity,
+  normalizeFilterValue,
+  normalizeKey,
+  STATUS_VALUES,
+  SEVERITY_VALUES,
+} from './vocabulary.js';
 
 // Document loader core (peer of hdf-engine/go/loader.go).
 export { load, detectFormat, type InputFormat, type LoadResult } from './loader.js';

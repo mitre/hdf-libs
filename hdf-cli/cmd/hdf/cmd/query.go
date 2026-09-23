@@ -94,6 +94,18 @@ Examples:
 				return fmt.Errorf("unknown --poams value %q (expected %q or %q)",
 					queryPoams, hdfengine.PoamValid, hdfengine.PoamNoneValid)
 			}
+			for _, status := range queryStatus {
+				if !hdfengine.ValidStatus(status) {
+					return fmt.Errorf("unknown --status value %q (expected one of: %s)",
+						status, strings.Join(hdfengine.StatusValues, ", "))
+				}
+			}
+			for _, severity := range querySeverity {
+				if !hdfengine.ValidSeverity(severity) {
+					return fmt.Errorf("unknown --severity value %q (expected one of: %s)",
+						severity, strings.Join(hdfengine.SeverityValues, ", "))
+				}
+			}
 			for _, disposition := range queryDisposition {
 				if !hdfengine.ValidDisposition(disposition) {
 					return fmt.Errorf("unknown --disposition value %q (expected one of: %s)",
@@ -164,7 +176,7 @@ func runQuery(_ *cobra.Command, args []string) error {
 	// its display-status resolver so the engine stays convention-agnostic.
 	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{
 		Status:      queryStatus,
-		Severity:    normalizeSeverityFilters(querySeverity),
+		Severity:    querySeverity,
 		Impact:      queryImpact,
 		CCI:         queryCCI,
 		NIST:        queryNIST,
@@ -248,22 +260,6 @@ const (
 	// accepted as a filter value so an existing command line keeps working.
 	SeverityNoneLegacy = "none"
 )
-
-// normalizeSeverityFilters maps the pre-3.7 "none" spelling onto the schema
-// value it named, so a saved command line keeps selecting the same findings.
-func normalizeSeverityFilters(values []string) []string {
-	if len(values) == 0 {
-		return values
-	}
-	out := make([]string, 0, len(values))
-	for _, v := range values {
-		if v == SeverityNoneLegacy {
-			v = SeverityInformational
-		}
-		out = append(out, v)
-	}
-	return out
-}
 
 func severityToLabel(severity string) string {
 	switch severity {

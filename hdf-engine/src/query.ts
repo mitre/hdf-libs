@@ -6,6 +6,7 @@
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { governingStatusOverrideIndex, parseTimestamp } from '@mitre/hdf-utilities';
 import { deriveSeverity } from './compliance.js';
+import { normalizeKey, normalizeFilterValue } from './vocabulary.js';
 import { safeGlobMatch } from './safematch.js';
 
 /**
@@ -110,23 +111,33 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
 function buildFilters(options: FilterOptions): FilterFunc[] {
   const filters: FilterFunc[] = [];
 
+  // Compared through normalizeKey so the CLI's display spelling and the schema's
+  // camelCase are one value: a filter copied from `hdf query` and a rule written
+  // against the schema must select the same requirements.
   if (options.status && options.status.length > 0) {
-    const statuses = options.status.map((s) => s.toLowerCase());
-    filters.push((_c, s) => statuses.includes(s.toLowerCase()));
+    const statuses = options.status.map((s) => normalizeKey(normalizeFilterValue('status', s)));
+    // BOTH sides go through the same alias map: the injected resolver may speak
+    // the CLI's display vocabulary while the spec speaks the schema's.
+    filters.push((_c, s) => statuses.includes(normalizeKey(normalizeFilterValue('status', s))));
   }
 
+  // Normalized the same way, and through the alias map as well, so the pre-3.7
+  // 'none' spelling keeps naming the informational severity on every surface
+  // rather than only in the CLI.
   if (options.severity && options.severity.length > 0) {
-    const severities = options.severity.map((s) => s.toLowerCase());
-    filters.push((_c, _s, severity) => severities.includes(severity));
+    const severities = options.severity.map((s) => normalizeKey(normalizeFilterValue('severity', s)));
+    filters.push((_c, _s, severity) =>
+      severities.includes(normalizeKey(normalizeFilterValue('severity', severity)))
+    );
   }
 
   // Disposition (OR across values). A requirement with no governing override
   // matches nothing, which is what makes "waived" and "not waived" opposites.
   if (options.disposition && options.disposition.length > 0) {
-    const wanted = options.disposition.map((d) => d.toLowerCase());
+    const wanted = options.disposition.map((d) => normalizeKey(normalizeFilterValue('disposition', d)));
     filters.push((c) => {
       const governing = governingDisposition(c, options.now);
-      return governing !== '' && wanted.includes(governing.toLowerCase());
+      return governing !== '' && wanted.includes(normalizeKey(normalizeFilterValue('disposition', governing)));
     });
   }
 
@@ -309,10 +320,9 @@ export const DISPOSITION_VALUES = [
  * reject, rather than letting a typo match nothing and pass — the same contract
  * validPoamFilter provides for the other amendment filter.
  */
-export function validDisposition(s: string): boolean {
-  const normalized = s.trim().toLowerCase();
-  return DISPOSITION_VALUES.some((value) => value.toLowerCase() === normalized);
-}
+// Re-exported from vocabulary.ts, where all four validators share one canonical()
+// rather than this one inferring "is an alias" from "the normalizer changed it".
+export { validDisposition } from './vocabulary.js';
 
 /**
  * The two values the poams filter accepts. 'none-valid' covers a requirement

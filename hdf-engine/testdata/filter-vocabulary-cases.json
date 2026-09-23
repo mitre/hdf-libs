@@ -1,0 +1,101 @@
+{
+  "$comment": "The closed vocabularies the filter enforces, and the aliases it accepts for them. go/filter_test.go and test/query.test.ts read THIS file, so the two languages cannot disagree about what is a legal value or about which spellings mean the same thing. An alias exists because a value arrived under two names historically: the CLI's display vocabulary spells the multi-word statuses with underscores while the schema spells them camelCase, and 'none' was the pre-3.7 name for the informational severity. Normalizing in the ENGINE rather than in one caller is what makes a threshold rule and an hdf query invocation mean the same thing \u2014 the promise recorded as decision 2 on hdf-libs-ji20j. A separator-bearing alias is listed for disposition on purpose: widening a validator without widening the filter it guards produces a value that is accepted and can never match, which is the defect this whole vocabulary exists to prevent. The alias cases assert selection through the FILTER, not merely that a validator said yes.",
+  "statusValues": [
+    "passed",
+    "failed",
+    "notApplicable",
+    "notReviewed",
+    "error"
+  ],
+  "severityValues": [
+    "critical",
+    "high",
+    "medium",
+    "low",
+    "informational"
+  ],
+  "dispositionValues": [
+    "waiver",
+    "attestation",
+    "poam",
+    "inherited",
+    "falsePositive",
+    "riskAdjustment",
+    "operationalRequirement"
+  ],
+  "poamsValues": [
+    "valid",
+    "none-valid"
+  ],
+  "aliases": [
+    {
+      "field": "status",
+      "spelling": "not_applicable",
+      "means": "notApplicable"
+    },
+    {
+      "field": "status",
+      "spelling": "not_reviewed",
+      "means": "notReviewed"
+    },
+    {
+      "field": "status",
+      "spelling": "NOTAPPLICABLE",
+      "means": "notApplicable"
+    },
+    {
+      "field": "severity",
+      "spelling": "none",
+      "means": "informational"
+    },
+    {
+      "field": "severity",
+      "spelling": "CRITICAL",
+      "means": "critical"
+    },
+    {
+      "field": "disposition",
+      "spelling": "FALSEPOSITIVE",
+      "means": "falsePositive"
+    },
+    {
+      "field": "disposition",
+      "spelling": "false_positive",
+      "means": "falsePositive"
+    }
+  ],
+  "rejected": [
+    {
+      "field": "status",
+      "spelling": "faild"
+    },
+    {
+      "field": "status",
+      "spelling": "skipped"
+    },
+    {
+      "field": "severity",
+      "spelling": "crit"
+    },
+    {
+      "field": "severity",
+      "spelling": "severe"
+    },
+    {
+      "field": "disposition",
+      "spelling": "waver"
+    },
+    {
+      "field": "poams",
+      "spelling": "absent"
+    },
+    {
+      "field": "disposition",
+      "spelling": "wai-ver"
+    },
+    {
+      "field": "status",
+      "spelling": "not-app-licable"
+    }
+  ]
+}
