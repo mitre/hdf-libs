@@ -64,7 +64,9 @@ export {
   governingOverrideIndex,
   governingStatusOverride,
   governingStatusOverrideIndex,
+  governingImpactOverrideIndex,
   computeEffectiveStatus,
+  computeEffectiveImpact,
   type StatusOverrideInput,
   type EffectiveStatusInput,
 } from './status/index.js';

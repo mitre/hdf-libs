@@ -292,3 +292,67 @@ func TestComputeEffectiveStatus(t *testing.T) {
 		}
 	})
 }
+
+// The schema defines effectiveImpact as "the most recent non-expired override
+// with an impact field", and GoverningOverrideIndex was generalized for exactly
+// that — but nothing ever computed it, so a riskAdjustment was invisible to every
+// consumer that asked about impact. This is the ladder's impact twin.
+func TestComputeEffectiveImpact(t *testing.T) {
+	adjustment := func(value float64, applied, expires time.Time) StatusOverrideInput {
+		return StatusOverrideInput{AppliedAt: applied, ExpiresAt: expires, Impact: &value}
+	}
+	zero := time.Time{}
+
+	for name, tc := range map[string]struct {
+		input EffectiveStatusInput
+		want  float64
+	}{
+		"no overrides falls back to the raw impact": {
+			EffectiveStatusInput{Impact: 0.9}, 0.9,
+		},
+		"a governing adjustment wins": {
+			EffectiveStatusInput{Impact: 0.9, Overrides: []StatusOverrideInput{
+				adjustment(0.3, appliedOld, farFuture),
+			}}, 0.3,
+		},
+		"an expired adjustment does not": {
+			EffectiveStatusInput{Impact: 0.9, Overrides: []StatusOverrideInput{
+				adjustment(0.3, appliedOld, longAgo),
+			}}, 0.9,
+		},
+		"the most recently applied of several wins": {
+			EffectiveStatusInput{Impact: 0.9, Overrides: []StatusOverrideInput{
+				adjustment(0.3, appliedOld, zero),
+				adjustment(0.5, appliedNew, zero),
+			}}, 0.5,
+		},
+		"an override carrying no impact is not eligible": {
+			EffectiveStatusInput{Impact: 0.9, Overrides: []StatusOverrideInput{
+				{Status: "passed", AppliedAt: appliedNew},
+			}}, 0.9,
+		},
+		"a status override newer than the impact one does not displace it": {
+			// Eligibility is per-field: a waiver adjudicates status and says
+			// nothing about impact, so the older adjustment still governs impact.
+			EffectiveStatusInput{Impact: 0.9, Overrides: []StatusOverrideInput{
+				adjustment(0.3, appliedOld, zero),
+				{Status: "passed", AppliedAt: appliedNew},
+			}}, 0.3,
+		},
+		"an adjustment to zero is honoured, not treated as absent": {
+			// The reason Impact is a pointer: 0 is a legitimate re-score meaning
+			// "no longer applicable", and a value type could not tell it from
+			// "this override carries no impact".
+			EffectiveStatusInput{Impact: 0.9, Overrides: []StatusOverrideInput{
+				adjustment(0, appliedOld, zero),
+			}}, 0,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			got := ComputeEffectiveImpact(tc.input, statusRef)
+			if diff := got - tc.want; diff > 0.0001 || diff < -0.0001 {
+				t.Errorf("ComputeEffectiveImpact() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

@@ -8,6 +8,7 @@
 
 import {
   computeEffectiveStatus,
+  computeEffectiveImpact,
   type EffectiveStatusInput,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
@@ -36,6 +37,10 @@ export function requirementStatusInput(req: EvaluatedRequirement): EffectiveStat
         status: o.status ? String(o.status) : undefined,
         appliedAt: stamp(o.appliedAt),
         expiresAt: stamp(o.expiresAt),
+        // Carried so effective IMPACT resolves from the same overrides;
+        // eligibility is per-field, so an override may govern one and not the
+        // other.
+        impact: o.impact?.value,
       })
     ),
   };
@@ -44,4 +49,14 @@ export function requirementStatusInput(req: EvaluatedRequirement): EffectiveStat
 /** The requirement's canonical effective status via the shared ladder. */
 export function requirementEffectiveStatus(req: EvaluatedRequirement): string {
   return computeEffectiveStatus(requirementStatusInput(req));
+}
+
+/**
+ * The requirement's canonical effective impact via the shared ladder: the
+ * governing non-expired impact override's value, else the requirement's own. The
+ * stored effectiveImpact field is an output cache and is never read, exactly as
+ * effectiveStatus is not. Parity: RequirementEffectiveImpact in shared/go.
+ */
+export function requirementEffectiveImpact(req: EvaluatedRequirement): number {
+  return computeEffectiveImpact(requirementStatusInput(req));
 }
