@@ -620,6 +620,73 @@ describe('hdf-to-csv numeric precision', () => {
   });
 });
 
+// The Effective Impact column is computed through the canonical ladder, exactly
+// as Effective Status is: the governing non-expired impact override's value,
+// else the requirement's own. The stored effectiveImpact field is an output
+// cache and is never read. Mirrors the Go peer case for case.
+describe('hdf-to-csv effective impact', () => {
+  const EFFECTIVE_IMPACT_COL = 23;
+
+  const riskAdjustment = (expiresAt: string, value: number) => [
+    {
+      type: 'riskAdjustment',
+      reason: 'unreachable from any entry point',
+      appliedBy: { identifier: 'assessor@example.gov' },
+      appliedAt: '2020-06-01T00:00:00Z',
+      expiresAt,
+      impact: { value },
+    },
+  ];
+
+  const doc = (requirement: Record<string, unknown>) =>
+    JSON.stringify({
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id: 'V-1',
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'failed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+              ...requirement,
+            },
+          ],
+        },
+      ],
+    });
+
+  it.each([
+    [
+      'a governing impact override moves the column',
+      { impact: 0.9, statusOverrides: riskAdjustment('2099-12-31T00:00:00Z', 0.3) },
+      '0.30',
+    ],
+    [
+      'an expired impact override does not',
+      { impact: 0.9, statusOverrides: riskAdjustment('2020-01-01T00:00:00Z', 0.3) },
+      '0.90',
+    ],
+    [
+      'a stored effectiveImpact no override accounts for is not read',
+      { impact: 0.125, effectiveImpact: 0.625 },
+      '0.13',
+    ],
+    [
+      'a governing override outranks a disagreeing stored value',
+      {
+        impact: 0.9,
+        effectiveImpact: 0.75,
+        statusOverrides: riskAdjustment('2099-12-31T00:00:00Z', 0.3),
+      },
+      '0.30',
+    ],
+  ])('%s', (_label, requirement, want) => {
+    const row = convertHdfToCsv(doc(requirement)).trim().split('\n')[1]!.split(',');
+    expect(row[EFFECTIVE_IMPACT_COL], 'Effective Impact').toBe(want);
+  });
+});
+
 // Awkward-but-plausible HDF shapes that once made the two languages disagree on
 // cell VALUES rather than on whether to convert at all — splits the shared
 // corpus cannot see, because it is about converter contracts. Go owns the golden
