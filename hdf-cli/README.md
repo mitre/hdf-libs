@@ -155,9 +155,9 @@ EXAMPLES
   # may hold several YAML documents (reported as policy.yaml#1, policy.yaml#2).
   hdf validate threshold results.json -T baseline.yaml -T repo-specific.yaml
 
-  # A rule is a filter predicate plus a bound, for policies the status x severity
-  # grid cannot express. -I accepts anything a file accepts, so this is the same
-  # language either way.
+  # A rule is a filter predicate plus a bound, for policies the count bounds and
+  # controls lists cannot express — selecting by field rather than by id.
+  # -I accepts anything a file accepts, so this is the same language either way.
   hdf validate threshold results.json \
     -I "{rules: [{name: nothing fails without a plan, where: {status: [failed], poams: none-valid}, max: 0}]}"
 ```
