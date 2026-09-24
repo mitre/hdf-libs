@@ -32,17 +32,22 @@ type queryInput struct {
 	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
 	Status    []string        `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
 	Severity  []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
-	Impact    string          `json:"impact,omitempty" jsonschema:"comparison e.g. >0.5, =0"`
+	Impact    string          `json:"impact,omitempty" jsonschema:"effective impact (after overrides); e.g. >0.5, =0"`
+	RawImpact string          `json:"rawImpact,omitempty" jsonschema:"impact before overrides; same grammar"`
 	CCI       []string        `json:"cci,omitempty"`
 	NIST      []string        `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
 	ID        string          `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title"`
 	Tag       []string        `json:"tag,omitempty" jsonschema:"key:value (OR)"`
 	Search    string          `json:"search,omitempty" jsonschema:"text match over id/title/descriptions"`
 	Baseline  string          `json:"baseline,omitempty" jsonschema:"baseline name, glob allowed"`
-	Verbosity string          `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
-	Limit     int             `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
-	Page      int             `json:"page,omitempty" jsonschema:"0-based page when truncated"`
-	Fields    []string        `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
+	// The amendments layer: what adjudicated the requirement, and whether a
+	// remediation plan is still in force.
+	Disposition []string `json:"disposition,omitempty" jsonschema:"governing override type: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)"`
+	Poams       string   `json:"poams,omitempty" jsonschema:"valid | none-valid (none, empty, or lapsed)"`
+	Verbosity   string   `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
+	Limit       int      `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
+	Page        int      `json:"page,omitempty" jsonschema:"0-based page when truncated"`
+	Fields      []string `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
 }
 
 // correlationProjectors is the bounded correlation set (bead-established): the
@@ -196,9 +201,44 @@ func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 // paginated result set.
 func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput] {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in queryInput) (*sdkmcp.CallToolResult, queryOutput, error) {
-		if in.Impact != "" && !hdfengine.ValidImpactFilter(in.Impact) {
-			return argError(fmt.Sprintf("invalid impact filter %q", in.Impact),
-				"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
+		// Every filter value is validated before any document is read: a value
+		// outside its vocabulary would match nothing and report a clean run,
+		// which reads to an agent as "asked and found none" rather than as the
+		// mistake it is. Same refusals the CLI makes, through the same helpers.
+		for _, c := range []struct{ field, comparison string }{
+			{"impact", in.Impact},
+			{"rawImpact", in.RawImpact},
+		} {
+			if c.comparison != "" && !hdfengine.ValidImpactFilter(c.comparison) {
+				return argError(fmt.Sprintf("invalid %s filter %q", c.field, c.comparison),
+					"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
+			}
+		}
+		for _, c := range []struct {
+			field  string
+			values []string
+			valid  func(string) bool
+			legal  []string
+		}{
+			{"status", in.Status, hdfengine.ValidStatus, hdfengine.StatusValues},
+			{"severity", in.Severity, hdfengine.ValidSeverity, hdfengine.SeverityValues},
+		} {
+			for _, v := range c.values {
+				if !c.valid(v) {
+					return argError(fmt.Sprintf("unknown %s %q", c.field, v),
+						fmt.Sprintf("%s accepts only: %s", c.field, strings.Join(c.legal, ", "))), errorQueryOutput(), nil
+				}
+			}
+		}
+		for _, d := range in.Disposition {
+			if !hdfengine.ValidDisposition(d) {
+				return argError(fmt.Sprintf("unknown disposition %q", d),
+					fmt.Sprintf("disposition accepts only: %s", strings.Join(hdfengine.DispositionValues, ", "))), errorQueryOutput(), nil
+			}
+		}
+		if in.Poams != "" && !hdfengine.ValidPoamFilter(in.Poams) {
+			return argError(fmt.Sprintf("unknown poams filter %q", in.Poams),
+				fmt.Sprintf("poams accepts only: %s or %s", hdfengine.PoamValid, hdfengine.PoamNoneValid)), errorQueryOutput(), nil
 		}
 		if f, ok := unknownCorrelationField(in.Fields); ok {
 			return argError(fmt.Sprintf("unknown correlation field %q", f),
@@ -222,8 +262,10 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 		results := view.Results
 		matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 			Status: in.Status, Severity: in.Severity, Impact: in.Impact,
-			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
+			RawImpact: in.RawImpact,
+			CCI:       in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
 			Search: in.Search, Baseline: in.Baseline,
+			Disposition: in.Disposition, Poams: in.Poams,
 			Count:    true, // return every match; the tool applies limit + token paging
 			StatusOf: shared.RequirementEffectiveStatus,
 		})

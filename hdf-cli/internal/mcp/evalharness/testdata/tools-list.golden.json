@@ -1185,6 +1185,16 @@
               "array"
             ]
           },
+          "disposition": {
+            "description": "governing override type: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
           "fields": {
             "description": "opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation",
             "items": {
@@ -1200,7 +1210,7 @@
             "type": "string"
           },
           "impact": {
-            "description": "comparison e.g. \u003e0.5, =0",
+            "description": "effective impact (after overrides); e.g. \u003e0.5, =0",
             "type": "string"
           },
           "limit": {
@@ -1220,6 +1230,14 @@
           "page": {
             "description": "0-based page when truncated",
             "type": "integer"
+          },
+          "poams": {
+            "description": "valid | none-valid (none, empty, or lapsed)",
+            "type": "string"
+          },
+          "rawImpact": {
+            "description": "impact before overrides; same grammar",
+            "type": "string"
           },
           "search": {
             "description": "text match over id/title/descriptions",

@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -410,5 +412,166 @@ func TestHdfQuery_RejectsMalformedImpact(t *testing.T) {
 	}
 	if len(out.Requirements) != 0 {
 		t.Fatalf("refused query must return no rows, got %d", len(out.Requirements))
+	}
+}
+
+// queryInput was written against the filter surface as it stood and did not
+// track it: disposition and poams were added to the engine and the CLI by one
+// card, rawImpact by another, and none reached the MCP. Nothing failed when the
+// surfaces diverged, which is why the gap widened to three keys unnoticed.
+//
+// This is the guard, not the sweep. Every user-facing field on the engine's
+// Options must be reachable through the tool or listed below with a reason, so a
+// future filter key cannot be added to the engine and silently skip the MCP.
+//
+// What it does NOT catch: a field present on queryInput but never passed to the
+// engine, or passed without a vocabulary check. Those are covered for the
+// current keys by the behavioural tests below, which assert what each filter
+// EXCLUDES — an inclusion-only assertion passes against a filter that never ran,
+// since an absent filter returns everything.
+func TestQueryInputCoversEveryEngineFilter(t *testing.T) {
+	// Not filters: these are how the CALLER drives the engine, not what a user
+	// selects by. Each is either supplied by the tool itself or exposed under a
+	// different name that the tool owns.
+	notAFilter := map[string]string{
+		"Now":      "reference clock, supplied by the tool rather than the caller",
+		"Count":    "the tool always requests every match and pages the result itself",
+		"StatusOf": "the status resolver the tool injects; not a value a caller picks",
+		"Limit":    "exposed as the tool's own Limit/Page pair, which paginate the response",
+	}
+
+	options := reflect.TypeOf(hdfengine.Options{})
+	input := reflect.TypeOf(queryInput{})
+	for i := 0; i < options.NumField(); i++ {
+		name := options.Field(i).Name
+		if reason, ok := notAFilter[name]; ok {
+			if reason == "" {
+				t.Errorf("%s is excluded without a reason", name)
+			}
+			continue
+		}
+		if _, found := input.FieldByName(name); !found {
+			t.Errorf("engine filter %q is not reachable through hdf_query and is not listed as a non-filter — "+
+				"an agent cannot ask what a CLI user can", name)
+		}
+	}
+}
+
+// amendedResults is the minimum document that can tell the three amendments
+// filters apart: one requirement waived, one risk-adjusted from 0.9 to 0.3, one
+// carrying a live POA&M, one plain. A fixture without them would let every
+// assertion below pass against a filter that never reached the engine.
+func amendedResults(t *testing.T) string {
+	t.Helper()
+	const doc = `{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "PLAIN", "title": "no amendment", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}]},
+    {"id": "WAIVED", "title": "waived", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "statusOverrides": [{"type": "waiver", "status": "passed", "reason": "compensating control",
+       "appliedBy": {"type": "simple", "identifier": "t"},
+       "appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"}]},
+    {"id": "ADJUSTED", "title": "risk-adjusted", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "statusOverrides": [{"type": "riskAdjustment", "reason": "environmental context",
+       "appliedBy": {"type": "simple", "identifier": "t"},
+       "appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+       "impact": {"value": 0.3}}]},
+    {"id": "LOW", "title": "below every bound the tests use", "impact": 0.1, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}]},
+    {"id": "PLANNED", "title": "has a live plan", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "poams": [{"type": "remediation", "explanation": "remediation scheduled",
+       "appliedBy": {"type": "simple", "identifier": "t"},
+       "appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"}]}
+  ]}]
+}`
+	return writeRoot(t, "amended.json", []byte(doc))
+}
+
+func queryIDs(t *testing.T, in queryInput) []string {
+	t.Helper()
+	_, out := callQuery(t, in)
+	ids := make([]string, 0, len(out.Requirements))
+	for _, r := range out.Requirements {
+		if id, ok := r["id"].(string); ok {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// The three keys must SELECT, not merely be accepted. Each assertion names what
+// the filter excludes as well as what it includes, so a filter that never
+// reached the engine — and therefore returned everything — fails here.
+func TestQuery_AmendmentFiltersReachTheEngine(t *testing.T) {
+	path := amendedResults(t)
+	src := handle.Source{Path: path}
+
+	for _, tc := range []struct {
+		name string
+		in   queryInput
+		want []string
+	}{
+		{"disposition selects the governing override's type",
+			queryInput{Source: src, Disposition: []string{"riskAdjustment"}}, []string{"ADJUSTED"}},
+		{"disposition ORs across values",
+			queryInput{Source: src, Disposition: []string{"waiver", "riskAdjustment"}}, []string{"ADJUSTED", "WAIVED"}},
+		{"poams valid finds the requirement carrying a live plan",
+			queryInput{Source: src, Poams: "valid"}, []string{"PLANNED"}},
+		{"poams none-valid collapses absent and empty",
+			queryInput{Source: src, Poams: "none-valid"}, []string{"ADJUSTED", "LOW", "PLAIN", "WAIVED"}},
+		{"impact is the EFFECTIVE score, so the adjusted requirement leaves the band it was re-scored from",
+			queryInput{Source: src, Impact: ">=0.9"}, []string{"PLAIN", "PLANNED", "WAIVED"}},
+		{"rawImpact reaches the score the adjustment moved it from",
+			queryInput{Source: src, RawImpact: ">=0.9"}, []string{"ADJUSTED", "PLAIN", "PLANNED", "WAIVED"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := queryIDs(t, tc.in); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// An unrecognized value must be REFUSED, not matched against nothing. To an
+// agent a clean empty result reads as "asked and found none", which is the false
+// green this vocabulary exists to prevent — and it has no way to tell the two
+// apart without the refusal.
+func TestQuery_AmendmentFiltersRefuseUnknownValues(t *testing.T) {
+	path := amendedResults(t)
+	src := handle.Source{Path: path}
+
+	for _, tc := range []struct {
+		name string
+		in   queryInput
+		want string
+	}{
+		{"disposition", queryInput{Source: src, Disposition: []string{"waver"}}, "unknown disposition"},
+		{"poams", queryInput{Source: src, Poams: "absent"}, "unknown poams filter"},
+		{"rawImpact", queryInput{Source: src, RawImpact: ">>7"}, "invalid rawImpact filter"},
+		{"impact", queryInput{Source: src, Impact: ">>7"}, "invalid impact filter"},
+		// The CLI has refused these two since the vocabulary landed; the MCP
+		// never did, so an agent's typo read as a clean empty result.
+		{"status", queryInput{Source: src, Status: []string{"faild"}}, "unknown status"},
+		{"severity", queryInput{Source: src, Severity: []string{"crit"}}, "unknown severity"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, _ := callQuery(t, tc.in)
+			txt := payloadText(t, res)
+			if !strings.Contains(txt, tc.want) {
+				t.Errorf("want refusal containing %q, got %s", tc.want, txt)
+			}
+		})
 	}
 }

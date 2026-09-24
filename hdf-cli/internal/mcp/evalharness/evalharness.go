@@ -37,8 +37,12 @@ const (
 	// a capability, not bloat, and the alternative — cutting description text
 	// that was added after measured agent failures — trades accuracy for tokens.
 	// The per-tool ceiling below is the real anti-bloat invariant; a deployment
-	// that does not need every tool advertises a subset (--tools).
-	ToolsListTotalBudget = 5400
+	// that does not need every tool advertises a subset (--tools). Raised to
+	// 5460 (owner decision 2026-09-24) when hdf_query gained disposition,
+	// poams and rawImpact: the amendments layer was reachable from the CLI and
+	// not from the MCP, so an agent could not ask what a user could. Measured
+	// 5444 with the descriptions already trimmed twice.
+	ToolsListTotalBudget = 5460
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -49,8 +53,14 @@ const (
 	// description can SAY that sources[] combines several documents — a
 	// benchmark smoke showed a 20B model never discovering it from the
 	// parameter hint alone, so the sentence is capability, not prose; measured
-	// 738 with the naming aside kept.
-	ToolsListPerToolBudget = 740
+	// 738 with the naming aside kept. Raised to 840 (owner decision 2026-09-24)
+	// for hdf_query's three amendments-layer filters. The cost is structural —
+	// roughly 95 tokens for three properties, not prose: trimming took it from
+	// 848 to 833 and no further, and the only remaining lever was dropping the
+	// disposition enum from its description, which would cost a guess-and-be-
+	// refused round trip and make it the one closed vocabulary not listed the
+	// way status and severity are. Measured 833.
+	ToolsListPerToolBudget = 840
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -60,8 +70,11 @@ const (
 	// aggregate tool included, against the full ~5079. Raised from 2900 to 3500 when
 	// hdf_aggregate joined the read profile, and to 3700 with sources[] on the two
 	// read tools that carry it. This ceiling only needs to catch the read surface
-	// creeping back toward full; the wire measurement is a faithful proxy.
-	ReadProfileBudget = 3700
+	// creeping back toward full; the wire measurement is a faithful proxy. Raised
+	// to 3760 (owner decision 2026-09-24) with hdf_query's amendments filters;
+	// measured 3744. The read profile still sits far below the full surface,
+	// which is what this ceiling exists to protect.
+	ReadProfileBudget = 3760
 )
 
 var (
