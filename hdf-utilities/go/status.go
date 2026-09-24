@@ -43,6 +43,10 @@ type StatusOverrideInput struct {
 	AppliedAt time.Time
 	// ExpiresAt zero means the override never expires.
 	ExpiresAt time.Time
+	// Impact is the override's re-scored impact, nil when the override carries
+	// none. A pointer because 0 is a legitimate re-score meaning "no longer
+	// applicable", which a value type could not distinguish from absence.
+	Impact *float64
 }
 
 func (o StatusOverrideInput) expired(ref time.Time) bool {
@@ -73,6 +77,32 @@ func GoverningOverrideIndex(overrides []StatusOverrideInput, eligible func(int) 
 		}
 	}
 	return governing
+}
+
+// GoverningImpactOverrideIndex returns the index of the override that governs a
+// requirement's impact: the most recently applied non-expired override carrying
+// an impact, matching the schema's definition of effectiveImpact. Eligibility is
+// per-field, so a newer override carrying only a status does not displace an
+// older re-score — a waiver adjudicates status and says nothing about impact.
+func GoverningImpactOverrideIndex(overrides []StatusOverrideInput, ref time.Time) int {
+	return GoverningOverrideIndex(overrides, func(i int) bool { return overrides[i].Impact != nil }, ref)
+}
+
+// ComputeEffectiveImpact determines a requirement's effective impact: the
+// governing impact override's value, else the requirement's own impact. It is
+// the impact twin of ComputeEffectiveStatus and follows the same rule the schema
+// states for the effectiveImpact field — "the most recent non-expired override
+// with an impact field".
+//
+// The stored effectiveImpact field is an output cache and is never read, exactly
+// as effectiveStatus is not: the only sanctioned channel for impact to diverge
+// from the requirement's own value is a governing override. A zero ref time
+// means "now".
+func ComputeEffectiveImpact(input EffectiveStatusInput, ref time.Time) float64 {
+	if i := GoverningImpactOverrideIndex(input.Overrides, ref); i >= 0 {
+		return *input.Overrides[i].Impact
+	}
+	return input.Impact
 }
 
 // GoverningStatusOverrideIndex returns the index of the override that governs

@@ -16,6 +16,13 @@ func StatusOverrideInputs(overrides []hdf.StatusOverride) []hdfutil.StatusOverri
 		if o.Status != nil {
 			inputs[i].Status = string(*o.Status)
 		}
+		if o.Impact != nil {
+			// Carried so effective IMPACT can be resolved from the same
+			// overrides; eligibility is per-field, so an override may govern one
+			// and not the other.
+			value := o.Impact.Value
+			inputs[i].Impact = &value
+		}
 	}
 	return inputs
 }
@@ -32,6 +39,14 @@ func RequirementStatusInput(r hdf.EvaluatedRequirement) hdfutil.EffectiveStatusI
 		input.ResultStatuses = append(input.ResultStatuses, string(res.Status))
 	}
 	return input
+}
+
+// RequirementEffectiveImpact is the requirement's canonical effective impact via
+// the shared ladder: the governing non-expired impact override's value, else the
+// requirement's own. The stored effectiveImpact field is an output cache and is
+// never read, exactly as effectiveStatus is not.
+func RequirementEffectiveImpact(r hdf.EvaluatedRequirement) float64 {
+	return hdfutil.ComputeEffectiveImpact(RequirementStatusInput(r), time.Time{})
 }
 
 // RequirementEffectiveStatus is the requirement's canonical effective status
