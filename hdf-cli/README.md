@@ -588,10 +588,19 @@ SUBCOMMANDS
 
 EXAMPLES
   hdf evidence build --system system.json --results r1.json --results r2.json -o q1.hdf-evidence-package.json
+  hdf evidence build --system system.json --results "scans/*.json" --plan q3-plan.json --baseline rhel9.json -o q1.hdf-evidence-package.json
   hdf evidence info q1.hdf-evidence-package.json
   hdf evidence verify q1.hdf-evidence-package.json
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri logs/q1.ndjson --format ecs --collector elastic-agent
+  hdf evidence add-evidence q1.hdf-evidence-package.json --uri logs/q1.ndjson --uri sbom.cdx.json --format ecs --format cyclonedx
+  hdf evidence add-evidence q1.hdf-evidence-package.json --uri sbom.cdx.json --infer
 ```
+
+**References are package-relative.** A content reference is a path relative to the evidence package's own directory, confined to that subtree — the package sits at the root of the base directory a CI orchestrator hands from job to job, and documents may be flat beside it or in subdirectories. A document outside that subtree is refused; record it with `add-evidence` instead. Absolute and remote references are refused rather than reinterpreted.
+
+**`add-evidence` writes `externalEvidence[]` — native-format material that IS evidence** (a log or telemetry corpus). It is not the place for inert context: CTI/STIX, advisories and the like belong in `externalReferences[]`, which overrides nothing. `hdf enrich <results> <bundle>` attaches that context to a **results** document's findings — it does not accept an evidence package. The package's own `externalReferences[]` has no command yet.
+
+`--uri` is repeatable. `--format` takes one value for every artifact, or one per `--uri` in the order given; any other count is refused rather than guessed. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred. The same URI twice is refused rather than ignored, because a repeat add usually means the artifact changed and its new checksum must be recorded deliberately.
 
 Example output:
 
