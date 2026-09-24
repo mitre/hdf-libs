@@ -10,6 +10,7 @@ import {
   computeEffectiveStatus,
   computeEffectiveImpact,
   governingOverrideIndex,
+  governingImpactOverrideIndex,
   type EffectiveStatusInput,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
@@ -85,6 +86,30 @@ export function governingOverride(
       expiresAt: stamp(o.expiresAt),
     })),
     () => true,
+    now
+  );
+  return i >= 0 ? overrides[i] : undefined;
+}
+
+/**
+ * The override that governs a requirement's IMPACT — the most recently applied
+ * non-expired one CARRYING an impact — or undefined when none does. Eligibility
+ * is per field, so a newer override that says nothing about impact does not
+ * displace an older re-score.
+ *
+ * Parity: GoverningImpactOverrideIndex usage in shared/go/checklist.
+ */
+export function governingImpactOverride(
+  req: EvaluatedRequirement,
+  now?: string
+): NonNullable<EvaluatedRequirement['statusOverrides']>[number] | undefined {
+  const overrides = (req.statusOverrides ?? []).filter((o) => o != null);
+  const i = governingImpactOverrideIndex(
+    overrides.map((o) => ({
+      appliedAt: stamp(o.appliedAt),
+      expiresAt: stamp(o.expiresAt),
+      impact: o.impact?.value,
+    })),
     now
   );
   return i >= 0 ? overrides[i] : undefined;

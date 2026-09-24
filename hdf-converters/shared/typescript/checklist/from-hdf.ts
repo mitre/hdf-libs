@@ -1,5 +1,5 @@
 import { hdfTime, requireHdfResults } from '../converterutil.js';
-import { requirementEffectiveStatus } from '../status.js';
+import { requirementEffectiveStatus, governingImpactOverride } from '../status.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -193,15 +193,20 @@ function formatOverride(o: StatusOverride): string {
   return s;
 }
 
-// overrideSeverity derives the checklist severity override from the first
-// impact-bearing status override (a risk adjustment).
+// overrideSeverity derives the checklist severity override from the status
+// override that governs the requirement's IMPACT (a risk adjustment): the most
+// recently applied non-expired override CARRYING an impact, the same rule
+// computeEffectiveImpact uses, so the severity a checklist reports and the
+// effective impact every other surface reports come from one override.
+//
+// It selected the first impact-bearing entry instead, which let an expired
+// adjustment drive the severity and let array order decide between several.
+// Eligibility is per field, so a newer waiver — which says nothing about impact —
+// does not displace an older re-score.
 function overrideSeverity(req: EvaluatedRequirement): { severity: string; justification: string } {
-  for (const o of req.statusOverrides ?? []) {
-    if (o.impact) {
-      return { severity: cklSeverityOrFloor(o.impact.value), justification: o.reason ?? '' };
-    }
-  }
-  return { severity: '', justification: '' };
+  const o = governingImpactOverride(req);
+  if (!o) return { severity: '', justification: '' };
+  return { severity: cklSeverityOrFloor(o.impact!.value), justification: o.reason ?? '' };
 }
 
 // Maps an impact score to STIG's qualitative severity bucket via the shared band

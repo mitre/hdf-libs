@@ -233,16 +233,24 @@ func formatOverrideTime(t time.Time) string {
 }
 
 // overrideSeverity derives the checklist severity override (SEVERITY_OVERRIDE /
-// overrides.severity) from the first impact-bearing status override — a risk
-// adjustment restates the qualitative severity, its reason the justification.
+// overrides.severity) from the status override that governs the requirement's
+// IMPACT — a risk adjustment restates the qualitative severity, its reason the
+// justification.
+//
+// That is the most recently applied non-expired override CARRYING an impact, the
+// same rule ComputeEffectiveImpact uses, so the severity a checklist reports and
+// the effective impact every other surface reports come from one override. It
+// selected the first impact-bearing entry instead, which let an expired
+// adjustment drive the severity and let array order decide between several.
+// Eligibility is per field, so a newer waiver — which says nothing about impact —
+// does not displace an older re-score.
 func overrideSeverity(req *hdf.EvaluatedRequirement) (severity, justification string) {
-	for i := range req.StatusOverrides {
-		o := &req.StatusOverrides[i]
-		if o.Impact != nil {
-			return cklSeverityOrFloor(o.Impact.Value), o.Reason
-		}
+	i := hdfutil.GoverningImpactOverrideIndex(shared.StatusOverrideInputs(req.StatusOverrides), time.Time{})
+	if i < 0 {
+		return "", ""
 	}
-	return "", ""
+	o := &req.StatusOverrides[i]
+	return cklSeverityOrFloor(o.Impact.Value), o.Reason
 }
 
 // cklSeverityFromImpact maps an impact score to STIG's qualitative severity
