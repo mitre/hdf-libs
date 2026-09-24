@@ -22,6 +22,7 @@ import {
   floatNumber,
   governingOverrideIndexOf,
   governingOverrideOf,
+  disposition,
 } from './exportmap.js';
 
 function mkResults(...statuses: string[]): Record<string, unknown> {
@@ -277,5 +278,37 @@ describe('governingOverrideIndexOf', () => {
     expect(governingOverrideIndexOf(['not an object', newer], NOW)).toBe(1);
     expect(governingOverrideIndexOf([null, undefined, 42], NOW)).toBe(-1);
     expect(governingOverrideOf([older, newer], NOW)?.reason).toBe('newer');
+  });
+});
+
+// Parity: TestDisposition_FallbackBoundary in shared/go/exportmap.
+describe('disposition', () => {
+  const governing = {
+    type: 'riskAdjustment', reason: 'r',
+    appliedAt: '2025-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const expired = {
+    type: 'waiver', reason: 'r',
+    appliedAt: '2024-01-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+  };
+  const NOW = '2026-06-01T00:00:00Z';
+
+  it('lets the governing override beat a disagreeing stored field', () => {
+    expect(disposition({ disposition: 'waiver', statusOverrides: [governing] }, NOW)).toBe('riskAdjustment');
+  });
+
+  it('falls back to the stored field only when there are no overrides at all', () => {
+    expect(disposition({ disposition: 'waiver' }, NOW)).toBe('waiver');
+  });
+
+  // The boundary that matters: an expired override still means the document
+  // carries overrides, so it suppresses the fallback rather than triggering it.
+  it('lets an expired override suppress the fallback', () => {
+    expect(disposition({ disposition: 'waiver', statusOverrides: [expired] }, NOW)).toBe('');
+  });
+
+  it('yields empty for nothing at all, and for a type-less override', () => {
+    expect(disposition({}, NOW)).toBe('');
+    expect(disposition({ statusOverrides: [{ reason: 'r' }] }, NOW)).toBe('');
   });
 });

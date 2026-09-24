@@ -51,6 +51,35 @@ func GoverningOverride(overrides []hdf.StatusOverride, ref time.Time) *hdf.Statu
 	return nil
 }
 
+// RequirementDisposition is the type of the override that governs a requirement,
+// or "" when none does — the disposition twin of RequirementEffectiveStatus and
+// RequirementEffectiveImpact. A zero ref means now.
+//
+// Whenever the requirement carries overrides, they decide: the stored
+// disposition field is an output cache that can disagree with them, or be stale,
+// and it is not read.
+//
+// The one exception is a requirement carrying NO overrides at all. There the
+// stored field is the only evidence in the document — nothing can contradict it,
+// so passing it through preserves information an export would otherwise drop,
+// and an exporter that dropped it would lose the disposition of every document
+// whose producer recorded the verdict without the override detail. That is why
+// it is a fallback and not a source.
+//
+// Note hdf-engine's filter does NOT take this fallback: it returns no
+// disposition for such a requirement. The asymmetry is deliberate for now —
+// a filter that matched on an unprovenanced value would select requirements it
+// cannot justify, where an export is only restating what it was given.
+func RequirementDisposition(r hdf.EvaluatedRequirement, ref time.Time) string {
+	if o := GoverningOverride(r.StatusOverrides, ref); o != nil {
+		return string(o.Type)
+	}
+	if len(r.StatusOverrides) == 0 && r.Disposition != nil {
+		return string(*r.Disposition)
+	}
+	return ""
+}
+
 // RequirementStatusInput maps a requirement onto the canonical
 // effective-status helper's input shape (hdf-utilities), so every consumer
 // computes status through the single shared implementation.

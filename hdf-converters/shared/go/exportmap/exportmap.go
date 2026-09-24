@@ -501,3 +501,17 @@ func parseOverrideTime(m map[string]interface{}, key string) time.Time {
 	}
 	return hdfutil.ParseTimestamp(s)
 }
+
+// Disposition is the type of the override that governs a requirement, or "" when
+// none does — the map-shaped twin of shared.RequirementDisposition, including its
+// no-overrides fallback to the stored field. A zero ref means now.
+func Disposition(req map[string]interface{}, ref time.Time) string {
+	overrides, _ := AsSlice(req["statusOverrides"])
+	if gov, ok := GoverningOverride(overrides, ref); ok {
+		return GetStr(gov, "type")
+	}
+	if len(overrides) == 0 {
+		return GetStr(req, "disposition")
+	}
+	return ""
+}

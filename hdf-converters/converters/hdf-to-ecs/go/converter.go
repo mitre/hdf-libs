@@ -144,7 +144,9 @@ func buildEvent(req, baseline map[string]interface{}, docTimestamp string, tool,
 // Returns nil when the requirement carries no disposition or overrides.
 func buildLabels(req map[string]interface{}) map[string]interface{} {
 	labels := map[string]interface{}{}
-	exportmap.SetIf(labels, "hdf_disposition", exportmap.GetStr(req, "disposition"))
+	// Resolved, not read from the stored disposition field, which is an output
+	// cache that can disagree with the overrides or be absent entirely.
+	exportmap.SetIf(labels, "hdf_disposition", exportmap.Disposition(req, time.Time{}))
 	if overrides, ok := exportmap.AsSlice(req["statusOverrides"]); ok && len(overrides) > 0 {
 		if ov, ok := exportmap.GoverningOverride(overrides, time.Time{}); ok {
 			exportmap.SetIf(labels, "hdf_override_type", exportmap.GetStr(ov, "type"))

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { EvaluatedRequirement } from '@mitre/hdf-schema';
-import { requirementEffectiveStatus, requirementEffectiveImpact, governingOverride } from './status.js';
+import { requirementEffectiveStatus, requirementEffectiveImpact, governingOverride, requirementDisposition } from './status.js';
 
 // These two are the schema-typed wrappers an external consumer reaches for, so
 // they are tested directly rather than only through whichever converter happens
@@ -118,5 +118,52 @@ describe('governingOverride', () => {
   it('returns undefined when nothing governs', () => {
     expect(governingOverride(of([]), NOW)).toBeUndefined();
     expect(governingOverride(req({}), NOW)).toBeUndefined();
+  });
+});
+
+// Parity: TestRequirementDisposition in shared/go/status_test.go.
+describe('requirementDisposition', () => {
+  const waiver = {
+    type: 'waiver', status: 'passed',
+    appliedAt: '2024-06-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const adjustment = {
+    type: 'riskAdjustment',
+    appliedAt: '2025-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+    impact: { value: 0.3 },
+  };
+  const expiredWaiver = {
+    type: 'waiver', status: 'passed',
+    appliedAt: '2024-06-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+  };
+  const NOW = '2026-06-01T00:00:00Z';
+
+  it('is the governing override type, whatever the array order', () => {
+    expect(requirementDisposition(req({ statusOverrides: [waiver, adjustment] }), NOW)).toBe('riskAdjustment');
+    expect(requirementDisposition(req({ statusOverrides: [adjustment, waiver] }), NOW)).toBe('riskAdjustment');
+  });
+
+  it('is empty when nothing governs', () => {
+    expect(requirementDisposition(req({}), NOW)).toBe('');
+    expect(requirementDisposition(req({ statusOverrides: [expiredWaiver] }), NOW)).toBe('');
+  });
+
+  it('never reads the stored cache when overrides are present', () => {
+    expect(requirementDisposition(req({ disposition: 'waiver', statusOverrides: [adjustment] }), NOW)).toBe('riskAdjustment');
+    // An EXPIRED override still counts as the document carrying overrides, so
+    // the fallback stays suppressed.
+    expect(requirementDisposition(req({ disposition: 'waiver', statusOverrides: [expiredWaiver] }), NOW)).toBe('');
+  });
+
+  it('falls back to the stored field only when there are no overrides at all', () => {
+    expect(requirementDisposition(req({ disposition: 'waiver' }), NOW)).toBe('waiver');
+  });
+
+  // Schema-invalid, but the converters structurally check their input rather
+  // than schema-validate it, so this shape reaches the exporters. It must yield
+  // the empty string in both languages, never the literal "undefined".
+  it('yields empty, not "undefined", for an override carrying no type', () => {
+    const typeless = { reason: 'r', appliedAt: '2025-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z' };
+    expect(requirementDisposition(req({ statusOverrides: [typeless] }), NOW)).toBe('');
   });
 });

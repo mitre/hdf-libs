@@ -348,3 +348,35 @@ func TestConvertHDFToECS_ProvenanceNamesTheGoverningOverride(t *testing.T) {
 	assert.NotEqual(t, "waiver", labels["hdf_override_type"],
 		"and the older waiver must not be reported as provenance")
 }
+
+// The ECS hdf_disposition label came straight from the stored disposition field
+// through exportmap.GetStr — an accessor read that no dotted-field or
+// bracket-index sweep could see, which is why it survived the first audit. The
+// field is an output cache: absent here, though the requirement plainly carries
+// a governing override.
+func TestConvertHDFToECS_DispositionIsResolvedNotRead(t *testing.T) {
+	doc := []byte(`{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "SV-1", "title": "no stored disposition", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "statusOverrides": [
+       {"type": "riskAdjustment", "reason": "environmental context",
+        "appliedBy": {"type": "simple", "identifier": "a"},
+        "appliedAt": "2025-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+        "impact": {"value": 0.3}}
+     ]}
+  ]}]
+}`)
+	out, err := ConvertHDFToECS(doc, converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 1)
+
+	labels := sub(t, objs[0], "labels")
+	assert.Equal(t, "riskAdjustment", labels["hdf_disposition"],
+		"the governing override's type, though the document stamps no disposition field")
+}

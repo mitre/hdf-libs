@@ -357,3 +357,43 @@ func TestGoverningOverrideIndex_MapShaped(t *testing.T) {
 		t.Errorf("malformed entry: got %d, want 1", got)
 	}
 }
+
+// Disposition is the map-shaped twin of shared.RequirementDisposition, including
+// its no-overrides fallback to the stored field. The boundary that matters: an
+// EXPIRED override still means the document carries overrides, so it suppresses
+// the fallback rather than triggering it.
+func TestDisposition_FallbackBoundary(t *testing.T) {
+	governing := map[string]interface{}{
+		"type": "riskAdjustment", "reason": "r",
+		"appliedAt": "2025-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+	}
+	expired := map[string]interface{}{
+		"type": "waiver", "reason": "r",
+		"appliedAt": "2024-01-01T00:00:00Z", "expiresAt": "2020-01-01T00:00:00Z",
+	}
+	ref, err := time.Parse(time.RFC3339, "2026-06-01T00:00:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name string
+		req  map[string]interface{}
+		want string
+	}{
+		{"the governing override wins over a disagreeing stored field",
+			map[string]interface{}{"disposition": "waiver", "statusOverrides": []interface{}{governing}}, "riskAdjustment"},
+		{"no overrides at all falls back to the stored field",
+			map[string]interface{}{"disposition": "waiver"}, "waiver"},
+		{"an expired override suppresses the fallback — the document does carry overrides",
+			map[string]interface{}{"disposition": "waiver", "statusOverrides": []interface{}{expired}}, ""},
+		{"nothing at all yields nothing", map[string]interface{}{}, ""},
+		{"a type-less governing override yields empty, never a placeholder",
+			map[string]interface{}{"statusOverrides": []interface{}{map[string]interface{}{"reason": "r"}}}, ""},
+	}
+	for _, c := range cases {
+		if got := Disposition(c.req, ref); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}

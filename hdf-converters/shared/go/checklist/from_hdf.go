@@ -201,8 +201,10 @@ func overrideProvenance(req *hdf.EvaluatedRequirement) string {
 		}
 		return strings.Join(lines, "\n")
 	}
-	if req.Disposition != nil && *req.Disposition != "" {
-		return "Disposition: " + string(*req.Disposition)
+	// Resolved, not read from the stored disposition field, which is an output
+	// cache that can disagree with the overrides or be absent entirely.
+	if disp := shared.RequirementDisposition(*req, time.Time{}); disp != "" {
+		return "Disposition: " + disp
 	}
 	return ""
 }

@@ -139,3 +139,63 @@ func TestGoverningOverrideIndex_IsByAppliedAtNotPosition(t *testing.T) {
 
 	assert.Equal(t, -1, GoverningOverrideIndex(nil, ref), "nothing governs an empty list")
 }
+
+// The disposition twin of RequirementEffectiveStatus / RequirementEffectiveImpact.
+// Exporters read the STORED disposition field, which this project treats as an
+// output cache: it can disagree with the overrides, or be absent entirely on a
+// document whose producer never stamped it.
+func TestRequirementDisposition(t *testing.T) {
+	waiver := hdf.StatusOverride{
+		Type: hdf.OverrideTypeWaiver, Status: statusPtr(hdf.Passed),
+		AppliedAt: mustTime(t, "2024-06-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+	}
+	adjustment := hdf.StatusOverride{
+		Type:      hdf.RiskAdjustment,
+		AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+		Impact: &hdf.ImpactOverride{Value: 0.3},
+	}
+	expiredWaiver := hdf.StatusOverride{
+		Type: hdf.OverrideTypeWaiver, Status: statusPtr(hdf.Passed),
+		AppliedAt: mustTime(t, "2024-06-01T00:00:00Z"), ExpiresAt: mustTime(t, "2020-01-01T00:00:00Z"),
+	}
+	stored := hdf.OverrideTypeWaiver
+
+	cases := []struct {
+		name string
+		req  hdf.EvaluatedRequirement
+		want string
+	}{
+		{"no overrides and no stored field", hdf.EvaluatedRequirement{}, ""},
+		{"the governing override's type",
+			hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{waiver, adjustment}}, "riskAdjustment"},
+		{"array order does not decide it",
+			hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{adjustment, waiver}}, "riskAdjustment"},
+		{"an expired override governs nothing",
+			hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{expiredWaiver}}, ""},
+		{"the stored field is never read when overrides are present",
+			hdf.EvaluatedRequirement{Disposition: &stored, StatusOverrides: []hdf.StatusOverride{adjustment}}, "riskAdjustment"},
+		// The one exception, and it is a tested export contract: with NO overrides
+		// the stored field is the only evidence the document carries, so dropping
+		// it would lose the disposition of every document whose producer recorded
+		// the verdict without the override detail.
+		{"but it is the fallback when the requirement carries no overrides at all",
+			hdf.EvaluatedRequirement{Disposition: &stored}, "waiver"},
+		{"and an EXPIRED override still suppresses that fallback — the document does carry overrides",
+			hdf.EvaluatedRequirement{Disposition: &stored, StatusOverrides: []hdf.StatusOverride{expiredWaiver}}, ""},
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.want, RequirementDisposition(c.req, time.Time{}), c.name)
+	}
+}
+
+// A type-less override is schema-invalid but reaches the exporters, which check
+// their input structurally rather than schema-validating it. Both languages must
+// yield the empty string — TypeScript's String(undefined) would emit the literal
+// "undefined" into an exported document.
+func TestRequirementDisposition_TypelessOverrideYieldsEmpty(t *testing.T) {
+	req := hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{{
+		Reason:    "r",
+		AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+	}}}
+	assert.Equal(t, "", RequirementDisposition(req, time.Time{}))
+}

@@ -1,5 +1,5 @@
 import { hdfTime, requireHdfResults } from '../converterutil.js';
-import { requirementEffectiveStatus, governingImpactOverride } from '../status.js';
+import { requirementEffectiveStatus, governingImpactOverride, requirementDisposition } from '../status.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -176,7 +176,10 @@ function overrideProvenance(req: EvaluatedRequirement): string {
   if (overrides.length > 0) {
     return overrides.map(formatOverride).join('\n');
   }
-  if (req.disposition) return `Disposition: ${req.disposition}`;
+  // Resolved, not read from the stored disposition field, which is an output
+  // cache that can disagree with the overrides or be stale.
+  const disposition = requirementDisposition(req);
+  if (disposition) return `Disposition: ${disposition}`;
   return '';
 }
 

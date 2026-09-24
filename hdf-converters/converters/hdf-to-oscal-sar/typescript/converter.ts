@@ -6,7 +6,7 @@
  */
 
 import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { requirementEffectiveStatus, governingOverride } from '../../../shared/typescript/status.js';
+import { requirementEffectiveStatus, governingOverride, requirementDisposition } from '../../../shared/typescript/status.js';
 import { emitConverterWarning, hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
@@ -623,13 +623,16 @@ function oscalStateFromStatus(status: string): { state: string; reason: string }
  */
 function overrideRemarks(req: EvaluatedRequirement): string {
   const parts: string[] = [];
-  if (req.disposition) parts.push('Disposition: ' + String(req.disposition));
+  // Resolved, not read from the stored disposition field, which is an output
+  // cache that can disagree with the overrides or be stale.
+  const disposition = requirementDisposition(req);
+  if (disposition) parts.push('Disposition: ' + disposition);
   // The GOVERNING override, resolved by appliedAt. The schema's description asks
   // for most-recent-first ordering, but nothing sorts and this repo's writers
   // append, so array position is the opposite of recency on an amended document.
   const o = governingOverride(req);
   if (o) {
-    parts.push('Override: ' + String(o.type));
+    parts.push('Override: ' + String(o.type ?? ''));
     if (o.reason) parts.push('Reason: ' + o.reason);
     if (o.appliedBy?.identifier) parts.push('Applied by: ' + o.appliedBy.identifier);
     const appliedAt = hdfTime(o.appliedAt);
@@ -734,10 +737,14 @@ function buildRemediations(req: EvaluatedRequirement): RiskResponse[] {
       props: [descriptionLabelProp('fix')],
     });
   }
+  // A governing override IS the disposition, so one condition now covers what two
+  // used to: the stored field being present said nothing about whether an
+  // override actually governed.
   const o = governingOverride(req);
-  if (req.disposition && o) {
-    const desc = o.reason || 'Risk accepted via ' + String(req.disposition);
-    rems.push({ uuid: crypto.randomUUID(), lifecycle: 'accepted', title: String(req.disposition), description: desc });
+  if (o) {
+    const disp = String(o.type ?? '');
+    const desc = o.reason || 'Risk accepted via ' + disp;
+    rems.push({ uuid: crypto.randomUUID(), lifecycle: 'accepted', title: disp, description: desc });
   }
   return rems;
 }

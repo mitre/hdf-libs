@@ -313,3 +313,45 @@ describe('hdf-to-ecs override provenance', () => {
     expect(labels['hdf_override_applied_at']).toBe('2025-01-01T00:00:00Z');
   });
 });
+
+// Parity: TestConvertHDFToECS_DispositionIsResolvedNotRead in go/.
+// The hdf_disposition label came from the stored disposition field through an
+// accessor read, which is why no dotted-field sweep saw it. The field is an
+// output cache: absent here, though the requirement carries a governing override.
+describe('hdf-to-ecs disposition', () => {
+  it('resolves the label from the overrides rather than the stored field', () => {
+    const doc = JSON.stringify({
+      generator: { name: 'test', version: '1' },
+      timestamp: '2026-01-01T00:00:00Z',
+      statistics: { duration: 1.0 },
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id: 'SV-1',
+              title: 'no stored disposition',
+              impact: 0.9,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'failed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
+              statusOverrides: [
+                {
+                  type: 'riskAdjustment',
+                  reason: 'environmental context',
+                  appliedBy: { type: 'simple', identifier: 'a' },
+                  appliedAt: '2025-01-01T00:00:00Z',
+                  expiresAt: '2099-12-31T00:00:00Z',
+                  impact: { value: 0.3 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const rows = lines(convertHdfToEcs(doc, VERSION));
+    const labels = rows[0]!['labels'] as Record<string, unknown>;
+    expect(labels['hdf_disposition']).toBe('riskAdjustment');
+  });
+});

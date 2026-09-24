@@ -195,7 +195,9 @@ func overrideStatusID(st exportmap.Status) int {
 // (Status_Override.justification is an optional structured controlled-vocabulary
 // object, not the human rationale — reason is the field to surface.)
 func overrideComment(req map[string]interface{}) string {
-	disposition := exportmap.GetStr(req, "disposition")
+	// Resolved, not read from the stored disposition field, which is an output
+	// cache that can disagree with the overrides or be absent entirely.
+	disposition := exportmap.Disposition(req, time.Time{})
 	overrides, _ := exportmap.AsSlice(req["statusOverrides"])
 	if disposition == "" && len(overrides) == 0 {
 		return ""

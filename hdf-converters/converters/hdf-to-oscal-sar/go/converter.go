@@ -622,8 +622,10 @@ func oscalStateFromStatus(status hdf.ResultStatus) (state string, reason string)
 // requirement carries no disposition or overrides.
 func overrideRemarks(req *hdf.EvaluatedRequirement) string {
 	var parts []string
-	if req.Disposition != nil {
-		parts = append(parts, "Disposition: "+string(*req.Disposition))
+	// Resolved, not read from the stored disposition field, which is an output
+	// cache that can disagree with the overrides or be absent entirely.
+	if disp := shared.RequirementDisposition(*req, time.Time{}); disp != "" {
+		parts = append(parts, "Disposition: "+disp)
 	}
 	// The GOVERNING override, resolved by appliedAt. The schema's description asks
 	// for most-recent-first ordering, but nothing sorts and this repo's writers
@@ -760,15 +762,19 @@ func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
 			Props:       []oscal.Property{oscal.DescriptionLabelProp("fix")},
 		})
 	}
-	if o := shared.GoverningOverride(req.StatusOverrides, time.Time{}); req.Disposition != nil && o != nil {
+	// A governing override IS the disposition, so one condition now covers what
+	// two used to: the stored field being present said nothing about whether an
+	// override actually governed.
+	if o := shared.GoverningOverride(req.StatusOverrides, time.Time{}); o != nil {
+		disp := string(o.Type)
 		desc := o.Reason
 		if desc == "" {
-			desc = "Risk accepted via " + string(*req.Disposition)
+			desc = "Risk accepted via " + disp
 		}
 		rems = append(rems, oscal.Remediation{
 			UUID:        oscal.GenerateUUID(),
 			Lifecycle:   "accepted",
-			Title:       string(*req.Disposition),
+			Title:       disp,
 			Description: desc,
 		})
 	}

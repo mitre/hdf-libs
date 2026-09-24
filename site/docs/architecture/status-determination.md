@@ -92,9 +92,13 @@ Every non-test read of a requirement's `impact`, `effectiveStatus` or `dispositi
 | Reads of `statusOverrides[].impact.value` (`hdf-to-oscal-poam`, `hdf-to-cyclonedx-vex`, `hdf amend`) | n/a | The override's own field, not the requirement's |
 | `hdf-diff` `ComputeEffectiveImpact` / `ComputeDisposition` | computes, then **falls back to the stored cache when a requirement carries no overrides** | Predates the shared ladder; feeds the effective checksum, so changing it is a checksum epoch |
 
-| `hdf-to-ocsf`, `hdf-to-ecs` governance labels | **stored `disposition`, via `exportmap.GetStr`** | Tracked defect — reached through an accessor taking the field name as a string, which is why the first sweep missed them |
+| Exporters' disposition text and labels (`hdf-to-oscal-sar`, `hdf-to-ocsf`, `hdf-to-ecs`, CKL/CKLB) | resolved, with one fallback | Resolve from the overrides; fall back to the stored field only on a requirement carrying none at all — see the exception below |
 
 Open defects found by the sweep are tracked rather than listed here, so this table does not rot into a bug list. The shape that recurs is an exporter trusting a stored `effective*`/`disposition` field.
+
+**One exception, at the export boundary.** A requirement carrying **no overrides at all** still reports its stored `disposition` when exported (`RequirementDisposition`, `exportmap.Disposition` and their TypeScript twins). There the stored value is the only evidence the document holds — nothing can contradict it — and dropping it would lose the disposition of every document whose producer recorded the verdict without the override detail. An *expired* override still counts as the document carrying overrides, so it suppresses the fallback rather than triggering it.
+
+`hdf query --disposition` deliberately does **not** take that fallback and reports nothing for such a requirement. The asymmetry is the point: a filter matching on an unprovenanced value selects requirements it cannot justify, where an export is only restating what it was handed. No other stored `effective*` field has an equivalent exception.
 
 **Array order carries no meaning.** A reader must never take `statusOverrides[0]` as "the governing override": nothing sorts that array, and this repo's own writers **append**, so the newest override is last. The schema's description says so explicitly — order is not significant, and the governing override is resolved by `appliedAt`. Two shared helpers do it, `GoverningOverride` for typed requirements and `exportmap.GoverningOverride` for the generically-parsed exporters, both on the same `governingOverrideIndex` the three ladders use. One exception is deliberate: `sarif-to-hdf` picks the override whose status produced the rollup, because every override it creates carries the same run timestamp and so recency cannot tell them apart.
 

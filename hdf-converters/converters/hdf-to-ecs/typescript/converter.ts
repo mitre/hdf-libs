@@ -12,6 +12,7 @@ import {
   buildHDFBlock,
   runExport,
   governingOverrideOf,
+  disposition,
 } from '../../../shared/typescript/exportmap.js';
 
 /**
@@ -138,7 +139,9 @@ function buildEvent(
  */
 function buildLabels(req: Obj): Obj | undefined {
   const labels: Obj = {};
-  setIf(labels, 'hdf_disposition', getStr(req, 'disposition'));
+  // Resolved, not read from the stored disposition field, which is an output
+  // cache that can disagree with the overrides or be absent entirely.
+  setIf(labels, 'hdf_disposition', disposition(req));
   const overrides = asArr(req.statusOverrides);
   if (overrides && overrides.length > 0) {
     const ov = governingOverrideOf(overrides);

@@ -114,3 +114,30 @@ export function governingImpactOverride(
   );
   return i >= 0 ? overrides[i] : undefined;
 }
+
+/**
+ * The type of the override that governs a requirement, or '' when none does —
+ * the disposition twin of requirementEffectiveStatus and
+ * requirementEffectiveImpact.
+ *
+ * Whenever the requirement carries overrides, they decide: the stored
+ * disposition field is an output cache that can disagree with them, or be stale,
+ * and it is not read. The one exception is a requirement carrying NO overrides
+ * at all, where the stored field is the only evidence in the document.
+ *
+ * Parity: RequirementDisposition in shared/go/status.go.
+ */
+export function requirementDisposition(req: EvaluatedRequirement, now?: string): string {
+  const governing = governingOverride(req, now);
+  // `?? ''` matters: a type-less override is schema-invalid but reaches here,
+  // because the converters structurally check their input rather than
+  // schema-validate it. String(undefined) would emit the literal "undefined".
+  if (governing) return String(governing.type ?? '');
+  // The one exception: with NO overrides the stored field is the only evidence
+  // the document carries, so passing it through preserves information an export
+  // would otherwise drop. See the Go twin for why this is a fallback, not a
+  // source, and why hdf-engine's filter deliberately does not take it.
+  const overrides = (req.statusOverrides ?? []).filter((o) => o != null);
+  if (overrides.length === 0 && req.disposition) return String(req.disposition);
+  return '';
+}

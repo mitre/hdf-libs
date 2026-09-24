@@ -425,3 +425,16 @@ export function governingOverrideOf(overrides: unknown[], now?: string): Obj | u
   const i = governingOverrideIndexOf(overrides, now);
   return i >= 0 ? asMap(overrides[i]) : undefined;
 }
+
+/**
+ * The type of the override that governs a requirement, or '' when none does —
+ * the map-shaped twin of requirementDisposition, including its no-overrides
+ * fallback to the stored field.
+ */
+export function disposition(req: Obj, now?: string): string {
+  const overrides = asArr(req.statusOverrides) ?? [];
+  const gov = governingOverrideOf(overrides, now);
+  if (gov) return getStr(gov, 'type');
+  if (overrides.length === 0) return getStr(req, 'disposition');
+  return '';
+}
