@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -85,6 +86,84 @@ func dropEmpty(paths []string) []string {
 	return kept
 }
 
+// resolvedAbs returns a path's symlink-resolved absolute form, falling back to
+// the lexical absolute form for a path not yet on disk.
+//
+// Resolving matters: `hdf evidence verify` confines references through
+// hdfutil.SafePath, which resolves symlinks, so a reference written by comparing
+// paths lexically disagrees with the reader. On macOS /tmp is a symlink to
+// /private/tmp, so a pipeline mixing $TMPDIR-derived and realpath-derived paths
+// would be told a document is outside a directory it is plainly inside — with the
+// prescribed remedy already satisfied and no way forward.
+func resolvedAbs(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	// Both inputs exist by the time this runs: a document has just been read, and
+	// the output directory is checked before any reference is computed. So a
+	// resolution failure here is a real one (a permission wall, a symlink loop)
+	// and is surfaced rather than degraded to the lexical form — degrading would
+	// silently reintroduce the /tmp-versus-/private/tmp mismatch this exists to
+	// prevent, with no error to show for it.
+	resolved, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve %s: %w", path, err)
+	}
+	return resolved, nil
+}
+
+// packageRelativeRef renders a document's path as a reference relative to the
+// package's own directory. The package sits at the root of the base directory —
+// the artifacts folder a CI orchestrator hands from job to job — so that
+// directory IS the base, and a document outside it is not a content reference at
+// all: it belongs in externalEvidence, carried by URI and hash.
+//
+// The result always uses forward slashes. A reference is data read by whoever
+// opens the package, not a path on the machine that wrote it, so a package built
+// on Windows must still say "scans/x.json".
+func packageRelativeRef(baseDir, docPath string) (string, error) {
+	absBase, err := resolvedAbs(baseDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve package directory %s: %w", baseDir, err)
+	}
+	absDoc, err := resolvedAbs(docPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve %s: %w", docPath, err)
+	}
+	rel, err := filepath.Rel(absBase, absDoc)
+	if err != nil {
+		return "", fmt.Errorf("failed to relate %s to the package directory %s: %w", docPath, absBase, err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("%s is outside the evidence package's directory (%s); "+
+			"move it under that directory, or record it with `hdf evidence add-evidence`", docPath, absBase)
+	}
+	return filepath.ToSlash(rel), nil
+}
+
+// documentRef is the one definition of what a content reference is. With a
+// package directory it is the package-relative path; writing to stdout there is
+// none, so the basename stands and the caller is told the layout will not
+// survive a subdirectory.
+func documentRef(baseDir, path string) (string, error) {
+	if baseDir == "" {
+		return filepath.Base(path), nil
+	}
+	return packageRelativeRef(baseDir, path)
+}
+
+// mustRef is documentRef for a path already proven in-tree by addEntry.
+// A failure cannot happen at that point; the basename is a harmless fallback
+// rather than a panic in a CLI.
+func mustRef(baseDir, path string) string {
+	ref, err := documentRef(baseDir, path)
+	if err != nil {
+		return filepath.Base(path)
+	}
+	return ref
+}
+
 // evidenceBuildOpts carries the documents a package is built from. The schema
 // permits seven Content_Type values; every one of them is reachable here, so a
 // package never has to be finished by a second command.
@@ -119,7 +198,7 @@ func requireDetectedType(data []byte, path, want, flag string) error {
 // appendTyped fingerprint-checks each path, then lists it under contentType. The
 // file is read ONCE and its bytes reused for both the check and the checksum:
 // reading twice consumed stdin in the guard and left the second read empty.
-func appendTyped(contents []map[string]interface{}, paths []string, schemaType, contentType, flag string) ([]map[string]interface{}, error) {
+func appendTyped(contents []map[string]interface{}, baseDir string, paths []string, schemaType, contentType, flag string) ([]map[string]interface{}, error) {
 	for _, p := range paths {
 		data, err := readInputFile(p)
 		if err != nil {
@@ -128,7 +207,11 @@ func appendTyped(contents []map[string]interface{}, paths []string, schemaType, 
 		if err := requireDetectedType(data, p, schemaType, flag); err != nil {
 			return nil, err
 		}
-		contents = append(contents, contentEntryFromBytes(contentType, p, data))
+		ref, refErr := documentRef(baseDir, p)
+		if refErr != nil {
+			return nil, refErr
+		}
+		contents = append(contents, contentEntryFromBytes(contentType, ref, data))
 	}
 	return contents, nil
 }
@@ -136,32 +219,63 @@ func appendTyped(contents []map[string]interface{}, paths []string, schemaType, 
 func runEvidenceBuild(opts evidenceBuildOpts) error {
 	contents := make([]map[string]interface{}, 0, len(opts.resultsPaths)+6)
 
+	// Every reference is relative to the package's own directory. Writing to
+	// stdout leaves no package location at all, so no relative reference can be
+	// computed: that case keeps the historical basename and warns, rather than
+	// inventing a base directory the reader will not share.
+	baseDir := ""
+	if opts.outputPath != "" {
+		baseDir = filepath.Dir(opts.outputPath)
+		if info, statErr := os.Stat(baseDir); statErr != nil || !info.IsDir() {
+			return fmt.Errorf("output directory %s does not exist; create it before writing the package there", baseDir)
+		}
+	} else {
+		// Said once, and only what is true: there is no package directory, so
+		// every reference is a bare filename whatever the layout.
+		fmt.Fprintf(os.Stderr,
+			"Warning: writing to stdout, so references are recorded as bare filenames — "+
+				"there is no package directory to resolve them against. "+
+				"Use -o <file> for references that resolve.\n")
+	}
+
+	// addEntry computes the document's reference from the package's location and
+	// lists it. One path for every content type, so no type can drift.
+	addEntry := func(docType, path string) error {
+		ref, refErr := documentRef(baseDir, path)
+		if refErr != nil {
+			return refErr
+		}
+		e, entryErr := buildContentEntry(docType, path, ref)
+		if entryErr != nil {
+			return entryErr
+		}
+		contents = append(contents, e)
+		return nil
+	}
+
 	// Add system
-	entry, err := buildContentEntry("hdf-system", opts.systemPath)
-	if err != nil {
+	if err := addEntry("hdf-system", opts.systemPath); err != nil {
 		return err
 	}
-	contents = append(contents, entry)
 
 	// Add results
 	for _, rp := range opts.resultsPaths {
-		entry, err = buildContentEntry("hdf-results", rp)
-		if err != nil {
+		if err := addEntry("hdf-results", rp); err != nil {
 			return err
 		}
-		contents = append(contents, entry)
 	}
+	var err error
 
 	// Optional: plan. Its presence also sets the package's planRef, which is
 	// what `evidence verify` reads to check completeness against the plan.
 	if opts.planPath != "" {
-		if contents, err = appendTyped(contents, []string{opts.planPath}, "plan", "hdf-plan", "plan"); err != nil {
+		if contents, err = appendTyped(contents, baseDir, []string{opts.planPath}, "plan", "hdf-plan", "plan"); err != nil {
 			return err
 		}
 	}
 
 	// Optional: baselines
-	if contents, err = appendTyped(contents, opts.baselinePaths, "baseline", "hdf-baseline", "baseline"); err != nil {
+	if contents, err = appendTyped(contents, baseDir, opts.baselinePaths, "baseline", "hdf-baseline", "baseline"); err != nil {
 		return err
 	}
 
@@ -171,26 +285,23 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 	// field, so a guard here rejects real SBOMs. The schema carries a BOM's kind
 	// in the referenced document's own bomType, not in the Content_Type.
 	for _, bp := range opts.bomPaths {
-		if entry, err = buildContentEntry("bom", bp); err != nil {
-			return err
+		if aerr := addEntry("bom", bp); aerr != nil {
+			return aerr
 		}
-		contents = append(contents, entry)
 	}
 
 	// Optional: amendments and comparisons. These are NOT fingerprint-checked,
 	// because they never were: making them repeatable must not also tighten what
 	// they accept. That asymmetry against --plan/--baseline is tracked on its own card.
 	for _, ap := range opts.amendmentsPaths {
-		if entry, err = buildContentEntry("hdf-amendments", ap); err != nil {
-			return err
+		if aerr := addEntry("hdf-amendments", ap); aerr != nil {
+			return aerr
 		}
-		contents = append(contents, entry)
 	}
 	for _, cp := range opts.comparisonPaths {
-		if entry, err = buildContentEntry("hdf-comparison", cp); err != nil {
-			return err
+		if aerr := addEntry("hdf-comparison", cp); aerr != nil {
+			return aerr
 		}
-		contents = append(contents, entry)
 	}
 
 	// Extract system name for package name
@@ -212,13 +323,13 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 
 	pkg := map[string]interface{}{
 		"name":              sysName + "-evidence-package",
-		"systemRef":         filepath.Base(opts.systemPath),
+		"systemRef":         mustRef(baseDir, opts.systemPath),
 		"preparedAt":        time.Now().UTC().Format(time.RFC3339),
 		"contents":          contents,
 		"completenessCheck": completeness,
 	}
 	if opts.planPath != "" {
-		pkg["planRef"] = filepath.Base(opts.planPath)
+		pkg["planRef"] = mustRef(baseDir, opts.planPath)
 	}
 
 	output, err := json.MarshalIndent(pkg, "", "  ")
@@ -242,21 +353,25 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 	return nil
 }
 
-func buildContentEntry(docType, filePath string) (map[string]interface{}, error) {
+// buildContentEntry reads filePath and lists it under ref. The reference is
+// computed by the caller from the package's location (packageRelativeRef), not
+// derived here: the same document has different references depending on where
+// the package is written.
+func buildContentEntry(docType, filePath, ref string) (map[string]interface{}, error) {
 	data, err := readInputFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s file %s: %w", docType, filePath, err)
 	}
-	return contentEntryFromBytes(docType, filePath, data), nil
+	return contentEntryFromBytes(docType, ref, data), nil
 }
 
 // contentEntryFromBytes is buildContentEntry's body for a caller that has
 // already read the file. Shared, not forked: both paths produce the same entry.
-func contentEntryFromBytes(docType, filePath string, data []byte) map[string]interface{} {
+func contentEntryFromBytes(docType, ref string, data []byte) map[string]interface{} {
 	hash := sha256.Sum256(data)
 	return map[string]interface{}{
 		"type": docType,
-		"uri":  filepath.Base(filePath),
+		"uri":  ref,
 		"checksum": map[string]interface{}{
 			"algorithm": "sha256",
 			"value":     hex.EncodeToString(hash[:]),

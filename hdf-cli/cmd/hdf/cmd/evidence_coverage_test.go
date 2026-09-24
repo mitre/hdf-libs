@@ -388,7 +388,7 @@ func TestBuildContentEntry(t *testing.T) {
 		fp := filepath.Join(tmpDir, "doc.json")
 		require.NoError(t, os.WriteFile(fp, []byte(content), 0o600))
 
-		entry, err := buildContentEntry("hdf-results", fp)
+		entry, err := buildContentEntry("hdf-results", fp, filepath.Base(fp))
 		require.NoError(t, err)
 
 		assert.Equal(t, "hdf-results", entry["type"])
@@ -402,7 +402,7 @@ func TestBuildContentEntry(t *testing.T) {
 	})
 
 	t.Run("returns error for missing file", func(t *testing.T) {
-		_, err := buildContentEntry("hdf-system", "/nonexistent/file.json")
+		_, err := buildContentEntry("hdf-system", "/nonexistent/file.json", "file.json")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to read")
 	})

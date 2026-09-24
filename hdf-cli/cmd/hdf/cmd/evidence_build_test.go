@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -374,4 +376,213 @@ func TestEvidenceBuild_EmptyResultsPathIsANoOp(t *testing.T) {
 	for _, c := range entries {
 		assert.NotEqual(t, ".", c.(map[string]interface{})["uri"])
 	}
+}
+
+// A content reference is a path relative to the package's own directory, and the
+// package sits at the root of the base directory — the artifacts folder a CI
+// orchestrator hands from job to job. Documents may sit flat beside it or in
+// subdirectories, as the pipeline prefers. Writing the basename describes only the
+// flat layout, so a document in a subdirectory produced a ref that cannot resolve
+// even though the resolver has always handled subdirectories.
+func TestEvidenceBuild_RefsArePackageRelativeNotBasenames(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "scans"), 0o750))
+
+	// Real fixtures, copied into a subdirectory layout.
+	copyFixture := func(name, dest string) string {
+		src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, name))
+		require.NoError(t, err)
+		p := filepath.Join(tmpDir, dest)
+		require.NoError(t, os.WriteFile(p, src, 0o600))
+		return p
+	}
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "meta"), 0o750))
+	systemPath := copyFixture("system.json", filepath.Join("meta", "system.json"))
+	resultsPath := copyFixture("rhel9-results.json", filepath.Join("scans", "rhel9-results.json"))
+
+	// A plan demanding only the baseline the copied results cover.
+	planPath := filepath.Join(tmpDir, "meta", "plan.json")
+	require.NoError(t, os.WriteFile(planPath,
+		[]byte(`{"name": "q3", "assessments": [{"baselineRef": "RHEL9-STIG"}]}`), 0o600))
+
+	outputPath := filepath.Join(tmpDir, "pkg.json")
+	_, _, err := executeCommand("evidence", "build",
+		"--system", systemPath,
+		"--results", resultsPath,
+		"--plan", planPath,
+		"-o", outputPath,
+	)
+	require.NoError(t, err)
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+
+	uris := map[string]string{}
+	for _, c := range pkg["contents"].([]interface{}) {
+		e := c.(map[string]interface{})
+		uris[e["type"].(string)] = e["uri"].(string)
+	}
+	assert.Equal(t, "scans/rhel9-results.json", uris["hdf-results"],
+		"a document in a subdirectory must keep its path relative to the package")
+	assert.Equal(t, "meta/system.json", uris["hdf-system"],
+		"the system document's subdirectory must survive too")
+
+	// AC1 names systemRef and planRef alongside the content entries; they follow
+	// the same rule, and forward slashes regardless of host OS.
+	assert.Equal(t, "meta/system.json", pkg["systemRef"], "systemRef must be package-relative")
+	assert.Equal(t, "meta/plan.json", pkg["planRef"], "planRef must be package-relative")
+
+	// The point of the ref being right: the package must actually verify.
+	_, _, verifyErr := executeCommand("evidence", "verify", outputPath)
+	require.NoError(t, verifyErr,
+		"a package whose documents sit in subdirectories must verify")
+}
+
+// AC3's branch: a document outside the package's own subtree is not a content
+// reference at all. It must be refused by name, with both remedies stated, and no
+// package written — never silently degraded to a basename that cannot resolve.
+func TestEvidenceBuild_RefusesDocumentOutsideThePackageTree(t *testing.T) {
+	outside := t.TempDir()
+	base := t.TempDir()
+
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "system.json"))
+	require.NoError(t, err)
+	systemPath := filepath.Join(base, "system.json")
+	require.NoError(t, os.WriteFile(systemPath, src, 0o600))
+
+	strayResults := filepath.Join(outside, "rhel9-results.json")
+	resSrc, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(strayResults, resSrc, 0o600))
+
+	outputPath := filepath.Join(base, "pkg.json")
+	_, _, buildErr := executeCommand("evidence", "build",
+		"--system", systemPath,
+		"--results", strayResults,
+		"-o", outputPath,
+	)
+	require.Error(t, buildErr, "a document outside the package's directory must be refused")
+	assert.Contains(t, buildErr.Error(), strayResults, "the error must name the document")
+	assert.Contains(t, buildErr.Error(), "outside the evidence package's directory")
+	assert.Contains(t, buildErr.Error(), "add-evidence",
+		"the error must state the externalEvidence remedy")
+	assert.NoFileExists(t, outputPath, "no package may be written when a reference cannot be formed")
+}
+
+// Regression guard for a false rejection this card introduced and fixed: the
+// reference must be computed with symlinks resolved, because `evidence verify`
+// confines through SafePath, which resolves them. Comparing lexically made two
+// spellings of ONE directory look like different directories — on macOS /tmp
+// versus /private/tmp — and refused a document plainly inside the package's
+// directory, prescribing a remedy that was already satisfied.
+func TestEvidenceBuild_SymlinkedSpellingIsNotOutsideTheTree(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating a symlink needs elevated privileges on Windows; the resolution logic is OS-independent")
+	}
+	root := t.TempDir()
+	target := filepath.Join(root, "real")
+	require.NoError(t, os.MkdirAll(target, 0o750))
+	link := filepath.Join(root, "link")
+	require.NoError(t, os.Symlink(target, link))
+
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "system.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(target, "system.json"), src, 0o600))
+	resSrc, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(target, "rhel9-results.json"), resSrc, 0o600))
+
+	// The system document is named through the symlink, the package through the
+	// real path. Same directory, two spellings.
+	outputPath := filepath.Join(target, "pkg.json")
+	_, _, buildErr := executeCommand("evidence", "build",
+		"--system", filepath.Join(link, "system.json"),
+		"--results", filepath.Join(target, "rhel9-results.json"),
+		"-o", outputPath,
+	)
+	require.NoError(t, buildErr,
+		"a document reached by a symlinked spelling of the package's own directory is not outside it")
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	for _, c := range pkg["contents"].([]interface{}) {
+		uri := c.(map[string]interface{})["uri"].(string)
+		assert.NotContains(t, uri, "..", "a same-directory document must not produce a traversing reference")
+	}
+
+	_, _, verifyErr := executeCommand("evidence", "verify", outputPath, "--checksums-only")
+	require.NoError(t, verifyErr, "the package build produced must verify")
+}
+
+// Writing to stdout leaves no package directory, so references are bare
+// filenames. The warning must say that once and say only what is true: an earlier
+// version claimed the document was "not beside the package" and fired for every
+// absolute path, i.e. for flat layouts that were perfectly fine.
+func TestEvidenceBuild_StdoutWarnsOnceAndOnlyAboutStdout(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := writeEvidenceInputs(t, tmpDir)
+
+	_, stderr, err := executeCommand("evidence", "build",
+		"--system", p["system.json"],
+		"--results", p["results.json"],
+	)
+	require.NoError(t, err)
+	assert.Equal(t, 1, strings.Count(stderr, "Warning:"),
+		"exactly one warning, however many documents are listed")
+	assert.Contains(t, stderr, "bare filenames")
+	assert.NotContains(t, stderr, "not beside the package",
+		"the old claim was false for a flat layout")
+}
+
+// A missing output directory must blame the output directory. Before this check it
+// blamed the input document — "<doc> is outside the evidence package's directory
+// (<missing dir>); move it under that directory" — prescribing a move that would
+// not have helped, because the fault was the -o path. Same class of wrongness as
+// the stdout warning.
+func TestEvidenceBuild_MissingOutputDirectoryBlamesTheOutputPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := writeEvidenceInputs(t, tmpDir)
+
+	_, _, err := executeCommand("evidence", "build",
+		"--system", p["system.json"],
+		"--results", p["results.json"],
+		"-o", filepath.Join(tmpDir, "does-not-exist", "pkg.json"),
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "does not exist",
+		"the error must name the missing output directory")
+	assert.NotContains(t, err.Error(), "add-evidence",
+		"it must not prescribe the out-of-tree remedy for a missing output directory")
+	assert.NotContains(t, err.Error(), "outside the evidence package",
+		"the input document is not at fault")
+}
+
+// A reference cannot be computed for a document whose path does not resolve — a
+// broken symlink in an artifacts directory is the realistic case. The failure must
+// surface: an earlier version swallowed every EvalSymlinks error and fell back to
+// the lexical path, which silently reintroduced the /tmp-versus-/private/tmp
+// mismatch the resolution exists to prevent, with no error to show for it.
+func TestEvidenceBuild_DanglingSymlinkDocumentSurfacesTheFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating a symlink needs elevated privileges on Windows; the resolution logic is OS-independent")
+	}
+	tmpDir := t.TempDir()
+	p := writeEvidenceInputs(t, tmpDir)
+
+	dangling := filepath.Join(tmpDir, "vanished-results.json")
+	require.NoError(t, os.Symlink(filepath.Join(tmpDir, "no-such-file.json"), dangling))
+
+	outputPath := filepath.Join(tmpDir, "pkg.json")
+	_, _, err := executeCommand("evidence", "build",
+		"--system", p["system.json"],
+		"--results", dangling,
+		"-o", outputPath,
+	)
+	require.Error(t, err, "an unresolvable document path must fail, not degrade to a lexical reference")
+	assert.Contains(t, err.Error(), "vanished-results.json", "the error must name the document")
+	assert.NoFileExists(t, outputPath)
 }
