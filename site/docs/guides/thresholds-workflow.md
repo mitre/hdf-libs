@@ -151,6 +151,19 @@ The predicate is the filter vocabulary `hdf query` already speaks, so a gate can
 
 `status` is the EFFECTIVE status, so amendments are already applied when a rule sees the document. That is what makes the example above express the whole posture in one line: a requirement suppressed by a waiver is no longer `failed`, so the rule asks only about findings nobody has adjudicated. Either something is suppressed by an override that records an owner and an expiry, or it carries a live POA&M, or it fails the gate.
 
+`impact` in a predicate is the **effective** impact — the score after any governing impact override — for the same reason `status` is the effective status. An assessor who formally re-scores a finding has moved it, and a gate that kept reading the original number would be ignoring the adjudication it was told about. `rawImpact` reaches the requirement's own score, and the pair is what expresses a policy about the adjudication itself:
+
+```yaml
+rules:
+  - name: no override may move a critical below 0.7
+    where:
+      rawImpact: ">=0.9"
+      impact: "<0.7"
+    max: 0
+```
+
+Severity follows the effective impact too, so a requirement risk-adjusted out of `critical` is counted in the band it was moved to rather than the one it left.
+
 `poams: none-valid` deliberately covers "no POA&M", "an empty list" and "only lapsed ones" as one condition, because a plan that has expired is not a plan.
 
 A rule bounds a count, not a percentage — `compliance` remains the only percentage bound — and it evaluates over the whole document. To narrow it to one baseline, say so in the predicate with `baseline`.

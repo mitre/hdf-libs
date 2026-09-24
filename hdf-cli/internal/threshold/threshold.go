@@ -137,9 +137,17 @@ func validateRules(rules []hdfengine.ThresholdRule, label string) error {
 			return fmt.Errorf("%s: %s: poams %q is not a known value (expected one of: %s, %s)",
 				label, name, rule.Where.Poams, hdfengine.PoamValid, hdfengine.PoamNoneValid)
 		}
-		if rule.Where.Impact != "" && !hdfengine.ValidImpactFilter(rule.Where.Impact) {
-			return fmt.Errorf("%s: %s: impact %q is not a comparison (expected e.g. \">=0.7\")",
-				label, name, rule.Where.Impact)
+		// A slice, not a map: two malformed comparisons in one rule must always
+		// report the same one first.
+		for _, c := range []struct{ field, comparison string }{
+			{"impact", rule.Where.Impact},
+			{"rawImpact", rule.Where.RawImpact},
+		} {
+			field, comparison := c.field, c.comparison
+			if comparison != "" && !hdfengine.ValidImpactFilter(comparison) {
+				return fmt.Errorf("%s: %s: %s %q is not a comparison (expected e.g. \">=0.7\")",
+					label, name, field, comparison)
+			}
 		}
 	}
 	return nil

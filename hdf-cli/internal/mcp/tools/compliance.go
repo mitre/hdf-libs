@@ -7,6 +7,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 
 	appmcp "github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
@@ -388,9 +389,11 @@ func partitionBy(results hdf.HDFResults, keyOf func(hdf.EvaluatedRequirement) []
 // canonical rule (hdfengine.DeriveSeverity: explicit STIG tag first, impact-
 // derived fallback with the zero band normalized to "none") that hdf_query rows
 // and the compliance counts also use, so no surface reports one requirement at
-// two severities.
+// two severities. Over the EFFECTIVE impact for the same reason those do: a
+// governing riskAdjustment would otherwise partition a requirement into one
+// group and count it in another. A zero reference means now.
 func groupSeverity(req hdf.EvaluatedRequirement) string {
-	return hdfengine.DeriveSeverity(req.Impact, req.Severity)
+	return hdfengine.DeriveSeverity(hdfengine.EffectiveImpactOf(req, time.Time{}), req.Severity)
 }
 
 // nistFamilies returns the distinct NIST control families a requirement maps to

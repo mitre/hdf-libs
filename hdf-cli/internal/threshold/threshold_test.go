@@ -328,6 +328,10 @@ func TestDecodeAll_RejectsAPredicateThatCanNeverMatch(t *testing.T) {
 			"rules:\n  - name: r\n    where: {impact: \">>7\"}\n    max: 0\n",
 			`">>7"`,
 		},
+		"rawImpact": {
+			"rules:\n  - name: r\n    where: {rawImpact: \">>7\"}\n    max: 0\n",
+			`">>7"`,
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, err := DecodeAll([]byte(tc.spec), "policy.yaml")
