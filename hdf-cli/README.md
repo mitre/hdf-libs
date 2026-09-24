@@ -256,8 +256,10 @@ Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`,
 
 `--status` reports EFFECTIVE status, so a requirement with a governing waiver is
 already off `failed` before the filter sees it. `--disposition` names the type of
-the override doing that, and `--poams` reports whether a remediation plan is still
-in force — `none-valid` deliberately covers "no POA&M", "an empty list" and "only
+the most recent non-expired override of any kind — which is not always the one
+that set the status, since an override carrying only an impact governs the
+disposition without touching the status — and `--poams` reports whether a
+remediation plan is still in force — `none-valid` deliberately covers "no POA&M", "an empty list" and "only
 lapsed ones" as one condition, because a plan that has expired is not a plan.
 
 EXAMPLES

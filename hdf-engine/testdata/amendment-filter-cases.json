@@ -1,5 +1,5 @@
 {
-  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass \u2014 both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations.",
+  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass \u2014 both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver.",
   "now": "2026-01-01T00:00:00Z",
   "fixture": {
     "baselines": [
@@ -301,6 +301,51 @@
               }
             ],
             "tags": {}
+          },
+          {
+            "id": "WAIVED-THEN-ADJUSTED",
+            "title": "An older waiver decided the status; a newer riskAdjustment re-scored the impact",
+            "impact": 0.9,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "compensating control in place",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              },
+              {
+                "type": "riskAdjustment",
+                "reason": "environmental context lowers the exposure",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z",
+                "impact": {
+                  "value": 0.3
+                }
+              }
+            ],
+            "tags": {}
           }
         ],
         "supports": [],
@@ -318,7 +363,7 @@
   },
   "cases": [
     {
-      "name": "disposition waiver excludes a lapsed waiver",
+      "name": "disposition waiver excludes a lapsed waiver, and a waiver a NEWER override has superseded \u2014 WAIVED-THEN-ADJUSTED is governed by its riskAdjustment now",
       "options": {
         "disposition": [
           "waiver"
@@ -353,13 +398,16 @@
       ]
     },
     {
-      "name": "CHARACTERIZATION: an impact-only riskAdjustment does not govern disposition, because disposition eligibility requires a status-carrying override. The schema defines disposition as the most recent non-expired override with no such qualifier, so this filter cannot match the canonical riskAdjustment shape. Pinning current behaviour, not endorsing it.",
+      "name": "disposition names the governing override even when it carries only an impact \u2014 a riskAdjustment typically does, so requiring a status made this filter unable to match its own canonical shape",
       "options": {
         "disposition": [
           "riskAdjustment"
         ]
       },
-      "expect": []
+      "expect": [
+        "ADJUSTED-DOWN",
+        "WAIVED-THEN-ADJUSTED"
+      ]
     },
     {
       "name": "a disposition nothing carries matches nothing",
@@ -393,7 +441,8 @@
         "POAM-LAPSED",
         "POAM-EMPTY",
         "ADJUSTED-DOWN",
-        "ADJUSTMENT-LAPSED"
+        "ADJUSTMENT-LAPSED",
+        "WAIVED-THEN-ADJUSTED"
       ]
     },
     {
@@ -404,7 +453,7 @@
       "expect": []
     },
     {
-      "name": "the motivating policy: still failing after amendments, with no current plan",
+      "name": "the motivating policy: still failing after amendments, with no current plan. WAIVED-THEN-ADJUSTED is absent because its effective STATUS still comes from the older waiver even though its disposition names the newer riskAdjustment \u2014 the two may name different overrides, which is what per-field eligibility means",
       "options": {
         "status": [
           "failed"
@@ -436,7 +485,8 @@
         "impact": "<0.5"
       },
       "expect": [
-        "ADJUSTED-DOWN"
+        "ADJUSTED-DOWN",
+        "WAIVED-THEN-ADJUSTED"
       ]
     },
     {
@@ -446,7 +496,8 @@
       },
       "expect": [
         "ADJUSTED-DOWN",
-        "ADJUSTMENT-LAPSED"
+        "ADJUSTMENT-LAPSED",
+        "WAIVED-THEN-ADJUSTED"
       ]
     },
     {
@@ -456,7 +507,8 @@
         "impact": "<0.7"
       },
       "expect": [
-        "ADJUSTED-DOWN"
+        "ADJUSTED-DOWN",
+        "WAIVED-THEN-ADJUSTED"
       ]
     }
   ],

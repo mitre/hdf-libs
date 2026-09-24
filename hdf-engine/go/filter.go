@@ -48,8 +48,9 @@ type Options struct {
 	Baseline  string
 	// Disposition selects by the TYPE of the override that governs the
 	// requirement (waiver, falsePositive, riskAdjustment, …), OR across values.
-	// It is resolved through the same governing-override rule effective status
-	// uses rather than read from the stored disposition field, which is an
+	// The governing override is the most recent non-expired one of ANY kind, so
+	// it may differ from the one that set the status — see governingDisposition.
+	// Resolved rather than read from the stored disposition field, which is an
 	// output cache: a reader that trusted the cache would disagree with the
 	// status it is filtering alongside.
 	Disposition []string
@@ -493,12 +494,21 @@ func poamFilterWantsValid(s string) (wantValid, known bool) {
 }
 
 // governingDisposition returns the type of the override that governs the
-// requirement, or "" when none does. The index comes from the shared
-// governing-override rule — most recently applied, non-expired, carrying a
-// status — so disposition and effective status can never disagree about which
-// override is in force.
+// requirement, or "" when none does: the most recently applied non-expired
+// override, whatever it carries. That is the schema's own definition, and it is
+// the rule hdf-diff has always used to compute the effective checksum.
+//
+// Eligibility is deliberately unfiltered here, unlike the status and impact
+// ladders. Requiring a status — as this did — meant an override carrying only an
+// impact governed nothing, so `--disposition riskAdjustment` could not match the
+// shape a riskAdjustment normally has. The cost is that disposition may name a
+// different override than the one that decided the status, which is what
+// per-field eligibility means rather than a contradiction: disposition answers
+// "what is the latest thing anyone did to this requirement", not "what set its
+// status".
 func governingDisposition(control hdf.EvaluatedRequirement, ref time.Time) string {
-	i := hdfutil.GoverningStatusOverrideIndex(statusOverrideInputs(control.StatusOverrides), ref)
+	anyOverride := func(int) bool { return true }
+	i := hdfutil.GoverningOverrideIndex(statusOverrideInputs(control.StatusOverrides), anyOverride, ref)
 	if i < 0 {
 		return ""
 	}

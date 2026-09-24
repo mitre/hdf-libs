@@ -73,6 +73,22 @@ Requirement-change-event chains anchor their integrity in effective checksums, w
 
 The `effectiveStatus` field on `EvaluatedRequirement` carries the post-adjudication status a producer computed at write time. It is an **output cache, not an input**: the canonical `computeEffectiveStatus` never reads it — the ladder above computes from results, overrides, and impact alone, so a stale stored value (in either direction) cannot influence the answer. The field's correctness is a **write-path guarantee**: every producer (converters, the amendments-apply flow) must emit a value equal to what the ladder computes. External consumers that cannot run the computation — raw-JSON readers, dashboards, `jq` pipelines — may read the field directly and are relying on that write-path guarantee.
 
+### disposition Field
+
+Disposition has a ladder too, and it is the shortest of the three:
+
+```
+1. the most recent non-expired statusOverride — whatever it carries → its type
+```
+
+There is **no eligibility filter**. Status requires an override carrying a status, impact one carrying an impact; disposition takes the latest non-expired override of any kind, which is the schema's own definition ("the type of the most recent non-expired override … governing this requirement") and the rule `hdf-diff` has always used to compute the effective checksum.
+
+The consequence is worth stating plainly, because it looks like a contradiction and is not: **disposition may name a different override than the one that decided the status.** A requirement waived in June and risk-adjusted in January reports `effectiveStatus: passed` from the waiver and `disposition: riskAdjustment` from the adjustment. That is what per-field eligibility means — disposition answers "what is the most recent thing anyone did to this requirement", not "what set its status".
+
+Filtering it required a status-carrying override until the change that introduced this section, which meant `--disposition riskAdjustment` could not match the shape a `riskAdjustment` normally has — one carrying an impact and no status. That shape is not hypothetical: `hdf enrich --recompute-cvss` authors exactly it, and appends it to whatever overrides a requirement already carries, so a waived finding that is later enriched acquires a newer impact-only override with no human deciding it.
+
+**Known gap:** the schema says disposition may also name a governing **POA&M** (`disposition: poam`), and no implementation does that. Neither the filter nor the effective checksum considers POA&Ms when resolving disposition.
+
 ### effectiveImpact Field
 
 Impact has its own ladder, and it is much shorter than the status one:

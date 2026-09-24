@@ -4,7 +4,7 @@
 // runs both over the same fixture).
 
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
-import { governingStatusOverrideIndex, parseTimestamp } from '@mitre/hdf-utilities';
+import { governingOverrideIndex, parseTimestamp } from '@mitre/hdf-utilities';
 import { deriveSeverity } from './compliance.js';
 import { effectiveImpactOf, overrideInputs } from './effective.js';
 import { normalizeKey, normalizeFilterValue } from './vocabulary.js';
@@ -39,9 +39,10 @@ export interface FilterOptions {
   baseline?: string;
   /**
    * The TYPE of the override that governs the requirement (waiver,
-   * falsePositive, riskAdjustment, …), OR across values. Resolved through the
-   * same governing-override rule effective status uses rather than read from the
-   * stored disposition field, which is an output cache.
+   * falsePositive, riskAdjustment, …), OR across values. The governing override
+   * is the most recent non-expired one of ANY kind, so it may differ from the one
+   * that set the status — see governingDisposition. Resolved rather than read
+   * from the stored disposition field, which is an output cache.
    */
   disposition?: string[];
   /**
@@ -382,14 +383,21 @@ function poamFilterWantsValid(s: string): boolean | undefined {
 }
 
 /**
- * The type of the override that governs the requirement, or '' when none does.
- * The index comes from the shared governing-override rule — most recently
- * applied, non-expired, carrying a status — so disposition and effective status
- * can never disagree about which override is in force.
+ * The type of the override that governs the requirement, or '' when none does:
+ * the most recently applied non-expired override, whatever it carries. That is
+ * the schema's own definition, and the rule hdf-diff has always used to compute
+ * the effective checksum.
+ *
+ * Eligibility is deliberately unfiltered here, unlike the status and impact
+ * ladders. Requiring a status — as this did — meant an override carrying only an
+ * impact governed nothing, so `--disposition riskAdjustment` could not match the
+ * shape a riskAdjustment normally has. The cost is that disposition may name a
+ * different override than the one that decided the status, which is what
+ * per-field eligibility means rather than a contradiction.
  */
 function governingDisposition(control: EvaluatedRequirement, now?: string): string {
   const overrides = control.statusOverrides ?? [];
-  const index = governingStatusOverrideIndex(overrideInputs(control), now);
+  const index = governingOverrideIndex(overrideInputs(control), () => true, now);
   return index < 0 ? '' : (overrides[index]?.type ?? '');
 }
 
