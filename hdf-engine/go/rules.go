@@ -10,10 +10,19 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
-// ThresholdRule is a policy the status × severity grid cannot express: a filter
-// predicate plus a bound on how many requirements may match it. Rules are
-// additive — the grid remains the SAF-compatible floor — and both are bounds in
-// one policy, so every one must hold.
+// ThresholdRule is a policy the pre-existing assertions cannot express: a filter
+// predicate plus a bound on how many requirements may match it.
+//
+// "The grid" appears in comments here as local shorthand for what a threshold
+// file could assert before rules: the compliance percentage, the per-status
+// per-severity count bounds, and the `controls` lists that require a named
+// control to land in a given bucket. It is OUR word, not SAF CLI's — SAF's docs
+// describe thresholds functionally and name no shape — so it stays out of
+// user-facing text. What rules add is selection by FIELD: `controls` names a
+// requirement by id, and nothing before could say "requirements where x".
+//
+// Rules are additive; the pre-existing assertions remain the SAF-compatible
+// floor, and all of them are assertions in one policy, so every one must hold.
 // Two decisions, recorded because a policy author will otherwise assume one of
 // them: a rule bounds a COUNT and not a percentage — the grid's compliance
 // min/max remains the only percentage bound, and extending rules to percentages

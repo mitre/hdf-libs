@@ -123,11 +123,13 @@ An inline spec names itself by its own text, because that is what you typed:
 
 `-F` operates on files, not specs: every spec is always evaluated against a document, so one run shows every policy it broke, and `-F` decides only whether the next document is read.
 
-## Rules: policies the grid cannot express
+## Rules: selecting by field rather than by id
 
-The bounds above are a fixed grid — five statuses by five severities, plus compliance. It can say "no failing criticals". It cannot say "nothing still failing without a remediation plan", because it has no way to talk about amendments.
+Everything above selects in one of two ways: a count within a status-and-severity bucket, or a named control that must land in a given bucket. Between them they cover a lot — "no failing criticals" is a count, and "`CKV_TF_1` must keep failing" is an exact control list.
 
-A `rules:` section adds that. A rule is a filter predicate plus a bound:
+What neither can do is select by a requirement's *fields*. `controls` names a requirement by id; nothing can say "requirements **where** something is true of them". So "nothing still failing without a remediation plan" is inexpressible, not because the bounds are too coarse, but because no part of the file can talk about the amendments layer — or about CVSS, EPSS, KEV, tags or disposition.
+
+That is what a rule adds. A rule is a filter predicate plus a bound:
 
 ```yaml
 rules:
@@ -145,7 +147,7 @@ rules:
     nothing fails without a plan: 1 matched, maximum 0
 ```
 
-The predicate is the filter vocabulary `hdf query` already speaks, so a gate can be prototyped with a query and pasted into a spec. Values within a field OR together; different fields AND. Rules sit beside the grid rather than replacing it — both are bounds in one policy, and every one must hold.
+The predicate is the filter vocabulary `hdf query` already speaks, so a gate can be prototyped with a query and pasted into a spec. Values within a field OR together; different fields AND. Rules sit beside the bounds and control lists rather than replacing them — all of them are assertions in one policy, and every one must hold.
 
 `status` is the EFFECTIVE status, so amendments are already applied when a rule sees the document. That is what makes the example above express the whole posture in one line: a requirement suppressed by a waiver is no longer `failed`, so the rule asks only about findings nobody has adjudicated. Either something is suppressed by an override that records an owner and an expiry, or it carries a live POA&M, or it fails the gate.
 
