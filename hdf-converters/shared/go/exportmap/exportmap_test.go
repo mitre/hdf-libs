@@ -3,6 +3,7 @@ package exportmap
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -315,4 +316,44 @@ func TestBuildHDFBlock(t *testing.T) {
 	assert.NotContains(t, minimal, "tool")
 	assert.NotContains(t, minimal, "control_id")
 	assert.NotContains(t, minimal, "nist")
+}
+
+// The map-shaped twin of shared.GoverningOverrideIndex, for the exporters that
+// work on generically-parsed JSON. Same rule: most recently applied non-expired
+// override, never array position — our own writers append, so position is the
+// opposite of recency on a document amended twice.
+func TestGoverningOverrideIndex_MapShaped(t *testing.T) {
+	older := map[string]interface{}{
+		"type": "waiver", "status": "passed", "reason": "older",
+		"appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+	}
+	newer := map[string]interface{}{
+		"type": "riskAdjustment", "reason": "newer",
+		"appliedAt": "2025-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+	}
+	expired := map[string]interface{}{
+		"type": "riskAdjustment", "reason": "expired",
+		"appliedAt": "2026-01-01T00:00:00Z", "expiresAt": "2020-01-01T00:00:00Z",
+	}
+	ref, err := time.Parse(time.RFC3339, "2026-06-01T00:00:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := GoverningOverrideIndex([]interface{}{older, newer}, ref); got != 1 {
+		t.Errorf("appended order: got %d, want 1 (the newest governs even when last)", got)
+	}
+	if got := GoverningOverrideIndex([]interface{}{newer, older}, ref); got != 0 {
+		t.Errorf("prepended order: got %d, want 0 (same answer either way)", got)
+	}
+	if got := GoverningOverrideIndex([]interface{}{older, newer, expired}, ref); got != 1 {
+		t.Errorf("expired newest: got %d, want 1", got)
+	}
+	if got := GoverningOverrideIndex(nil, ref); got != -1 {
+		t.Errorf("empty: got %d, want -1", got)
+	}
+	// A malformed entry must not govern, and must not take the whole export down.
+	if got := GoverningOverrideIndex([]interface{}{"not an object", newer}, ref); got != 1 {
+		t.Errorf("malformed entry: got %d, want 1", got)
+	}
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { EvaluatedRequirement } from '@mitre/hdf-schema';
-import { requirementEffectiveStatus, requirementEffectiveImpact } from './status.js';
+import { requirementEffectiveStatus, requirementEffectiveImpact, governingOverride } from './status.js';
 
 // These two are the schema-typed wrappers an external consumer reaches for, so
 // they are tested directly rather than only through whichever converter happens
@@ -79,4 +79,44 @@ describe('requirementEffectiveImpact', () => {
       expect(requirementEffectiveImpact(c.req)).toBeCloseTo(c.want, 9);
     });
   }
+});
+
+// Parity: TestGoverningOverrideIndex_IsByAppliedAtNotPosition in shared/go.
+// Array position is not recency. The schema says order is not significant and
+// this repo's own writers append, so on a document amended twice the newest
+// override is LAST; a reader taking statusOverrides[0] gets the oldest.
+describe('governingOverride', () => {
+  const older = {
+    type: 'waiver', status: 'passed', reason: 'older',
+    appliedAt: '2024-06-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const newer = {
+    type: 'riskAdjustment', reason: 'newer',
+    appliedAt: '2025-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+    impact: { value: 0.3 },
+  };
+  const expired = {
+    type: 'riskAdjustment', reason: 'expired',
+    appliedAt: '2026-01-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+    impact: { value: 0.1 },
+  };
+  const NOW = '2026-06-01T00:00:00Z';
+  const of = (overrides: unknown[]) => req({ statusOverrides: overrides });
+
+  it('takes the newest even when append put it last', () => {
+    expect(governingOverride(of([older, newer]), NOW)?.reason).toBe('newer');
+  });
+
+  it('gives the same answer in the order the schema used to ask for', () => {
+    expect(governingOverride(of([newer, older]), NOW)?.reason).toBe('newer');
+  });
+
+  it('never lets an expired override govern, however recently applied', () => {
+    expect(governingOverride(of([older, newer, expired]), NOW)?.reason).toBe('newer');
+  });
+
+  it('returns undefined when nothing governs', () => {
+    expect(governingOverride(of([]), NOW)).toBeUndefined();
+    expect(governingOverride(req({}), NOW)).toBeUndefined();
+  });
 });

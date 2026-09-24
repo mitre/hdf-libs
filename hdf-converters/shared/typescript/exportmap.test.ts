@@ -20,6 +20,8 @@ import {
   epochSeconds,
   epochMillis,
   floatNumber,
+  governingOverrideIndexOf,
+  governingOverrideOf,
 } from './exportmap.js';
 
 function mkResults(...statuses: string[]): Record<string, unknown> {
@@ -230,5 +232,50 @@ describe('exportmap RawNumber float tokens (OCSF float_t)', () => {
     expect(stringifyLine(canonicalize({ base_score: floatNumber(8) }))).toBe('{"base_score":8.0}');
     // a normal string containing digits is untouched (marker cannot collide)
     expect(stringifyLine({ desc: 'score 10 ok' })).toBe('{"desc":"score 10 ok"}');
+  });
+});
+
+// Parity: TestGoverningOverrideIndex_MapShaped in shared/go/exportmap.
+// The map-shaped resolver for the exporters that work on generically-parsed
+// JSON. Same rule as the typed twin: most recently applied non-expired override,
+// never array position — this repo's writers append, so position is the opposite
+// of recency on a document amended twice.
+describe('governingOverrideIndexOf', () => {
+  const older = {
+    type: 'waiver', status: 'passed', reason: 'older',
+    appliedAt: '2024-06-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const newer = {
+    type: 'riskAdjustment', reason: 'newer',
+    appliedAt: '2025-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const expired = {
+    type: 'riskAdjustment', reason: 'expired',
+    appliedAt: '2026-01-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+  };
+  const NOW = '2026-06-01T00:00:00Z';
+
+  it('takes the newest even when append put it last', () => {
+    expect(governingOverrideIndexOf([older, newer], NOW)).toBe(1);
+  });
+
+  it('gives the same answer in the order the schema used to ask for', () => {
+    expect(governingOverrideIndexOf([newer, older], NOW)).toBe(0);
+  });
+
+  it('never lets an expired override govern, however recently applied', () => {
+    expect(governingOverrideIndexOf([older, newer, expired], NOW)).toBe(1);
+  });
+
+  it('returns -1 when there is nothing to govern', () => {
+    expect(governingOverrideIndexOf([], NOW)).toBe(-1);
+  });
+
+  // The robustness guarantee the Go comment states: a malformed override must
+  // not govern and must not take a whole document's conversion down.
+  it('skips an entry that is not an object rather than throwing', () => {
+    expect(governingOverrideIndexOf(['not an object', newer], NOW)).toBe(1);
+    expect(governingOverrideIndexOf([null, undefined, 42], NOW)).toBe(-1);
+    expect(governingOverrideOf([older, newer], NOW)?.reason).toBe('newer');
   });
 });

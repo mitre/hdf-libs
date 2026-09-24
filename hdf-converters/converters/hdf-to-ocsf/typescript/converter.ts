@@ -12,6 +12,7 @@ import {
   firstCVE,
   epochMillis,
   floatNumber,
+  governingOverrideOf,
 } from '../../../shared/typescript/exportmap.js';
 import { impactToSeverity, formatJsonNumber } from '@mitre/hdf-utilities';
 
@@ -182,7 +183,9 @@ function overrideComment(req: Obj): string {
   const overrides = asArr(req.statusOverrides) ?? [];
   if (disposition === '' && overrides.length === 0) return '';
   let reason = '';
-  if (overrides.length > 0) reason = getStr(asMap(overrides[0]), 'reason');
+  // The GOVERNING override's reason — resolved by appliedAt, not by array
+  // position, because this repo's writers append and so put the newest last.
+  if (overrides.length > 0) reason = getStr(governingOverrideOf(overrides), 'reason');
   if (disposition !== '' && reason !== '') return `${disposition}: ${reason}`;
   if (disposition !== '') return disposition;
   return reason;

@@ -94,7 +94,9 @@ Every non-test read of a requirement's `impact`, `effectiveStatus` or `dispositi
 
 | `hdf-to-ocsf`, `hdf-to-ecs` governance labels | **stored `disposition`, via `exportmap.GetStr`** | Tracked defect — reached through an accessor taking the field name as a string, which is why the first sweep missed them |
 
-Open defects found by the sweep are tracked rather than listed here, so this table does not rot into a bug list. Two shapes recur: an exporter trusting a stored `effective*`/`disposition` field, and a reader taking `statusOverrides[0]` as "the governing override" — which is wrong twice over, because nothing sorts that array and this repo's own writers **append**, putting the newest override last while the schema documents most-recent-first.
+Open defects found by the sweep are tracked rather than listed here, so this table does not rot into a bug list. The shape that recurs is an exporter trusting a stored `effective*`/`disposition` field.
+
+**Array order carries no meaning.** A reader must never take `statusOverrides[0]` as "the governing override": nothing sorts that array, and this repo's own writers **append**, so the newest override is last. The schema's description says so explicitly — order is not significant, and the governing override is resolved by `appliedAt`. Two shared helpers do it, `GoverningOverride` for typed requirements and `exportmap.GoverningOverride` for the generically-parsed exporters, both on the same `governingOverrideIndex` the three ladders use. One exception is deliberate: `sarif-to-hdf` picks the override whose status produced the rollup, because every override it creates carries the same run timestamp and so recency cannot tell them apart.
 
 **A field is reachable three ways, and a sweep must cover all three:** dotted access (`req.Impact`), map index (`req["impact"]`), and an accessor helper taking the name as a string (`exportmap.GetStr(req, "disposition")`). Enumerate the codebase's own accessors before grepping; the third shape is invisible to patterns written for the first two.
 

@@ -9,6 +9,7 @@
 import {
   computeEffectiveStatus,
   computeEffectiveImpact,
+  governingOverrideIndex,
   type EffectiveStatusInput,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
@@ -59,4 +60,32 @@ export function requirementEffectiveStatus(req: EvaluatedRequirement): string {
  */
 export function requirementEffectiveImpact(req: EvaluatedRequirement): number {
   return computeEffectiveImpact(requirementStatusInput(req));
+}
+
+/**
+ * The override that governs a requirement — the most recently applied
+ * non-expired one, whatever it carries — or undefined when none does.
+ *
+ * Resolution is by appliedAt, never by array position. The schema's description
+ * says the most recent override "should be first in array", but nothing in this
+ * repo sorts and both writers append, so on a document our own tooling amended
+ * twice the newest override is LAST and statusOverrides[0] is the oldest.
+ *
+ * Parity: GoverningOverride in shared/go/status.go.
+ */
+export function governingOverride(
+  req: EvaluatedRequirement,
+  now?: string
+): NonNullable<EvaluatedRequirement['statusOverrides']>[number] | undefined {
+  const overrides = (req.statusOverrides ?? []).filter((o) => o != null);
+  const i = governingOverrideIndex(
+    overrides.map((o) => ({
+      status: o.status ? String(o.status) : undefined,
+      appliedAt: stamp(o.appliedAt),
+      expiresAt: stamp(o.expiresAt),
+    })),
+    () => true,
+    now
+  );
+  return i >= 0 ? overrides[i] : undefined;
 }

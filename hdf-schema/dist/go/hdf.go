@@ -470,8 +470,11 @@ type EvaluatedRequirement struct {
 	SourceLocation                                                                              *SourceLocation         `json:"sourceLocation,omitempty"`
 	// Chronological history of all overrides applied to this requirement. Overrides are                                
 	// intentional changes to the compliance status and/or impact score (waivers, attestations,                         
-	// false positives, risk adjustments). Most recent override should be first in array.                               
-	// Preserves full audit trail.                                                                                      
+	// false positives, risk adjustments). Array order is NOT significant: consumers resolve the                        
+	// governing override by appliedAt (the most recently applied non-expired one), never by                            
+	// position. Earlier revisions of this description asked for most-recent-first, but nothing                         
+	// enforces it and producers commonly append, so position is frequently the opposite of                             
+	// recency. Preserves full audit trail.                                                                             
 	StatusOverrides                                                                             []StatusOverride        `json:"statusOverrides,omitempty"`
 	// The requirement identifier. Example: 'SV-238196'.                                                                
 	ID                                                                                          string                  `json:"id"`

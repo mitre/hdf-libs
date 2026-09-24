@@ -309,3 +309,42 @@ func TestGoldenParity(t *testing.T) {
 		assert.Equal(t, string(golden), string(out), "golden mismatch for %s", name)
 	}
 }
+
+// Override provenance must name the override that governs, which is the most
+// recently APPLIED non-expired one — not statusOverrides[0]. This repo's own
+// writers append (hdf amend apply, hdf enrich), so on a document amended twice
+// position is the opposite of recency and the labels named the oldest override.
+func TestConvertHDFToECS_ProvenanceNamesTheGoverningOverride(t *testing.T) {
+	doc := []byte(`{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "SV-1", "title": "amended twice", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "statusOverrides": [
+       {"type": "waiver", "status": "passed", "reason": "OLDER",
+        "appliedBy": {"type": "simple", "identifier": "a"},
+        "appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z"},
+       {"type": "riskAdjustment", "reason": "NEWER",
+        "appliedBy": {"type": "simple", "identifier": "b"},
+        "appliedAt": "2025-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+        "impact": {"value": 0.3}}
+     ]}
+  ]}]
+}`)
+	out, err := ConvertHDFToECS(doc, converterVersion)
+	require.NoError(t, err)
+	objs := parseLines(t, out)
+	require.Len(t, objs, 1)
+
+	labels := sub(t, objs[0], "labels")
+	assert.Equal(t, "riskAdjustment", labels["hdf_override_type"],
+		"the 2025 riskAdjustment governs; it is last only because our writers append")
+	assert.Equal(t, "NEWER", labels["hdf_override_reason"])
+	assert.Equal(t, "b", labels["hdf_override_applied_by"])
+	assert.Equal(t, "2025-01-01T00:00:00Z", labels["hdf_override_applied_at"])
+	assert.NotEqual(t, "waiver", labels["hdf_override_type"],
+		"and the older waiver must not be reported as provenance")
+}

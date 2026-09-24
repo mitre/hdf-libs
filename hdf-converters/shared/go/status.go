@@ -27,6 +27,30 @@ func StatusOverrideInputs(overrides []hdf.StatusOverride) []hdfutil.StatusOverri
 	return inputs
 }
 
+// GoverningOverrideIndex returns the index of the override that governs a
+// requirement — the most recently applied non-expired one, whatever it carries —
+// or -1 when none does. A zero ref means now.
+//
+// Resolution is by appliedAt, never by array position. The schema's description
+// says the most recent override "should be first in array", but nothing in this
+// repo sorts and both writers append (hdf-diff amend, enrich_stix), so on a
+// document our own tooling amended twice the newest override is LAST. Selecting
+// by position therefore reads the oldest.
+func GoverningOverrideIndex(overrides []hdf.StatusOverride, ref time.Time) int {
+	anyOverride := func(int) bool { return true }
+	return hdfutil.GoverningOverrideIndex(StatusOverrideInputs(overrides), anyOverride, ref)
+}
+
+// GoverningOverride returns the override that governs a requirement, or nil when
+// none does. The pointer aliases the caller's slice; do not retain it past the
+// slice's lifetime.
+func GoverningOverride(overrides []hdf.StatusOverride, ref time.Time) *hdf.StatusOverride {
+	if i := GoverningOverrideIndex(overrides, ref); i >= 0 {
+		return &overrides[i]
+	}
+	return nil
+}
+
 // RequirementStatusInput maps a requirement onto the canonical
 // effective-status helper's input shape (hdf-utilities), so every consumer
 // computes status through the single shared implementation.

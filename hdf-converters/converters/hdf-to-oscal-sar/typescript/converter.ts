@@ -6,7 +6,7 @@
  */
 
 import { encodeBase64Utf8, formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
+import { requirementEffectiveStatus, governingOverride } from '../../../shared/typescript/status.js';
 import { emitConverterWarning, hdfTime, oscalSeverityFromHdf, requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Description, RequirementResult, ResultStatus } from '@mitre/hdf-schema';
 import type {
@@ -624,9 +624,11 @@ function oscalStateFromStatus(status: string): { state: string; reason: string }
 function overrideRemarks(req: EvaluatedRequirement): string {
   const parts: string[] = [];
   if (req.disposition) parts.push('Disposition: ' + String(req.disposition));
-  const overrides = req.statusOverrides ?? [];
-  if (overrides.length > 0) {
-    const o = overrides[0]!; // most-recent first per schema convention
+  // The GOVERNING override, resolved by appliedAt. The schema's description asks
+  // for most-recent-first ordering, but nothing sorts and this repo's writers
+  // append, so array position is the opposite of recency on an amended document.
+  const o = governingOverride(req);
+  if (o) {
     parts.push('Override: ' + String(o.type));
     if (o.reason) parts.push('Reason: ' + o.reason);
     if (o.appliedBy?.identifier) parts.push('Applied by: ' + o.appliedBy.identifier);
@@ -732,9 +734,8 @@ function buildRemediations(req: EvaluatedRequirement): RiskResponse[] {
       props: [descriptionLabelProp('fix')],
     });
   }
-  const overrides = req.statusOverrides ?? [];
-  if (req.disposition && overrides.length > 0) {
-    const o = overrides[0]!;
+  const o = governingOverride(req);
+  if (req.disposition && o) {
     const desc = o.reason || 'Risk accepted via ' + String(req.disposition);
     rems.push({ uuid: crypto.randomUUID(), lifecycle: 'accepted', title: String(req.disposition), description: desc });
   }
@@ -746,9 +747,12 @@ function buildRemediations(req: EvaluatedRequirement): RiskResponse[] {
  * (the field the OSCAL POA&M importer reads back). Returns '' when none applies.
  */
 function riskDeadline(req: EvaluatedRequirement): string {
-  const overrides = req.statusOverrides ?? [];
-  if (overrides.length > 0) {
-    const expiresAt = hdfTime(overrides[0]!.expiresAt);
+  // The governing override's expiry, not the first array entry's — and a
+  // governing override is by definition not itself expired, so the deadline this
+  // publishes can no longer be a date already past.
+  const o = governingOverride(req);
+  if (o) {
+    const expiresAt = hdfTime(o.expiresAt);
     if (expiresAt) return formatTimestampSeconds(expiresAt);
   }
   return '';

@@ -100,3 +100,42 @@ func TestRequirementEffectiveImpact_Ladder(t *testing.T) {
 		assert.InDelta(t, c.want, RequirementEffectiveImpact(c.req), 1e-9, c.name)
 	}
 }
+
+// Array position is not recency. The schema's description says the most recent
+// override "should be first", but nothing sorts and this repo's own writers
+// append (hdf-diff amend.go, shared enrich_stix.go), so on a document our own
+// tooling amended twice the newest override is LAST. A reader that takes
+// overrides[0] gets the oldest.
+func TestGoverningOverrideIndex_IsByAppliedAtNotPosition(t *testing.T) {
+	older := hdf.StatusOverride{
+		Type: hdf.OverrideTypeWaiver, Status: statusPtr(hdf.Passed),
+		AppliedAt: mustTime(t, "2024-06-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+	}
+	newer := hdf.StatusOverride{
+		Type:      hdf.RiskAdjustment,
+		AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+		Impact: &hdf.ImpactOverride{Value: 0.3},
+	}
+	expired := hdf.StatusOverride{
+		Type:      hdf.RiskAdjustment,
+		AppliedAt: mustTime(t, "2026-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2020-01-01T00:00:00Z"),
+		Impact: &hdf.ImpactOverride{Value: 0.1},
+	}
+	ref := mustTime(t, "2026-06-01T00:00:00Z")
+
+	// The order our own writers produce: append, so newest last.
+	appended := []hdf.StatusOverride{older, newer}
+	assert.Equal(t, 1, GoverningOverrideIndex(appended, ref),
+		"the newest override governs even when it is last, which is where append puts it")
+
+	// The order the schema's description asks for. Same answer either way —
+	// that is the point: resolution must not depend on array order.
+	prepended := []hdf.StatusOverride{newer, older}
+	assert.Equal(t, 0, GoverningOverrideIndex(prepended, ref))
+
+	// Recency never beats expiry: the most recently applied is expired here.
+	assert.Equal(t, 1, GoverningOverrideIndex([]hdf.StatusOverride{older, newer, expired}, ref),
+		"an expired override does not govern however recently it was applied")
+
+	assert.Equal(t, -1, GoverningOverrideIndex(nil, ref), "nothing governs an empty list")
+}
