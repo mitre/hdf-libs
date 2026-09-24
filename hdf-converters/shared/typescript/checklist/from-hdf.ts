@@ -234,6 +234,8 @@ function resolveSeverity(req: EvaluatedRequirement, tags: Record<string, unknown
   const tagSev = strVal(tags, 'severity');
   if (tagSev) return tagSev;
   if (req.severity) return String(req.severity).toLowerCase();
+  // RAW impact by design: CKL models base severity and SEVERITY_OVERRIDE
+  // separately, and this is the base. overrideSeverity supplies the other half.
   return cklSeverityOrFloor(req.impact ?? 0);
 }
 

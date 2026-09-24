@@ -88,7 +88,9 @@ type ThresholdConfig struct {
 }
 
 // CountControlsByStatusSeverity counts a result set's requirements by their
-// overall status and severity.
+// overall status and severity. Reads each requirement's OWN impact and raw
+// result statuses by design: this is the no-override-awareness twin of
+// CountControlsByStatus, which is its purpose, not an oversight.
 func CountControlsByStatusSeverity(results hdf.HDFResults) *StatusCounts {
 	counts := &StatusCounts{}
 	for _, baseline := range results.Baselines {

@@ -311,3 +311,38 @@ func TestTruncateTitle(t *testing.T) {
 		})
 	}
 }
+
+// hdf list resolved STATUS through the shared effective-status ladder and
+// reported the requirement's RAW impact in the same row — the same
+// pre/post-adjudication split hdf query carried, on a surface that emits both
+// fields together in --json. A risk-adjusted requirement is the only document
+// shape that can tell them apart.
+func TestListRequirements_ImpactResolvesOverrides(t *testing.T) {
+	resultsPath := writeRiskAdjustedResults(t)
+
+	stdout, _, err := executeCommand("list", resultsPath, "--detail", "requirements", "--json")
+	require.NoError(t, err)
+
+	var rows []struct {
+		ID     string  `json:"id"`
+		Status string  `json:"status"`
+		Impact float64 `json:"impact"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(stdout), &rows), "stdout: %s", stdout)
+
+	byID := map[string]float64{}
+	status := map[string]string{}
+	for _, r := range rows {
+		byID[r.ID] = r.Impact
+		status[r.ID] = r.Status
+	}
+	require.Equal(t, "failed", status["SV-ADJUSTED"],
+		"the status column is post-adjudication, which is what makes a raw impact beside it incoherent")
+	require.Contains(t, byID, "SV-ADJUSTED")
+	require.Contains(t, byID, "SV-PLAIN")
+
+	assert.InDelta(t, 0.3, byID["SV-ADJUSTED"], 1e-9,
+		"the row reports the impact the governing riskAdjustment re-scored it to, since its status column is already post-adjudication")
+	assert.InDelta(t, 0.9, byID["SV-PLAIN"], 1e-9,
+		"and a requirement nobody adjudicated is unchanged")
+}

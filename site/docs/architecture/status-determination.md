@@ -73,6 +73,31 @@ Requirement-change-event chains anchor their integrity in effective checksums, w
 
 The `effectiveStatus` field on `EvaluatedRequirement` carries the post-adjudication status a producer computed at write time. It is an **output cache, not an input**: the canonical `computeEffectiveStatus` never reads it — the ladder above computes from results, overrides, and impact alone, so a stale stored value (in either direction) cannot influence the answer. The field's correctness is a **write-path guarantee**: every producer (converters, the amendments-apply flow) must emit a value equal to what the ladder computes. External consumers that cannot run the computation — raw-JSON readers, dashboards, `jq` pipelines — may read the field directly and are relying on that write-path guarantee.
 
+### Who resolves, and who deliberately does not
+
+Every non-test read of a requirement's `impact`, `effectiveStatus` or `disposition` in this workspace was classified in one sweep, because the two defects found by hand before it (`hdf query` counting severity pre-adjudication while resolving status post-adjudication, and `hdf-to-csv` reporting a stored impact nothing accounted for) were both invisible to a passing test suite.
+
+**The question is never "does this call the ladder". It is "which question is this reader answering".** A raw read is correct in about half these places. A reader is wrong only when its stated purpose is post-adjudication and its code is pre-adjudication.
+
+| Reader | Reads | Why |
+|---|---|---|
+| `Filter` / `hdf query`, `hdf list`, MCP `hdf_query` | effective | Report a requirement's current posture; their status column already resolves overrides |
+| `CountControlsByStatus`, `MapControlIDsByStatus`, MCP severity grouping | effective | Override-aware by contract; the injected status resolver is the giveaway |
+| `CountControlsByStatusSeverity`, `MapControlIDs` | **raw, by design** | The documented no-override-awareness twins — that is their entire purpose |
+| `hdf generate` control stubs (`hdf-generators`) | **raw, by design** | Generating a profile's declared impact, not reporting an assessment |
+| `hdf-to-xccdf` severity | **raw, by design** | XCCDF severity describes the *rule*, not the outcome of running it |
+| Checklist `resolveSeverity` (base severity) | **raw, by design** | CKL models base severity and `SEVERITY_OVERRIDE` separately; the base is the raw one |
+| `hdf-diff` field comparisons, `hdf-extension-graph` modifications, `hdf-parsers` flatten | **raw, structural** | A differ reports that a *field* changed; the stored field is the subject, not a posture claim |
+| `baselineAsResults` (MCP) | **raw, unavoidable** | A baseline document carries no results and no overrides |
+| Reads of `statusOverrides[].impact.value` (`hdf-to-oscal-poam`, `hdf-to-cyclonedx-vex`, `hdf amend`) | n/a | The override's own field, not the requirement's |
+| `hdf-diff` `ComputeEffectiveImpact` / `ComputeDisposition` | computes, then **falls back to the stored cache when a requirement carries no overrides** | Predates the shared ladder; feeds the effective checksum, so changing it is a checksum epoch |
+
+| `hdf-to-ocsf`, `hdf-to-ecs` governance labels | **stored `disposition`, via `exportmap.GetStr`** | Tracked defect — reached through an accessor taking the field name as a string, which is why the first sweep missed them |
+
+Open defects found by the sweep are tracked rather than listed here, so this table does not rot into a bug list. Two shapes recur: an exporter trusting a stored `effective*`/`disposition` field, and a reader taking `statusOverrides[0]` as "the governing override" — which is wrong twice over, because nothing sorts that array and this repo's own writers **append**, putting the newest override last while the schema documents most-recent-first.
+
+**A field is reachable three ways, and a sweep must cover all three:** dotted access (`req.Impact`), map index (`req["impact"]`), and an accessor helper taking the name as a string (`exportmap.GetStr(req, "disposition")`). Enumerate the codebase's own accessors before grepping; the third shape is invisible to patterns written for the first two.
+
 ### disposition Field
 
 Disposition has a ladder too, and it is the shortest of the three:

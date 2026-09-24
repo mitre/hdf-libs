@@ -283,6 +283,8 @@ func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{})
 	if req.Severity != nil && *req.Severity != "" {
 		return strings.ToLower(string(*req.Severity))
 	}
+	// RAW impact by design: CKL models base severity and SEVERITY_OVERRIDE
+	// separately, and this is the base. overrideSeverity supplies the other half.
 	return cklSeverityOrFloor(req.Impact)
 }
 

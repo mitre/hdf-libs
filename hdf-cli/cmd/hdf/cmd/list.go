@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
+
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 )
 
 // Global flag variables for list command (used by runList).
@@ -330,10 +333,13 @@ func buildControlList(results hdf.HDFResults) []controlInfo {
 			}
 
 			controls = append(controls, controlInfo{
-				ID:      c.ID,
-				Title:   title,
+				ID:    c.ID,
+				Title: title,
+				// Status is already post-adjudication (determineControlStatus runs
+				// the override ladder), so the impact beside it is too. A zero
+				// reference means now, as everywhere else on this surface.
 				Status:  status,
-				Impact:  c.Impact,
+				Impact:  hdfengine.EffectiveImpactOf(c, time.Time{}),
 				Profile: baseline.Name,
 			})
 		}

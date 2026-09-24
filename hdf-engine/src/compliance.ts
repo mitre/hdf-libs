@@ -173,7 +173,11 @@ function statusToThresholdKey(status: string): string {
   }
 }
 
-/** CountControlsByStatusSeverity counts requirements by overall status and severity. */
+/**
+ * countControlsByStatusSeverity counts requirements by overall status and severity.
+ * Reads each requirement's OWN impact and raw result statuses by design: this is the
+ * no-override-awareness twin of countControlsByStatus, which is its purpose.
+ */
 export function countControlsByStatusSeverity(results: HDFResults): StatusCounts {
   const counts = newStatusCounts();
   for (const baseline of results.baselines ?? []) {
