@@ -270,6 +270,7 @@
     "status",
     "severity",
     "impact",
+    "rawImpact",
     "cci",
     "nist",
     "id",

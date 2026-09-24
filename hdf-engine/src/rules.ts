@@ -23,6 +23,7 @@ export const PREDICATE_FIELDS = [
   'status',
   'severity',
   'impact',
+  'rawImpact',
   'cci',
   'nist',
   'id',
@@ -42,6 +43,7 @@ export interface RulePredicate {
   status?: string[];
   severity?: string[];
   impact?: string;
+  rawImpact?: string;
   cci?: string[];
   nist?: string[];
   id?: string;

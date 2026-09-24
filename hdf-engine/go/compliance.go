@@ -3,6 +3,7 @@ package hdfengine
 import (
 	"fmt"
 	"math"
+	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -118,7 +119,12 @@ func CountControlsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRe
 			if statusOf != nil {
 				status = statusOf(req)
 			}
-			addCount(counts, hdf.ResultStatus(status), DeriveSeverity(req.Impact, req.Severity))
+			// Effective impact, so a governing riskAdjustment moves the
+			// requirement into the band it was re-scored into. This function
+			// already resolves STATUS through the injected resolver; deriving
+			// severity from the raw impact counted one post-adjudication and the
+			// other pre-adjudication.
+			addCount(counts, hdf.ResultStatus(status), DeriveSeverity(EffectiveImpactOf(req, time.Time{}), req.Severity))
 		}
 	}
 	return counts
@@ -176,9 +182,11 @@ func MapControlIDsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRe
 				status = statusOf(req)
 			}
 			mappings = append(mappings, ControlIDMapping{
-				ID:       req.ID,
-				Status:   statusToThresholdKey(hdf.ResultStatus(status)),
-				Severity: DeriveSeverity(req.Impact, req.Severity),
+				ID:     req.ID,
+				Status: statusToThresholdKey(hdf.ResultStatus(status)),
+				// Effective impact, matching CountControlsByStatus, so a control
+				// listing and the counts it is listed alongside cannot disagree.
+				Severity: DeriveSeverity(EffectiveImpactOf(req, time.Time{}), req.Severity),
 			})
 		}
 	}

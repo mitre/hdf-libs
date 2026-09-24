@@ -386,3 +386,58 @@ describe('threshold rules (parity with go/rules.go)', () => {
     expect(violations).toContain('failed.total: 2 exceeds maximum 0');
   });
 });
+
+// The override-aware counting path resolved STATUS through an injected resolver
+// while deriving SEVERITY from raw impact, so a risk-adjusted requirement was
+// counted post-adjudication for one and pre-adjudication for the other. A
+// formally re-scored finding belongs in the bucket it was re-scored into.
+//
+// The raw twins (countControlsByStatusSeverity, mapControlIDs) are documented as
+// having no override awareness and keep deriving from the requirement's own
+// impact — that is their purpose, not an oversight.
+// Parity: TestOverrideAwareCountingUsesEffectiveImpactForSeverity in go/compliance_test.go.
+describe('override-aware counting derives severity from effective impact', () => {
+  // Impact 0.9 derives to critical (the band starts at 0.9); re-scored to 0.3 it
+  // derives to low. No explicit severity, because an explicit one wins over both
+  // and would mask the whole question.
+  const adjusted = {
+    baselines: [
+      {
+        name: 'adjustments',
+        requirements: [
+          {
+            id: 'ADJUSTED',
+            impact: 0.9,
+            results: [{ status: 'failed' }],
+            statusOverrides: [
+              {
+                type: 'riskAdjustment',
+                reason: 'environmental context',
+                appliedAt: '2024-06-01T00:00:00Z',
+                expiresAt: '2099-12-31T00:00:00Z',
+                impact: { value: 0.3 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  } as unknown as HDFResults;
+  const statusOf = () => 'failed';
+
+  it('counts the re-scored requirement in the band it was moved to', () => {
+    const counts = countControlsByStatus(adjusted, statusOf);
+    expect(counts.failed.low).toBe(1);
+    expect(counts.failed.critical).toBe(0);
+  });
+
+  it('lists the control at the severity it was counted at', () => {
+    const mapped = mapControlIDsByStatus(adjusted, statusOf);
+    expect(mapped).toHaveLength(1);
+    expect(mapped[0]?.severity).toBe('low');
+  });
+
+  it('leaves the no-override-awareness twin reading the requirement own impact', () => {
+    expect(countControlsByStatusSeverity(adjusted).failed.critical).toBe(1);
+  });
+});

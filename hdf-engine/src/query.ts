@@ -6,6 +6,7 @@
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { governingStatusOverrideIndex, parseTimestamp } from '@mitre/hdf-utilities';
 import { deriveSeverity } from './compliance.js';
+import { effectiveImpactOf, overrideInputs } from './effective.js';
 import { normalizeKey, normalizeFilterValue } from './vocabulary.js';
 import { safeGlobMatch } from './safematch.js';
 
@@ -18,7 +19,18 @@ import { safeGlobMatch } from './safematch.js';
 export interface FilterOptions {
   status?: string[];
   severity?: string[];
+  /**
+   * Compares the EFFECTIVE impact — the governing non-expired impact override's
+   * value, else the requirement's own.
+   */
   impact?: string;
+  /**
+   * Compares the requirement's own impact, ignoring overrides. It exists because
+   * impact resolves them: the governance policy "an override may not move a
+   * critical below 0.7" needs both scores, and no other key reaches the
+   * unadjusted one.
+   */
+  rawImpact?: string;
   cci?: string[];
   nist?: string[];
   id?: string;
@@ -87,7 +99,11 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
       // Explicit STIG severity wins; impact-derived only as a fallback — the
       // canonical rule shared with the compliance counts (deriveSeverity), so
       // query rows and compliance never disagree on a requirement's severity.
-      const severity = deriveSeverity(control.impact, control.severity ?? null);
+      // Effective impact for the same reason the impact filter uses it: a
+      // governing riskAdjustment moves the requirement into the band it was
+      // re-scored into, and filter is an override-aware surface.
+      const impact = effectiveImpactOf(control, options.now);
+      const severity = deriveSeverity(impact, control.severity ?? null);
 
       if (!applyFilters(control, status, severity, filters)) {
         continue;
@@ -97,7 +113,9 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
         id: control.id,
         title: control.title ?? '',
         status,
-        impact: control.impact,
+        // The effective impact, for the same reason status carries the
+        // effective status and a Match has no raw twin of either.
+        impact,
         severity,
         baseline: baseline.name,
         baselineIndex,
@@ -149,8 +167,18 @@ function buildFilters(options: FilterOptions): FilterFunc[] {
     filters.push((c) => wantValid !== undefined && hasValidPoam(c, options.now) === wantValid);
   }
 
+  // Compared against EFFECTIVE impact, so a governing riskAdjustment is
+  // honoured. Status has resolved overrides all along; an impact filter that
+  // ignored a formal re-score was the same amendments-blindness in the field
+  // nobody looked at.
   if (options.impact) {
     const [op, val] = parseImpactFilter(options.impact);
+    filters.push((c) => compareImpact(effectiveImpactOf(c, options.now), op, val));
+  }
+
+  // The unadjusted twin, same grammar and same safe-degradation.
+  if (options.rawImpact) {
+    const [op, val] = parseImpactFilter(options.rawImpact);
     filters.push((c) => compareImpact(c.impact, op, val));
   }
 
@@ -361,16 +389,7 @@ function poamFilterWantsValid(s: string): boolean | undefined {
  */
 function governingDisposition(control: EvaluatedRequirement, now?: string): string {
   const overrides = control.statusOverrides ?? [];
-  const index = governingStatusOverrideIndex(
-    // The schema types render timestamps as Date; the shared helper takes the
-    // RFC3339 strings they came from, so convert rather than widening it.
-    overrides.map((o) => ({
-      status: o.status,
-      appliedAt: new Date(o.appliedAt).toISOString(),
-      expiresAt: new Date(o.expiresAt).toISOString(),
-    })),
-    now
-  );
+  const index = governingStatusOverrideIndex(overrideInputs(control), now);
   return index < 0 ? '' : (overrides[index]?.type ?? '');
 }
 

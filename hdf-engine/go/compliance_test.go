@@ -286,3 +286,44 @@ func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 	require.Len(t, violations, 1, "the legacy bound must still be applied")
 	assert.Contains(t, violations[0], "no_impact.informational")
 }
+
+// The override-aware counting path resolved STATUS through an injected resolver
+// while deriving SEVERITY from raw impact, so a risk-adjusted requirement was
+// counted post-adjudication for one and pre-adjudication for the other. A
+// formally re-scored finding belongs in the bucket it was re-scored into.
+//
+// The raw twins (CountControlsByStatusSeverity, MapControlIDs) are documented as
+// having no override awareness and keep deriving from the requirement's own
+// impact — that is their purpose, not an oversight.
+func TestOverrideAwareCountingUsesEffectiveImpactForSeverity(t *testing.T) {
+	value := 0.3
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{
+		Name: "adjustments",
+		Requirements: []hdf.EvaluatedRequirement{{
+			// Impact 0.9 derives to critical (the band starts at 0.9); re-scored
+			// to 0.3 it derives to low. No explicit severity, because an
+			// explicit one wins over both and would mask the whole question.
+			ID: "ADJUSTED", Impact: 0.9,
+			Results: []hdf.RequirementResult{{Status: "failed"}},
+			StatusOverrides: []hdf.StatusOverride{{
+				Type: hdf.RiskAdjustment, Reason: "environmental context",
+				AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+				Impact:    &hdf.ImpactOverride{Value: value},
+			}},
+		}},
+	}}}
+	statusOf := func(hdf.EvaluatedRequirement) string { return "failed" }
+
+	counts := CountControlsByStatus(results, statusOf)
+	assert.Equal(t, 1, counts.Failed.Low, "the re-scored requirement counts in the band it was moved to")
+	assert.Equal(t, 0, counts.Failed.Critical, "and not in the one it left")
+
+	mapped := MapControlIDsByStatus(results, statusOf)
+	require.Len(t, mapped, 1)
+	assert.Equal(t, "low", mapped[0].Severity,
+		"the control listing must agree with the counts it is listed alongside")
+
+	// The raw twin is unchanged by design.
+	raw := CountControlsByStatusSeverity(results)
+	assert.Equal(t, 1, raw.Failed.Critical, "the no-override-awareness variant still reads the requirement's own impact")
+}

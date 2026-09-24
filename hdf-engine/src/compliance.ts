@@ -5,6 +5,7 @@
 
 import type { HDFResults, EvaluatedRequirement, RequirementResult, Severity } from '@mitre/hdf-schema';
 import { worstStatus, impactToSeverity } from '@mitre/hdf-utilities';
+import { effectiveImpactOf } from './effective.js';
 import type { ThresholdRule } from './rules.js';
 
 /** Threshold status-key constants (SAF CLI-compatible keys). */
@@ -201,7 +202,11 @@ export function countControlsByStatus(
   for (const baseline of results.baselines ?? []) {
     for (const req of baseline.requirements ?? []) {
       const status = statusOf ? statusOf(req) : '';
-      addCount(counts, status, deriveSeverity(req.impact, reqSeverity(req)));
+      // Effective impact, so a governing riskAdjustment moves the requirement
+      // into the band it was re-scored into. This function already resolves
+      // STATUS through the injected resolver; deriving severity from the raw
+      // impact counted one post-adjudication and the other pre-adjudication.
+      addCount(counts, status, deriveSeverity(effectiveImpactOf(req), reqSeverity(req)));
     }
   }
   return counts;
@@ -263,7 +268,9 @@ export function mapControlIDsByStatus(
       mappings.push({
         id: req.id,
         status: statusToThresholdKey(status),
-        severity: deriveSeverity(req.impact, reqSeverity(req)),
+        // Effective impact, matching countControlsByStatus, so a control
+        // listing and the counts it is listed alongside cannot disagree.
+        severity: deriveSeverity(effectiveImpactOf(req), reqSeverity(req)),
       });
     }
   }

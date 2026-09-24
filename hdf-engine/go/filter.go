@@ -32,13 +32,20 @@ var decimalFloat = regexp.MustCompile(`^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$
 type Options struct {
 	Status   []string
 	Severity []string
-	Impact   string
-	CCI      []string
-	NIST     []string
-	ID       string
-	Tag      []string
-	Search   string
-	Baseline string
+	// Impact compares the EFFECTIVE impact — the governing non-expired impact
+	// override's value, else the requirement's own.
+	Impact string
+	// RawImpact compares the requirement's own impact, ignoring overrides. It
+	// exists because Impact resolves them: the governance policy "an override
+	// may not move a critical below 0.7" needs both scores, and no other key
+	// reaches the unadjusted one.
+	RawImpact string
+	CCI       []string
+	NIST      []string
+	ID        string
+	Tag       []string
+	Search    string
+	Baseline  string
 	// Disposition selects by the TYPE of the override that governs the
 	// requirement (waiver, falsePositive, riskAdjustment, …), OR across values.
 	// It is resolved through the same governing-override rule effective status
@@ -115,7 +122,11 @@ func Filter(ctx context.Context, results hdf.HDFResults, opts Options) []Match {
 			// Explicit STIG severity wins; impact-derived only as a fallback — one
 			// canonical rule (DeriveSeverity) shared with the compliance counts, so
 			// hdf_query and hdf_compliance never disagree on a requirement's severity.
-			severity := DeriveSeverity(control.Impact, control.Severity)
+			// Effective impact for the same reason the impact filter uses it: a
+			// governing riskAdjustment moves the requirement into the band it
+			// was re-scored into, and Filter is an override-aware surface.
+			impact := EffectiveImpactOf(control, opts.Now)
+			severity := DeriveSeverity(impact, control.Severity)
 
 			if !applyFilters(control, status, severity, filters) {
 				continue
@@ -126,10 +137,12 @@ func Filter(ctx context.Context, results hdf.HDFResults, opts Options) []Match {
 				title = *control.Title
 			}
 			matches = append(matches, Match{
-				ID:            control.ID,
-				Title:         title,
-				Status:        status,
-				Impact:        control.Impact,
+				ID:     control.ID,
+				Title:  title,
+				Status: status,
+				// The effective impact, for the same reason Status carries the
+				// effective status and a Match has no raw twin of either.
+				Impact:        impact,
 				Severity:      severity,
 				Baseline:      baseline.Name,
 				BaselineIndex: bi,
@@ -222,8 +235,22 @@ func buildFilters(opts Options) []filterFunc {
 	// Impact filter (supports >, >=, <, <=, =). A malformed filter matches
 	// NOTHING rather than silently degrading to impact==0 — callers should
 	// validate with ValidImpactFilter and reject before filtering.
+	//
+	// Compared against EFFECTIVE impact, so a governing riskAdjustment is
+	// honoured. Status has resolved overrides all along; an impact filter that
+	// ignored a formal re-score was the same amendments-blindness in the field
+	// nobody looked at.
 	if opts.Impact != "" {
+		now := opts.Now
 		op, val, ok := parseImpactFilter(opts.Impact)
+		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+			return ok && compareImpact(EffectiveImpactOf(c, now), op, val)
+		})
+	}
+
+	// The unadjusted twin, same grammar and same safe-degradation.
+	if opts.RawImpact != "" {
+		op, val, ok := parseImpactFilter(opts.RawImpact)
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
 			return ok && compareImpact(c.Impact, op, val)
 		})
@@ -494,6 +521,18 @@ func hasValidPoam(control hdf.EvaluatedRequirement, ref time.Time) bool {
 	return false
 }
 
+// EffectiveImpactOf is the requirement's impact after its governing non-expired
+// impact override, else its own. Computed here rather than injected like StatusOf
+// because impact has no competing conventions to reconcile — the ladder in
+// hdf-utilities is canonical — and because the caller already supplies the clock
+// this needs. A zero ref means now.
+func EffectiveImpactOf(control hdf.EvaluatedRequirement, ref time.Time) float64 {
+	return hdfutil.ComputeEffectiveImpact(hdfutil.EffectiveStatusInput{
+		Impact:    control.Impact,
+		Overrides: statusOverrideInputs(control.StatusOverrides),
+	}, ref)
+}
+
 // statusOverrideInputs maps schema overrides onto the shared helper's neutral
 // shape. It is the sixth copy of this mapping in the repo, not the second —
 // hdf-converters/shared/go/status.go and .../exportmap, hdf-diff/go/status.go and
@@ -508,6 +547,13 @@ func statusOverrideInputs(overrides []hdf.StatusOverride) []hdfutil.StatusOverri
 		inputs[i] = hdfutil.StatusOverrideInput{AppliedAt: o.AppliedAt, ExpiresAt: o.ExpiresAt}
 		if o.Status != nil {
 			inputs[i].Status = string(*o.Status)
+		}
+		if o.Impact != nil {
+			// Carried so effective IMPACT resolves from the same overrides;
+			// eligibility is per-field, so one override may govern one and not
+			// the other.
+			value := o.Impact.Value
+			inputs[i].Impact = &value
 		}
 	}
 	return inputs

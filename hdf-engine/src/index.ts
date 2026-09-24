@@ -23,6 +23,9 @@ export { detect, type HdfDocType } from './detect.js';
 // Query engine (peer of hdf-engine/go/filter.go).
 export { filter, type FilterOptions, type Match } from './query.js';
 
+// Amendments-layer resolution (peer of EffectiveImpactOf in go/filter.go).
+export { effectiveImpactOf, overrideInputs } from './effective.js';
+
 // Threshold rules: a filter predicate plus a bound, for the policies the fixed
 // status x severity grid cannot express.
 export {
