@@ -15,6 +15,7 @@ var (
 	queryStatus      []string
 	querySeverity    []string
 	queryImpact      string
+	queryRawImpact   string
 	queryCCI         []string
 	queryNIST        []string
 	querySTIGID      string
@@ -34,6 +35,7 @@ func NewQueryCmd() *cobra.Command {
 		localQueryStatus      []string
 		localQuerySeverity    []string
 		localQueryImpact      string
+		localQueryRawImpact   string
 		localQueryCCI         []string
 		localQueryNIST        []string
 		localQuerySTIGID      string
@@ -81,6 +83,7 @@ Examples:
 			queryStatus = localQueryStatus
 			querySeverity = localQuerySeverity
 			queryImpact = localQueryImpact
+			queryRawImpact = localQueryRawImpact
 			queryCCI = localQueryCCI
 			queryNIST = localQueryNIST
 			querySTIGID = localQuerySTIGID
@@ -112,6 +115,18 @@ Examples:
 						disposition, strings.Join(hdfengine.DispositionValues, ", "))
 				}
 			}
+			// Here with its siblings rather than inside runQuery: a malformed
+			// comparison is a property of the command line, so it must be
+			// refused once, before any document is read, not once per file.
+			for _, c := range []struct{ flag, comparison string }{
+				{"--impact", queryImpact},
+				{"--raw-impact", queryRawImpact},
+			} {
+				if c.comparison != "" && !hdfengine.ValidImpactFilter(c.comparison) {
+					return fmt.Errorf("invalid %s filter %q: use a comparison like >0.5, >=0.7, <0.5, or =0",
+						c.flag, c.comparison)
+				}
+			}
 			querySearch = localQuerySearch
 			queryProfile = localQueryProfile
 			queryCount = localQueryCount
@@ -129,7 +144,8 @@ Examples:
 
 	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil, "Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed")
 	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
-	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
+	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by effective impact — after any governing impact override (e.g., \">0.5\", \">=0.7\", \"0.5\")")
+	cmd.Flags().StringVar(&localQueryRawImpact, "raw-impact", "", "Filter by the requirement's own impact, ignoring overrides (same comparison grammar as --impact)")
 	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic; supports globs)")
 	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
@@ -168,16 +184,13 @@ func runQuery(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
-	if queryImpact != "" && !hdfengine.ValidImpactFilter(queryImpact) {
-		return fmt.Errorf("invalid --impact filter %q: use a comparison like >0.5, >=0.7, <0.5, or =0", queryImpact)
-	}
-
 	// Filtering is delegated to the shared hdf-engine library; the CLI supplies
 	// its display-status resolver so the engine stays convention-agnostic.
 	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{
 		Status:      queryStatus,
 		Severity:    querySeverity,
 		Impact:      queryImpact,
+		RawImpact:   queryRawImpact,
 		CCI:         queryCCI,
 		NIST:        queryNIST,
 		ID:          querySTIGID,

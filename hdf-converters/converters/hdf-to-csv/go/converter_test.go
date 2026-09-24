@@ -88,14 +88,16 @@ func TestConvertHDFToCSV_Minimal(t *testing.T) {
 	assert.Equal(t, "10.1.2.3", row1[33])                                                     // Target IP
 
 	// Verify second data row — waived-but-failing control: raw Status stays failed
-	// while Effective Status/Impact reflect the falsePositive override.
+	// while Effective Status reflects the falsePositive override. That override
+	// carries no impact, so Effective Impact keeps the requirement's own value —
+	// the stored effectiveImpact of 0.00 is an output cache and is not read.
 	row2 := records[2]
 	assert.Equal(t, "SV-123457", row2[5])                                                                         // Requirement ID
 	assert.Equal(t, "", row2[8])                                                                                  // Check
 	assert.Equal(t, "failed", row2[15])                                                                           // Status (raw)
 	assert.Equal(t, "Audit logging is not configured", row2[21])                                                  // Result Message
 	assert.Equal(t, "passed", row2[22])                                                                           // Effective Status (override)
-	assert.Equal(t, "0.00", row2[23])                                                                             // Effective Impact (override, canonical 2dp)
+	assert.Equal(t, "0.50", row2[23])                                                                             // Effective Impact (no impact override, canonical 2dp)
 	assert.Equal(t, "falsePositive", row2[24])                                                                    // Disposition
 	assert.Equal(t, "Authentication logging is handled by an external SIEM the scanner cannot observe", row2[25]) // Override Reason
 	assert.Equal(t, "jdoe", row2[26])                                                                             // Applied By
@@ -551,6 +553,49 @@ func TestConvertHDFToCSV_NumericPrecision(t *testing.T) {
 			assert.Equal(t, tc.wantImpact, rows[1][impactCol], "Impact")
 			assert.Equal(t, tc.wantEff, rows[1][effImpactCol], "Effective Impact")
 			assert.Equal(t, tc.wantCV, rows[1][cvssCol], "CVSS keeps the source precision")
+		})
+	}
+}
+
+// The Effective Impact column is computed through the canonical ladder, exactly
+// as Effective Status is: the governing non-expired impact override's value,
+// else the requirement's own. The stored effectiveImpact field is an output
+// cache and is never read, so a document carrying one that nothing in it
+// accounts for reports the impact it can justify.
+func TestConvertHDFToCSV_EffectiveImpactIsComputed(t *testing.T) {
+	const effImpactCol = 23
+
+	doc := func(body string) []byte {
+		return []byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1","tags":{},` +
+			`"descriptions":[{"label":"default","data":"d"}],` +
+			`"results":[{"status":"failed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}],` +
+			body + `}]}]}`)
+	}
+	riskAdjustment := func(expiresAt string, value float64) string {
+		return fmt.Sprintf(`"statusOverrides":[{"type":"riskAdjustment","reason":"unreachable from any entry point",`+
+			`"appliedBy":{"identifier":"assessor@example.gov"},"appliedAt":"2020-06-01T00:00:00Z",`+
+			`"expiresAt":%q,"impact":{"value":%v}}]`, expiresAt, value)
+	}
+
+	for _, tc := range []struct{ name, doc, want string }{
+		{"a governing impact override moves the column",
+			string(doc(`"impact":0.9,` + riskAdjustment("2099-12-31T00:00:00Z", 0.3))), "0.30"},
+		{"an expired impact override does not",
+			string(doc(`"impact":0.9,` + riskAdjustment("2020-01-01T00:00:00Z", 0.3))), "0.90"},
+		{"a stored effectiveImpact no override accounts for is not read",
+			string(doc(`"impact":0.125,"effectiveImpact":0.625`)), "0.13"},
+		{"a governing override outranks a disagreeing stored value",
+			string(doc(`"impact":0.9,"effectiveImpact":0.75,` + riskAdjustment("2099-12-31T00:00:00Z", 0.3))), "0.30"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := ConvertHDFToCSV([]byte(tc.doc))
+			require.NoError(t, err)
+
+			rows, err := csv.NewReader(bytes.NewReader(out)).ReadAll()
+			require.NoError(t, err)
+			require.Len(t, rows, 2, "header plus one data row")
+
+			assert.Equal(t, tc.want, rows[1][effImpactCol], "Effective Impact")
 		})
 	}
 }

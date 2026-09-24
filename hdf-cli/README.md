@@ -155,9 +155,9 @@ EXAMPLES
   # may hold several YAML documents (reported as policy.yaml#1, policy.yaml#2).
   hdf validate threshold results.json -T baseline.yaml -T repo-specific.yaml
 
-  # A rule is a filter predicate plus a bound, for policies the status x severity
-  # grid cannot express. -I accepts anything a file accepts, so this is the same
-  # language either way.
+  # A rule is a filter predicate plus a bound, for policies the count bounds and
+  # controls lists cannot express — selecting by field rather than by id.
+  # -I accepts anything a file accepts, so this is the same language either way.
   hdf validate threshold results.json \
     -I "{rules: [{name: nothing fails without a plan, where: {status: [failed], poams: none-valid}, max: 0}]}"
 ```
@@ -229,7 +229,11 @@ USAGE
 FLAGS
   -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed
       --severity stringArray   Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
-      --impact string          Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
+      --impact string          Filter by EFFECTIVE impact — the score after any governing impact
+                               override (e.g., ">0.5", ">=0.7", "0.5")
+      --raw-impact string      Filter by the requirement's own impact, ignoring overrides. Same
+                               comparison grammar; the pair expresses policies like "an override
+                               may not move a critical below 0.7"
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
       --id string              Filter by requirement ID, STIG ID, GID, or group title

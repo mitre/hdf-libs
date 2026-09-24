@@ -73,6 +73,25 @@ Requirement-change-event chains anchor their integrity in effective checksums, w
 
 The `effectiveStatus` field on `EvaluatedRequirement` carries the post-adjudication status a producer computed at write time. It is an **output cache, not an input**: the canonical `computeEffectiveStatus` never reads it — the ladder above computes from results, overrides, and impact alone, so a stale stored value (in either direction) cannot influence the answer. The field's correctness is a **write-path guarantee**: every producer (converters, the amendments-apply flow) must emit a value equal to what the ladder computes. External consumers that cannot run the computation — raw-JSON readers, dashboards, `jq` pipelines — may read the field directly and are relying on that write-path guarantee.
 
+### effectiveImpact Field
+
+Impact has its own ladder, and it is much shorter than the status one:
+
+```
+1. governing impact override — the most recent non-expired statusOverride carrying an impact → its value
+2. the requirement's own impact
+```
+
+The canonical implementation is `computeEffectiveImpact` in `@mitre/hdf-utilities` (`hdfutil.ComputeEffectiveImpact` in Go), and the stored `effectiveImpact` field is an **output cache under the same write-path guarantee** as `effectiveStatus` — never read as an input.
+
+Eligibility is **per field**. The override that governs status and the override that governs impact need not be the same one: a waiver adjudicates status and says nothing about impact, so a newer waiver does not displace an older `riskAdjustment`'s re-score. Both selections run through one shared rule (`governingOverrideIndex`) with a different eligibility predicate, so they cannot disagree about expiry or recency.
+
+The override's impact is optional rather than defaulted because **0 is a legitimate re-score** meaning "no longer applicable", which a default could not tell from "this override carries no impact".
+
+Everything that asks a requirement's impact post-adjudication goes through this: the `impact` filter and the derived severity in `hdf query`, the override-aware compliance counts and control listings, and threshold rules. The documented no-override-awareness variants (`countControlsByStatusSeverity`, `mapControlIDs`) keep reading the requirement's own impact — that is their purpose. On the query surface, `--impact` is the effective score and `--raw-impact` the unadjusted one; there is no raw twin of `--status`, so the pair exists only where both scores answer different questions (for example, "an override may not move a critical below 0.7").
+
+**Open question — rung 3 of the status ladder.** `impact === 0 → notApplicable` currently reads the requirement's *own* impact, not the effective one, so a `riskAdjustment` re-scoring a finding to 0.0 does not by itself make it `notApplicable`. Whether it should is unsettled; changing it would move every consumer of effective status, so it is tracked rather than assumed.
+
 ### In hdf-libs
 
 The single canonical implementation is `computeEffectiveStatus` in `@mitre/hdf-utilities` (mirrored in Go as `hdfutil.ComputeEffectiveStatus`). Everything else delegates to it:

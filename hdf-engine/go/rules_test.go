@@ -167,6 +167,7 @@ func TestRulePredicateFieldsReachTheFilterOptions(t *testing.T) {
 		Status:      []string{"failed"},
 		Severity:    []string{"critical"},
 		Impact:      ">=0.7",
+		RawImpact:   ">=0.9",
 		CCI:         []string{"CCI-000366"},
 		NIST:        []string{"AC-2"},
 		ID:          "V-1",

@@ -1,5 +1,5 @@
 {
-  "$comment": "Awkward-but-plausible HDF shapes that once made the Go and TypeScript CSV converters disagree. Each is a whole HDF Results document. Go owns the expected output (fixtures/expected/parity-outputs.json, regenerated with -update); TypeScript verifies against it, so neither language can redefine parity to match itself. Added because the 13-case shared corpus is about converter contracts, not about the value-level formatting splits these expose. Shapes after impact-on-the-tie were added when a wider parity sweep found splits the first eight missed.",
+  "$comment": "Awkward-but-plausible HDF shapes that once made the Go and TypeScript CSV converters disagree. Each is a whole HDF Results document. Go owns the expected output (fixtures/expected/parity-outputs.json, regenerated with -update); TypeScript verifies against it, so neither language can redefine parity to match itself. Added because the 13-case shared corpus is about converter contracts, not about the value-level formatting splits these expose. Shapes after impact-on-the-tie were added when a wider parity sweep found splits the first eight missed. impact-off-grid-tie carries a riskAdjustment because the Effective Impact column is computed, not read: without an override accounting for its stored 0.625 the column would report the requirement's own impact and the half-way formatting case would be lost.",
   "shapes": {
     "absent-baseline-name": {
       "baselines": [
@@ -296,7 +296,22 @@
                   "startTime": "2020-01-01T00:00:00Z"
                 }
               ],
-              "effectiveImpact": 0.625
+              "effectiveImpact": 0.625,
+              "statusOverrides": [
+                {
+                  "type": "riskAdjustment",
+                  "reason": "compensating control limits exposure to an isolated management VLAN",
+                  "appliedBy": {
+                    "type": "username",
+                    "identifier": "jdoe"
+                  },
+                  "appliedAt": "2026-01-30T12:00:00Z",
+                  "expiresAt": "2099-12-31T00:00:00Z",
+                  "impact": {
+                    "value": 0.625
+                  }
+                }
+              ]
             }
           ]
         }
@@ -654,6 +669,48 @@
                   "reason": "r",
                   "appliedBy": {
                     "identifier": "a"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "impact-override-without-stored-effective": {
+      "baselines": [
+        {
+          "name": "b",
+          "requirements": [
+            {
+              "id": "V-1",
+              "impact": 0.9,
+              "tags": {},
+              "descriptions": [
+                {
+                  "label": "default",
+                  "data": "d"
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "codeDesc": "c",
+                  "startTime": "2020-01-01T00:00:00Z"
+                }
+              ],
+              "statusOverrides": [
+                {
+                  "type": "riskAdjustment",
+                  "reason": "vulnerable code path is unreachable from any entry point",
+                  "appliedBy": {
+                    "type": "username",
+                    "identifier": "jdoe"
+                  },
+                  "appliedAt": "2026-01-30T12:00:00Z",
+                  "expiresAt": "2099-12-31T00:00:00Z",
+                  "impact": {
+                    "value": 0.3
                   }
                 }
               ]

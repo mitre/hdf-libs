@@ -233,6 +233,74 @@
                 "expiresAt": "2026-06-01T00:00:00Z"
               }
             ]
+          },
+          {
+            "id": "ADJUSTED-DOWN",
+            "title": "Governing riskAdjustment re-scoring 0.9 down to 0.3",
+            "impact": 0.9,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "riskAdjustment",
+                "reason": "environmental context lowers the exposure",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z",
+                "impact": {
+                  "value": 0.3
+                }
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "ADJUSTMENT-LAPSED",
+            "title": "The same re-score, expired",
+            "impact": 0.9,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "riskAdjustment",
+                "reason": "environmental context lowers the exposure",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z",
+                "impact": {
+                  "value": 0.3
+                }
+              }
+            ],
+            "tags": {}
           }
         ],
         "supports": [],
@@ -285,10 +353,19 @@
       ]
     },
     {
-      "name": "a disposition nothing carries matches nothing",
+      "name": "CHARACTERIZATION: an impact-only riskAdjustment does not govern disposition, because disposition eligibility requires a status-carrying override. The schema defines disposition as the most recent non-expired override with no such qualifier, so this filter cannot match the canonical riskAdjustment shape. Pinning current behaviour, not endorsing it.",
       "options": {
         "disposition": [
           "riskAdjustment"
+        ]
+      },
+      "expect": []
+    },
+    {
+      "name": "a disposition nothing carries matches nothing",
+      "options": {
+        "disposition": [
+          "operationalRequirement"
         ]
       },
       "expect": []
@@ -314,7 +391,9 @@
         "WAIVER-LAPSED",
         "FALSE-POSITIVE",
         "POAM-LAPSED",
-        "POAM-EMPTY"
+        "POAM-EMPTY",
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED"
       ]
     },
     {
@@ -337,7 +416,47 @@
         "PLAIN",
         "WAIVER-LAPSED",
         "POAM-LAPSED",
-        "POAM-EMPTY"
+        "POAM-EMPTY",
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED"
+      ]
+    },
+    {
+      "name": "impact compares the EFFECTIVE impact: a governing re-score takes the requirement out of the band it left",
+      "options": {
+        "impact": ">=0.9"
+      },
+      "expect": [
+        "ADJUSTMENT-LAPSED"
+      ]
+    },
+    {
+      "name": "and puts it in the band it was re-scored into",
+      "options": {
+        "impact": "<0.5"
+      },
+      "expect": [
+        "ADJUSTED-DOWN"
+      ]
+    },
+    {
+      "name": "rawImpact reaches the requirement own score, which effective impact no longer reports once an override governs",
+      "options": {
+        "rawImpact": ">=0.9"
+      },
+      "expect": [
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED"
+      ]
+    },
+    {
+      "name": "the governance policy the pair exists for: an override may not move a critical below 0.7",
+      "options": {
+        "rawImpact": ">=0.9",
+        "impact": "<0.7"
+      },
+      "expect": [
+        "ADJUSTED-DOWN"
       ]
     }
   ],
