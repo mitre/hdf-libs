@@ -269,7 +269,7 @@ interface AmendmentCases {
   fixture: HDFResults;
   cases: {
     name: string;
-    options: { status?: string[]; disposition?: string[]; poams?: string };
+    options: { status?: string[]; disposition?: string[]; poams?: string; impact?: string; rawImpact?: string };
     effectiveStatus?: boolean;
     expect: string[];
   }[];

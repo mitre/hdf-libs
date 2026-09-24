@@ -486,6 +486,8 @@ type amendmentCases struct {
 			Status      []string `json:"status"`
 			Disposition []string `json:"disposition"`
 			Poams       string   `json:"poams"`
+			Impact      string   `json:"impact"`
+			RawImpact   string   `json:"rawImpact"`
 		} `json:"options"`
 		EffectiveStatus bool     `json:"effectiveStatus"`
 		Expect          []string `json:"expect"`
@@ -518,6 +520,8 @@ func TestFilterAmendmentVocabulary(t *testing.T) {
 				Status:      tc.Options.Status,
 				Disposition: tc.Options.Disposition,
 				Poams:       tc.Options.Poams,
+				Impact:      tc.Options.Impact,
+				RawImpact:   tc.Options.RawImpact,
 				Now:         now,
 				StatusOf:    testStatusOf,
 			}
@@ -564,4 +568,56 @@ func TestValidPoamFilter(t *testing.T) {
 	for _, bad := range []string{"", "absent", "present", "expired", "none"} {
 		assert.False(t, ValidPoamFilter(bad), "%q must be rejected", bad)
 	}
+}
+
+// A riskAdjustment formally re-scores a finding's impact. The filter compared the
+// RAW impact, so an assessor could downgrade a critical and every gate keyed on
+// impact behaved as though nothing had happened — the same amendments-blindness
+// disposition and POA&M validity closed, in the field nobody looked at. --status
+// has resolved overrides all along; impact now does too.
+func TestFilterImpactResolvesOverrides(t *testing.T) {
+	ref := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	at := func(s string) time.Time {
+		parsed, err := time.Parse(time.RFC3339, s)
+		require.NoError(t, err)
+		return parsed
+	}
+	adjusted := func(id string, raw, to float64, expires string) hdf.EvaluatedRequirement {
+		value := to
+		return hdf.EvaluatedRequirement{
+			ID: id, Impact: raw,
+			Results: []hdf.RequirementResult{{Status: "failed"}},
+			StatusOverrides: []hdf.StatusOverride{{
+				Type: hdf.RiskAdjustment, Reason: "environmental context",
+				AppliedAt: at("2024-06-01T00:00:00Z"), ExpiresAt: at(expires),
+				Impact: &hdf.ImpactOverride{Value: value},
+			}},
+		}
+	}
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{
+		Name: "adjustments",
+		Requirements: []hdf.EvaluatedRequirement{
+			{ID: "RAW-HIGH", Impact: 0.9, Results: []hdf.RequirementResult{{Status: "failed"}}},
+			adjusted("ADJUSTED-DOWN", 0.9, 0.3, "2099-12-31T00:00:00Z"),
+			adjusted("ADJUSTMENT-LAPSED", 0.9, 0.3, "2020-01-01T00:00:00Z"),
+		},
+	}}}
+
+	assert.Equal(t, []string{"ADJUSTMENT-LAPSED", "RAW-HIGH"},
+		ids(Filter(context.Background(), results, Options{Impact: ">=0.7", Now: ref, StatusOf: testStatusOf})),
+		"a governing adjustment takes the requirement out of the high band; a lapsed one does not")
+
+	assert.Equal(t, []string{"ADJUSTED-DOWN"},
+		ids(Filter(context.Background(), results, Options{Impact: "<0.5", Now: ref, StatusOf: testStatusOf})),
+		"and puts it in the band it was re-scored into")
+
+	// The row must agree with the filter that selected it and with its own
+	// severity column. Status has no raw twin on a Match either — the display
+	// status is the effective one — so impact follows the same precedent.
+	rows := Filter(context.Background(), results, Options{ID: "ADJUSTED-DOWN", Now: ref, StatusOf: testStatusOf})
+	require.Len(t, rows, 1)
+	assert.InDelta(t, 0.3, rows[0].Impact, 1e-9,
+		"the row reports the impact the requirement was re-scored to, not the one it left")
+	assert.Equal(t, "low", rows[0].Severity,
+		"so the impact and severity columns cannot contradict each other")
 }
