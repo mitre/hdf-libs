@@ -13,13 +13,7 @@ import (
 )
 
 func newEvidenceBuildCmd() *cobra.Command {
-	var (
-		systemPath     string
-		resultsPaths   []string
-		amendmentsPath string
-		comparisonPath string
-		outputPath     string
-	)
+	var opts evidenceBuildOpts
 
 	cmd := &cobra.Command{
 		Use:   "build",
@@ -41,43 +35,116 @@ Examples:
 		Args: cobra.ArbitraryArgs,
 		RunE: func(_ *cobra.Command, args []string) error {
 			// Combine --results flags and positional args as results files
-			allResults := make([]string, 0, len(resultsPaths)+len(args))
-			allResults = append(allResults, resultsPaths...)
+			allResults := make([]string, 0, len(opts.resultsPaths)+len(args))
+			allResults = append(allResults, opts.resultsPaths...)
 			allResults = append(allResults, args...)
-			expanded, err := expandGlobs(allResults)
+			expanded, err := expandGlobs(dropEmpty(allResults))
 			if err != nil {
 				return fmt.Errorf("failed to expand results paths: %w", err)
 			}
 			if len(expanded) == 0 {
 				return fmt.Errorf("no results files provided; use --results or pass files as arguments")
 			}
-			return runEvidenceBuild(systemPath, expanded, amendmentsPath, comparisonPath, outputPath)
+			opts.resultsPaths = expanded
+			for _, g := range []*[]string{&opts.baselinePaths, &opts.bomPaths, &opts.amendmentsPaths, &opts.comparisonPaths} {
+				ex, gerr := expandGlobs(dropEmpty(*g))
+				if gerr != nil {
+					return fmt.Errorf("failed to expand paths: %w", gerr)
+				}
+				*g = ex
+			}
+			return runEvidenceBuild(opts)
 		},
 	}
 
-	cmd.Flags().StringVar(&systemPath, "system", "", "System document (required)")
-	cmd.Flags().StringArrayVar(&resultsPaths, "results", nil, "Results document(s) (repeatable, supports globs)")
-	cmd.Flags().StringVar(&amendmentsPath, "amendments", "", "Amendments document (optional)")
-	cmd.Flags().StringVar(&comparisonPath, "comparison", "", "Comparison document (optional)")
-	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
+	cmd.Flags().StringVar(&opts.systemPath, "system", "", "System document (required)")
+	cmd.Flags().StringArrayVar(&opts.resultsPaths, "results", nil, "Results document(s) (repeatable, supports globs)")
+	cmd.Flags().StringVar(&opts.planPath, "plan", "", "Assessment plan document; also sets the package's planRef (optional)")
+	cmd.Flags().StringArrayVar(&opts.baselinePaths, "baseline", nil, "Baseline document(s) (repeatable, supports globs)")
+	cmd.Flags().StringArrayVar(&opts.bomPaths, "bom", nil, "BOM document(s) — SBOM, AI model/dataset manifest (repeatable, supports globs)")
+	cmd.Flags().StringArrayVar(&opts.amendmentsPaths, "amendments", nil, "Amendments document(s) (repeatable, supports globs)")
+	cmd.Flags().StringArrayVar(&opts.comparisonPaths, "comparison", nil, "Comparison document(s) (repeatable, supports globs)")
+	cmd.Flags().StringVarP(&opts.outputPath, "output", "o", "", "Output file (default: stdout)")
 
 	_ = cmd.MarkFlagRequired("system")
 
 	return cmd
 }
 
-func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, comparisonPath, outputPath string) error {
-	contents := make([]map[string]interface{}, 0, len(resultsPaths)+3)
+// dropEmpty removes empty path elements. An unset shell variable (--amendments
+// "$AMEND") was a no-op before these flags became repeatable, and must stay one:
+// readInputFile("") reads stdin, which would otherwise be swallowed and listed
+// as a content entry with uri ".".
+func dropEmpty(paths []string) []string {
+	kept := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if p != "" {
+			kept = append(kept, p)
+		}
+	}
+	return kept
+}
+
+// evidenceBuildOpts carries the documents a package is built from. The schema
+// permits seven Content_Type values; every one of them is reachable here, so a
+// package never has to be finished by a second command.
+type evidenceBuildOpts struct {
+	systemPath      string
+	resultsPaths    []string
+	planPath        string
+	baselinePaths   []string
+	bomPaths        []string
+	amendmentsPaths []string
+	comparisonPaths []string
+	outputPath      string
+}
+
+// requireDetectedType rejects a document whose fingerprint is not what the flag
+// promised. Mistyping a content entry is worse than refusing it: `evidence
+// verify` reads these types to judge completeness, so a plan filed as a
+// baseline yields a confident wrong verdict. Build is deliberately not a full
+// validation gate for its inputs (see computeCompleteness), so this checks the
+// fingerprint only.
+func requireDetectedType(data []byte, path, want, flag string) error {
+	got := detectHDFDocumentType(data)
+	if got == want {
+		return nil
+	}
+	if got == "" {
+		return fmt.Errorf("--%s file %s is not a recognized HDF document", flag, path)
+	}
+	return fmt.Errorf("--%s file %s is an HDF %s document, expected %s", flag, path, got, want)
+}
+
+// appendTyped fingerprint-checks each path, then lists it under contentType. The
+// file is read ONCE and its bytes reused for both the check and the checksum:
+// reading twice consumed stdin in the guard and left the second read empty.
+func appendTyped(contents []map[string]interface{}, paths []string, schemaType, contentType, flag string) ([]map[string]interface{}, error) {
+	for _, p := range paths {
+		data, err := readInputFile(p)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read --%s file %s: %w", flag, p, err)
+		}
+		if err := requireDetectedType(data, p, schemaType, flag); err != nil {
+			return nil, err
+		}
+		contents = append(contents, contentEntryFromBytes(contentType, p, data))
+	}
+	return contents, nil
+}
+
+func runEvidenceBuild(opts evidenceBuildOpts) error {
+	contents := make([]map[string]interface{}, 0, len(opts.resultsPaths)+6)
 
 	// Add system
-	entry, err := buildContentEntry("hdf-system", systemPath)
+	entry, err := buildContentEntry("hdf-system", opts.systemPath)
 	if err != nil {
 		return err
 	}
 	contents = append(contents, entry)
 
 	// Add results
-	for _, rp := range resultsPaths {
+	for _, rp := range opts.resultsPaths {
 		entry, err = buildContentEntry("hdf-results", rp)
 		if err != nil {
 			return err
@@ -85,32 +152,55 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 		contents = append(contents, entry)
 	}
 
-	// Optional: amendments
-	if amendmentsPath != "" {
-		entry, err = buildContentEntry("hdf-amendments", amendmentsPath)
-		if err != nil {
+	// Optional: plan. Its presence also sets the package's planRef, which is
+	// what `evidence verify` reads to check completeness against the plan.
+	if opts.planPath != "" {
+		if contents, err = appendTyped(contents, []string{opts.planPath}, "plan", "hdf-plan", "plan"); err != nil {
+			return err
+		}
+	}
+
+	// Optional: baselines
+	if contents, err = appendTyped(contents, opts.baselinePaths, "baseline", "hdf-baseline", "baseline"); err != nil {
+		return err
+	}
+
+	// Optional: BOMs. Deliberately NOT fingerprint-checked. A BOM is not one of
+	// the eight HDF document types, and hdfengine.Detect classifies any root
+	// `components` key as an HDF system — which is exactly CycloneDX's primary
+	// field, so a guard here rejects real SBOMs. The schema carries a BOM's kind
+	// in the referenced document's own bomType, not in the Content_Type.
+	for _, bp := range opts.bomPaths {
+		if entry, err = buildContentEntry("bom", bp); err != nil {
 			return err
 		}
 		contents = append(contents, entry)
 	}
 
-	// Optional: comparison
-	if comparisonPath != "" {
-		entry, err = buildContentEntry("hdf-comparison", comparisonPath)
-		if err != nil {
+	// Optional: amendments and comparisons. These are NOT fingerprint-checked,
+	// because they never were: making them repeatable must not also tighten what
+	// they accept. That asymmetry against --plan/--baseline is tracked on its own card.
+	for _, ap := range opts.amendmentsPaths {
+		if entry, err = buildContentEntry("hdf-amendments", ap); err != nil {
+			return err
+		}
+		contents = append(contents, entry)
+	}
+	for _, cp := range opts.comparisonPaths {
+		if entry, err = buildContentEntry("hdf-comparison", cp); err != nil {
 			return err
 		}
 		contents = append(contents, entry)
 	}
 
 	// Extract system name for package name
-	sysData, err := readInputFile(systemPath)
+	sysData, err := readInputFile(opts.systemPath)
 	if err != nil {
 		return fmt.Errorf("failed to re-read system file: %w", err)
 	}
 	sysDoc, err := loadAndValidateHDFDoc(sysData, "system")
 	if err != nil {
-		return fmt.Errorf("system file %s: %w", systemPath, err)
+		return fmt.Errorf("system file %s: %w", opts.systemPath, err)
 	}
 	sysName, _ := sysDoc["name"].(string)
 	if sysName == "" {
@@ -118,14 +208,17 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 	}
 
 	// Compute completeness check from all results
-	completeness := computeCompleteness(sysDoc, resultsPaths)
+	completeness := computeCompleteness(sysDoc, opts.resultsPaths)
 
 	pkg := map[string]interface{}{
 		"name":              sysName + "-evidence-package",
-		"systemRef":         filepath.Base(systemPath),
+		"systemRef":         filepath.Base(opts.systemPath),
 		"preparedAt":        time.Now().UTC().Format(time.RFC3339),
 		"contents":          contents,
 		"completenessCheck": completeness,
+	}
+	if opts.planPath != "" {
+		pkg["planRef"] = filepath.Base(opts.planPath)
 	}
 
 	output, err := json.MarshalIndent(pkg, "", "  ")
@@ -137,15 +230,15 @@ func runEvidenceBuild(systemPath string, resultsPaths []string, amendmentsPath, 
 		return fmt.Errorf("evidence package failed validation before write: %w", err)
 	}
 
-	if outputPath == "" {
+	if opts.outputPath == "" {
 		fmt.Println(string(output))
 		return nil
 	}
 
-	if err := os.WriteFile(outputPath, output, 0o600); err != nil { // #nosec G703 -- CLI writes user path
+	if err := os.WriteFile(opts.outputPath, output, 0o600); err != nil { // #nosec G703 -- CLI writes user path
 		return fmt.Errorf("failed to write evidence package: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "Evidence package written to %s (%d documents)\n", outputPath, len(contents))
+	fmt.Fprintf(os.Stderr, "Evidence package written to %s (%d documents)\n", opts.outputPath, len(contents))
 	return nil
 }
 
@@ -154,7 +247,12 @@ func buildContentEntry(docType, filePath string) (map[string]interface{}, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s file %s: %w", docType, filePath, err)
 	}
+	return contentEntryFromBytes(docType, filePath, data), nil
+}
 
+// contentEntryFromBytes is buildContentEntry's body for a caller that has
+// already read the file. Shared, not forked: both paths produce the same entry.
+func contentEntryFromBytes(docType, filePath string, data []byte) map[string]interface{} {
 	hash := sha256.Sum256(data)
 	return map[string]interface{}{
 		"type": docType,
@@ -163,7 +261,7 @@ func buildContentEntry(docType, filePath string) (map[string]interface{}, error)
 			"algorithm": "sha256",
 			"value":     hex.EncodeToString(hash[:]),
 		},
-	}, nil
+	}
 }
 
 // computeCompleteness is a best-effort courtesy metric. It deliberately
