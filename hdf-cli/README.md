@@ -229,7 +229,11 @@ USAGE
 FLAGS
   -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed
       --severity stringArray   Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
-      --impact string          Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
+      --impact string          Filter by EFFECTIVE impact — the score after any governing impact
+                               override (e.g., ">0.5", ">=0.7", "0.5")
+      --raw-impact string      Filter by the requirement's own impact, ignoring overrides. Same
+                               comparison grammar; the pair expresses policies like "an override
+                               may not move a critical below 0.7"
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
       --id string              Filter by requirement ID, STIG ID, GID, or group title

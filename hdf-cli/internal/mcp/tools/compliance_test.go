@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
@@ -563,6 +564,23 @@ func TestGroupSeverity_ExplicitAndDerived(t *testing.T) {
 	// Zero band with an explicit tag → the tag wins.
 	if g := groupSeverity(hdf.EvaluatedRequirement{Severity: sevPtr(hdf.SeverityMedium), Impact: 0.0}); g != "medium" {
 		t.Errorf("impact-0 tagged medium group key = %q, want medium", g)
+	}
+	// A governing riskAdjustment moves the requirement into the band it was
+	// re-scored into. This key labels the compliance counts, which derive
+	// severity from effective impact; reading the raw score here would partition
+	// a requirement into one group and count it in another.
+	value := 0.3
+	adjusted := hdf.EvaluatedRequirement{
+		Impact: 0.95,
+		StatusOverrides: []hdf.StatusOverride{{
+			Type: hdf.RiskAdjustment, Reason: "environmental context",
+			AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+			ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+			Impact:    &hdf.ImpactOverride{Value: value},
+		}},
+	}
+	if g := groupSeverity(adjusted); g != "low" {
+		t.Errorf("risk-adjusted group key = %q, want low (the band it was re-scored into)", g)
 	}
 }
 

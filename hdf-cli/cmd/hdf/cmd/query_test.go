@@ -572,3 +572,78 @@ func TestQueryStatusAndSeverity_AcceptedSpellingsReachTheFilter(t *testing.T) {
 	require.NoError(t, err, "the pre-3.7 spelling must still select the informational requirement")
 	assert.Contains(t, stdout, "SV-004", "and select the same one its canonical spelling does")
 }
+
+// --impact validated after the document was read, so a malformed comparison
+// reported a parse failure on an unreadable file instead of the filter error,
+// and a bulk run repeated the same complaint once per file. Its siblings
+// (--status, --severity, --disposition) all validate before any read; this one
+// did not. A nonexistent path is what tells the two apart.
+func TestQueryImpactFilters_ValidatedBeforeAnyFileIsRead(t *testing.T) {
+	for _, flag := range []string{"--impact", "--raw-impact"} {
+		t.Run(flag, func(t *testing.T) {
+			_, _, err := executeCommand("query", filepath.Join(t.TempDir(), "absent.json"), flag, ">>7")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid "+flag+" filter",
+				"the filter must be refused before the file is opened")
+		})
+	}
+}
+
+// The unadjusted twin of --impact. --impact resolves overrides, so without this
+// the requirement's own score became unreachable; the pair is what expresses
+// "an override may not move a critical below 0.7".
+//
+// The document has to CARRY an override for this to assert anything: over one
+// that does not, the two flags select identically and the test would pass with
+// --raw-impact wired to the effective score.
+func TestQueryRawImpact_ReachesTheUnadjustedScore(t *testing.T) {
+	resultsPath := writeRiskAdjustedResults(t)
+
+	effective, _, err := executeCommand("query", resultsPath, "--impact", ">=0.9")
+	require.NoError(t, err)
+	assert.NotContains(t, effective, "SV-ADJUSTED",
+		"--impact is the post-override score, so the re-scored requirement is out of the band it left")
+	assert.Contains(t, effective, "SV-PLAIN")
+
+	raw, _, err := executeCommand("query", resultsPath, "--raw-impact", ">=0.9")
+	require.NoError(t, err)
+	assert.Contains(t, raw, "SV-ADJUSTED",
+		"--raw-impact reaches the requirement's own score, which is what the override moved it from")
+	assert.Contains(t, raw, "SV-PLAIN")
+	// And it must actually FILTER: without this the test passes on a flag that
+	// is parsed and then never reaches the engine, which selects everything.
+	assert.NotContains(t, raw, "SV-LOW",
+		"--raw-impact must exclude a requirement below the bound, not just include the ones above it")
+}
+
+// writeRiskAdjustedResults writes a schema-valid document holding one requirement
+// at impact 0.9 governed by a riskAdjustment re-scoring it to 0.3, one at 0.9
+// with no override at all, and one below every bound the test uses — the minimum
+// needed to tell the effective score from the raw one AND to tell either from a
+// filter that never ran.
+func writeRiskAdjustedResults(t *testing.T) string {
+	t.Helper()
+	const doc = `{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "SV-ADJUSTED", "title": "re-scored down", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "statusOverrides": [{"type": "riskAdjustment", "reason": "environmental context",
+       "appliedBy": {"type": "simple", "identifier": "assessor"},
+       "appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+       "impact": {"value": 0.3}}]},
+    {"id": "SV-PLAIN", "title": "untouched", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}]},
+    {"id": "SV-LOW", "title": "below both bounds", "impact": 0.1, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}]}
+  ]}]
+}`
+	path := filepath.Join(t.TempDir(), "risk-adjusted.json")
+	require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+	return path
+}
