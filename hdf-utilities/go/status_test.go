@@ -356,3 +356,67 @@ func TestComputeEffectiveImpact(t *testing.T) {
 		})
 	}
 }
+
+// Rung 3 (impact 0 -> notApplicable) reads the requirement's OWN impact and
+// deliberately ignores an impact override. The two answer different questions:
+// rung 3 asks whether the control was in scope, which the profile author states
+// at authoring time; effective impact asks how much risk it carries now, which
+// an assessor states at adjudication time. See status-determination.md, "Settled
+// — rung 3 reads the requirement's own impact, deliberately".
+//
+// The schema pins the same rule from the other side: riskAdjustment "does not
+// change pass/fail status, only impact". FedRAMP, whose deviation-request
+// categories the enum is aligned to, keeps a risk-adjusted finding open on the
+// POA&M and closes only a validated false positive.
+// CHARACTERIZATION: these pin behaviour that already shipped, so they passed the
+// moment they were written and were NOT red-first. Mutation stands in for the
+// red step — changing rung 3 to read ComputeEffectiveImpact fails cases (b) and
+// (c) below. Cases (a) and (d) are mutation-invariant on purpose: they pin the
+// adjacent rungs (no-data vs not-applicable, and rung 1's precedence) so the
+// decision reads in context rather than as two isolated assertions.
+func TestComputeEffectiveStatus_Rung3IgnoresImpactOverrides(t *testing.T) {
+	adjust := func(v float64) StatusOverrideInput {
+		return StatusOverrideInput{Impact: &v, AppliedAt: appliedOld, ExpiresAt: farFuture}
+	}
+	waived := StatusOverrideInput{Status: "notApplicable", AppliedAt: appliedOld, ExpiresAt: farFuture}
+
+	cases := []struct {
+		name  string
+		input EffectiveStatusInput
+		want  string
+	}{
+		{
+			// InSpec supplies no pass/fail for an impact-0 control, so rung 3 is
+			// the only thing distinguishing "reviewed, not applicable" from "no
+			// data". 1,234 of the corpus's 1,294 impact-0 requirements are
+			// exactly this shape.
+			"an authored impact of 0 with no results is notApplicable, not notReviewed",
+			EffectiveStatusInput{Impact: 0},
+			"notApplicable",
+		},
+		{
+			"an adjustment to 0 leaves a real finding failing — it is re-scored, not closed",
+			EffectiveStatusInput{Impact: 0.7, ResultStatuses: []string{"failed"}, Overrides: []StatusOverrideInput{adjust(0)}},
+			"failed",
+		},
+		{
+			// The mirror: raising the impact of an out-of-scope control does not
+			// bring it into scope either. Rung 3 reads the authored value only.
+			"an adjustment away from 0 does not make an out-of-scope control applicable",
+			EffectiveStatusInput{Impact: 0, Overrides: []StatusOverrideInput{adjust(0.9)}},
+			"notApplicable",
+		},
+		{
+			// An override that DOES carry a status is making a scope claim, and
+			// rung 1 lets it win — that is the sanctioned way to say this.
+			"a status-carrying override still outranks the authored impact",
+			EffectiveStatusInput{Impact: 0.7, ResultStatuses: []string{"failed"}, Overrides: []StatusOverrideInput{waived}},
+			"notApplicable",
+		},
+	}
+	for _, c := range cases {
+		if got := ComputeEffectiveStatus(c.input, statusRef); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}

@@ -289,3 +289,59 @@ describe('computeEffectiveImpact', () => {
     });
   }
 });
+
+// Parity: TestComputeEffectiveStatus_Rung3IgnoresImpactOverrides in go/.
+// Rung 3 (impact 0 -> notApplicable) reads the requirement's OWN impact and
+// deliberately ignores an impact override. Rung 3 asks whether the control was
+// in scope, which the profile author states at authoring time; effective impact
+// asks how much risk it carries now, which an assessor states at adjudication
+// time. See status-determination.md, "Settled — rung 3 reads the requirement's
+// own impact, deliberately".
+// CHARACTERIZATION: these pin behaviour that already shipped, so they passed the
+// moment they were written and were NOT red-first. Mutation stands in for the
+// red step — changing rung 3 to read computeEffectiveImpact fails the second and
+// third cases. The first and fourth are mutation-invariant on purpose: they pin
+// the adjacent rungs so the decision reads in context.
+describe('computeEffectiveStatus — rung 3 ignores impact overrides', () => {
+  const adjust = (impact: number) => ({
+    impact,
+    appliedAt: APPLIED_OLD,
+    expiresAt: FAR_FUTURE,
+  });
+  const waived = { status: 'notApplicable', appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE };
+
+  const cases: { name: string; input: EffectiveStatusInput; want: string }[] = [
+    {
+      // InSpec supplies no pass/fail for an impact-0 control, so rung 3 is the
+      // only thing distinguishing "reviewed, not applicable" from "no data".
+      name: 'an authored impact of 0 with no results is notApplicable, not notReviewed',
+      input: { impact: 0 },
+      want: 'notApplicable',
+    },
+    {
+      name: 'an adjustment to 0 leaves a real finding failing — it is re-scored, not closed',
+      input: { impact: 0.7, resultStatuses: ['failed'], overrides: [adjust(0)] },
+      want: 'failed',
+    },
+    {
+      // The mirror: raising the impact of an out-of-scope control does not bring
+      // it into scope either. Rung 3 reads the authored value only.
+      name: 'an adjustment away from 0 does not make an out-of-scope control applicable',
+      input: { impact: 0, overrides: [adjust(0.9)] },
+      want: 'notApplicable',
+    },
+    {
+      // An override that DOES carry a status is making a scope claim, and rung 1
+      // lets it win — that is the sanctioned way to say this.
+      name: 'a status-carrying override still outranks the authored impact',
+      input: { impact: 0.7, resultStatuses: ['failed'], overrides: [waived] },
+      want: 'notApplicable',
+    },
+  ];
+
+  for (const c of cases) {
+    it(c.name, () => {
+      expect(computeEffectiveStatus(c.input, REF)).toBe(c.want);
+    });
+  }
+});
