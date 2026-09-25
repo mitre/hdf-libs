@@ -707,7 +707,7 @@ func TestValidateThreshold_UnknownKeyErrorAvoidsGoTypeNames(t *testing.T) {
 	assert.NotContains(t, err.Error(), "hdfengine.")
 }
 
-// The inline path buckets an unrecognized severity into "none" via
+// The inline path buckets an unrecognized severity into "informational" via
 // getSeverityBound, which is correct when generate places a scan's own severity
 // but wrong for a user-typed path: the typo asserted a bound nobody asked for
 // and passed silently, the same failure the template path had.
@@ -921,6 +921,12 @@ func TestThresholdCounting_MalformedSeverityRejectedAtLoad(t *testing.T) {
 
 // Templates this tool generated before the fold was removed say "none". They
 // meant the controls that now count as informational, so the key keeps working.
+//
+// The satisfied case alone could not fail: dropping the legacy fold entirely
+// leaves the bound unchecked, which also reports no error. The violated case is
+// what pins the bound as APPLIED, and the message must name the key the author
+// wrote — a spec saying none must not send its author hunting for an
+// informational key that is not in their file.
 func TestValidateThreshold_LegacyNoneKeyIsAcceptedAsInformational(t *testing.T) {
 	dir := t.TempDir()
 	resultsPath := filepath.Join(dir, "results.json")
@@ -928,6 +934,13 @@ func TestValidateThreshold_LegacyNoneKeyIsAcceptedAsInformational(t *testing.T) 
 
 	_, _, err := executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.none.min: 2}")
 	require.NoError(t, err, "legacy none: must still resolve")
+
+	_, _, err = executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.none.max: 1}")
+	require.Error(t, err, "the legacy bound must be applied, not merely parsed")
+	assert.Contains(t, err.Error(), "no_impact.none: 2 exceeds maximum 1",
+		"the violation must name the spelling the author wrote")
+	assert.NotContains(t, err.Error(), "no_impact.informational",
+		"a key the author never wrote must not appear in their violation")
 }
 
 // The inline path must route the legacy spelling to the legacy field, not fold

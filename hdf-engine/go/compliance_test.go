@@ -274,17 +274,114 @@ func TestValidateThresholds_BothNoneAndInformationalIsRefused(t *testing.T) {
 	assert.Contains(t, violations[0], "pre-3.7 spelling")
 }
 
-// The legacy spelling resolves to the same bucket it always meant.
+// The legacy spelling resolves to the same bucket it always meant, and the
+// violation names the spelling the author wrote: a spec that says none must not
+// send its author hunting for an informational key that is not in their file.
 func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 	zero := 0
-	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
 	counts := StatusCounts{}
 	counts.NoImpact.Informational = 3
 	counts.NoImpact.Total = 3
 
-	violations := ValidateThresholds(config, &counts, 100, nil)
+	legacy := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
+	violations := ValidateThresholds(legacy, &counts, 100, nil)
 	require.Len(t, violations, 1, "the legacy bound must still be applied")
-	assert.Contains(t, violations[0], "no_impact.informational")
+	assert.Equal(t, "no_impact.none: 3 exceeds maximum 0", violations[0])
+
+	// The canonical spelling still reports under its own name: only a bound the
+	// author wrote as none is renamed back.
+	canonical := &ThresholdConfig{NoImpact: &ThresholdSeverity{Informational: &ThresholdBound{Max: &zero}}}
+	violations = ValidateThresholds(canonical, &counts, 100, nil)
+	require.Len(t, violations, 1)
+	assert.Equal(t, "no_impact.informational: 3 exceeds maximum 0", violations[0])
+
+	five := 5
+	belowMin := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Min: &five}}}
+	violations = ValidateThresholds(belowMin, &counts, 100, nil)
+	require.Len(t, violations, 1)
+	assert.Equal(t, "no_impact.none: 3 is below minimum 5", violations[0])
+}
+
+// A validate pass must not rewrite the spec it was handed. It folded the legacy
+// key into the canonical one in place, so the SAME config object reported the
+// author's spelling on the first call and the canonical one on every call after
+// — the exact confusion naming the author's key exists to remove.
+func TestValidateThresholds_LegacyNoneSurvivesConfigReuse(t *testing.T) {
+	zero := 0
+	counts := StatusCounts{}
+	counts.NoImpact.Informational = 3
+	counts.NoImpact.Total = 3
+	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
+
+	first := ValidateThresholds(config, &counts, 100, nil)
+	second := ValidateThresholds(config, &counts, 100, nil)
+	assert.Equal(t, first, second, "a second pass over the same config must report identically")
+	require.Len(t, second, 1)
+	assert.Equal(t, "no_impact.none: 3 exceeds maximum 0", second[0])
+
+	require.NotNil(t, config.NoImpact.None, "the caller's spec must come back as it went in")
+	assert.Nil(t, config.NoImpact.Informational)
+}
+
+// A control listed under a legacy none bound reports its mismatch against the
+// canonical bucket, because informational is where the control was counted. The
+// path names the author's key; the comparison names the bucket.
+func TestValidateThresholds_LegacyNonePathKeepsCanonicalComparison(t *testing.T) {
+	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Controls: []string{"C-1"}}}}
+	controlMap := []ControlIDMapping{{ID: "C-1", Status: ThresholdNoImpact, Severity: "low"}}
+
+	violations := ValidateThresholds(config, &StatusCounts{}, 100, controlMap)
+	require.Len(t, violations, 1)
+	assert.Equal(t,
+		"no_impact.none: control C-1 expected no_impact/informational but found no_impact/low",
+		violations[0])
+}
+
+// A severity outside the schema enum is counted as informational by addCount,
+// but the control mapping recorded the raw string, so a bound listing that
+// control under informational reported a mismatch against a control the counts
+// had already put there. Unreachable from the CLI and the MCP — both
+// schema-validate first — so this is the engine keeping its own two outputs
+// consistent for a direct library caller.
+func TestMapControlIDs_SeverityGoesThroughTheCountingBucket(t *testing.T) {
+	outOfEnum := hdf.Severity("sev-9")
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{
+		Requirements: []hdf.EvaluatedRequirement{{
+			ID:       "C-1",
+			Impact:   0.5,
+			Severity: &outOfEnum,
+			Results:  []hdf.RequirementResult{{Status: hdf.Failed}},
+		}},
+	}}}
+
+	mappings := MapControlIDs(results)
+	require.Len(t, mappings, 1)
+	assert.Equal(t, "informational", mappings[0].Severity,
+		"the listing must name the bucket the counts used, not the raw string")
+
+	counts := CountControlsByStatusSeverity(results)
+	require.Equal(t, 1, counts.Failed.Informational, "precondition: the counts bucket it as informational")
+
+	config := &ThresholdConfig{Failed: &ThresholdSeverity{Informational: &ThresholdBound{Controls: []string{"C-1"}}}}
+	assert.Empty(t, ValidateThresholds(config, counts, 0, mappings),
+		"a control the counts put in informational must not be reported as a mismatch there")
+
+	// The injected-resolver twin buckets identically.
+	byStatus := MapControlIDsByStatus(results, func(hdf.EvaluatedRequirement) string { return string(hdf.Failed) })
+	require.Len(t, byStatus, 1)
+	assert.Equal(t, "informational", byStatus[0].Severity)
+}
+
+// SeverityBucket is the rule both the counts and the control listing use, so a
+// caller building its own mapping can match it. The four named levels pass
+// through; everything else is informational.
+func TestSeverityBucket(t *testing.T) {
+	for _, s := range []string{"critical", "high", "medium", "low"} {
+		assert.Equal(t, s, SeverityBucket(s))
+	}
+	for _, s := range []string{"informational", "none", "sev-9", ""} {
+		assert.Equal(t, "informational", SeverityBucket(s))
+	}
 }
 
 // The override-aware counting path resolved STATUS through an injected resolver

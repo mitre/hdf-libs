@@ -15,6 +15,12 @@ export const THRESHOLD_SKIPPED = 'skipped';
 export const THRESHOLD_ERROR = 'error';
 export const THRESHOLD_NO_IMPACT = 'no_impact';
 
+/**
+ * The pre-3.7 spelling of the informational severity bucket. Accepted on input
+ * and echoed back in violations written with it, never emitted by generate.
+ */
+const LEGACY_INFORMATIONAL_KEY = 'none';
+
 export interface SeverityCounts {
   critical: number;
   high: number;
@@ -36,6 +42,13 @@ export interface StatusCounts {
 export interface ControlIDMapping {
   id: string;
   status: string;
+  /**
+   * The counting BUCKET, not the requirement's raw severity string: always one
+   * of `critical`, `high`, `medium`, `low`, `informational`, having gone through
+   * severityBucket. Anything else would name a bucket the counts do not have,
+   * and a bound listing the control would report a mismatch against the bucket
+   * that control was counted in.
+   */
   severity: string;
 }
 
@@ -116,6 +129,29 @@ export function deriveSeverity(impact: number, severity?: Severity | null): stri
   return impactToSeverity(impact);
 }
 
+/**
+ * severityBucket folds a severity string into the bucket the threshold grid
+ * counts it in. The schema's four named levels pass through; informational and
+ * anything outside the enum land in informational, so a malformed severity is
+ * counted rather than dropped and a document still gates.
+ *
+ * Exported because ControlIDMapping.severity is the bucket, not the raw string:
+ * a caller assembling its own control map has to apply the same rule or its
+ * listing and its counts will disagree. Parity: SeverityBucket in
+ * go/compliance.go.
+ */
+export function severityBucket(severity: string): string {
+  switch (severity) {
+    case 'critical':
+    case 'high':
+    case 'medium':
+    case 'low':
+      return severity;
+    default:
+      return 'informational';
+  }
+}
+
 function statusBucket(counts: StatusCounts, status: string): SeverityCounts {
   switch (status) {
     case 'passed':
@@ -136,7 +172,7 @@ function statusBucket(counts: StatusCounts, status: string): SeverityCounts {
 function addCount(counts: StatusCounts, status: string, severity: string): void {
   const sc = statusBucket(counts, status);
   sc.total++;
-  switch (severity) {
+  switch (severityBucket(severity)) {
     case 'critical':
       sc.critical++;
       break;
@@ -150,8 +186,6 @@ function addCount(counts: StatusCounts, status: string, severity: string): void 
       sc.low++;
       break;
     default:
-      // Informational plus anything outside the enum: an unrecognized severity
-      // is counted, never dropped, so a malformed document still gates.
       sc.informational++;
   }
 }
@@ -245,7 +279,7 @@ export function mapControlIDs(results: HDFResults): ControlIDMapping[] {
       mappings.push({
         id: req.id,
         status: statusToThresholdKey(status),
-        severity: deriveSeverity(req.impact, reqSeverity(req)),
+        severity: severityBucket(deriveSeverity(req.impact, reqSeverity(req))),
       });
     }
   }
@@ -274,7 +308,7 @@ export function mapControlIDsByStatus(
         status: statusToThresholdKey(status),
         // Effective impact, matching countControlsByStatus, so a control
         // listing and the counts it is listed alongside cannot disagree.
-        severity: deriveSeverity(effectiveImpactOf(req), reqSeverity(req)),
+        severity: severityBucket(deriveSeverity(effectiveImpactOf(req), reqSeverity(req))),
       });
     }
   }
@@ -299,31 +333,44 @@ export function calculateCompliance(counts: StatusCounts): number {
 }
 
 /**
- * normalizeLegacySeverity folds the pre-3.7 `none` key into `informational`. A
- * spec setting both is refused rather than resolved: the two name one bucket, so
+/** One status category of a spec after the legacy spelling has been resolved. */
+interface ResolvedSection {
+  name: string;
+  threshold: ThresholdSeverity | undefined;
+  counts: SeverityCounts;
+  wroteNone: boolean;
+}
+
+/**
+ * resolveLegacySeverity folds a section's pre-3.7 `none` key into
+ * `informational`, reporting whether the bound was written that way so a
+ * violation can name the key the author will find in their own file. A spec
+ * setting both is refused rather than resolved: the two name one bucket, so
  * silently honouring one would drop a bound the author wrote.
+ *
+ * The caller's section is COPIED, never rewritten. Folding in place made the
+ * spelling a one-shot property of the config object: the same spec reported the
+ * author's key on its first validate pass and the canonical one on every pass
+ * after, which is the confusion naming the author's key exists to remove.
+ * Parity: resolveLegacySeverity in go/compliance.go.
  */
-function normalizeLegacySeverity(config: ThresholdConfig): string[] {
-  const violations: string[] = [];
-  const sections: [string, ThresholdSeverity | undefined][] = [
-    [THRESHOLD_PASSED, config.passed],
-    [THRESHOLD_FAILED, config.failed],
-    [THRESHOLD_SKIPPED, config.skipped],
-    [THRESHOLD_ERROR, config.error],
-    [THRESHOLD_NO_IMPACT, config.noImpact],
-  ];
-  for (const [name, ts] of sections) {
-    if (!ts?.none) continue;
-    if (ts.informational) {
-      violations.push(
-        `${name}: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket`,
-      );
-      continue;
-    }
-    ts.informational = ts.none;
-    delete ts.none;
+function resolveLegacySeverity(
+  name: string,
+  ts: ThresholdSeverity | undefined,
+): { threshold: ThresholdSeverity | undefined; wroteNone: boolean; refusal: string } {
+  if (!ts?.none) {
+    return { threshold: ts, wroteNone: false, refusal: '' };
   }
-  return violations;
+  if (ts.informational) {
+    return {
+      threshold: ts,
+      wroteNone: false,
+      refusal: `${name}: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket`,
+    };
+  }
+  const resolved: ThresholdSeverity = { ...ts, informational: ts.none };
+  delete resolved.none;
+  return { threshold: resolved, wroteNone: true, refusal: '' };
 }
 
 /**
@@ -374,8 +421,23 @@ export function validateGrid(
   const violations: string[] = [];
 
   // Every construction path lands here, so the legacy spelling is resolved once
-  // rather than in each caller.
-  violations.push(...normalizeLegacySeverity(config));
+  // rather than in each caller. Resolved before the compliance bounds so a
+  // refusal is reported ahead of them.
+  const sections: ResolvedSection[] = [
+    { name: THRESHOLD_PASSED, threshold: config.passed, counts: counts.passed, wroteNone: false },
+    { name: THRESHOLD_FAILED, threshold: config.failed, counts: counts.failed, wroteNone: false },
+    { name: THRESHOLD_SKIPPED, threshold: config.skipped, counts: counts.skipped, wroteNone: false },
+    { name: THRESHOLD_ERROR, threshold: config.error, counts: counts.error, wroteNone: false },
+    { name: THRESHOLD_NO_IMPACT, threshold: config.noImpact, counts: counts.noImpact, wroteNone: false },
+  ];
+  for (const section of sections) {
+    const { threshold, wroteNone, refusal } = resolveLegacySeverity(section.name, section.threshold);
+    if (refusal) {
+      violations.push(refusal);
+    }
+    section.threshold = threshold;
+    section.wroteNone = wroteNone;
+  }
 
   const actualControls = new Map<string, ControlIDMapping>();
   for (const m of controlMap) {
@@ -391,11 +453,11 @@ export function validateGrid(
     }
   }
 
-  violations.push(...checkSeverityThreshold(THRESHOLD_PASSED, config.passed, counts.passed, actualControls));
-  violations.push(...checkSeverityThreshold(THRESHOLD_FAILED, config.failed, counts.failed, actualControls));
-  violations.push(...checkSeverityThreshold(THRESHOLD_SKIPPED, config.skipped, counts.skipped, actualControls));
-  violations.push(...checkSeverityThreshold(THRESHOLD_ERROR, config.error, counts.error, actualControls));
-  violations.push(...checkSeverityThreshold(THRESHOLD_NO_IMPACT, config.noImpact, counts.noImpact, actualControls));
+  for (const section of sections) {
+    violations.push(
+      ...checkSeverityThreshold(section.name, section.threshold, section.counts, actualControls, section.wroteNone),
+    );
+  }
 
   return violations;
 }
@@ -405,16 +467,23 @@ function checkSeverityThreshold(
   threshold: ThresholdSeverity | undefined,
   actual: SeverityCounts,
   actualControls: Map<string, ControlIDMapping>,
+  wroteNone: boolean,
 ): string[] {
   if (!threshold) {
     return [];
   }
+  // The path names the spelling the author wrote; the comparison below keeps the
+  // canonical bucket name, because informational is where the control was
+  // actually counted. Reporting `expected no_impact/none` would name a bucket
+  // that does not exist.
+  const pathLabel = (label: string): string =>
+    wroteNone && label === 'informational' ? LEGACY_INFORMATIONAL_KEY : label;
   const violations: string[] = [];
   const check = (label: string, bound: ThresholdBound | undefined, actualCount: number): void => {
     if (!bound) {
       return;
     }
-    const path = `${status}.${label}`;
+    const path = `${status}.${pathLabel(label)}`;
     if (bound.min !== undefined && actualCount < bound.min) {
       violations.push(`${path}: ${actualCount} is below minimum ${bound.min}`);
     }

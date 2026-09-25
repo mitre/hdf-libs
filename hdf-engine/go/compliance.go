@@ -19,6 +19,11 @@ const (
 	ThresholdNoImpact = "no_impact"
 )
 
+// legacyInformationalKey is the pre-3.7 spelling of the informational severity
+// bucket. Accepted on input and echoed back in violations written with it,
+// never emitted by generate.
+const legacyInformationalKey = "none"
+
 // SeverityCounts holds counts broken down by severity level.
 type SeverityCounts struct {
 	Critical int `yaml:"critical,omitempty" json:"critical,omitempty"`
@@ -42,9 +47,14 @@ type StatusCounts struct {
 
 // ControlIDMapping maps a control ID to its observed status and severity.
 type ControlIDMapping struct {
-	ID       string
-	Status   string // "passed", "failed", "skipped", "error", "no_impact"
-	Severity string // "critical", "high", "medium", "low", "none"
+	ID     string
+	Status string // "passed", "failed", "skipped", "error", "no_impact"
+	// Severity is the counting BUCKET, not the requirement's raw severity
+	// string: it is always one of "critical", "high", "medium", "low",
+	// "informational", having gone through SeverityBucket. Anything else would
+	// name a bucket the counts do not have, and a bound listing the control
+	// would report a mismatch against the bucket that control was counted in.
+	Severity string
 }
 
 // ThresholdBound is a min/max/controls bound on a single count.
@@ -161,7 +171,7 @@ func MapControlIDs(results hdf.HDFResults) []ControlIDMapping {
 			mappings = append(mappings, ControlIDMapping{
 				ID:       req.ID,
 				Status:   statusToThresholdKey(status),
-				Severity: sev,
+				Severity: SeverityBucket(sev),
 			})
 		}
 	}
@@ -188,7 +198,7 @@ func MapControlIDsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRe
 				Status: statusToThresholdKey(hdf.ResultStatus(status)),
 				// Effective impact, matching CountControlsByStatus, so a control
 				// listing and the counts it is listed alongside cannot disagree.
-				Severity: DeriveSeverity(EffectiveImpactOf(req, time.Time{}), req.Severity),
+				Severity: SeverityBucket(DeriveSeverity(EffectiveImpactOf(req, time.Time{}), req.Severity)),
 			})
 		}
 	}
@@ -238,6 +248,23 @@ func DeriveSeverity(impact float64, severity *hdf.Severity) string {
 	return hdfutil.ImpactToSeverity(impact)
 }
 
+// SeverityBucket folds a severity string into the bucket the threshold grid
+// counts it in. The schema's four named levels pass through; informational and
+// anything outside the enum land in informational, so a malformed severity is
+// counted rather than dropped and a document still gates.
+//
+// It is exported because ControlIDMapping.Severity is the bucket, not the raw
+// string: a caller assembling its own control map has to apply the same rule or
+// its listing and its counts will disagree about where a requirement went.
+func SeverityBucket(severity string) string {
+	switch severity {
+	case string(hdf.SeverityCritical), string(hdf.SeverityHigh), string(hdf.SeverityMedium), string(hdf.SeverityLow):
+		return severity
+	default:
+		return string(hdf.Informational)
+	}
+}
+
 // addCount increments the appropriate severity bucket for the given status.
 func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 	var sc *SeverityCounts
@@ -257,7 +284,7 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 	}
 
 	sc.Total++
-	switch severity {
+	switch SeverityBucket(severity) {
 	case string(hdf.SeverityCritical):
 		sc.Critical++
 	case string(hdf.SeverityHigh):
@@ -267,8 +294,6 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 	case string(hdf.SeverityLow):
 		sc.Low++
 	default:
-		// Informational plus anything outside the enum: an unrecognized severity
-		// is counted, never dropped, so a malformed document still gates.
 		sc.Informational++
 	}
 }
@@ -306,8 +331,23 @@ func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance floa
 	var violations []string
 
 	// Every construction path lands here, so the legacy spelling is resolved
-	// once rather than in each of the file, inline and MCP callers.
-	violations = append(violations, normalizeLegacySeverity(config)...)
+	// once rather than in each of the file, inline and MCP callers. Resolved
+	// before the compliance bounds so a refusal is reported ahead of them.
+	sections := []resolvedSection{
+		{name: ThresholdPassed, threshold: config.Passed, counts: &counts.Passed},
+		{name: ThresholdFailed, threshold: config.Failed, counts: &counts.Failed},
+		{name: ThresholdSkipped, threshold: config.Skipped, counts: &counts.Skipped},
+		{name: ThresholdError, threshold: config.Error, counts: &counts.Error},
+		{name: ThresholdNoImpact, threshold: config.NoImpact, counts: &counts.NoImpact},
+	}
+	for i := range sections {
+		resolved, wroteNone, refusal := resolveLegacySeverity(sections[i].name, sections[i].threshold)
+		if refusal != "" {
+			violations = append(violations, refusal)
+		}
+		sections[i].threshold = resolved
+		sections[i].wroteNone = wroteNone
+	}
 
 	actualControls := make(map[string]ControlIDMapping)
 	for _, m := range controlMap {
@@ -325,50 +365,61 @@ func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance floa
 		}
 	}
 
-	violations = append(violations, checkSeverityThreshold(ThresholdPassed, config.Passed, &counts.Passed, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(ThresholdFailed, config.Failed, &counts.Failed, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(ThresholdSkipped, config.Skipped, &counts.Skipped, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(ThresholdError, config.Error, &counts.Error, actualControls)...)
-	violations = append(violations, checkSeverityThreshold(ThresholdNoImpact, config.NoImpact, &counts.NoImpact, actualControls)...)
+	for _, s := range sections {
+		violations = append(violations, checkSeverityThreshold(s.name, s.threshold, s.counts, actualControls, s.wroteNone)...)
+	}
 
 	return violations
 }
 
-// normalizeLegacySeverity folds the pre-3.7 "none" key into "informational".
-// A spec setting both is refused rather than resolved: the two name one bucket,
-// so silently honouring one would drop a bound the author wrote.
-func normalizeLegacySeverity(config *ThresholdConfig) []string {
-	if config == nil {
-		return nil
+// resolvedSection is one status category of a spec after the legacy spelling has
+// been resolved, paired with the counts it is checked against.
+type resolvedSection struct {
+	name      string
+	threshold *ThresholdSeverity
+	counts    *SeverityCounts
+	wroteNone bool
+}
+
+// resolveLegacySeverity folds a section's pre-3.7 "none" key into
+// "informational", reporting whether the bound was written that way so a
+// violation can name the key the author will find in their own file. A spec
+// setting both is refused rather than resolved: the two name one bucket, so
+// silently honouring one would drop a bound the author wrote.
+//
+// The caller's section is COPIED, never rewritten. Folding in place made the
+// spelling a one-shot property of the config object: the same spec reported the
+// author's key on its first validate pass and the canonical one on every pass
+// after, which is the confusion naming the author's key exists to remove.
+func resolveLegacySeverity(name string, ts *ThresholdSeverity) (*ThresholdSeverity, bool, string) {
+	if ts == nil || ts.None == nil {
+		return ts, false, ""
 	}
-	var violations []string
-	sections := map[string]*ThresholdSeverity{
-		ThresholdPassed:   config.Passed,
-		ThresholdFailed:   config.Failed,
-		ThresholdSkipped:  config.Skipped,
-		ThresholdError:    config.Error,
-		ThresholdNoImpact: config.NoImpact,
+	if ts.Informational != nil {
+		return ts, false, fmt.Sprintf(
+			"%s: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket", name)
 	}
-	for _, name := range []string{ThresholdPassed, ThresholdFailed, ThresholdSkipped, ThresholdError, ThresholdNoImpact} {
-		ts := sections[name]
-		if ts == nil || ts.None == nil {
-			continue
-		}
-		if ts.Informational != nil {
-			violations = append(violations, fmt.Sprintf(
-				"%s: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket", name))
-			continue
-		}
-		ts.Informational = ts.None
-		ts.None = nil
-	}
-	return violations
+	resolved := *ts
+	resolved.Informational = ts.None
+	resolved.None = nil
+	return &resolved, true, ""
 }
 
 // checkSeverityThreshold validates all severity bounds within a status category.
-func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping) []string {
+func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping, wroteNone bool) []string {
 	if threshold == nil {
 		return nil
+	}
+
+	// The path names the spelling the author wrote; the comparison below keeps
+	// the canonical bucket name, because informational is where the control was
+	// actually counted. Reporting "expected no_impact/none" would name a bucket
+	// that does not exist.
+	pathLabel := func(label string) string {
+		if wroteNone && label == string(hdf.Informational) {
+			return legacyInformationalKey
+		}
+		return label
 	}
 
 	var violations []string
@@ -376,7 +427,7 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 		if bound == nil {
 			return
 		}
-		path := status + "." + label
+		path := status + "." + pathLabel(label)
 		if bound.Min != nil && actualCount < *bound.Min {
 			violations = append(violations, fmt.Sprintf("%s: %d is below minimum %d", path, actualCount, *bound.Min))
 		}

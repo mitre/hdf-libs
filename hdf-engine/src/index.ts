@@ -72,6 +72,7 @@ export {
   agentOverrideCount,
   mapControlIDs,
   mapControlIDsByStatus,
+  severityBucket,
   calculateCompliance,
   validateThresholds,
   overallStatus,

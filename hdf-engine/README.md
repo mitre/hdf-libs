@@ -146,8 +146,9 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 - `countControlsByStatus` / `CountControlsByStatus` — counts with a caller-supplied status resolver
 - `calculateCompliance` / `CalculateCompliance` — the percentage
 - `deriveSeverity` / `DeriveSeverity` — a requirement's severity, explicit or derived from impact
+- `severityBucket` / `SeverityBucket` — the counting bucket a severity falls in; anything outside the schema enum lands in `informational`, so a caller assembling its own control map buckets the way the counts do
 - `overallStatus` (TypeScript only) — the worst status across a requirement's results; the Go peer is internal to the package
-- `mapControlIDs`, `mapControlIDsByStatus` / `MapControlIDs`, `MapControlIDsByStatus` — control id to status/severity
+- `mapControlIDs`, `mapControlIDsByStatus` / `MapControlIDs`, `MapControlIDsByStatus` — control id to status and severity bucket
 - `agentOverrideCount` / `AgentOverrideCount` — overrides attributed to an agent
 - `validateThresholds` / `ValidateThresholds` — threshold verdicts
 - `StatusCounts`, `SeverityCounts`, `ControlIDMapping`, `ThresholdConfig`, `ThresholdSeverity`, `ThresholdBound`, `ComplianceBound`

@@ -17,9 +17,11 @@ import {
   mapControlIDsByStatus,
   calculateCompliance,
   type StatusCounts,
+  type SeverityCounts,
   validateThresholds,
   overallStatus,
   deriveSeverity,
+  severityBucket,
   type ThresholdConfig,
 } from '../src/compliance.js';
 import { evaluateRules, evaluate, PREDICATE_FIELDS, type ThresholdRule } from '../src/rules.js';
@@ -162,10 +164,11 @@ describe('threshold verdict — parity with go/compliance_test.go TestValidateTh
     expect(validateThresholds({ skipped: { low: { max: 0 } } }, counts, compliance, controlMap)).toEqual([
       'skipped.low: 1 exceeds maximum 0',
     ]);
-    // The legacy `none` spelling still resolves, and reports under the name it
-    // normalizes to.
+    // The legacy `none` spelling still resolves, and reports under the spelling
+    // the author wrote — parity with Go
+    // TestValidateThresholds_LegacyNoneNormalizesToInformational.
     expect(validateThresholds({ error: { none: { min: 5 } } }, counts, compliance, controlMap)).toEqual([
-      'error.informational: 1 is below minimum 5',
+      'error.none: 1 is below minimum 5',
     ]);
     expect(validateThresholds({ error: { informational: { min: 5 } } }, counts, compliance, controlMap)).toEqual([
       'error.informational: 1 is below minimum 5',
@@ -439,5 +442,116 @@ describe('override-aware counting derives severity from effective impact', () =>
 
   it('leaves the no-override-awareness twin reading the requirement own impact', () => {
     expect(countControlsByStatusSeverity(adjusted).failed.critical).toBe(1);
+  });
+});
+
+const zeroSeverityCounts = (): SeverityCounts => ({
+  critical: 0,
+  high: 0,
+  medium: 0,
+  low: 0,
+  informational: 0,
+  total: 0,
+});
+
+// The same hand-built counts Go's legacy-`none` tests use, so the two languages
+// assert the identical violation strings rather than merely the same shape.
+const threeInformationalNoImpact = (): StatusCounts => ({
+  passed: zeroSeverityCounts(),
+  failed: zeroSeverityCounts(),
+  skipped: zeroSeverityCounts(),
+  error: zeroSeverityCounts(),
+  noImpact: { ...zeroSeverityCounts(), informational: 3, total: 3 },
+});
+
+describe('legacy `none` spelling and severity bucketing — parity with go/compliance_test.go', () => {
+  const counts = countControlsByStatusSeverity(results);
+  const compliance = calculateCompliance(counts);
+  const controlMap = mapControlIDs(results);
+
+  // Byte-identical to the strings Go's
+  // TestValidateThresholds_LegacyNoneNormalizesToInformational asserts, over the
+  // same hand-built counts, so the two languages cannot drift on the wording.
+  it('reports the same bytes as Go for a none-written bound', () => {
+    const counts = threeInformationalNoImpact();
+
+    expect(validateThresholds({ noImpact: { none: { max: 0 } } }, counts, 100, [])).toEqual([
+      'no_impact.none: 3 exceeds maximum 0',
+    ]);
+    expect(validateThresholds({ noImpact: { informational: { max: 0 } } }, counts, 100, [])).toEqual([
+      'no_impact.informational: 3 exceeds maximum 0',
+    ]);
+    expect(validateThresholds({ noImpact: { none: { min: 5 } } }, counts, 100, [])).toEqual([
+      'no_impact.none: 3 is below minimum 5',
+    ]);
+  });
+
+  // Parity: Go TestValidateThresholds_LegacyNoneSurvivesConfigReuse.
+  it('reports identically on a second pass over the same config object', () => {
+    const counts = threeInformationalNoImpact();
+    const config: ThresholdConfig = { noImpact: { none: { max: 0 } } };
+
+    const first = validateThresholds(config, counts, 100, []);
+    const second = validateThresholds(config, counts, 100, []);
+    expect(second).toEqual(first);
+    expect(second).toEqual(['no_impact.none: 3 exceeds maximum 0']);
+
+    // The caller's spec must come back as it went in.
+    expect(config.noImpact?.none).toBeDefined();
+    expect(config.noImpact?.informational).toBeUndefined();
+  });
+
+  it('a bound written as none reports under none; informational reports under informational', () => {
+    expect(validateThresholds({ error: { none: { max: 0 } } }, counts, compliance, controlMap)).toEqual([
+      'error.none: 1 exceeds maximum 0',
+    ]);
+    expect(validateThresholds({ error: { informational: { max: 0 } } }, counts, compliance, controlMap)).toEqual([
+      'error.informational: 1 exceeds maximum 0',
+    ]);
+  });
+
+  it('a control listed under a none bound compares against the canonical bucket', () => {
+    expect(
+      validateThresholds({ noImpact: { none: { controls: ['C-1'] } } }, counts, compliance, [
+        { id: 'C-1', status: 'no_impact', severity: 'low' },
+      ]),
+    ).toEqual(['no_impact.none: control C-1 expected no_impact/informational but found no_impact/low']);
+  });
+
+  it('severityBucket folds anything outside the enum into informational', () => {
+    for (const s of ['critical', 'high', 'medium', 'low']) {
+      expect(severityBucket(s)).toBe(s);
+    }
+    for (const s of ['informational', 'none', 'sev-9', '']) {
+      expect(severityBucket(s)).toBe('informational');
+    }
+  });
+
+  it('a control listing buckets an out-of-enum severity the way the counts do', () => {
+    const malformed = {
+      baselines: [
+        {
+          requirements: [
+            {
+              id: 'C-1',
+              impact: 0.5,
+              severity: 'sev-9',
+              results: [{ status: 'failed' }],
+            },
+          ],
+        },
+      ],
+    } as unknown as HDFResults;
+
+    const mappings = mapControlIDs(malformed);
+    expect(mappings[0].severity).toBe('informational');
+
+    const malformedCounts = countControlsByStatusSeverity(malformed);
+    expect(malformedCounts.failed.informational).toBe(1);
+    expect(
+      validateThresholds({ failed: { informational: { controls: ['C-1'] } } }, malformedCounts, 0, mappings),
+    ).toEqual([]);
+
+    expect(mapControlIDsByStatus(malformed, () => 'failed')[0].severity).toBe('informational');
   });
 });
