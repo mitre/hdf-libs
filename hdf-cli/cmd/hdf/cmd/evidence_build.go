@@ -43,8 +43,8 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to expand results paths: %w", err)
 			}
-			if len(expanded) == 0 {
-				return fmt.Errorf("no results files provided; use --results or pass files as arguments")
+			if len(expanded) == 0 && opts.fromDir == "" {
+				return fmt.Errorf("no results files provided; use --results, --from-dir, or pass files as arguments")
 			}
 			opts.resultsPaths = expanded
 			for _, g := range []*[]string{&opts.baselinePaths, &opts.bomPaths, &opts.amendmentsPaths, &opts.comparisonPaths} {
@@ -53,6 +53,11 @@ Examples:
 					return fmt.Errorf("failed to expand paths: %w", gerr)
 				}
 				*g = ex
+			}
+			if opts.fromDir != "" {
+				if err := mergeScannedDir(&opts); err != nil {
+					return err
+				}
 			}
 			return runEvidenceBuild(opts)
 		},
@@ -65,11 +70,94 @@ Examples:
 	cmd.Flags().StringArrayVar(&opts.bomPaths, "bom", nil, "BOM document(s) — SBOM, AI model/dataset manifest (repeatable, supports globs)")
 	cmd.Flags().StringArrayVar(&opts.amendmentsPaths, "amendments", nil, "Amendments document(s) (repeatable, supports globs)")
 	cmd.Flags().StringArrayVar(&opts.comparisonPaths, "comparison", nil, "Comparison document(s) (repeatable, supports globs)")
+	cmd.Flags().StringVar(&opts.fromDir, "from-dir", "",
+		"Scan a directory and route every document by its content; recurses, and reports what it cannot place")
 	cmd.Flags().StringVarP(&opts.outputPath, "output", "o", "", "Output file (default: stdout)")
 
-	_ = cmd.MarkFlagRequired("system")
+	// --system is required unless --from-dir will supply it.
+	cmd.PreRunE = func(c *cobra.Command, _ []string) error {
+		if opts.systemPath == "" && opts.fromDir == "" {
+			return fmt.Errorf("--system is required (or use --from-dir to discover it)")
+		}
+		return nil
+	}
 
 	return cmd
+}
+
+// mergeScannedDir folds a directory scan into the explicit flags. Explicit wins:
+// a path named on the command line is skipped by the scan, so it is listed once.
+func mergeScannedDir(opts *evidenceBuildOpts) error {
+	skip := map[string]struct{}{}
+	for _, group := range [][]string{{opts.systemPath, opts.planPath}, opts.resultsPaths,
+		opts.baselinePaths, opts.bomPaths, opts.amendmentsPaths, opts.comparisonPaths} {
+		for _, p := range group {
+			if p == "" {
+				continue
+			}
+			if abs, err := resolvedAbs(p); err == nil {
+				skip[abs] = struct{}{}
+			}
+		}
+	}
+
+	found, err := scanEvidenceDir(opts.fromDir, skip)
+	if err != nil {
+		return err
+	}
+
+	// The package must have exactly one system document. Naming every candidate is
+	// what lets the operator see which one to move out of the tree.
+	switch {
+	case opts.systemPath != "":
+		// explicitly given; any scanned system documents are additional candidates
+		if len(found.systems) > 0 {
+			return fmt.Errorf("--system was given as %s, but --from-dir also found %s; "+
+				"an evidence package has exactly one system document",
+				opts.systemPath, strings.Join(found.systems, ", "))
+		}
+	case len(found.systems) == 0:
+		return fmt.Errorf("--from-dir %s contains no HDF system document; "+
+			"an evidence package needs exactly one", opts.fromDir)
+	case len(found.systems) > 1:
+		return fmt.Errorf("--from-dir %s contains %d HDF system documents (%s); "+
+			"an evidence package has exactly one — move the others out of the tree",
+			opts.fromDir, len(found.systems), strings.Join(found.systems, ", "))
+	default:
+		opts.systemPath = found.systems[0]
+	}
+
+	opts.resultsPaths = append(opts.resultsPaths, found.results...)
+	opts.baselinePaths = append(opts.baselinePaths, found.baselines...)
+	opts.bomPaths = append(opts.bomPaths, found.boms...)
+	opts.amendmentsPaths = append(opts.amendmentsPaths, found.amendments...)
+	opts.comparisonPaths = append(opts.comparisonPaths, found.comparisons...)
+	// Which plan is the bar (planRef) is singular and can be ambiguous; which
+	// documents the package carries is not. Every scanned plan is listed either
+	// way, so following the ">1 plans" error's own advice cannot make one vanish.
+	switch {
+	case opts.planPath != "":
+		opts.extraPlanPaths = append(opts.extraPlanPaths, found.plans...)
+	case len(found.plans) == 1:
+		opts.planPath = found.plans[0]
+	case len(found.plans) > 1:
+		return fmt.Errorf("--from-dir %s contains %d HDF plan documents (%s); "+
+			"name the one the package was assessed against with --plan "+
+			"(the others will still be listed in the package)",
+			opts.fromDir, len(found.plans), strings.Join(found.plans, ", "))
+	}
+	if opts.planPath != "" && len(opts.extraPlanPaths) > 0 {
+		rel := func(p string) string { return displayUnderBase(opts.fromDir, p) }
+		others := make([]string, 0, len(opts.extraPlanPaths))
+		for _, p := range opts.extraPlanPaths {
+			others = append(others, rel(p))
+		}
+		fmt.Fprintf(os.Stderr, "planRef is %s; also listed, but not the assessment bar: %s\n",
+			rel(opts.planPath), strings.Join(others, ", "))
+	}
+
+	reportScan(found, opts.fromDir, opts.outputPath)
+	return nil
 }
 
 // dropEmpty removes empty path elements. An unset shell variable (--amendments
@@ -176,6 +264,12 @@ type evidenceBuildOpts struct {
 	amendmentsPaths []string
 	comparisonPaths []string
 	outputPath      string
+	fromDir         string
+	// extraPlanPaths are plans a scan found that are NOT the planRef. They are
+	// still listed in contents[]: planRef names which plan the package was
+	// assessed against, while contents[] is the manifest of documents carried —
+	// conflating the two silently dropped every plan but one.
+	extraPlanPaths []string
 }
 
 // requireDetectedType rejects a document whose fingerprint is not what the flag
@@ -268,8 +362,13 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 
 	// Optional: plan. Its presence also sets the package's planRef, which is
 	// what `evidence verify` reads to check completeness against the plan.
+	planPaths := make([]string, 0, 1+len(opts.extraPlanPaths))
 	if opts.planPath != "" {
-		if contents, err = appendTyped(contents, baseDir, []string{opts.planPath}, "plan", "hdf-plan", "plan"); err != nil {
+		planPaths = append(planPaths, opts.planPath)
+	}
+	planPaths = append(planPaths, opts.extraPlanPaths...)
+	if len(planPaths) > 0 {
+		if contents, err = appendTyped(contents, baseDir, planPaths, "plan", "hdf-plan", "plan"); err != nil {
 			return err
 		}
 	}
