@@ -234,6 +234,17 @@ FLAGS
       --raw-impact string      Filter by the requirement's own impact, ignoring overrides. Same
                                comparison grammar; the pair expresses policies like "an override
                                may not move a critical below 0.7"
+      --cvss string            Filter by CVSS score — computedScore where a consumer recomputed
+                               one, else baseScore; a requirement with several CVSS entries
+                               resolves to its highest (e.g., ">=7")
+      --epss string            Filter by EPSS exploit probability — the score, NOT the
+                               percentile rank (e.g., ">=0.5")
+      --kev string             Filter by CISA Known Exploited Vulnerabilities membership:
+                               true or false. false includes findings carrying no KEV data
+      --cwe stringArray        Filter by CWE id (repeatable, OR logic). CWE-79, "CWE 79" and
+                               cwe79 are one value. Reads the first-class cwe[] field only and
+                               never tags.cwe, so a SARIF-derived document matches nothing
+                               until the SARIF converter populates cwe[]
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
       --id string              Filter by requirement ID, STIG ID, GID, or group title

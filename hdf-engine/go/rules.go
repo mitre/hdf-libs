@@ -48,6 +48,10 @@ type RulePredicate struct {
 	Severity    []string `yaml:"severity,omitempty" json:"severity,omitempty"`
 	Impact      string   `yaml:"impact,omitempty" json:"impact,omitempty"`
 	RawImpact   string   `yaml:"rawImpact,omitempty" json:"rawImpact,omitempty"`
+	Cvss        string   `yaml:"cvss,omitempty" json:"cvss,omitempty"`
+	Epss        string   `yaml:"epss,omitempty" json:"epss,omitempty"`
+	Kev         string   `yaml:"kev,omitempty" json:"kev,omitempty"`
+	Cwe         []string `yaml:"cwe,omitempty" json:"cwe,omitempty"`
 	CCI         []string `yaml:"cci,omitempty" json:"cci,omitempty"`
 	NIST        []string `yaml:"nist,omitempty" json:"nist,omitempty"`
 	ID          string   `yaml:"id,omitempty" json:"id,omitempty"`
@@ -76,6 +80,10 @@ func (p RulePredicate) filterOptions(opts RuleOptions) Options {
 		Severity:    p.Severity,
 		Impact:      p.Impact,
 		RawImpact:   p.RawImpact,
+		Cvss:        p.Cvss,
+		Epss:        p.Epss,
+		Kev:         p.Kev,
+		Cwe:         p.Cwe,
 		CCI:         p.CCI,
 		NIST:        p.NIST,
 		ID:          p.ID,
@@ -116,6 +124,10 @@ func (p RulePredicate) describe() string {
 	add("disposition", p.Disposition)
 	addOne("impact", p.Impact)
 	addOne("rawImpact", p.RawImpact)
+	addOne("cvss", p.Cvss)
+	addOne("epss", p.Epss)
+	addOne("kev", p.Kev)
+	add("cwe", p.Cwe)
 	addOne("id", p.ID)
 	addOne("search", p.Search)
 	addOne("baseline", p.Baseline)

@@ -139,9 +139,15 @@ func validateRules(rules []hdfengine.ThresholdRule, label string) error {
 		}
 		// A slice, not a map: two malformed comparisons in one rule must always
 		// report the same one first.
+		if rule.Where.Kev != "" && !hdfengine.ValidKevFilter(rule.Where.Kev) {
+			return fmt.Errorf("%s: %s: kev %q is not a known value (expected one of: true, false)",
+				label, name, rule.Where.Kev)
+		}
 		for _, c := range []struct{ field, comparison string }{
 			{"impact", rule.Where.Impact},
 			{"rawImpact", rule.Where.RawImpact},
+			{"cvss", rule.Where.Cvss},
+			{"epss", rule.Where.Epss},
 		} {
 			field, comparison := c.field, c.comparison
 			if comparison != "" && !hdfengine.ValidImpactFilter(comparison) {

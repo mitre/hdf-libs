@@ -197,22 +197,12 @@ export function mapCWEToNIST(
 }
 
 /** Matches CWE identifiers like "CWE-79", "CWE 89", "cwe22"; group 1 is the number. */
-export const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
+// Re-exported from @mitre/hdf-utilities rather than defined here: the Go twin
+// has always lived in that package, and hdf-engine can reach it there while it
+// cannot reach hdf-converters. Kept exported from this module so the converters
+// importing it do not all have to change.
+export { CWE_PATTERN, extractCWEIDs } from '@mitre/hdf-utilities';
 
-/**
- * Extract all numeric CWE IDs from text.
- * Returns deduplicated sorted array of numeric ID strings (e.g., ["79", "89"]).
- *
- * @param text - Text potentially containing CWE identifiers
- * @returns Sorted, deduplicated numeric CWE ID strings
- */
-export function extractCWEIDs(text: string): string[] {
-  const matches = [...text.matchAll(CWE_PATTERN)];
-  if (matches.length === 0) return [];
-  const ids = [...new Set(matches.map(m => m[1]!))];
-  ids.sort();
-  return ids;
-}
 
 /**
  * Return the first candidate whose content is not empty or whitespace-only,

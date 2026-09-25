@@ -83,6 +83,9 @@ export {
   type CvssScore,
 } from './cvss/index.js';
 
+// CWE identifier extraction (twin of go/cwe.go)
+export { extractCWEIDs, CWE_PATTERN } from './cwe/index.js';
+
 // CPE 2.3 URI parser
 export { parseCpe, type ParsedCpe, type CpePart } from './cpe/index.js';
 

@@ -164,6 +164,26 @@ rules:
 
 Severity follows the effective impact too, so a requirement risk-adjusted out of `critical` is counted in the band it was moved to rather than the one it left.
 
+A rule can also select on the vulnerability fields, which is what makes the gates this feature was built for expressible:
+
+```yaml
+rules:
+  - name: nothing CISA knows is exploited may fail
+    where:
+      status: [failed]
+      kev: "true"
+    max: 0
+  - name: nothing failing above CVSS 7
+    where:
+      status: [failed]
+      cvss: ">=7"
+    max: 0
+```
+
+`cvss` compares the score a consumer should act on — `computedScore` where someone recomputed one (as `hdf enrich --recompute-cvss` does), else `baseScore` — and a requirement carrying several CVSS entries resolves to its **highest**, because a finding matching several CVEs is as dangerous as its worst. `epss` is the exploit **probability**, not the percentile rank; both are on a 0–1 scale and mean very different things. `kev` takes `true` or `false`, where `false` also covers a finding carrying no KEV data, since that is not known-exploited either. `cwe` matches numerically, so `CWE-79`, `"CWE 79"` and `cwe79` are one value.
+
+`cwe` reads the first-class `cwe[]` field and never falls back to `tags.cwe`, so the filter means the same thing on every document. The cost of that is worth knowing: the SARIF converter currently records CWEs only in tags, so a SARIF-derived document matches no `cwe` predicate until that is fixed.
+
 `poams: none-valid` deliberately covers "no POA&M", "an empty list" and "only lapsed ones" as one condition, because a plan that has expired is not a plan.
 
 A rule bounds a count, not a percentage — `compliance` remains the only percentage bound — and it evaluates over the whole document. To narrow it to one baseline, say so in the predicate with `baseline`.

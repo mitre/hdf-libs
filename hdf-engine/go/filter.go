@@ -40,12 +40,28 @@ type Options struct {
 	// may not move a critical below 0.7" needs both scores, and no other key
 	// reaches the unadjusted one.
 	RawImpact string
-	CCI       []string
-	NIST      []string
-	ID        string
-	Tag       []string
-	Search    string
-	Baseline  string
+	// Cvss compares the requirement's authoritative CVSS score, using the same
+	// comparison grammar as Impact. See cvssScoreOf for what "authoritative"
+	// resolves to and how several CVSS entries collapse to one number.
+	Cvss string
+	// Epss compares the EPSS exploit PROBABILITY (epss.score), not the
+	// percentile rank. They share a 0-1 scale and mean very different things.
+	Epss string
+	// Kev selects on CISA Known Exploited Vulnerabilities membership: "true" for
+	// kev.inKev, "false" for everything else — including a requirement carrying
+	// no kev block at all, which is not known-exploited either.
+	Kev string
+	// Cwe selects by CWE identifier, OR across values, matched numerically so
+	// CWE-79, "CWE 79" and cwe79 are one value. It reads the first-class cwe[]
+	// field ONLY and never falls back to tags.cwe, so the filter means the same
+	// thing on every document.
+	Cwe      []string
+	CCI      []string
+	NIST     []string
+	ID       string
+	Tag      []string
+	Search   string
+	Baseline string
 	// Disposition selects by the TYPE of the override that governs the
 	// requirement (waiver, falsePositive, riskAdjustment, …), OR across values.
 	// The governing override is the most recent non-expired one of ANY kind, so
@@ -254,6 +270,48 @@ func buildFilters(opts Options) []filterFunc {
 		op, val, ok := parseImpactFilter(opts.RawImpact)
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
 			return ok && compareImpact(c.Impact, op, val)
+		})
+	}
+
+	// The vulnerability numbers, through the SAME comparison parser — a second
+	// grammar would be a second thing to learn and a second thing to get wrong.
+	// A requirement carrying no such score matches no comparison on it, rather
+	// than defaulting to zero and matching "<5" for the wrong reason.
+	if opts.Cvss != "" {
+		op, val, ok := parseImpactFilter(opts.Cvss)
+		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+			score, present := cvssScoreOf(c)
+			return ok && present && compareImpact(score, op, val)
+		})
+	}
+	if opts.Epss != "" {
+		op, val, ok := parseImpactFilter(opts.Epss)
+		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+			return ok && c.Epss != nil && compareImpact(c.Epss.Score, op, val)
+		})
+	}
+	if opts.Kev != "" {
+		want, ok := parseKevFilter(opts.Kev)
+		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+			return ok && inKev(c) == want
+		})
+	}
+	if len(opts.Cwe) > 0 {
+		wanted := map[string]bool{}
+		for _, v := range opts.Cwe {
+			for _, id := range hdfutil.ExtractCWEIDs(v) {
+				wanted[id] = true
+			}
+		}
+		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+			for _, raw := range c.Cwe {
+				for _, id := range hdfutil.ExtractCWEIDs(raw) {
+					if wanted[id] {
+						return true
+					}
+				}
+			}
+			return false
 		})
 	}
 
@@ -567,4 +625,67 @@ func statusOverrideInputs(overrides []hdf.StatusOverride) []hdfutil.StatusOverri
 		}
 	}
 	return inputs
+}
+
+// cvssScoreOf is the requirement's authoritative CVSS score, and whether it has
+// one at all.
+//
+// Two decisions live here. First, an entry's score is its computedScore when the
+// producer supplied one, else its baseScore: the schema calls computedScore "the
+// score consumers should treat as authoritative for risk decisions when
+// present", and converters populate it: nessus-to-hdf writes a requirement-level
+// computedScore when it has the metrics to recompute one, and hdf-to-csv already
+// resolves computedScore-else-baseScore for its own column. A gate reading
+// baseScore alone would disagree with both.
+//
+// Note this does NOT reach `hdf enrich --recompute-cvss`, which writes its
+// recomputed score into a riskAdjustment OVERRIDE's cvss block rather than the
+// requirement's own cvss[]. Reaching those is hdf-libs-5cim9's overrideCvss
+// candidate, deliberately not in this card.
+// Second, a requirement may carry one CVSS entry per CVE, and it resolves to the
+// HIGHEST of them: a finding matching several CVEs is as dangerous as its worst.
+func cvssScoreOf(control hdf.EvaluatedRequirement) (float64, bool) {
+	best, found := 0.0, false
+	for i := range control.Cvss {
+		c := &control.Cvss[i]
+		score, ok := 0.0, false
+		switch {
+		case c.ComputedScore != nil:
+			score, ok = *c.ComputedScore, true
+		case c.BaseScore != nil:
+			score, ok = *c.BaseScore, true
+		}
+		if ok && (!found || score > best) {
+			best, found = score, true
+		}
+	}
+	return best, found
+}
+
+// inKev reports CISA Known Exploited Vulnerabilities membership. An absent kev
+// block reads as false: a requirement nobody checked against the catalog is not
+// known-exploited, and treating absence as unknown would leave "kev: false"
+// unable to express "everything CISA does not list".
+func inKev(control hdf.EvaluatedRequirement) bool {
+	return control.Kev != nil && control.Kev.InKev
+}
+
+// parseKevFilter accepts only "true" and "false". Anything else is refused by
+// ValidKevFilter before a document is read; here it matches nothing rather than
+// silently meaning one of them.
+func parseKevFilter(s string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "true":
+		return true, true
+	case "false":
+		return false, true
+	}
+	return false, false
+}
+
+// ValidKevFilter reports whether a kev filter value is one this engine
+// understands, for callers to reject up front rather than matching nothing.
+func ValidKevFilter(s string) bool {
+	_, ok := parseKevFilter(s)
+	return ok
 }

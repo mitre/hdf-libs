@@ -42,7 +42,11 @@ const (
 	// poams and rawImpact: the amendments layer was reachable from the CLI and
 	// not from the MCP, so an agent could not ask what a user could. Measured
 	// 5444 with the descriptions already trimmed twice.
-	ToolsListTotalBudget = 5460
+	// Raised to 5580 (owner decision 2026-09-25) with hdf_query's four
+	// vulnerability filters; measured 5567. This is the fifth raise and the
+	// ratchet has never been examined as a whole — hdf-libs-5cim9 is that audit,
+	// and no further raise should land before it runs.
+	ToolsListTotalBudget = 5580
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -60,7 +64,10 @@ const (
 	// disposition enum from its description, which would cost a guess-and-be-
 	// refused round trip and make it the one closed vocabulary not listed the
 	// way status and severity are. Measured 833.
-	ToolsListPerToolBudget = 840
+	// Raised to 970 (owner decision 2026-09-25) for hdf_query's cvss, epss, kev
+	// and cwe; measured 956. hdf_query is now roughly a fifth of the whole
+	// listing, which is the specific thing hdf-libs-5cim9 exists to weigh.
+	ToolsListPerToolBudget = 970
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -74,7 +81,9 @@ const (
 	// to 3760 (owner decision 2026-09-24) with hdf_query's amendments filters;
 	// measured 3744. The read profile still sits far below the full surface,
 	// which is what this ceiling exists to protect.
-	ReadProfileBudget = 3760
+	// Raised to 3880 (owner decision 2026-09-25) with the vulnerability filters;
+	// measured 3867.
+	ReadProfileBudget = 3880
 )
 
 var (

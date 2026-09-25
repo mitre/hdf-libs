@@ -34,6 +34,10 @@ type queryInput struct {
 	Severity  []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
 	Impact    string          `json:"impact,omitempty" jsonschema:"effective impact (after overrides); e.g. >0.5, =0"`
 	RawImpact string          `json:"rawImpact,omitempty" jsonschema:"impact before overrides; same grammar"`
+	Cvss      string          `json:"cvss,omitempty" jsonschema:"CVSS score, computed else base, highest entry; e.g. >=7"`
+	Epss      string          `json:"epss,omitempty" jsonschema:"EPSS exploit probability (not percentile); e.g. >=0.5"`
+	Kev       string          `json:"kev,omitempty" jsonschema:"CISA known-exploited: true | false (false includes no KEV data)"`
+	Cwe       []string        `json:"cwe,omitempty" jsonschema:"CWE ids (OR); reads cwe[] only, not tags"`
 	CCI       []string        `json:"cci,omitempty"`
 	NIST      []string        `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
 	ID        string          `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title"`
@@ -205,9 +209,15 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 		// outside its vocabulary would match nothing and report a clean run,
 		// which reads to an agent as "asked and found none" rather than as the
 		// mistake it is. Same refusals the CLI makes, through the same helpers.
+		if in.Kev != "" && !hdfengine.ValidKevFilter(in.Kev) {
+			return argError(fmt.Sprintf("unknown kev filter %q", in.Kev),
+				"kev accepts only: true, false"), errorQueryOutput(), nil
+		}
 		for _, c := range []struct{ field, comparison string }{
 			{"impact", in.Impact},
 			{"rawImpact", in.RawImpact},
+			{"cvss", in.Cvss},
+			{"epss", in.Epss},
 		} {
 			if c.comparison != "" && !hdfengine.ValidImpactFilter(c.comparison) {
 				return argError(fmt.Sprintf("invalid %s filter %q", c.field, c.comparison),
@@ -263,7 +273,8 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 		matches := hdfengine.Filter(ctx, results, hdfengine.Options{
 			Status: in.Status, Severity: in.Severity, Impact: in.Impact,
 			RawImpact: in.RawImpact,
-			CCI:       in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
+			Cvss:      in.Cvss, Epss: in.Epss, Kev: in.Kev, Cwe: in.Cwe,
+			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
 			Search: in.Search, Baseline: in.Baseline,
 			Disposition: in.Disposition, Poams: in.Poams,
 			Count:    true, // return every match; the tool applies limit + token paging

@@ -16,6 +16,10 @@ var (
 	querySeverity    []string
 	queryImpact      string
 	queryRawImpact   string
+	queryCvss        string
+	queryEpss        string
+	queryKev         string
+	queryCwe         []string
 	queryCCI         []string
 	queryNIST        []string
 	querySTIGID      string
@@ -36,6 +40,10 @@ func NewQueryCmd() *cobra.Command {
 		localQuerySeverity    []string
 		localQueryImpact      string
 		localQueryRawImpact   string
+		localQueryCvss        string
+		localQueryEpss        string
+		localQueryKev         string
+		localQueryCwe         []string
 		localQueryCCI         []string
 		localQueryNIST        []string
 		localQuerySTIGID      string
@@ -84,6 +92,10 @@ Examples:
 			querySeverity = localQuerySeverity
 			queryImpact = localQueryImpact
 			queryRawImpact = localQueryRawImpact
+			queryCvss = localQueryCvss
+			queryEpss = localQueryEpss
+			queryKev = localQueryKev
+			queryCwe = localQueryCwe
 			queryCCI = localQueryCCI
 			queryNIST = localQueryNIST
 			querySTIGID = localQuerySTIGID
@@ -118,9 +130,14 @@ Examples:
 			// Here with its siblings rather than inside runQuery: a malformed
 			// comparison is a property of the command line, so it must be
 			// refused once, before any document is read, not once per file.
+			if queryKev != "" && !hdfengine.ValidKevFilter(queryKev) {
+				return fmt.Errorf("unknown --kev value %q (expected true or false)", queryKev)
+			}
 			for _, c := range []struct{ flag, comparison string }{
 				{"--impact", queryImpact},
 				{"--raw-impact", queryRawImpact},
+				{"--cvss", queryCvss},
+				{"--epss", queryEpss},
 			} {
 				if c.comparison != "" && !hdfengine.ValidImpactFilter(c.comparison) {
 					return fmt.Errorf("invalid %s filter %q: use a comparison like >0.5, >=0.7, <0.5, or =0",
@@ -146,6 +163,10 @@ Examples:
 	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by effective impact — after any governing impact override (e.g., \">0.5\", \">=0.7\", \"0.5\")")
 	cmd.Flags().StringVar(&localQueryRawImpact, "raw-impact", "", "Filter by the requirement's own impact, ignoring overrides (same comparison grammar as --impact)")
+	cmd.Flags().StringVar(&localQueryCvss, "cvss", "", "Filter by CVSS score — computedScore when a consumer recomputed one, else baseScore; highest entry wins (e.g. \">=7\")")
+	cmd.Flags().StringVar(&localQueryEpss, "epss", "", "Filter by EPSS exploit probability, NOT the percentile rank (e.g. \">=0.5\")")
+	cmd.Flags().StringVar(&localQueryKev, "kev", "", "Filter by CISA Known Exploited Vulnerabilities membership: true or false (false includes findings with no KEV data)")
+	cmd.Flags().StringArrayVar(&localQueryCwe, "cwe", nil, "Filter by CWE id (repeatable, OR logic; CWE-79, \"CWE 79\" and cwe79 are one value). Reads cwe[] only — SARIF-derived documents record CWEs in tags and will not match")
 	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic; supports globs)")
 	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
@@ -191,6 +212,10 @@ func runQuery(_ *cobra.Command, args []string) error {
 		Severity:    querySeverity,
 		Impact:      queryImpact,
 		RawImpact:   queryRawImpact,
+		Cvss:        queryCvss,
+		Epss:        queryEpss,
+		Kev:         queryKev,
+		Cwe:         queryCwe,
 		CCI:         queryCCI,
 		NIST:        queryNIST,
 		ID:          querySTIGID,

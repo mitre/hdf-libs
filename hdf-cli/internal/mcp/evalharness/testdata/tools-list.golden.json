@@ -1185,6 +1185,20 @@
               "array"
             ]
           },
+          "cvss": {
+            "description": "CVSS score, computed else base, highest entry; e.g. \u003e=7",
+            "type": "string"
+          },
+          "cwe": {
+            "description": "CWE ids (OR); reads cwe[] only, not tags",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
           "disposition": {
             "description": "governing override type: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)",
             "items": {
@@ -1194,6 +1208,10 @@
               "null",
               "array"
             ]
+          },
+          "epss": {
+            "description": "EPSS exploit probability (not percentile); e.g. \u003e=0.5",
+            "type": "string"
           },
           "fields": {
             "description": "opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation",
@@ -1211,6 +1229,10 @@
           },
           "impact": {
             "description": "effective impact (after overrides); e.g. \u003e0.5, =0",
+            "type": "string"
+          },
+          "kev": {
+            "description": "CISA known-exploited: true | false (false includes no KEV data)",
             "type": "string"
           },
           "limit": {

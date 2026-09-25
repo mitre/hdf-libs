@@ -544,6 +544,93 @@ func TestQuery_AmendmentFiltersReachTheEngine(t *testing.T) {
 	}
 }
 
+// vulnResults is the minimum document that can tell the four vulnerability
+// filters apart, including one requirement each bound below must EXCLUDE: the
+// guard test proves the FIELD exists on queryInput, not that it reaches the
+// engine, and an absent filter returns everything.
+func vulnResults(t *testing.T) string {
+	t.Helper()
+	const doc = `{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "KEV", "title": "critical, known exploited", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 9.8}],
+     "epss": {"score": 0.944, "percentile": 0.999, "date": "2026-01-01"},
+     "kev": {"inKev": true, "dateAdded": "2021-12-10", "dueDate": "2021-12-24"},
+     "cwe": ["CWE-502"]},
+    {"id": "ENRICHED", "title": "vendor 9.8, recomputed to 5.2", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 9.8, "threatVector": "E:U", "threatScore": 5.2, "computedScore": 5.2}],
+     "epss": {"score": 0.02, "percentile": 0.41, "date": "2026-01-01"},
+     "kev": {"inKev": false},
+     "cwe": ["CWE-79"]},
+    {"id": "LOW", "title": "below every bound here", "impact": 0.3, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 2.1}],
+     "epss": {"score": 0.001, "percentile": 0.05, "date": "2026-01-01"}}
+  ]}]
+}`
+	return writeRoot(t, "vulns.json", []byte(doc))
+}
+
+// The four keys must SELECT, not merely be accepted. Each case names what the
+// filter excludes as well as what it includes — removing the wiring from the
+// Options literal previously left the whole MCP suite green.
+func TestQuery_VulnerabilityFiltersReachTheEngine(t *testing.T) {
+	src := handle.Source{Path: vulnResults(t)}
+	for _, tc := range []struct {
+		name string
+		in   queryInput
+		want []string
+	}{
+		{"cvss compares the recomputed score, not the vendor base score",
+			queryInput{Source: src, Cvss: ">=7"}, []string{"KEV"}},
+		{"and finds the enriched one in the band it was recomputed into",
+			queryInput{Source: src, Cvss: ">=5"}, []string{"ENRICHED", "KEV"}},
+		{"epss is the probability, so the 0.999 percentile row is not what matches",
+			queryInput{Source: src, Epss: ">=0.5"}, []string{"KEV"}},
+		{"kev true selects only the catalogued finding",
+			queryInput{Source: src, Kev: "true"}, []string{"KEV"}},
+		{"kev false covers inKev:false and an absent block alike",
+			queryInput{Source: src, Kev: "false"}, []string{"ENRICHED", "LOW"}},
+		{"cwe matches numerically, whatever the spelling",
+			queryInput{Source: src, Cwe: []string{"cwe502"}}, []string{"KEV"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := queryIDs(t, tc.in); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// The vulnerability half of the refusal contract below.
+func TestQuery_VulnerabilityFiltersRefuseBadValues(t *testing.T) {
+	src := handle.Source{Path: vulnResults(t)}
+	for _, tc := range []struct {
+		name string
+		in   queryInput
+		want string
+	}{
+		{"cvss", queryInput{Source: src, Cvss: ">>7"}, "invalid cvss filter"},
+		{"epss", queryInput{Source: src, Epss: "~0.5"}, "invalid epss filter"},
+		{"kev", queryInput{Source: src, Kev: "yes"}, "unknown kev filter"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, _ := callQuery(t, tc.in)
+			if txt := payloadText(t, res); !strings.Contains(txt, tc.want) {
+				t.Errorf("want refusal containing %q, got %s", tc.want, txt)
+			}
+		})
+	}
+}
+
 // An unrecognized value must be REFUSED, not matched against nothing. To an
 // agent a clean empty result reads as "asked and found none", which is the false
 // green this vocabulary exists to prevent — and it has no way to tell the two

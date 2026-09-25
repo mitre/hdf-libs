@@ -4,7 +4,7 @@
 // runs both over the same fixture).
 
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
-import { governingOverrideIndex, parseTimestamp } from '@mitre/hdf-utilities';
+import { governingOverrideIndex, parseTimestamp, extractCWEIDs } from '@mitre/hdf-utilities';
 import { deriveSeverity } from './compliance.js';
 import { effectiveImpactOf, overrideInputs } from './effective.js';
 import { normalizeKey, normalizeFilterValue } from './vocabulary.js';
@@ -31,6 +31,29 @@ export interface FilterOptions {
    * unadjusted one.
    */
   rawImpact?: string;
+  /**
+   * Compares the requirement's authoritative CVSS score, using the same
+   * comparison grammar as impact. See cvssScoreOf for what "authoritative"
+   * resolves to and how several CVSS entries collapse to one number.
+   */
+  cvss?: string;
+  /**
+   * Compares the EPSS exploit PROBABILITY (epss.score), not the percentile
+   * rank. They share a 0-1 scale and mean very different things.
+   */
+  epss?: string;
+  /**
+   * CISA Known Exploited Vulnerabilities membership: 'true' for kev.inKev,
+   * 'false' for everything else — including a requirement carrying no kev block
+   * at all, which is not known-exploited either.
+   */
+  kev?: string;
+  /**
+   * Selects by CWE identifier, OR across values, matched numerically so CWE-79,
+   * 'CWE 79' and cwe79 are one value. Reads the first-class cwe[] field ONLY and
+   * never falls back to tags.cwe.
+   */
+  cwe?: string[];
   cci?: string[];
   nist?: string[];
   id?: string;
@@ -181,6 +204,32 @@ function buildFilters(options: FilterOptions): FilterFunc[] {
   if (options.rawImpact) {
     const [op, val] = parseImpactFilter(options.rawImpact);
     filters.push((c) => compareImpact(c.impact, op, val));
+  }
+
+  // The vulnerability numbers, through the SAME comparison parser — a second
+  // grammar would be a second thing to learn and a second thing to get wrong. A
+  // requirement carrying no such score matches no comparison on it, rather than
+  // defaulting to zero and matching '<5' for the wrong reason.
+  if (options.cvss) {
+    const [op, val] = parseImpactFilter(options.cvss);
+    filters.push((c) => {
+      const score = cvssScoreOf(c);
+      return score !== undefined && compareImpact(score, op, val);
+    });
+  }
+  if (options.epss) {
+    const [op, val] = parseImpactFilter(options.epss);
+    filters.push((c) => c.epss != null && compareImpact(c.epss.score, op, val));
+  }
+  if (options.kev) {
+    const want = parseKevFilter(options.kev);
+    filters.push((c) => want !== undefined && inKev(c) === want);
+  }
+  if (options.cwe && options.cwe.length > 0) {
+    const wanted = new Set(options.cwe.flatMap((v) => extractCWEIDs(v)));
+    filters.push((c) =>
+      (c.cwe ?? []).some((raw) => extractCWEIDs(String(raw)).some((id) => wanted.has(id)))
+    );
   }
 
   if (options.cci && options.cci.length > 0) {
@@ -417,4 +466,61 @@ function hasValidPoam(control: EvaluatedRequirement, now?: string): boolean {
   const parsed = now ? parseTimestamp(now) : null;
   const ref = parsed ? parsed.getTime() : Date.now();
   return (control.poams ?? []).some((poam) => new Date(poam.expiresAt).getTime() > ref);
+}
+
+/**
+ * The requirement's authoritative CVSS score, or undefined when it carries none.
+ *
+ * Two decisions live here. An entry's score is its computedScore when the
+ * producer supplied one, else its baseScore: the schema calls computedScore "the
+ * score consumers should treat as authoritative for risk decisions when
+ * present", and converters populate it: nessus-to-hdf writes a requirement-level
+ * computedScore when it has the metrics to recompute one, and hdf-to-csv already
+ * resolves computedScore-else-baseScore for its own column, so a gate reading
+ * baseScore alone would disagree with both. It does NOT reach
+ * `hdf enrich --recompute-cvss`, which writes its recomputed score into a
+ * riskAdjustment OVERRIDE's cvss block rather than the requirement's own cvss[].
+ * And a
+ * requirement may carry one entry per CVE, resolving to the HIGHEST of them: a
+ * finding matching several CVEs is as dangerous as its worst.
+ *
+ * Parity: cvssScoreOf in go/filter.go.
+ */
+export function cvssScoreOf(control: EvaluatedRequirement): number | undefined {
+  let best: number | undefined;
+  for (const entry of control.cvss ?? []) {
+    const score = entry.computedScore ?? entry.baseScore;
+    if (typeof score === 'number' && (best === undefined || score > best)) best = score;
+  }
+  return best;
+}
+
+/**
+ * CISA Known Exploited Vulnerabilities membership. An absent kev block reads as
+ * false: a requirement nobody checked against the catalog is not
+ * known-exploited, and treating absence as unknown would leave 'kev: false'
+ * unable to express "everything CISA does not list".
+ */
+function inKev(control: EvaluatedRequirement): boolean {
+  return control.kev?.inKev === true;
+}
+
+/** Accepts only 'true' and 'false'; anything else yields undefined. */
+function parseKevFilter(s: string): boolean | undefined {
+  switch (s.trim().toLowerCase()) {
+    case 'true':
+      return true;
+    case 'false':
+      return false;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Whether a kev filter value is one this engine understands, for callers to
+ * reject up front rather than matching nothing.
+ */
+export function validKevFilter(s: string): boolean {
+  return parseKevFilter(s) !== undefined;
 }

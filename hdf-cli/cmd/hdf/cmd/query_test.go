@@ -647,3 +647,92 @@ func writeRiskAdjustedResults(t *testing.T) string {
 	require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
 	return path
 }
+
+// writeVulnResults writes a schema-valid document that can tell the four
+// vulnerability filters apart: a KEV-listed critical, one whose 9.8 was
+// recomputed down to 5.2, and a low-scoring finding that every bound below must
+// EXCLUDE — an inclusion-only assertion would pass against a filter that never
+// ran, since an absent filter returns everything.
+func writeVulnResults(t *testing.T) string {
+	t.Helper()
+	const doc = `{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "SV-KEV", "title": "critical, known exploited", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 9.8}],
+     "epss": {"score": 0.944, "percentile": 0.999, "date": "2026-01-01"},
+     "kev": {"inKev": true, "dateAdded": "2021-12-10", "dueDate": "2021-12-24"},
+     "cwe": ["CWE-502"]},
+    {"id": "SV-ENRICHED", "title": "vendor 9.8, recomputed to 5.2", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 9.8, "threatVector": "E:U", "threatScore": 5.2, "computedScore": 5.2}],
+     "epss": {"score": 0.02, "percentile": 0.41, "date": "2026-01-01"},
+     "kev": {"inKev": false},
+     "cwe": ["CWE-79"]},
+    {"id": "SV-LOW", "title": "below every bound these tests use", "impact": 0.3, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 2.1}],
+     "epss": {"score": 0.001, "percentile": 0.05, "date": "2026-01-01"}}
+  ]}]
+}`
+	path := filepath.Join(t.TempDir(), "vulns.json")
+	require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+	return path
+}
+
+func TestQueryVulnerabilityFilters_ReachTheEngine(t *testing.T) {
+	path := writeVulnResults(t)
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		contains []string
+		excludes []string
+	}{
+		{"cvss compares the recomputed score, not the vendor base score",
+			[]string{"--cvss", ">=7"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+		{"and finds the enriched one in the band it was recomputed into",
+			[]string{"--cvss", ">=5"}, []string{"SV-KEV", "SV-ENRICHED"}, []string{"SV-LOW"}},
+		{"epss is the probability, so the 0.999 PERCENTILE row is not what matches",
+			[]string{"--epss", ">=0.5"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+		{"kev true selects only the catalogued finding",
+			[]string{"--kev", "true"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+		{"kev false covers inKev:false and the field being absent alike",
+			[]string{"--kev", "false"}, []string{"SV-ENRICHED", "SV-LOW"}, []string{"SV-KEV"}},
+		{"cwe matches numerically, whatever the spelling",
+			[]string{"--cwe", "cwe502"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stdout, _, err := executeCommand(append([]string{"query", path}, tc.args...)...)
+			require.NoError(t, err)
+			for _, id := range tc.contains {
+				assert.Contains(t, stdout, id)
+			}
+			for _, id := range tc.excludes {
+				assert.NotContains(t, stdout, id, "the filter must exclude this, or it proves nothing")
+			}
+		})
+	}
+}
+
+// A value outside a closed vocabulary, or a malformed comparison, is refused
+// before any document is read — the same posture as --status and --impact.
+func TestQueryVulnerabilityFilters_RefuseBadValues(t *testing.T) {
+	absent := filepath.Join(t.TempDir(), "absent.json")
+	for _, tc := range []struct{ flag, bad, wants string }{
+		{"--cvss", ">>7", "invalid --cvss filter"},
+		{"--epss", "~0.5", "invalid --epss filter"},
+		{"--kev", "yes", "unknown --kev value"},
+	} {
+		t.Run(tc.flag, func(t *testing.T) {
+			_, _, err := executeCommand("query", absent, tc.flag, tc.bad)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wants, "must be refused before the file is opened")
+		})
+	}
+}

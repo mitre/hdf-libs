@@ -621,3 +621,39 @@ func TestFilterImpactResolvesOverrides(t *testing.T) {
 	assert.Equal(t, "low", rows[0].Severity,
 		"so the impact and severity columns cannot contradict each other")
 }
+
+// vulnerabilityCases is the shared cross-language contract for the cvss, epss,
+// kev and cwe filters. test/query.test.ts reads the SAME file and runs the SAME
+// cases, so the two implementations are held to one contract rather than two
+// hand-kept copies. The decisions each case pins are recorded in the file's
+// own $comment.
+type vulnerabilityCases struct {
+	Fixture hdf.HDFResults `json:"fixture"`
+	Cases   []struct {
+		Name    string `json:"name"`
+		Options struct {
+			Cvss string   `json:"cvss"`
+			Epss string   `json:"epss"`
+			Kev  string   `json:"kev"`
+			Cwe  []string `json:"cwe"`
+		} `json:"options"`
+		Expect []string `json:"expect"`
+	} `json:"cases"`
+}
+
+func TestFilterVulnerabilityFields(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "vulnerability-filter-cases.json"))
+	require.NoError(t, err)
+	var table vulnerabilityCases
+	require.NoError(t, json.Unmarshal(data, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			assert.ElementsMatch(t, tc.Expect, ids(Filter(context.Background(), table.Fixture, Options{
+				Cvss: tc.Options.Cvss, Epss: tc.Options.Epss, Kev: tc.Options.Kev, Cwe: tc.Options.Cwe,
+				StatusOf: testStatusOf,
+			})))
+		})
+	}
+}

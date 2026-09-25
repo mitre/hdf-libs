@@ -430,3 +430,36 @@ describe('filter vocabularies (parity with go/vocabulary.go)', () => {
     }
   });
 });
+
+// The shared vulnerability-field contract, read by go/filter_test.go too so the
+// two implementations cannot drift. The decisions each case pins are recorded in
+// the table's own $comment.
+interface VulnerabilityCases {
+  fixture: HDFResults;
+  cases: {
+    name: string;
+    options: { cvss?: string; epss?: string; kev?: string; cwe?: string[] };
+    expect: string[];
+  }[];
+}
+
+const vulnPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'testdata',
+  'vulnerability-filter-cases.json'
+);
+const vulnerabilities = JSON.parse(readFileSync(vulnPath, 'utf-8')) as VulnerabilityCases;
+
+describe('vulnerability filters — cvss, epss, kev, cwe (parity with go/filter.go)', () => {
+  it('has cases to run', () => {
+    expect(vulnerabilities.cases.length).toBeGreaterThan(0);
+  });
+
+  for (const c of vulnerabilities.cases) {
+    it(c.name, () => {
+      const got = ids(filter(vulnerabilities.fixture, { ...c.options, statusOf: testStatusOf }));
+      expect(got.slice().sort()).toEqual(c.expect.slice().sort());
+    });
+  }
+});
