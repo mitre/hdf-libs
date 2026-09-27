@@ -411,8 +411,8 @@ func TestQuerySeverity_InformationalSelectsImpactZero(t *testing.T) {
 	assert.Equal(t, "1\n", stdout)
 }
 
-// The pre-3.7 spelling keeps selecting the same findings, so a saved command
-// line does not quietly start matching nothing.
+// The name informational replaced in 3.7.0 keeps selecting the same findings,
+// so a saved command line does not quietly start matching nothing.
 func TestQuerySeverity_LegacyNoneStillSelects(t *testing.T) {
 	reqs := []map[string]any{
 		makeReqWithStatus("REQ-ZERO", 0.0, "notReviewed"),
@@ -563,14 +563,14 @@ func TestQueryStatusAndSeverity_AcceptedSpellingsReachTheFilter(t *testing.T) {
 		// it must select something rather than erroring or matching nothing.
 		assert.NoError(t, err, "%q must select the same requirements as its canonical spelling", spelling)
 	}
-	// The pre-3.7 severity spelling still names informational on this surface
+	// The pre-3.7 severity name still means informational on this surface
 	// too. Asserted as SELECTION, not as the absence of a validation error: the
 	// fixture's impact-0 requirement derives to informational, so if the alias
 	// stopped resolving this would exit 1 with "No matching requirements found"
 	// and an assertion about the error text would not notice.
 	stdout, _, err := executeCommand("query", resultsPath, "--severity", "none")
-	require.NoError(t, err, "the pre-3.7 spelling must still select the informational requirement")
-	assert.Contains(t, stdout, "SV-004", "and select the same one its canonical spelling does")
+	require.NoError(t, err, "the pre-3.7 name must still select the informational requirement")
+	assert.Contains(t, stdout, "SV-004", "and select the same one its current name does")
 }
 
 // --impact validated after the document was read, so a malformed comparison

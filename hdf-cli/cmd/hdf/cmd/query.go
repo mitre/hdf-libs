@@ -294,7 +294,7 @@ const (
 	SeverityMedium        = "medium"
 	SeverityLow           = "low"
 	SeverityInformational = "informational"
-	// SeverityNoneLegacy is the pre-3.7 spelling of informational, still
+	// SeverityNoneLegacy is the name informational replaced in 3.7.0, still
 	// accepted as a filter value so an existing command line keeps working.
 	SeverityNoneLegacy = "none"
 )

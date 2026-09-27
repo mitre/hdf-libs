@@ -199,8 +199,8 @@ func buildFilters(opts Options) []filterFunc {
 	}
 
 	// Severity filter (OR across values). Normalized the same way, and through
-	// the alias map as well, so the pre-3.7 "none" spelling keeps naming the
-	// informational severity on every surface rather than only in the CLI.
+	// the alias map as well, so "none" — the name informational replaced in
+	// 3.7.0 — keeps selecting it on every surface, not only in the CLI.
 	if len(opts.Severity) > 0 {
 		severities := make([]string, len(opts.Severity))
 		for i, s := range opts.Severity {

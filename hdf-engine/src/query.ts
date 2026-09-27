@@ -163,9 +163,9 @@ function buildFilters(options: FilterOptions): FilterFunc[] {
     filters.push((_c, s) => statuses.includes(normalizeKey(normalizeFilterValue('status', s))));
   }
 
-  // Normalized the same way, and through the alias map as well, so the pre-3.7
-  // 'none' spelling keeps naming the informational severity on every surface
-  // rather than only in the CLI.
+  // Normalized the same way, and through the alias map as well, so 'none' — the
+  // name informational replaced in 3.7.0 — keeps selecting it on every surface,
+  // not only in the CLI.
   if (options.severity && options.severity.length > 0) {
     const severities = options.severity.map((s) => normalizeKey(normalizeFilterValue('severity', s)));
     filters.push((_c, _s, severity) =>

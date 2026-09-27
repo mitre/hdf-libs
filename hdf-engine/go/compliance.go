@@ -19,9 +19,9 @@ const (
 	ThresholdNoImpact = "no_impact"
 )
 
-// legacyInformationalKey is the pre-3.7 spelling of the informational severity
-// bucket. Accepted on input and echoed back in violations written with it,
-// never emitted by generate.
+// legacyInformationalKey is the name the informational severity bucket had
+// before 3.7.0 renamed it. Accepted on input and echoed back in violations
+// written with it, never emitted by generate.
 const legacyInformationalKey = "none"
 
 // SeverityCounts holds counts broken down by severity level.
@@ -71,9 +71,9 @@ type ThresholdSeverity struct {
 	Medium        *ThresholdBound `yaml:"medium,omitempty" json:"medium,omitempty"`
 	Low           *ThresholdBound `yaml:"low,omitempty" json:"low,omitempty"`
 	Informational *ThresholdBound `yaml:"informational,omitempty" json:"informational,omitempty"`
-	// None is the pre-3.7 spelling of Informational, accepted so templates this
-	// tool generated before the two were unified still parse. Normalized into
-	// Informational by normalizeLegacySeverity; never written.
+	// None is the name Informational replaced in 3.7.0, accepted so templates
+	// this tool generated before the rename still parse. Resolved into
+	// Informational by resolveLegacySeverity; never written.
 	None  *ThresholdBound `yaml:"none,omitempty" json:"none,omitempty"`
 	Total *ThresholdBound `yaml:"total,omitempty" json:"total,omitempty"`
 }
@@ -330,8 +330,8 @@ func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, complianc
 func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
 	var violations []string
 
-	// Every construction path lands here, so the legacy spelling is resolved
-	// once rather than in each of the file, inline and MCP callers. Resolved
+	// Every construction path lands here, so the former name is resolved once
+	// rather than in each of the file, inline and MCP callers. Resolved
 	// before the compliance bounds so a refusal is reported ahead of them.
 	sections := []resolvedSection{
 		{name: ThresholdPassed, threshold: config.Passed, counts: &counts.Passed},
@@ -372,8 +372,8 @@ func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance floa
 	return violations
 }
 
-// resolvedSection is one status category of a spec after the legacy spelling has
-// been resolved, paired with the counts it is checked against.
+// resolvedSection is one status category of a spec after the former severity
+// name has been resolved, paired with the counts it is checked against.
 type resolvedSection struct {
 	name      string
 	threshold *ThresholdSeverity
@@ -384,11 +384,12 @@ type resolvedSection struct {
 // resolveLegacySeverity folds a section's pre-3.7 "none" key into
 // "informational", reporting whether the bound was written that way so a
 // violation can name the key the author will find in their own file. A spec
-// setting both is refused rather than resolved: the two name one bucket, so
-// silently honouring one would drop a bound the author wrote.
+// setting both is refused rather than resolved: 3.7.0 renamed the bucket, so
+// the two name one thing and silently honouring one would drop a bound the
+// author wrote.
 //
 // The caller's section is COPIED, never rewritten. Folding in place made the
-// spelling a one-shot property of the config object: the same spec reported the
+// name a one-shot property of the config object: the same spec reported the
 // author's key on its first validate pass and the canonical one on every pass
 // after, which is the confusion naming the author's key exists to remove.
 func resolveLegacySeverity(name string, ts *ThresholdSeverity) (*ThresholdSeverity, bool, string) {
@@ -397,7 +398,7 @@ func resolveLegacySeverity(name string, ts *ThresholdSeverity) (*ThresholdSeveri
 	}
 	if ts.Informational != nil {
 		return ts, false, fmt.Sprintf(
-			"%s: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket", name)
+			"%s: both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket", name)
 	}
 	resolved := *ts
 	resolved.Informational = ts.None
@@ -411,7 +412,7 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 		return nil
 	}
 
-	// The path names the spelling the author wrote; the comparison below keeps
+	// The path names the key the author wrote; the comparison below keeps
 	// the canonical bucket name, because informational is where the control was
 	// actually counted. Reporting "expected no_impact/none" would name a bucket
 	// that does not exist.

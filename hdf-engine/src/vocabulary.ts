@@ -16,10 +16,15 @@ export const STATUS_VALUES = ['passed', 'failed', 'notApplicable', 'notReviewed'
 export const SEVERITY_VALUES = ['critical', 'high', 'medium', 'low', 'informational'] as const;
 
 /**
- * The spellings a value has legitimately arrived under, enumerated rather than
- * derived. An earlier version stripped separators to fold spellings together,
- * which also silently repaired typos: 'wai-ver' became 'waiver'. A closed
- * vocabulary that quietly corrects a misspelling is not closed.
+ * The forms a value has legitimately arrived under, enumerated rather than
+ * derived. An earlier version stripped separators to fold them together, which
+ * also silently repaired typos: 'wai-ver' became 'waiver'. A closed vocabulary
+ * that quietly corrects a misspelling is not closed.
+ *
+ * The status and disposition entries are separator variants of one name. The
+ * severity entry is not: 3.7.0 renamed the bucket, and 'none' is the name it had
+ * before, kept so a command line or spec written against the old vocabulary
+ * selects what it always did.
  */
 const STATUS_ALIASES: Record<string, string> = {
   not_applicable: 'notApplicable',
@@ -47,23 +52,23 @@ function canonical(
   return vocabulary.find((member) => normalizeKey(member) === key) ?? '';
 }
 
-/** Whether s names a status the filter understands, under any accepted spelling. */
+/** Whether s names a status the filter understands, in any accepted form. */
 export function validStatus(s: string): boolean {
   return canonical(STATUS_VALUES, STATUS_ALIASES, s) !== '';
 }
 
-/** Whether s names an override type the filter understands, under any accepted spelling. */
+/** Whether s names an override type the filter understands, in any accepted form. */
 export function validDisposition(s: string): boolean {
   return canonical(DISPOSITION_VALUES, DISPOSITION_ALIASES, s) !== '';
 }
 
-/** Whether s names a severity the filter understands, under any accepted spelling. */
+/** Whether s names a severity the filter understands, in any accepted form. */
 export function validSeverity(s: string): boolean {
   return canonical(SEVERITY_VALUES, SEVERITY_ALIASES, s) !== '';
 }
 
 /**
- * The canonical spelling of a filter value for the named field, or the value
+ * The canonical form of a filter value for the named field, or the value
  * unchanged when the field has no closed vocabulary or the value names no
  * member. Normalizing here rather than in one caller is what makes a threshold
  * rule and an `hdf query` invocation mean the same thing.

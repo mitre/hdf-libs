@@ -15,20 +15,20 @@ import (
 
 // vocabularyCases is the shared cross-language contract for what a filter value
 // may be. test/query.test.ts reads the SAME file, so the two languages cannot
-// disagree about a legal value or about which spellings mean the same thing.
+// disagree about a legal value or about which forms name the same thing.
 type vocabularyCases struct {
 	StatusValues      []string `json:"statusValues"`
 	SeverityValues    []string `json:"severityValues"`
 	DispositionValues []string `json:"dispositionValues"`
 	PoamsValues       []string `json:"poamsValues"`
 	Aliases           []struct {
-		Field    string `json:"field"`
-		Spelling string `json:"spelling"`
-		Means    string `json:"means"`
+		Field string `json:"field"`
+		Form  string `json:"form"`
+		Means string `json:"means"`
 	} `json:"aliases"`
 	Rejected []struct {
-		Field    string `json:"field"`
-		Spelling string `json:"spelling"`
+		Field string `json:"field"`
+		Form  string `json:"form"`
 	} `json:"rejected"`
 }
 
@@ -86,18 +86,19 @@ func TestFilterVocabulariesMatchTheSharedTable(t *testing.T) {
 	}
 }
 
-// An alias is a spelling that arrived under two names historically. Normalizing
-// in the ENGINE rather than in one caller is what makes a threshold rule and an
-// hdf query invocation mean the same thing.
+// An alias is a form a value arrived under historically — a separator variant
+// for the statuses, a former name for the informational severity. Normalizing in
+// the ENGINE rather than in one caller is what makes a threshold rule and an hdf
+// query invocation mean the same thing.
 func TestFilterAliasesNormalizeToTheirCanonicalValue(t *testing.T) {
 	table := loadVocabulary(t)
 	for _, alias := range table.Aliases {
-		t.Run(alias.Field+"/"+alias.Spelling, func(t *testing.T) {
+		t.Run(alias.Field+"/"+alias.Form, func(t *testing.T) {
 			valid := validatorFor(alias.Field)
 			require.NotNil(t, valid)
-			assert.True(t, valid(alias.Spelling), "an accepted alias must validate")
-			assert.Equal(t, alias.Means, NormalizeFilterValue(alias.Field, alias.Spelling),
-				"%q must normalize onto the value it names", alias.Spelling)
+			assert.True(t, valid(alias.Form), "an accepted alias must validate")
+			assert.Equal(t, alias.Means, NormalizeFilterValue(alias.Field, alias.Form),
+				"%q must normalize onto the value it names", alias.Form)
 		})
 	}
 }
@@ -107,23 +108,23 @@ func TestFilterAliasesNormalizeToTheirCanonicalValue(t *testing.T) {
 func TestFilterRejectsValuesOutsideTheVocabulary(t *testing.T) {
 	table := loadVocabulary(t)
 	for _, bad := range table.Rejected {
-		t.Run(bad.Field+"/"+bad.Spelling, func(t *testing.T) {
+		t.Run(bad.Field+"/"+bad.Form, func(t *testing.T) {
 			valid := validatorFor(bad.Field)
 			require.NotNil(t, valid)
-			assert.False(t, valid(bad.Spelling), "%q must be refused", bad.Spelling)
+			assert.False(t, valid(bad.Form), "%q must be refused", bad.Form)
 		})
 	}
 }
 
 // The point of normalizing is not that a validator accepts an alias but that the
 // FILTER selects the same requirements for it. A rule written with the schema
-// spelling and an `hdf query` written with the CLI's must answer identically, or
+// vocabulary and an `hdf query` written with the CLI's must answer identically, or
 // ji20j's "prototype with query, paste into a spec" promise is false.
 func TestFilterAliasesSelectTheSameRequirements(t *testing.T) {
 	table := loadVocabulary(t)
 	results := loadQueryFixture(t)
 	// Returns canonical schema values, which is what the threshold path's
-	// resolver produces; the CLI's display vocabulary is the other spelling the
+	// resolver produces; the CLI's display vocabulary is the other form the
 	// aliases exist to reconcile.
 	schemaStatus := func(c hdf.EvaluatedRequirement) string {
 		if len(c.Results) == 0 {
@@ -137,29 +138,29 @@ func TestFilterAliasesSelectTheSameRequirements(t *testing.T) {
 	amendments := loadAmendmentCases(t).Fixture
 
 	for _, alias := range table.Aliases {
-		t.Run(alias.Field+"/"+alias.Spelling, func(t *testing.T) {
+		t.Run(alias.Field+"/"+alias.Form, func(t *testing.T) {
 			subject := results
 			aliasOpts := Options{StatusOf: schemaStatus}
 			canonOpts := Options{StatusOf: schemaStatus}
 			switch alias.Field {
 			case "status":
-				aliasOpts.Status = []string{alias.Spelling}
+				aliasOpts.Status = []string{alias.Form}
 				canonOpts.Status = []string{alias.Means}
 			case "severity":
-				aliasOpts.Severity = []string{alias.Spelling}
+				aliasOpts.Severity = []string{alias.Form}
 				canonOpts.Severity = []string{alias.Means}
 			case "disposition":
 				subject = amendments
-				aliasOpts.Disposition = []string{alias.Spelling}
+				aliasOpts.Disposition = []string{alias.Form}
 				canonOpts.Disposition = []string{alias.Means}
 			default:
 				t.Skipf("no filter-selection shape for field %q", alias.Field)
 			}
 			canon := ids(Filter(context.Background(), subject, canonOpts))
 			require.NotEmpty(t, canon,
-				"the canonical spelling must select something, or this proves nothing")
+				"the canonical form must select something, or this proves nothing")
 			assert.Equal(t, canon, ids(Filter(context.Background(), subject, aliasOpts)),
-				"%q must select exactly what %q selects", alias.Spelling, alias.Means)
+				"%q must select exactly what %q selects", alias.Form, alias.Means)
 		})
 	}
 }

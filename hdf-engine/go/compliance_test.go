@@ -67,7 +67,7 @@ func TestCompliance_CountsAndPercentage(t *testing.T) {
 	assert.Equal(t, 1, counts.Skipped.Total)
 	assert.Equal(t, 1, counts.Skipped.Low)
 	assert.Equal(t, 1, counts.Error.Total)
-	// Was counts.Error.None before the two spellings were unified.
+	// Was counts.Error.None before 3.7.0 renamed the bucket.
 	assert.Equal(t, 1, counts.Error.Informational)
 	assert.Equal(t, 1, counts.NoImpact.Total)
 	assert.Equal(t, 1, counts.NoImpact.Medium)
@@ -261,7 +261,7 @@ func TestAddCount_SeverityOutsideTheEnumCountsAsInformational(t *testing.T) {
 	assert.Equal(t, 1, counts.Failed.Total)
 }
 
-// A spec naming both spellings of one bucket is refused rather than silently
+// A spec naming one bucket under both its names is refused rather than silently
 // resolved, so a bound the author wrote is never dropped.
 func TestValidateThresholds_BothNoneAndInformationalIsRefused(t *testing.T) {
 	two := 2
@@ -270,12 +270,14 @@ func TestValidateThresholds_BothNoneAndInformationalIsRefused(t *testing.T) {
 		None:          &ThresholdBound{Max: &two},
 	}}
 	violations := ValidateThresholds(config, &StatusCounts{}, 100, nil)
-	require.NotEmpty(t, violations)
-	assert.Contains(t, violations[0], "pre-3.7 spelling")
+	require.Len(t, violations, 1)
+	// Pinned exactly, and to the same bytes the TypeScript peer pins, so the two
+	// surfaces cannot drift on wording a user reads.
+	assert.Equal(t, "no_impact: both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket", violations[0])
 }
 
-// The legacy spelling resolves to the same bucket it always meant, and the
-// violation names the spelling the author wrote: a spec that says none must not
+// The former name resolves to the same bucket it always meant, and the
+// violation names the key the author wrote: a spec that says none must not
 // send its author hunting for an informational key that is not in their file.
 func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 	zero := 0
@@ -288,7 +290,7 @@ func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 	require.Len(t, violations, 1, "the legacy bound must still be applied")
 	assert.Equal(t, "no_impact.none: 3 exceeds maximum 0", violations[0])
 
-	// The canonical spelling still reports under its own name: only a bound the
+	// The current name still reports under itself: only a bound the
 	// author wrote as none is renamed back.
 	canonical := &ThresholdConfig{NoImpact: &ThresholdSeverity{Informational: &ThresholdBound{Max: &zero}}}
 	violations = ValidateThresholds(canonical, &counts, 100, nil)
@@ -304,7 +306,7 @@ func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 
 // A validate pass must not rewrite the spec it was handed. It folded the legacy
 // key into the canonical one in place, so the SAME config object reported the
-// author's spelling on the first call and the canonical one on every call after
+// author's key on the first call and the canonical one on every call after
 // — the exact confusion naming the author's key exists to remove.
 func TestValidateThresholds_LegacyNoneSurvivesConfigReuse(t *testing.T) {
 	zero := 0

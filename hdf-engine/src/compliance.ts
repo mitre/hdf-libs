@@ -16,8 +16,9 @@ export const THRESHOLD_ERROR = 'error';
 export const THRESHOLD_NO_IMPACT = 'no_impact';
 
 /**
- * The pre-3.7 spelling of the informational severity bucket. Accepted on input
- * and echoed back in violations written with it, never emitted by generate.
+ * The name the informational severity bucket had before 3.7.0 renamed it.
+ * Accepted on input and echoed back in violations written with it, never
+ * emitted by generate.
  */
 const LEGACY_INFORMATIONAL_KEY = 'none';
 
@@ -64,7 +65,7 @@ export interface ThresholdSeverity {
   medium?: ThresholdBound;
   low?: ThresholdBound;
   informational?: ThresholdBound;
-  /** Pre-3.7 spelling of `informational`, normalized on read and never written. */
+  /** The name `informational` replaced in 3.7.0; resolved on read, never written. */
   none?: ThresholdBound;
   total?: ThresholdBound;
 }
@@ -333,7 +334,7 @@ export function calculateCompliance(counts: StatusCounts): number {
 }
 
 /**
-/** One status category of a spec after the legacy spelling has been resolved. */
+/** One status category of a spec after the former severity name has been resolved. */
 interface ResolvedSection {
   name: string;
   threshold: ThresholdSeverity | undefined;
@@ -345,11 +346,12 @@ interface ResolvedSection {
  * resolveLegacySeverity folds a section's pre-3.7 `none` key into
  * `informational`, reporting whether the bound was written that way so a
  * violation can name the key the author will find in their own file. A spec
- * setting both is refused rather than resolved: the two name one bucket, so
- * silently honouring one would drop a bound the author wrote.
+ * setting both is refused rather than resolved: 3.7.0 renamed the bucket, so the
+ * two name one thing and silently honouring one would drop a bound the author
+ * wrote.
  *
  * The caller's section is COPIED, never rewritten. Folding in place made the
- * spelling a one-shot property of the config object: the same spec reported the
+ * name a one-shot property of the config object: the same spec reported the
  * author's key on its first validate pass and the canonical one on every pass
  * after, which is the confusion naming the author's key exists to remove.
  * Parity: resolveLegacySeverity in go/compliance.go.
@@ -365,7 +367,7 @@ function resolveLegacySeverity(
     return {
       threshold: ts,
       wroteNone: false,
-      refusal: `${name}: both 'none' and 'informational' are set; 'none' is the pre-3.7 spelling of the same bucket`,
+      refusal: `${name}: both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket`,
     };
   }
   const resolved: ThresholdSeverity = { ...ts, informational: ts.none };
@@ -420,7 +422,7 @@ export function validateGrid(
 ): string[] {
   const violations: string[] = [];
 
-  // Every construction path lands here, so the legacy spelling is resolved once
+  // Every construction path lands here, so the former name is resolved once
   // rather than in each caller. Resolved before the compliance bounds so a
   // refusal is reported ahead of them.
   const sections: ResolvedSection[] = [
@@ -472,7 +474,7 @@ function checkSeverityThreshold(
   if (!threshold) {
     return [];
   }
-  // The path names the spelling the author wrote; the comparison below keeps the
+  // The path names the key the author wrote; the comparison below keeps the
   // canonical bucket name, because informational is where the control was
   // actually counted. Reporting `expected no_impact/none` would name a bucket
   // that does not exist.

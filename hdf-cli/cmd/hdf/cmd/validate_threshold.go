@@ -436,7 +436,7 @@ func getOrCreateStatusSeverity(config *ThresholdConfig, status string) *Threshol
 }
 
 // knownSeverityFields is the severity vocabulary a threshold path may name: the
-// schema's severity enum, plus "none" as the pre-3.7 spelling of informational.
+// schema's severity enum, plus "none", the name informational replaced in 3.7.0.
 // getSeverityBound (generate_threshold.go) maps anything else to informational
 // on purpose, so the inline path checks membership here before calling it.
 var knownSeverityFields = []string{"critical", "high", "medium", "low", "informational", "none"}

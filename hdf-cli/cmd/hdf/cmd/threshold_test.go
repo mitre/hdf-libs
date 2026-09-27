@@ -938,15 +938,15 @@ func TestValidateThreshold_LegacyNoneKeyIsAcceptedAsInformational(t *testing.T) 
 	_, _, err = executeCommand("validate", "threshold", resultsPath, "-I", "{no_impact.none.max: 1}")
 	require.Error(t, err, "the legacy bound must be applied, not merely parsed")
 	assert.Contains(t, err.Error(), "no_impact.none: 2 exceeds maximum 1",
-		"the violation must name the spelling the author wrote")
+		"the violation must name the key the author wrote")
 	assert.NotContains(t, err.Error(), "no_impact.informational",
 		"a key the author never wrote must not appear in their violation")
 }
 
-// The inline path must route the legacy spelling to the legacy field, not fold
-// it early — otherwise a spec naming both writes them to one pointer and the
-// second silently overwrites the first instead of being refused.
-func TestValidateThreshold_InlineBothSpellingsIsRefused(t *testing.T) {
+// The inline path must route the former name to the legacy field, not fold it
+// early — otherwise a spec naming the bucket twice writes both to one pointer
+// and the second silently overwrites the first instead of being refused.
+func TestValidateThreshold_InlineBothNamesIsRefused(t *testing.T) {
 	dir := t.TempDir()
 	resultsPath := filepath.Join(dir, "results.json")
 	require.NoError(t, os.WriteFile(resultsPath, []byte(testResultsEverySchemaSeverity), 0o644))
@@ -954,7 +954,7 @@ func TestValidateThreshold_InlineBothSpellingsIsRefused(t *testing.T) {
 	_, _, err := executeCommand("validate", "threshold", resultsPath,
 		"-I", "{no_impact.none.max: 1}, {no_impact.informational.max: 2}")
 	require.Error(t, err, "a spec naming one bucket twice must be refused, not silently resolved")
-	assert.Contains(t, err.Error(), "pre-3.7 spelling")
+	assert.Contains(t, err.Error(), "no_impact: both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket")
 }
 
 // A dotted path with junk appended used to be accepted and acted on by its
@@ -1209,17 +1209,17 @@ func TestValidateThreshold_FailFastDoesNotStopAtTheFirstFailingSpec(t *testing.T
 	assert.Contains(t, stderr, "2 threshold violations")
 }
 
-// The legacy `none` spelling is normalized per document, so two policies in one
-// file may each use a different spelling. Setting both in ONE policy is still
-// refused; that is a collision, this is not.
-func TestValidateThreshold_SpellingsDoNotCollideAcrossDocuments(t *testing.T) {
+// The former `none` name resolves per policy, so two policies in one file may
+// each name the bucket differently. Setting both in ONE policy is still refused;
+// that is a collision, this is not.
+func TestValidateThreshold_BothNamesDoNotCollideAcrossDocuments(t *testing.T) {
 	dir := t.TempDir()
 	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
-	spellings := writeResultsAt(t, dir, "spellings.yaml",
+	policies := writeResultsAt(t, dir, "policies.yaml",
 		"no_impact:\n  none:\n    max: 1\n---\nno_impact:\n  informational:\n    max: 1\n")
 
-	stdout, _, err := executeCommand("validate", "threshold", results, "-T", spellings)
-	require.NoError(t, err, "each document normalizes on its own; only one policy naming both spellings collides")
+	stdout, _, err := executeCommand("validate", "threshold", results, "-T", policies)
+	require.NoError(t, err, "each policy resolves on its own; only one policy naming the bucket twice collides")
 	assert.Contains(t, stdout, "passed all 2 thresholds")
 }
 

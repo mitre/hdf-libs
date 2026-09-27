@@ -28,12 +28,17 @@ var SeverityValues = []string{
 	string(hdf.Informational),
 }
 
-// The spellings a value has legitimately arrived under, enumerated rather than
-// derived. An earlier version stripped separators to fold spellings together,
-// which also silently repaired typos: "wai-ver" became "waiver" and
-// "not-app-licable" became "notApplicable". A closed vocabulary that quietly
-// corrects a misspelling is not closed — every accepted spelling is listed here,
-// so accepting one is a decision somebody made rather than a side effect.
+// The forms a value has legitimately arrived under, enumerated rather than
+// derived. An earlier version stripped separators to fold them together, which
+// also silently repaired typos: "wai-ver" became "waiver" and "not-app-licable"
+// became "notApplicable". A closed vocabulary that quietly corrects a
+// misspelling is not closed — every accepted form is listed here, so accepting
+// one is a decision somebody made rather than a side effect.
+//
+// The status and disposition entries are separator variants of one name. The
+// severity entry is not: 3.7.0 renamed the bucket, and "none" is the name it had
+// before, kept so a command line or spec written against the old vocabulary
+// selects what it always did.
 var (
 	statusAliases = map[string]string{
 		"not_applicable": string(hdf.NotApplicable),
@@ -66,16 +71,16 @@ func canonical(vocabulary []string, aliases map[string]string, value string) str
 	return ""
 }
 
-// ValidStatus reports whether s names a status the filter understands, under any
-// accepted spelling. Callers validate with this and reject, rather than letting a
+// ValidStatus reports whether s names a status the filter understands, in any
+// accepted form. Callers validate with this and reject, rather than letting a
 // typo match nothing and report a passing gate.
 func ValidStatus(s string) bool { return canonical(StatusValues, statusAliases, s) != "" }
 
-// ValidSeverity reports whether s names a severity the filter understands, under
-// any accepted spelling.
+// ValidSeverity reports whether s names a severity the filter understands, in
+// any accepted form.
 func ValidSeverity(s string) bool { return canonical(SeverityValues, severityAliases, s) != "" }
 
-// NormalizeFilterValue returns the canonical spelling of a filter value for the
+// NormalizeFilterValue returns the canonical form of a filter value for the
 // named field, or the value unchanged when the field has no closed vocabulary or
 // the value names no member. Normalizing here rather than in one caller is what
 // makes a threshold rule and an `hdf query` invocation mean the same thing.

@@ -102,7 +102,7 @@ describe('compliance counts + percentage — parity with go/compliance_test.go',
     expect(counts.skipped.total).toBe(1);
     expect(counts.skipped.low).toBe(1);
     expect(counts.error.total).toBe(1);
-    // Was counts.error.none before the two spellings were unified.
+    // Was counts.error.none before 3.7.0 renamed the bucket.
     expect(counts.error.informational).toBe(1);
     expect(counts.noImpact.total).toBe(1);
     expect(counts.noImpact.medium).toBe(1);
@@ -164,8 +164,8 @@ describe('threshold verdict — parity with go/compliance_test.go TestValidateTh
     expect(validateThresholds({ skipped: { low: { max: 0 } } }, counts, compliance, controlMap)).toEqual([
       'skipped.low: 1 exceeds maximum 0',
     ]);
-    // The legacy `none` spelling still resolves, and reports under the spelling
-    // the author wrote — parity with Go
+    // The former name `none` still resolves, and reports under the key the
+    // author wrote — parity with Go
     // TestValidateThresholds_LegacyNoneNormalizesToInformational.
     expect(validateThresholds({ error: { none: { min: 5 } } }, counts, compliance, controlMap)).toEqual([
       'error.none: 1 is below minimum 5',
@@ -173,14 +173,11 @@ describe('threshold verdict — parity with go/compliance_test.go TestValidateTh
     expect(validateThresholds({ error: { informational: { min: 5 } } }, counts, compliance, controlMap)).toEqual([
       'error.informational: 1 is below minimum 5',
     ]);
+    // The refusal does not skip the section: the informational bound the author
+    // wrote is still checked, so the refusal and its verdict are both reported.
     expect(
-      validateThresholds(
-        { error: { none: { min: 5 }, informational: { min: 5 } } },
-        counts,
-        compliance,
-        controlMap,
-      )[0],
-    ).toContain('pre-3.7 spelling');
+      validateThresholds({ error: { none: { min: 5 }, informational: { min: 5 } } }, counts, compliance, controlMap),
+    ).toEqual([`error: ${BOTH_NAMES_SET}`, 'error.informational: 1 is below minimum 5']);
     expect(validateThresholds({ noImpact: { medium: { max: 0 } } }, counts, compliance, controlMap)).toEqual([
       'no_impact.medium: 1 exceeds maximum 0',
     ]);
@@ -445,6 +442,11 @@ describe('override-aware counting derives severity from effective impact', () =>
   });
 });
 
+// The exact refusal text both languages emit, so the assertions below pin bytes
+// rather than a substring. Mirrors the Go format string in go/compliance.go.
+const BOTH_NAMES_SET =
+  "both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket";
+
 const zeroSeverityCounts = (): SeverityCounts => ({
   critical: 0,
   high: 0,
@@ -452,6 +454,14 @@ const zeroSeverityCounts = (): SeverityCounts => ({
   low: 0,
   informational: 0,
   total: 0,
+});
+
+const zeroStatusCounts = (): StatusCounts => ({
+  passed: zeroSeverityCounts(),
+  failed: zeroSeverityCounts(),
+  skipped: zeroSeverityCounts(),
+  error: zeroSeverityCounts(),
+  noImpact: zeroSeverityCounts(),
 });
 
 // The same hand-built counts Go's legacy-`none` tests use, so the two languages
@@ -464,7 +474,7 @@ const threeInformationalNoImpact = (): StatusCounts => ({
   noImpact: { ...zeroSeverityCounts(), informational: 3, total: 3 },
 });
 
-describe('legacy `none` spelling and severity bucketing — parity with go/compliance_test.go', () => {
+describe('the former `none` name and severity bucketing — parity with go/compliance_test.go', () => {
   const counts = countControlsByStatusSeverity(results);
   const compliance = calculateCompliance(counts);
   const controlMap = mapControlIDs(results);
@@ -484,6 +494,19 @@ describe('legacy `none` spelling and severity bucketing — parity with go/compl
     expect(validateThresholds({ noImpact: { none: { min: 5 } } }, counts, 100, [])).toEqual([
       'no_impact.none: 3 is below minimum 5',
     ]);
+  });
+
+  // Byte-identical to the string Go's
+  // TestValidateThresholds_BothNoneAndInformationalIsRefused pins.
+  it('refuses a spec naming both names with the same bytes as Go', () => {
+    expect(
+      validateThresholds(
+        { noImpact: { none: { max: 2 }, informational: { max: 2 } } },
+        zeroStatusCounts(),
+        100,
+        [],
+      ),
+    ).toEqual([`no_impact: ${BOTH_NAMES_SET}`]);
   });
 
   // Parity: Go TestValidateThresholds_LegacyNoneSurvivesConfigReuse.

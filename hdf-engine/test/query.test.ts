@@ -349,14 +349,14 @@ describe('validPoamFilter', () => {
 
 // The closed vocabularies and their aliases, read from the same file
 // go/vocabulary_test.go reads, so the two languages cannot disagree about a legal
-// value or about which spellings mean the same thing.
+// value or about which forms name the same thing.
 interface VocabularyCases {
   statusValues: string[];
   severityValues: string[];
   dispositionValues: string[];
   poamsValues: string[];
-  aliases: { field: string; spelling: string; means: string }[];
-  rejected: { field: string; spelling: string }[];
+  aliases: { field: string; form: string; means: string }[];
+  rejected: { field: string; form: string }[];
 }
 
 const vocabPath = join(
@@ -401,20 +401,20 @@ describe('filter vocabularies (parity with go/vocabulary.go)', () => {
   it('normalizes every alias onto the value it names', () => {
     expect(vocab.aliases.length).toBeGreaterThan(0);
     for (const alias of vocab.aliases) {
-      expect(validatorFor(alias.field)!(alias.spelling), alias.spelling).toBe(true);
-      expect(normalizeFilterValue(alias.field, alias.spelling)).toBe(alias.means);
+      expect(validatorFor(alias.field)!(alias.form), alias.form).toBe(true);
+      expect(normalizeFilterValue(alias.field, alias.form)).toBe(alias.means);
     }
   });
 
   it('refuses a value outside the vocabulary', () => {
     for (const bad of vocab.rejected) {
-      expect(validatorFor(bad.field)!(bad.spelling), bad.spelling).toBe(false);
+      expect(validatorFor(bad.field)!(bad.form), bad.form).toBe(false);
     }
   });
 
   // The point is not that a validator accepts an alias but that the FILTER
   // selects the same requirements for it.
-  it('an alias selects exactly what its canonical spelling selects', () => {
+  it('an alias selects exactly what its canonical form selects', () => {
     const schemaStatus = (c: EvaluatedRequirement) =>
       c.results && c.results.length > 0 ? String(c.results[0]!.status) : 'notReviewed';
     for (const alias of vocab.aliases) {
@@ -422,11 +422,11 @@ describe('filter vocabularies (parity with go/vocabulary.go)', () => {
       // query fixture has none of; the amendment fixture exists for that.
       const subject = alias.field === 'disposition' ? amendments.fixture : results;
       const aliasIds = ids(
-        filter(subject, { [alias.field]: [alias.spelling], statusOf: schemaStatus })
+        filter(subject, { [alias.field]: [alias.form], statusOf: schemaStatus })
       );
       const canonIds = ids(filter(subject, { [alias.field]: [alias.means], statusOf: schemaStatus }));
       expect(canonIds.length, `${alias.means} must select something`).toBeGreaterThan(0);
-      expect(aliasIds, `${alias.spelling} vs ${alias.means}`).toEqual(canonIds);
+      expect(aliasIds, `${alias.form} vs ${alias.means}`).toEqual(canonIds);
     }
   });
 });
