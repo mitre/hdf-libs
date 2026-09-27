@@ -230,6 +230,13 @@ func findingsToEvaluatedRequirement(
 	nistTags := sarConfirmedNistTags(findings)
 	tags := shared.BuildNISTCCITags(nistTags, cci.NISTToCCI(nistTags))
 
+	// Foreign and otherwise-unconsumed props on this requirement's finding(s),
+	// observations and risks ride through HDF in the reserved oscal-props tag
+	// (ADR-0014 §3) so re-export can reproduce them.
+	if carried := sarCarriedProps(findings, obsMap, riskMap); len(carried) > 0 {
+		tags[OscalPropsTag] = carried
+	}
+
 	return hdf.EvaluatedRequirement{
 		ID:           id,
 		Title:        hdfutil.Ptr(title),
@@ -294,6 +301,42 @@ func sarConfirmedNistTags(findings []*Finding) []string {
 		}
 	}
 	return ControlIDsToNistTags(controlIDs)
+}
+
+// sarCarriedProps collects the carriage entries for a requirement (ADR-0014
+// §3.1): every unconsumed prop on its finding(s), then on their related
+// observations, then on their related risks. Observations and risks are read
+// once each (deduplicated by UUID) even when several findings reference them.
+func sarCarriedProps(findings []*Finding, obsMap map[string]*Observation, riskMap map[string]*Risk) []CarriedProp {
+	var entries []CarriedProp
+	for _, f := range findings {
+		entries = CarryForeignProps(entries, "finding", f.Props)
+	}
+	seenObs := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedObservations {
+			if seenObs[ref.ObservationUUID] {
+				continue
+			}
+			seenObs[ref.ObservationUUID] = true
+			if obs, ok := obsMap[ref.ObservationUUID]; ok {
+				entries = CarryForeignProps(entries, "observation", obs.Props)
+			}
+		}
+	}
+	seenRisk := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedRisks {
+			if seenRisk[ref.RiskUUID] {
+				continue
+			}
+			seenRisk[ref.RiskUUID] = true
+			if risk, ok := riskMap[ref.RiskUUID]; ok {
+				entries = CarryForeignProps(entries, "risk", risk.Props)
+			}
+		}
+	}
+	return entries
 }
 
 // mapFindingStatus maps a finding's target status to an HDF ResultStatus.

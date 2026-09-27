@@ -42,6 +42,7 @@ import {
   descriptionLabel,
 } from './shared.js';
 import { findVocabularyProp } from './vocabulary.js';
+import { OSCAL_PROPS_TAG, carryForeignProps, type CarriedProp } from './carriage.js';
 
 /**
  * Converts an OSCAL Assessment Results (SAR) document to HDF Results JSON.
@@ -227,6 +228,12 @@ function findingsToEvaluatedRequirement(
   const nistTags = sarConfirmedNistTags(findings);
   const tags: Record<string, unknown> = buildNistCciTags(nistTags, nistToCci(nistTags));
 
+  // Foreign and otherwise-unconsumed props on this requirement's finding(s),
+  // observations and risks ride through HDF in the reserved oscal-props tag
+  // (ADR-0014 §3) so re-export can reproduce them.
+  const carried = sarCarriedProps(findings, obsMap, riskMap);
+  if (carried.length > 0) tags[OSCAL_PROPS_TAG] = carried;
+
   const req = createRequirement(id, title, descriptions, impact, results, {
     tags,
     ...(refs ? { refs } : {}),
@@ -274,6 +281,42 @@ function sarConfirmedNistTags(findings: Finding[]): string[] {
     if (controlId !== undefined) controlIds.push(controlId);
   }
   return controlIdsToNistTags(controlIds);
+}
+
+/**
+ * Collects the carriage entries for a requirement (ADR-0014 §3.1): every
+ * unconsumed prop on its finding(s), then on their related observations, then on
+ * their related risks. Observations and risks are read once each (deduplicated
+ * by UUID). Mirrors Go's sarCarriedProps.
+ */
+function sarCarriedProps(
+  findings: Finding[],
+  obsMap: Map<string, Observation>,
+  riskMap: Map<string, IdentifiedRisk>,
+): CarriedProp[] {
+  const entries: CarriedProp[] = [];
+  for (const f of findings) carryForeignProps(entries, 'finding', f.props);
+  const seenObs = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-observations'] ?? []) {
+      const uuid = ref['observation-uuid'];
+      if (!uuid || seenObs.has(uuid)) continue;
+      seenObs.add(uuid);
+      const obs = obsMap.get(uuid);
+      if (obs) carryForeignProps(entries, 'observation', obs.props);
+    }
+  }
+  const seenRisk = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-risks'] ?? []) {
+      const uuid = ref['risk-uuid'];
+      if (!uuid || seenRisk.has(uuid)) continue;
+      seenRisk.add(uuid);
+      const risk = riskMap.get(uuid);
+      if (risk) carryForeignProps(entries, 'risk', risk.props);
+    }
+  }
+  return entries;
 }
 
 function mapFindingStatus(f: Finding): ResultStatus {

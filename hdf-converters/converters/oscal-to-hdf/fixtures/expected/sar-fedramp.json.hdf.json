@@ -143,6 +143,32 @@
           "tags": {
             "nist": [
               "CM-2 (1)"
+            ],
+            "oscal-props": [
+              {
+                "on": "risk",
+                "name": "priority",
+                "value": "1",
+                "ns": "https://fedramp.gov/ns/oscal"
+              },
+              {
+                "on": "risk",
+                "name": "operational-requirement",
+                "value": "approved",
+                "ns": "https://fedramp.gov/ns/oscal"
+              },
+              {
+                "on": "risk",
+                "name": "false-positive",
+                "value": "withdrawn",
+                "ns": "https://fedramp.gov/ns/oscal"
+              },
+              {
+                "on": "risk",
+                "name": "risk-adjustment",
+                "value": "approved",
+                "ns": "https://fedramp.gov/ns/oscal"
+              }
             ]
           },
           "controlType": "operational",
@@ -213,6 +239,14 @@
           "tags": {
             "nist": [
               "CA-8 (1)"
+            ],
+            "oscal-props": [
+              {
+                "on": "risk",
+                "name": "priority",
+                "value": "2",
+                "ns": "https://fedramp.gov/ns/oscal"
+              }
             ]
           },
           "controlType": "management",

@@ -34,6 +34,7 @@ import {
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
 import { pushVocabularyProp, vocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import { appendCarriedProps, carriedFor, readCarriedProps } from '../../oscal-to-hdf/typescript/carriage.js';
 
 /** A reviewed-controls include-controls entry. */
 interface SelectControl {
@@ -452,6 +453,11 @@ function requirementToFindingSet(
     if (typeof er.href === 'string' && er.href !== '') links.push({ href: er.href, rel: 'reference' });
   }
 
+  // Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
+  // finding's own props, deduped, in carried order.
+  const carried = readCarriedProps(req.tags);
+  appendCarriedProps(props, carriedFor(carried, 'finding'));
+
   let title = req.id;
   if (req.title && req.title !== '') {
     title = req.title;
@@ -511,6 +517,7 @@ function requirementToFindingSet(
     const obsUUID = crypto.randomUUID();
     const obsDesc = buildObservationDescription(results);
     const relevantEvidence = buildRelevantEvidence(req);
+    const obsProps = appendCarriedProps([], carriedFor(carried, 'observation'));
     observation = {
       uuid: obsUUID,
       description: obsDesc,
@@ -523,6 +530,8 @@ function requirementToFindingSet(
       // reads back. Match Go's omitempty: empty arrays are omitted.
       ...(subjects.length > 0 ? { subjects } : {}),
       ...(relevantEvidence.length > 0 ? { 'relevant-evidence': relevantEvidence } : {}),
+      // Carried observation props (ADR-0014 §3.4); the observation has no own props.
+      ...(obsProps.length > 0 ? { props: obsProps } : {}),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
   } else {
@@ -543,6 +552,7 @@ function requirementToFindingSet(
     }
     const remediations = buildRemediations(req);
     const deadline = riskDeadline(req);
+    const riskProps = appendCarriedProps([], carriedFor(carried, 'risk'));
     risk = {
       uuid: riskUUID,
       title: `Risk for ${req.id}`,
@@ -569,6 +579,8 @@ function requirementToFindingSet(
       // Match Go's omitempty: empty remediations / deadline are omitted.
       ...(remediations.length > 0 ? { remediations } : {}),
       ...(deadline ? { deadline } : {}),
+      // Carried risk props (ADR-0014 §3.4); the risk has no own props.
+      ...(riskProps.length > 0 ? { props: riskProps } : {}),
     } as unknown as IdentifiedRisk;
     finding['related-risks'] = [{ 'risk-uuid': riskUUID }];
   }

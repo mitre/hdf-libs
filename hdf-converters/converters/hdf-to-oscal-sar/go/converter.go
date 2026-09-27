@@ -474,6 +474,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		links = append(links, oscal.Link{Href: "#" + codeResource.UUID, Rel: "code"})
 	}
 
+	// Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
+	// finding's own props, deduped, in carried order.
+	carried := oscal.ReadCarriedProps(req.Tags)
+	props = oscal.AppendCarriedProps(props, oscal.CarriedFor(carried, "finding"))
+
 	// OSCAL requires a non-empty finding description; fall back to the title
 	// when the requirement carries no description of its own.
 	if findingDesc == "" {
@@ -518,6 +523,9 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 			// reads back.
 			Subjects:         subjects,
 			RelevantEvidence: buildRelevantEvidence(req),
+			// Carried observation props (ADR-0014 §3.4); the observation has no
+			// own props, so these are all it carries.
+			Props: oscal.AppendCarriedProps(nil, oscal.CarriedFor(carried, "observation")),
 		}
 		finding.RelatedObservations = []oscal.RelatedRef{
 			{ObservationUUID: obsUUID},
@@ -567,6 +575,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 			},
 			Remediations: buildRemediations(req),
 			Deadline:     riskDeadline(req),
+			// Carried risk props (ADR-0014 §3.4); the risk has no own props.
+			Props: oscal.AppendCarriedProps(nil, oscal.CarriedFor(carried, "risk")),
 		}
 		finding.RelatedRisks = []oscal.RelatedRef{
 			{RiskUUID: riskUUID},
