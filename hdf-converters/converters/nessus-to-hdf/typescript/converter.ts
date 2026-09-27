@@ -111,16 +111,6 @@ const NESSUS_ALIASES: Record<string, number> = {
 /**
  * Strip HTML tags from a string
  */
-/**
- * Substitutes the shared remediation fallback when a lookup resolved nothing, so
- * the CCI path and the plugin-family path behave alike. A finding the mapping
- * tables do not cover is still a flaw to remediate, and an empty nist tag would
- * drop it from every NIST-based view.
- */
-function orDefaultNist(controls: string[]): string[] {
-  return controls.length > 0 ? controls : [...DEFAULT_REMEDIATION_NIST_TAGS];
-}
-
 function parseHtml(html: string): string {
   return replaceHtmlTags(html, '').trim();
 }
@@ -544,6 +534,16 @@ function calculateImpact(item: ReportItem, isCompliance: boolean): number {
   }
 
   return severityToImpactWithAliases(item['severity'], NESSUS_ALIASES, 0.0);
+}
+
+/**
+ * Substitutes the shared remediation fallback when a lookup resolved nothing, so
+ * the CCI path and the plugin-family path behave alike. A finding the mapping
+ * tables do not cover is still a flaw to remediate, and an empty nist tag would
+ * drop it from every NIST-based view.
+ */
+function orDefaultNist(controls: string[]): string[] {
+  return controls.length > 0 ? controls : [...DEFAULT_REMEDIATION_NIST_TAGS];
 }
 
 function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unknown> {
