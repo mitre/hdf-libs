@@ -942,3 +942,65 @@ func TestMapFindingStatus(t *testing.T) {
 		})
 	}
 }
+
+// The SAR importer reconstitutes every top-level component from the assessment
+// subjects, with type-specific identity fields read back from the
+// HDF-namespaced props the exporter stamps on each subject (ADR-0014 §1.5).
+func TestConvertAssessmentResultsToHDF_ReconstitutesAllComponents(t *testing.T) {
+	obs := `[{"uuid":"o1","description":"d","collected":"2026-01-01T00:00:00Z","subjects":[
+		{"subject-uuid":"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"host","title":"web01","props":[
+			{"name":"component-os-name","ns":"` + hdfNS + `","value":"Ubuntu"},
+			{"name":"component-os-version","ns":"` + hdfNS + `","value":"22.04 LTS"},
+			{"name":"component-label-key","ns":"` + hdfNS + `","value":"environment","group":"component-label-1"},
+			{"name":"component-label-value","ns":"` + hdfNS + `","value":"production","group":"component-label-1"}]},
+		{"subject-uuid":"c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"cloudAccount","title":"Prod AWS","props":[
+			{"name":"component-account-id","ns":"` + hdfNS + `","value":"123456789012"},
+			{"name":"component-region","ns":"` + hdfNS + `","value":"us-east-1"},
+			{"name":"component-provider","ns":"` + hdfNS + `","value":"aws"},
+			{"name":"component-label-key","ns":"` + hdfNS + `","value":"boundary","group":"component-label-1"},
+			{"name":"component-label-value","ns":"` + hdfNS + `","value":"prod-authorization-boundary","group":"component-label-1"}]}]}]`
+	finding := `[{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},"related-observations":[{"observation-uuid":"o1"}]}]`
+
+	results, err := ConvertAssessmentResultsToHDF(sarWithProse(finding, obs, `[]`), "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Components, 2, "importer must reconstitute every component from the SAR subjects")
+
+	byName := make(map[string]hdf.Component, len(results.Components))
+	for _, c := range results.Components {
+		byName[c.Name] = c
+	}
+
+	host, ok := byName["web01"]
+	require.True(t, ok)
+	assert.Equal(t, hdf.Host, host.Type)
+	require.NotNil(t, host.ComponentID)
+	assert.Equal(t, "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", *host.ComponentID)
+	require.NotNil(t, host.OSName)
+	assert.Equal(t, "Ubuntu", *host.OSName)
+	require.NotNil(t, host.OSVersion)
+	assert.Equal(t, "22.04 LTS", *host.OSVersion)
+	assert.Equal(t, "production", host.Labels["environment"])
+
+	acct, ok := byName["Prod AWS"]
+	require.True(t, ok)
+	assert.Equal(t, hdf.CloudAccount, acct.Type)
+	require.NotNil(t, acct.AccountID)
+	assert.Equal(t, "123456789012", *acct.AccountID)
+	require.NotNil(t, acct.Provider)
+	assert.Equal(t, hdf.CloudProvider("aws"), *acct.Provider)
+	assert.Equal(t, "prod-authorization-boundary", acct.Labels["boundary"])
+}
+
+// A subject whose type is not an HDF component type (a foreign SAR's
+// "inventory-item", "party", etc.) is not turned into a component, so foreign
+// documents keep importing without gaining invalid components.
+func TestConvertAssessmentResultsToHDF_SkipsNonComponentSubjects(t *testing.T) {
+	obs := `[{"uuid":"o1","description":"d","collected":"2026-01-01T00:00:00Z","subjects":[
+		{"subject-uuid":"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"inventory-item","title":"asset"},
+		{"subject-uuid":"b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"party","title":"person"}]}]`
+	finding := `[{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},"related-observations":[{"observation-uuid":"o1"}]}]`
+
+	results, err := ConvertAssessmentResultsToHDF(sarWithProse(finding, obs, `[]`), "1.0.0")
+	require.NoError(t, err)
+	assert.Empty(t, results.Components)
+}

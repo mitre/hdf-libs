@@ -33,7 +33,7 @@ import {
   descriptionLabelProp,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
-import { pushVocabularyProp, vocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import { emptyFieldProp, pushVocabularyProp, vocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
 import { appendCarriedProps, carriedFor, readCarriedProps } from '../../oscal-to-hdf/typescript/carriage.js';
 
 /** A reviewed-controls include-controls entry. */
@@ -338,13 +338,19 @@ interface SubjectRef {
   'subject-uuid': string;
   type: string;
   title: string;
+  props?: Property[];
 }
+
+/** One top-level HDF component. */
+type HDFComponent = NonNullable<HDFResults['components']>[number];
 
 /**
  * Turns the top-level HDF components[] into OSCAL assessment subjects. Each
  * component's UUID (componentId when present, otherwise a fresh one) identifies
  * the subject; the HDF component type is a valid OSCAL subject type token and
- * its name becomes the subject title.
+ * its name becomes the subject title. A subject holds only uuid/type/title, so
+ * each component's type-specific identity fields ride as HDF-namespaced props on
+ * the subject (ADR-0014 §1.5) and reconstitute on read-back.
  *
  * A component with no type is skipped rather than given one. OSCAL requires both
  * subject-uuid and type on a subject-reference, so the type cannot simply be
@@ -355,13 +361,126 @@ interface SubjectRef {
  */
 function buildSubjects(components: HDFResults['components']): SubjectRef[] {
   if (!Array.isArray(components) || components.length === 0) return [];
-  return components
-    .filter((c) => oscalString(c.type ?? '') !== '')
-    .map((c) => ({
+  const subjects: SubjectRef[] = [];
+  for (const c of components) {
+    if (oscalString(c.type ?? '') === '') continue;
+    const subject: SubjectRef = {
       'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
       type: String(c.type),
       title: c.name,
-    }));
+    };
+    const props = componentSubjectProps(c);
+    if (props.length > 0) subject.props = props;
+    subjects.push(subject);
+    warnUncarriedComponentFields(c);
+  }
+  return subjects;
+}
+
+/**
+ * Carries a component's identity fields as HDF-namespaced props on its
+ * assessment subject. A present-but-empty optional string is carried by an
+ * empty-field marker (§1.7.3); an absent field emits nothing. Mirrors the Go peer.
+ */
+function componentSubjectProps(c: HDFComponent): Property[] {
+  const props: Property[] = [];
+  const emit = (name: string, field: string, val: string | undefined): void => {
+    if (val === undefined) return;
+    if (val === '') {
+      props.push(emptyFieldProp(field));
+      return;
+    }
+    pushVocabularyProp(props, name, val);
+  };
+  emit('component-description', 'description', c.description);
+  emit('component-hostname', 'hostname', c.hostname);
+  emit('component-fqdn', 'fqdn', c.fqdn);
+  emit('component-domain', 'domain', c.domain);
+  emit('component-ip-address', 'ipAddress', c.ipAddress);
+  emit('component-mac-address', 'macAddress', c.macAddress);
+  emit('component-os-name', 'osName', c.osName);
+  emit('component-os-version', 'osVersion', c.osVersion);
+  emit('component-image-id', 'imageId', c.imageId);
+  emit('component-registry', 'registry', c.registry);
+  emit('component-repository', 'repository', c.repository);
+  emit('component-tag', 'tag', c.tag);
+  emit('component-container-id', 'containerId', c.containerId);
+  emit('component-image', 'image', c.image);
+  emit('component-runtime', 'runtime', c.runtime);
+  emit('component-platform-type', 'platformType', c.platformType);
+  emit('component-cluster-name', 'clusterName', c.clusterName);
+  emit('component-namespace', 'namespace', c.namespace);
+  emit('component-version', 'version', c.version);
+  emit('component-provider', 'provider', c.provider ?? undefined);
+  emit('component-account-id', 'accountId', c.accountId);
+  emit('component-region', 'region', c.region);
+  emit('component-resource-type', 'resourceType', c.resourceType);
+  emit('component-resource-id', 'resourceId', c.resourceId);
+  emit('component-arn', 'arn', c.arn);
+  emit('component-url', 'url', c.url);
+  emit('component-branch', 'branch', c.branch);
+  emit('component-commit', 'commit', c.commit);
+  emit('component-environment', 'environment', c.environment);
+  emit('component-package-manager', 'packageManager', c.packageManager);
+  emit('component-package-name', 'packageName', c.packageName);
+  emit('component-cidr', 'cidr', c.cidr);
+  emit('component-gateway', 'gateway', c.gateway);
+  emit('component-engine', 'engine', c.engine);
+  emit('component-host', 'host', c.host);
+  if (c.port !== undefined) pushVocabularyProp(props, 'component-port', String(c.port));
+  emit('component-model-id', 'modelId', c.modelId);
+  emit('component-dataset-id', 'datasetId', c.datasetId);
+  appendComponentMap(props, 'component-label-key', 'component-label-value', 'component-label', c.labels);
+  appendComponentMap(props, 'component-external-id-key', 'component-external-id-value', 'component-external-id', c.externalIds);
+  return props;
+}
+
+/**
+ * Carries a component's string map (labels or externalIds) as grouped key/value
+ * props in sorted key order, one group per entry. An empty key or value is
+ * carried by an empty-field marker in the same group (§1.7.3). Mirrors the Go peer.
+ */
+function appendComponentMap(
+  props: Property[],
+  keyName: string,
+  valueName: string,
+  groupPrefix: string,
+  m: Record<string, string> | undefined,
+): void {
+  if (!m) return;
+  const keys = Object.keys(m).sort();
+  keys.forEach((k, i) => {
+    const group = `${groupPrefix}-${i + 1}`;
+    props.push(groupedComponentProp(keyName, 'key', group, k));
+    props.push(groupedComponentProp(valueName, 'value', group, m[k]!));
+  });
+}
+
+/** Builds one grouped map prop, degrading to an empty-field marker when empty. */
+function groupedComponentProp(name: string, field: string, group: string, value: string): Property {
+  if (value === '') {
+    return { ...emptyFieldProp(field), group };
+  }
+  return { ...vocabularyProp(name, value)!, group };
+}
+
+/**
+ * Reports component identity beyond the type-specific fields a SAR subject can
+ * hold — owner, BOMs, artifact integrity, and the migration-only fields — so it
+ * is not silently dropped (matching the lossy-conversion warning UX). Mirrors Go.
+ */
+function warnUncarriedComponentFields(c: HDFComponent): void {
+  const dropped: string[] = [];
+  if (c.owner) dropped.push('owner');
+  if (Array.isArray(c.boms) && c.boms.length > 0) dropped.push('boms');
+  if (Array.isArray(c.integrity) && c.integrity.length > 0) dropped.push('integrity');
+  if (Array.isArray(c.baselineRefs) && c.baselineRefs.length > 0) dropped.push('baselineRefs');
+  if (Array.isArray(c.inputOverrides) && c.inputOverrides.length > 0) dropped.push('inputOverrides');
+  if (c.targetSelector && Object.keys(c.targetSelector).length > 0) dropped.push('targetSelector');
+  if (dropped.length === 0) return;
+  emitConverterWarning(
+    `hdf-to-oscal-sar: component "${c.name}" carries ${dropped.join(', ')}, which an OSCAL SAR assessment subject cannot represent; not carried`,
+  );
 }
 
 /**

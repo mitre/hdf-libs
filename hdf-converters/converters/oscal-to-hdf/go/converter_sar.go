@@ -1,7 +1,9 @@
 package oscal
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -146,12 +148,141 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 		ToolName:         "OSCAL Assessment Results",
 		ToolFormat:       "OSCAL",
 		Baselines:        baselines,
+		Components:       sarComponents(sar),
 		Timestamp:        timestamp,
 	})
 
 	result.PlanRef = planRef
 
 	return result, nil
+}
+
+// hdfComponentTypes is the set of OSCAL subject types that are HDF component
+// types. A foreign SAR's subject types (component, inventory-item, party, …) are
+// not among them, so those subjects do not reconstitute as HDF components.
+var hdfComponentTypes = map[string]bool{
+	string(hdf.Host): true, string(hdf.ContainerImage): true, string(hdf.ContainerInstance): true,
+	string(hdf.ContainerPlatform): true, string(hdf.CloudAccount): true, string(hdf.CloudResource): true,
+	string(hdf.Repository): true, string(hdf.Application): true, string(hdf.Artifact): true,
+	string(hdf.Network): true, string(hdf.Database): true, string(hdf.AIModel): true, string(hdf.Dataset): true,
+}
+
+// sarComponents reconstitutes the top-level HDF components from the assessment
+// subjects the exporter attaches to every observation. Subjects are
+// deduplicated by uuid in first-seen document order (each component appears
+// identically on every observation), and a subject whose type is not an HDF
+// component type is left alone so foreign SARs gain no invalid components.
+func sarComponents(sar *AssessmentResults) []hdf.Component {
+	var components []hdf.Component
+	seen := make(map[string]bool)
+	for i := range sar.Results {
+		for j := range sar.Results[i].Observations {
+			subjects := sar.Results[i].Observations[j].Subjects
+			for k := range subjects {
+				subj := &subjects[k]
+				if subj.SubjectUUID == "" || seen[subj.SubjectUUID] || !hdfComponentTypes[subj.Type] {
+					continue
+				}
+				seen[subj.SubjectUUID] = true
+				components = append(components, subjectToComponent(subj))
+			}
+		}
+	}
+	return components
+}
+
+// subjectToComponent rebuilds one HDF component from an assessment subject: the
+// subject uuid is the componentId (ADR-0014 §4.5 SSP analog), and every
+// type-specific identity field comes from the HDF-namespaced props the exporter
+// stamped on the subject.
+func subjectToComponent(subj *SubjectRef) hdf.Component {
+	uuid := subj.SubjectUUID
+	c := hdf.Component{
+		Type:        hdf.TargetType(subj.Type),
+		Name:        subj.Title,
+		ComponentID: &uuid,
+	}
+	c.Description = VocabularyString(subj.Props, "component-description", "description", "")
+	c.Hostname = VocabularyString(subj.Props, "component-hostname", "hostname", "")
+	c.FQDN = VocabularyString(subj.Props, "component-fqdn", "fqdn", "")
+	c.Domain = VocabularyString(subj.Props, "component-domain", "domain", "")
+	c.IPAddress = VocabularyString(subj.Props, "component-ip-address", "ipAddress", "")
+	c.MACAddress = VocabularyString(subj.Props, "component-mac-address", "macAddress", "")
+	c.OSName = VocabularyString(subj.Props, "component-os-name", "osName", "")
+	c.OSVersion = VocabularyString(subj.Props, "component-os-version", "osVersion", "")
+	c.ImageID = VocabularyString(subj.Props, "component-image-id", "imageId", "")
+	c.Registry = VocabularyString(subj.Props, "component-registry", "registry", "")
+	c.Repository = VocabularyString(subj.Props, "component-repository", "repository", "")
+	c.Tag = VocabularyString(subj.Props, "component-tag", "tag", "")
+	c.ContainerID = VocabularyString(subj.Props, "component-container-id", "containerId", "")
+	c.Image = VocabularyString(subj.Props, "component-image", "image", "")
+	c.Runtime = VocabularyString(subj.Props, "component-runtime", "runtime", "")
+	c.PlatformType = VocabularyString(subj.Props, "component-platform-type", "platformType", "")
+	c.ClusterName = VocabularyString(subj.Props, "component-cluster-name", "clusterName", "")
+	c.Namespace = VocabularyString(subj.Props, "component-namespace", "namespace", "")
+	c.Version = VocabularyString(subj.Props, "component-version", "version", "")
+	if v := VocabularyString(subj.Props, "component-provider", "provider", ""); v != nil {
+		p := hdf.CloudProvider(*v)
+		c.Provider = &p
+	}
+	c.AccountID = VocabularyString(subj.Props, "component-account-id", "accountId", "")
+	c.Region = VocabularyString(subj.Props, "component-region", "region", "")
+	c.ResourceType = VocabularyString(subj.Props, "component-resource-type", "resourceType", "")
+	c.ResourceID = VocabularyString(subj.Props, "component-resource-id", "resourceId", "")
+	c.Arn = VocabularyString(subj.Props, "component-arn", "arn", "")
+	c.URL = VocabularyString(subj.Props, "component-url", "url", "")
+	c.Branch = VocabularyString(subj.Props, "component-branch", "branch", "")
+	c.Commit = VocabularyString(subj.Props, "component-commit", "commit", "")
+	c.Environment = VocabularyString(subj.Props, "component-environment", "environment", "")
+	c.PackageManager = VocabularyString(subj.Props, "component-package-manager", "packageManager", "")
+	c.PackageName = VocabularyString(subj.Props, "component-package-name", "packageName", "")
+	c.CIDR = VocabularyString(subj.Props, "component-cidr", "cidr", "")
+	c.Gateway = VocabularyString(subj.Props, "component-gateway", "gateway", "")
+	c.Engine = VocabularyString(subj.Props, "component-engine", "engine", "")
+	c.Host = VocabularyString(subj.Props, "component-host", "host", "")
+	if v := VocabularyString(subj.Props, "component-port", "port", ""); v != nil {
+		if n, err := strconv.ParseInt(*v, 10, 64); err == nil {
+			c.Port = &n
+		}
+	}
+	c.ModelID = VocabularyString(subj.Props, "component-model-id", "modelId", "")
+	c.DatasetID = VocabularyString(subj.Props, "component-dataset-id", "datasetId", "")
+	c.Labels = readComponentMap(
+		func(g string) *string { return VocabularyString(subj.Props, "component-label-key", "key", g) },
+		func(g string) *string { return VocabularyString(subj.Props, "component-label-value", "value", g) },
+		"component-label")
+	c.ExternalIDS = readComponentMap(
+		func(g string) *string { return VocabularyString(subj.Props, "component-external-id-key", "key", g) },
+		func(g string) *string { return VocabularyString(subj.Props, "component-external-id-value", "value", g) },
+		"component-external-id")
+	return c
+}
+
+// readComponentMap rebuilds a component string map from grouped key/value props.
+// Groups are numbered from 1 in the order the exporter emitted them (sorted key
+// order), so reading stops at the first group with neither a key nor a value.
+func readComponentMap(readKey, readValue func(group string) *string, prefix string) map[string]string {
+	m := map[string]string{}
+	for n := 1; ; n++ {
+		group := fmt.Sprintf("%s-%d", prefix, n)
+		key, value := readKey(group), readValue(group)
+		if key == nil && value == nil {
+			break
+		}
+		m[strOrEmpty(key)] = strOrEmpty(value)
+	}
+	if len(m) == 0 {
+		return nil
+	}
+	return m
+}
+
+// strOrEmpty dereferences an optional string, treating absence as empty.
+func strOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // resultToEvaluatedBaseline converts a single OSCAL Result to an HDF

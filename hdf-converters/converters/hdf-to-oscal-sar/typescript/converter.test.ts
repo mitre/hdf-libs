@@ -9,6 +9,7 @@ import { nistTagToControlId as nistTagToControlID, impactToSeverity } from '../.
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
 import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
 import { convertOscalSarToHdf } from '../../oscal-to-hdf/typescript/converter-sar.js';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -997,4 +998,106 @@ describe('NIST requirement id control references', () => {
       assertSchemaValid(validate, file, JSON.parse(await convertHdfToOscalSar(input)));
     },
   );
+});
+
+// A v3 results doc whose components[] carries three component types, each with
+// type-specific identity fields, to prove every component (not just the first)
+// round-trips HDF -> OSCAL-SAR -> HDF with those fields. Mirrors the Go peer.
+const multiComponentHdf = JSON.stringify({
+  baselines: [{
+    name: 'b',
+    requirements: [{
+      id: 'AC-1', impact: 0.5, tags: {},
+      descriptions: [{ label: 'default', data: 'd' }],
+      results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+    }],
+  }],
+  components: [
+    {
+      type: 'host', name: 'web01', componentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      hostname: 'web01', fqdn: 'web01.prod.example.com', osName: 'Ubuntu', osVersion: '22.04 LTS',
+      labels: { environment: 'production' },
+    },
+    {
+      type: 'containerImage', name: 'nginx', componentId: 'b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      registry: 'docker.io', repository: 'library/nginx', tag: '1.25-alpine',
+    },
+    {
+      type: 'cloudAccount', name: 'Prod AWS', componentId: 'c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      provider: 'aws', accountId: '123456789012', region: 'us-east-1',
+      labels: { boundary: 'prod-authorization-boundary' },
+    },
+  ],
+});
+
+describe('SAR component round trip', () => {
+  const roundTrip = async (hdf: string): Promise<NonNullable<HDFResults['components']>> => {
+    const sar = await convertHdfToOscalSar(hdf);
+    const back = JSON.parse(await convertOscalSarToHdf(sar)) as HDFResults;
+    return back.components ?? [];
+  };
+  const byName = (components: NonNullable<HDFResults['components']>): Record<string, (typeof components)[number]> =>
+    Object.fromEntries(components.map((c) => [c.name, c]));
+
+  it('preserves every component with its type-specific identity fields', async () => {
+    const components = await roundTrip(multiComponentHdf);
+    expect(components).toHaveLength(3);
+    const found = byName(components);
+
+    const host = found['web01']!;
+    expect(host.type).toBe('host');
+    expect(host.componentId).toBe('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(host.osName).toBe('Ubuntu');
+    expect(host.osVersion).toBe('22.04 LTS');
+    expect(host.fqdn).toBe('web01.prod.example.com');
+    expect(host.hostname).toBe('web01');
+    expect(host.labels?.environment).toBe('production');
+
+    const img = found['nginx']!;
+    expect(img.type).toBe('containerImage');
+    expect(img.componentId).toBe('b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(img.registry).toBe('docker.io');
+    expect(img.repository).toBe('library/nginx');
+    expect(img.tag).toBe('1.25-alpine');
+
+    const acct = found['Prod AWS']!;
+    expect(acct.type).toBe('cloudAccount');
+    expect(acct.componentId).toBe('c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(acct.accountId).toBe('123456789012');
+    expect(acct.provider).toBe('aws');
+    expect(acct.region).toBe('us-east-1');
+  });
+
+  // The SAF-normalized assessed target arrives as a cloudAccount component
+  // (ADR-0008); it must round-trip with accountId and labels.boundary intact (#234).
+  it('round-trips the cloudAccount assessed target identity', async () => {
+    const acct = byName(await roundTrip(multiComponentHdf))['Prod AWS']!;
+    expect(acct.accountId).toBe('123456789012');
+    expect(acct.labels?.boundary).toBe('prod-authorization-boundary');
+  });
+
+  it('warns on a component field a SAR subject cannot represent, never silently dropping it', async () => {
+    const hdf = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'AC-1', impact: 0.5, tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      }],
+      components: [{
+        type: 'host', name: 'web01', componentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+        osName: 'Ubuntu',
+        integrity: [{ algorithm: 'sha256', value: 'd1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d' }],
+      }],
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await convertHdfToOscalSar(hdf);
+    const calls = warn.mock.calls.map((c) => String(c[0]));
+    warn.mockRestore();
+    const message = calls.find((m) => m.includes('web01') && m.includes('integrity'));
+    expect(message, calls.join('\n')).toBeDefined();
+    expect(message).toContain('WARNING');
+  });
 });

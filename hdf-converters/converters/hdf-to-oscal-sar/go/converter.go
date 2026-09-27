@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -288,7 +289,10 @@ func selectControl(controls []oscal.SelectControl, index map[string]int, control
 // buildSubjects turns the top-level HDF components[] into OSCAL assessment
 // subjects. Each component's UUID (componentId when present, otherwise a fresh
 // one) identifies the subject; the HDF component type is a valid OSCAL subject
-// type token and its name becomes the subject title.
+// type token and its name becomes the subject title. A subject holds only
+// uuid/type/title, so each component's type-specific identity fields ride as
+// HDF-namespaced props on the subject (ADR-0014 §1.5) and reconstitute on
+// read-back.
 //
 // A component with no type is skipped rather than given one. OSCAL requires both
 // subject-uuid and type on a subject-reference, so the type cannot simply be
@@ -312,9 +316,138 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 			SubjectUUID: uid,
 			Type:        string(c.Type),
 			Title:       c.Name,
+			Props:       componentSubjectProps(c),
 		})
+		warnUncarriedComponentFields(c)
 	}
 	return subjects
+}
+
+// componentSubjectProps carries a component's identity fields as HDF-namespaced
+// props on its assessment subject. A present-but-empty optional string is
+// carried by an empty-field marker (§1.7.3); an absent field emits nothing.
+func componentSubjectProps(c *hdf.Component) []oscal.Property {
+	var props []oscal.Property
+	emit := func(name, field string, val *string) {
+		if val == nil {
+			return
+		}
+		if *val == "" {
+			p := oscal.EmptyFieldProp(field)
+			props = append(props, p)
+			return
+		}
+		props = oscal.AppendVocabularyProp(props, name, *val)
+	}
+	emit("component-description", "description", c.Description)
+	emit("component-hostname", "hostname", c.Hostname)
+	emit("component-fqdn", "fqdn", c.FQDN)
+	emit("component-domain", "domain", c.Domain)
+	emit("component-ip-address", "ipAddress", c.IPAddress)
+	emit("component-mac-address", "macAddress", c.MACAddress)
+	emit("component-os-name", "osName", c.OSName)
+	emit("component-os-version", "osVersion", c.OSVersion)
+	emit("component-image-id", "imageId", c.ImageID)
+	emit("component-registry", "registry", c.Registry)
+	emit("component-repository", "repository", c.Repository)
+	emit("component-tag", "tag", c.Tag)
+	emit("component-container-id", "containerId", c.ContainerID)
+	emit("component-image", "image", c.Image)
+	emit("component-runtime", "runtime", c.Runtime)
+	emit("component-platform-type", "platformType", c.PlatformType)
+	emit("component-cluster-name", "clusterName", c.ClusterName)
+	emit("component-namespace", "namespace", c.Namespace)
+	emit("component-version", "version", c.Version)
+	if c.Provider != nil {
+		emit("component-provider", "provider", (*string)(c.Provider))
+	}
+	emit("component-account-id", "accountId", c.AccountID)
+	emit("component-region", "region", c.Region)
+	emit("component-resource-type", "resourceType", c.ResourceType)
+	emit("component-resource-id", "resourceId", c.ResourceID)
+	emit("component-arn", "arn", c.Arn)
+	emit("component-url", "url", c.URL)
+	emit("component-branch", "branch", c.Branch)
+	emit("component-commit", "commit", c.Commit)
+	emit("component-environment", "environment", c.Environment)
+	emit("component-package-manager", "packageManager", c.PackageManager)
+	emit("component-package-name", "packageName", c.PackageName)
+	emit("component-cidr", "cidr", c.CIDR)
+	emit("component-gateway", "gateway", c.Gateway)
+	emit("component-engine", "engine", c.Engine)
+	emit("component-host", "host", c.Host)
+	if c.Port != nil {
+		props = oscal.AppendVocabularyProp(props, "component-port", strconv.FormatInt(*c.Port, 10))
+	}
+	emit("component-model-id", "modelId", c.ModelID)
+	emit("component-dataset-id", "datasetId", c.DatasetID)
+	props = appendComponentMap(props, "component-label-key", "component-label-value", "component-label", c.Labels)
+	props = appendComponentMap(props, "component-external-id-key", "component-external-id-value", "component-external-id", c.ExternalIDS)
+	return props
+}
+
+// appendComponentMap carries a component's string map (labels or externalIds) as
+// grouped key/value props in sorted key order, one group per entry, so the
+// reverse importer can rebuild the map. An empty key or value is carried by an
+// empty-field marker in the same group (§1.7.3).
+func appendComponentMap(props []oscal.Property, keyName, valueName, groupPrefix string, m map[string]string) []oscal.Property {
+	if len(m) == 0 {
+		return props
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		group := fmt.Sprintf("%s-%d", groupPrefix, i+1)
+		props = append(props, groupedComponentProp(keyName, "key", group, k))
+		props = append(props, groupedComponentProp(valueName, "value", group, m[k]))
+	}
+	return props
+}
+
+// groupedComponentProp builds one grouped map prop, degrading to an empty-field
+// marker (§1.7.3) when the value is empty.
+func groupedComponentProp(name, field, group, value string) oscal.Property {
+	if value == "" {
+		p := oscal.EmptyFieldProp(field)
+		p.Group = group
+		return p
+	}
+	p, _ := oscal.VocabularyProp(name, value)
+	p.Group = group
+	return p
+}
+
+// warnUncarriedComponentFields reports component identity beyond the type-
+// specific fields a SAR subject can hold — owner, BOMs, artifact integrity, and
+// the migration-only fields — so it is not silently dropped (matching the
+// lossy-conversion warning UX).
+func warnUncarriedComponentFields(c *hdf.Component) {
+	var dropped []string
+	if c.Owner != nil {
+		dropped = append(dropped, "owner")
+	}
+	if len(c.Boms) > 0 {
+		dropped = append(dropped, "boms")
+	}
+	if len(c.Integrity) > 0 {
+		dropped = append(dropped, "integrity")
+	}
+	if len(c.BaselineRefs) > 0 {
+		dropped = append(dropped, "baselineRefs")
+	}
+	if len(c.InputOverrides) > 0 {
+		dropped = append(dropped, "inputOverrides")
+	}
+	if len(c.TargetSelector) > 0 {
+		dropped = append(dropped, "targetSelector")
+	}
+	if len(dropped) == 0 {
+		return
+	}
+	log.Printf("WARNING: hdf-to-oscal-sar: component %q carries %s, which an OSCAL SAR assessment subject cannot represent; not carried", c.Name, strings.Join(dropped, ", "))
 }
 
 // noIdentifiableControlsRemark accompanies the include-all selection of a result

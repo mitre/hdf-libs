@@ -196,6 +196,384 @@
       "legacy": false
     },
     {
+      "name": "component-description",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "The description of the component the assessment subject reconstitutes.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].description",
+      "legacy": false
+    },
+    {
+      "name": "component-hostname",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A host component's short OS-reported hostname.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].hostname",
+      "legacy": false
+    },
+    {
+      "name": "component-fqdn",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A host component's fully qualified domain name.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].fqdn",
+      "legacy": false
+    },
+    {
+      "name": "component-domain",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A host component's directory domain.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].domain",
+      "legacy": false
+    },
+    {
+      "name": "component-ip-address",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A host component's IP address.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].ipAddress",
+      "legacy": false
+    },
+    {
+      "name": "component-mac-address",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A host component's MAC address.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].macAddress",
+      "legacy": false
+    },
+    {
+      "name": "component-os-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A host component's operating system name.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].osName",
+      "legacy": false
+    },
+    {
+      "name": "component-os-version",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A host component's operating system version.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].osVersion",
+      "legacy": false
+    },
+    {
+      "name": "component-image-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container image component's image id.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].imageId",
+      "legacy": false
+    },
+    {
+      "name": "component-registry",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container image component's registry.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].registry",
+      "legacy": false
+    },
+    {
+      "name": "component-repository",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container image component's repository.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].repository",
+      "legacy": false
+    },
+    {
+      "name": "component-tag",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container image component's tag.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].tag",
+      "legacy": false
+    },
+    {
+      "name": "component-container-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container instance component's running container id.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].containerId",
+      "legacy": false
+    },
+    {
+      "name": "component-image",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container instance component's source image.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].image",
+      "legacy": false
+    },
+    {
+      "name": "component-runtime",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container instance component's runtime.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].runtime",
+      "legacy": false
+    },
+    {
+      "name": "component-platform-type",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container platform component's platform type.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].platformType",
+      "legacy": false
+    },
+    {
+      "name": "component-cluster-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container platform component's cluster name.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].clusterName",
+      "legacy": false
+    },
+    {
+      "name": "component-namespace",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A container platform component's namespace.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].namespace",
+      "legacy": false
+    },
+    {
+      "name": "component-version",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A component's version (container platform, application, artifact, database, aiModel or dataset).",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].version",
+      "legacy": false
+    },
+    {
+      "name": "component-provider",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A cloud account or cloud resource component's cloud provider.",
+      "valueFormat": "An HDF cloud provider value (aws, azure, gcp, oci, other)",
+      "hdfField": "components[].provider",
+      "legacy": false
+    },
+    {
+      "name": "component-account-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A cloud account component's account identifier.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].accountId",
+      "legacy": false
+    },
+    {
+      "name": "component-region",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A cloud account or cloud resource component's region.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].region",
+      "legacy": false
+    },
+    {
+      "name": "component-resource-type",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A cloud resource component's resource type.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].resourceType",
+      "legacy": false
+    },
+    {
+      "name": "component-resource-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A cloud resource component's provider-specific resource id.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].resourceId",
+      "legacy": false
+    },
+    {
+      "name": "component-arn",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A cloud resource component's Amazon Resource Name.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].arn",
+      "legacy": false
+    },
+    {
+      "name": "component-url",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A repository or application component's URL.",
+      "valueFormat": "String (§1.7), a URL",
+      "hdfField": "components[].url",
+      "legacy": false
+    },
+    {
+      "name": "component-branch",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A repository component's scanned branch.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].branch",
+      "legacy": false
+    },
+    {
+      "name": "component-commit",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A repository component's scanned commit SHA.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].commit",
+      "legacy": false
+    },
+    {
+      "name": "component-environment",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "An application component's environment.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].environment",
+      "legacy": false
+    },
+    {
+      "name": "component-package-manager",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "An artifact component's package manager.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].packageManager",
+      "legacy": false
+    },
+    {
+      "name": "component-package-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "An artifact component's package name.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].packageName",
+      "legacy": false
+    },
+    {
+      "name": "component-cidr",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A network component's CIDR block.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].cidr",
+      "legacy": false
+    },
+    {
+      "name": "component-gateway",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A network component's gateway address.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].gateway",
+      "legacy": false
+    },
+    {
+      "name": "component-engine",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A database component's engine.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].engine",
+      "legacy": false
+    },
+    {
+      "name": "component-host",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A database component's host.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].host",
+      "legacy": false
+    },
+    {
+      "name": "component-port",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A database component's port.",
+      "valueFormat": "Decimal number, a TCP port",
+      "hdfField": "components[].port",
+      "legacy": false
+    },
+    {
+      "name": "component-model-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "An aiModel component's provider/registry model id.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].modelId",
+      "legacy": false
+    },
+    {
+      "name": "component-dataset-id",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "A dataset component's provider/registry dataset id.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].datasetId",
+      "legacy": false
+    },
+    {
+      "name": "component-label-key",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "The key of a component label, grouped component-label-<n>, n the label's 1-based position in sorted key order.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].labels (key)",
+      "legacy": false
+    },
+    {
+      "name": "component-label-value",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "The value of the component label its group names.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].labels (value)",
+      "legacy": false
+    },
+    {
+      "name": "component-external-id-key",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "The scheme of a component external id, grouped component-external-id-<n>, n its 1-based position in sorted key order.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].externalIds (key)",
+      "legacy": false
+    },
+    {
+      "name": "component-external-id-value",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "The value of the component external id its group names.",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].externalIds (value)",
+      "legacy": false
+    },
+    {
       "name": "amendment-id",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["plan-of-action-and-milestones.metadata"],

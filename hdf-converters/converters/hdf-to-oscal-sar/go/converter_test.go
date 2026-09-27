@@ -1319,3 +1319,154 @@ func TestConvertHDFToOSCALSAR_NISTRequirementIDControlReferences(t *testing.T) {
 		})
 	}
 }
+
+// multiComponentHDF is a v3 results doc whose components[] carries three
+// component types — a host, a container image, and a cloudAccount assessed
+// target — each with type-specific identity fields, to prove every component
+// (not just the first) round-trips HDF -> OSCAL-SAR -> HDF with those fields.
+const multiComponentHDF = `{
+	"baselines": [{
+		"name": "b",
+		"requirements": [{
+			"id": "AC-1", "impact": 0.5, "tags": {},
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "passed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}]
+	}],
+	"components": [
+		{
+			"type": "host", "name": "web01",
+			"componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+			"hostname": "web01", "fqdn": "web01.prod.example.com",
+			"osName": "Ubuntu", "osVersion": "22.04 LTS",
+			"labels": { "environment": "production" }
+		},
+		{
+			"type": "containerImage", "name": "nginx",
+			"componentId": "b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+			"registry": "docker.io", "repository": "library/nginx", "tag": "1.25-alpine"
+		},
+		{
+			"type": "cloudAccount", "name": "Prod AWS",
+			"componentId": "c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+			"provider": "aws", "accountId": "123456789012", "region": "us-east-1",
+			"labels": { "boundary": "prod-authorization-boundary" }
+		}
+	]
+}`
+
+func componentsByName(components []hdf.Component) map[string]hdf.Component {
+	byName := make(map[string]hdf.Component, len(components))
+	for _, c := range components {
+		byName[c.Name] = c
+	}
+	return byName
+}
+
+func TestConvert_OSCALSAR_RoundTrip_PreservesAllComponents(t *testing.T) {
+	sar, err := ConvertHDFToOSCALSAR([]byte(multiComponentHDF), "1.0.0")
+	require.NoError(t, err)
+
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Components, 3, "every component must survive the round trip, not just the first")
+
+	byName := componentsByName(back.Components)
+
+	host, ok := byName["web01"]
+	require.True(t, ok, "host component lost")
+	assert.Equal(t, hdf.Host, host.Type)
+	require.NotNil(t, host.ComponentID)
+	assert.Equal(t, "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", *host.ComponentID)
+	require.NotNil(t, host.OSName)
+	assert.Equal(t, "Ubuntu", *host.OSName)
+	require.NotNil(t, host.OSVersion)
+	assert.Equal(t, "22.04 LTS", *host.OSVersion)
+	require.NotNil(t, host.FQDN)
+	assert.Equal(t, "web01.prod.example.com", *host.FQDN)
+	require.NotNil(t, host.Hostname)
+	assert.Equal(t, "web01", *host.Hostname)
+	assert.Equal(t, "production", host.Labels["environment"])
+
+	img, ok := byName["nginx"]
+	require.True(t, ok, "container image component lost")
+	assert.Equal(t, hdf.ContainerImage, img.Type)
+	require.NotNil(t, img.ComponentID)
+	assert.Equal(t, "b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", *img.ComponentID)
+	require.NotNil(t, img.Registry)
+	assert.Equal(t, "docker.io", *img.Registry)
+	require.NotNil(t, img.Repository)
+	assert.Equal(t, "library/nginx", *img.Repository)
+	require.NotNil(t, img.Tag)
+	assert.Equal(t, "1.25-alpine", *img.Tag)
+
+	acct, ok := byName["Prod AWS"]
+	require.True(t, ok, "cloudAccount component lost")
+	assert.Equal(t, hdf.CloudAccount, acct.Type)
+	require.NotNil(t, acct.ComponentID)
+	assert.Equal(t, "c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", *acct.ComponentID)
+	require.NotNil(t, acct.AccountID)
+	assert.Equal(t, "123456789012", *acct.AccountID)
+	require.NotNil(t, acct.Provider)
+	assert.Equal(t, hdf.CloudProvider("aws"), *acct.Provider)
+	require.NotNil(t, acct.Region)
+	assert.Equal(t, "us-east-1", *acct.Region)
+
+	// The SAR that carries the component props must validate on both vendored
+	// OSCAL revisions — the subject props are a schema-valid extension.
+	for _, file := range arSchemaFiles {
+		t.Run(file, func(t *testing.T) {
+			requireValidAR(t, arSchemaFor(t, file), "multi-component subjects", []byte(multiComponentHDF))
+		})
+	}
+}
+
+// The SAF-normalized assessed target arrives as a cloudAccount component
+// (ADR-0008). It must round-trip with accountId and labels.boundary intact so
+// the OSCAL SAR can identify and reconstruct the assessed subject (#234).
+func TestConvert_OSCALSAR_RoundTrip_CloudAccountTargetIdentity(t *testing.T) {
+	sar, err := ConvertHDFToOSCALSAR([]byte(multiComponentHDF), "1.0.0")
+	require.NoError(t, err)
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+
+	acct, ok := componentsByName(back.Components)["Prod AWS"]
+	require.True(t, ok, "assessed cloudAccount target lost")
+	require.NotNil(t, acct.AccountID)
+	assert.Equal(t, "123456789012", *acct.AccountID)
+	assert.Equal(t, "prod-authorization-boundary", acct.Labels["boundary"])
+}
+
+// A component field with no faithful SAR-subject representation is warned about,
+// matching the lossy-conversion warning UX, rather than silently dropped.
+const componentWithUnrepresentableHDF = `{
+	"baselines": [{
+		"name": "b",
+		"requirements": [{
+			"id": "AC-1", "impact": 0.5, "tags": {},
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": [{ "status": "passed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z" }]
+		}]
+	}],
+	"components": [{
+		"type": "host", "name": "web01",
+		"componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+		"osName": "Ubuntu",
+		"integrity": [{ "algorithm": "sha256", "value": "d1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d" }]
+	}]
+}`
+
+func TestConvert_OSCALSAR_WarnsOnUnrepresentableComponentField(t *testing.T) {
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(prev)
+
+	_, err := ConvertHDFToOSCALSAR([]byte(componentWithUnrepresentableHDF), "1.0.0")
+	require.NoError(t, err)
+
+	out := buf.String()
+	assert.Contains(t, out, "WARNING")
+	assert.Contains(t, out, "web01", "the warning must name the component")
+	assert.Contains(t, out, "integrity", "the warning must name the dropped field")
+}
