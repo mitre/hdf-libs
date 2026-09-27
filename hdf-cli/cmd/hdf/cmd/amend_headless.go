@@ -411,6 +411,13 @@ func buildDraftFromResults(doc map[string]interface{}, amendType, statusFilter, 
 		return nil, fmt.Errorf("invalid override type %q", amendType)
 	}
 
+	// Validated here as well as at the flag, because an empty draft is a valid
+	// FILE: a typo used to be written out as a legitimate-looking draft with no
+	// stubs, which is worse than a command printing nothing.
+	if err := ValidateStatusFilter(statusFilter); err != nil {
+		return nil, err
+	}
+
 	resolvedExpiry, err := resolveDraftExpiry(expires, now)
 	if err != nil {
 		return nil, err
@@ -421,7 +428,7 @@ func buildDraftFromResults(doc map[string]interface{}, amendType, statusFilter, 
 
 	overrides := make([]map[string]interface{}, 0, len(reqs))
 	for _, r := range reqs {
-		if statusFilter != "" && r.Status != statusFilter {
+		if !StatusFilterMatches(statusFilter, r.Status) {
 			continue
 		}
 		if selectLower != "" && !matchesSelect(r, selectLower) {

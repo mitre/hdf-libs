@@ -183,7 +183,9 @@ DETAIL SECTIONS by document type
     g (groups), a (assessments), o (overrides)
 
 FLAGS
-  -s, --status string    Filter requirements by status: passed, failed, error, not_applicable, not_reviewed
+  -s, --status string    Filter requirements by status: passed, failed, notApplicable, notReviewed,
+                         error (not_applicable and not_reviewed also accepted). A value outside the
+                         vocabulary is rejected, not matched against nothing.
   -a, --all              Show all details (expand every section)
 
 EXAMPLES
@@ -227,7 +229,8 @@ USAGE
   hdf query <file> [flags]
 
 FLAGS
-  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed
+  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, notApplicable,
+                               notReviewed, error (not_applicable and not_reviewed also accepted)
       --severity stringArray   Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
       --impact string          Filter by EFFECTIVE impact — the score after any governing impact
                                override (e.g., ">0.5", ">=0.7", "0.5")
@@ -550,7 +553,11 @@ SUBCOMMANDS
   apply    Merge amendments into a results file (sets effectiveStatus); refuses
            a document that does not verify
   create   Create waivers, attestations, and other amendments
-  draft    Scaffold an incomplete amendments draft from a results file
+  draft    Scaffold an incomplete amendments draft from a results file.
+           --status accepts the same vocabulary as `hdf list`/`hdf query`
+           (passed, failed, notApplicable, notReviewed, error; not_applicable
+           and not_reviewed also accepted) and rejects anything outside it
+           before reading the input, rather than writing a draft with no stubs.
   list     List amendments in an amendments file
   verify   Verify amendment structure, expiration, and chain integrity
   set      Set/unset top-level fields

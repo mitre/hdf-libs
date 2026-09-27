@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -345,4 +346,94 @@ func TestListRequirements_ImpactResolvesOverrides(t *testing.T) {
 		"the row reports the impact the governing riskAdjustment re-scored it to, since its status column is already post-adjudication")
 	assert.InDelta(t, 0.9, byID["SV-PLAIN"], 1e-9,
 		"and a requirement nobody adjudicated is unchanged")
+}
+
+// `hdf query --status` refuses a value outside its vocabulary and normalizes the
+// aliases, because a typo that matches nothing is indistinguishable from a clean
+// run. `hdf list --status` did neither: it compared the flag string to the
+// DISPLAY status, so the schema spelling every other surface accepts selected
+// nothing, and an outright typo reported an empty result with exit 0.
+//
+// Each case names a requirement the filter must EXCLUDE. An absent filter returns
+// everything, so an inclusion-only assertion would pass against a filter that
+// never ran.
+func TestListStatusFilter_AcceptsEveryFormAndRefusesATypo(t *testing.T) {
+	fixture := writeRichFixture(t)
+
+	// AC-3 is the fixture's only notApplicable requirement; AC-1 is failed.
+	for _, form := range []string{"not_applicable", "notApplicable", "NOTAPPLICABLE"} {
+		t.Run("accepts "+form, func(t *testing.T) {
+			stdout, _, err := executeCommand("list", fixture, "--detail", "requirements", "--status", form)
+			require.NoError(t, err, "%q must be accepted", form)
+			assert.Contains(t, stdout, "AC-3", "%q must select the notApplicable requirement", form)
+			assert.NotContains(t, stdout, "AC-1", "%q must exclude the failed requirement", form)
+		})
+	}
+
+	for _, bad := range []string{"bogus_value", "not_aplicable", "faild"} {
+		t.Run("refuses "+bad, func(t *testing.T) {
+			_, _, err := executeCommand("list", fixture, "--detail", "requirements", "--status", bad)
+			require.Error(t, err, "%q must be refused, not reported as an empty result", bad)
+			assert.Contains(t, err.Error(), "unknown --status value")
+		})
+	}
+}
+
+// The filter is refused in the command's run step rather than where it filters,
+// so a typo cannot ride along on an invocation that happens to ignore the flag.
+// The summary view ignores --status entirely, which made a typo there silently
+// harmless — and a flag that is sometimes validated is not validated.
+func TestListStatusFilter_RefusedEvenWhereTheFlagIsIgnored(t *testing.T) {
+	fixture := writeRichFixture(t)
+
+	_, _, err := executeCommand("list", fixture, "--status", "bogus_value")
+	require.Error(t, err, "an unknown status must be refused even without --detail")
+	assert.Contains(t, err.Error(), "unknown --status value")
+}
+
+// The flag help and the refusal message must name the same forms, or a user who
+// typos is answered with a vocabulary the help they just read never showed. Both
+// are hand-written today; this is what makes editing one alone fail rather than
+// drift silently (hdf-libs-mz8ok derives them from the engine and retires this).
+func TestStatusFlagHelpNamesEveryFormTheRefusalNames(t *testing.T) {
+	refusal := ValidateStatusFilter("definitely-not-a-status")
+	require.Error(t, refusal)
+
+	for _, cmd := range []struct {
+		name string
+		help string
+	}{
+		{"list", NewListCmd().Flags().Lookup("status").Usage},
+		{"query", NewQueryCmd().Flags().Lookup("status").Usage},
+		{"amend draft", amendDraftStatusUsage(t)},
+	} {
+		t.Run(cmd.name, func(t *testing.T) {
+			for _, form := range hdfengine.StatusValues {
+				assert.Contains(t, refusal.Error(), form, "the refusal must name %q", form)
+				assert.Contains(t, cmd.help, form, "--status help must name %q", form)
+			}
+			// And an alias the command accepts is advertised as accepted, so the
+			// help does not read as though the schema forms were the only ones.
+			for _, alias := range []string{"not_applicable", "not_reviewed"} {
+				require.NoError(t, ValidateStatusFilter(alias), "%q must be accepted", alias)
+				assert.Contains(t, cmd.help, alias, "--status help must mention the accepted alias %q", alias)
+			}
+		})
+	}
+}
+
+// amendDraftStatusUsage reaches the draft subcommand's --status help. It is a
+// subcommand rather than a top-level flag, so it cannot be looked up the way the
+// other two are.
+func amendDraftStatusUsage(t *testing.T) string {
+	t.Helper()
+	for _, sub := range NewAmendCmd().Commands() {
+		if sub.Name() == "draft" {
+			flag := sub.Flags().Lookup("status")
+			require.NotNil(t, flag, "amend draft must still take --status")
+			return flag.Usage
+		}
+	}
+	t.Fatal("amend draft subcommand not found")
+	return ""
 }

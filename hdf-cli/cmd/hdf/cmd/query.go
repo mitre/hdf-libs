@@ -110,9 +110,8 @@ Examples:
 					queryPoams, hdfengine.PoamValid, hdfengine.PoamNoneValid)
 			}
 			for _, status := range queryStatus {
-				if !hdfengine.ValidStatus(status) {
-					return fmt.Errorf("unknown --status value %q (expected one of: %s)",
-						status, strings.Join(hdfengine.StatusValues, ", "))
+				if err := ValidateStatusFilter(status); err != nil {
+					return err
 				}
 			}
 			for _, severity := range querySeverity {
@@ -159,7 +158,10 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil, "Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed")
+	// Same rule as hdf list: the listed forms match what ValidateStatusFilter
+	// names on refusal. Kept consistent by hand until hdf-libs-mz8ok derives both.
+	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil,
+		"Filter by status (repeatable, OR logic): passed, failed, notApplicable, notReviewed, error; not_applicable and not_reviewed also accepted")
 	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by effective impact — after any governing impact override (e.g., \">0.5\", \">=0.7\", \"0.5\")")
 	cmd.Flags().StringVar(&localQueryRawImpact, "raw-impact", "", "Filter by the requirement's own impact, ignoring overrides (same comparison grammar as --impact)")

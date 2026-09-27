@@ -61,6 +61,11 @@ Examples:
   hdf list amendments.json --detail overrides          List amendments`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Refused here rather than where it filters, so a typo cannot ride
+			// along on an invocation that ignores the flag (the summary view does).
+			if err := ValidateStatusFilter(localStatusFilter); err != nil {
+				return err
+			}
 			statusFilter = localStatusFilter
 			showAll = localShowAll
 			return runListBulk(cmd, args, detailSection)
@@ -68,7 +73,11 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, components, ...)")
-	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
+	// The listed forms must match what ValidateStatusFilter names when it refuses
+	// a value, or a typo is answered with a vocabulary the help never showed.
+	// Kept consistent by hand until hdf-libs-mz8ok derives both from the engine.
+	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "",
+		"Filter by status (passed, failed, notApplicable, notReviewed, error; not_applicable and not_reviewed also accepted)")
 	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
 
 	return cmd
@@ -323,7 +332,7 @@ func buildControlList(results hdf.HDFResults) []controlInfo {
 		for _, c := range baseline.Requirements {
 			status := determineControlStatus(c)
 
-			if statusFilter != "" && status != statusFilter {
+			if !StatusFilterMatches(statusFilter, status) {
 				continue
 			}
 

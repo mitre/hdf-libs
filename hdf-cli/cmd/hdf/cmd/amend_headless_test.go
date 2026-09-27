@@ -960,3 +960,86 @@ func TestAuthoringRoutesChain(t *testing.T) {
 		}
 	})
 }
+
+// twoStatusResultsDoc carries one failed and one notApplicable requirement, so a
+// status filter has something to EXCLUDE. A fixture where every requirement
+// shares one status cannot tell a working filter from an absent one.
+func twoStatusResultsDoc() map[string]interface{} {
+	const doc = `{
+  "baselines": [{
+    "name": "b", "checksum": {"algorithm": "sha256", "value": "x"},
+    "depends": [], "groups": [], "inspecVersion": "5", "supports": [],
+    "requirements": [
+      {"id": "AC-1", "impact": 0.7, "tags": {}, "code": "", "refs": [],
+       "descriptions": [{"label": "default", "data": "t"}],
+       "sourceLocation": {"line": 1, "ref": "t.rb"},
+       "statusOverrides": [], "evidence": [], "poams": [],
+       "results": [{"status": "failed", "codeDesc": "x", "startTime": "2026-01-01T00:00:00Z"}]},
+      {"id": "AC-3", "impact": 0.0, "tags": {}, "code": "", "refs": [],
+       "descriptions": [{"label": "default", "data": "t"}],
+       "sourceLocation": {"line": 2, "ref": "t.rb"},
+       "statusOverrides": [], "evidence": [], "poams": [],
+       "results": [{"status": "notApplicable", "codeDesc": "x", "startTime": "2026-01-01T00:00:00Z"}]}
+    ]
+  }],
+  "statistics": {"duration": 0}
+}`
+	var out map[string]interface{}
+	_ = json.Unmarshal([]byte(doc), &out)
+	return out
+}
+
+func draftedIDs(t *testing.T, draft map[string]interface{}) []string {
+	t.Helper()
+	overrides, ok := draft["overrides"].([]map[string]interface{})
+	require.True(t, ok, "draft must carry overrides")
+	ids := make([]string, 0, len(overrides))
+	for _, o := range overrides {
+		id, _ := o["requirementId"].(string)
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// The same defect `hdf list --status` carried, in the opposite direction: this
+// path compares against the SCHEMA status, so the CLI's display spelling
+// selected nothing, and a typo produced a draft with zero stubs and exit 0 — a
+// file that looks like a legitimately empty draft.
+func TestBuildDraftFromResults_StatusFilterAcceptsEveryFormAndRefusesATypo(t *testing.T) {
+	for _, form := range []string{"notApplicable", "not_applicable", "NOTAPPLICABLE"} {
+		t.Run("accepts "+form, func(t *testing.T) {
+			draft, err := buildDraftFromResults(twoStatusResultsDoc(), "waiver", form, "", "", fixedNow())
+			require.NoError(t, err, "%q must be accepted", form)
+			assert.Equal(t, []string{"AC-3"}, draftedIDs(t, draft),
+				"%q must stub the notApplicable requirement and only it", form)
+		})
+	}
+
+	for _, bad := range []string{"bogus_value", "not_aplicable", "faild"} {
+		t.Run("refuses "+bad, func(t *testing.T) {
+			_, err := buildDraftFromResults(twoStatusResultsDoc(), "waiver", bad, "", "", fixedNow())
+			require.Error(t, err, "%q must be refused, not emit an empty draft", bad)
+			assert.Contains(t, err.Error(), "unknown --status value")
+		})
+	}
+}
+
+// The RunE guard is what refuses a typo before the results file is read. Without
+// a command-level test the whole hdf-cli suite stayed green with that block
+// deleted, so buildDraftFromResults' own check was the only thing asserted.
+func TestAmendDraftCmd_RefusesAnUnknownStatusBeforeReadingInput(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "draft.json")
+
+	// A path that does not exist: if the status were validated after the read,
+	// the error would name the missing file instead.
+	_, _, err := executeCommand("amend", "draft",
+		"--from", filepath.Join(dir, "absent.json"), "--type", "waiver",
+		"--status", "bogus_value", "-o", out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown --status value")
+	assert.NotContains(t, err.Error(), "absent.json", "the status must be refused before the input is read")
+
+	_, statErr := os.Stat(out)
+	assert.True(t, os.IsNotExist(statErr), "no draft file may be written when the filter is refused")
+}
