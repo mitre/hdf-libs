@@ -1470,3 +1470,80 @@ func TestConvert_OSCALSAR_WarnsOnUnrepresentableComponentField(t *testing.T) {
 	assert.Contains(t, out, "web01", "the warning must name the component")
 	assert.Contains(t, out, "integrity", "the warning must name the dropped field")
 }
+
+// roundTripHDF exports an HDF Results document to an OSCAL SAR and imports it
+// back, returning the recovered HDF for baseline-identity assertions.
+func roundTripHDF(t *testing.T, doc hdf.HDFResults) *hdf.HDFResults {
+	t.Helper()
+	in, err := json.Marshal(doc)
+	require.NoError(t, err)
+	sar, err := ConvertHDFToOSCALSAR(in, "1.0.0")
+	require.NoError(t, err)
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	return back
+}
+
+// baselineNames returns the names of the recovered baselines in order.
+func baselineNames(r *hdf.HDFResults) []string {
+	names := make([]string, 0, len(r.Baselines))
+	for i := range r.Baselines {
+		names = append(names, r.Baselines[i].Name)
+	}
+	return names
+}
+
+// TestBaselineNameRoundTripsExact is the card's first-failing test: two
+// baselines that share a title must recover their exact HDF names through
+// HDF → SAR → HDF, not collapse to one kebab-cased title (ADR-0014 §4.3).
+func TestBaselineNameRoundTripsExact(t *testing.T) {
+	title := "RHEL 9 STIG"
+	doc := testhdf.Doc(
+		testhdf.Baseline("rhel9-stig-host-a",
+			testhdf.Req("AC-2", testhdf.Impact(0.5), testhdf.Tag("nist", []interface{}{"AC-2"}), testhdf.Status(hdf.Passed))),
+		testhdf.Baseline("rhel9-stig-host-b",
+			testhdf.Req("AC-3", testhdf.Impact(0.5), testhdf.Tag("nist", []interface{}{"AC-3"}), testhdf.Status(hdf.Passed))),
+	)
+	doc.Baselines[0].Title = &title
+	doc.Baselines[1].Title = &title
+
+	back := roundTripHDF(t, doc)
+	assert.Equal(t, []string{"rhel9-stig-host-a", "rhel9-stig-host-b"}, baselineNames(back))
+
+	// The human-facing title still reaches the SAR result title (ADR-0014 §4.3).
+	sar := sarDoc(t, mustMarshal(t, doc))
+	require.Len(t, sar.Results, 2)
+	for i := range sar.Results {
+		assert.Equal(t, title, sar.Results[i].Title, "result title preserves the baseline title")
+	}
+}
+
+// TestBaselineNameNotValidStringDatatypeRoundTrips verifies a baseline name that
+// is not a valid OSCAL StringDatatype (it carries a line terminator) survives
+// via the prop's remarks (ADR-0014 §1.7.2), byte-exact.
+func TestBaselineNameNotValidStringDatatypeRoundTrips(t *testing.T) {
+	name := "rhel9-stig\nhost-c"
+	doc := testhdf.Doc(
+		testhdf.Baseline(name,
+			testhdf.Req("AC-2", testhdf.Impact(0.5), testhdf.Tag("nist", []interface{}{"AC-2"}), testhdf.Status(hdf.Passed))),
+	)
+
+	back := roundTripHDF(t, doc)
+	require.Len(t, back.Baselines, 1)
+	assert.Equal(t, name, back.Baselines[0].Name)
+
+	// The exported prop normalizes its value but keeps the exact name in remarks.
+	sar := sarDoc(t, mustMarshal(t, doc))
+	require.Len(t, sar.Results, 1)
+	props := propsNamed(sar.Results[0].Props, "baseline-name")
+	require.Len(t, props, 1)
+	assert.Equal(t, "rhel9-stig host-c", props[0].Value, "value is normalized (§1.7.1)")
+	assert.Equal(t, name, props[0].Remarks, "remarks carries the exact value (§1.7.2)")
+}
+
+func mustMarshal(t *testing.T, doc hdf.HDFResults) []byte {
+	t.Helper()
+	b, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return b
+}

@@ -254,8 +254,12 @@ function baselineToResult(
     description = baseline.description;
   }
 
-  // baseline.version has no first-class SAR home; carry it as a result prop.
+  // The result title is display text and not injective, so carry the exact HDF
+  // baseline name in a namespaced prop for a lossless round trip (§4.3).
   const resultProps: Property[] = [];
+  pushVocabularyProp(resultProps, 'baseline-name', baseline.name);
+
+  // baseline.version has no first-class SAR home; carry it as a result prop.
   if (typeof baseline.version === 'string') {
     pushVocabularyProp(resultProps, 'baseline-version', baseline.version);
   }

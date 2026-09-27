@@ -124,7 +124,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 			log.Printf("WARNING: Skipping assessment result \"%s\": no finding has a target-id", title)
 			continue
 		}
-		baseline := resultToEvaluatedBaseline(r, order, groups, sar, rawInput, scanTime)
+		baseline := resultToEvaluatedBaseline(r, order, groups, rawInput, scanTime)
 		baselines = append(baselines, baseline)
 	}
 
@@ -288,7 +288,7 @@ func strOrEmpty(s *string) string {
 // resultToEvaluatedBaseline converts a single OSCAL Result to an HDF
 // EvaluatedBaseline from its findings grouped by requirement id, so that
 // multiple findings for the same requirement produce multiple results on it.
-func resultToEvaluatedBaseline(result *Result, order []string, groups map[string][]*Finding, sar *AssessmentResults, rawInput []byte, scanTime time.Time) hdf.EvaluatedBaseline {
+func resultToEvaluatedBaseline(result *Result, order []string, groups map[string][]*Finding, rawInput []byte, scanTime time.Time) hdf.EvaluatedBaseline {
 	checksum := shared.InputChecksum(rawInput)
 	integrity := shared.InputIntegrity(rawInput)
 
@@ -303,7 +303,7 @@ func resultToEvaluatedBaseline(result *Result, order []string, groups map[string
 	}
 
 	// Derive baseline name
-	name := sarBaselineName(result, sar)
+	name := sarBaselineName(result)
 
 	status := "loaded"
 	baseline := hdf.EvaluatedBaseline{
@@ -867,11 +867,18 @@ func parseResultStartTime(result *Result) time.Time {
 	return time.Time{}
 }
 
-// sarBaselineName derives a baseline name from the result title or SAR metadata.
-func sarBaselineName(result *Result, sar *AssessmentResults) string {
-	title := result.Title
-	if title == "" {
-		title = sar.Metadata.Title
+// sarBaselineName recovers the HDF baseline name. An HDF-produced result carries
+// it exactly in the namespaced baseline-name prop (§4.3). A foreign result has
+// none, so the name is <kebab-title>--<result-uuid> — the bare uuid when the
+// kebab-cased title is empty — which keeps same-title results distinct because
+// OSCAL guarantees uniqueness only for uuid (§4.5).
+func sarBaselineName(result *Result) string {
+	if m, ok := FindVocabularyProp(result.Props, "baseline-name"); ok {
+		return m.Value
 	}
-	return ToKebabCase(title, "oscal-assessment-results")
+	kebab := hdfutil.ToKebabCase(result.Title)
+	if kebab == "" {
+		return result.UUID
+	}
+	return kebab + "--" + result.UUID
 }

@@ -22,6 +22,15 @@
       "legacy": true
     },
     {
+      "name": "baseline-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[]"],
+      "meaning": "The exact HDF baseline name the result reports, so an HDF-produced SAR round-trips the name that hdf-diff and baseline references key on. The result title is display text and is not injective, so two baselines sharing a title would otherwise collide (§4.3, §4.5).",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].name",
+      "legacy": false
+    },
+    {
       "name": "nist",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["assessment-results.results[].findings[]"],

@@ -473,23 +473,76 @@ func TestConvertAssessmentResultsToHDF_EmptyTargetSkippedWithWarning(t *testing.
 }
 
 func TestSarBaselineName(t *testing.T) {
-	tests := []struct {
-		resultTitle string
-		sarTitle    string
-		expected    string
-	}{
-		{"2023 Annual Assessment", "", "2023-annual-assessment"},
-		{"", "FedRAMP SAR", "fedramp-sar"},
-		{"", "", "oscal-assessment-results"},
-	}
+	const ns = "https://mitre.github.io/hdf-libs/ns/oscal"
 
-	for _, tt := range tests {
-		t.Run(tt.resultTitle+"/"+tt.sarTitle, func(t *testing.T) {
-			result := &Result{Title: tt.resultTitle}
-			sar := &AssessmentResults{Metadata: Metadata{Title: tt.sarTitle}}
-			assert.Equal(t, tt.expected, sarBaselineName(result, sar))
-		})
-	}
+	// A foreign result (no baseline-name prop) is named <kebab-title>--<uuid>,
+	// or the bare uuid when the kebab-cased title is empty (ADR-0014 §4.5).
+	t.Run("foreign result uses kebab title and uuid", func(t *testing.T) {
+		result := &Result{Title: "2023 Annual Assessment", UUID: "af0c8632-e994-48a7-924e-2354b6abace7"}
+		assert.Equal(t, "2023-annual-assessment--af0c8632-e994-48a7-924e-2354b6abace7", sarBaselineName(result))
+	})
+	t.Run("empty title falls back to the bare uuid", func(t *testing.T) {
+		result := &Result{Title: "", UUID: "22222222-2222-4222-8222-222222222222"}
+		assert.Equal(t, "22222222-2222-4222-8222-222222222222", sarBaselineName(result))
+	})
+	t.Run("title that kebabs to empty falls back to the bare uuid", func(t *testing.T) {
+		result := &Result{Title: "***", UUID: "33333333-3333-4333-8333-333333333333"}
+		assert.Equal(t, "33333333-3333-4333-8333-333333333333", sarBaselineName(result))
+	})
+
+	// An HDF-produced result carries the exact baseline name in a namespaced
+	// prop, which takes precedence over the title (ADR-0014 §4.3).
+	t.Run("baseline-name prop takes precedence over title", func(t *testing.T) {
+		result := &Result{
+			Title: "RHEL 9 STIG",
+			UUID:  "44444444-4444-4444-8444-444444444444",
+			Props: []Property{{Name: "baseline-name", Ns: ns, Value: "rhel9-stig-host-a"}},
+		}
+		assert.Equal(t, "rhel9-stig-host-a", sarBaselineName(result))
+	})
+	t.Run("baseline-name prop reads its exact value from remarks", func(t *testing.T) {
+		result := &Result{
+			Title: "RHEL 9 STIG",
+			UUID:  "55555555-5555-4555-8555-555555555555",
+			Props: []Property{{Name: "baseline-name", Ns: ns, Value: "rhel9-stig host-c", Remarks: "rhel9-stig\nhost-c"}},
+		}
+		assert.Equal(t, "rhel9-stig\nhost-c", sarBaselineName(result))
+	})
+	// A baseline-name prop in a foreign namespace is not HDF's and is ignored.
+	t.Run("foreign-namespace baseline-name is ignored", func(t *testing.T) {
+		result := &Result{
+			Title: "RHEL 9 STIG",
+			UUID:  "66666666-6666-4666-8666-666666666666",
+			Props: []Property{{Name: "baseline-name", Ns: "https://fedramp.gov/ns/oscal", Value: "not-ours"}},
+		}
+		assert.Equal(t, "rhel-9-stig--66666666-6666-4666-8666-666666666666", sarBaselineName(result))
+	})
+}
+
+// TestConvertAssessmentResultsToHDF_SameTitleForeignResultsStayDistinct proves
+// two foreign results sharing a title never collide on a baseline name.
+func TestConvertAssessmentResultsToHDF_SameTitleForeignResultsStayDistinct(t *testing.T) {
+	input := []byte(`{"assessment-results":{
+		"uuid":"11111111-1111-4111-8111-111111111111",
+		"metadata":{"title":"t","last-modified":"2026-01-01T00:00:00Z","version":"1","oscal-version":"1.1.2"},
+		"import-ap":{"href":"#"},
+		"results":[
+		  {"uuid":"aaaaaaaa-1111-4111-8111-111111111111","title":"RHEL 9 STIG","description":"d","start":"2026-01-01T00:00:00Z",
+			"reviewed-controls":{"control-selections":[{"include-all":{}}]},
+			"findings":[{"uuid":"f1","title":"F1","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}}}]},
+		  {"uuid":"bbbbbbbb-2222-4222-8222-222222222222","title":"RHEL 9 STIG","description":"d","start":"2026-01-01T00:00:00Z",
+			"reviewed-controls":{"control-selections":[{"include-all":{}}]},
+			"findings":[{"uuid":"f2","title":"F2","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}}}]}
+		]}}`)
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 2)
+	names := []string{results.Baselines[0].Name, results.Baselines[1].Name}
+	assert.Equal(t, []string{
+		"rhel-9-stig--aaaaaaaa-1111-4111-8111-111111111111",
+		"rhel-9-stig--bbbbbbbb-2222-4222-8222-222222222222",
+	}, names)
+	assert.NotEqual(t, names[0], names[1], "same-title foreign results must not collide")
 }
 
 // findReqByID returns the requirement with the given ID from the first

@@ -90,7 +90,7 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
       emitConverterWarning(`Skipping assessment result "${title}": no finding has a target-id`);
       continue;
     }
-    const baseline = await resultToEvaluatedBaseline(result, groups, sar, input, scanTime);
+    const baseline = await resultToEvaluatedBaseline(result, groups, input, scanTime);
     baselines.push(baseline);
   }
 
@@ -294,7 +294,6 @@ export function sarRequirementId(f: Finding): string | undefined {
 async function resultToEvaluatedBaseline(
   result: AssessmentResult,
   groups: Map<string, Finding[]>,
-  sar: SecurityAssessmentResultsSAR,
   rawInput: string,
   scanTime: Date,
 ): Promise<EvaluatedBaseline> {
@@ -310,7 +309,7 @@ async function resultToEvaluatedBaseline(
   }
 
   // Derive baseline name
-  const name = sarBaselineName(result, sar);
+  const name = sarBaselineName(result);
 
   const baseline = createMinimalBaseline(name, requirements, {
     resultsChecksum: checksum,
@@ -782,7 +781,14 @@ function parseResultStartTime(result: AssessmentResult): Date {
   return new Date(0);
 }
 
-function sarBaselineName(result: AssessmentResult, sar: SecurityAssessmentResultsSAR): string {
-  const title = result.title || sar.metadata.title;
-  return toKebabCase(title, 'oscal-assessment-results');
+// sarBaselineName recovers the HDF baseline name. An HDF-produced result carries
+// it exactly in the namespaced baseline-name prop (§4.3). A foreign result has
+// none, so the name is <kebab-title>--<result-uuid> — the bare uuid when the
+// kebab-cased title is empty — which keeps same-title results distinct because
+// OSCAL guarantees uniqueness only for uuid (§4.5).
+function sarBaselineName(result: AssessmentResult): string {
+  const match = findVocabularyProp(result.props, 'baseline-name');
+  if (match) return match.value;
+  const kebab = toKebabCase(result.title ?? '', '');
+  return kebab === '' ? result.uuid : `${kebab}--${result.uuid}`;
 }

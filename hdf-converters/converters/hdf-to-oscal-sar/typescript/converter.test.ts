@@ -804,6 +804,93 @@ describe('requirement ids round-trip through OSCAL SAR', () => {
   });
 });
 
+describe('baseline names round-trip through OSCAL SAR', () => {
+  const HDF_NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+  // A HDF Results document whose baselines carry the given name/title, each with
+  // one control-shaped requirement so it survives the export.
+  const twoBaselineDoc = (specs: Array<{ name: string; title?: string; reqId: string }>): string =>
+    JSON.stringify({
+      baselines: specs.map((s) => ({
+        name: s.name,
+        ...(s.title ? { title: s.title } : {}),
+        requirements: [{
+          id: s.reqId, impact: 0.5, tags: { nist: [s.reqId] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      })),
+    });
+
+  it('recovers two same-title baseline names byte-exact', async () => {
+    const doc = twoBaselineDoc([
+      { name: 'rhel9-stig-host-a', title: 'RHEL 9 STIG', reqId: 'AC-2' },
+      { name: 'rhel9-stig-host-b', title: 'RHEL 9 STIG', reqId: 'AC-3' },
+    ]);
+    const sar = JSON.parse(await convertHdfToOscalSar(doc))['assessment-results'];
+    // The human-facing title still reaches the SAR result title.
+    expect(sar.results.map((r: { title: string }) => r.title)).toEqual(['RHEL 9 STIG', 'RHEL 9 STIG']);
+
+    const back = JSON.parse(await convertOscalSarToHdf(JSON.stringify({ 'assessment-results': sar })));
+    expect(back.baselines.map((b: { name: string }) => b.name)).toEqual(['rhel9-stig-host-a', 'rhel9-stig-host-b']);
+  });
+
+  it('recovers a name that is not a valid StringDatatype via prop remarks', async () => {
+    const name = 'rhel9-stig\nhost-c';
+    const doc = twoBaselineDoc([{ name, title: 'RHEL 9 STIG', reqId: 'AC-2' }]);
+    const sar = JSON.parse(await convertHdfToOscalSar(doc))['assessment-results'];
+    const prop = sar.results[0].props.find((p: { name: string }) => p.name === 'baseline-name');
+    expect(prop.value).toBe('rhel9-stig host-c');
+    expect(prop.remarks).toBe(name);
+
+    const back = JSON.parse(await convertOscalSarToHdf(JSON.stringify({ 'assessment-results': sar })));
+    expect(back.baselines[0].name).toBe(name);
+  });
+
+  // Mirrors the Go reader unit tests: a foreign result (no baseline-name prop)
+  // is named <kebab-title>--<uuid>, and same-title foreign results stay distinct.
+  const foreignSar = (results: Array<{ uuid: string; title: string; props?: unknown[] }>): string =>
+    JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: results.map((r) => ({
+          uuid: r.uuid, title: r.title, description: 'd', start: '2026-01-01T00:00:00Z',
+          ...(r.props ? { props: r.props } : {}),
+          'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+          findings: [{ uuid: `f-${r.uuid}`, title: 'F', description: 'd', target: { type: 'objective-id', 'target-id': 'ac-1', status: { state: 'satisfied' } } }],
+        })),
+      },
+    });
+
+  it('names same-title foreign results distinctly with the result uuid', async () => {
+    const back = JSON.parse(await convertOscalSarToHdf(foreignSar([
+      { uuid: 'aaaaaaaa-1111-4111-8111-111111111111', title: 'RHEL 9 STIG' },
+      { uuid: 'bbbbbbbb-2222-4222-8222-222222222222', title: 'RHEL 9 STIG' },
+    ])));
+    expect(back.baselines.map((b: { name: string }) => b.name)).toEqual([
+      'rhel-9-stig--aaaaaaaa-1111-4111-8111-111111111111',
+      'rhel-9-stig--bbbbbbbb-2222-4222-8222-222222222222',
+    ]);
+  });
+
+  it('falls back to the bare uuid when the kebab-cased title is empty', async () => {
+    const back = JSON.parse(await convertOscalSarToHdf(foreignSar([
+      { uuid: '33333333-3333-4333-8333-333333333333', title: '***' },
+    ])));
+    expect(back.baselines[0].name).toBe('33333333-3333-4333-8333-333333333333');
+  });
+
+  it('prefers a baseline-name prop over the title', async () => {
+    const back = JSON.parse(await convertOscalSarToHdf(foreignSar([
+      { uuid: '44444444-4444-4444-8444-444444444444', title: 'RHEL 9 STIG',
+        props: [{ name: 'baseline-name', ns: HDF_NS, value: 'rhel9-stig-host-a' }] },
+    ])));
+    expect(back.baselines[0].name).toBe('rhel9-stig-host-a');
+  });
+});
+
 describe('nistTagToControlID', () => {
   it.each([
     ['AC-1', 'ac-1'],

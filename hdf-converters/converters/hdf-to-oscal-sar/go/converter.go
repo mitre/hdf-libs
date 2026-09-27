@@ -197,8 +197,12 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		description = *baseline.Description
 	}
 
-	// baseline.version has no first-class SAR home; carry it as a result prop.
+	// The result title is display text and not injective, so carry the exact HDF
+	// baseline name in a namespaced prop for a lossless round trip (§4.3).
 	var resultProps []oscal.Property
+	resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-name", baseline.Name)
+
+	// baseline.version has no first-class SAR home; carry it as a result prop.
 	if baseline.Version != nil {
 		resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-version", *baseline.Version)
 	}
