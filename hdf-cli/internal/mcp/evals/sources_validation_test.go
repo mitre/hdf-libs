@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -20,12 +21,16 @@ import (
 // cannot be expressed to the reflector, so neither field may be required.
 func TestSourcesOnly_PassesSDKArgumentValidation(t *testing.T) {
 	root := t.TempDir()
-	for _, name := range []string{"sarif-gosec.json", "zap-webgoat.json"} {
-		b, err := os.ReadFile(filepath.Join("..", "tools", "testdata", name))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(root, name), b, 0o600); err != nil {
+	// sarif-gosec.json is local to the tools package; zap-webgoat.json is the
+	// shared merge-zap.json corpus fixture (@mitre/hdf-fixtures).
+	seed := map[string][]byte{"zap-webgoat.json": fixtures.Results.MergeZap}
+	b, err := os.ReadFile(filepath.Join("..", "tools", "testdata", "sarif-gosec.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	seed["sarif-gosec.json"] = b
+	for name, content := range seed {
+		if err := os.WriteFile(filepath.Join(root, name), content, 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -245,6 +245,11 @@ func sspComponentToHDFComponent(sc *SystemComponent, componentControls map[strin
 		Type: mapOSCALComponentType(sc.Type),
 	}
 
+	if sc.UUID != "" {
+		id := sc.UUID
+		comp.ComponentID = &id
+	}
+
 	if sc.Description != "" {
 		comp.Description = &sc.Description
 	}

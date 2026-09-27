@@ -1,7 +1,9 @@
 # XCCDF 1.2 XSD — provenance
 
 Used to validate `hdf-to-xccdf` output against the NIST XCCDF 1.2 schema in its
-tests (Go side, via `shared/go/xsdvalidate` → libxml2). The converter emits
+tests, in both languages: Go via `shared/go/xsdvalidate` (libxml2 through cgo)
+and TypeScript via `shared/typescript/xsd-validation.ts` (libxml2 compiled to
+WASM by `xmllint-wasm`). The converter emits
 `xmlns="http://checklists.nist.gov/xccdf/1.2"`.
 
 | file | source | original SHA-256 | modified? | local SHA-256 |
@@ -26,6 +28,17 @@ schema definitions are otherwise upstream-identical (see original SHAs above).
 **Import graph:** `xccdf_1.2.xsd` → `xml.xsd`, `cpe-language_2.3.xsd`;
 `cpe-language_2.3.xsd` → `cpe-naming_2.3.xsd`, `xml.xsd`.
 
-Note: `hdf-to-xccdf` output is XSD-validated on the Go side; the TypeScript output
-is covered transitively by the Go↔TS golden-parity test (byte-identical output).
+**Each language gates its own output.** An earlier revision of this file claimed
+the TypeScript output was covered transitively by Go↔TS golden parity. That was
+false: the golden comparison runs both sides through `NormalizeXMLForGolden`,
+which decodes entities and collapses whitespace, so output that differs in
+escaping or newline encoding compares equal and never reaches an XSD. The
+TypeScript suite therefore validates its own output against this XSD rather than
+relying on the Go result.
+
+**Windows:** the Go validator is a skipping stub on Windows
+(`xsdvalidate_windows.go`, no cgo libxml2), so Go XSD validation runs only on
+non-Windows CI legs. The WASM validator has no native dependency and runs on
+every leg.
+
 CKL was evaluated and excluded — DISA publishes no authoritative `.ckl` XSD.

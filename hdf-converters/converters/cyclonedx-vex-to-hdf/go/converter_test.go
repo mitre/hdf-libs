@@ -229,3 +229,23 @@ func TestSnapshots(t *testing.T) {
 		return ConvertCycloneDXVEXToHDF(input, "1.0.0")
 	})
 }
+
+// The spec's own example carries no analysis date, so appliedAt is conversion
+// time and the snapshot harness cannot hold it; the conversion is pinned here.
+func TestConvertCycloneDXVEX_SpecExample(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "fixtures", "input", "cyclonedx-vex-example.json"))
+	require.NoError(t, err)
+	out, err := ConvertCycloneDXVEXToHDF(raw, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, out.Overrides, 1)
+	o := out.Overrides[0]
+	assert.Equal(t, "CVE-2020-25649", o.RequirementID)
+	assert.Equal(t, hdf.FalsePositive, o.Type)
+	require.NotNil(t, o.Status)
+	assert.Equal(t, hdf.Passed, *o.Status)
+	require.NotNil(t, o.Justification)
+	assert.Equal(t, "vulnerable_code_not_in_execute_path", string(*o.Justification))
+	assert.False(t, o.AppliedAt.IsZero(), "appliedAt is conversion time, never zero")
+	require.Len(t, o.Evidence, 2)
+	assert.Equal(t, "https://nvd.nist.gov/vuln/detail/CVE-2020-25649", o.Evidence[0].Data)
+}

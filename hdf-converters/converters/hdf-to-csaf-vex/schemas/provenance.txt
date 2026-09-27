@@ -1,0 +1,64 @@
+# CSAF 2.0 JSON Schema and its CVSS companions — provenance
+
+`csaf_json_schema.json` is the OASIS CSAF v2.0 JSON Schema as published at the
+OASIS Standard (`os`) stage. It gates `hdf-to-csaf-vex` output in both
+languages, and the reverse importer `csaf-vex-to-hdf` points its fixture
+provenance here rather than re-vendoring (see
+`../../csaf-vex-to-hdf/fixtures/provenance.txt`). The converter emits
+`"csaf_version": "2.0"`.
+
+## csaf_json_schema.json
+
+- **Source:** https://docs.oasis-open.org/csaf/csaf/v2.0/os/schemas/csaf_json_schema.json
+- **Pinned ref:** OASIS Standard stage `v2.0/os`, equivalently the
+  `oasis-tcs/csaf` git tag **`csaf-2.0-os`**. Both were fetched on 2026-09-17
+  and serve the same bytes as the copy vendored here:
+  `https://raw.githubusercontent.com/oasis-tcs/csaf/csaf-2.0-os/csaf_2.0/json_schema/csaf_json_schema.json`.
+- **`$id`:** `https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json`
+- **JSON Schema draft:** 2020-12
+- **Self-contained:** no — it `$ref`s three FIRST.org CVSS schemas by absolute
+  URL. Those are the three companions vendored beside it; both test harnesses
+  register them under exactly those URLs so the schema compiles offline.
+- **SHA-256:** `29c114b35b0a30831f1674f2ab8b3ed9b2890cfeaa63b924ac6ed9d70ef44262`
+- **Retrieved:** 2026-09-17
+
+## CVSS companions
+
+| file | source | `$ref`ed as | draft | own id revision | SHA-256 |
+|---|---|---|---|---|---|
+| `cvss-v2.0.json` | https://www.first.org/cvss/cvss-v2.0.json | same URL | draft-04 | `?20170531` | `cd1a7c0815b7a47dc12fb7dded10622b96d562841f7bc6d2d8765c5d937a28f2` |
+| `cvss-v3.0.json` | https://www.first.org/cvss/cvss-v3.0.json | same URL | draft-04 | `?20170531` | `b2b587e5dfa6d9a4be89e25cb593df04f14e7ffbe8fe5b167ceee17b6097d919` |
+| `cvss-v3.1.json` | https://www.first.org/cvss/cvss-v3.1.json | same URL | draft-07 | `?20211103` | `77ff3df106e4588e2bb5c9cf0237f962c62d35c5002443c4bf7cc7ca16ee171f` |
+
+**No pinned upstream ref exists for these three.** FIRST.org publishes each CVSS
+schema at a single unversioned URL and does not tag or archive revisions; the
+only version marker upstream offers is the date suffix each file carries in its
+own `id`/`$id` (recorded above). Recording that, plus the hash and the retrieval
+date, is the whole of what can truthfully be pinned here.
+
+All four files were re-downloaded from their sources on 2026-09-17 and hashed;
+every one is byte-identical to the copy vendored here (first vendored
+2026-09-09). Do not edit; re-fetch to update.
+
+## Both languages validate directly
+
+The draft-04 CVSS companions used to mean CSAF output was schema-gated on the Go
+side only, with the TypeScript side called "covered transitively" by the Go↔TS
+golden-parity test. **That is no longer true, and the transitive claim was never
+sound** — parity proves the two emit the same bytes, not that those bytes
+satisfy the schema.
+
+Both harnesses now compile this schema and validate output against it:
+
+- **Go** — `santhosh-tekuri/jsonschema` compiles mixed drafts natively.
+- **TypeScript** — ajv 8 dropped draft-04, so
+  `shared/typescript/schema-validation.ts` registers each companion under its
+  `$ref` URL with the companion's own `id` stripped and the meta-schema lint
+  skipped. The URL registration supersedes draft-04's `id`, and only the
+  companion's meta-schema is skipped, not its constraints.
+
+The one place the draft-04 limit still bites is the whole-tree "every vendored
+schema compiles" sweep in `shared/typescript/schema-validation.test.ts`, which
+compiles each file in isolation: `cvss-v2.0.json`, `cvss-v3.0.json` and the CSAF
+schema that `$ref`s them are named there as the known ajv exclusions, and the Go
+peer covers them.

@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
+	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/nist"
 	"github.com/stretchr/testify/require"
 )
 
@@ -80,12 +82,17 @@ func TestOSCALToken_NoCollisionsAcrossRealFixtureIDs(t *testing.T) {
 					continue
 				}
 				ids++
-				// The shipped composition, not OSCALToken alone: the converter
-				// always encodes what NistTagToControlID returns, and testing the
-				// bare encoder would pin a function no caller uses.
-				tok := OSCALToken(NistTagToControlID(r.ID))
+				// The shipped composition, not OSCALToken alone: a finding targets
+				// the statement id when the requirement names a statement, and the
+				// encoded control id otherwise. Testing the bare encoder would pin
+				// a function no caller uses.
+				controlID, statementID := NistTagToControlRef(r.ID)
+				tok := statementID
+				if tok == "" {
+					tok = OSCALToken(controlID)
+				}
 				require.True(t, tokenRe.MatchString(tok), "%q encoded to %q, not a token", r.ID, tok)
-				if prev, ok := seen[tok]; ok && prev != r.ID {
+				if prev, ok := seen[tok]; ok && !sameNISTID(prev, r.ID) {
 					t.Fatalf("collision: %q and %q both encode to %q", prev, r.ID, tok)
 				}
 				seen[tok] = r.ID
@@ -94,4 +101,16 @@ func TestOSCALToken_NoCollisionsAcrossRealFixtureIDs(t *testing.T) {
 	}
 	require.Greater(t, ids, 1000, "scanned too few ids to be meaningful")
 	t.Logf("scanned %d requirement ids, %d distinct encodings, no collisions", ids, len(seen))
+}
+
+// sameNISTID reports whether two ids are spellings of one NIST control or
+// statement ("AC-2 (3)" and "ac-2(3)"), which the converter maps to one target
+// on purpose. Distinct ids that are not both NIST spellings are never the same.
+func sameNISTID(a, b string) bool {
+	if a == b {
+		return true
+	}
+	na, okA := nist.NormalizeID(strings.Join(strings.Fields(a), " "))
+	nb, okB := nist.NormalizeID(strings.Join(strings.Fields(b), " "))
+	return okA && okB && na == nb
 }

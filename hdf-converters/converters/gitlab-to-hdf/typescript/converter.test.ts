@@ -585,6 +585,27 @@ describe('gitlab-to-hdf refs and remediation backfill', () => {
     expect(req.refs).toBeUndefined();
   });
 
+  // The schema requires at least one identifier, so no committed fixture has an
+  // empty array any more; the converter still tolerates one (matches the Go peer).
+  it('tolerates an empty identifiers[] — no refs, default NIST', async () => {
+    const input = JSON.stringify({
+      version: '15.1.0',
+      scan: {
+        type: 'sast', status: 'success', start_time: '2024-01-01T00:00:00', end_time: '2024-01-01T00:01:00',
+        scanner: { id: 'semgrep', name: 'Semgrep', version: '1.34.0', vendor: { name: 'Semgrep' } },
+        analyzer: { id: 'semgrep', name: 'Semgrep', version: '1.0.0', vendor: { name: 'GitLab' } },
+      },
+      vulnerabilities: [{
+        id: '44444444-4444-4444-4444-444444444444', name: 'No identifiers', severity: 'Low',
+        identifiers: [], links: [], location: { file: 'a.py', start_line: 1, end_line: 1 },
+      }],
+    });
+    const hdf = parseJSON<HDFResults>(await convertGitlabToHdf(input));
+    const req = reqById(hdf, '44444444-4444-4444-4444-444444444444');
+    expect(req.refs).toBeUndefined();
+    expect(req.tags?.nist).toEqual(['SA-11', 'RA-5']);
+  });
+
   it('de-duplicates a URL shared by links[] and identifiers[]', async () => {
     const input = JSON.stringify({
       scan: {type: 'sast', scanner: {name: 'Semgrep'}},

@@ -46,7 +46,7 @@
       ],
       "resultsChecksum": {
         "algorithm": "sha256",
-        "value": "4c1a8302a8f8160f65d9a491fc0ba901afa203ee35b4916ed9cde4eb74be61ce"
+        "value": "d86078179e2b8b089f0fbe792df2b94ed9fc800475acf29a549225c3c34fb5d0"
       },
       "name": "GitLab Security Scan",
       "summary": "Scanner: ZAProxy v2.14.0",

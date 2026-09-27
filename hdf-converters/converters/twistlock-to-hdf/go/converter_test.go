@@ -190,8 +190,11 @@ func TestSeverityToImpact(t *testing.T) {
 		{"moderate", 0.5},
 		{"low", 0.3},
 		{"LOW", 0.3},
+		{"unimportant", 0.3}, // Debian's lowest RATED tier -> nearest standard rated tier
+		{"negligible", 0.0},  // parity with grype-to-hdf's negligible floor
 		{"", 0.5},
 		{"unknown", 0.5},
+		{"unassigned", 0.5}, // unrated -> default impact (marker asserted separately)
 	}
 	for _, tc := range tests {
 		t.Run(tc.severity, func(t *testing.T) {
@@ -744,7 +747,10 @@ func TestConvertTwistlock_UnratedSeverityMarker(t *testing.T) {
 				{"id": "CVE-2099-1001", "severity": "", "description": "empty severity"},
 				{"id": "CVE-2099-1002", "severity": "unknown", "description": "unknown severity"},
 				{"id": "CVE-2099-1003", "severity": "moderate", "description": "rated severity"},
-				{"id": "CVE-2099-1004", "severity": "info", "description": "zero-impact tier is rated"}
+				{"id": "CVE-2099-1004", "severity": "info", "description": "zero-impact tier is rated"},
+				{"id": "CVE-2099-1005", "severity": "unassigned", "description": "unrated token"},
+				{"id": "CVE-2099-1006", "severity": "negligible", "description": "rated floor, not unrated"},
+				{"id": "CVE-2099-1007", "severity": "unimportant", "description": "rated low tier, not unrated"}
 			]
 		}]
 	}`)
@@ -752,7 +758,7 @@ func TestConvertTwistlock_UnratedSeverityMarker(t *testing.T) {
 	require.NoError(t, err)
 	reqs := result.Baselines[0].Requirements
 
-	for _, id := range []string{"CVE-2099-1001", "CVE-2099-1002"} {
+	for _, id := range []string{"CVE-2099-1001", "CVE-2099-1002", "CVE-2099-1005"} {
 		req := shared.MustFindRequirement(t, reqs, id)
 		assert.Equal(t, "unrated", req.Tags["severity_rating"],
 			"%s: unrated severity should carry severity_rating=unrated", id)
@@ -760,7 +766,8 @@ func TestConvertTwistlock_UnratedSeverityMarker(t *testing.T) {
 
 	// Tag-only assertions: the zero-impact tier is RATED (no marker); impact is
 	// deliberately not asserted here (tracked TS info/none impact-map gap).
-	for _, id := range []string{"CVE-2099-1003", "CVE-2099-1004"} {
+	// negligible and unimportant are RATED distro severities — no unrated marker.
+	for _, id := range []string{"CVE-2099-1003", "CVE-2099-1004", "CVE-2099-1006", "CVE-2099-1007"} {
 		rated := shared.MustFindRequirement(t, reqs, id)
 		_, present := rated.Tags["severity_rating"]
 		assert.False(t, present, "%s: rated severity must not carry the severity_rating tag", id)

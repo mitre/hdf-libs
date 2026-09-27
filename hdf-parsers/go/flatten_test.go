@@ -638,8 +638,8 @@ func loadV1FixtureAsHDFResults(t *testing.T, data []byte) hdf.HDFResults {
 }
 
 func TestFlattenOverlays_Integration(t *testing.T) {
-	t.Run("Three_Layer_RHEL7 3 profiles to 1 baseline 247 controls", func(t *testing.T) {
-		results := loadV1FixtureAsHDFResults(t, fixtures.Inspec.ThreeLayerRhel7)
+	t.Run("Three_Layer_Overlay 3 profiles to 1 baseline 247 controls", func(t *testing.T) {
+		results := loadV1FixtureAsHDFResults(t, fixtures.Inspec.ThreeLayerOverlay)
 		flat := FlattenOverlays(results)
 
 		assert.Len(t, flat.Results.Baselines, 1)

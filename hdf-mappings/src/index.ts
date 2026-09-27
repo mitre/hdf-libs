@@ -22,6 +22,7 @@ export {
   getNISTDescription,
   getAllNISTIds,
   nistExists,
+  normalizeNistId,
   getNISTFamily,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
   DEFAULT_REMEDIATION_NIST_TAGS,

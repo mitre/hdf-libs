@@ -2,15 +2,15 @@
   "schemas": [
     {
       "file": "ocsf-vulnerability_finding-2002.schema.json",
-      "source": "https://schema.ocsf.io/schema/classes/vulnerability_finding",
-      "sha256": "8029415ae1440899f5aaeba85a74c3494cef8b0f9a4f9614578fe5f32554ea01",
-      "retrieved": "2026-09-09"
+      "source": "https://schema.ocsf.io/schema/classes/vulnerability_finding?profiles=",
+      "sha256": "8a540c96b43e4e0f437f75a718b056395aec32d2098a1f5ac6e195f4f9244bff",
+      "retrieved": "2026-09-20"
     },
     {
       "file": "ocsf-compliance_finding-2003.schema.json",
-      "source": "https://schema.ocsf.io/schema/classes/compliance_finding",
-      "sha256": "2f6e79a02e08e9e394584ec684c50304e61b15e7579abe853f0f9ac725f09c67",
-      "retrieved": "2026-09-09"
+      "source": "https://schema.ocsf.io/schema/classes/compliance_finding?profiles=",
+      "sha256": "0d03b361acf2bdc94169f8bf7ace0498e5a873155868a1ba11fae256e2d8daf9",
+      "retrieved": "2026-09-20"
     }
   ]
 }

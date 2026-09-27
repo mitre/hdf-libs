@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfparsers "github.com/mitre/hdf-libs/hdf-parsers/go/v3"
@@ -46,6 +47,7 @@ func NewValidateCmd() *cobra.Command { //nolint:dupl // Cobra command setup; fla
 	var (
 		localSchemaType string
 		localQuiet      bool
+		localSchemaVer  string
 	)
 
 	cmd := &cobra.Command{
@@ -67,7 +69,12 @@ Examples:
   cat results.json | hdf validate -`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ver, err := parseSchemaVer(localSchemaVer)
+			if err != nil {
+				return err
+			}
 			// Sync local flags to global variables for runValidate
+			validateSchemaVer = ver
 			schemaType = localSchemaType
 			quiet = localQuiet
 
@@ -84,10 +91,33 @@ Examples:
 
 	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
+	cmd.Flags().StringVar(&localSchemaVer, "schema-ver", "", "HDF major schema version to validate against: 2 (legacy Heimdall/InSpec exec-json) or 3 (default, latest). Accepts 'hdf@2'/'hdf@3'; majors only.")
 
 	cmd.AddCommand(newValidateThresholdCmd())
 
 	return cmd
+}
+
+// validateSchemaVer is the resolved major HDF schema version to validate against
+// (2 or 3); 3 is the default/latest. Set from the --schema-ver flag.
+var validateSchemaVer int
+
+// parseSchemaVer resolves the --schema-ver flag to a major version. Only majors
+// are accepted (2 or 3) — a minor/patch like "3.4.1" is rejected; empty defaults
+// to the latest (3). "hdf@N" is accepted for parity with `hdf convert --to hdf@N`.
+func parseSchemaVer(s string) (int, error) {
+	v := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(s)), "hdf@")
+	v = strings.TrimPrefix(v, "v")
+	switch v {
+	case "":
+		return 3, nil // default: latest
+	case "2":
+		return 2, nil
+	case "3":
+		return 3, nil
+	default:
+		return 0, fmt.Errorf("unsupported --schema-ver %q: only major versions 2 or 3 are allowed (e.g. --schema-ver 2), not a minor/patch like 3.4.1", s)
+	}
 }
 
 func runValidate(_ *cobra.Command, args []string) error {
@@ -110,6 +140,25 @@ func runValidate(_ *cobra.Command, args []string) error {
 	displayName := filename
 	if filename == "-" {
 		displayName = "<stdin>"
+	}
+
+	// v2 selected: validate against the pinned legacy (Heimdall/InSpec exec-json)
+	// schema at the same rigor as v3, rather than the v3 schemas.
+	if validateSchemaVer == 2 {
+		return runValidateLegacyV2(data, filename, displayName)
+	}
+
+	// Default/v3 path: a legacy HDF v2 (InSpec exec-json) document (profiles[]+
+	// platform) is not a v3 document. Point at both ways to handle it — validate
+	// it as v2 (--schema-ver 2) or convert it to v3 — instead of the opaque
+	// "unrecognized" (auto-detect) or "baselines is required" (--type results).
+	if looksLikeLegacyHDFv2(data) {
+		convertTarget := filename
+		if convertTarget == "-" {
+			convertTarget = "<file>"
+		}
+		fmt.Fprintf(os.Stderr, "✗ %s — this looks like a legacy HDF v2 (InSpec exec-json) document; hdf validate defaults to the current v3 schemas. Validate it as v2:\n  hdf validate %s --schema-ver 2\nor convert it to v3:\n  hdf convert %s --to hdf@3\n", displayName, convertTarget, convertTarget)
+		return &exitCodeError{code: 1, message: fmt.Sprintf("legacy HDF v2 (InSpec exec-json) document; validate with --schema-ver 2 or convert to v3: %s", displayName)}
 	}
 
 	// Auto-detect document type if --type not provided
@@ -175,6 +224,35 @@ func runValidate(_ *cobra.Command, args []string) error {
 		}
 	}
 
+	return nil
+}
+
+// runValidateLegacyV2 validates a document against the pinned HDF v2
+// (Heimdall/InSpec exec-json) schema and reports the result like the v3 path.
+func runValidateLegacyV2(data []byte, filename, displayName string) error {
+	const v2Label = "v2 (InSpec exec-json)"
+	result := validators.ValidateLegacyV2(data)
+	if !result.Valid {
+		var lineMap map[string]int
+		if filename != "-" {
+			lineMap = hdfutil.JSONPathLineMap(data)
+		}
+		if jsonOutput {
+			outputValidationJSON(displayName, v2Label, &result, lineMap)
+		} else {
+			outputValidationHuman(displayName, v2Label, &result, lineMap)
+		}
+		return &exitCodeError{code: 1, message: fmt.Sprintf("HDF v2 validation failed for %s", displayName)}
+	}
+
+	if jsonOutput {
+		output, _ := json.MarshalIndent(map[string]interface{}{
+			"valid": true, "file": displayName, "type": v2Label,
+		}, "", "  ")
+		fmt.Println(string(output))
+	} else if !quiet {
+		fmt.Printf("✓ %s is a valid HDF %s file\n", displayName, v2Label)
+	}
 	return nil
 }
 

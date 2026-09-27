@@ -1,0 +1,200 @@
+{
+  "$comment": "Shared table for the hdf-to-csaf-vex CVSS score export, read by both converters/hdf-to-csaf-vex/go/schema_validation_test.go and converters/hdf-to-csaf-vex/typescript/schema-validation.test.ts, so the completeness rule and the severity mapping are asserted against ONE definition in both languages. Each case is an HDF Cvss block as it sits on an override for `cve` whose single affectedPackages entry carries `product` as its purl or cpe; `want` is the CSAF scores[] entry the exporter must emit, or null when the block cannot satisfy the FIRST.org schema CSAF binds its version to, in which case `warning` is the message the exporter must log instead (null when the block is enrichment-only and is skipped silently). Every emitting case is additionally validated against the vendored CSAF schema, and the full output of every case is frozen as expected/cvss-<name>.csaf-vex.json by Go and asserted byte-identical by TypeScript. Data provenance: CVE-2021-44228 (Log4Shell) carries the CVSS 3.1 (10.0 CRITICAL) and CVSS 2.0 (9.3 HIGH) base vectors NVD publishes for it, against log4j-core 2.14.1, a vulnerable release; CVE-2017-5638 (Apache Struts S2-045) carries NVD's CVSS 3.0 (10.0 CRITICAL) against struts2-core 2.3.31, the last vulnerable 2.3 release; the CVSS 4.0 vector is the HDF schema's own Cvss example for CVE-2024-21762 (FortiOS SSL VPN, 7.4.2 affected per FG-IR-24-015) with its base score computed by hdf-utilities computeCvss40Score, which is parity-tested against FIRST's 4.0 reference vectors (9.3, not the 9.8 the schema example lists, which is that CVE's 3.1 score). Every vector validates under hdf-utilities validateCvssVector for its version, and every 3.1 score was recomputed with computeCvssScore.",
+  "severity": {
+    "$comment": "HDF Cvss_Severity to the FIRST.org severityType enum (cvss-v3.0.json and cvss-v3.1.json, both vendored beside this file; 4.0 is held to the same enum from FIRST's published cvss-v4.0.json, which is NOT vendored here). The five bands are the same; FIRST spells them uppercase. CVSS 2.0 defines no qualitative severity, so cvss_v2 carries none. The tests also check these values against the enum in the vendored cvss-v3.1.json, so this table cannot drift from the schema either.",
+    "none": "NONE",
+    "low": "LOW",
+    "medium": "MEDIUM",
+    "high": "HIGH",
+    "critical": "CRITICAL"
+  },
+  "cases": [
+    {
+      "name": "v31-complete",
+      "why": "a complete 3.1 block is exported with its severity in FIRST's uppercase enum",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "3.1",
+        "source": "CVE-2021-44228",
+        "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+        "baseScore": 10.0,
+        "baseSeverity": "critical"
+      },
+      "want": {
+        "products": ["pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"],
+        "cvss_v3": {
+          "version": "3.1",
+          "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+          "baseScore": 10.0,
+          "baseSeverity": "CRITICAL"
+        }
+      },
+      "warning": null
+    },
+    {
+      "name": "v31-no-vector",
+      "why": "a 3.1 score without its vector (Twistlock/Prisma shape) is legal HDF but cannot satisfy cvss-v3.1.json",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "3.1",
+        "source": "CVE-2021-44228",
+        "baseScore": 10.0,
+        "baseSeverity": "critical"
+      },
+      "want": null,
+      "warning": "hdf-to-csaf-vex: CVE-2021-44228: CVSS 3.1 score not exported, CSAF requires vectorString"
+    },
+    {
+      "name": "v31-no-severity",
+      "why": "a 3.1 vector and score without the severity band is legal HDF; the band is not synthesized",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "3.1",
+        "source": "CVE-2021-44228",
+        "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+        "baseScore": 10.0
+      },
+      "want": null,
+      "warning": "hdf-to-csaf-vex: CVE-2021-44228: CVSS 3.1 score not exported, CSAF requires baseSeverity"
+    },
+    {
+      "name": "v31-no-score",
+      "why": "a 3.1 vector without its score is legal HDF; the score is not recomputed",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "3.1",
+        "source": "CVE-2021-44228",
+        "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+        "baseSeverity": "critical"
+      },
+      "want": null,
+      "warning": "hdf-to-csaf-vex: CVE-2021-44228: CVSS 3.1 score not exported, CSAF requires baseScore"
+    },
+    {
+      "name": "v31-score-only",
+      "why": "the minimal legal HDF block, version and baseScore, is short two of the four fields cvss-v3.1.json requires",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "3.1",
+        "source": "CVE-2021-44228",
+        "baseScore": 10.0
+      },
+      "want": null,
+      "warning": "hdf-to-csaf-vex: CVE-2021-44228: CVSS 3.1 score not exported, CSAF requires vectorString, baseSeverity"
+    },
+    {
+      "name": "v31-enrichment-only",
+      "why": "consumer threat enrichment with no base metrics is the designed riskAdjustment shape; CSAF scores carry base metrics, so nothing exportable was lost and no warning is raised",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "3.1",
+        "source": "CVE-2021-44228",
+        "threatVector": "E:H/RL:O/RC:C",
+        "threatScore": 9.5
+      },
+      "want": null,
+      "warning": null
+    },
+    {
+      "name": "v30-complete",
+      "why": "CSAF binds cvss_v3 to either cvss-v3.0.json or cvss-v3.1.json by the version field; 3.0 shares 3.1's required set and uppercase enum",
+      "cve": "CVE-2017-5638",
+      "product": "pkg:maven/org.apache.struts/struts2-core@2.3.31",
+      "cvss": {
+        "version": "3.0",
+        "source": "CVE-2017-5638",
+        "baseVector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+        "baseScore": 10.0,
+        "baseSeverity": "critical"
+      },
+      "want": {
+        "products": ["pkg:maven/org.apache.struts/struts2-core@2.3.31"],
+        "cvss_v3": {
+          "version": "3.0",
+          "vectorString": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+          "baseScore": 10.0,
+          "baseSeverity": "CRITICAL"
+        }
+      },
+      "warning": null
+    },
+    {
+      "name": "v20-complete",
+      "why": "cvss-v2.0.json requires version, vectorString and baseScore and defines no severity, so the HDF band has no CSAF home and is not emitted",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "2.0",
+        "source": "CVE-2021-44228",
+        "baseVector": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+        "baseScore": 9.3,
+        "baseSeverity": "high"
+      },
+      "want": {
+        "products": ["pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"],
+        "cvss_v2": {
+          "version": "2.0",
+          "vectorString": "AV:N/AC:M/Au:N/C:C/I:C/A:C",
+          "baseScore": 9.3
+        }
+      },
+      "warning": null
+    },
+    {
+      "name": "v20-score-only",
+      "why": "a 2.0 score without its vector cannot satisfy cvss-v2.0.json; severity is not among what 2.0 requires",
+      "cve": "CVE-2021-44228",
+      "product": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "cvss": {
+        "version": "2.0",
+        "source": "CVE-2021-44228",
+        "baseScore": 9.3
+      },
+      "want": null,
+      "warning": "hdf-to-csaf-vex: CVE-2021-44228: CVSS 2.0 score not exported, CSAF requires vectorString"
+    },
+    {
+      "name": "v40-complete",
+      "why": "a complete 4.0 block is keyed cvss_v4 with the same four-field rule and uppercase enum as 3.x. NOTE: no cvss-v4.0.json is vendored, and CSAF 2.0 defines only cvss_v2 and cvss_v3 under scores[] (cvss_v4 arrived in CSAF 2.1), so this rule is enforced by this table and the code against FIRST's published 4.0 schema, not by the schema-validation test",
+      "cve": "CVE-2024-21762",
+      "product": "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*",
+      "cvss": {
+        "version": "4.0",
+        "source": "CVE-2024-21762",
+        "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+        "baseScore": 9.3,
+        "baseSeverity": "critical"
+      },
+      "want": {
+        "products": ["cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*"],
+        "cvss_v4": {
+          "version": "4.0",
+          "vectorString": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+          "baseScore": 9.3,
+          "baseSeverity": "CRITICAL"
+        }
+      },
+      "warning": null
+    },
+    {
+      "name": "v40-no-severity",
+      "why": "4.0 is held to the same completeness rule as 3.x",
+      "cve": "CVE-2024-21762",
+      "product": "cpe:2.3:o:fortinet:fortios:7.4.2:*:*:*:*:*:*:*",
+      "cvss": {
+        "version": "4.0",
+        "source": "CVE-2024-21762",
+        "baseVector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+        "baseScore": 9.3
+      },
+      "want": null,
+      "warning": "hdf-to-csaf-vex: CVE-2024-21762: CVSS 4.0 score not exported, CSAF requires baseSeverity"
+    }
+  ]
+}

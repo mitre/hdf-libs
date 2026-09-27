@@ -266,6 +266,10 @@ function sspComponentToHDFComponent(
     type: mapOSCALComponentType(sc.type),
   };
 
+  if (sc.uuid) {
+    comp.componentId = sc.uuid;
+  }
+
   if (sc.description) {
     comp.description = sc.description;
   }

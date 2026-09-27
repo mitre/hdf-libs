@@ -26,13 +26,28 @@ var resultsInspecMultilayered []byte
 //go:embed results/minimal.json
 var resultsMinimal []byte
 
+//go:embed results/duplicate-baselines.json
+var resultsDuplicateBaselines []byte
+
+//go:embed results/merge-grype.json
+var resultsMergeGrype []byte
+
+//go:embed results/merge-zap.json
+var resultsMergeZap []byte
+
 // Results exposes embedded HDF Results documents.
 var Results = struct {
 	InspecMultilayered []byte
 	Minimal            []byte
+	DuplicateBaselines []byte
+	MergeGrype         []byte
+	MergeZap           []byte
 }{
 	InspecMultilayered: resultsInspecMultilayered,
 	Minimal:            resultsMinimal,
+	DuplicateBaselines: resultsDuplicateBaselines,
+	MergeGrype:         resultsMergeGrype,
+	MergeZap:           resultsMergeZap,
 }
 
 // ── HDF Baseline ─────────────────────────────────────────────────────────
@@ -75,9 +90,6 @@ var inspecContainerScan []byte
 //go:embed inspec/three-layer-overlay.json
 var inspecThreeLayerOverlay []byte
 
-//go:embed inspec/three-layer-rhel7.json
-var inspecThreeLayerRhel7 []byte
-
 //go:embed inspec/wrapper.json
 var inspecWrapper []byte
 
@@ -90,12 +102,10 @@ var Inspec = struct {
 	Ubi9Scan          []byte
 	ContainerScan     []byte
 	ThreeLayerOverlay []byte
-	ThreeLayerRhel7   []byte
 	Wrapper           []byte
 }{
 	Ubi9Scan:          inspecUbi9Scan,
 	ContainerScan:     inspecContainerScan,
 	ThreeLayerOverlay: inspecThreeLayerOverlay,
-	ThreeLayerRhel7:   inspecThreeLayerRhel7,
 	Wrapper:           inspecWrapper,
 }

@@ -1,0 +1,151 @@
+{
+  "generator": {
+    "name": "oscal-poam-to-hdf",
+    "version": "dev"
+  },
+  "integrity": {
+    "algorithm": "sha256",
+    "checksum": "1e58d526a2a73352d540aec64a36cf0c9eb7bd7174393ecd02191ab096f91ef0"
+  },
+  "name": "portal-q1-2026-waivers",
+  "overrides": [
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2026-06-30T00:00:00Z",
+      "reason": "Compensating control: session timeout set to 15 min",
+      "requirementId": "SV-257777",
+      "status": "passed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2026-10-14T00:00:00Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "d5927009b2bc1086ff0be5d94c559aa5f8ee1be97dd9c87055d87bc921e00e00"
+      },
+      "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+      "requirementId": "SV-258010",
+      "status": "passed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2026-10-14T00:00:00Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "261055f96934790e4a33655955248a4c85c01cc1d5edfd4eb8c0d17c1f9a83ee"
+      },
+      "reason": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+      "requirementId": "CVE-2026-12345",
+      "status": "passed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2026-10-14T00:00:00Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "9d671f9e9a193eb6ef5cda05671e49263c7a3b5e65f47e1ea9499ca5d2b11a0e"
+      },
+      "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
+      "requirementId": "SV-258020",
+      "status": "failed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2026-07-01T00:00:00Z",
+      "milestones": [
+        {
+          "description": "Vendor patch release",
+          "estimatedCompletion": "2026-04-15T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "description": "Apply patch to all servers",
+          "estimatedCompletion": "2026-05-01T00:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "dce8beaa82528c2e5bf6078fd87fc98b4cdb93ba96c080529b4aa14a58558d5a"
+      },
+      "reason": "Patch requires vendor release, expected Q2 2026",
+      "requirementId": "SV-258001",
+      "status": "failed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2026-09-26T00:00:00Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "09549d40bb72389c875a62d2127f7ada7b2269682d9041b89ab7036be322fb8b"
+      },
+      "reason": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+      "requirementId": "SV-230368",
+      "status": "passed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2027-05-01T00:00:00Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "014995a1d2a1da1dfb47c1dd9719404f6ffecd6e73fd124b03bce77317066c3f"
+      },
+      "reason": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+      "requirementId": "CVE-2026-12345",
+      "status": "passed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "appliedBy": {
+        "identifier": "oscal-poam-converter",
+        "type": "system"
+      },
+      "expiresAt": "2026-06-30T00:00:00Z",
+      "previousChecksum": {
+        "algorithm": "sha256",
+        "value": "4fc7f3d6959ca2597edbd0fa8380aad1b463b01a86d19382e12e7008f9325c2a"
+      },
+      "reason": "Manual attestation recorded before the requirement was identified",
+      "requirementId": "unknown",
+      "status": "passed",
+      "type": "poam"
+    }
+  ],
+  "systemRef": "#",
+  "version": "1.0.0"
+}

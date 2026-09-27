@@ -979,7 +979,7 @@ describe('hdf-results.schema.json (refactored)', () => {
                 evidence: [
                   {
                     type: 'screenshot',
-                    data: 'base64-screenshot-data',
+                    data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
                     description: 'Configuration interface screenshot',
                     mimeType: 'image/png',
                     encoding: 'base64',
@@ -1006,6 +1006,93 @@ describe('hdf-results.schema.json (refactored)', () => {
         ],
       });
       expect(validate(doc)).toBe(true);
+    });
+
+    it('should reject requirement evidence with empty data', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [createMinimalRequirement({ evidence: [{ type: 'log', data: '' }] })],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should reject embedded override evidence with empty data', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            requirements: [
+              createMinimalRequirement({
+                statusOverrides: [
+                  {
+                    type: 'attestation',
+                    status: 'passed',
+                    reason: 'Manually verified the sshd FIPS cipher list',
+                    appliedBy: { identifier: 'assessor@example.com', type: 'email' },
+                    appliedAt: '2025-12-01T10:00:00Z',
+                    expiresAt: '2099-12-31T00:00:00Z',
+                    evidence: [{ type: 'screenshot', data: '' }],
+                  },
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+      expect(validate(doc)).toBe(false);
+    });
+
+    it('should reject base64-encoded requirement evidence whose data is not base64', () => {
+      const withData = (data: string) =>
+        createMinimalResultsDoc({
+          baselines: [
+            createMinimalEvaluatedBaseline({
+              requirements: [
+                createMinimalRequirement({
+                  evidence: [{ type: 'screenshot', data, mimeType: 'image/png', encoding: 'base64' }],
+                }),
+              ],
+            }),
+          ],
+        });
+      expect(validate(withData('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==')), JSON.stringify(validate.errors)).toBe(true);
+      expect(validate(withData('not base64!'))).toBe(false);
+      expect(validate(withData('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='))).toBe(false);
+    });
+
+    it('should validate a POA&M milestone with a title and reject a multi-line one', () => {
+      const withTitle = (title: string) =>
+        createMinimalResultsDoc({
+          baselines: [
+            createMinimalEvaluatedBaseline({
+              requirements: [
+                createMinimalRequirement({
+                  poams: [
+                    {
+                      type: 'remediation',
+                      explanation: 'Patch deployment scheduled pending vendor fix',
+                      appliedBy: { identifier: 'ops-team@example.com', type: 'simple' },
+                      appliedAt: '2025-12-01T10:00:00Z',
+                      expiresAt: '2099-12-31T00:00:00Z',
+                      milestones: [
+                        {
+                          title,
+                          description: 'Deploy the vendor patch to production after staging sign-off',
+                          estimatedCompletion: '2026-01-10T00:00:00Z',
+                          status: 'pending',
+                        },
+                      ],
+                    },
+                  ],
+                }),
+              ],
+            }),
+          ],
+        });
+      expect(validate(withTitle('Deploy to production')), JSON.stringify(validate.errors)).toBe(true);
+      expect(validate(withTitle('Deploy to\nproduction'))).toBe(false);
     });
 
     it('should validate requirement without evidence field', () => {

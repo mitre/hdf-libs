@@ -141,16 +141,33 @@ type XCCDFScore struct {
 
 // XCCDFRuleResult represents an XCCDF rule-result element.
 type XCCDFRuleResult struct {
-	XMLName xml.Name    `xml:"rule-result"`
-	IDRef   string      `xml:"idref,attr"`
-	Time    string      `xml:"time,attr,omitempty"`
-	Version string      `xml:"version,attr,omitempty"`
-	Result  string      `xml:"result"`
-	Message string      `xml:"message,omitempty"`
-	Check   *XCCDFCheck `xml:"check,omitempty"`
+	XMLName xml.Name      `xml:"rule-result"`
+	IDRef   string        `xml:"idref,attr"`
+	Time    string        `xml:"time,attr,omitempty"`
+	Version string        `xml:"version,attr,omitempty"`
+	Result  string        `xml:"result"`
+	Message *XCCDFMessage `xml:"message,omitempty"`
+	Check   *XCCDFCheck   `xml:"check,omitempty"`
+}
+
+// XCCDFMessage represents an XCCDF message element. The XSD makes severity
+// required (messageType), so it is not omitempty.
+type XCCDFMessage struct {
+	XMLName  xml.Name `xml:"message"`
+	Severity string   `xml:"severity,attr"`
+	Text     string   `xml:",chardata"`
 }
 
 // --- Mapping functions ---
+
+// messageSeverity maps an XCCDF result to the severity of its message: an error
+// result is the checking engine reporting a fault, any other is check output.
+func messageSeverity(status string) string {
+	if status == "error" {
+		return "error"
+	}
+	return "info"
+}
 
 // impactToSeverity maps HDF impact (0.0-1.0) to XCCDF severity via the shared
 // band mapper. The XCCDF vocabulary has no critical band, so critical folds
@@ -416,7 +433,7 @@ func buildTestResult(hdfData *hdf.HDFResults, baseline hdf.EvaluatedBaseline) *X
 			rr.Time = result.StartTime.Format(time.RFC3339Nano)
 
 			if result.Message != nil && *result.Message != "" {
-				rr.Message = *result.Message
+				rr.Message = &XCCDFMessage{Severity: messageSeverity(status), Text: *result.Message}
 			}
 
 			if result.CodeDesc != "" {

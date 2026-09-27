@@ -6,6 +6,12 @@ import { convertHdfToXccdf, isXccdfGroupId, xccdfGroupId } from './converter.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+interface RealShape {
+  gid: string;
+  shape: string;
+  source: string;
+}
+
 interface GroupIdCase {
   gid: string;
   id: string;
@@ -13,11 +19,11 @@ interface GroupIdCase {
   why: string;
 }
 
-const CASES = (
-  JSON.parse(
-    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'xccdf-group-id-cases.json'), 'utf-8'),
-  ) as { cases: GroupIdCase[] }
-).cases;
+const TABLE = JSON.parse(
+  readFileSync(join(__dirname, '..', '..', '..', 'shared', 'xccdf-group-id-cases.json'), 'utf-8'),
+) as { cases: GroupIdCase[]; realShapes?: RealShape[] };
+const CASES = TABLE.cases;
+const REAL_SHAPES = TABLE.realShapes ?? [];
 
 function hdfWithGid(gid: string): string {
   return JSON.stringify({
@@ -82,6 +88,23 @@ describe('hdf-to-xccdf Group/@id', () => {
 // .+ (xccdf_1.2.xsd:799, :843). A baseline with an empty name is valid HDF but
 // produced "xccdf_hdf_benchmark_", which the XSD rejects. The Go peer gates the
 // same input on the real XSD.
+// Encoding is not injective — sanitization folds every character outside
+// [A-Za-z0-9._-] to "_" — and the cases above pin that on hostile input. For the
+// shapes real tools emit, sanitization must be the identity, because then
+// encoding is prefix-plus-gid (or passthrough) and cannot collide at all. One
+// representative per shape proves it; the property is about characters, not
+// counts. Mirrors TestXCCDFGroupIDLeavesRealShapesUntouched in Go.
+describe('hdf-to-xccdf Group/@id on real gid shapes', () => {
+  it('has a populated shape table', () => {
+    expect(REAL_SHAPES.length, 'an empty table would pass vacuously').toBeGreaterThan(0);
+  });
+
+  it.each(REAL_SHAPES.map((r) => [r.shape, r] as const))('leaves a %s untouched', (_shape, r) => {
+    const expected = isXccdfGroupId(r.gid) ? r.gid : `xccdf_hdf_group_${r.gid}`;
+    expect(xccdfGroupId(r.gid), `${r.source} id ${JSON.stringify(r.gid)} was rewritten by the sanitizer`).toBe(expected);
+  });
+});
+
 describe('hdf-to-xccdf empty baseline name', () => {
   it('still emits ids with a trailing name segment', () => {
     const out = convertHdfToXccdf(

@@ -1,0 +1,10 @@
+{
+  "schemas": [
+    {
+      "file": "semgrep_output_v1-1.174.0.schema.json",
+      "source": "https://raw.githubusercontent.com/semgrep/semgrep-interfaces/v1.174.0/semgrep_output_v1.jsonschema",
+      "sha256": "6b045900d43c890f27234690aa18b52b1233cac188cda3aac9f0d68e31c7d008",
+      "retrieved": "2026-09-20"
+    }
+  ]
+}

@@ -32,8 +32,6 @@ var (
 	responseRegexp = regexp.MustCompile(`(?m)^Response:.*$`)
 )
 
-const defaultProductID = "HDFPID-0001"
-
 // BOM is the CycloneDX top-level document we emit.
 type BOM struct {
 	BOMFormat       string          `json:"bomFormat"`
@@ -148,7 +146,7 @@ type Vulnerability struct {
 	Recommendation string        `json:"recommendation,omitempty"`
 	Advisories     []Advisory    `json:"advisories,omitempty"`
 	Analysis       Analysis      `json:"analysis"`
-	Affects        []AffectedRef `json:"affects"`
+	Affects        []AffectedRef `json:"affects,omitempty"`
 }
 
 // Advisory is a CycloneDX vulnerability advisory (a published notification of
@@ -458,7 +456,10 @@ func productIDsFor(o *hdf.StandaloneOverride) []string {
 			return out
 		}
 	}
-	return []string{defaultProductID}
+	// Nothing identified the product. CycloneDX leaves affects[] and components[]
+	// optional, so both are omitted: a synthetic bom-ref would need a components[]
+	// entry behind it, asserting an inventory item the source never named.
+	return nil
 }
 
 func affectsForProducts(pids []string, pkgByID map[string]hdf.AffectedPackage) []AffectedRef {

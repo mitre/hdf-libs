@@ -9,7 +9,133 @@ import (
 	"github.com/stretchr/testify/require"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
+
+const duplicateTitleComponentUUID = "a3ca96ea-f853-4539-9db3-bf9694f7e0dc"
+
+// sspComponents returns the system-implementation components of a generic SSP document.
+func sspComponents(t *testing.T, doc map[string]any) []any {
+	t.Helper()
+	ssp, ok := doc["system-security-plan"].(map[string]any)
+	require.True(t, ok)
+	si, ok := ssp["system-implementation"].(map[string]any)
+	require.True(t, ok)
+	components, ok := si["components"].([]any)
+	require.True(t, ok)
+	return components
+}
+
+// sspComponentUUIDs returns each system-implementation component uuid in source order.
+func sspComponentUUIDs(t *testing.T, input []byte) []string {
+	t.Helper()
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(input, &doc))
+	var uuids []string
+	for _, c := range sspComponents(t, doc) {
+		comp, ok := c.(map[string]any)
+		require.True(t, ok)
+		uuid, ok := comp["uuid"].(string)
+		require.True(t, ok)
+		uuids = append(uuids, uuid)
+	}
+	return uuids
+}
+
+// sspWithDuplicateTitleComponent returns ssp-example.json with its "Logging Server"
+// component copied under a new uuid, so two components share one title.
+func sspWithDuplicateTitleComponent(t *testing.T) []byte {
+	t.Helper()
+	raw, err := os.ReadFile("../fixtures/input/ssp-example.json")
+	require.NoError(t, err)
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	components := sspComponents(t, doc)
+
+	var duplicate map[string]any
+	for _, c := range components {
+		comp, ok := c.(map[string]any)
+		require.True(t, ok)
+		if comp["title"] == "Logging Server" {
+			duplicate = make(map[string]any, len(comp))
+			for k, v := range comp {
+				duplicate[k] = v
+			}
+			duplicate["uuid"] = duplicateTitleComponentUUID
+		}
+	}
+	require.NotNil(t, duplicate)
+
+	ssp, ok := doc["system-security-plan"].(map[string]any)
+	require.True(t, ok)
+	si, ok := ssp["system-implementation"].(map[string]any)
+	require.True(t, ok)
+	si["components"] = append(components, duplicate)
+
+	input, err := json.Marshal(doc)
+	require.NoError(t, err)
+	return input
+}
+
+func TestConvertSSPToHDF_ComponentIDFromOSCALUUID(t *testing.T) {
+	input := sspWithDuplicateTitleComponent(t)
+	uuids := sspComponentUUIDs(t, input)
+
+	system, err := ConvertSSPToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.Len(t, system.Components, len(uuids))
+
+	var loggingServerIDs []string
+	for i, c := range system.Components {
+		require.NotNil(t, c.ComponentID, "component %q has no componentId", c.Name)
+		assert.Equal(t, uuids[i], *c.ComponentID)
+		if c.Name == "Logging Server" {
+			loggingServerIDs = append(loggingServerIDs, *c.ComponentID)
+		}
+	}
+	require.Len(t, loggingServerIDs, 2)
+	assert.NotEqual(t, loggingServerIDs[0], loggingServerIDs[1])
+	assert.Equal(t, []string{"e00acdcf-911b-437d-a42f-b0b558cc4f03", duplicateTitleComponentUUID}, loggingServerIDs)
+
+	out, err := json.Marshal(system)
+	require.NoError(t, err)
+	vr := validators.ValidateSystem(out)
+	assert.True(t, vr.Valid, vr.Error())
+}
+
+func TestConvertSSPToHDF_ComponentIDVerbatimFedRAMP(t *testing.T) {
+	input, err := os.ReadFile("../fixtures/input/ssp-fedramp.json")
+	require.NoError(t, err)
+	uuids := sspComponentUUIDs(t, input)
+
+	system, err := ConvertSSPToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.Len(t, system.Components, len(uuids))
+
+	for i, c := range system.Components {
+		require.NotNil(t, c.ComponentID, "component %q has no componentId", c.Name)
+		assert.Equal(t, uuids[i], *c.ComponentID)
+	}
+	assert.Contains(t, uuids, "77A1614A-57B3-4B32-9FEE-613A6520EC58", "fixture keeps its upper-case uuid, carried without re-casing")
+
+	out, err := json.Marshal(system)
+	require.NoError(t, err)
+	vr := validators.ValidateSystem(out)
+	assert.True(t, vr.Valid, vr.Error())
+}
+
+func TestConvertSSPToHDF_ComponentWithoutUUIDOmitsComponentID(t *testing.T) {
+	input := []byte(`{"system-security-plan":{"uuid":"d7456980-9277-4dcb-83cf-f8ff0442623b",` +
+		`"metadata":{"title":"SSP","version":"1","oscal-version":"1.1.2","last-modified":"2024-01-01T00:00:00Z"},` +
+		`"system-implementation":{"components":[{"uuid":"","title":"No UUID","type":"software"}]}}}`)
+
+	system, err := ConvertSSPToHDF(input, "1.0.0-test")
+	require.NoError(t, err)
+	require.Len(t, system.Components, 1)
+	assert.Equal(t, "No UUID", system.Components[0].Name)
+	assert.Nil(t, system.Components[0].ComponentID)
+}
 
 func TestConvertSSPToHDF_EmptyInput(t *testing.T) {
 	_, err := ConvertSSPToHDF(nil, "1.0.0")

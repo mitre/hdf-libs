@@ -1,0 +1,31 @@
+{
+  "description": "HDF requirement ids and the OSCAL references the SAR and POA&M exporters derive from them, read by the Go (shared_test.go) and TypeScript (converter.test.ts) tests. controlId is what NistTagToControlID / nistTagToControlId return; statementId is the OSCAL statement id for a statement-part requirement id, or empty when the id names a whole control or is not a NIST spelling.",
+  "cases": [
+    { "input": "AC-1", "controlId": "ac-1", "statementId": "", "why": "base control" },
+    { "input": "AC-2", "controlId": "ac-2", "statementId": "", "why": "base control" },
+    { "input": "AC-2 (3)", "controlId": "ac-2.3", "statementId": "", "why": "parenthesized enhancement with a space, InSpec tag spelling" },
+    { "input": "AC-2(3)", "controlId": "ac-2.3", "statementId": "", "why": "parenthesized enhancement, NIST publication spelling" },
+    { "input": "ac-2 (3)", "controlId": "ac-2.3", "statementId": "", "why": "lowercase family" },
+    { "input": "Ac-2(3)", "controlId": "ac-2.3", "statementId": "", "why": "mixed-case family" },
+    { "input": "AC-02 03", "controlId": "ac-2.3", "statementId": "", "why": "padded description-table spelling" },
+    { "input": "AC-2 3", "controlId": "ac-2.3", "statementId": "", "why": "unpadded space-separated enhancement" },
+    { "input": "AC-17(2)", "controlId": "ac-17.2", "statementId": "", "why": "two-digit control number" },
+    { "input": "SI-7 (1)", "controlId": "si-7.1", "statementId": "", "why": "enhancement in another family" },
+    { "input": "RA-5 (11)", "controlId": "ra-5.11", "statementId": "", "why": "two-digit enhancement" },
+    { "input": "Si-2", "controlId": "si-2", "statementId": "", "why": "mixed-case base control" },
+    { "input": "  AC-1 ", "controlId": "ac-1", "statementId": "", "why": "surrounding whitespace is trimmed" },
+    { "input": "AC-2  (3)", "controlId": "ac-2.3", "statementId": "", "why": "a run of whitespace between parts reads as one separator" },
+    { "input": "AC-8 c 1", "controlId": "ac-8", "statementId": "ac-8_smt.c.1", "why": "statement part of a base control" },
+    { "input": "AC-08 c 01", "controlId": "ac-8", "statementId": "ac-8_smt.c.1", "why": "padded description-table spelling of a statement part" },
+    { "input": "AC-8 c", "controlId": "ac-8", "statementId": "ac-8_smt.c", "why": "top-level statement part" },
+    { "input": "AC-1 a 1 (a)", "controlId": "ac-1", "statementId": "ac-1_smt.a.1.a", "why": "third-level statement part" },
+    { "input": "AC-2 (3) (a)", "controlId": "ac-2.3", "statementId": "ac-2.3_smt.a", "why": "statement part of an enhancement" },
+    { "input": "ac-2(3)(a)", "controlId": "ac-2.3", "statementId": "ac-2.3_smt.a", "why": "lowercase statement part of an enhancement" },
+    { "input": "SV-257778", "controlId": "sv-257778", "statementId": "", "why": "STIG vulnerability id, not a NIST spelling: lowercased as before" },
+    { "input": "CVE-2021-44228", "controlId": "cve-2021-44228", "statementId": "", "why": "CVE id, not a NIST spelling: lowercased as before" },
+    { "input": "xccdf_org.ssgproject.content_rule_accounts_tmout", "controlId": "xccdf_org.ssgproject.content_rule_accounts_tmout", "statementId": "", "why": "XCCDF rule id, not a NIST spelling" },
+    { "input": "3.1.1/AC-2:enh", "controlId": "3.1.1/ac-2:enh", "statementId": "", "why": "not a NIST spelling" },
+    { "input": "unknown", "controlId": "unknown", "statementId": "", "why": "not a NIST spelling" },
+    { "input": "", "controlId": "", "statementId": "", "why": "empty id stays empty so the SAR exporter can drop the finding" }
+  ]
+}

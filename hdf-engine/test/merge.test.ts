@@ -3,14 +3,24 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { HDFResults } from '@mitre/hdf-schema';
+import { results as sharedResults } from '@mitre/hdf-fixtures';
 import { merge, type MergeSource } from '../src/merge.js';
 import { engineVersion } from '../src/index.js';
 import { validateResults } from '@mitre/hdf-validators';
 
-// Shared cross-language fixtures at hdf-engine/testdata (also read by
-// go/merge_test.go): committed copies of real converter expected output.
+// merge-grype/merge-zap live in the shared corpus (@mitre/hdf-fixtures), read
+// here and by go/merge_test.go; merge-gosec is still local to this package.
+// Both languages read the SAME bytes and assert the SAME expectations.
 const testdata = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata');
-const load = (name: string): HDFResults => JSON.parse(readFileSync(join(testdata, name), 'utf-8')) as HDFResults;
+const load = (name: string): HDFResults => {
+  const raw =
+    name === 'merge-grype.json'
+      ? sharedResults.mergeGrype.read()
+      : name === 'merge-zap.json'
+        ? sharedResults.mergeZap.read()
+        : readFileSync(join(testdata, name), 'utf-8');
+  return JSON.parse(raw) as HDFResults;
+};
 
 function threeScanners(): MergeSource[] {
   return [

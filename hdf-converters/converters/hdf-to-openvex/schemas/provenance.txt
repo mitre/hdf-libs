@@ -1,0 +1,38 @@
+# OpenVEX JSON Schema — provenance
+
+`openvex_json_schema.json` is the OpenVEX specification repository's own JSON
+Schema. It gates `hdf-to-openvex` output in both languages, and the reverse
+importer `openvex-to-hdf` records its input fixtures as validated against the
+same copy (see `../../openvex-to-hdf/fixtures/provenance.txt`). The converter emits
+`"@context": "https://openvex.dev/ns/v0.2.0"`, which this schema matches: its
+own `$id` is `openvex_json_schema_0.2.0.json`.
+
+- **Source:** https://raw.githubusercontent.com/openvex/spec/a68ccd19b15a9604d28ef66ebf33f27a772ba4ec/openvex_json_schema.json
+- **Pinned ref:** `openvex/spec@a68ccd19b15a9604d28ef66ebf33f27a772ba4ec`,
+  committed 2025-03-31 ("schema: Add missing `type` for statements") — the most
+  recent commit to touch the file, so the permalink above is immutable.
+- **`$id`:** `https://github.com/openvex/spec/openvex_json_schema_0.2.0.json`
+- **JSON Schema draft:** 2020-12
+- **Self-contained:** yes — all five `$ref`s are local JSON Pointers into
+  `$defs`, so it compiles offline with no companions.
+- **SHA-256:** `9373597734ed1d3ea5161a8b46d3866c4a8cfe76fd632fdd16aef01fb34b3238`
+- **Retrieved:** 2026-09-17
+
+Re-downloaded from the permalink and from `main` on 2026-09-17; both hash to the
+value above, byte-identical to the copy vendored here (first vendored
+2026-09-09). Do not edit; re-fetch to update.
+
+## Why a commit pin and not the v0.2.0 tag
+
+**No tag in `openvex/spec` contains this file.** The repository has exactly two
+tags, `v0.0.2` and `v0.2.0`; `v0.2.0` points at commit `7667061` (2023-08-22) and
+its tree holds only `OPENVEX-SPEC.md`, the governance documents and the README.
+The schema was first committed on 2024-03-15 ("feat: json schema for version
+0.2.0"), months after the tag, and has been amended six times since. The
+spec-0.2.0 conformance target therefore exists only on `main`, and the strongest
+available pin is the commit that last changed the blob — which is what the
+`source` URL above resolves.
+
+`pinned_ref` is recorded as an explicit field here rather than left implicit in
+the URL, because a 40-character commit SHA inside a raw.githubusercontent path
+is not self-evidently a pin the way `/releases/download/v1.2.3/` is.

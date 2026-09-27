@@ -11,3 +11,15 @@ distro/package data. Host identifiers have been **anonymized** (`my-fake-host-1.
 regenerate current output. The CSV column contract is stable, so this real,
 host-anonymized capture remains valid. Refresh only on a column-format change,
 re-anonymizing hostnames.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.csv` — Prisma Cloud CSV export; CSV carries no exporter version, so its version is not determinable from file content.
+- `minimal.csv` — Prisma Cloud CSV export; CSV carries no exporter version, so its version is not determinable from file content.
+- `prismacloud_sample.csv` — Prisma Cloud CSV export; CSV carries no exporter version, so its version is not determinable from file content.
+
+## Schema
+
+No schema for the CSV export was located (2026-09-20); a CSV carries only its header row, which the Tool and version section quotes.

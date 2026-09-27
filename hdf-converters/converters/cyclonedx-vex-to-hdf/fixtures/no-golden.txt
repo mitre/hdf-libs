@@ -1,0 +1,8 @@
+# Inputs in fixtures/input/ that intentionally have no fixtures/expected/<name>.hdf.json golden.
+# One per line, as <input> — <reason>. The snapshot harness in both languages requires every
+# input to have a golden or a line here, and fails on a line that names a missing input, an
+# input that has a golden, or no reason. The empty.* convention needs no line.
+
+case1-vex-affected.json — converts to an error by design: only an `affected` analysis, nothing actionable; asserted by TestConvertCycloneDXVEX_AffectedAndUnderInvestigationProduceError and its TS twin
+case1-vex-under_investigation.json — converts to an error by design: only `under_investigation`; same tests as above
+cyclonedx-vex-example.json — the CycloneDX spec's own VEX example; its analysis carries no date, so the override's appliedAt/expiresAt are conversion-time and a golden cannot be deterministic; asserted field by field in TestConvertCycloneDXVEX_SpecExample and its TS twin

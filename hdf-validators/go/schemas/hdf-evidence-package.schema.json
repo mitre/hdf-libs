@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.6.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-evidence-package/v3.7.0",
   "title": "HDF Evidence Package",
   "description": "Bundles references to all HDF documents for audit, authorization, and compliance review. Each content entry references a document by type, URI, and checksum for integrity verification.",
   "type": "object",
@@ -13,7 +13,7 @@
     "externalReferences": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/External_Reference"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/External_Reference"
       },
       "description": "Optional references to external artifacts relevant to this evidence package (CTI/STIX, BOMs, advisories, or any URI-addressable artifact) beyond the document references it already carries. Inert context; see External_Reference."
     },
@@ -41,7 +41,7 @@
       "description": "URI to the hdf-plan document that drove this assessment. Used for completeness verification — every baseline in the plan should have a corresponding results document in this package."
     },
     "preparedBy": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Identity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
       "description": "Identity of who prepared this evidence package."
     },
     "preparedAt": {
@@ -69,7 +69,7 @@
       "description": "Summary of assessment completeness and compliance status."
     },
     "signature": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Signature",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Signature",
       "description": "Digital signature covering the entire evidence package."
     },
     "labels": {
@@ -80,7 +80,7 @@
       "description": "Optional key-value labels for grouping and querying evidence packages."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this evidence package has not been tampered with."
     },
     "version": {
@@ -88,7 +88,7 @@
       "description": "Version of this evidence package."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Generator",
       "description": "Information about the tool that generated this document."
     }
   },
@@ -125,7 +125,7 @@
           "description": "URI to the document. Can be a relative path or absolute URL."
         },
         "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
           "description": "Cryptographic checksum for verifying the referenced document's integrity."
         },
         "description": {
@@ -242,7 +242,7 @@
           "description": "The native format discriminator of the referenced artifact."
         },
         "checksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
           "description": "Cryptographic checksum of the referenced artifact for integrity verification.",
           "$comment": "Strongly recommended for external evidence — a point-in-time reference without an integrity hash is weakly auditable. Kept out of `description` so this usage-specific note does not aggregate into the shared Checksum type's generated Go doc comment (quicktype concatenates $ref-sibling descriptions onto the referenced type)."
         },
@@ -357,9 +357,9 @@
       "description": "Informational summary of assessment completeness. Not authoritative — tools should compute these from the referenced documents.",
       "title": "Completeness Check"
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0",
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
@@ -799,6 +799,24 @@
             "type",
             "data"
           ],
+          "if": {
+            "properties": {
+              "encoding": {
+                "const": "base64"
+              }
+            },
+            "required": [
+              "encoding"
+            ]
+          },
+          "then": {
+            "properties": {
+              "data": {
+                "pattern": "^[0-9A-Za-z+/]+={0,2}$",
+                "contentEncoding": "base64"
+              }
+            }
+          },
           "properties": {
             "type": {
               "type": "string",
@@ -815,7 +833,8 @@
             },
             "data": {
               "type": "string",
-              "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string."
+              "minLength": 1,
+              "description": "The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs: the raw text. For URLs: the URL string. Must not be empty. When encoding is 'base64', data must be bare base64 matching ^[0-9A-Za-z+/]+={0,2}$ (OSCAL's Base64Datatype): no data: URI prefix, URL, or line breaks."
             },
             "description": {
               "type": "string",
@@ -827,7 +846,7 @@
             },
             "encoding": {
               "type": "string",
-              "description": "Encoding used for the data. Example: 'base64', 'utf-8'."
+              "description": "Encoding used for the data. Example: 'base64', 'utf-8'. The value 'base64' (exactly, lowercase) requires data to be bare base64."
             },
             "size": {
               "type": "number",
@@ -891,6 +910,7 @@
               }
             }
           ],
+          "$comment": "Examples, in order: 1) base64-encoded PNG screenshot with full capture provenance; 2) raw configuration text; 3) log excerpt; 4) URL to an external ticket; 5) base64-encoded file captured by an automated system.",
           "description": "Supporting evidence for a finding or override, such as screenshots, code samples, log excerpts, or URLs.",
           "title": "Evidence"
         },
@@ -968,6 +988,13 @@
             "status"
           ],
           "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[^ \\t\\n\\r]([^\\n\\r]*[^ \\t\\n\\r])?$",
+              "$comment": "The pattern is OSCAL's StringDatatype (\\S(.*\\S)?) as its XSD defines \\S and '.', spelled with explicit classes so ECMA-262 and Go regexp engines agree: \\S and '.' differ between them on CR and non-ASCII whitespace.",
+              "description": "Short single-line label for this milestone, suitable where a consumer needs a title (for example an OSCAL POA&M remediation or task). No line breaks, and no leading or trailing whitespace. The description remains the full text of the milestone; the title does not replace it."
+            },
             "description": {
               "type": "string",
               "description": "Description of this milestone or task."
@@ -997,6 +1024,25 @@
               "description": "Identity of who completed this milestone."
             }
           },
+          "examples": [
+            {
+              "title": "Deploy OpenSSH 9.8p1",
+              "description": "Upgrade OpenSSH to 9.8p1 on every RHEL 9 host in the web tier to remediate CVE-2024-6387, then restart sshd during the Saturday maintenance window.",
+              "estimatedCompletion": "2026-10-31T00:00:00Z",
+              "status": "inProgress"
+            },
+            {
+              "description": "Isolate the affected host on a restricted VLAN until the vendor patch is available.",
+              "estimatedCompletion": "2026-09-05T00:00:00Z",
+              "status": "completed",
+              "completedAt": "2026-09-04T14:30:00Z",
+              "completedBy": {
+                "identifier": "network-admin@example.com",
+                "type": "email"
+              }
+            }
+          ],
+          "$comment": "Examples, in order: 1) titled milestone in progress — the title is the short label, the description the full remediation text; 2) untitled completed milestone with completion provenance — title is optional, and a consumer needing one derives it.",
           "description": "A milestone or task within a POA&M remediation plan.",
           "title": "Milestone"
         },
@@ -1286,7 +1332,7 @@
               "description": "Whether the requirement is mandatory within its baseline.\n\nDistinct from severity (risk weight) and status (lifecycle state).\n\nMaps cleanly onto: FedRAMP rev5 OSCAL 'CORE' prop, FedRAMP 20x inline 'Optional:' markers, CMMC sublevel rows, and CIS Implementation Group memberships (IG1/IG2/IG3 may carry richer semantics; layer those onto props[]/tags{}).\n\nOptional: when omitted, consumers should treat the requirement as 'required' by convention."
             }
           },
-          "$comment": "Examples, in order: 1) v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape under v3.6.0 (backward compatibility); 2) v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline; 3) v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement; 4) v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
+          "$comment": "Examples, in order: 1) v3.1.x-style requirement: classification fields omitted. Consumers must continue to handle this shape for backward compatibility; 2) v3.2 example populating all three classification fields. controlType=technical because AC-3 is enforced via configuration, not policy text. verificationMethod=automated because a check exists. applicability=required because this is a CORE control in the source baseline; 3) v3.2 example for a manual-by-design requirement. FedRAMP 20x KSIs are statement-form: code is omitted (not null) and verificationMethod=manual-by-design distinguishes this from 'automation could exist but doesn't yet'. controlType=policy because this is an authored governance statement; 4) v3.2 example for a STIG rule lacking a <fix>. Differs from manual-by-design: automation should exist, just not yet. applicability=advisory used here because the source format flagged it as recommended-but-not-mandatory; CIS-style IG memberships and FedRAMP 'Optional:' markers map onto applicability=optional or advisory similarly.",
           "examples": [
             {
               "id": "SV-238196",
@@ -1422,9 +1468,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.6.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0",
       "title": "HDF Extension Primitives",
       "description": "Extension types for waivers, attestations, generators, and integrity.",
       "$defs": {
@@ -1454,20 +1500,20 @@
             "externalReferences": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/External_Reference"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/External_Reference"
               },
               "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences for the inline (results-embedded) override carrier."
             },
             "type": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.6.0#/$defs/Override_Type",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0#/$defs/Override_Type",
               "description": "The type of override applied to this requirement."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0#/$defs/Result_Status",
               "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
             },
             "impact": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.6.0#/$defs/Impact_Override",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0#/$defs/Impact_Override",
               "description": "Override to the requirement's impact score. At least one of status or impact must be set."
             },
             "reason": {
@@ -1475,7 +1521,7 @@
               "description": "Explanation for why this override was applied."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
               "description": "Identity of who applied this override. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -1489,27 +1535,27 @@
               "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this override, such as screenshots demonstrating manual verification for attestations."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
             "justification": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.6.0#/$defs/Justification",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0#/$defs/Justification",
               "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
@@ -1602,7 +1648,7 @@
               "evidence": [
                 {
                   "type": "screenshot",
-                  "data": "base64-encoded-screenshot-data-here",
+                  "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
                   "description": "Screenshot showing firewall configuration",
                   "mimeType": "image/png",
                   "encoding": "base64",
@@ -1645,7 +1691,7 @@
               "description": "Detailed explanation of the plan, including what actions will be taken."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
               "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -1661,23 +1707,23 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Milestone"
               },
               "description": "Optional array of milestones tracking progress toward completion."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
             }
           },
@@ -1830,7 +1876,7 @@
           },
           "properties": {
             "algorithm": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Hash_Algorithm",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Hash_Algorithm",
               "description": "The hash algorithm used for the checksum."
             },
             "checksum": {
@@ -1863,9 +1909,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.6.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.6.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0",
       "title": "HDF Amendment Primitives",
       "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
       "$defs": {
@@ -1976,7 +2022,7 @@
             "externalReferences": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/External_Reference"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/External_Reference"
               },
               "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from `evidence`; see External_Reference."
             },
@@ -1986,6 +2032,7 @@
             },
             "requirementId": {
               "type": "string",
+              "minLength": 1,
               "description": "The ID of the requirement being amended. Must match a requirement ID in the referenced baseline."
             },
             "baselineRef": {
@@ -1993,7 +2040,7 @@
               "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0#/$defs/Result_Status",
               "description": "The new status this amendment sets. Optional when only impact is being overridden."
             },
             "impact": {
@@ -2005,7 +2052,7 @@
               "description": "Justification for this amendment."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
               "description": "Identity of who applied this amendment."
             },
             "appliedAt": {
@@ -2021,20 +2068,20 @@
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Evidence"
               },
               "description": "Supporting evidence (screenshots, logs, URLs, documents)."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Signature",
               "description": "Digital signature for non-repudiation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the prior amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
@@ -2045,7 +2092,7 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.6.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Milestone"
               },
               "description": "Remediation milestones (primarily for POA&M type amendments)."
             },
@@ -2062,7 +2109,7 @@
             "affectedPackages": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.6.0#/$defs/Affected_Package"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.7.0#/$defs/Affected_Package"
               },
               "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID).\n\nUse when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments.\n\nSymmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary.\n\nWhen omitted, the amendment applies system-wide (or only to componentRef when that is set)."
             }
@@ -2195,9 +2242,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.6.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0",
       "title": "HDF Result Primitives",
       "description": "Types for representing assessment results and statuses.",
       "$defs": {
@@ -2328,9 +2375,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.6.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0",
       "title": "HDF CVSS Primitives",
       "description": "Types for representing CVSS (Common Vulnerability Scoring System) data attached to assessment findings. Supports CVSS v2.0, v3.0, v3.1, and v4.0 metric groups (Base, Threat, Environmental, Supplemental).",
       "$defs": {
@@ -2527,9 +2574,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.6.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.7.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.6.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.7.0",
       "title": "HDF Affected Package Primitives",
       "description": "Types for representing the software package(s) affected by a vulnerability finding.",
       "$defs": {

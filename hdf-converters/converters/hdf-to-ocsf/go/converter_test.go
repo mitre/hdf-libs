@@ -324,41 +324,42 @@ func TestConvert_WarningStatuses(t *testing.T) {
 }
 
 // TestConvert_Remediation pins the "fix"-labeled description onto the OCSF
-// remediation homes: top-level remediation.desc on every finding, plus per-vuln
-// vulnerabilities[].remediation + fix_available on a Vulnerability Finding. A
-// bare "n/a" fix placeholder yields no remediation.
+// remediation homes: a Vulnerability Finding carries it ONLY per vuln
+// (vulnerabilities[].remediation + fix_available — class 2002 has no top-level
+// remediation member), a Compliance Finding carries it at the top level. A bare
+// "n/a" fix placeholder yields no remediation.
 func TestConvert_Remediation(t *testing.T) {
 	out, err := ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
 	require.NoError(t, err)
 	objs := parseLines(t, out)
 
-	// req1: real fix text -> top-level + per-vuln remediation + fix_available
+	// req1: real fix text -> per-vuln remediation + fix_available, nothing top-level
 	o := objs[0]
-	assert.Equal(t, "Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.",
-		sub(t, o, "remediation")["desc"])
+	_, hasTop := o["remediation"]
+	assert.False(t, hasTop, "class 2002 defines no top-level remediation")
 	vuln := o["vulnerabilities"].([]interface{})[0].(map[string]interface{})
 	assert.Equal(t, "Apply the appropriate patch according to the January 2022 Oracle Critical Patch Update advisory.",
 		vuln["remediation"].(map[string]interface{})["desc"])
 	assert.Equal(t, true, vuln["fix_available"])
 
 	// req3 (portmapper): fix == "n/a" -> no remediation anywhere, no fix_available
-	last := objs[2]
-	_, hasTop := last["remediation"]
-	assert.False(t, hasTop, "n/a fix yields no top-level remediation")
-	lastVuln := last["vulnerabilities"].([]interface{})[0].(map[string]interface{})
+	lastVuln := objs[2]["vulnerabilities"].([]interface{})[0].(map[string]interface{})
 	_, hasVulnRem := lastVuln["remediation"]
 	assert.False(t, hasVulnRem)
 	_, hasFix := lastVuln["fix_available"]
 	assert.False(t, hasFix)
 
-	// Compliance findings also carry top-level remediation from their fix text.
+	// Compliance findings carry top-level remediation from their fix text.
 	cout, err := ConvertHDFToOCSF(fixture(t, "input", "compliance.json"), converterVersion)
 	require.NoError(t, err)
 	assert.Contains(t, sub(t, parseLines(t, cout)[0], "remediation")["desc"], "banner-message-enable=true")
 }
 
-// TestConvert_RawDataMessageEvidence pins the raw tool blob -> raw_data, the
-// assertion text -> message, and per-result codeDesc/message/status -> evidences[].
+// TestConvert_RawDataMessageEvidence pins the raw tool blob -> raw_data and the
+// assertion text -> message on both classes, and per-result codeDesc/message/
+// status -> evidences[] on a Compliance Finding only: class 2002 has no
+// evidences member, so there the per-result evidence stays verbatim in
+// unmapped.hdf_requirement.results.
 func TestConvert_RawDataMessageEvidence(t *testing.T) {
 	out, err := ConvertHDFToOCSF(fixture(t, "input", "cve.json"), converterVersion)
 	require.NoError(t, err)
@@ -366,12 +367,25 @@ func TestConvert_RawDataMessageEvidence(t *testing.T) {
 
 	assert.Contains(t, o["raw_data"], "\"PluginID\": \"156888\"", "raw code blob -> raw_data")
 	assert.Contains(t, o["message"], "Installed version : 1.11.0_12", "result message -> base_event.message")
-	ev := o["evidences"].([]interface{})
+	_, hasEvidences := o["evidences"]
+	assert.False(t, hasEvidences, "class 2002 defines no evidences member")
+	results := sub(t, o, "unmapped")["hdf_requirement"].(map[string]interface{})["results"].([]interface{})
+	require.Len(t, results, 1)
+	kept := results[0].(map[string]interface{})
+	assert.Contains(t, kept["codeDesc"], "January 2022 CPU advisory", "per-result evidence survives in unmapped")
+	assert.Contains(t, kept["message"], "Installed version")
+	assert.Equal(t, "failed", kept["status"])
+
+	cout, err := ConvertHDFToOCSF(fixture(t, "input", "compliance.json"), converterVersion)
+	require.NoError(t, err)
+	c := parseLines(t, cout)[0]
+	ev := c["evidences"].([]interface{})
 	require.Len(t, ev, 1)
 	data := ev[0].(map[string]interface{})["data"].(map[string]interface{})
-	assert.Contains(t, data["code_desc"], "January 2022 CPU advisory")
-	assert.Contains(t, data["message"], "Installed version")
+	assert.Equal(t, "XCCDF rule xccdf_mil.disa.stig_rule_SV-204393r603261_rule", data["code_desc"])
 	assert.Equal(t, "failed", data["status"])
+	_, hasMsg := data["message"]
+	assert.False(t, hasMsg, "a null result message is not emitted")
 }
 
 // TestConvert_AllReferences pins that ALL refs[].url are emitted, not just the first.

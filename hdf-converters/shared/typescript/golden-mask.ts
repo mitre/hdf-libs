@@ -48,6 +48,8 @@ function maskValue(value: unknown, volatile: Set<string>, seen: Map<string, stri
 }
 
 function maskUuid(s: string, seen: Map<string, string>): string {
+  // A "#<uuid>" fragment reference points at the uuid it names, so it shares that ordinal.
+  if (s.length > 1 && s.startsWith('#') && UUID_PATTERN.test(s.slice(1))) return `#${maskUuid(s.slice(1), seen)}`;
   if (!UUID_PATTERN.test(s)) return s;
   const existing = seen.get(s);
   if (existing !== undefined) return existing;

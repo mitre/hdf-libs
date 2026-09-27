@@ -10,11 +10,18 @@ import {
   Justification,
   MilestoneStatus,
   OverrideType,
+  type CVSSSeverity,
   type HDFAmendments,
   type StandaloneOverride,
 } from '@mitre/hdf-schema';
 import { formatTimestampSeconds } from '@mitre/hdf-utilities';
-import { validateInputSize, parseHdf, hdfTime, firstNonEmpty } from '../../../shared/typescript/converterutil.js';
+import {
+  validateInputSize,
+  parseHdf,
+  hdfTime,
+  firstNonEmpty,
+  emitConverterWarning,
+} from '../../../shared/typescript/converterutil.js';
 import {
   affectedPackageToIdentifier,
   fixedPackageIdentifier,
@@ -28,7 +35,18 @@ const GO_ZERO_TIME = new Date('0001-01-01T00:00:00Z');
 
 const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
+// Kept where the sibling hdf-to-cyclonedx-vex exporter dropped its own: this
+// document declares category csaf_vex, whose profile makes product_tree
+// mandatory, product_status buckets cannot be empty, and scores[] requires
+// products. product_id is a document-local token by spec. Omitting would still
+// pass the vendored schema, which does not encode the profile. See the Go peer
+// and hdf-libs-5gri.39.
 const DEFAULT_PRODUCT_ID = 'HDFPID-0001';
+
+// What a human reads where the token above is what the profile requires. CSAF
+// requires a name on every full_product_name, and repeating the token there made
+// an invented identifier look like one a vendor had assigned. Mirrors the Go peer.
+const DEFAULT_PRODUCT_NAME = 'No product identity was recorded in the source amendment';
 
 interface CSAFVexDocument {
   document: {
@@ -73,10 +91,12 @@ interface Vulnerability {
   scores?: CsafScore[];
 }
 
+// A CSAF score's CVSS block, holding exactly the fields the FIRST.org schema
+// for its version requires; buildCsafScore emits nothing else.
 interface CsafCvss {
   version: string;
-  vectorString?: string;
-  baseScore?: number;
+  vectorString: string;
+  baseScore: number;
   baseSeverity?: string;
 }
 
@@ -87,19 +107,62 @@ interface CsafScore {
   cvss_v4?: CsafCvss;
 }
 
-/** Map an HDF Cvss block to a CSAF score entry (cvss_v2/v3/v4 by version). */
-function buildCsafScore(cvss: NonNullable<StandaloneOverride['cvss']>, products: string[]): CsafScore | undefined {
-  const inner: CsafCvss = {
-    version: cvss.version,
-    ...(cvss.baseVector && { vectorString: cvss.baseVector }),
-    ...(typeof cvss.baseScore === 'number' && { baseScore: cvss.baseScore }),
-    ...(cvss.baseSeverity && { baseSeverity: cvss.baseSeverity }),
-  };
-  if (inner.vectorString === undefined && inner.baseScore === undefined) {
+/**
+ * Map an HDF Cvss_Severity band to the FIRST.org severityType enum: the same
+ * five bands, which FIRST spells uppercase. Pinned in both languages to
+ * fixtures/cvss-score-cases.json and to the vendored schema's enum.
+ */
+export function csafSeverity(s: CVSSSeverity): string {
+  return s.toUpperCase();
+}
+
+/**
+ * Map an HDF Cvss block to a CSAF score entry, or undefined when the block
+ * cannot be exported.
+ *
+ * A score is emitted only when every field the FIRST.org schema for its
+ * version requires is present: version, vectorString and baseScore, plus
+ * baseSeverity for 3.x and 4.0 (2.0 defines no severity, so none is emitted
+ * for it). HDF requires only version, so legal HDF can fall short, and the
+ * choice is to drop such a block rather than emit it partially: a partial
+ * score fails the CSAF schema, and conforming consumers reject a document that
+ * fails it, so it would cost every statement in the export, not just itself.
+ * Nothing is synthesized to close the gap — a vector cannot be recovered from
+ * a score, and a band the source never stated would be asserted in its name —
+ * and the drop is logged so the loss is visible. A block with no base metrics
+ * at all is consumer enrichment by design (threat or environmental deltas on a
+ * riskAdjustment); CSAF scores carry base metrics, so nothing exportable was
+ * lost and it is skipped silently.
+ */
+function buildCsafScore(
+  cvss: NonNullable<StandaloneOverride['cvss']>,
+  cve: string,
+  products: string[],
+): CsafScore | undefined {
+  const { version, baseVector, baseScore, baseSeverity } = cvss;
+  const hasVector = Boolean(baseVector);
+  const hasScore = typeof baseScore === 'number';
+  const hasSeverity = typeof baseSeverity === 'string';
+  if (!hasVector && !hasScore && !hasSeverity) return undefined;
+
+  const v2 = version.startsWith('2');
+  if (!baseVector || typeof baseScore !== 'number' || (!v2 && !hasSeverity)) {
+    const missing = [
+      ...(hasVector ? [] : ['vectorString']),
+      ...(hasScore ? [] : ['baseScore']),
+      ...(v2 || hasSeverity ? [] : ['baseSeverity']),
+    ];
+    emitConverterWarning(
+      `hdf-to-csaf-vex: ${cve}: CVSS ${version} score not exported, CSAF requires ${missing.join(', ')}`,
+    );
     return undefined;
   }
-  const key = cvss.version.startsWith('4') ? 'cvss_v4' : cvss.version.startsWith('2') ? 'cvss_v2' : 'cvss_v3';
-  return { [key]: inner, products };
+
+  const inner: CsafCvss = { version, vectorString: baseVector, baseScore };
+  if (!v2 && hasSeverity) inner.baseSeverity = csafSeverity(baseSeverity);
+  const key = version.startsWith('4') ? 'cvss_v4' : v2 ? 'cvss_v2' : 'cvss_v3';
+  // Key order mirrors the Go Score struct so both languages emit identical bytes.
+  return { products, [key]: inner };
 }
 
 export function convertHdfToCsafVex(input: string, converterVersion: string): string {
@@ -133,7 +196,7 @@ export function convertHdfToCsafVex(input: string, converterVersion: string): st
   const doc = buildDocument(amendments, converterVersion);
   doc.vulnerabilities = vulnerabilities;
   doc.product_tree.full_product_names =
-    names.length > 0 ? names : [{ name: DEFAULT_PRODUCT_ID, product_id: DEFAULT_PRODUCT_ID }];
+    names.length > 0 ? names : [{ name: DEFAULT_PRODUCT_NAME, product_id: DEFAULT_PRODUCT_ID }];
 
   return JSON.stringify(doc, null, 2);
 }
@@ -190,7 +253,7 @@ function productEntriesFor(o: StandaloneOverride): CsafFullProductName[] {
       .filter(Boolean);
     if (parts.length > 0) return parts.map((p) => ({ name: p, product_id: p }));
   }
-  return [{ name: DEFAULT_PRODUCT_ID, product_id: DEFAULT_PRODUCT_ID }];
+  return [{ name: DEFAULT_PRODUCT_NAME, product_id: DEFAULT_PRODUCT_ID }];
 }
 
 /** product_tree entries for the synthesized fixed-version products. */
@@ -298,7 +361,7 @@ function buildVulnerability(group: CveGroup): Vulnerability | undefined {
 
     // Emit consumer-supplied CVSS enrichment as a CSAF score entry.
     if (o.cvss) {
-      const score = buildCsafScore(o.cvss, pids);
+      const score = buildCsafScore(o.cvss, group.cve, pids);
       if (score) {
         v.scores = (v.scores ?? []).concat(score);
         emitted = true;

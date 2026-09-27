@@ -58,6 +58,12 @@ function wrap(
   return { '#text': value };
 }
 
+/** Map an XCCDF result to the severity of its message: an error result is the
+ *  checking engine reporting a fault, any other is check output. */
+function messageSeverity(status: string): string {
+  return status === 'error' ? 'error' : 'info';
+}
+
 /** Map HDF impact (0.0-1.0) to XCCDF severity via the shared band mapper. The
  *  XCCDF vocabulary has no critical band, so critical folds into high, and its
  *  zero band is spelled 'info'. */
@@ -502,7 +508,10 @@ function buildTestResultObj(
       rr.result = wrap(status);
 
       if (result.message) {
-        rr.message = wrap(result.message);
+        rr.message = {
+          [`${ATTR}severity`]: messageSeverity(status),
+          '#text': result.message,
+        };
       }
 
       if (result.codeDesc) {

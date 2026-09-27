@@ -1,0 +1,6 @@
+# Inputs in fixtures/input/ that intentionally have no fixtures/expected/<name>.hdf.json golden.
+# One per line, as <input> — <reason>. The snapshot harness in both languages requires every
+# input to have a golden or a line here, and fails on a line that names a missing input, an
+# input that has a golden, or no reason. The empty.* convention needs no line.
+
+remediation.json — a second input for TestConvertAWSConfigToHDF_Remediation and the TS test 'emits a fix description only for rules with remediation', which assert the specific fields a remediation adds rather than a whole golden

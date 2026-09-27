@@ -25,12 +25,16 @@ func mustTime(t *testing.T, s string) time.Time {
 
 const testVersion = "test"
 
-// uc-01-fixed-amendments.json lives in the shared corpus (hdf-to-oscal-poam
-// consumes it too); the other inputs are local to this converter.
+// Both amendments inputs live in the shared corpus: uc-01-fixed-amendments.json
+// (hdf-to-oscal-poam consumes it too) and sec-vex-amendments.json (the
+// multi-cve-amendments.json doc, shared with the VEX output-count anchors).
 func loadInput(t *testing.T, name string) []byte {
 	t.Helper()
-	if name == "uc-01-fixed-amendments.json" {
+	switch name {
+	case "uc-01-fixed-amendments.json":
 		return fixtures.Amendments.UC01Fixed
+	case "sec-vex-amendments.json":
+		return fixtures.Amendments.MultiCVE
 	}
 	data, err := os.ReadFile(filepath.Join("..", "fixtures", "input", name))
 	require.NoError(t, err)
@@ -458,4 +462,33 @@ func TestGoldenParity(t *testing.T) {
 		require.NoError(t, err, "read golden %s", goldenPath)
 		assert.Equal(t, string(golden), string(out), "golden mismatch for %s", name)
 	}
+}
+
+// The profile compels a product_id token, but nothing compels the human-readable
+// name to repeat it. A reader cannot tell "HDFPID-0001" in the name field from a
+// product identifier a vendor assigned; a sentence cannot be mistaken for one.
+func TestConvertHDFToCSAFVEX_NamesTheAbsenceNotTheToken(t *testing.T) {
+	out, err := ConvertHDFToCSAFVEX(loadInput(t, "sec-vex-amendments.json"), testVersion)
+	require.NoError(t, err)
+
+	var doc struct {
+		ProductTree struct {
+			FullProductNames []struct {
+				Name      string `json:"name"`
+				ProductID string `json:"product_id"`
+			} `json:"full_product_names"`
+		} `json:"product_tree"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+
+	found := false
+	for _, p := range doc.ProductTree.FullProductNames {
+		if p.ProductID != defaultProductID {
+			continue
+		}
+		found = true
+		assert.Equal(t, "No product identity was recorded in the source amendment", p.Name,
+			"the human-readable name must say what it is, not repeat the synthetic token")
+	}
+	require.True(t, found, "fixture has an override with no product identity, so the entry must exist")
 }

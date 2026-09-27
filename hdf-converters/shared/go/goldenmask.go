@@ -74,6 +74,10 @@ func maskValue(v interface{}, volatile map[string]bool, seen map[string]string) 
 }
 
 func maskUUID(s string, seen map[string]string) string {
+	// A "#<uuid>" fragment reference points at the uuid it names, so it shares that ordinal.
+	if len(s) > 1 && s[0] == '#' && uuidPattern.MatchString(s[1:]) {
+		return "#" + maskUUID(s[1:], seen)
+	}
 	if !uuidPattern.MatchString(s) {
 		return s
 	}

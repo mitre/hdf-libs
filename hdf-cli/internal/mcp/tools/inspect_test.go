@@ -341,9 +341,19 @@ func keysOf(m map[string]any) []string {
 	return ks
 }
 
-// readToolsFixture reads a fixture from this package's own testdata dir.
+// readToolsFixture reads a fixture. The three merge/correlation documents live
+// in the shared corpus (@mitre/hdf-fixtures), read here and by hdf-engine's
+// tests; the rest are local to this package's testdata dir.
 func readToolsFixture(t *testing.T, name string) []byte {
 	t.Helper()
+	switch name {
+	case "duplicate-baselines.json":
+		return fixtures.Results.DuplicateBaselines
+	case "grype-duplicate-ids.json":
+		return fixtures.Results.MergeGrype
+	case "zap-webgoat.json":
+		return fixtures.Results.MergeZap
+	}
 	b, err := os.ReadFile("testdata/" + name)
 	if err != nil {
 		t.Skipf("tools fixture %s unavailable: %v", name, err)

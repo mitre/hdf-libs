@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   getNISTDescription,
   getAllNISTIds,
   nistExists,
+  normalizeNistId,
   getNISTFamily,
   DEFAULT_NIST_REVISION,
   SUPPORTED_NIST_REVISIONS,
@@ -82,6 +86,12 @@ describe('NIST Mapping Functions', () => {
       expect(getNISTDescription('AC-01 a 01')).toBeDefined();
       expect(getNISTDescription('AC-02')).toBeDefined();
     });
+
+    it('accepts the unpadded and parenthesized spellings nistExists accepts', () => {
+      expect(getNISTDescription('AC-2', 5)).toBe(getNISTDescription('AC-02', 5));
+      expect(getNISTDescription('AC-2 (3)', 5)).toBe(getNISTDescription('AC-02 03', 5));
+      expect(getNISTDescription('AC-2(3)', 5)).toBeDefined();
+    });
   });
 
   describe('getAllNISTIds', () => {
@@ -121,6 +131,92 @@ describe('NIST Mapping Functions', () => {
 
     it('should return false for empty string', () => {
       expect(nistExists('')).toBe(false);
+    });
+
+    it('accepts the unpadded and parenthesized spellings HDF uses', () => {
+      expect(nistExists('AC-2', 5)).toBe(true);
+      expect(nistExists('AC-2(3)', 5)).toBe(true);
+      expect(nistExists('AC-2 (3)', 5)).toBe(true);
+      expect(nistExists('SV-230221', 5)).toBe(false);
+    });
+  });
+
+  // The Go peer (go/nist/exists_test.go) asserts this same table, which is what
+  // keeps the two normalizers agreeing on every spelling.
+  describe('NIST id spelling (shared case table)', () => {
+    interface SpellingCase {
+      input: string;
+      normalized: string | null;
+      exists: Record<string, boolean>;
+      why: string;
+    }
+
+    const casesPath = join(
+      dirname(fileURLToPath(import.meta.url)),
+      '..',
+      'go',
+      'nist',
+      'testdata',
+      'nist-id-spelling-cases.json'
+    );
+    const { cases } = JSON.parse(readFileSync(casesPath, 'utf-8')) as { cases: SpellingCase[] };
+
+    it('has cases, each with a result for every supported revision', () => {
+      expect(cases.length).toBeGreaterThan(0);
+      for (const c of cases) {
+        expect(Object.keys(c.exists).map(Number).sort()).toEqual([...SUPPORTED_NIST_REVISIONS]);
+      }
+    });
+
+    it.each(cases.map((c) => [c.input, c.normalized, c.why] as const))(
+      'normalizeNistId(%j) is %j',
+      (input, normalized, why) => {
+        expect(normalizeNistId(input), why).toBe(normalized ?? undefined);
+      }
+    );
+
+    it.each(
+      cases.flatMap((c) =>
+        Object.entries(c.exists).map(([rev, exists]) => [c.input, Number(rev), exists, c.why] as const)
+      )
+    )('nistExists(%j, %d) is %s', (input, rev, exists, why) => {
+      expect(nistExists(input, rev), why).toBe(exists);
+    });
+
+    it.each(
+      cases.flatMap((c) =>
+        Object.entries(c.exists).map(
+          ([rev, exists]) => [c.input, Number(rev), exists, c.normalized, c.why] as const
+        )
+      )
+    )('getNISTDescription(%j, %d) is defined: %s', (input, rev, exists, normalized, why) => {
+      const desc = getNISTDescription(input, rev);
+      if (exists) {
+        expect(typeof desc, why).toBe('string');
+        expect(desc, why).toBe(getNISTDescription(normalized!, rev));
+      } else {
+        expect(desc, why).toBeUndefined();
+      }
+    });
+
+    it('accepts every description key at its revision, and each key normalizes to itself', () => {
+      for (const rev of SUPPORTED_NIST_REVISIONS) {
+        const ids = getAllNISTIds(rev);
+        expect(ids.length).toBeGreaterThan(0);
+        for (const id of ids) {
+          expect(nistExists(id, rev), `${id} at Rev ${rev}`).toBe(true);
+          expect(normalizeNistId(id)).toBe(id);
+        }
+      }
+    });
+
+    it('uses the default revision data for an unsupported revision', () => {
+      expect(nistExists('SR-3', 99)).toBe(nistExists('SR-3', DEFAULT_NIST_REVISION));
+    });
+
+    it('normalizeNistId returns undefined for non-string input', () => {
+      expect(normalizeNistId(null as unknown as string)).toBeUndefined();
+      expect(normalizeNistId(3 as unknown as string)).toBeUndefined();
     });
   });
 

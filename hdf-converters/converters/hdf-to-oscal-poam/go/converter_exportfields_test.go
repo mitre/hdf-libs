@@ -268,14 +268,14 @@ func TestExport_ApprovedBy(t *testing.T) {
 	assert.True(t, haveRole)
 }
 
-// TestExport_MinorProps pins the low-value prop homes (baseline/component ref,
-// amendment id, labels) and milestone completion attribution.
+// TestExport_MinorProps pins the scope prop homes, the amendment id, labels as
+// grouped key/value pairs, and milestone completion attribution through a role.
 func TestExport_MinorProps(t *testing.T) {
 	completedAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	amendments := hdf.HDFAmendments{
 		Name:        "minor-test",
 		AmendmentID: strPtr("AMD-42"),
-		Labels:      map[string]string{"zone": "prod", "env": "gov"},
+		Labels:      map[string]string{"zone": "prod", "env": "gov", "app.kubernetes.io/name": "portal"},
 		Overrides: []hdf.StandaloneOverride{{
 			Type: hdf.Poam, RequirementID: "AC-1", Reason: "r",
 			Status:       resultStatusPtr(hdf.Failed),
@@ -295,14 +295,32 @@ func TestExport_MinorProps(t *testing.T) {
 	}
 	poam := convertToPOAM(t, amendments)
 
-	// Labels emit in sorted key order.
-	require.GreaterOrEqual(t, len(poam.Metadata.Props), 3)
 	amdID, ok := propVal(poam.Metadata.Props, "amendment-id")
 	require.True(t, ok)
 	assert.Equal(t, "AMD-42", amdID)
-	env, ok := propVal(poam.Metadata.Props, "env")
-	require.True(t, ok)
-	assert.Equal(t, "gov", env)
+
+	// Labels are key/value pairs grouped in sorted key order, with keys kept verbatim.
+	type label struct{ class, group, key, value string }
+	var labels []label
+	for _, p := range poam.Metadata.Props {
+		if p.Class != "amendment-label" {
+			continue
+		}
+		assert.Equal(t, oscal.VocabularyNamespace(), p.Ns)
+		switch p.Name {
+		case "label-key":
+			labels = append(labels, label{class: p.Class, group: p.Group, key: p.Value})
+		case "label-value":
+			require.NotEmpty(t, labels)
+			assert.Equal(t, labels[len(labels)-1].group, p.Group)
+			labels[len(labels)-1].value = p.Value
+		}
+	}
+	assert.Equal(t, []label{
+		{"amendment-label", "label-1", "app.kubernetes.io/name", "portal"},
+		{"amendment-label", "label-2", "env", "gov"},
+		{"amendment-label", "label-3", "zone", "prod"},
+	}, labels)
 
 	risk := poam.Risks[0]
 	v, ok := propVal(risk.Props, "baseline-ref")
@@ -314,10 +332,21 @@ func TestExport_MinorProps(t *testing.T) {
 
 	require.Len(t, risk.Remediations, 1)
 	require.Len(t, risk.Remediations[0].Tasks, 1)
-	cb, ok := propVal(risk.Remediations[0].Tasks[0].Props, "completed-by")
-	require.True(t, ok)
-	assert.Equal(t, "ops", cb)
-	ca, ok := propVal(risk.Remediations[0].Tasks[0].Props, "completed-at")
+	task := risk.Remediations[0].Tasks[0]
+	_, ok = propVal(task.Props, "completed-by")
+	assert.False(t, ok, "completedBy rides on a responsible role, not a prop")
+	require.Len(t, task.ResponsibleRoles, 1)
+	assert.Equal(t, "completed-by", task.ResponsibleRoles[0].RoleID)
+	require.Len(t, task.ResponsibleRoles[0].PartyIDs, 1)
+	var completer oscal.Party
+	for _, p := range poam.Metadata.Parties {
+		if p.UUID == task.ResponsibleRoles[0].PartyIDs[0] {
+			completer = p
+		}
+	}
+	assert.Equal(t, "ops", completer.Name)
+	assert.Contains(t, poam.Metadata.Roles, oscal.Role{ID: "completed-by", Title: "Completed By"})
+	ca, ok := propVal(task.Props, "completed-at")
 	require.True(t, ok)
 	assert.Equal(t, "2023-01-01T00:00:00Z", ca)
 }
@@ -348,4 +377,40 @@ func TestExport_RoundTripAppliedAtVersion(t *testing.T) {
 	assert.Equal(t, "3.2", *hdfOut.Version)
 	require.Len(t, hdfOut.Overrides, 1)
 	assert.True(t, appliedAt.Equal(hdfOut.Overrides[0].AppliedAt), "appliedAt should round-trip")
+}
+
+// TestExport_MilestoneTitles pins the milestone title homes (ADR-0014 §4.6): a
+// title is carried exactly in the remediation and task titles, and an untitled
+// milestone gets the display text "Milestone <n>" and absent-field on both,
+// never a title derived from its description.
+func TestExport_MilestoneTitles(t *testing.T) {
+	eta := time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)
+	poam := convertToPOAM(t, hdf.HDFAmendments{
+		Name: "titles",
+		Overrides: []hdf.StandaloneOverride{{
+			Type: hdf.Poam, RequirementID: "AC-1", Reason: "r",
+			AppliedBy: hdf.Identity{Type: hdf.Simple, Identifier: "admin"},
+			AppliedAt: time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC), ExpiresAt: eta,
+			Milestones: []hdf.Milestone{
+				{Title: strPtr("Deploy OpenSSH 9.8p1"), Description: "Upgrade OpenSSH on every host.", EstimatedCompletion: eta, Status: hdf.Pending},
+				{Description: "Isolate the affected host\non a restricted VLAN.", EstimatedCompletion: eta, Status: hdf.Pending},
+			},
+		}},
+	})
+	require.Len(t, poam.Risks, 1)
+	rems := poam.Risks[0].Remediations
+	require.Len(t, rems, 2)
+
+	type titled struct {
+		title  string
+		marker bool
+	}
+	carried := func(title string, props []oscal.Property) titled {
+		return titled{title, oscal.HasFieldMarker(props, "absent-field", "title", "")}
+	}
+	for i, want := range []titled{{"Deploy OpenSSH 9.8p1", false}, {"Milestone 2", true}} {
+		require.Len(t, rems[i].Tasks, 1)
+		assert.Equal(t, want, carried(rems[i].Title, rems[i].Props), "remediation %d", i+1)
+		assert.Equal(t, want, carried(rems[i].Tasks[0].Title, rems[i].Tasks[0].Props), "task %d", i+1)
+	}
 }

@@ -1,0 +1,7 @@
+# Inputs in fixtures/input/ that intentionally have no fixtures/expected/<name>.hdf.json golden.
+# One per line, as <input> — <reason>. The snapshot harness in both languages requires every
+# input to have a golden or a line here, and fails on a line that names a missing input, an
+# input that has a golden, or no reason. The empty.* convention needs no line.
+
+2022-evd-uc-01-a-001.json — converts to an error by design: only `affected` statements, nothing actionable; asserted by TestConvertCSAFVEX_AffectedAndUnderInvestigationProduceError and its TS twin
+2022-evd-uc-01-ui-001.json — converts to an error by design: only `under_investigation` statements; same tests as above

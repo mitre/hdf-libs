@@ -41,6 +41,9 @@ function fixture(category: string, name: string): FixtureRef {
 export const results = {
   inspecMultilayered: fixture('results', 'inspec-multilayered.json'),
   minimal: fixture('results', 'minimal.json'),
+  duplicateBaselines: fixture('results', 'duplicate-baselines.json'),
+  mergeGrype: fixture('results', 'merge-grype.json'),
+  mergeZap: fixture('results', 'merge-zap.json'),
 } as const;
 
 // HDF Baseline documents.
@@ -61,7 +64,6 @@ export const inspec = {
   ubi9Scan: fixture('inspec', 'ubi9-scan.json'),
   containerScan: fixture('inspec', 'container-scan.json'),
   threeLayerOverlay: fixture('inspec', 'three-layer-overlay.json'),
-  threeLayerRhel7: fixture('inspec', 'three-layer-rhel7.json'),
   wrapper: fixture('inspec', 'wrapper.json'),
 } as const;
 

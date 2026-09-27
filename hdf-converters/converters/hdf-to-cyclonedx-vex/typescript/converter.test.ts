@@ -389,7 +389,10 @@ describe('convertHdfToCyclonedxVex — amendmentId and sparse reason', () => {
     const out = await convertHdfToCyclonedxVex(JSON.stringify(a), TEST_VERSION);
     const bom = JSON.parse(out);
     expect(bom.serialNumber).toBe('urn:uuid:AMD-42');
-    expect(bom.vulnerabilities[0].affects[0].ref).toBe('HDFPID-0001');
+    // Nothing named a product, so no affects[] and no invented component.
+    expect(bom.vulnerabilities[0]).not.toHaveProperty('affects');
+    expect(bom).not.toHaveProperty('components');
+    expect(out).not.toContain('HDFPID');
   });
 });
 
@@ -430,8 +433,8 @@ describe('helpers', () => {
   it('productIDsFor parses the Products line', async () => {
     expect(productIDsFor({ reason: 'prose\nProducts: A, B' } as never)).toEqual(['A', 'B']);
   });
-  it('productIDsFor falls back to default', async () => {
-    expect(productIDsFor({ reason: 'no products' } as never)).toEqual(['HDFPID-0001']);
+  it('productIDsFor names no product when nothing identifies one', async () => {
+    expect(productIDsFor({ reason: 'no products' } as never)).toEqual([]);
   });
   it('stripReasonAnnotations removes Products/VEX justification/Response lines', async () => {
     expect(

@@ -38,7 +38,9 @@ interface GrypeDescriptor {
 
 interface GrypeSource {
   type?: string;
-  target: GrypeTarget;
+  // Image scans carry the object; directory and SBOM scans carry a bare string
+  // (the scan target). Both shapes must parse — see grypeTargetName.
+  target: GrypeTarget | string;
 }
 
 // GrypeTarget mirrors source.target for an image scan. Only userInput is
@@ -467,8 +469,18 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
 // component. An image scan yields a containerImage component carrying the image
 // digest, id, and distro OS; anything without image identity (e.g. a directory
 // scan) falls back to a bare artifact component named for the scan target.
+// grypeTargetName resolves the scan target's display name from either shape:
+// the bare string a directory/SBOM scan emits, or an image object's userInput.
+function grypeTargetName(target: GrypeTarget | string | undefined): string {
+  if (typeof target === 'string') return target || 'Grype Scan';
+  return target?.userInput || 'Grype Scan';
+}
+
 function buildComponent(report: GrypeReport, targetName: string): Component {
-  const t = report.source?.target;
+  const rawTarget = report.source?.target;
+  // Only an object target carries image identity; a bare string is a
+  // directory/SBOM scan and yields a plain artifact named for targetName.
+  const t = typeof rawTarget === 'object' ? rawTarget : undefined;
   const firstRepoDigest = t?.repoDigests?.find(d => d);
   const firstTag = t?.tags?.find(tag => tag);
   const isImage = Boolean(t && (t.imageID || t.manifestDigest || firstRepoDigest || firstTag));
@@ -503,7 +515,7 @@ export async function convertGrypeToHdf(input: string, converterVersion = '1.0.0
   const requirements: EvaluatedRequirement[] = [];
 
   // Build baseline name from source.
-  const targetName = grypeData.source?.target?.userInput || 'Grype Scan';
+  const targetName = grypeTargetName(grypeData.source?.target);
 
   // The scan timestamp anchors every result's start_time; a Go zero-time Date is
   // the schema-safe fallback when Grype omits descriptor.timestamp.

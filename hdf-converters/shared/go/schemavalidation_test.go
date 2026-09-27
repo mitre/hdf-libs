@@ -82,17 +82,29 @@ func loadFormatCases(t *testing.T) ([]formatCase, []string) {
 	raw, err := os.ReadFile(filepath.Join("..", "testdata", "format-assertion-cases.json"))
 	require.NoError(t, err, "read the shared format table")
 	var table struct {
-		Formats []string     `json:"formats"`
-		Cases   []formatCase `json:"cases"`
+		Formats          []string     `json:"formats"`
+		TSAnnotationOnly []string     `json:"tsAnnotationOnly"`
+		Cases            []formatCase `json:"cases"`
 	}
 	require.NoError(t, json.Unmarshal(raw, &table))
 	require.NotEmpty(t, table.Cases)
 	covered := map[string]bool{}
+	goRejects := map[string]bool{}
 	for _, c := range table.Cases {
 		covered[c.Format] = true
+		if (c.Go != nil && !*c.Go) || (c.GoDraft07 != nil && !*c.GoDraft07) {
+			goRejects[c.Format] = true
+		}
 	}
 	for _, f := range table.Formats {
 		require.True(t, covered[f], "format %q is declared but has no cases", f)
+	}
+	// ajv-formats implements none of these, so only this harness can catch a
+	// violation. A row Go rejects is what makes that a recorded fact rather than
+	// a claim.
+	for _, f := range table.TSAnnotationOnly {
+		require.Contains(t, table.Formats, f, "annotation-only format %q must be declared in formats[]", f)
+		require.True(t, goRejects[f], "format %q is unchecked in TypeScript; the table needs a value Go rejects", f)
 	}
 	return table.Cases, table.Formats
 }

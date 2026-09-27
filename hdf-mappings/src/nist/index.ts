@@ -3,8 +3,12 @@
  */
 
 import type { NISTDescriptions } from './types.js';
-import rawNistDataRev4 from '../data/nist-descriptions.json';
-import rawNistDataRev5 from '../data/nist-descriptions-rev5.json';
+import { normalizeNistId } from './normalize.js';
+// The JSON files the Go nist package embeds, imported so both languages read one copy.
+import rawNistDataRev4 from '../../go/nist/nist-descriptions.json';
+import rawNistDataRev5 from '../../go/nist/nist-descriptions-rev5.json';
+
+export { normalizeNistId };
 
 // Descriptions are revision-specific: Rev 5 renamed titles ("... POLICY AND
 // PROCEDURES" -> "Policy and Procedures"), added the SR and PT families, and
@@ -83,7 +87,8 @@ export function setNistStrict(strict: boolean): void {
 /**
  * Get the description for a NIST control ID at the selected revision.
  *
- * @param nistId - The NIST control ID (e.g., 'AC-01', 'AC-01 a', 'AC-02 01')
+ * @param nistId - The NIST control ID, in any spelling normalizeNistId accepts
+ *   ('AC-1', 'AC-01 a', 'AC-2 (1)', 'AC-02 01', ...)
  * @param rev - NIST revision to look up; defaults to the module-global revision
  * @returns The control's Rev-specific description, or undefined if not found at
  *   that revision (e.g. a Rev 5-only SR/PT control at Rev 4, or a Rev 4 control
@@ -92,18 +97,15 @@ export function setNistStrict(strict: boolean): void {
  * @example
  * ```typescript
  * getNISTDescription('AC-01');    // Rev 5 default -> "Policy and Procedures"
- * getNISTDescription('AC-01', 4); // -> "ACCESS CONTROL POLICY AND PROCEDURES"
+ * getNISTDescription('AC-1', 4);  // -> "ACCESS CONTROL POLICY AND PROCEDURES"
  * ```
  */
 export function getNISTDescription(
   nistId: string,
   rev: number = getCurrentNistRevision()
 ): string | undefined {
-  if (!nistId || typeof nistId !== 'string') {
-    return undefined;
-  }
-
-  return descriptionsFor(rev)[nistId];
+  const key = normalizeNistId(nistId);
+  return key === undefined ? undefined : descriptionsFor(rev)[key];
 }
 
 /**
@@ -126,24 +128,22 @@ export function getAllNISTIds(rev: number = getCurrentNistRevision()): string[] 
 /**
  * Check if a NIST control ID exists at the selected revision.
  *
- * @param nistId - The NIST control ID to check
+ * @param nistId - The NIST control ID to check, in any spelling normalizeNistId
+ *   accepts ('AC-2', 'AC-2(3)', 'AC-2 (3)', 'AC-02 03', 'AC-01 a 01', ...)
  * @param rev - NIST revision to check against; defaults to the module-global revision
  * @returns true if the control exists at that revision (e.g. an SR/PT control is
  *   present at Rev 5 but not Rev 4)
  *
  * @example
  * ```typescript
- * if (nistExists('AC-01')) {
- *   console.log('NIST control found');
- * }
+ * nistExists('AC-2 (3)');   // true
+ * nistExists('SR-3', 4);    // false: the SR family is Rev 5-only
+ * nistExists('SV-230221');  // false
  * ```
  */
 export function nistExists(nistId: string, rev: number = getCurrentNistRevision()): boolean {
-  if (!nistId || typeof nistId !== 'string') {
-    return false;
-  }
-
-  return nistId in descriptionsFor(rev);
+  const key = normalizeNistId(nistId);
+  return key !== undefined && key in descriptionsFor(rev);
 }
 
 /**

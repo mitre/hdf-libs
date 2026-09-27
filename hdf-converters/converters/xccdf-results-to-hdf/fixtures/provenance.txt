@@ -8,27 +8,27 @@ have come from somewhere else.
 ## `input/`
 
 ### `arf-minimal.xml`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
 ### `benchmark-minimal-1.1.xml`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
 ### `benchmark-minimal-1.2.xml`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
 ### `benchmark-ssg-nested-groups.xml`
-No counterpart in either upstream. Introduced by this repository in
-`fix(xccdf): traverse nested Groups, keep every rule, and map severity (#137)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+SCAP Security Guide content by its own identifiers (`xccdf_org.ssgproject.content_benchmark_RHEL-8`, "Guide to the Secure Configuration of Red Hat Enterprise Linux 8"), and the converter test that uses it states it is verbatim from ComplianceAsCode v0.1.81 `ssg-rhel8`, cut down to one nested Group subtree. SSG benchmarks are build products, not files in the ComplianceAsCode repository, so no byte match against upstream is possible from here; neither heimdall2 nor SAF carries it. Introduced by this repository in
+`fix(xccdf): traverse nested Groups, keep every rule, and map severity (#137)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
 ### `empty.xml`
@@ -36,30 +36,64 @@ Synthetic by construction: an empty or no-findings document used to
 exercise the nothing-to-convert path. Not sourced from anywhere.
 
 ### `minimal.xml`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
 ### `stig-rhel7.xml`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/xccdf_results`, none matching.
 
 ### `xccdf-results-openscap-rhel7.xml`
 Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/xccdf_results_mapper/sample_input_report/xccdf-results-openscap-rhel7.xml`.
 
 ### `xccdf-results-openscap-rhel8.xml`
-Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/xccdf_results_mapper/sample_input_report/xccdf-results-openscap-rhel8.xml`.
+Derived from heimdall2 `libs/hdf-converters/sample_jsons/xccdf_results_mapper/sample_input_report/xccdf-results-openscap-rhel8.xml`
+(an OpenSCAP 1.2.17 run of the DISA RHEL 8 STIG, release 1.3, 248 rule-results), of which this file was a byte-identical copy until 2026-09-19.
+Trimmed then to 16 rule-results: the first two in document order for each distinct (result, severity) pair the run contains — the one `error`/`low`
+and one `error`/`high` are all the run had — plus `SV-230221`, which the converter tests pin by id. Only the Groups and Rules those rule-results
+reference are kept, and the Profile `select` entries for the removed Groups are dropped so the document stays consistent; the Benchmark metadata,
+TestResult header, target facts, and score are untouched. Every distinct output shape the full file produced is still produced, and the kept
+requirements are byte-identical to their pre-trim golden entries; only the volume changed. Text was removed, never edited, so the retained
+content is still verbatim upstream. The full file is in this repository's history before that date if a volume test ever needs it.
 
 ### `xccdf-results-scc-rhel7.xml`
 Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/xccdf_results_mapper/sample_input_report/xccdf-results-scc-rhel7.xml`.
 
 ### `xccdf-results-scc-rhel8.xml`
-Byte-identical to heimdall2 `libs/hdf-converters/sample_jsons/xccdf_results_mapper/sample_input_report/xccdf-results-scc-rhel8.xml`.
+Derived from heimdall2 `libs/hdf-converters/sample_jsons/xccdf_results_mapper/sample_input_report/xccdf-results-scc-rhel8.xml`
+(an SCC 5.4.2 run of the DISA RHEL 8 STIG, 248 rule-results), of which this file was a byte-identical copy until 2026-09-19.
+Trimmed then to 12 rule-results: the first two in document order for each of the six distinct (result, severity) pairs the run contains, plus
+`SV-230221` and the rule-result timed `2021-12-17T10:24:35`, both of which the converter tests pin. Only the Groups and Rules those rule-results
+reference are kept, and the Profile `select` entries for the removed Groups are dropped so the document stays consistent; the Benchmark metadata,
+TestResult header, target facts, and scores are untouched. Every distinct output shape the full file produced is still produced, and the kept
+requirements are byte-identical to their pre-trim golden entries; only the volume changed. Text was removed, never edited, so the retained
+content is still verbatim upstream. The full file is in this repository's history before that date if a volume test ever needs it.
 
 ## `expected/`
 
 Generated by this repository's converters, not sourced. Regenerate with
 `go test ./converters/xccdf-results-to-hdf/... -run TestSnapshots -update`.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `arf-minimal.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:redhat:openscap:1.3.5`; Benchmark `xccdf_com.example.www_benchmark_dummy` version 1.0.
+- `benchmark-minimal-1.1.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `MS_Windows_Server_2022_STIG` version 2.
+- `benchmark-minimal-1.2.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `MS_Windows_Server_2022_STIG` version 2.
+- `benchmark-ssg-nested-groups.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_org.ssgproject.content_benchmark_RHEL-8` version 0.1.81.
+- `empty.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
+- `minimal.xml` — XCCDF Benchmark only (no `TestResult`, so no scanner and no scanner version); Benchmark `xccdf_moc.elpmaxe.www_benchmark_test` version 1.0.
+- `stig-rhel7.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:redhat:openscap:1.2.17`; Benchmark `xccdf_mil.disa.stig_benchmark_RHEL_7_STIG` version 003.005.
+- `xccdf-results-openscap-rhel7.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:redhat:openscap:1.2.17`; Benchmark `xccdf_mil.disa.stig_benchmark_RHEL_7_STIG` version 003.005.
+- `xccdf-results-openscap-rhel8.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:redhat:openscap:1.3.5`; Benchmark `xccdf_mil.disa.stig_benchmark_RHEL_8_STIG` version 001.003.
+- `xccdf-results-scc-rhel7.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:spawar:scc:5.4`; Benchmark `xccdf_mil.disa.stig_benchmark_RHEL_7_STIG` version 003.002.
+- `xccdf-results-scc-rhel8.xml` — XCCDF results; scanner from `TestResult/@test-system`: `cpe:/a:spawar:scc:5.4.2`; Benchmark `xccdf_mil.disa.stig_benchmark_RHEL_8_STIG` version 001.002.
+
+## Schema
+
+XCCDF 1.2 has an XSD and it is vendored at `hdf-to-xccdf/schemas/xccdf_1.2.xsd` (with the CPE and `xml.xsd` schemas it imports; see that directory's `provenance.json`); libxml2 compiles it in the hdf-to-xccdf tests. It is not copied here. The ARF 1.1 XSD for `arf-minimal.xml` (NIST, `asset-reporting-format_1.1.0.xsd`) is vendored here and recorded in `provenance.json`; it imports the asset-identification and reporting-core schemas by relative path, which are not vendored, so it is hash-checked but not compiled.

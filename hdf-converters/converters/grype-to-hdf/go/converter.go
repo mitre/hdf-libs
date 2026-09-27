@@ -50,6 +50,25 @@ type GrypeTarget struct {
 	Layers         []GrypeLayer `json:"layers,omitempty"`
 }
 
+// UnmarshalJSON accepts both shapes grype emits for source.target: the object of
+// an image scan, and the bare string of a directory or SBOM scan (where that
+// string is the scan target). A bare string populates UserInput — the one field
+// guaranteed across scan types — so a directory scan no longer fails to parse.
+func (t *GrypeTarget) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*t = GrypeTarget{UserInput: s}
+		return nil
+	}
+	type grypeTargetObject GrypeTarget // avoid recursing into this method
+	var obj grypeTargetObject
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return err
+	}
+	*t = GrypeTarget(obj)
+	return nil
+}
+
 type GrypeLayer struct {
 	Digest string `json:"digest,omitempty"`
 	Size   int64  `json:"size,omitempty"`

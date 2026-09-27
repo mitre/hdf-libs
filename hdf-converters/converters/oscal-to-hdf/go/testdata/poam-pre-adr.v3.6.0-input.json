@@ -1,0 +1,138 @@
+{
+  "name": "Portal Q1 2026 Waivers",
+  "overrides": [
+    {
+      "type": "waiver",
+      "requirementId": "SV-257777",
+      "baselineRef": "RHEL9-STIG",
+      "status": "passed",
+      "reason": "Compensating control: session timeout set to 15 min",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "ao@agency.gov"
+      },
+      "appliedAt": "2026-01-15T10:00:00Z",
+      "expiresAt": "2026-06-30T00:00:00Z",
+      "evidence": [
+        {
+          "type": "url",
+          "data": "https://jira.agency.gov/CYBER-4521",
+          "description": "ISSM approval with compensating control documentation"
+        }
+      ]
+    },
+    {
+      "type": "falsePositive",
+      "requirementId": "SV-258010",
+      "baselineRef": "RHEL9-STIG",
+      "status": "passed",
+      "reason": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "assessor@agency.gov"
+      },
+      "appliedAt": "2026-04-14T10:00:00Z",
+      "expiresAt": "2026-10-14T00:00:00Z"
+    },
+    {
+      "type": "falsePositive",
+      "requirementId": "CVE-2026-12345",
+      "status": "notApplicable",
+      "reason": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "dev@org.gov"
+      },
+      "appliedAt": "2026-04-14T10:00:00Z",
+      "expiresAt": "2026-10-14T00:00:00Z"
+    },
+    {
+      "type": "riskAdjustment",
+      "requirementId": "SV-258020",
+      "baselineRef": "RHEL9-STIG",
+      "impact": {
+        "value": 0.3
+      },
+      "reason": "CVE-123 is in a dead code path, unreachable from any entry point",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "dev@org.gov"
+      },
+      "appliedAt": "2026-04-14T10:00:00Z",
+      "expiresAt": "2026-10-14T00:00:00Z"
+    },
+    {
+      "type": "poam",
+      "requirementId": "SV-258001",
+      "baselineRef": "RHEL9-STIG",
+      "status": "failed",
+      "reason": "Patch requires vendor release, expected Q2 2026",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "sysadmin@agency.gov"
+      },
+      "appliedAt": "2026-01-20T09:00:00Z",
+      "expiresAt": "2026-07-01T00:00:00Z",
+      "milestones": [
+        {
+          "description": "Vendor patch release",
+          "estimatedCompletion": "2026-04-15T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "description": "Apply patch to all servers",
+          "estimatedCompletion": "2026-05-01T00:00:00Z",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "type": "inherited",
+      "requirementId": "SV-230368",
+      "baselineRef": "RHEL9-STIG",
+      "status": "notApplicable",
+      "reason": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+      "inheritedFrom": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "issm@agency.gov"
+      },
+      "appliedAt": "2026-03-26T10:00:00Z",
+      "expiresAt": "2026-09-26T00:00:00Z"
+    },
+    {
+      "type": "falsePositive",
+      "requirementId": "CVE-2026-12345",
+      "status": "notApplicable",
+      "reason": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+      "justification": "vulnerable_code_not_present",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "secops@org.gov"
+      },
+      "appliedAt": "2026-05-01T10:00:00Z",
+      "expiresAt": "2027-05-01T00:00:00Z",
+      "affectedPackages": [
+        {
+          "purl": "pkg:npm/lodash@4.17.20"
+        },
+        {
+          "purl": "pkg:rpm/openssl@1.1.1k-2.el8",
+          "fixedInVersion": "1.1.1k-3.el8"
+        }
+      ]
+    },
+    {
+      "type": "attestation",
+      "requirementId": "",
+      "status": "passed",
+      "reason": "Manual attestation recorded before the requirement was identified",
+      "appliedBy": {
+        "type": "email",
+        "identifier": "ao@agency.gov"
+      },
+      "appliedAt": "2026-01-15T10:00:00Z",
+      "expiresAt": "2026-06-30T00:00:00Z"
+    }
+  ]
+}

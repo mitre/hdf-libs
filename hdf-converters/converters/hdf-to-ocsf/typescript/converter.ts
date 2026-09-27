@@ -98,25 +98,24 @@ function buildFinding(
 
   // Surface the check evidence and raw source data into their first-class OCSF
   // (base_event) homes instead of leaving them only in unmapped: the raw tool
-  // blob -> raw_data, the assertion text -> message, per-result codeDesc/message/
-  // status -> evidences[], and the precise HDF status (which the collapsed
-  // compliance.status_id loses for notApplicable/notReviewed/error) ->
-  // status_detail. status_detail carries the effective/rollup status so it also
-  // reflects an override (e.g. a waived fail reads "passed").
+  // blob -> raw_data, the assertion text -> message, and the precise HDF status
+  // (which the collapsed compliance.status_id loses for notApplicable/
+  // notReviewed/error) -> status_detail. status_detail carries the effective/
+  // rollup status so it also reflects an override (a waived fail reads "passed").
   setIf(finding, 'raw_data', getStr(req, 'code'));
   setIf(finding, 'message', firstResultMessage(req));
-  const evidences = buildEvidences(req);
-  if (evidences.length > 0) finding.evidences = evidences;
   setIf(finding, 'status_detail', st.rollup);
-  // The "fix"-labeled description is real remediation guidance; give it the
-  // first-class Finding remediation home (Vulnerability Findings also get a
-  // per-vuln remediation + fix_available below).
-  const remediation = remediationText(req);
-  if (remediation !== '') finding.remediation = { desc: remediation };
 
   if (hasCVSS) {
+    // Vulnerability Finding defines neither evidences nor a top-level
+    // remediation: the fix text rides vulnerabilities[].remediation and the
+    // per-result evidence stays verbatim in unmapped.hdf_requirement.results.
     finding.vulnerabilities = buildVulnerabilities(cvssList!, req);
   } else {
+    const evidences = buildEvidences(req);
+    if (evidences.length > 0) finding.evidences = evidences;
+    const remediation = remediationText(req);
+    if (remediation !== '') finding.remediation = { desc: remediation };
     finding.compliance = buildCompliance(req, baseline, title, st.raw);
   }
   return finding;

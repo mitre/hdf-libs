@@ -245,7 +245,7 @@ func TestConvertGitlabToHDF_MultiVuln_DefaultNIST(t *testing.T) {
 	result, err := ConvertGitlabToHDF(input, testVersion)
 	require.NoError(t, err)
 
-	// Third vulnerability has no identifiers, should get default NIST
+	// Third vulnerability carries only a semgrep_id identifier, no CWE, so it gets the default NIST
 	for _, req := range result.Baselines[0].Requirements {
 		if req.ID == "33333333-3333-3333-3333-333333333333" {
 			nist := req.Tags["nist"]
@@ -519,7 +519,7 @@ func TestConvertGitlabToHDF_Refs_LinksAndIdentifiers(t *testing.T) {
 	assert.Equal(t, "https://cwe.mitre.org/data/definitions/89.html", *req.Refs[1].URL)
 }
 
-// A vuln with empty links[] and empty identifiers[] emits no refs[].
+// A vuln with empty links[] and identifiers that carry no url emits no refs[].
 func TestConvertGitlabToHDF_Refs_AbsentNotEmitted(t *testing.T) {
 	input := loadFixture(t, "input/multi-vuln.json")
 	result, err := ConvertGitlabToHDF(input, testVersion)
@@ -527,6 +527,31 @@ func TestConvertGitlabToHDF_Refs_AbsentNotEmitted(t *testing.T) {
 
 	req := reqByID(t, result, "33333333-3333-3333-3333-333333333333")
 	assert.Nil(t, req.Refs)
+}
+
+// The report schema requires at least one identifier, so the committed fixtures
+// all carry one; the converter must still tolerate a report that breaks that
+// rule, and the empty case is the one that used to live in multi-vuln.json.
+func TestConvertGitlabToHDF_EmptyIdentifiersTolerated(t *testing.T) {
+	input := []byte(`{
+	  "version": "15.1.0",
+	  "scan": {"type": "sast", "status": "success", "start_time": "2024-01-01T00:00:00", "end_time": "2024-01-01T00:01:00",
+	    "scanner": {"id": "semgrep", "name": "Semgrep", "version": "1.34.0", "vendor": {"name": "Semgrep"}},
+	    "analyzer": {"id": "semgrep", "name": "Semgrep", "version": "1.0.0", "vendor": {"name": "GitLab"}}},
+	  "vulnerabilities": [{
+	    "id": "44444444-4444-4444-4444-444444444444", "name": "No identifiers", "severity": "Low",
+	    "identifiers": [], "links": [], "location": {"file": "a.py", "start_line": 1, "end_line": 1}
+	  }]
+	}`)
+	result, err := ConvertGitlabToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	req := reqByID(t, result, "44444444-4444-4444-4444-444444444444")
+	assert.Nil(t, req.Refs)
+	nist, ok := req.Tags["nist"].([]interface{})
+	require.True(t, ok)
+	assert.Contains(t, nist, "SA-11")
+	assert.Contains(t, nist, "RA-5")
 }
 
 // A URL present in both links[] and identifiers[] appears in refs[] only once.

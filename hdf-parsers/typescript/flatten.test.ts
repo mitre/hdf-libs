@@ -492,9 +492,9 @@ describe('flattenOverlays', () => {
   describe('integration — real fixtures', () => {
     // Migrated from hdf-schema/test/fixtures to @mitre/hdf-fixtures/inspec/
     // (see bead hdf-libs-e95o).
-    it('Three_Layer_RHEL7: 3 profiles → 1 baseline, 247 controls', () => {
+    it('Three_Layer_Overlay: 3 profiles → 1 baseline, 247 controls', () => {
       const { results: flat, metadata } = flattenOverlays(
-        loadV1FixtureAsHdfResults(inspec.threeLayerRhel7.path)
+        loadV1FixtureAsHdfResults(inspec.threeLayerOverlay.path)
       );
 
       expect(flat.baselines).toHaveLength(1);

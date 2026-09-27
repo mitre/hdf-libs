@@ -1,0 +1,1070 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Schema definition for the Detailed Report XML.
+  Copyright Veracode, Inc., 2014.
+-->
+<xs:schema version="1.5"
+  targetNamespace="https://www.veracode.com/schema/reports/export/1.0"
+  xmlns:tns="https://www.veracode.com/schema/reports/export/1.0"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified">
+
+<xs:element name="detailedreport">
+  <xs:annotation>
+    <xs:documentation>
+      This is a wrapper for the entire report.  This element contains these attributes:
+      * report_format_version:  Version of the format of this report.
+      * account_id: The account id.
+      * app_name:  The application name.
+      * app_id:  The numeric identifier for the application.
+      * analysis_id: The analysis id for the scan.
+      * static_analysis_unit_id: The analysis unit id for the static scan. 
+      * sandbox_name:  The sandbox name. Not present if the report is for a policy scan.
+      * sandbox_id:  The sandbox id.
+	  * first_build_submitted_date: The timestamp of the first submission of a build for this application.
+      * version:  The version label for the application.
+      * build_id:  The numeric identifier for the build of the application.
+      * vendor: The name of the vendor that provided the application, should this apply.
+      * submitter: The name of the account or user that created the build.
+      * platform:  The platform of the build of the application.
+      * assurance_level (Deprecated):  The assurance level of the application.
+	  * business_criticality: The business criticality of the application.
+	  * generation_date:  The date at which the report was generated.
+	  * veracode_level: The Veracode Level score of this application.
+	  * total_flaws: The total number of flaws found for the application.
+	  * flaws_not_mitigated: The total number of flaws not marked as mitigated.
+	  * teams: The teams assigned to this application.
+	  * life_cycle_stage: The current stage of the lifecycle of this application, ie. deployed versus in development.
+	  * planned_deployment_date: The specified deployment date for the application, if provided.
+	  * last_update_time: The last time this application was modified in some way.
+	  * is_latest_build: True if this report is for the most recent build of this application.
+      * policy_name:  The name of the policy assigned to the application.
+      * policy_version:  The version number of the policy assigned to the version
+        of the application.
+      * policy_compliance_status:  A string describing the compliance of the application
+        with the policy.  Allowed values include "Calculating...", "Did Not Pass",
+        "Conditional Pass", and "Pass".
+      * policy_rules_status: A string describing the compliance of the application with the 
+        rules of the policy, ignoring scan frequency requirements and grace period
+        time allowed to address rule violations.  Allowed values include "Calculating...", 
+        "Did Not Pass", and "Pass".
+      * grace_period_expired: True if flaws exist in the latest analyzed build of
+        the application that have been outstanding for longer than the allowed grace period.
+      * scan_overdue: True if the amount of time between the last analysis and the current time
+        is greater than the scan frequency required by the policy.
+      * any_type_scan_due: If present, the date at which a new build of the application must be analyzed
+        in order for the application to remain in compliance with the required scan frequency of the 
+        policy.
+      * business_owner: First and last name of party responsible for the application.
+      * business_unit: The department or group associated with the application.
+      * tags: A comma-delimited list of tags associated with the application.
+    
+      There are up to seven child elements:
+      * static-analysis:  A summary of static analysis results, if static analysis
+        was performed.
+      * dynamic-analysis:  A summary of dynamic analysis results, if dynamic 
+        analysis was performed.
+      * manual-analysis:  A summary of manual analysis results, if manual 
+        analysis was performed.
+      * severity:  There are six severity elements, one per severity level, 
+        with a range of 0 through 5.  The severity
+        5 flaws are the most severe; the severity 0 flaws are informational.
+      * legacy_scan_engine: Flag to indicate if this scan was run with a legacy scan engine, that is
+        it used the same engine version as the previous scan of its type. This only applies to static scans.
+      * software-composition-analysis: A summary of software composition analysis results, if there are
+        vulnerable components available in the static scan.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:complexType>
+    <xs:sequence>
+      <xs:element name="static-analysis" minOccurs="0" maxOccurs="1" type="tns:AnalysisType"/>
+      <xs:element name="dynamic-analysis" minOccurs="0" maxOccurs="1" type="tns:AnalysisType"/>
+      <xs:element name="manual-analysis" minOccurs="0" maxOccurs="1" type="tns:ManualAnalysisType"/>
+      <xs:element name="severity" minOccurs="6" maxOccurs="6" type="tns:SeverityType" />
+      <xs:element name="flaw-status" minOccurs="1" maxOccurs="1" type="tns:FlawStatusType" />
+      <xs:element name="customfields" minOccurs="0" maxOccurs="1" type="tns:CustomFieldsType"/>
+      <xs:element name="software_composition_analysis" minOccurs="0" maxOccurs="1" type="tns:SoftwareCompositionAnalysis"/>
+    </xs:sequence>
+    <xs:attribute name="report_format_version" type="xs:string" use="required"/>
+    <xs:attribute name="account_id" type="xs:long" use="required"/>
+    <xs:attribute name="app_name" type="xs:string" use="required"/>
+    <xs:attribute name="app_id" type="xs:long" use="required"/>
+    <xs:attribute name="analysis_id" type="xs:long" use="required"/>
+    <xs:attribute name="static_analysis_unit_id" type="xs:long" use="required"/>
+    <xs:attribute name="sandbox_name" type="xs:string" use="optional"/>
+    <xs:attribute name="sandbox_id" type="xs:long" use="required"/>
+	<xs:attribute name="first_build_submitted_date" type="xs:string" use="optional"/>
+    <xs:attribute name="version" type="xs:string" use="required"/>
+    <xs:attribute name="build_id" type="xs:long" use="required"/>
+    <xs:attribute name="vendor" type="xs:string" use="optional"/>
+    <xs:attribute name="submitter" type="xs:string" use="required"/>
+    <xs:attribute name="platform" type="xs:string" use="required"/>
+    <xs:attribute name="assurance_level" type="xs:integer" use="optional"/>
+    <xs:attribute name="business_criticality" type="xs:integer" use="optional"/>
+    <xs:attribute name="generation_date" type="xs:string" use="required"/>
+    <xs:attribute name="veracode_level" type="xs:string" use="required"/>
+    <xs:attribute name="total_flaws" type="xs:integer" use="optional"/>
+    <xs:attribute name="flaws_not_mitigated" type="xs:integer" use="optional"/>
+	<xs:attribute name="teams" type="xs:string" use="required"/>
+	<xs:attribute name="life_cycle_stage" type="xs:string" use="required"/>
+	<xs:attribute name="planned_deployment_date" type="xs:string" use="optional"/>
+	<xs:attribute name="last_update_time" type="xs:string" use="required"/>
+	<xs:attribute name="is_latest_build" type="xs:boolean" use="required"/>
+	<xs:attribute name="policy_name" type="xs:string" use="required"/>
+	<xs:attribute name="policy_version" type="xs:integer" use="required"/>
+	<xs:attribute name="policy_compliance_status" type="xs:string" use="required"/>
+	<xs:attribute name="policy_rules_status" type="xs:string" use="required"/>
+	<xs:attribute name="grace_period_expired" type="xs:boolean" use="required"/>
+	<xs:attribute name="scan_overdue" type="xs:string" use="required"/>
+	<xs:attribute name="any_type_scan_due" type="xs:string" use="optional"/>
+	<xs:attribute name="business_owner" type="xs:string" use="optional"/>
+	<xs:attribute name="business_unit" type="xs:string" use="optional"/>
+	<xs:attribute name="tags" type="xs:string" use="optional"/>
+	<xs:attribute name="legacy_scan_engine" type="xs:boolean" use="optional"/>
+  </xs:complexType>
+</xs:element>
+
+<xs:complexType name="SeverityType">
+  <xs:annotation>
+    <xs:documentation>
+      For each severity, there is one attribute:
+      * level:  an integer between 0 and 5 inclusive.  The severity
+        5 flaws are the most severe; the severity 0 flaws are informational.
+        
+      There is one child element per severity:
+      * category: A category of flaws, with one per category for which there is at 
+        least one flaw.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="category" minOccurs="0" maxOccurs="unbounded" type="tns:CategoryType"/>
+  </xs:sequence>
+  <xs:attribute name="level" type="tns:SeverityValueType" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="CategoryType">
+  <xs:annotation>
+    <xs:documentation>
+      For each category, there are the following attributes:
+      * categoryid:  A numeric identifier for the category.
+      * categoryname:  The name of the category.
+      * pcirelated:  Whether the flaw is PCI related.  (This will be specified in a 
+        future release of the platform.)
+      
+      Each category also has the following child elements:
+      * desc:  A list of paragraphs describing the category.
+      * recommendations:  A list of paragraphs describing how to manage flaws within 
+        that category.
+      * cwe:  For each distinct CWE ID for which there is at least one flaw within this
+        category, there is a cwe element.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="desc" type="tns:ParaListType"/>
+    <xs:element name="recommendations" type="tns:ParaListType"/>
+    <xs:element name="cwe" maxOccurs="unbounded" type="tns:CweType"/>
+  </xs:sequence>
+  <xs:attribute name="categoryid" type="xs:integer" use="required"/>
+  <xs:attribute name="categoryname" type="xs:string" use="required"/>
+  <xs:attribute name="pcirelated" type="xs:boolean" use="optional"/>
+</xs:complexType>
+
+<xs:complexType name="CweType">
+  <xs:annotation>
+    <xs:documentation>
+      For each CWE entry, there are the following attributes:
+      * cweId:  The CWE ID for the flaw type.
+      * cwename:  The name of the CWE flaw type.
+      * owasp:  The OWASP ID for the CWE flaw type if it applies.
+      * owasp2013:  The Legacy OWASP 2013 ID for the CWE flaw type if it applies.
+      * sans:  The SANS ID for the CWE flaw type if it applies.
+      * certc:  The CERTC ID for the CWE flaw type if it applies.
+      * certcpp:  The CERTCPP ID for the CWE flaw type if it applies.
+      * certjava:  The CERTJAVA ID for the CWE flaw type if it applies.
+      * owaspmobile:  The OWASP Mobile 2016 ID for the CWE flaw type if it applies.
+      
+      This element has these child elements:
+      * staticflaws:  If flaws of this type are found through static analysis,
+        those flaws are grouped under this element.
+      * dynamicflaws:  If flaws of this type are found through dynamic analysis,
+        those flaws are grouped under this element.
+      * pcirelated:  Whether the flaw is PCI related.  (This will be specified in a 
+        future release of the platform.)
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="description">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="text" minOccurs="0" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:attribute name="text" type="xs:string" use="required"/>
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+    <xs:element name="staticflaws" type="tns:FlawListType" minOccurs="0"/>
+    <xs:element name="dynamicflaws" type="tns:FlawListType" minOccurs="0"/>
+    <xs:element name="manualflaws" type="tns:FlawListType" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="cweid" type="xs:positiveInteger" use="required"/>
+  <xs:attribute name="cwename" type="xs:string" use="required"/>
+  <xs:attribute name="pcirelated" type="xs:boolean" use="optional"/>
+  <xs:attribute name="owasp" type="xs:positiveInteger" use="optional"/>
+  <xs:attribute name="owasp2013" type="xs:positiveInteger" use="optional"/>
+  <xs:attribute name="sans" type="xs:positiveInteger" use="optional"/>
+  <xs:attribute name="certc" type="xs:positiveInteger" use="optional"/>
+  <xs:attribute name="certcpp" type="xs:positiveInteger" use="optional"/>
+  <xs:attribute name="certjava" type="xs:positiveInteger" use="optional"/>
+  <xs:attribute name="owaspmobile" type="xs:positiveInteger" use="optional"/>
+</xs:complexType>
+
+<xs:simpleType name="cvssType">
+  <xs:restriction base="xs:decimal">
+    <xs:minInclusive value="0"/>
+    <xs:maxInclusive value="10"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:complexType name="AnalysisType">
+  <xs:annotation>
+    <xs:documentation>
+      For each analysis (static or dynamic), there is a list of modules.  If this
+      element is for static analysis, there is one module element per module 
+      analyzed.  If this element is for dynamic analysis, there is exactly one 
+      module element.  
+      
+      Each static or dynamic analysis has these attribute values:
+      * rating: A letter grade.
+      * score: A numeric score.
+      * mitigated_rating: A letter grade, taking into account flaws that are mitigated.
+      * mitigated_score: A numeric score, taking into account flaws that are mitigated.
+	  * submitted_date: The date that this analysis was submitted to Veracode.
+	  * published_date: The date that this analysis was published by Veracode.
+	  * next_scan_due: The date that the active policy for this application requests the next scan by.
+	  * analysis_size_bytes: Optional (Static Analysis Only) size of modules scanned in bytes.
+	  * engine_version: The version of the engine that this scan was run against. Static only.
+	  * dynamic_scan_type: Optional (Dynamic Analysis Only) indicates whether the build is MP or DS.
+	  * scan_exit_status_id: Optional (Dynamic Analysis Only) A numeric code for scan exit status.
+	  * scan_exit_status_desc: Optional (Dynamic Analysis Only) The description corresponds to the status id.
+	  * version: Optional scan name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="modules">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="module" minOccurs="0" maxOccurs="unbounded" type="tns:ModuleType"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+  </xs:sequence>
+  <xs:attribute name="rating" type="xs:string" use="required"/>
+  <xs:attribute name="score" type="xs:integer" use="required"/>
+  <xs:attribute name="mitigated_rating" type="xs:string" use="optional"/>
+  <xs:attribute name="mitigated_score" type="xs:integer" use="optional"/>
+  <xs:attribute name="submitted_date" type="xs:string" use="required"/>
+  <xs:attribute name="published_date" type="xs:string" use="optional"/>
+  <xs:attribute name="next_scan_due" type="xs:string" use="optional"/>
+  <xs:attribute name="analysis_size_bytes" type="xs:long" use="optional"/>
+  <xs:attribute name="engine_version" type="xs:string" use="optional"/>
+  <xs:attribute name="dynamic_scan_type" type="tns:DynamicScanType" use="optional"/>
+  <xs:attribute name="scan_exit_status_id" type="xs:integer" use="optional"/>
+  <xs:attribute name="scan_exit_status_desc" type="xs:string" use="optional"/>
+  <xs:attribute name="version" type="xs:string" use="optional"/>
+</xs:complexType>
+
+<xs:complexType name="ManualAnalysisType">
+  <xs:annotation>
+    <xs:documentation>
+      For manual analysis, there is global data associated with the scan.
+      The CIA adjustment factor is used to generate the final numeric score for
+      the scan. The delivery consultants, if any, are listed, followed by the
+      rest of the analysis for the scan.
+
+      Each manual analysis has these attribute values:
+      * rating: A letter grade.
+      * score: A numeric score.
+      * mitigated_rating: A letter grade, taking into account flaws that are mitigated.
+      * mitigated_score: A numeric score, taking into account flaws that are mitigated.
+	  * submitted_date: The date that this analysis was submitted to Veracode.
+	  * published_date: The date that this analysis was published by Veracode.
+	  * next_scan_due: The date that the active policy for this application requests the next scan by.
+	  * version: Optional scan name.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="cia_adjustment" type="tns:negativeInteger" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="delivery_consultant" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    <xs:element name="modules">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="module" minOccurs="0" maxOccurs="unbounded" type="tns:ModuleType"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+  </xs:sequence>
+  <xs:attribute name="rating" type="xs:string" use="required"/>
+  <xs:attribute name="score" type="xs:integer" use="required"/>
+  <xs:attribute name="mitigated_rating" type="xs:string" use="optional"/>
+  <xs:attribute name="mitigated_score" type="xs:integer" use="optional"/>
+  <xs:attribute name="submitted_date" type="xs:string" use="required"/>
+  <xs:attribute name="published_date" type="xs:string" use="optional"/>
+  <xs:attribute name="next_scan_due" type="xs:string" use="optional"/>
+  <xs:attribute name="version" type="xs:string" use="optional"/>
+</xs:complexType>
+
+<xs:complexType name="ModuleType">
+  <xs:annotation>
+    <xs:documentation>
+      Each module element has the following attributes:
+      
+      * name:  The name of the module.  If the module represents dynamic
+        analysis, the name is blank.
+      * compiler:  The compiler that compiled the module.  This value is
+        blank for dynamic analysis module elements.
+      * os:  The name of the operating system for which the module is
+        targeted.  This value is blank for dynamic analysis module elements.
+      * architecture:  The name of the architecture for which the module is
+        targeted.  This value is blank for dynamic analysis module elements.
+      * loc:  The lines of codes. This value is blank for dynamic analysis or non-debug modules.
+      * score:  A module-specific score, which contributes toward the analysis scores.
+      * numflawssev0:  The number of severity-0 flaws.  (This is the lowest
+        flaw severity and usually referred to as informational.)
+      * numflawssev1:  The number of severity-1 flaws.
+      * numflawssev2:  The number of severity-2 flaws.
+      * numflawssev3:  The number of severity-3 flaws.
+      * numflawssev4:  The number of severity-4 flaws.
+      * numflawssev5:  The number of severity-5 flaws.  (This is the highest
+        flaw severity.)
+    </xs:documentation>
+  </xs:annotation>
+  <xs:attribute name="name" type="xs:string" use="required"/>
+  <xs:attribute name="compiler" type="xs:string" use="required"/>
+  <xs:attribute name="os" type="xs:string" use="required"/>
+  <xs:attribute name="architecture" type="xs:string" use="required"/>
+  <xs:attribute name="loc" type="xs:nonNegativeInteger" use="optional"/>
+  <xs:attribute name="score" type="xs:nonNegativeInteger" use="required"/>
+  <xs:attribute name="numflawssev0" type="xs:nonNegativeInteger" use="required"/>
+  <xs:attribute name="numflawssev1" type="xs:nonNegativeInteger" use="required"/>
+  <xs:attribute name="numflawssev2" type="xs:nonNegativeInteger" use="required"/>
+  <xs:attribute name="numflawssev3" type="xs:nonNegativeInteger" use="required"/>
+  <xs:attribute name="numflawssev4" type="xs:nonNegativeInteger" use="required"/>
+  <xs:attribute name="numflawssev5" type="xs:nonNegativeInteger" use="required"/>
+  <xs:attribute name="target_url" type="xs:string" use="optional"/>
+  <xs:attribute name="domain" type="xs:string" use="optional"/>
+  <xs:attribute name="approxlinecount" type="xs:nonNegativeInteger" use="optional"/>
+</xs:complexType>
+
+<xs:complexType name="BulletItemType">
+  <xs:annotation>
+    <xs:documentation>
+      This represents a bullet item within a paragraph.  This has one child 
+      element:  
+      * text:  The text of the bullet item.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:attribute name="text" type="xs:string" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="ParaType">
+  <xs:annotation>
+    <xs:documentation>
+      This represents a text paragraph.  There is one attribute:
+      * text:  The text of the paragraph.
+      
+      There may be "bullet item" child elements, indicating list items.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="bulletitem" type="tns:BulletItemType" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+  <xs:attribute name="text" type="xs:string" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="ParaListType">
+  <xs:annotation>
+    <xs:documentation>
+      This represents a list of paragraphs. This can contain any 
+      number of para child elements.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="para" minOccurs="0" maxOccurs="unbounded" type="tns:ParaType"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="FlawListType">
+  <xs:annotation>
+    <xs:documentation>
+      This is a container for an appropriate list of flaw elements.  There is one
+      child flaw element per flaw.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="flaw" minOccurs="0" maxOccurs="unbounded" type="tns:FlawType" />
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="FlawType">
+  <xs:annotation>
+    <xs:documentation>
+      There is one flaw element per flaw. A flaw element has these elements:
+      * mitigations: An optional list of any mitigation annotations associated with the flaw.
+      * annotations: An optional list of any annotations or comments associated with the flaw.
+      * exploitability_adjustments: An optional list of any exploitability adjustments associated with the flaw.
+      * exploit_desc: For manual flaws, an optional description of the flaw.
+      * severity_desc: For manual flaws, an optional description of the severity.
+      * remediation_desc: For manual flaws, an optional description for remediation.
+      * appendix: For manual flaws, if there are any screenshots associated with the flaw.
+
+      A flaw element has these attributes:
+      * severity:  The severity level of the flaw, with 5 being the most severe
+      * categoryname:  The name of the category.
+      * count: The number of times this flaw appears.
+      * issueid:  A unique identifier for the flaw across all builds of this application.
+        Note that single instances of a flaw found in multiple builds of an application
+        will have the same issueid value.
+      * module:  The name of the module in which the flaw is found.
+      * type:  A very short description of the type of flaw.
+      * description:  A more detailed description of the type of flaw.
+      * note:  Any additional information added by our security analysts.
+      * cweid:  The CWE ID of the flaw.
+      * remediationeffort: The effort to fix the flaw, with 5 
+        requiring the most effort and 1 requiring the least.
+      * exploitLevel: Indication of the intrinsic likelihood that the flaw may be exploited by an attacker.
+        Ratings range from -2 (very unlikely to be exploited) to 2 (very likely to be exploited).
+        Rating of 0 means that the likelihood is unspecified.
+      * categoryid:  A numeric identifier for the category.
+      * pcirelated:  Whether the flaw is PCI related.  (This will be specified in a 
+        future release of the platform.)
+      * date_first_occurrence:  The date of submission of the build where Veracode first identified the
+        flaw.
+      * remediation_status:  One of the following values:  Cannot Reproduce, Fixed,
+        Mitigated, New, Open, Potential False Positive, Remediated by User,
+        Reopened (Re-Open for V4 of the API and earlier), Reviewed - No Action Taken
+      * sourcefile:  For flaws found through static analysis, the name of the
+        source file at which the flaw was found.
+      * line:  For flaws found through static analysis, the line number on which
+        the flaw was found.
+      * sourcefilepath:  For flaws found through static analysis, the name of
+        the source file path at which the flaw was found. It does not include
+        the file name.
+      * scope: An approximate classpath containing the flaw. Useful when more 
+        specific source information is unavailable	  
+      * functionprototype: A prototype of the function containing the flaw
+      * functionrelativelocation: A percent estimate of the way through the function
+        a flaw was found
+      * url:  For flaws found through dynamic analysis, the URL at which the flaw
+        was found.
+      * location: The location of the flaw, whether a url or the name of the
+        page the flaw was found on.
+      * cvss: A scaling factor for each flaws score weight.
+      * capecid: A category id for the flaw.
+      * exploitdifficulty: an enumeration.
+      * inputvector: Where the attack originates.
+      * affects_policy_compliance: True if the presence of the flaw violates rules associated
+        with the policy of the application.
+      * grace_period_expires: If the flaw affects policy compliance, the date by which the flaw
+        must be fixed in order to remain in compliance with the policy.
+      * mitigation_status:  One of the following values:  none, proposed, accepted, rejected
+      * mitigation_status_desc:  Mitigation Status description
+      * tag: Optional categorization of the module containing the flaw.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="mitigations" minOccurs="0" maxOccurs="1" type="tns:MitigationListType" />
+    <xs:element name="exploitability_adjustments" minOccurs="0" maxOccurs="1" type="tns:ExploitAdjustmentListType" />
+    <xs:element name="annotations" minOccurs="0" maxOccurs="1" type="tns:AnnotationListType" />
+    <xs:element name="exploit_desc" type="tns:LongTextType" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="severity_desc" type="tns:LongTextType" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="remediation_desc" type="tns:LongTextType" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="appendix" type="tns:AppendixType" minOccurs="0" maxOccurs="1"/>
+  </xs:sequence>
+
+  <xs:attribute name="severity" type="tns:SeverityValueType" use="required"/>
+  <xs:attribute name="categoryname" type="xs:string" use="required"/>
+  <xs:attribute name="count" type="tns:positiveInteger" use="optional"/>
+  <xs:attribute name="issueid" type="xs:positiveInteger" use="required"/>
+  <xs:attribute name="module" type="xs:string" use="required"/>
+  <xs:attribute name="type" type="xs:string" use="required"/>
+  <xs:attribute name="description" type="xs:string" use="required"/>
+  <xs:attribute name="note" type="xs:string" use="required"/>
+  <xs:attribute name="cweid" type="xs:integer" use="required"/>
+  <xs:attribute name="remediationeffort" type="tns:RemediationEffortValueType" use="required"/>
+  <xs:attribute name="exploitLevel" type="tns:ExploitabilityValueType" use="optional"/>
+  <xs:attribute name="categoryid" type="xs:integer" use="required"/>
+  <xs:attribute name="pcirelated" type="xs:boolean" use="optional"/>
+  <xs:attribute name="date_first_occurrence" type="xs:string" use="required"/>
+  <xs:attribute name="remediation_status" type="xs:string" use="required"/>
+  <xs:attribute name="sourcefile" type="xs:string" use="optional"/>
+  <xs:attribute name="line" type="xs:integer" use="optional"/>
+  <xs:attribute name="sourcefilepath" type="xs:string" use="optional"/>
+  <xs:attribute name="scope" type="xs:string" use="optional"/>
+  <xs:attribute name="functionprototype" type="xs:string" use="optional"/>
+  <xs:attribute name="functionrelativelocation" type="xs:integer" use="optional"/>
+  <xs:attribute name="url" type="xs:string" use="optional"/>
+  <xs:attribute name="vuln_parameter" type="xs:string" use="optional"/>
+  <xs:attribute name="procedure_name" type="xs:string" use="optional"/>
+  <xs:attribute name="procedure_hash" type="xs:string" use="optional"/>
+  <xs:attribute name="prototype_hash" type="xs:string" use="optional"/>
+  <xs:attribute name="statement_hash" type="xs:string" use="optional"/>
+  <xs:attribute name="statement_hash_count" type="xs:integer" use="optional"/>
+  <xs:attribute name="statement_hash_ordinal" type="xs:integer" use="optional"/>
+  <xs:attribute name="location" type="xs:string" use="optional"/>
+  <xs:attribute name="cvss" type="tns:cvssType"  use="optional" />
+  <xs:attribute name="capecid" type="tns:positiveInteger" use="optional"/>
+  <xs:attribute name="exploitdifficulty" type="tns:ExploitDifficultyValueType" use="optional"/>
+  <xs:attribute name="inputvector" type="xs:string" use="optional"/>
+  <xs:attribute name="cia_impact" type="xs:string" use="required"/>
+  <xs:attribute name="grace_period_expires" type="xs:string" use="required"/>
+  <xs:attribute name="affects_policy_compliance" type="xs:boolean" use="required"/>
+  <xs:attribute name="mitigation_status" type="xs:string" use="optional"/>
+  <xs:attribute name="mitigation_status_desc" type="xs:string" use="optional"/>
+  <xs:attribute name="tag" type="xs:string" use="optional"/>
+</xs:complexType>
+
+<xs:simpleType name="SeverityValueType">
+  <xs:annotation>
+    <xs:documentation>
+      A severity value is an integer between 0 and 5 inclusive, with 
+      5 being the most severe and 0 being the least severe.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:integer">
+    <xs:minInclusive value="0"/>
+    <xs:maxInclusive value="5"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="ExploitabilityValueType">
+  <xs:annotation>
+    <xs:documentation>
+      An exploitability level is an integer between -2 and 2 inclusive.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:integer">
+    <xs:minInclusive value="-2"/>
+    <xs:maxInclusive value="2"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="RemediationEffortValueType">
+  <xs:annotation>
+    <xs:documentation>
+      A remediation effort value is an integer between 1 and 5 inclusive, with 
+      5 requiring the most effort to remediate and 1 requiring the least effort 
+      to remediate.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:integer">
+    <xs:minInclusive value="1"/>
+    <xs:maxInclusive value="5"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:complexType name="MitigationListType">
+  <xs:annotation>
+    <xs:documentation>
+      This represents a list of mitigation annotations for this flaw.
+      This can contain any number of mitigation child elements.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="mitigation" minOccurs="0" maxOccurs="unbounded" type="tns:MitigationType"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="MitigationType">
+  <xs:annotation>
+    <xs:documentation>
+      In some cases, a flaw's potential security impact may be mitigated
+      by a control external to the application itself, or inherent in the
+      design of the application. A reviewer can provide additional
+      information about the flaw by adding mitigations
+      to the flaw. Mitigations have the following attributes:
+      * action:  A specific reason why the flaw is mitigated.
+      * description:  A more detailed description of the type of mitigation
+        action.
+	  * user: The user who mitigated the flaw
+	  * date: The date and time the mitigation occured
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:attribute name="action" type="xs:string" use="required"/>
+  <xs:attribute name="description" type="xs:string" use="required"/>
+  <xs:attribute name="user" type="xs:string" use="required"/>
+  <xs:attribute name="date" type="xs:string" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="AnnotationListType">
+  <xs:annotation>
+    <xs:documentation>
+      This represents a list of comment or potential false positive annotations 
+	  for this flaw. This can contain any number of annotation child elements.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="annotation" minOccurs="0" maxOccurs="unbounded" type="tns:AnnotationType"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="AnnotationType">
+  <xs:annotation>
+    <xs:documentation>
+	  A reviewer can add a note to a flaw, or they can mark a flaw as a 
+	  potential false positive by creating an Annotation. Annotations 
+	  have the following attributes:
+	  * action: The purpose of this annotation (Comment, or marking a flaw as)
+	    a possible false positive
+	  * description: The note created by the reviewer for the annotation
+	  * user: The user who mitigated the flaw
+	  * date: The date and time the annotation was created
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:attribute name="action" type="xs:string" use="required"/>
+  <xs:attribute name="description" type="xs:string" use="required"/>
+  <xs:attribute name="user" type="xs:string" use="required"/>
+  <xs:attribute name="date" type="xs:string" use="required"/>
+</xs:complexType>
+
+
+<xs:complexType name="ExploitAdjustmentListType">
+  <xs:annotation>
+    <xs:documentation>
+      This represents a list of exploitability adjustments made for this flaw.
+      This can contain any number of exploitability_adjustment child elements.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="exploitability_adjustment" minOccurs="0" maxOccurs="unbounded" type="tns:ExploitAdjustmentType"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="ExploitAdjustmentType">
+  <xs:annotation>
+    <xs:documentation>
+	  Each flaw may have 0 or more exploitability adjustments associated with it.
+     Exploitability gives an indication of how likely an attacker can exploit the flaw.
+     The exploitability adjustment shows one or more factors that may have been applied to
+     adjust the likelihood of being exploited. Factors such as WebApp, or the taint source are
+     commonly taken into consideration.
+     Each adjustment will have the following attributes:
+	 * score_adjustment: This denotes an integer range adjustment made to the overall exploitability
+       of the flaw.
+	 * note: The note or description for the adjustment.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+     <xs:element name="note" minOccurs="1" maxOccurs="1" type="xs:string"/>
+  </xs:sequence>
+  <xs:attribute name="score_adjustment" type="tns:ExploitAdjustmentValueType" use="required"/>
+</xs:complexType>
+
+
+<xs:simpleType name="positiveInteger">
+  <xs:annotation>
+    <xs:documentation>
+      Range of positive integers that can be processed by Java.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:positiveInteger">
+    <xs:maxInclusive value="2147483647"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="negativeInteger">
+  <xs:annotation>
+    <xs:documentation>
+      Range of negative integers that can be processed by Java.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:nonPositiveInteger">
+    <xs:minInclusive value="-2147483648"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="ExploitDifficultyValueType">
+  <xs:annotation>
+    <xs:documentation>
+      The range of exploitability values pertaining to a flaw.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:int">
+    <xs:enumeration value="1"/>
+    <xs:enumeration value="2"/>
+    <xs:enumeration value="3"/>
+  </xs:restriction>
+</xs:simpleType>
+
+
+<xs:simpleType name="ExploitAdjustmentValueType">
+  <xs:annotation>
+    <xs:documentation>
+      The range of exploitability adjustment values pertaining to a flaw.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:int">
+    <xs:enumeration value="-2"/>
+    <xs:enumeration value="-1"/>
+    <xs:enumeration value="0"/>
+    <xs:enumeration value="1"/>
+    <xs:enumeration value="2"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="LongTextType">
+  <xs:annotation>
+    <xs:documentation>
+      The maximum string size of a given text field.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:string">
+    <xs:maxLength value="2048"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:complexType name="AppendixType">
+  <xs:annotation>
+    <xs:documentation>
+      The element describes a screen shot for a flaw. There is a
+      description of the screen shot, and a element for the 
+      data and type.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="description" type="tns:LongTextType"/>
+    <xs:element name="screenshot" type="tns:ScreenshotType" minOccurs="0" maxOccurs="unbounded"/>
+    <xs:element name="code" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="ScreenshotType">
+  <xs:annotation>
+    <xs:documentation>
+      The element describes a screen shot for a flaw. There is a
+      format element to describe the file type, and the code
+      element will contain a base64 encoding of the actual binary
+      file.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:sequence>
+    <xs:element name="data" type="xs:base64Binary" />
+  </xs:sequence>
+  <xs:attribute name="format" type="tns:ScreenshotFormatType" use="required"/>
+</xs:complexType>
+
+<xs:complexType name="FlawStatusType">
+  <xs:annotation>
+    <xs:documentation>
+      The element describes summary data for the flaws in the build.
+      Each adjustment will have the following attributes:
+      * new:  The number of flaws first found in this build of the application.
+      * reopen:  The number of flaws found in a prior build of the application 
+        that were not new, but were not found in the build immediately prior to
+        this build.
+      * open:  The number of flaws found in this build that were also found in the
+        build immediately prior to this build.
+      * cannot-reproduce: The number of dynamic vulnerabilities reported in a previous 
+      	dynamic scan that could not be verified as fixed.
+      * fixed:  The number of flaws found in the prior build that were not found 
+      	in the current build. Dynamic vulnerabilities are verified as fixed.
+      * total:  The total number of flaws found in this build.
+      * not_mitigated:  The total number of flaws found in this build that are 
+        not mitigated.
+      * sev-1-change: The number of Severity 1 flaws found in this build, 
+        minus the number of Severity 1 flaws found in the build immediately prior
+        to this build.
+      * sev-2-change: The number of Severity 2 flaws found in this build, 
+        minus the number of Severity 2 flaws found in the build immediately prior
+        to this build.
+      * sev-3-change: The number of Severity 3 flaws found in this build, 
+        minus the number of Severity 3 flaws found in the build immediately prior
+        to this build.
+      * sev-4-change: The number of Severity 4 flaws found in this build, 
+        minus the number of Severity 4 flaws found in the build immediately prior
+        to this build.
+      * sev-5-change: The number of Severity 5 flaws found in this build, 
+        minus the number of Severity 5 flaws found in the build immediately prior
+        to this build.
+      * conforms-to-guidelines: The total number of mitigations reviewed by Veracode 
+        that adhere to the risk tolerance guidelines you established.
+      * deviates-from-guidelines: The total number of mitigations reviewed by Veracode
+        that either do not provide enough information, or do not adhere to the risk
+        tolerance guidelines you established.
+      * total-reviewed-mitigations: The total number of mitigations reviewed by Veracode.
+        This may not add up to the total number of all proposed or accepted mitigations.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:attribute name="new" type="xs:integer" use="required"/>
+  <xs:attribute name="reopen" type="xs:integer" use="required"/>
+  <xs:attribute name="open" type="xs:integer" use="required"/>
+  <xs:attribute name="cannot-reproduce" type="xs:integer" use="optional"/>
+  <xs:attribute name="fixed" type="xs:integer" use="required"/>
+  <xs:attribute name="total" type="xs:integer" use="required"/>
+  <xs:attribute name="not_mitigated" type="xs:integer" use="required"/>
+  <xs:attribute name="sev-1-change" type="xs:integer" use="required"/>
+  <xs:attribute name="sev-2-change" type="xs:integer" use="required"/>
+  <xs:attribute name="sev-3-change" type="xs:integer" use="required"/>
+  <xs:attribute name="sev-4-change" type="xs:integer" use="required"/>
+  <xs:attribute name="sev-5-change" type="xs:integer" use="required"/>
+  <xs:attribute name="conforms-to-guidelines" type="xs:integer" use="optional"/>
+  <xs:attribute name="deviates-from-guidelines" type="xs:integer" use="optional"/>
+  <xs:attribute name="defer-to-security-team" type="xs:integer" use="optional"/>
+  <xs:attribute name="total-reviewed-mitigations" type="xs:integer" use="optional"/>
+</xs:complexType>
+
+
+<xs:complexType name="CustomFieldsType">
+     <xs:annotation>
+         <xs:documentation>
+			The custom fields type element contains a list of 
+			custom field type
+         </xs:documentation>
+     </xs:annotation>
+	 <xs:sequence>
+	     <xs:element name="customfield" minOccurs="0" maxOccurs="unbounded" type="tns:CustomFieldType"/>
+	 </xs:sequence>
+</xs:complexType>
+
+
+<xs:complexType name="CustomFieldType">
+     <xs:annotation>
+         <xs:documentation>
+			The custom field type element contains a name-value pair
+			of account-specific fields and their assigned values:
+
+            * name: The custom name of the field
+			* value: The value assigned to this field for this application
+         </xs:documentation>
+     </xs:annotation>
+     <xs:attribute name="name" type="tns:LongRequiredTextType"/>
+     <xs:attribute name="value" type="tns:LongTextType"/>
+</xs:complexType>
+
+<xs:simpleType name="LongRequiredTextType">
+     <xs:restriction base="xs:string">
+         <xs:minLength value="1"/>
+         <xs:maxLength value="1024"/>
+     </xs:restriction>
+</xs:simpleType>
+
+
+<xs:simpleType name="ScreenshotFormatType">
+  <xs:annotation>
+    <xs:documentation>
+      Supported file types for screen shots.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="GIF"/>
+    <xs:enumeration value="JPG"/>
+    <xs:enumeration value="PNG"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="DynamicScanType">
+    <xs:restriction base="xs:string">
+    	<xs:enumeration value="mp"></xs:enumeration>
+    	<xs:enumeration value="ds"></xs:enumeration>
+    	<xs:enumeration value="da"></xs:enumeration>
+    </xs:restriction>
+</xs:simpleType>
+
+<xs:complexType name="SoftwareCompositionAnalysis">
+	<xs:annotation>
+	   <xs:documentation>
+	      The element describe the details of software composition analysis results.
+	      * vulnerable_components: Details of the vulnerable components.
+	      * third_party_components: Number of vulnerable third party components.
+	      * violate_policy: Policy is violated or not
+	      * components_violated_policy: Number of components that violate the 
+	        policy.
+	      * blocklisted_components: Number of blocklisted components.
+	      * sca_service_available: true if sca service is available, else set to false
+	   </xs:documentation>
+	</xs:annotation>
+	<xs:sequence>
+		<xs:element name="vulnerable_components" minOccurs="0" type="tns:VulnerableComponentList" />
+	</xs:sequence>
+	<xs:attribute name="third_party_components" type="xs:integer" use="required"/>
+	<xs:attribute name="violate_policy" type="xs:boolean" use="required"/>
+	<xs:attribute name="components_violated_policy" type="xs:integer" use="required"/>
+	<xs:attribute name="blocklisted_components" type="xs:integer"/>
+	<xs:attribute name="sca_service_available" type="xs:boolean"/>
+</xs:complexType>
+
+<xs:complexType name="VulnerableComponentList">
+	<xs:sequence>
+		<xs:element name="component" minOccurs="0" maxOccurs="unbounded" type="tns:Component" />
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="Component">
+	<xs:annotation>
+	   <xs:documentation>
+	      The element describe the details of vulnerable component.
+	      * file_paths: File paths of the component.
+	      * vulnerabilities : Vulnerabilities of the component.
+	      * violated_policy_rules: Violated policy rules of the component.
+	      * component_id: The id of the component.
+	      * file_name: File name of the component.
+	      * vulnerabilities: Number of vulnerabilities available in the component.
+	      * max_cvss_score: Max cvss_score of the component.
+	      * library: Library name of the component.
+	      * version: Version of the component.
+	      * vendor: Vendor name of the component.
+	      * description: Description about component.
+	      * blocklisted: Component's blocklisted status.
+	      * new: Component added newly.
+	      * added_date: Component's added_date.
+	      * component_affects_policy_compliance: COmponent's policy violation status.
+	      * licenses: Contains license details of the component.
+	      
+	   </xs:documentation>
+	</xs:annotation>
+	<xs:sequence>
+		<xs:element name="file_paths" minOccurs="0" maxOccurs="1" type="tns:FilePathList"/>
+		<xs:element name="licenses" minOccurs="0" maxOccurs="1" type="tns:LicenseList"/>
+		<xs:element name="vulnerabilities" minOccurs="0" maxOccurs="1" type="tns:VulnerabilityList" />
+		<xs:element name="violated_policy_rules" minOccurs="0" maxOccurs="1" type="tns:ViolatedRuleList" />
+	</xs:sequence>
+	<xs:attribute name="component_id" type="xs:string" use="required"/>
+	<xs:attribute name="file_name" type="xs:string" use="required"/>
+	<xs:attribute name="sha1" type="xs:string" use="required"/>
+	<xs:attribute name="vulnerabilities" type="xs:integer" use="required"/>
+	<xs:attribute name="max_cvss_score" type="xs:string" use="required"/>
+	<xs:attribute name="library" type="xs:string" use="required"/>
+	<xs:attribute name="library_id" type="xs:string" use="required"/>
+	<xs:attribute name="version" type="xs:string" use="required"/>
+	<xs:attribute name="vendor" type="xs:string" use="required"/>
+	<xs:attribute name="description" type="xs:string" use="required"/>
+	<xs:attribute name="blocklisted" type="xs:string"/>
+	<xs:attribute name="new" type="xs:string"/>
+	<xs:attribute name="added_date" type="xs:string"/>
+	<xs:attribute name="component_affects_policy_compliance" type="xs:string"/>	 
+</xs:complexType>
+
+<xs:complexType name="FilePathList">
+	<xs:sequence>
+		<xs:element name="file_path" minOccurs="0" maxOccurs="unbounded" type="tns:FilePath" />
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="FilePath">
+		<xs:attribute name="value" type="xs:string" use="required" />
+</xs:complexType>
+
+<xs:complexType name="LicenseList">
+	<xs:sequence>
+		<xs:element name="license" minOccurs="0" maxOccurs="unbounded" type="tns:License" />
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="License">
+    <xs:sequence>
+      <xs:element name="mitigations" minOccurs="0" maxOccurs="1" type="tns:MitigationHistoryList" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="spdx_id" type="xs:string" use="required"/>
+    <xs:attribute name="license_url" type="xs:string" use="required"/>
+    <xs:attribute name="risk_rating" type="xs:string" use="required"/>
+    <xs:attribute name="mitigation" type="xs:boolean" />
+    <xs:attribute name="mitigation_type" type="xs:string" />
+    <xs:attribute name="mitigated_date" type="xs:string" />
+    <xs:attribute name="license_affects_policy_compliance" type="xs:boolean" />
+</xs:complexType>
+
+<xs:complexType name="VulnerabilityList">
+	<xs:sequence>
+		<xs:element name="vulnerability" minOccurs="0" maxOccurs="unbounded" type="tns:Vulnerability" />
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="Vulnerability">
+	<xs:annotation>
+	   <xs:documentation>
+	      The element describe the details of SCA vulnerability.
+	      * cve_id: Id of the vulnerability.
+	      * cvss_score: This measure the complexity of the vulnerability with
+	        range of 0 to 10.
+	      * severity: There are six severity elements, one per severity level, 
+	        with a range of 0 through 5.  The severity 5 flaws are the most severe; 
+	        the severity 0 flaws are informational.
+	      * cwe_id: The CWE ID for the flaw type.
+	      * first_found_date: First found date of vulnerability.
+	      * severity_desc: Severity description.
+	      * mitigation: Vulnerability mitigation status.
+	      * mitigation_type: Mitigation reason.
+	      * mitigated_date: Date, mitigated.
+	      * vulnerability_affects_policy_compliance: Policy impact on the vulnerability.
+	      
+	   </xs:documentation>
+	</xs:annotation>
+    <xs:sequence>
+      <xs:element name="mitigations" minOccurs="0" maxOccurs="1" type="tns:MitigationHistoryList" />
+    </xs:sequence>
+	<xs:attribute name="cve_id" type="xs:string" use="required" />
+	<xs:attribute name="cvss_score" type="xs:double" use="required" />
+	<xs:attribute name="severity" type="xs:integer" use="required" />
+	<xs:attribute name="cwe_id" type="xs:string" />
+	<xs:attribute name="first_found_date" type="xs:string" />
+	<xs:attribute name="cve_summary" type="xs:string"/>
+	<xs:attribute name="severity_desc" type="xs:string"/>
+	<xs:attribute name="mitigation" type="xs:string"/>
+	<xs:attribute name="mitigation_type" type="xs:string"/>
+	<xs:attribute name="mitigated_date" type="xs:string"/>
+	<xs:attribute name="vulnerability_affects_policy_compliance" type="xs:string"/>
+</xs:complexType>
+
+<xs:complexType name="MitigationHistoryList">
+    <xs:sequence>
+      <xs:element name="mitigation" minOccurs="0" maxOccurs="unbounded" type="tns:MitigationHistory" />
+    </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="MitigationHistory">
+    <xs:annotation>
+      <xs:documentation>
+      The element describe the details of SCA mitigation history.
+      * description: Description of the mitigation.
+      * date: Date of the mitigation action done
+      * user: User name of the mitigation action done.
+      * action: Mitigation action type.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="description" type="xs:string" use="required" />
+    <xs:attribute name="date" type="xs:string" use="required" />
+    <xs:attribute name="user" type="xs:string" use="required" />
+    <xs:attribute name="action" type="xs:string" use="required" />
+</xs:complexType>
+
+<xs:complexType name="ViolatedRuleList">
+	<xs:sequence>
+		<xs:element name="policy_rule" minOccurs="0" maxOccurs="unbounded" type="tns:PolicyRule" />
+	</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="PolicyRule">
+	<xs:attribute name="type" type="tns:PolicyRuleType" use="required" />
+	<xs:attribute name="value" type="xs:string" use="required" />
+	<xs:attribute name="desc" type="xs:string" use="required" />
+</xs:complexType>
+
+<xs:simpleType name="PolicyRuleType">
+  <xs:annotation>
+    <xs:documentation>
+      * SCA policy rule values that can be violated.
+    </xs:documentation>
+  </xs:annotation>
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="Disallow Vulnerabilities by Severity"/>
+    <xs:enumeration value="Disallow CVSS Score"/>
+    <xs:enumeration value="Disallow Component Blocklist"/>
+    <xs:enumeration value="Disallow Component by License Risk"/>
+  </xs:restriction>
+</xs:simpleType>
+
+</xs:schema>

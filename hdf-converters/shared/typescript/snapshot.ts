@@ -110,6 +110,71 @@ function snapshotInputName(inputDir: string, stem: string): { inputName: string;
   return { inputName: stem };
 }
 
+/**
+ * Whether any golden belongs to inputName. A golden is named after the input's
+ * stem, and the older form that repeated the input's whole filename still
+ * counts while the corpus migrates — the same tolerance snapshotInputName
+ * applies from the other direction.
+ */
+function goldenCovers(goldens: Set<string>, inputName: string): boolean {
+  if (goldens.has(inputName + GOLDEN_SUFFIX)) return true;
+  const stem = stripExtension(inputName);
+  return stem !== '' && goldens.has(stem + GOLDEN_SUFFIX);
+}
+
+function stripExtension(name: string): string {
+  const dot = name.lastIndexOf('.');
+  return dot <= 0 ? name : name.slice(0, dot);
+}
+
+/**
+ * Every input in fixtures/input/ must have a golden, or a line in
+ * fixtures/no-golden.txt saying why not. Deleting a golden used to delete its
+ * test in silence, because the harness only ever discovered goldens.
+ *
+ * The `empty.*` convention (an input that converts to nothing and is asserted
+ * by a dedicated empty-input test) needs no entry. Every manifest entry must
+ * name an input that exists and has no golden, so the list cannot rot; and it
+ * must carry a reason after " — ", so the exception is a deliberate, visible
+ * act. Mirrors checkGoldenCoverage in shared/go/testing.go.
+ */
+export function checkGoldenCoverage(inputDir: string, expectedDir: string, manifestPath: string): string[] {
+  const problems: string[] = [];
+  const inputs = existsSync(inputDir) ? readdirSync(inputDir, { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name) : [];
+  const goldens = new Set(existsSync(expectedDir) ? readdirSync(expectedDir) : []);
+  const recorded = new Set<string>();
+
+  if (existsSync(manifestPath)) {
+    for (const raw of readFileSync(manifestPath, 'utf-8').split('\n')) {
+      const line = raw.trim();
+      if (line === '' || line.startsWith('#')) continue;
+      const sep = line.indexOf(' — ');
+      const name = sep < 0 ? line : line.slice(0, sep).trim();
+      const reason = sep < 0 ? '' : line.slice(sep + 3).trim();
+      if (reason === '') {
+        problems.push(`no-golden.txt entry for ${name} gives no reason — write one after " — "`);
+        recorded.add(name); // reported once, as the defective entry, not again as uncovered
+        continue;
+      }
+      if (!inputs.includes(name)) {
+        problems.push(`no-golden.txt names ${name}, which is not in input/ — remove the entry`);
+        continue;
+      }
+      if (goldenCovers(goldens, name)) {
+        problems.push(`no-golden.txt names ${name}, but a golden for it exists — remove the entry`);
+        continue;
+      }
+      recorded.add(name);
+    }
+  }
+
+  for (const name of inputs.sort()) {
+    if (name.startsWith('empty.') || recorded.has(name) || goldenCovers(goldens, name)) continue;
+    problems.push(`input ${name} has no golden expected/${stripExtension(name)}${GOLDEN_SUFFIX} and no entry in no-golden.txt`);
+  }
+  return problems;
+}
+
 export function runSnapshotTests(
   converterName: string,
   convertFn: SnapshotConvertFn,
@@ -129,6 +194,11 @@ export function runSnapshotTests(
     it('every golden is named <stem>.hdf.json, and at least one exists', () => {
       expect(misnamed, `golden(s) nothing asserts; rename to <stem>.hdf.json or delete`).toEqual([]);
       expect(goldens.length, `no golden in ${expectedDir}`).toBeGreaterThan(0);
+    });
+
+    it('every input has a golden, or a recorded reason in fixtures/no-golden.txt', () => {
+      const manifest = join(convertersDir(), converterName, 'fixtures', 'no-golden.txt');
+      expect(checkGoldenCoverage(inputDir, expectedDir, manifest)).toEqual([]);
     });
 
     for (const golden of goldens) {

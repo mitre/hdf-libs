@@ -8,21 +8,21 @@ have come from somewhere else.
 ## `input/`
 
 ### `codeQL-output.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `codeql-extensions.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Fix/sarif security severity (#292)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Fix/sarif security severity (#292)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `dockle_0_3_15.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `empty-results.sarif`
@@ -30,57 +30,81 @@ Synthetic by construction: an empty or no-findings document used to
 exercise the nothing-to-convert path. Not sourced from anywhere.
 
 ### `eslint-10.9.1.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Ci/hdf enabled pipeline (#276)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Ci/hdf enabled pipeline (#276)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `gitleaks_7.5.0.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `gosec.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `grype.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Fix/sarif security severity (#292)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Fix/sarif security severity (#292)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `osv-scanner-2.5.1.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Ci/hdf enabled pipeline (#276)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Ci/hdf enabled pipeline (#276)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `rich.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `sarif_input.sarif`
 Byte-identical to SAF CLI `test/sample_data/sarif/sample_input_report/sarif_input.sarif`.
 
 ### `semgrep.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`feat(converters): add semgrep-to-hdf converter (#237)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`feat(converters): add semgrep-to-hdf converter (#237)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ### `spotbugs.sarif`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
 ## `expected/`
 
 Generated by this repository's converters, not sourced. Regenerate with
 `go test ./converters/sarif-to-hdf/... -run TestSnapshots -update`.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `codeQL-output.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: CodeQL 2.5.4.
+- `codeql-extensions.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: CodeQL 2.17.4.
+- `dockle_0_3_15.sarif` — SARIF 2.1.0; `runs[0].tool.driver.name` = Dockle; the driver block carries no `version`/`semanticVersion`, so the tool's version is not determinable from file content (the filename suggests 0.3.15).
+- `empty-results.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: ExampleAnalyzer 1.4.2.
+- `eslint-10.9.1.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: ESLint 10.9.1.
+- `gitleaks_7.5.0.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Gitleaks v7.4.0 — note the filename says 7.5.0 while the file itself says v7.4.0; the file is authoritative.
+- `gosec.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: gosec 2.18.2.
+- `grype.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: grype 0.91.2.
+- `osv-scanner-2.5.1.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: osv-scanner 2.5.1.
+- `rich.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SecurityScanner 3.2.1.
+- `sarif_input.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Flawfinder 2.0.15.
+- `semgrep.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Semgrep OSS <MASKED>.
+- `spotbugs.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SpotBugs 4.4.0.
+
+## Schema
+
+SARIF 2.1.0 has a machine-readable schema and it is vendored here: `sarif-schema-2.1.0.json`, recorded in `provenance.json` (OASIS canonical URL, SHA-256, retrieval date). It is JSON Schema draft-04, which the TypeScript sweep cannot compile (ajv 8); the Go sweep compiles and hash-checks it.
+
+Validation (gojsonschema, 2026-09-20): all 13 `input/*.sarif` fixtures validate against the vendored schema.

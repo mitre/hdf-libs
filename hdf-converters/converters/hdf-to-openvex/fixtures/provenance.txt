@@ -60,3 +60,14 @@ and asserted byte-for-byte by both languages, so a Go/TS divergence on
 sparse input fails the build. Both sides convert the canonicalized case
 input, because the document `@id` is a digest of the input bytes and the
 two corpora are byte-equal only after canonicalization.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `multi-status-amendments.json` — an HDF document produced by `openvex-to-hdf` dev (tool=None None).
+- `spring-boot-log4j-amendments.json` — an HDF document produced by `openvex-to-hdf` dev (tool=None None).
+
+## Schema
+
+The inputs are HDF documents; their schema is this repository's own (`hdf-schema`), and every input is validated by the converter tests through `hdf-validators`. The exporter's target-format schema, where one is vendored, lives under this converter's `schemas/` directory with its own `provenance.json`.

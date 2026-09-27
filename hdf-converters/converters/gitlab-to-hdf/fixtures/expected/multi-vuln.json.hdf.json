@@ -134,16 +134,19 @@
             "nist": [
               "SA-11",
               "RA-5"
+            ],
+            "semgrep_id": [
+              "python.lang.security.audit.logging.debug-log.debug-log"
             ]
           },
-          "code": "{\n  \"id\": \"33333333-3333-3333-3333-333333333333\",\n  \"name\": \"Information Exposure Through Debug Log\",\n  \"description\": \"Sensitive information is written to debug logs that may be accessible to unauthorized users.\",\n  \"severity\": \"Info\",\n  \"solution\": \"Remove or guard debug logging statements that expose sensitive data.\",\n  \"identifiers\": [],\n  \"location\": {\n    \"file\": \"src/auth/login.py\",\n    \"start_line\": 55,\n    \"end_line\": 55\n  },\n  \"links\": []\n}",
+          "code": "{\n  \"id\": \"33333333-3333-3333-3333-333333333333\",\n  \"name\": \"Information Exposure Through Debug Log\",\n  \"description\": \"Sensitive information is written to debug logs that may be accessible to unauthorized users.\",\n  \"severity\": \"Info\",\n  \"solution\": \"Remove or guard debug logging statements that expose sensitive data.\",\n  \"identifiers\": [\n    {\n      \"type\": \"semgrep_id\",\n      \"name\": \"python.lang.security.audit.logging.debug-log.debug-log\",\n      \"value\": \"python.lang.security.audit.logging.debug-log.debug-log\"\n    }\n  ],\n  \"location\": {\n    \"file\": \"src/auth/login.py\",\n    \"start_line\": 55,\n    \"end_line\": 55\n  },\n  \"links\": []\n}",
           "title": "Information Exposure Through Debug Log",
           "verificationMethod": "automated"
         }
       ],
       "resultsChecksum": {
         "algorithm": "sha256",
-        "value": "b6cbce74998444ce9cd313a84e2bce1c97b2a8759c5f1cf849ecd413a7fb9d50"
+        "value": "a1542ed55f563a899df8a5f09d36670a87ec1786ae9d37d75d6bb04895f395f7"
       },
       "name": "GitLab Security Scan",
       "summary": "Scanner: Semgrep v1.34.0",

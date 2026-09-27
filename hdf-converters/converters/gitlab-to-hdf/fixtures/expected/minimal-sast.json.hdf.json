@@ -53,7 +53,7 @@
       ],
       "resultsChecksum": {
         "algorithm": "sha256",
-        "value": "39d24442673c663d46c5677826e8e5b2178154e367a15bcefcdaee7e230b2c47"
+        "value": "946605c6053afd1eba57b5f1c4c1496800b197474bf043c9a6e9f793ee0db791"
       },
       "name": "GitLab Security Scan",
       "summary": "Scanner: Semgrep v1.34.0",

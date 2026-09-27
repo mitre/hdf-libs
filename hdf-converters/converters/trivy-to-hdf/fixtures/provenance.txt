@@ -68,3 +68,15 @@ and any `AKIA…` key pattern all grep to zero):
 - **Secrets redacted at the source** by Trivy (see above); no raw secret is committed.
 - No host filesystem paths — the image scan carries only in-image paths, the fs scan only
   the relative `testdata/` names.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — Trivy 0.74.0 (`SchemaVersion 2; Trivy/Metadata keys: ['Version']`).
+- `fs-misconfig-secret.json` — Trivy 0.74.0 (`SchemaVersion 2; Trivy/Metadata keys: ['Version']`).
+- `image-webgoat.json` — Trivy 0.74.0 (`SchemaVersion 2; Trivy/Metadata keys: ['Version']`).
+
+## Schema
+
+Trivy publishes no schema for its JSON report; `SchemaVersion` is an integer in `pkg/types/report.go` with no published schema keyed to it, and the reporting docs show only an example (2026-09-20).

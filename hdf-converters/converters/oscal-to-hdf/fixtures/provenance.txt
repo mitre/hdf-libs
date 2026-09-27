@@ -8,9 +8,10 @@ have come from somewhere else.
 ## `input/`
 
 ### `catalog-800-53-rev5.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+NIST's own OSCAL content, not authored here: byte-identical to `nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json`
+in usnistgov/oscal-content at commit bc8a528770 (2025-08-27, "Publishing auto-converted artifacts") — verified by SHA-256 on 2026-09-20
+(local `1645df6a370dcb93…`). The document reports `oscal-version` 1.1.3 and catalog `version` 5.2.0. Neither heimdall2 nor SAF carries it, which is why
+the generated record above once said "most likely authored here"; that was the generator's boilerplate, not a finding.
 **Kept at full size on purpose (10 MB, over the ~1 MB fixture guideline; its golden is 1.8 MB).**
 The 2026-09-14 fixture audit measured rather than assumed: the catalog holds 1196 control ids; two profile
 fixtures resolve against it by control id and need 410 of them; and the converter tests assert its
@@ -19,59 +20,70 @@ profile closure would still leave roughly 4 MB while destroying the property und
 whole catalog. Shrinking it means weakening those assertions, so it stays.
 
 ### `catalog-moderate-resolved.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+NIST's own OSCAL content, not authored here: byte-identical to `nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_MODERATE-baseline-resolved-profile_catalog.json`
+in usnistgov/oscal-content at commit bc8a528770 (2025-08-27, "Publishing auto-converted artifacts") — verified by SHA-256 on 2026-09-20
+(local `e0aed6ef276c0071…`). The document reports `oscal-version` 1.1.3 and catalog `version` 5.2.0. Neither heimdall2 nor SAF carries it, which is why
+the generated record above once said "most likely authored here"; that was the generator's boilerplate, not a finding.
 **Kept at full size on purpose (3.8 MB, over the ~1 MB fixture guideline).** The converter test asserts
 `assert.Equal(287, len(Requirements))` — 177 controls plus 110 enhancements — so the count is the property
 under test and a subset cannot exercise it (2026-09-14 fixture audit).
 
 ### `component-definition-multi.json`
-No counterpart in either upstream. Introduced by this repository in
-`Fix/converter input fidelity (#330)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Fix/converter input fidelity (#330)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 
 ### `component-example.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 
 ### `poam-fedramp.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+FedRAMP's own OSCAL template content by its metadata, not authored here: `metadata.version` `fedramp2.1.0-oscal1.0.4`, `metadata.title` "[System Name] FedRAMP Plan of Action and Milestones (POA&M)", with the FedRAMP PMO and JAB named as parties. The publisher of that content, GSA's `fedramp-automation` repository, returned 404 on github.com and its API on 2026-09-20, so no byte-for-byte match against an upstream revision could be made from here; neither heimdall2 nor SAF carries the file. Introduced by this repository in `Development (#10)`, which records no source.
 
 ### `profile-moderate.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+NIST's own OSCAL content, not authored here: byte-identical to `nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_MODERATE-baseline_profile.json`
+in usnistgov/oscal-content at commit bc8a528770 (2025-08-27), verified by SHA-256 on 2026-09-20 (local `b5dd6ef0d1c3…`). The document
+reports `oscal-version` 1.1.3 and `version` 5.2.0 — the profile whose resolution is `catalog-moderate-resolved.json` above.
 
 ### `profile-redhat-fedramp-high.json`
-No counterpart in either upstream. Introduced by this repository in
-`Dev (#12)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+FedRAMP's own OSCAL template content by its metadata, not authored here: `metadata.version` `fedramp-2.0.0-oscal1.0.4`, `metadata.title` "FedRAMP Rev 5 High Baseline", with the FedRAMP PMO and JAB named as parties. The publisher of that content, GSA's `fedramp-automation` repository, returned 404 on github.com and its API on 2026-09-20, so no byte-for-byte match against an upstream revision could be made from here; neither heimdall2 nor SAF carries the file. Introduced by this repository in `Dev (#12)`, which records no source.
 
 ### `sap-fedramp.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+FedRAMP's own OSCAL template content by its metadata, not authored here: `metadata.version` `fedramp2.1.0-oscal1.0.4`, `metadata.title` "[System Name] FedRAMP Security Assessment Plan (SAP)", with the FedRAMP PMO and JAB named as parties. The publisher of that content, GSA's `fedramp-automation` repository, returned 404 on github.com and its API on 2026-09-20, so no byte-for-byte match against an upstream revision could be made from here; neither heimdall2 nor SAF carries the file. Introduced by this repository in `Development (#10)`, which records no source.
 
 ### `sar-fedramp.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+FedRAMP's own OSCAL template content by its metadata, not authored here: `metadata.version` `fedramp2.1.0-oscal1.0.4`, `metadata.title` "[System Name] FedRAMP Security Assessment Results (SAR)", with the FedRAMP PMO and JAB named as parties. The publisher of that content, GSA's `fedramp-automation` repository, returned 404 on github.com and its API on 2026-09-20, so no byte-for-byte match against an upstream revision could be made from here; neither heimdall2 nor SAF carries the file. Introduced by this repository in `Development (#10)`, which records no source.
 
 ### `ssp-example.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+NIST's own OSCAL example, not authored here: byte-identical to `examples/ssp/json/ssp-example.json` in usnistgov/oscal-content
+at commit bc8a528770 (2025-08-27), verified by SHA-256 on 2026-09-20 (local `36d10a9d3f0f…`). The document reports `oscal-version`
+1.1.3 and `version` 1.2 ("Enterprise Logging and Auditing System Security Plan").
 
 ### `ssp-fedramp.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+FedRAMP's own OSCAL template content by its metadata, not authored here: `metadata.version` `fedramp2.1.0-oscal1.0.4`, `metadata.title` "FedRAMP System Security Plan (SSP)", with the FedRAMP PMO and JAB named as parties. The publisher of that content, GSA's `fedramp-automation` repository, returned 404 on github.com and its API on 2026-09-20, so no byte-for-byte match against an upstream revision could be made from here; neither heimdall2 nor SAF carries the file. Introduced by this repository in `Development (#10)`, which records no source.
 
 ## `expected/`
 
 Generated by this repository's converters, not sourced. Regenerate with
 `go test ./converters/oscal-to-hdf/... -run TestSnapshots -update`.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `catalog-800-53-rev5.json` — OSCAL catalog; `metadata.oscal-version` 1.1.3; `metadata.version` 5.2.0; `metadata.title` "Electronic (OSCAL) Version of NIST SP 800-53 Rev 5.2.0 Controls and SP".
+- `catalog-moderate-resolved.json` — OSCAL catalog; `metadata.oscal-version` 1.1.3; `metadata.version` 5.2.0; `metadata.title` "Electronic (OSCAL) Version of NIST Special Publication 800-53 Revision".
+- `component-definition-multi.json` — OSCAL component-definition; `metadata.oscal-version` 1.0.2; `metadata.version` 0.21.0; `metadata.title` "comp def a".
+- `component-example.json` — OSCAL component-definition; `metadata.oscal-version` 1.1.2; `metadata.version` 20231012; `metadata.title` "Test Component Definition".
+- `poam-fedramp.json` — OSCAL plan-of-action-and-milestones; `metadata.oscal-version` 1.0.4; `metadata.version` fedramp2.1.0-oscal1.0.4; `metadata.title` "[System Name] FedRAMP Plan of Action and Milestones (POA&M)".
+- `profile-moderate.json` — OSCAL profile; `metadata.oscal-version` 1.1.3; `metadata.version` 5.2.0; `metadata.title` "Electronic (OSCAL) Version of NIST Special Publication 800-53 Revision".
+- `profile-redhat-fedramp-high.json` — OSCAL profile; `metadata.oscal-version` 1.0.4; `metadata.version` fedramp-2.0.0-oscal1.0.4; `metadata.title` "FedRAMP Rev 5 High Baseline".
+- `sap-fedramp.json` — OSCAL assessment-plan; `metadata.oscal-version` 1.0.4; `metadata.version` fedramp2.1.0-oscal1.0.4; `metadata.title` "[System Name] FedRAMP Security Assessment Plan (SAP)".
+- `sar-fedramp.json` — OSCAL assessment-results; `metadata.oscal-version` 1.0.4; `metadata.version` fedramp2.1.0-oscal1.0.4; `metadata.title` "[System Name] FedRAMP Security Assessment Results (SAR)".
+- `ssp-example.json` — OSCAL system-security-plan; `metadata.oscal-version` 1.1.3; `metadata.version` 1.2; `metadata.title` "Enterprise Logging and Auditing System Security Plan".
+- `ssp-fedramp.json` — OSCAL system-security-plan; `metadata.oscal-version` 1.0.4; `metadata.version` fedramp2.1.0-oscal1.0.4; `metadata.title` "FedRAMP System Security Plan (SSP)".
+
+## Schema
+
+OSCAL 1.1.x JSON Schemas are vendored at `oscal-to-hdf/schemas/` (see that directory's `provenance.json`).

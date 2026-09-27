@@ -36,21 +36,14 @@ func classSchemas(t *testing.T) map[float64]*gojsonschema.Schema {
 }
 
 // knownViolations is the EXACT set of schema violations this converter still
-// produces, tracked on the exporter-conformance board. It is pinned rather than tolerated: a
-// new violation fails this test, and fixing one fails it too, so the list cannot
-// drift in either direction without someone noticing.
+// produces, tracked on the exporter-conformance board. It is pinned rather than
+// tolerated: a new violation fails this test, and fixing one fails it too, so the
+// list cannot drift in either direction without someone noticing.
 //
-// None of these is a version artifact. The version-pinned OCSF metaschema shows
-// evidences and remediation absent from class 2002, and cloud and osint required,
-// in BOTH 1.8.0 (which this converter self-declares) and 1.9.0 (vendored).
-var knownViolations = map[string]bool{
-	"2002|additional_property_not_allowed|Additional property evidences is not allowed":   true,
-	"2002|additional_property_not_allowed|Additional property remediation is not allowed": true,
-	"2002|required|cloud is required": true,
-	"2002|required|osint is required": true,
-	"2003|required|cloud is required": true,
-	"2003|required|osint is required": true,
-}
+// It is empty, and that is the point: the converter's output conforms to both
+// vendored class schemas. Keep it that way — if a change makes this test fail,
+// fix the output rather than adding an entry here.
+var knownViolations = map[string]bool{}
 
 // violationsFor validates one NDJSON document set and returns the distinct
 // violation keys it produced.

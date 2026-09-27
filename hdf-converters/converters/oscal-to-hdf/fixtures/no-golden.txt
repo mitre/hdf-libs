@@ -1,0 +1,7 @@
+# Inputs in fixtures/input/ that intentionally have no fixtures/expected/<name>.hdf.json golden.
+# One per line, as <input> — <reason>. The snapshot harness in both languages requires every
+# input to have a golden or a line here, and fails on a line that names a missing input, an
+# input that has a golden, or no reason. The empty.* convention needs no line.
+
+profile-moderate.json — a profile that resolves against catalog-800-53-rev5.json; asserted by count and content in TestConvertProfileToHDF_ModerateBaseline and the fidelity test, and by detection in TestDetectDocumentType — a golden would be a 410-control document derived from another fixture
+profile-redhat-fedramp-high.json — rejected by design: uses `alter` directives the converter does not support; TestConvertProfileToHDF_RedHatFedRAMPHigh and the TS test 'should reject profiles with alter directives'

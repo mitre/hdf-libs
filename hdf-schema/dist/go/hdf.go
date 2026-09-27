@@ -657,11 +657,14 @@ type Evidence struct {
 	// Identity of who or what captured this evidence.                                                     
 	CapturedBy                                                                                *Identity    `json:"capturedBy,omitempty"`
 	// The evidence content. For screenshots/files: base64-encoded data or URL. For code/logs:             
-	// the raw text. For URLs: the URL string.                                                             
+	// the raw text. For URLs: the URL string. Must not be empty. When encoding is 'base64',               
+	// data must be bare base64 matching ^[0-9A-Za-z+/]+={0,2}$ (OSCAL's Base64Datatype): no               
+	// data: URI prefix, URL, or line breaks.                                                              
 	Data                                                                                      string       `json:"data"`
 	// Human-readable description of what this evidence shows.                                             
 	Description                                                                               *string      `json:"description,omitempty"`
-	// Encoding used for the data. Example: 'base64', 'utf-8'.                                             
+	// Encoding used for the data. Example: 'base64', 'utf-8'. The value 'base64' (exactly,                
+	// lowercase) requires data to be bare base64.                                                         
 	Encoding                                                                                  *string      `json:"encoding,omitempty"`
 	// MIME type of the evidence. Example: 'image/png', 'text/plain', 'application/json'.                  
 	MIMEType                                                                                  *string      `json:"mimeType,omitempty"`
@@ -726,16 +729,21 @@ type PoamElement struct {
 
 // A milestone or task within a POA&M remediation plan.
 type Milestone struct {
-	// Actual completion timestamp. ISO 8601 format.                
-	CompletedAt                                     *time.Time      `json:"completedAt,omitempty"`
-	// Identity of who completed this milestone.                    
-	CompletedBy                                     *Identity       `json:"completedBy,omitempty"`
-	// Description of this milestone or task.                       
-	Description                                     string          `json:"description"`
-	// Estimated completion date. ISO 8601 format.                  
-	EstimatedCompletion                             time.Time       `json:"estimatedCompletion"`
-	// Current status of this milestone.                            
-	Status                                          MilestoneStatus `json:"status"`
+	// Actual completion timestamp. ISO 8601 format.                                                           
+	CompletedAt                                                                                *time.Time      `json:"completedAt,omitempty"`
+	// Identity of who completed this milestone.                                                               
+	CompletedBy                                                                                *Identity       `json:"completedBy,omitempty"`
+	// Description of this milestone or task.                                                                  
+	Description                                                                                string          `json:"description"`
+	// Estimated completion date. ISO 8601 format.                                                             
+	EstimatedCompletion                                                                        time.Time       `json:"estimatedCompletion"`
+	// Current status of this milestone.                                                                       
+	Status                                                                                     MilestoneStatus `json:"status"`
+	// Short single-line label for this milestone, suitable where a consumer needs a title (for                
+	// example an OSCAL POA&M remediation or task). No line breaks, and no leading or trailing                 
+	// whitespace. The description remains the full text of the milestone; the title does not                  
+	// replace it.                                                                                             
+	Title                                                                                      *string         `json:"title,omitempty"`
 }
 
 // A digital signature following W3C Data Integrity Proofs pattern. Supports hardware security

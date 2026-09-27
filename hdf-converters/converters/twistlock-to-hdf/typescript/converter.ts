@@ -85,11 +85,16 @@ interface TwistlockDistribution {
   total: number;
 }
 
-// Mirrors the Go twin: "important" (critical-tier) and "moderate" (medium-tier)
-// are the Twistlock-specific aliases; standard levels come from the shared map.
+// Mirrors the Go twin's twistlockAliases exactly. Red Hat's important/moderate
+// and Debian's unimportant/negligible are the distro-feed severities Twistlock
+// passes through; standard levels (critical=0.9, high, medium, low, info) come
+// from the shared map. negligible is the 0.0 floor (grype-to-hdf convention);
+// unimportant is Debian's lowest *rated* tier -> nearest standard rated tier, low.
 const TWISTLOCK_ALIASES: Record<string, number> = {
   important: 0.9,
   moderate: 0.5,
+  unimportant: 0.3,
+  negligible: 0.0,
 };
 
 function twistlockSeverityToImpact(severity: string | undefined): number {
@@ -313,9 +318,9 @@ function buildRequirement(
   const cciTags = nistToCci(nist);
 
   const extras: Record<string, unknown> = { cveid: [vuln.id] };
-  // Legacy: retain the cvss_base_score tag for one release so existing
-  // downstream queries keep working. Marked for removal in v3.4.0 (see
-  // CHANGELOG note in epic hdf-libs-8zn0).
+  // Legacy: retain the cvss_base_score tag so existing downstream queries keep
+  // working. Removing it drops a tag consumers may key on, so the removal is
+  // deferred to the next major (v4.0.0) rather than shipped in a minor.
   if (typeof vuln.cvss === 'number' && vuln.cvss > 0) {
     extras['cvss_base_score'] = vuln.cvss;
   }

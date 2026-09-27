@@ -16,3 +16,15 @@ at the directory level.
 **Refreshing:** requires an M365 tenant with Defender for Endpoint (licensed). To
 replace with a real export, pull `security/alerts_v2` via MS Graph, scrub tenant/
 device/user identifiers, and drop the `_provenance` marker.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `empty.json` — Microsoft Defender API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `minimal.json` — Microsoft Defender API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `sample.json` — Microsoft Defender API response body; the service version is not part of the response, so its version is not determinable from file content.
+
+## Schema
+
+The fixture is a Defender for Endpoint API response; no published OpenAPI description was located (2026-09-20).

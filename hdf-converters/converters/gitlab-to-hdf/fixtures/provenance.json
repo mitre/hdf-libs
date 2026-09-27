@@ -1,0 +1,16 @@
+{
+  "schemas": [
+    {
+      "file": "sast-report-format-15.1.0.json",
+      "source": "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.1.0/dist/sast-report-format.json",
+      "sha256": "980839530f667cda5ba82d27e0fff47153a4979201438a92ceb3e0126828c0e0",
+      "retrieved": "2026-09-20"
+    },
+    {
+      "file": "dast-report-format-15.1.0.json",
+      "source": "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/v15.1.0/dist/dast-report-format.json",
+      "sha256": "cec7d3049393f147d327f11326974b6b727fb5165c51668b5cef8cd5cf9710c6",
+      "retrieved": "2026-09-20"
+    }
+  ]
+}

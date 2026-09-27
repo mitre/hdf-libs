@@ -896,6 +896,85 @@ describe('CVE-ecosystem: Standalone_Override.cvss in an amendments document', ()
   });
 });
 
+describe('Amendments: requirementId must not be empty', () => {
+  const doc = (requirementId: string) => ({
+    name: 'Waivers',
+    overrides: [
+      {
+        type: 'waiver',
+        requirementId,
+        status: 'passed',
+        reason: 'Risk accepted by the AO',
+        appliedBy: { type: 'email', identifier: 'ao@agency.gov' },
+        appliedAt: '2026-01-15T10:00:00Z',
+        expiresAt: '2099-12-31T00:00:00Z',
+      },
+    ],
+  });
+
+  it('rejects an empty requirementId', () => {
+    const result = validateAmendments(doc(''));
+    expect(result.valid).toBe(false);
+    expect(result.getErrorMessage()).toContain('requirementId');
+  });
+
+  it('accepts a non-empty requirementId', () => {
+    const result = validateAmendments(doc('SV-257777'));
+    expect(result.valid, result.getErrorMessage()).toBe(true);
+  });
+});
+
+// Mirrors the Go peer case for case, so both regex engines are held to the same
+// title and base64 verdicts: the title pattern avoids \S and '.', which ECMA-262
+// and Go regexp read differently, so a carriage return must be rejected by both.
+describe('Amendments: milestone title and evidence data', () => {
+  const doc = (extra: Record<string, unknown>) => ({
+    name: 'POA&Ms',
+    overrides: [
+      {
+        type: 'poam',
+        requirementId: 'SV-257777',
+        status: 'failed',
+        reason: 'Remediation scheduled',
+        appliedBy: { type: 'email', identifier: 'ao@agency.gov' },
+        appliedAt: '2026-01-15T10:00:00Z',
+        expiresAt: '2099-12-31T00:00:00Z',
+        ...extra,
+      },
+    ],
+  });
+  const milestone = (title: string) => ({
+    milestones: [
+      { title, description: 'Apply RHSA-2026:1234', estimatedCompletion: '2026-04-15T00:00:00Z', status: 'pending' },
+    ],
+  });
+
+  const evidence = (data: string, encoding: string) => ({
+    evidence: [{ type: 'screenshot', data, mimeType: 'image/png', encoding }],
+  });
+
+  it.each([
+    ['titled milestone', milestone('Apply vendor patch'), true],
+    ['single-character title', milestone('X'), true],
+    ['empty title', milestone(''), false],
+    ['title with a line feed', milestone('Apply\npatch'), false],
+    ['title with a carriage return', milestone('Apply\rpatch'), false],
+    ['title with a leading space', milestone(' Apply patch'), false],
+    ['title with a trailing tab', milestone('Apply patch\t'), false],
+    ['evidence with data', { evidence: [{ type: 'url', data: 'https://jira.example.com/SEC-1' }] }, true],
+    ['evidence with empty data', { evidence: [{ type: 'url', data: '' }] }, false],
+    ['base64 evidence with real base64', evidence('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'), true],
+    ['base64 evidence with non-base64 text', evidence('not base64!', 'base64'), false],
+    ['base64 evidence with a data: URI', evidence('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64'), false],
+    ['base64 evidence with a trailing line feed', evidence('aGk=\n', 'base64'), false],
+    ['URL evidence with encoding absent', { evidence: [{ type: 'url', data: 'https://evidence.example.com/firewall.png' }] }, true],
+    ['URL evidence with utf-8 encoding', evidence('https://evidence.example.com/firewall.png', 'utf-8'), true],
+  ])('%s', (_name, extra, valid) => {
+    const result = validateAmendments(doc(extra));
+    expect(result.valid, result.getErrorMessage()).toBe(valid);
+  });
+});
+
 describe('HDF Requirement Change Event Validation', () => {
   const validEvent = {
     eventId: '0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01',

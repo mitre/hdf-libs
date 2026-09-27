@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -196,8 +198,8 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	// baseline.version has no first-class SAR home; carry it as a result prop.
 	var resultProps []oscal.Property
-	if baseline.Version != nil && *baseline.Version != "" {
-		resultProps = append(resultProps, oscal.Property{Name: "baseline-version", Value: *baseline.Version})
+	if baseline.Version != nil {
+		resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-version", *baseline.Version)
 	}
 
 	var findings []oscal.Finding
@@ -208,7 +210,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 	// OSCAL requires result.reviewed-controls: the set of controls assessed.
 	// Populate it from the control each requirement targets (deduped).
 	var includeControls []oscal.SelectControl
-	seenControl := make(map[string]bool)
+	controlIndex := make(map[string]int)
 
 	for i := range baseline.Requirements {
 		req := &baseline.Requirements[i]
@@ -220,7 +222,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		// target schema rejects. The finding is dropped rather than carrying a
 		// fabricated identifier the source never had. Compute the control id once
 		// so the guard and the reviewed-controls encoding below cannot drift.
-		nistID := oscal.NistTagToControlID(req.ID)
+		nistID, statementID := oscal.NistTagToControlRef(req.ID)
 		if nistID == "" {
 			continue
 		}
@@ -236,12 +238,12 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		if res != nil {
 			resources = append(resources, *res)
 		}
-		// Encoded identically to the finding's target-id below: a finding that
-		// referenced a control absent from this list would validate while
-		// claiming to assess something the result never declares reviewing.
-		if cid := oscal.OSCALToken(nistID); cid != "" && !seenControl[cid] {
-			seenControl[cid] = true
-			includeControls = append(includeControls, oscal.SelectControl{ControlID: cid})
+		// Declares the control behind the finding's target (narrowed to its
+		// statement when the target is one): a finding whose control is absent
+		// from this list would validate while claiming to assess something the
+		// result never declares reviewing.
+		if cid := oscal.OSCALToken(nistID); cid != "" {
+			includeControls = selectControl(includeControls, controlIndex, cid, statementID)
 		}
 	}
 
@@ -256,6 +258,31 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		Observations:     observations,
 		Risks:            risks,
 	}, resources
+}
+
+// selectControl adds a control, or one statement of it, to the reviewed-controls
+// selection, one entry per control. A control selected whole carries no
+// statement-ids, because listing any would narrow the selection to them.
+func selectControl(controls []oscal.SelectControl, index map[string]int, controlID, statementID string) []oscal.SelectControl {
+	i, seen := index[controlID]
+	if !seen {
+		index[controlID] = len(controls)
+		selection := oscal.SelectControl{ControlID: controlID}
+		if statementID != "" {
+			selection.StatementIDs = []string{statementID}
+		}
+		return append(controls, selection)
+	}
+	selection := &controls[i]
+	if selection.StatementIDs == nil {
+		return controls
+	}
+	if statementID == "" {
+		selection.StatementIDs = nil
+	} else if !slices.Contains(selection.StatementIDs, statementID) {
+		selection.StatementIDs = append(selection.StatementIDs, statementID)
+	}
+	return controls
 }
 
 // buildSubjects turns the top-level HDF components[] into OSCAL assessment
@@ -324,10 +351,13 @@ func descriptionByLabel(descriptions []hdf.Description, label string) string {
 func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, toolActorUUID string, subjects []oscal.SubjectRef) (oscal.Finding, *oscal.Observation, *oscal.Risk, *oscal.Resource) {
 	// OSCAL types target-id as a token, and a requirement id is only token-shaped
 	// when the source tool happens to number its rules that way. The source id is
-	// recorded in the hdf-requirement-id prop below (trimmed, because OSCAL
-	// forbids a padded string value), so the encoding does not lose which
-	// requirement this came from even though it is not injective.
-	controlID := oscal.OSCALToken(oscal.NistTagToControlID(req.ID))
+	// recorded exactly in the hdf-requirement-id prop below, so the encoding does
+	// not lose which requirement this came from even though it is not injective.
+	controlID, statementID := oscal.NistTagToControlRef(req.ID)
+	targetType, targetID := "objective-id", oscal.OSCALToken(controlID)
+	if statementID != "" {
+		targetType, targetID = "statement-id", statementID
+	}
 
 	// Determine the finding state from the effective (post-override) status when
 	// present, falling back to the raw worst-wins result aggregation. This makes
@@ -341,33 +371,14 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 
 	// The source requirement id. target-id carries an encoded form, because OSCAL
 	// constrains it to a token, so without this the identifier the source tool
-	// reported would be unrecoverable — the encoding is not injective. Trimmed
-	// because OSCAL's StringDatatype is ^\S(.*\S)?$, so a padded value would
-	// itself be schema-invalid.
+	// reported would be unrecoverable — the encoding is not injective.
 	//
-	// Then control mappings (nist/cci), non-default descriptions
-	// (check/fix/rationale), and v3.2 classification fields. OSCAL prop values
-	// are StringDatatype (no newlines, no edge whitespace), so prose-capable
-	// fields emit a single-line preview as the value and carry the full text in
-	// the prop's own remarks (markup-multiline).
-	props := []oscal.Property{{Name: "hdf-requirement-id", Value: oscal.OSCALString(req.ID)}}
-	// OSCAL prop values must be non-empty strings, so skip any empty value
-	// (e.g. an empty source `code`) rather than emitting a schema-invalid value: "".
+	// Then control mappings (nist/cci) and v3.2 classification fields. Every prop
+	// goes through the vocabulary helper, which namespaces it and keeps the exact
+	// value in remarks when OSCAL's single-line StringDatatype cannot hold it.
+	props := oscal.AppendVocabularyProp(nil, "hdf-requirement-id", req.ID)
 	addProp := func(name, value string) {
-		if value != "" {
-			props = append(props, oscal.Property{Name: name, Value: value})
-		}
-	}
-	addProseProp := func(name, text string) {
-		preview := previewLine(text)
-		if preview == "" {
-			return
-		}
-		p := oscal.Property{Name: name, Value: preview}
-		if preview != text {
-			p.Remarks = text
-		}
-		props = append(props, p)
+		props = oscal.AppendVocabularyProp(props, name, value)
 	}
 	pushTagValues := func(key string) {
 		if raw, ok := req.Tags[key]; ok {
@@ -382,14 +393,6 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	}
 	pushTagValues("nist")
 	pushTagValues("cci")
-	addProseProp("check", descriptionByLabel(req.Descriptions, "check"))
-	addProseProp("rationale", descriptionByLabel(req.Descriptions, "rationale"))
-	// fix text's OSCAL home is risk.remediations (built below when impact > 0,
-	// the reverse importer's read path). Only an impact-0 requirement, which
-	// emits no risk, carries it as a finding prop instead.
-	if req.Impact <= 0 {
-		addProseProp("fix", descriptionByLabel(req.Descriptions, "fix"))
-	}
 	if req.ControlType != nil {
 		addProp("control-type", string(*req.ControlType))
 	}
@@ -437,7 +440,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		case r.URI != nil:
 			links = append(links, oscal.Link{Href: *r.URI, Rel: "reference"})
 		case r.Ref != nil && r.Ref.String != nil:
-			addProseProp("reference", *r.Ref.String)
+			addProp("reference", *r.Ref.String)
 		}
 	}
 
@@ -462,6 +465,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		codeResource = &oscal.Resource{
 			UUID:  oscal.GenerateUUID(),
 			Title: "Check source code for " + req.ID,
+			Props: oscal.AppendVocabularyProp(nil, "type", "evidence"),
 			Base64: &oscal.Base64{
 				Value:     base64.StdEncoding.EncodeToString([]byte(*req.Code)),
 				MediaType: "text/plain",
@@ -483,8 +487,10 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		Props:       props,
 		Links:       links,
 		Target: oscal.FindingTarget{
-			Type:     "objective-id",
-			TargetID: controlID,
+			Type:     targetType,
+			TargetID: targetID,
+			// The assessor's conclusion about the objective: rationale's OSCAL home.
+			Description: descriptionByLabel(req.Descriptions, "rationale"),
 			Status: oscal.TargetStatus{
 				State:  state,
 				Reason: reason,
@@ -516,6 +522,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		finding.RelatedObservations = []oscal.RelatedRef{
 			{ObservationUUID: obsUUID},
 		}
+	} else {
+		warnUncarriedProse(req)
 	}
 
 	// Build risk from impact
@@ -568,8 +576,8 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	return finding, observation, risk, codeResource
 }
 
-// previewLine reduces prose to a single line legal as an OSCAL StringDatatype
-// prop value: the first non-empty line, trimmed, truncated to 120 runes.
+// previewLine reduces prose to a single line for an OSCAL single-line field: the
+// first non-empty line, trimmed, truncated to 120 runes.
 func previewLine(text string) string {
 	for _, line := range strings.Split(text, "\n") {
 		line = strings.TrimSpace(line)
@@ -636,9 +644,11 @@ func overrideRemarks(req *hdf.EvaluatedRequirement) string {
 	return strings.Join(parts, "; ")
 }
 
-// buildRelevantEvidence collects the requirement's refs, evidence, and source
-// location into OSCAL observation relevant-evidence, the home the reverse SAR
-// importer reads back into HDF refs (via href) and evidence (via description).
+// buildRelevantEvidence collects the requirement's refs, evidence and source
+// location, then its check (and impact-0 fix) prose, into OSCAL observation
+// relevant-evidence, the home the reverse SAR importer reads back into HDF
+// refs (via href), evidence (via description) and check/fix (via
+// description-label).
 func buildRelevantEvidence(req *hdf.EvaluatedRequirement) []oscal.RelevantEvidence {
 	var ev []oscal.RelevantEvidence
 	for _, r := range req.Refs {
@@ -667,7 +677,48 @@ func buildRelevantEvidence(req *hdf.EvaluatedRequirement) []oscal.RelevantEviden
 			ev = append(ev, oscal.RelevantEvidence{Description: "Source location: " + loc})
 		}
 	}
+	// Labelled prose follows the entries above so their index positions are stable.
+	for _, label := range observationProseLabels(req) {
+		text := descriptionByLabel(req.Descriptions, label)
+		ev = append(ev, oscal.RelevantEvidence{
+			Description: previewLine(text),
+			Props:       []oscal.Property{oscal.DescriptionLabelProp(label)},
+			Remarks:     text,
+		})
+	}
 	return ev
+}
+
+// observationProseLabels lists the description labels whose text the
+// requirement's observation carries as labelled evidence: check, and fix when
+// impact is 0 (otherwise fix's home is the risk remediation). A description
+// with no preview text carries nothing.
+func observationProseLabels(req *hdf.EvaluatedRequirement) []string {
+	candidates := []string{"check"}
+	if req.Impact <= 0 {
+		candidates = append(candidates, "fix")
+	}
+	var labels []string
+	for _, label := range candidates {
+		if previewLine(descriptionByLabel(req.Descriptions, label)) != "" {
+			labels = append(labels, label)
+		}
+	}
+	return labels
+}
+
+// warnUncarriedProse reports observation-scoped prose lost because a
+// requirement with no results emits no observation.
+func warnUncarriedProse(req *hdf.EvaluatedRequirement) {
+	labels := observationProseLabels(req)
+	switch len(labels) {
+	case 0:
+		return
+	case 1:
+		log.Printf("WARNING: hdf-to-oscal-sar: requirement %q has no results, so no observation holds its %s description; it was not carried", req.ID, labels[0])
+	default:
+		log.Printf("WARNING: hdf-to-oscal-sar: requirement %q has no results, so no observation holds its %s descriptions; they were not carried", req.ID, strings.Join(labels, " and "))
+	}
 }
 
 // sourceLocationText renders a source location as "ref:line", degrading to
@@ -693,8 +744,9 @@ func severityToFacetValue(s hdf.Severity) string {
 }
 
 // buildRemediations turns the requirement's fix description and any governing
-// risk-acceptance override into OSCAL risk remediations, the home the reverse
-// importer reads back as the HDF remediation description.
+// risk-acceptance override into OSCAL risk remediations. The reverse importer
+// reads the labelled fix back as the HDF fix description and the rest as the
+// remediation description.
 func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
 	var rems []oscal.Remediation
 	if fix := descriptionByLabel(req.Descriptions, "fix"); fix != "" {
@@ -703,6 +755,7 @@ func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
 			Lifecycle:   "recommendation",
 			Title:       "Recommended fix",
 			Description: fix,
+			Props:       []oscal.Property{oscal.DescriptionLabelProp("fix")},
 		})
 	}
 	if req.Disposition != nil && len(req.StatusOverrides) > 0 {

@@ -223,11 +223,48 @@ func TestProductIDsFor_ParsesProductsLine(t *testing.T) {
 	assert.Equal(t, []string{"A", "B"}, got)
 }
 
-func TestProductIDsFor_FallsBackToDefault(t *testing.T) {
+// Was: asserted a synthetic "HDFPID-0001". CycloneDX leaves affects[] and
+// components[] optional, and a minted bom-ref would have to be backed by a
+// components[] entry — an inventory item the source never named.
+func TestProductIDsFor_OmitsWhenNothingPresent(t *testing.T) {
 	t.Parallel()
-	got := productIDsFor(&hdf.StandaloneOverride{Reason: "no products"})
-	assert.Equal(t, []string{defaultProductID}, got)
+	assert.Empty(t, productIDsFor(&hdf.StandaloneOverride{Reason: "no products"}))
 }
+
+// An override carrying no affectedPackages, no componentRef and no legacy
+// Products: line yields a vulnerability with no affects[] and a BOM with no
+// components[], rather than a fabricated component the reader cannot tell from
+// a real one.
+func TestConvert_OmitsProductWhenNothingIdentifiesOne(t *testing.T) {
+	t.Parallel()
+	a := hdf.HDFAmendments{Overrides: []hdf.StandaloneOverride{{
+		Type:          hdf.FalsePositive,
+		RequirementID: "CVE-2021-44228",
+		Status:        ptr(hdf.Passed),
+		Reason:        "Log4j is not present on the host",
+		Justification: ptr(hdf.ComponentNotPresent),
+		AppliedAt:     mustTime(t, "2026-01-01T00:00:00Z"),
+		AppliedBy:     hdf.Identity{Type: hdf.Simple, Identifier: "isso"},
+	}}}
+	input, err := json.Marshal(a)
+	require.NoError(t, err)
+
+	out, err := ConvertHDFToCycloneDXVEX(input, testVersion)
+	require.NoError(t, err)
+
+	var bom struct {
+		Components      *[]map[string]any `json:"components"`
+		Vulnerabilities []map[string]any  `json:"vulnerabilities"`
+	}
+	require.NoError(t, json.Unmarshal(out, &bom))
+	assert.Nil(t, bom.Components, "no product was named, so no component may be invented")
+	require.Len(t, bom.Vulnerabilities, 1)
+	assert.NotContains(t, bom.Vulnerabilities[0], "affects")
+	assert.NotContains(t, string(out), "HDFPID",
+		"a synthetic product id asserts traceability the source never had")
+}
+
+func ptr[T any](v T) *T { return &v }
 
 func TestStripReasonAnnotations(t *testing.T) {
 	t.Parallel()

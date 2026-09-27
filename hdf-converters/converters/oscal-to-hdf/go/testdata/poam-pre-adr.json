@@ -1,0 +1,462 @@
+{
+  "plan-of-action-and-milestones": {
+    "uuid": "62f4fbb2-dd0c-44be-8ba0-7791bdcbc1a8",
+    "metadata": {
+      "title": "Portal Q1 2026 Waivers",
+      "last-modified": "2026-05-01T10:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "parties": [
+        {
+          "uuid": "485e981f-1c2e-4848-b9a7-25d45bdf64ac",
+          "type": "person",
+          "name": "ao@agency.gov"
+        },
+        {
+          "uuid": "408e0c44-eebc-4c10-9b63-0fa2adb942ae",
+          "type": "person",
+          "name": "assessor@agency.gov"
+        },
+        {
+          "uuid": "ccd6582a-5511-4ad1-9930-1e3f21516380",
+          "type": "person",
+          "name": "dev@org.gov"
+        },
+        {
+          "uuid": "679f493d-9a54-4010-8647-7344953501be",
+          "type": "person",
+          "name": "sysadmin@agency.gov"
+        },
+        {
+          "uuid": "48be64d2-25ff-4950-a794-2a1a0024411c",
+          "type": "person",
+          "name": "issm@agency.gov"
+        },
+        {
+          "uuid": "6133c669-80ba-43a2-b325-971337360ac0",
+          "type": "person",
+          "name": "secops@org.gov"
+        }
+      ]
+    },
+    "import-ssp": {
+      "href": "#"
+    },
+    "observations": [
+      {
+        "uuid": "25791bcf-e311-4ea6-b387-475d8f4ecfe3",
+        "description": "ISSM approval with compensating control documentation",
+        "methods": [
+          "EXAMINE"
+        ],
+        "types": [
+          "url"
+        ],
+        "collected": "2026-01-15T10:00:00Z",
+        "relevant-evidence": [
+          {
+            "href": "https://jira.agency.gov/CYBER-4521",
+            "description": "ISSM approval with compensating control documentation"
+          }
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "uuid": "38c1c441-84c7-43b5-ba7b-ab5cd0f5b451",
+        "title": "SV-257777",
+        "description": "Compensating control: session timeout set to 15 min",
+        "statement": "Compensating control: session timeout set to 15 min",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "sv-257777"
+          },
+          {
+            "name": "override-type",
+            "value": "waiver"
+          },
+          {
+            "name": "baseline-ref",
+            "value": "RHEL9-STIG"
+          }
+        ],
+        "status": "closed",
+        "deadline": "2026-06-30T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "f03bd6cd-1620-4b8c-902f-36afed9428fd",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2026-06-30T00:00:00Z",
+              "status-change": "closed"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "b3f0c3c3-e02a-42a8-a3ed-cb69228b67c2",
+        "title": "SV-258010",
+        "description": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+        "statement": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "sv-258010"
+          },
+          {
+            "name": "override-type",
+            "value": "falsePositive"
+          },
+          {
+            "name": "baseline-ref",
+            "value": "RHEL9-STIG"
+          }
+        ],
+        "status": "closed",
+        "deadline": "2026-10-14T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "01f9716a-002b-403f-95f6-ad6b699c09b4",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2026-10-14T00:00:00Z",
+              "status-change": "closed"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "538ab0a0-92b6-4527-b141-f6dccbb01460",
+        "title": "CVE-2026-12345",
+        "description": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+        "statement": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "cve-2026-12345"
+          },
+          {
+            "name": "override-type",
+            "value": "falsePositive"
+          }
+        ],
+        "status": "closed",
+        "deadline": "2026-10-14T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "5da7f134-0e58-4395-a6f5-0bdc69346bba",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2026-10-14T00:00:00Z",
+              "status-change": "closed"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "535ea8b8-145c-4afc-88da-63ac4f0cb75a",
+        "title": "SV-258020",
+        "description": "CVE-123 is in a dead code path, unreachable from any entry point",
+        "statement": "CVE-123 is in a dead code path, unreachable from any entry point",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "sv-258020"
+          },
+          {
+            "name": "override-type",
+            "value": "riskAdjustment"
+          },
+          {
+            "name": "impact-override",
+            "value": "0.3"
+          },
+          {
+            "name": "baseline-ref",
+            "value": "RHEL9-STIG"
+          }
+        ],
+        "status": "open",
+        "deadline": "2026-10-14T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "e369ea49-e2d2-4070-a529-e9951f88042a",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2026-10-14T00:00:00Z",
+              "status-change": "open"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "35e8269e-eb77-4d5b-8731-e41f8484fc0a",
+        "title": "SV-258001",
+        "description": "Patch requires vendor release, expected Q2 2026",
+        "statement": "Patch requires vendor release, expected Q2 2026",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "sv-258001"
+          },
+          {
+            "name": "override-type",
+            "value": "poam"
+          },
+          {
+            "name": "baseline-ref",
+            "value": "RHEL9-STIG"
+          }
+        ],
+        "status": "open",
+        "deadline": "2026-07-01T00:00:00Z",
+        "remediations": [
+          {
+            "uuid": "9d8dcb79-d962-4e40-a2a1-5733997668b6",
+            "lifecycle": "planned",
+            "title": "Vendor patch release",
+            "description": "Vendor patch release",
+            "props": [
+              {
+                "name": "milestone-status",
+                "value": "pending"
+              }
+            ],
+            "tasks": [
+              {
+                "uuid": "f6beee4a-998e-420f-ab84-f5acc4992576",
+                "type": "milestone",
+                "title": "Vendor patch release",
+                "timing": {
+                  "within-date-range": {
+                    "start": "2026-04-15T00:00:00Z",
+                    "end": "2026-04-15T00:00:00Z"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "uuid": "7c32bf69-4316-4023-a3a1-b81b225454b6",
+            "lifecycle": "planned",
+            "title": "Apply patch to all servers",
+            "description": "Apply patch to all servers",
+            "props": [
+              {
+                "name": "milestone-status",
+                "value": "pending"
+              }
+            ],
+            "tasks": [
+              {
+                "uuid": "83f3b9dd-5ff8-40d3-98a6-47b89175dad7",
+                "type": "milestone",
+                "title": "Apply patch to all servers",
+                "timing": {
+                  "within-date-range": {
+                    "start": "2026-05-01T00:00:00Z",
+                    "end": "2026-05-01T00:00:00Z"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "f5734a55-d0d9-4b32-b325-a97c2912dc77",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2026-07-01T00:00:00Z",
+              "status-change": "open"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "00233cff-b9ce-4c48-bb3a-4225be6ecd4c",
+        "title": "SV-230368",
+        "description": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+        "statement": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "sv-230368"
+          },
+          {
+            "name": "override-type",
+            "value": "inherited"
+          },
+          {
+            "name": "baseline-ref",
+            "value": "RHEL9-STIG"
+          }
+        ],
+        "status": "closed",
+        "deadline": "2026-09-26T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "5426a9b1-3dfb-404e-bfee-0628d035d430",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2026-09-26T00:00:00Z",
+              "status-change": "closed"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "aecab9e7-bcec-49f5-8f4a-e021f81fb808",
+        "title": "CVE-2026-12345",
+        "description": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+        "statement": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+        "props": [
+          {
+            "name": "impacted-control-id",
+            "value": "cve-2026-12345"
+          },
+          {
+            "name": "override-type",
+            "value": "falsePositive"
+          },
+          {
+            "name": "justification",
+            "value": "vulnerable_code_not_present"
+          }
+        ],
+        "status": "closed",
+        "deadline": "2027-05-01T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "f7ca7582-5d7a-4a3d-842a-6ebe822ca358",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2027-05-01T00:00:00Z",
+              "status-change": "closed"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "7b79b1d4-59ec-42e9-83d3-75f9d40e2971",
+        "title": "",
+        "description": "Manual attestation recorded before the requirement was identified",
+        "statement": "Manual attestation recorded before the requirement was identified",
+        "props": [
+          {
+            "name": "override-type",
+            "value": "attestation"
+          }
+        ],
+        "status": "closed",
+        "deadline": "2026-06-30T00:00:00Z",
+        "risk-log": {
+          "entries": [
+            {
+              "uuid": "f6937c82-6021-4a5c-b9b9-b47b2a3db8c8",
+              "title": "Scheduled review",
+              "description": "Amendment expiration date",
+              "start": "2026-06-30T00:00:00Z",
+              "status-change": "closed"
+            }
+          ]
+        }
+      }
+    ],
+    "poam-items": [
+      {
+        "uuid": "8c36d560-dd6e-48fb-b40f-3cd78ba421c1",
+        "title": "SV-257777",
+        "description": "Compensating control: session timeout set to 15 min",
+        "related-observations": [
+          {
+            "observation-uuid": "25791bcf-e311-4ea6-b387-475d8f4ecfe3"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "38c1c441-84c7-43b5-ba7b-ab5cd0f5b451"
+          }
+        ]
+      },
+      {
+        "uuid": "a6350ca4-b646-46f4-9976-541761ed8877",
+        "title": "SV-258010",
+        "description": "STIG check misidentified sshd_config syntax; manual review confirms compliant configuration",
+        "related-risks": [
+          {
+            "risk-uuid": "b3f0c3c3-e02a-42a8-a3ed-cb69228b67c2"
+          }
+        ]
+      },
+      {
+        "uuid": "5c04c72b-55b8-4732-a1ac-541be60a5a92",
+        "title": "CVE-2026-12345",
+        "description": "CVE scanner matched library signature but the vulnerable code path is not present in our build — dependency is compiled with the affected module disabled",
+        "related-risks": [
+          {
+            "risk-uuid": "538ab0a0-92b6-4527-b141-f6dccbb01460"
+          }
+        ]
+      },
+      {
+        "uuid": "a73fb6a5-4768-4f98-839e-12fa98b2c253",
+        "title": "SV-258020",
+        "description": "CVE-123 is in a dead code path, unreachable from any entry point",
+        "related-risks": [
+          {
+            "risk-uuid": "535ea8b8-145c-4afc-88da-63ac4f0cb75a"
+          }
+        ]
+      },
+      {
+        "uuid": "c2483e6a-b73d-4b70-ae5f-9340659c6478",
+        "title": "SV-258001",
+        "description": "Patch requires vendor release, expected Q2 2026",
+        "related-risks": [
+          {
+            "risk-uuid": "35e8269e-eb77-4d5b-8731-e41f8484fc0a"
+          }
+        ]
+      },
+      {
+        "uuid": "1c04a37c-d909-4319-ab5c-bc7127fe706b",
+        "title": "SV-230368",
+        "description": "IA-2 is a common control provided by Keycloak SSO. This application has no local authentication mechanism.",
+        "related-risks": [
+          {
+            "risk-uuid": "00233cff-b9ce-4c48-bb3a-4225be6ecd4c"
+          }
+        ]
+      },
+      {
+        "uuid": "e820a2de-df30-45cb-9a1d-fb364dd8dbe6",
+        "title": "CVE-2026-12345",
+        "description": "Vulnerable code path is not present in our build — dependency compiled with the affected module disabled",
+        "related-risks": [
+          {
+            "risk-uuid": "aecab9e7-bcec-49f5-8f4a-e021f81fb808"
+          }
+        ]
+      },
+      {
+        "uuid": "6f81f9fe-06ff-418f-b294-04e613bad22d",
+        "title": "",
+        "description": "Manual attestation recorded before the requirement was identified",
+        "related-risks": [
+          {
+            "risk-uuid": "7b79b1d4-59ec-42e9-83d3-75f9d40e2971"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -17,22 +17,19 @@ const validators: Record<number, ReturnType<typeof loadSchemaValidator>> = {
   2003: loadSchemaValidator(join(schemas, 'ocsf-compliance_finding-2003.schema.json')),
 };
 
-// The EXACT set of schema violations this converter still produces, tracked as
-// the exporter-conformance board and mirrored one-for-one by the Go peer. Pinned rather than
-// tolerated: a new violation fails, and so does fixing one, so it cannot drift
-// either way.
+// The EXACT set of schema violations this converter still produces, tracked on
+// the exporter-conformance board and mirrored one-for-one by the Go peer. Pinned
+// rather than tolerated: a new violation fails, and so does fixing one, so it
+// cannot drift either way.
+//
+// It is empty, and that is the point: the converter's output conforms to both
+// vendored class schemas. Keep it that way — if a change makes this test fail,
+// fix the output rather than adding an entry here.
 //
 // The key includes params.additionalProperty so an additionalProperties error
 // names the offending member, matching gojsonschema. Keying on the message alone
 // collapses every extra member into one entry and hides a newly added one.
-const KNOWN_VIOLATIONS = [
-  '2002|additionalProperties|evidences',
-  '2002|additionalProperties|remediation',
-  '2002|required|cloud',
-  '2002|required|osint',
-  '2003|required|cloud',
-  '2003|required|osint',
-].sort();
+const KNOWN_VIOLATIONS: string[] = [];
 
 function violations(out: string): Set<string> {
   const seen = new Set<string>();

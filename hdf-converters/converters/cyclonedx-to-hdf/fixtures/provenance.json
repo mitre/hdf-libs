@@ -1,0 +1,28 @@
+{
+  "schemas": [
+    {
+      "file": "bom-1.5.schema.json",
+      "source": "https://raw.githubusercontent.com/CycloneDX/specification/1.6/schema/bom-1.5.schema.json",
+      "sha256": "5a2f8740206e4afedcbc97a67fbdc6f5d20dc8d3a8bc0f7f14bf75884a6e7ddb",
+      "retrieved": "2026-09-20"
+    },
+    {
+      "file": "bom-1.6.schema.json",
+      "source": "https://raw.githubusercontent.com/CycloneDX/specification/1.6/schema/bom-1.6.schema.json",
+      "sha256": "3e92dddbc30cf7f6a02b80f0942b1a4cfd4fb1c26f1dfc4310afa9d613cafb93",
+      "retrieved": "2026-09-20"
+    },
+    {
+      "file": "spdx.schema.json",
+      "source": "https://raw.githubusercontent.com/CycloneDX/specification/1.6/schema/spdx.schema.json",
+      "sha256": "baa9d3bd1ed57b6751b0887edead6b5063ff53ff7429cf85d476c6c94af0166e",
+      "retrieved": "2026-09-20"
+    },
+    {
+      "file": "jsf-0.82.schema.json",
+      "source": "https://raw.githubusercontent.com/CycloneDX/specification/1.6/schema/jsf-0.82.schema.json",
+      "sha256": "8bae002c25e723db7ee1f26afde680ae1a2b1a8f6b4b4b0fd65dc3becb090aae",
+      "retrieved": "2026-09-20"
+    }
+  ]
+}

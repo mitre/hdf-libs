@@ -8,9 +8,9 @@ have come from somewhere else.
 ## `input/`
 
 ### `minimal.json`
-No counterpart in either upstream. Introduced by this repository in
-`Development (#10)`; no upstream source is recorded, so it was
-most likely authored here for that change.
+No counterpart in either upstream checked. Introduced by this repository in
+`Development (#10)`, a commit that records no source. Origin not established by those searches;
+what the file says about its own producer is in the "Tool and version" section below.
 
 ## `expected/`
 
@@ -24,3 +24,15 @@ shared `@mitre/hdf-fixtures` corpus through a resolver, and `wrapper` alone has 
 the input side cannot be trimmed from here. A digest-plus-summary assertion mode for just these four was
 considered and rejected as a second mechanism not worth adding; a full golden gives a readable diff
 naming the exact regressed field.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `minimal.json` — InSpec exec-json; `version` 1.0.0 (the InSpec version that produced it).
+- `mixed-resource-id.json` — InSpec exec-json; `version` 7.0.107 (the InSpec version that produced it).
+- `object-resource-id.json` — InSpec exec-json; `version` 7.0.107 (the InSpec version that produced it).
+
+## Schema
+
+InSpec generates its exec-json schema at run time (`inspec schema exec-json`, from `lib/inspec/schema/exec_json.rb`) and publishes no static schema file (2026-09-20).

@@ -1,0 +1,8 @@
+# Inputs in fixtures/input/ that intentionally have no fixtures/expected/<name>.hdf.json golden.
+# One per line, as <input> — <reason>. The snapshot harness in both languages requires every
+# input to have a golden or a line here, and fails on a line that names a missing input, an
+# input that has a golden, or no reason. The empty.* convention needs no line.
+
+juice-shop-sbom-minimal.json — an SBOM with no vulnerabilities; input to hdf-cli's TestSystemCreate_FromCycloneDXSBOM (hdf system create), not to this converter
+spdx-to-cyclonedx.json — SBOM-only input this converter rejects by design (TestConvertCycloneDX_NoVulnSBOM_Rejected and its TS twin); also drives hdf-cli's system-create component-name test
+webgoat-sbom.json — an SBOM with no vulnerabilities; input to hdf-cli's TestSystemAddComponent, not to this converter

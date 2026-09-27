@@ -142,6 +142,50 @@ describe('hdf-to-xccdf Converter', () => {
     }
   });
 
+  // XCCDF requires severity on every message (xccdf_1.2.xsd messageType). An
+  // error-status result is the checking engine reporting a fault; every other
+  // message is diagnostic output from the check itself.
+  describe('Message severity', () => {
+    const cases: Array<[string, string]> = [
+      ['failed', 'info'],
+      ['passed', 'info'],
+      ['error', 'error'],
+    ];
+
+    for (const [status, severity] of cases) {
+      it(`should mark a ${status} result's message as ${severity}`, () => {
+        const input = JSON.stringify({
+          baselines: [
+            {
+              name: 'b',
+              requirements: [
+                {
+                  id: 'SV-1',
+                  impact: 0.5,
+                  title: 'req',
+                  tags: {},
+                  descriptions: [{ label: 'default', data: 'd' }],
+                  results: [
+                    {
+                      status,
+                      codeDesc: 'c',
+                      message: 'check output',
+                      startTime: '2026-01-01T00:00:00Z',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+
+        expect(convertHdfToXccdf(input)).toContain(
+          `<message severity="${severity}">check output</message>`,
+        );
+      });
+    }
+  });
+
   describe('Error handling', () => {
     it('should throw on invalid JSON', () => {
       expect(() => convertHdfToXccdf('not json')).toThrow('Invalid JSON');

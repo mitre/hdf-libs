@@ -41,6 +41,9 @@ func TestEveryFixtureValidatesAgainstItsSchema(t *testing.T) {
 			fixtures: map[string][]byte{
 				"inspec-multilayered.json": Results.InspecMultilayered,
 				"minimal.json":             Results.Minimal,
+				"duplicate-baselines.json": Results.DuplicateBaselines,
+				"merge-grype.json":         Results.MergeGrype,
+				"merge-zap.json":           Results.MergeZap,
 			},
 		},
 		{

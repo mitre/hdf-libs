@@ -29,7 +29,6 @@ const CVE_ID_PATTERN = /^CVE-\d{4}-\d{4,}$/;
 const PRODUCTS_LINE = /^Products:\s*(.+)$/m;
 const RAW_JUST_LINE = /^VEX justification:\s*(.+)$/m;
 const RESPONSE_LINE = /^Response:.*$/gm;
-const DEFAULT_PRODUCT_ID = 'HDFPID-0001';
 
 interface Component {
   type: string;
@@ -80,7 +79,7 @@ interface Vulnerability {
     response?: string[];
     detail?: string;
   };
-  affects: { ref: string; versions?: CdxVersion[] }[];
+  affects?: { ref: string; versions?: CdxVersion[] }[];
 }
 
 interface CdxVersion {
@@ -188,7 +187,7 @@ export async function convertHdfToCyclonedxVex(
     serialNumber: await buildSerialNumber(input, amendments),
     version: 1,
     metadata: buildMetadata(amendments, earliest ?? new Date(), converterVersion, overrideIdentities),
-    components,
+    ...(components.length > 0 && { components }),
     vulnerabilities,
   };
 
@@ -244,7 +243,8 @@ function overrideToVulnerability(
     if (e.type !== 'url' || !e.data) continue;
     references.push({
       id: o.requirementId,
-      source: { name: e.description ?? '', url: e.data },
+      // Key order and omission mirror the Go Source struct (name omitempty).
+      source: { ...(e.description && { name: e.description }), url: e.data },
     });
   }
 
@@ -275,9 +275,11 @@ function overrideToVulnerability(
     ...(unranged && { recommendation: `Upgrade to ${unranged.fixedInVersion}` }),
     ...(advisories.length > 0 && { advisories }),
     analysis,
-    affects: pids.map((pid) => {
-      const versions = buildCdxAffectsVersions(pkgById.get(pid));
-      return versions ? { ref: pid, versions } : { ref: pid };
+    ...(pids.length > 0 && {
+      affects: pids.map((pid) => {
+        const versions = buildCdxAffectsVersions(pkgById.get(pid));
+        return versions ? { ref: pid, versions } : { ref: pid };
+      }),
     }),
   };
 }
@@ -327,7 +329,10 @@ export function productIDsFor(o: StandaloneOverride): string[] {
     const parts = m[1].split(',').map((s) => s.trim()).filter(Boolean);
     if (parts.length > 0) return parts;
   }
-  return [DEFAULT_PRODUCT_ID];
+  // Nothing identified the product. CycloneDX leaves affects[] and components[]
+  // optional, so both are omitted: a synthetic bom-ref would need a components[]
+  // entry behind it, asserting an inventory item the source never named.
+  return [];
 }
 
 // stripReasonAnnotations removes the 'Products: …' tail line that

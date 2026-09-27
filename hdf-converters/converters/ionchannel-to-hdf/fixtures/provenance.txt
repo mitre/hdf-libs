@@ -20,3 +20,14 @@ response and sanitize it, or (b) validate a synthetic fixture against the offici
 Ion Channel API response schema and add an inline `_provenance` marker — the same
 bar the `msft-defender-*` fixtures meet. Until then, treat this converter's tests
 as mechanical-only.
+
+## Tool and version, read from the file itself (2026-09-20)
+
+A version below is what the fixture *says about itself*; where a format carries no producer version, that is stated rather than guessed.
+
+- `edge-cases.json` — Ion Channel API response body; the service version is not part of the response, so its version is not determinable from file content.
+- `minimal.json` — Ion Channel API response body; the service version is not part of the response, so its version is not determinable from file content.
+
+## Schema
+
+The fixture is a REST response body from a product that is no longer offered; no published API description or schema was located, and the vendor's documentation is no longer online to check (2026-09-20).
