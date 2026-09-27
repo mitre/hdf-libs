@@ -135,7 +135,7 @@ func validateContentRefs(pkgDir, planRef string, contents []hdfengine.EvidenceCo
 		}
 	}
 	for _, uri := range refs {
-		if err := checkContentRefShape(uri); err != nil {
+		if err := checkContentRefShape(uri, "content reference"); err != nil {
 			return err
 		}
 		if _, err := hdfutil.SafePath(pkgDir, uri); err != nil {
@@ -147,15 +147,18 @@ func validateContentRefs(pkgDir, planRef string, contents []hdfengine.EvidenceCo
 
 // checkContentRefShape refuses the two reference shapes the schema's description
 // once invited but nothing ever resolved.
-func checkContentRefShape(uri string) error {
+// label names the kind of reference being checked, so a caller applying this rule to
+// something other than contents[] does not report it as a content reference. Taking the
+// label extends the shared check rather than forking a near-duplicate of it.
+func checkContentRefShape(uri, label string) error {
 	if i := strings.Index(uri, "://"); i > 0 {
-		return fmt.Errorf("content reference %q is remote; contents[] lists documents carried with the "+
+		return fmt.Errorf("%s %q is remote; contents[] lists documents carried with the "+
 			"package and its references are relative to it — record a remote artifact under "+
-			"externalEvidence instead, where it is kept by URI and hash", uri)
+			"externalEvidence instead, where it is kept by URI and hash", label, uri)
 	}
 	if strings.HasPrefix(uri, "/") || filepath.IsAbs(uri) {
-		return fmt.Errorf("content reference %q is absolute; references are relative to the evidence "+
-			"package's own directory", uri)
+		return fmt.Errorf("%s %q is absolute; references are relative to the evidence "+
+			"package's own directory", label, uri)
 	}
 	return nil
 }
