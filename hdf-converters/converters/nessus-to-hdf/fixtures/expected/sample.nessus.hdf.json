@@ -155,7 +155,10 @@
           "impact": 0,
           "tags": {
             "fname": "apache_log4j_nix_installed.nbin",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2021/12/10",
             "plugin_type": "local",
             "rid": "156000",
@@ -212,7 +215,10 @@
             "cvss3_base_score": "5.3",
             "cvss_base_score": "5.0",
             "fname": "oracle_java_cpu_jan_2022_unix.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2022/01/20",
             "plugin_type": "local",
             "rid": "156888",
@@ -272,7 +278,10 @@
             "cvss3_base_score": "8.6",
             "cvss_base_score": "7.5",
             "fname": "oracle_java_cpu_oct_2021_unix.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2021/10/22",
             "plugin_type": "local",
             "rid": "154345",
@@ -368,7 +377,10 @@
             "cvss3_base_score": "0.0",
             "cvss_base_score": "0.0",
             "fname": "nfs_superfluous.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2009/10/26",
             "plugin_type": "remote",
             "rid": "42255",
@@ -466,7 +478,10 @@
           "impact": 0,
           "tags": {
             "fname": "host_credentials_failed.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2017/11/06",
             "plugin_type": "summary",
             "rid": "104410",
@@ -569,7 +584,10 @@
           "impact": 0,
           "tags": {
             "fname": "host_credentials_failed.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2017/11/06",
             "plugin_type": "summary",
             "rid": "104410",
@@ -608,7 +626,10 @@
             "cvss3_base_score": "10.0",
             "cvss_base_score": "10.0",
             "fname": "unsupported_operating_system.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2008/08/08",
             "plugin_type": "combined",
             "rid": "33850",
@@ -736,7 +757,10 @@
             "cvss3_base_score": "3.7",
             "cvss_base_score": "2.6",
             "fname": "ssh_weak_key_exchange_enabled.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2021/10/13",
             "plugin_type": "remote",
             "rid": "153953",
@@ -836,7 +860,10 @@
           "tags": {
             "cvss_base_score": "3.3",
             "fname": "dhcp.nasl",
-            "nist": [],
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ],
             "plugin_publication_date": "2001/05/05",
             "plugin_type": "remote",
             "rid": "10663",
