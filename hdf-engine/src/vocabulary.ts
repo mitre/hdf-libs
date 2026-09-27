@@ -26,12 +26,76 @@ export const SEVERITY_VALUES = ['critical', 'high', 'medium', 'low', 'informatio
  * before, kept so a command line or spec written against the old vocabulary
  * selects what it always did.
  */
-const STATUS_ALIASES: Record<string, string> = {
-  not_applicable: 'notApplicable',
-  not_reviewed: 'notReviewed',
-};
-const SEVERITY_ALIASES: Record<string, string> = { none: 'informational' };
-const DISPOSITION_ALIASES: Record<string, string> = { false_positive: 'falsePositive' };
+/**
+ * `advertise` records which forms help text should TEACH, so that is a property of
+ * the entry rather than of whichever string literal a command happens to hold. A
+ * separator variant is part of the CLI's display vocabulary and is taught; a
+ * retired name is honoured and never taught, because advertising it would hand a
+ * new user the name a release replaced. Parity: FilterAlias in go/vocabulary.go.
+ */
+export interface FilterAlias {
+  form: string;
+  means: string;
+  advertise: boolean;
+}
+
+const STATUS_ALIAS_LIST: FilterAlias[] = [
+  { form: 'not_applicable', means: 'notApplicable', advertise: true },
+  { form: 'not_reviewed', means: 'notReviewed', advertise: true },
+];
+const SEVERITY_ALIAS_LIST: FilterAlias[] = [{ form: 'none', means: 'informational', advertise: false }];
+const DISPOSITION_ALIAS_LIST: FilterAlias[] = [
+  { form: 'false_positive', means: 'falsePositive', advertise: true },
+];
+
+/** Derived from the lists, so an alias cannot be accepted without declaring whether it is advertised. */
+function aliasMap(aliases: FilterAlias[]): Record<string, string> {
+  return Object.fromEntries(aliases.map((a) => [a.form, a.means]));
+}
+
+const STATUS_ALIASES = aliasMap(STATUS_ALIAS_LIST);
+const SEVERITY_ALIASES = aliasMap(SEVERITY_ALIAS_LIST);
+const DISPOSITION_ALIASES = aliasMap(DISPOSITION_ALIAS_LIST);
+
+/** The accepted non-canonical forms for a field, or undefined when it has no closed vocabulary. */
+export function filterAliases(field: string): FilterAlias[] | undefined {
+  switch (field) {
+    case 'status':
+      return STATUS_ALIAS_LIST;
+    case 'severity':
+      return SEVERITY_ALIAS_LIST;
+    case 'disposition':
+      return DISPOSITION_ALIAS_LIST;
+    default:
+      return undefined;
+  }
+}
+
+/** The canonical vocabulary for a field, or undefined when it has no closed one. */
+export function filterValues(field: string): readonly string[] | undefined {
+  switch (field) {
+    case 'status':
+      return STATUS_VALUES;
+    case 'severity':
+      return SEVERITY_VALUES;
+    case 'disposition':
+      return DISPOSITION_VALUES;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * The forms a help string or tool schema should name for a field: the canonical
+ * vocabulary, then the aliases marked for teaching. Every value here is accepted,
+ * but not everything accepted is here — a retired name is deliberately absent.
+ * Parity: AdvertisedFilterValues in go/vocabulary.go.
+ */
+export function advertisedFilterValues(field: string): string[] | undefined {
+  const canonical = filterValues(field);
+  if (!canonical) return undefined;
+  return [...canonical, ...(filterAliases(field) ?? []).filter((a) => a.advertise).map((a) => a.form)];
+}
 
 /**
  * Folds a value to the form comparisons use. Case only: two spellings are the

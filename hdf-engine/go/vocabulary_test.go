@@ -30,6 +30,7 @@ type vocabularyCases struct {
 		Field string `json:"field"`
 		Form  string `json:"form"`
 	} `json:"rejected"`
+	Advertised map[string][]string `json:"advertised"`
 }
 
 func loadVocabulary(t *testing.T) vocabularyCases {
@@ -163,4 +164,60 @@ func TestFilterAliasesSelectTheSameRequirements(t *testing.T) {
 				"%q must select exactly what %q selects", alias.Form, alias.Means)
 		})
 	}
+}
+
+// Which forms help text should TEACH is a property of the alias entry, not of
+// whichever string literal a command happens to hold. A separator variant of the
+// canonical name is part of the display vocabulary and is taught; a name a
+// release RETIRED is honoured and never taught, because advertising it would
+// hand a new user the name we replaced.
+func TestFilterAliasesCarryWhetherToAdvertise(t *testing.T) {
+	byForm := map[string]FilterAlias{}
+	for _, field := range []string{"status", "severity", "disposition"} {
+		for _, a := range FilterAliases(field) {
+			byForm[a.Form] = a
+		}
+	}
+
+	for _, taught := range []string{"not_applicable", "not_reviewed", "false_positive"} {
+		a, ok := byForm[taught]
+		require.True(t, ok, "%q must be a listed alias", taught)
+		assert.True(t, a.Advertise, "%q is a separator variant and must be taught", taught)
+	}
+
+	none, ok := byForm["none"]
+	require.True(t, ok, "the retired severity name must still be accepted")
+	assert.False(t, none.Advertise, "a retired name must never be advertised")
+	assert.Equal(t, "informational", none.Means)
+}
+
+// Every alias must still be ACCEPTED whether or not it is advertised: the flag
+// governs what help says, never what validation allows.
+func TestEveryAliasIsAcceptedRegardlessOfAdvertising(t *testing.T) {
+	for field, valid := range map[string]func(string) bool{
+		"status":      ValidStatus,
+		"severity":    ValidSeverity,
+		"disposition": ValidDisposition,
+	} {
+		for _, a := range FilterAliases(field) {
+			assert.True(t, valid(a.Form), "%s alias %q must validate", field, a.Form)
+			assert.Equal(t, a.Means, NormalizeFilterValue(field, a.Form),
+				"%s alias %q must normalize onto the value it names", field, a.Form)
+		}
+	}
+}
+
+// AdvertisedFilterValues is what help text names: the canonical vocabulary, then
+// the aliases marked for teaching. Read from the shared table so the TypeScript
+// peer cannot advertise a different set.
+func TestAdvertisedFilterValues(t *testing.T) {
+	table := loadVocabulary(t)
+	require.NotEmpty(t, table.Advertised, "shared table must carry the advertised sets")
+	for field, want := range table.Advertised {
+		assert.Equal(t, want, AdvertisedFilterValues(field), "advertised set for %q", field)
+	}
+	assert.NotContains(t, AdvertisedFilterValues("severity"), "none",
+		"the retired name resolves but must never be advertised")
+	assert.True(t, ValidSeverity("none"), "...and must still be accepted")
+	assert.Nil(t, AdvertisedFilterValues("nist"), "a field with no closed vocabulary advertises nothing")
 }

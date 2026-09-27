@@ -44,6 +44,10 @@ export {
   normalizeKey,
   STATUS_VALUES,
   SEVERITY_VALUES,
+  filterAliases,
+  filterValues,
+  advertisedFilterValues,
+  type FilterAlias,
 } from './vocabulary.js';
 
 // Document loader core (peer of hdf-engine/go/loader.go).

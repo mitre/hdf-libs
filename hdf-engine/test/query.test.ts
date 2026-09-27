@@ -28,6 +28,9 @@ import {
   normalizeFilterValue,
   STATUS_VALUES,
   SEVERITY_VALUES,
+  filterAliases,
+  advertisedFilterValues,
+  type FilterAlias,
 } from '../src/vocabulary.js';
 
 // Shared cross-language fixture at hdf-engine/testdata (also read by
@@ -357,6 +360,7 @@ interface VocabularyCases {
   poamsValues: string[];
   aliases: { field: string; form: string; means: string }[];
   rejected: { field: string; form: string }[];
+  advertised: Record<string, string[]>;
 }
 
 const vocabPath = join(
@@ -462,4 +466,48 @@ describe('vulnerability filters — cvss, epss, kev, cwe (parity with go/filter.
       expect(got.slice().sort()).toEqual(c.expect.slice().sort());
     });
   }
+});
+
+// Which forms help text should TEACH is a property of the alias entry, not of
+// whichever string literal a command holds. Parity: Go
+// TestFilterAliasesCarryWhetherToAdvertise / TestAdvertisedFilterValues.
+describe('advertised vs merely accepted filter forms', () => {
+  it('a separator variant is taught; a retired name is accepted and never taught', () => {
+    const byForm = new Map<string, FilterAlias>();
+    for (const field of ['status', 'severity', 'disposition']) {
+      for (const a of filterAliases(field) ?? []) byForm.set(a.form, a);
+    }
+
+    for (const taught of ['not_applicable', 'not_reviewed', 'false_positive']) {
+      expect(byForm.get(taught)?.advertise, taught).toBe(true);
+    }
+    expect(byForm.get('none')?.advertise, 'a retired name must never be advertised').toBe(false);
+    expect(byForm.get('none')?.means).toBe('informational');
+  });
+
+  it('every alias is accepted whether or not it is advertised', () => {
+    const validators: Record<string, (s: string) => boolean> = {
+      status: validStatus,
+      severity: validSeverity,
+      disposition: validDisposition,
+    };
+    for (const [field, valid] of Object.entries(validators)) {
+      for (const a of filterAliases(field) ?? []) {
+        expect(valid(a.form), `${field} alias ${a.form}`).toBe(true);
+        expect(normalizeFilterValue(field, a.form)).toBe(a.means);
+      }
+    }
+  });
+
+  // Read from the shared table so Go cannot advertise a different set. Parity:
+  // Go TestAdvertisedFilterValues.
+  it('advertisedFilterValues matches the shared table for every field', () => {
+    expect(Object.keys(vocab.advertised).length).toBeGreaterThan(0);
+    for (const [field, want] of Object.entries(vocab.advertised)) {
+      expect(advertisedFilterValues(field), field).toEqual(want);
+    }
+    expect(advertisedFilterValues('severity')).not.toContain('none');
+    expect(validSeverity('none'), 'the retired name must still be accepted').toBe(true);
+    expect(advertisedFilterValues('nist')).toBeUndefined();
+  });
 });

@@ -42,6 +42,28 @@ func SchemaStatusToDisplay(status hdf.ResultStatus) string {
 	}
 }
 
+// FilterHelpVocabulary renders the forms a --status/--severity/--disposition flag
+// should name, for use in flag help: the canonical vocabulary, then the aliases
+// worth teaching, in one parenthesised clause. Built from the engine so a help
+// string cannot drift from what the refusal names, and so a retired name stays
+// accepted without being advertised.
+func FilterHelpVocabulary(field string) string {
+	canonical := hdfengine.FilterValues(field)
+	if canonical == nil {
+		return ""
+	}
+	taught := make([]string, 0, 2)
+	for _, a := range hdfengine.FilterAliases(field) {
+		if a.Advertise {
+			taught = append(taught, a.Form)
+		}
+	}
+	if len(taught) == 0 {
+		return strings.Join(canonical, ", ")
+	}
+	return fmt.Sprintf("%s (%s also accepted)", strings.Join(canonical, ", "), strings.Join(taught, " and "))
+}
+
 // ValidateStatusFilter refuses a --status value outside the engine's closed
 // vocabulary, naming the accepted values. Every command taking a status filter
 // calls this: a typo that merely matches nothing is indistinguishable from a

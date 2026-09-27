@@ -158,11 +158,10 @@ Examples:
 		},
 	}
 
-	// Same rule as hdf list: the listed forms match what ValidateStatusFilter
-	// names on refusal. Kept consistent by hand until hdf-libs-mz8ok derives both.
 	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil,
-		"Filter by status (repeatable, OR logic): passed, failed, notApplicable, notReviewed, error; not_applicable and not_reviewed also accepted")
-	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
+		"Filter by status (repeatable, OR logic): "+FilterHelpVocabulary("status"))
+	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil,
+		"Filter by severity (repeatable, OR logic): "+FilterHelpVocabulary("severity"))
 	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by effective impact — after any governing impact override (e.g., \">0.5\", \">=0.7\", \"0.5\")")
 	cmd.Flags().StringVar(&localQueryRawImpact, "raw-impact", "", "Filter by the requirement's own impact, ignoring overrides (same comparison grammar as --impact)")
 	cmd.Flags().StringVar(&localQueryCvss, "cvss", "", "Filter by CVSS score — computedScore when a consumer recomputed one, else baseScore; highest entry wins (e.g. \">=7\")")
@@ -174,7 +173,7 @@ Examples:
 	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
 	cmd.Flags().StringArrayVarP(&localQueryTag, "tag", "t", nil, "Filter by tag key:value (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryDisposition, "disposition", nil,
-		"Filter by the governing override's type (repeatable, OR logic): waiver, falsePositive, riskAdjustment, attestation, operationalRequirement, inherited, poam")
+		"Filter by the governing override's type (repeatable, OR logic): "+FilterHelpVocabulary("disposition"))
 	cmd.Flags().StringVar(&localQueryPoams, "poams", "",
 		"Filter by remediation-plan validity: valid (a POA&M still in force) or none-valid (none, empty, or only lapsed)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")

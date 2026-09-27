@@ -73,11 +73,8 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, components, ...)")
-	// The listed forms must match what ValidateStatusFilter names when it refuses
-	// a value, or a typo is answered with a vocabulary the help never showed.
-	// Kept consistent by hand until hdf-libs-mz8ok derives both from the engine.
 	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "",
-		"Filter by status (passed, failed, notApplicable, notReviewed, error; not_applicable and not_reviewed also accepted)")
+		"Filter by status: "+FilterHelpVocabulary("status"))
 	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
 
 	return cmd

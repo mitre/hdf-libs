@@ -90,10 +90,8 @@ Examples:
 
 	cmd.Flags().StringVar(&fromPath, "from", "", "HDF results file to enumerate requirements from (required)")
 	cmd.Flags().StringVar(&amendType, "type", "", "Override type for the stubs (waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement) (required)")
-	// Same rule as hdf list and hdf query: the listed forms match what
-	// ValidateStatusFilter names on refusal. Hand-kept until hdf-libs-mz8ok.
 	cmd.Flags().StringVar(&statusFilter, "status", "",
-		"Only stub requirements with this computed status: passed, failed, notApplicable, notReviewed, error (not_applicable and not_reviewed also accepted)")
+		"Only stub requirements with this computed status: "+FilterHelpVocabulary("status"))
 	cmd.Flags().StringVar(&selectStr, "select", "", "Only stub requirements whose id or title contains this substring")
 	cmd.Flags().StringVar(&expires, "expires", "", "Expiration for the stubs (30d, 6m, 1y, YYYY-MM-DD, or RFC3339)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")

@@ -185,7 +185,8 @@ DETAIL SECTIONS by document type
 FLAGS
   -s, --status string    Filter requirements by status: passed, failed, notApplicable, notReviewed,
                          error (not_applicable and not_reviewed also accepted). A value outside the
-                         vocabulary is rejected, not matched against nothing.
+                         vocabulary is rejected, not matched against nothing. The listed forms are
+                         rendered from the engine's vocabulary, so help and refusal cannot disagree.
   -a, --all              Show all details (expand every section)
 
 EXAMPLES
@@ -256,8 +257,8 @@ FLAGS
                                not_applicable and notApplicable are one value; the pre-3.7 severity
                                "none" still names informational.
       --disposition stringArray  Filter by the governing override's type (repeatable, OR logic): waiver,
-                               falsePositive, riskAdjustment, attestation, operationalRequirement,
-                               inherited, poam
+                               attestation, poam, inherited, falsePositive, riskAdjustment,
+                               operationalRequirement (false_positive also accepted)
       --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
                                none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description

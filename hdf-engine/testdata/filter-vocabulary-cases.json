@@ -1,5 +1,5 @@
 {
-  "$comment": "The closed vocabularies the filter enforces, and the aliases it accepts for them. go/filter_test.go and test/query.test.ts read THIS file, so the two languages cannot disagree about what is a legal value or about which forms name the same thing. An alias exists because a value arrived under two forms historically, and the two kinds are not the same: the CLI's display vocabulary spells the multi-word statuses with underscores while the schema spells them camelCase, which is orthography; 'none' is not, it is the name 'informational' replaced in 3.7.0. Normalizing in the ENGINE rather than in one caller is what makes a threshold rule and an hdf query invocation mean the same thing \u2014 the promise recorded as decision 2 on hdf-libs-ji20j. A separator-bearing alias is listed for disposition on purpose: widening a validator without widening the filter it guards produces a value that is accepted and can never match, which is the defect this whole vocabulary exists to prevent. The alias cases assert selection through the FILTER, not merely that a validator said yes.",
+  "$comment": "The closed vocabularies the filter enforces, and the aliases it accepts for them. go/filter_test.go and test/query.test.ts read THIS file, so the two languages cannot disagree about what is a legal value or about which forms name the same thing. An alias exists because a value arrived under two forms historically, and the two kinds are not the same: the CLI's display vocabulary spells the multi-word statuses with underscores while the schema spells them camelCase, which is orthography; 'none' is not, it is the name 'informational' replaced in 3.7.0. Normalizing in the ENGINE rather than in one caller is what makes a threshold rule and an hdf query invocation mean the same thing — the promise recorded as decision 2 on hdf-libs-ji20j. A separator-bearing alias is listed for disposition on purpose: widening a validator without widening the filter it guards produces a value that is accepted and can never match, which is the defect this whole vocabulary exists to prevent. The alias cases assert selection through the FILTER, not merely that a validator said yes. The 'advertised' map is what help text and tool schemas must NAME for each field: the canonical vocabulary plus the aliases worth teaching. It is deliberately narrower than what is accepted — 'none' resolves and is absent here, because advertising a name 3.7.0 retired would hand a new user the name we replaced. A separator variant like not_applicable IS taught, since it is the CLI's own display vocabulary.",
   "statusValues": [
     "passed",
     "failed",
@@ -97,5 +97,33 @@
       "field": "status",
       "form": "not-app-licable"
     }
-  ]
+  ],
+  "advertised": {
+    "status": [
+      "passed",
+      "failed",
+      "notApplicable",
+      "notReviewed",
+      "error",
+      "not_applicable",
+      "not_reviewed"
+    ],
+    "severity": [
+      "critical",
+      "high",
+      "medium",
+      "low",
+      "informational"
+    ],
+    "disposition": [
+      "waiver",
+      "attestation",
+      "poam",
+      "inherited",
+      "falsePositive",
+      "riskAdjustment",
+      "operationalRequirement",
+      "false_positive"
+    ]
+  }
 }

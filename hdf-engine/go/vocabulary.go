@@ -39,14 +39,96 @@ var SeverityValues = []string{
 // severity entry is not: 3.7.0 renamed the bucket, and "none" is the name it had
 // before, kept so a command line or spec written against the old vocabulary
 // selects what it always did.
+//
+// Advertise records which forms help text should TEACH, so that is a property of
+// the entry rather than of whichever string literal a command happens to hold.
+// A separator variant is part of the CLI's display vocabulary and is taught; a
+// retired name is honoured and never taught, because advertising it would hand a
+// new user the name a release replaced.
+type FilterAlias struct {
+	Form      string
+	Means     string
+	Advertise bool
+}
+
 var (
-	statusAliases = map[string]string{
-		"not_applicable": string(hdf.NotApplicable),
-		"not_reviewed":   string(hdf.NotReviewed),
+	statusAliasList = []FilterAlias{
+		{Form: "not_applicable", Means: string(hdf.NotApplicable), Advertise: true},
+		{Form: "not_reviewed", Means: string(hdf.NotReviewed), Advertise: true},
 	}
-	severityAliases    = map[string]string{"none": string(hdf.Informational)}
-	dispositionAliases = map[string]string{"false_positive": string(hdf.FalsePositive)}
+	severityAliasList = []FilterAlias{
+		{Form: "none", Means: string(hdf.Informational), Advertise: false},
+	}
+	dispositionAliasList = []FilterAlias{
+		{Form: "false_positive", Means: string(hdf.FalsePositive), Advertise: true},
+	}
 )
+
+// The lookup maps are DERIVED from the lists above, so an alias cannot be
+// accepted without also declaring whether it is advertised.
+var (
+	statusAliases      = aliasMap(statusAliasList)
+	severityAliases    = aliasMap(severityAliasList)
+	dispositionAliases = aliasMap(dispositionAliasList)
+)
+
+func aliasMap(aliases []FilterAlias) map[string]string {
+	out := make(map[string]string, len(aliases))
+	for _, a := range aliases {
+		out[a.Form] = a.Means
+	}
+	return out
+}
+
+// FilterAliases returns the accepted non-canonical forms for a field, or nil when
+// the field has no closed vocabulary.
+func FilterAliases(field string) []FilterAlias {
+	switch field {
+	case "status":
+		return statusAliasList
+	case "severity":
+		return severityAliasList
+	case "disposition":
+		return dispositionAliasList
+	default:
+		return nil
+	}
+}
+
+// FilterValues returns the canonical vocabulary for a field, or nil when the
+// field has no closed one.
+func FilterValues(field string) []string {
+	switch field {
+	case "status":
+		return StatusValues
+	case "severity":
+		return SeverityValues
+	case "disposition":
+		return DispositionValues
+	default:
+		return nil
+	}
+}
+
+// AdvertisedFilterValues returns the forms a help string or tool schema should
+// name for a field: the canonical vocabulary, then the aliases marked for
+// teaching. Every value here is accepted, but not everything accepted is here —
+// a retired name is deliberately absent. Callers build their own phrasing around
+// this; what they must not do is keep a second hand-written list.
+func AdvertisedFilterValues(field string) []string {
+	canonical := FilterValues(field)
+	if canonical == nil {
+		return nil
+	}
+	out := make([]string, 0, len(canonical)+len(FilterAliases(field)))
+	out = append(out, canonical...)
+	for _, a := range FilterAliases(field) {
+		if a.Advertise {
+			out = append(out, a.Form)
+		}
+	}
+	return out
+}
 
 // normalizeKey folds a value to the form comparisons use. Case only: two
 // spellings are the same value because this file says so, not because enough

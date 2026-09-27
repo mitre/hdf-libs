@@ -391,34 +391,82 @@ func TestListStatusFilter_RefusedEvenWhereTheFlagIsIgnored(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown --status value")
 }
 
-// The flag help and the refusal message must name the same forms, or a user who
-// typos is answered with a vocabulary the help they just read never showed. Both
-// are hand-written today; this is what makes editing one alone fail rather than
-// drift silently (hdf-libs-mz8ok derives them from the engine and retires this).
-func TestStatusFlagHelpNamesEveryFormTheRefusalNames(t *testing.T) {
-	refusal := ValidateStatusFilter("definitely-not-a-status")
-	require.Error(t, refusal)
-
-	for _, cmd := range []struct {
-		name string
-		help string
+// Every flag help naming a closed vocabulary is BUILT from the engine, so it
+// cannot drift from what the refusal names. This asserts the derivation actually
+// reaches each flag: a help string hand-typed back would stop matching.
+func TestFilterFlagHelpIsDerivedFromTheEngine(t *testing.T) {
+	query := NewQueryCmd()
+	for _, c := range []struct {
+		name  string
+		field string
+		usage string
 	}{
-		{"list", NewListCmd().Flags().Lookup("status").Usage},
-		{"query", NewQueryCmd().Flags().Lookup("status").Usage},
-		{"amend draft", amendDraftStatusUsage(t)},
+		{"list --status", "status", NewListCmd().Flags().Lookup("status").Usage},
+		{"query --status", "status", query.Flags().Lookup("status").Usage},
+		{"query --severity", "severity", query.Flags().Lookup("severity").Usage},
+		{"query --disposition", "disposition", query.Flags().Lookup("disposition").Usage},
+		{"amend draft --status", "status", amendDraftStatusUsage(t)},
 	} {
-		t.Run(cmd.name, func(t *testing.T) {
-			for _, form := range hdfengine.StatusValues {
-				assert.Contains(t, refusal.Error(), form, "the refusal must name %q", form)
-				assert.Contains(t, cmd.help, form, "--status help must name %q", form)
-			}
-			// And an alias the command accepts is advertised as accepted, so the
-			// help does not read as though the schema forms were the only ones.
-			for _, alias := range []string{"not_applicable", "not_reviewed"} {
-				require.NoError(t, ValidateStatusFilter(alias), "%q must be accepted", alias)
-				assert.Contains(t, cmd.help, alias, "--status help must mention the accepted alias %q", alias)
+		t.Run(c.name, func(t *testing.T) {
+			vocab := FilterHelpVocabulary(c.field)
+			require.NotEmpty(t, vocab, "the engine must supply a vocabulary for %q", c.field)
+			assert.Contains(t, c.usage, vocab,
+				"help must carry the engine-built vocabulary verbatim, not a hand-typed copy")
+
+			// And every advertised form is actually named, so a shrinking
+			// vocabulary cannot pass by matching a shorter string.
+			for _, form := range hdfengine.AdvertisedFilterValues(c.field) {
+				assert.Contains(t, c.usage, form, "help must name %q", form)
 			}
 		})
+	}
+}
+
+// A retired name is accepted and never advertised. Nothing a user reads may teach
+// it, or we hand a newcomer the name a release replaced.
+//
+// retiredForms is enumerated, NOT derived from the Advertise flag. Deriving it
+// made an earlier version of this test vacuous in both directions: it skipped
+// every entry whose flag said "advertised", so flipping the flag — the exact
+// regression it is named for — silenced it instead of failing it.
+func TestRetiredFormsAreAcceptedButNeverAdvertised(t *testing.T) {
+	retiredForms := map[string][]string{
+		"severity": {"none"}, // informational replaced it in 3.7.0
+	}
+
+	query := NewQueryCmd()
+	helpFor := map[string][]string{
+		"status":      {NewListCmd().Flags().Lookup("status").Usage, query.Flags().Lookup("status").Usage, amendDraftStatusUsage(t)},
+		"severity":    {query.Flags().Lookup("severity").Usage},
+		"disposition": {query.Flags().Lookup("disposition").Usage},
+	}
+
+	for field, forms := range retiredForms {
+		for _, form := range forms {
+			t.Run(field+"/"+form, func(t *testing.T) {
+				assert.True(t, hdfengine.ValidStatus(form) || hdfengine.ValidSeverity(form) || hdfengine.ValidDisposition(form),
+					"%q must still be accepted", form)
+				assert.NotContains(t, hdfengine.AdvertisedFilterValues(field), form,
+					"the engine must not advertise the retired %q", form)
+				assert.NotContains(t, FilterHelpVocabulary(field), form,
+					"the built help clause must not name the retired %q", form)
+				for _, usage := range helpFor[field] {
+					assert.NotContains(t, usage, form, "no %s help may teach the retired %q", field, form)
+				}
+			})
+		}
+	}
+}
+
+// The refusal names the canonical vocabulary, and the help names it too — the two
+// cannot disagree because both come from the engine. Pinned because a refusal
+// naming values the help never showed is what sent a user hunting.
+func TestStatusRefusalAndHelpAgree(t *testing.T) {
+	refusal := ValidateStatusFilter("definitely-not-a-status")
+	require.Error(t, refusal)
+	for _, form := range hdfengine.StatusValues {
+		assert.Contains(t, refusal.Error(), form, "the refusal must name %q", form)
+		assert.Contains(t, FilterHelpVocabulary("status"), form, "the help vocabulary must name %q", form)
 	}
 }
 
