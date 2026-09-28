@@ -21,6 +21,7 @@ and `tags.cci` fields in HDF output.
 | ScoutSuite | NIST SP 800-53 | Rule name string |
 | AWS Config | NIST SP 800-53 | Rule identifier or rule name |
 | Hipcheck | NIST SP 800-53 Rev 5 | Analysis name (`binary`, `mitre/binary`) |
+| Hadolint | NIST SP 800-53 Rev 5 | Rule code string (`DL3002`, `SC2154`) |
 
 Go equivalents are available in `go/` subdirectories (see below).
 
@@ -140,6 +141,7 @@ NIST-emitting converter honors the requested revision, not just aws-config:
 | cci | 4 | DISA refs incl. Appendix J privacy controls; translated with statement suffixes |
 | nikto, owasp, scoutsuite | 4 | content identical at both revisions today; a test guards that invariant |
 | hipcheck | 5 | SR-family controls have no Rev 4 equivalent and drop at Rev 4 |
+| hadolint | 5 | SR-3 expands and SR-4 drops at Rev 4; callers treat an empty result as unmapped |
 
 Translation semantics: statement-style suffixes ("AC-1 a") survive identity and
 are dropped on redirects; controls with no equivalent at the requested revision
@@ -331,6 +333,47 @@ const analyses = getAllHipcheckAnalyses();
 > mappings, these are candidate control associations for triage, not evidence a
 > control is assessed or satisfied.
 
+### Hadolint
+
+Maps hadolint rule codes to NIST 800-53 Rev 5 controls. One table covers both
+hadolint's own `DL` rules and the `SC` rules it surfaces from its embedded
+shellcheck, because both arrive in the same hadolint report.
+
+```typescript
+import {
+  getHadolintNistMapping,
+  hadolintRuleExists,
+  getAllHadolintRuleIds,
+  getHadolintMappingProvenance,
+} from '@mitre/hdf-mappings';
+
+const mapping = getHadolintNistMapping('DL3002');
+// Returns: {nist: ['AC-6']}
+
+getHadolintNistMapping('SC2154');
+// Returns: {nist: ['SA-11']} — shellcheck rules share the table
+
+if (hadolintRuleExists('DL1000')) { /* false: the parse-error pseudo-rule is unmapped */ }
+
+const rules = getAllHadolintRuleIds();
+// Returns the 105 mapped rule codes, sorted
+
+const {source, nistRevision} = getHadolintMappingProvenance();
+// source.commit pins the upstream file; nistRevision is 5
+```
+
+A mapped rule can still come back with an empty `nist` list: the table is
+authored at Rev 5, and `SR-4` has no Rev 4 equivalent. Callers must treat an
+empty list the same as an unmapped rule and apply their own fallback, rather
+than emit an empty `nist` tag.
+
+> **Provenance.** Hadolint publishes no rule-to-controls crosswalk, so this
+> table is a curated mapping ported verbatim from mitre/heimdall2 — the source
+> file, commit and SHA-256 are recorded in the dataset's own `$comment` and
+> `source` blocks, along with the re-port procedure. As with the other mappings,
+> these are candidate control associations for triage, not evidence a control is
+> assessed or satisfied.
+
 ## Go API
 
 Each mapping is also available as a Go package:
@@ -343,6 +386,7 @@ hdf-mappings/go/
   nessus/     — Nessus plugin→NIST lookups (NISTControls, with family+pluginID)
   nikto/      — Nikto test→NIST lookups (NISTControl, NISTControlByInt)
   hipcheck/   — Hipcheck analysis→NIST lookups (NISTControls, Exists, AllAnalyses)
+  hadolint/   — Hadolint rule→NIST lookups (Lookup, LookupForRevision, Exists, AllRuleIDs)
   scoutsuite/ — ScoutSuite rule→NIST lookups (NISTControls)
   awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)
   nist/       — revision selection (Revision, SetRevision) + Rev 4↔5 crosswalk (Translate, TranslateControls)
@@ -397,6 +441,7 @@ translated, unmapped := nist.TranslateControls([]string{"AC-1", "IR-10", "SC-19"
 | Nessus→NIST | heimdall2 mapping tables |
 | Nikto→NIST | heimdall2 mapping tables |
 | ScoutSuite→NIST | heimdall2 mapping tables |
+| Hadolint→NIST | heimdall2 mapping tables |
 | AWS Config→NIST | AWS Config OBP for NIST 800-53 docs + Security Hub NIST r5 standard + derived (see Coverage tiers) |
 | NIST Rev 4↔5 crosswalk | NIST SP 800-53 Rev 4→Rev 5 comparison workbook + Appendix J comparison (csrc.nist.gov, Rev 5 final) |
 
