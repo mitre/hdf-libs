@@ -110,9 +110,11 @@ recreating the data inside HDF.
 
 This writes externalEvidence[] — native-format material that IS evidence, such as
 a log or telemetry corpus. It is NOT the place for inert context: CTI/STIX,
-advisories and the like belong in externalReferences[], which overrides nothing.
-'hdf enrich <results> <bundle>' attaches that context to a RESULTS document's
-findings. The evidence package's own externalReferences[] has no command yet.
+advisories and the like belong in externalReferences[], written by its sibling
+'hdf evidence add-reference' (alias add-ref), which overrides nothing. The test: if
+the artifact would support or contradict a finding it is evidence; if it only
+explains one it is a reference. To attach context to a RESULTS document's findings
+rather than to the package, use 'hdf enrich <results> <bundle>'.
 
 --uri is repeatable. --format takes one value for every artifact, or one per
 --uri matched in the order they were given; any other count is refused rather
