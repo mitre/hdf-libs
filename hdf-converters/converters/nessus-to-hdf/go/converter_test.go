@@ -804,3 +804,74 @@ func findReqAcrossBaselines(result *hdf.HDFResults, id string) *hdf.EvaluatedReq
 	}
 	return nil
 }
+
+// An unmapped finding is still a flaw-remediation item, so it carries the
+// shared remediation controls rather than nothing — leaving it untagged drops it
+// from every NIST-based view. Mirrors the TypeScript twin's unmapped tests.
+func TestConvertNessusToHDF_UnmappedPluginDefaultsToRemediationControls(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "sample.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+
+	byID := map[string][]string{}
+	for _, b := range result.Baselines {
+		for _, r := range b.Requirements {
+			nist, ok := r.Tags["nist"].([]string)
+			require.True(t, ok, "requirement %s carries no nist tag", r.ID)
+			require.NotEmpty(t, nist, "requirement %s has an empty nist tag", r.ID)
+			byID[r.ID] = nist
+		}
+	}
+
+	// Plugins the table does not cover. Asserted by id rather than by counting
+	// the fallback value, because 66334 (Patch Report) maps to the same pair on
+	// its own and would make a count-based check pass for the wrong reason.
+	for _, id := range []string{"156000", "156888", "154345", "42255", "104410", "33850", "153953", "10663"} {
+		assert.Equal(t, shared.DefaultRemediationNIST, byID[id], "plugin %s is unmapped, so it takes the fallback", id)
+	}
+	// A plugin the table does cover keeps its own mapping.
+	assert.Equal(t, []string{"CM-8"}, byID["45590"], "a mapped plugin is untouched by the fallback")
+}
+
+func TestConvertNessusToHDF_UnmappedCCIDefaultsToRemediationControls(t *testing.T) {
+	// A compliance item whose CCI is not in the mapping table: the CCI path has
+	// to fall back too, not just the plugin-family path.
+	input := []byte(`<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Audit</policyName></Policy>
+  <Report name="Audit">
+    <ReportHost name="host.example.com">
+      <HostProperties><tag name="host-ip">10.0.0.1</tag></HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="2" pluginID="33814" pluginName="DISA STIG Compliance" pluginFamily="Policy Compliance">
+        <cm:compliance-reference xmlns:cm="http://www.nessus.org/cm">CCI|CCI-999999,STIG-ID|XX-00-000000</cm:compliance-reference>
+        <cm:compliance-check-name xmlns:cm="http://www.nessus.org/cm">A check with no mapped CCI</cm:compliance-check-name>
+        <cm:compliance-result xmlns:cm="http://www.nessus.org/cm">FAILED</cm:compliance-result>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`)
+	result, err := ConvertNessusToHDF(input, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, []string{"CCI-999999"}, req.Tags["cci"], "the unmapped CCI is still recorded")
+	assert.Equal(t, []string{"SI-2", "RA-5"}, req.Tags["nist"])
+}
+
+// The synthesized placeholder for a host with no findings is not an unmapped
+// finding, so the fallback must not reach it.
+func TestConvertNessusToHDF_NoFindingsPlaceholderCarriesNoNIST(t *testing.T) {
+	inputPath := filepath.Join(shared.GetConvertersDir(), "nessus-to-hdf", "fixtures", "input", "empty-host.nessus")
+	inputData, err := os.ReadFile(inputPath)
+	require.NoError(t, err)
+	result, err := ConvertNessusToHDF(inputData, converterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "nessus-no-findings", req.ID)
+	assert.NotContains(t, req.Tags, "nist", "a placeholder for a clean host claims no control coverage")
+}
