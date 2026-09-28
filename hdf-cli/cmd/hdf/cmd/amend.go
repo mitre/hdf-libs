@@ -89,7 +89,8 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&fromPath, "from", "", "HDF results file to enumerate requirements from (required)")
-	cmd.Flags().StringVar(&amendType, "type", "", "Override type for the stubs (waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement) (required)")
+	cmd.Flags().StringVar(&amendType, "type", "",
+		"Override type for the stubs ("+OverrideTypeHelpVocabulary()+") (required)")
 	cmd.Flags().StringVar(&statusFilter, "status", "",
 		"Only stub requirements with this computed status: "+FilterHelpVocabulary("status"))
 	cmd.Flags().StringVar(&selectStr, "select", "", "Only stub requirements whose id or title contains this substring")

@@ -499,6 +499,27 @@ describe('advertised vs merely accepted filter forms', () => {
     }
   });
 
+  // The shared table is the pinned authority in BOTH directions. Checking only
+  // table -> engine let the ACCEPTED set grow in silence: an alias added with
+  // advertise false appeared in no advertised set, so nothing compared it.
+  // Parity: Go TestEveryEngineAliasIsListedInTheSharedTable.
+  it('every alias the engine accepts is listed in the shared table', () => {
+    const listed = new Map<string, string>();
+    for (const a of vocab.aliases) listed.set(`${a.field}/${a.form}`, a.means);
+
+    for (const field of ['status', 'severity', 'disposition']) {
+      for (const a of filterAliases(field) ?? []) {
+        const key = `${field}/${a.form}`;
+        expect(
+          listed.has(key),
+          `engine accepts ${key} but the shared table does not list it — add it to ` +
+            `testdata/filter-vocabulary-cases.json so both languages record the decision`,
+        ).toBe(true);
+        expect(listed.get(key)).toBe(a.means);
+      }
+    }
+  });
+
   // Read from the shared table so Go cannot advertise a different set. Parity:
   // Go TestAdvertisedFilterValues.
   it('advertisedFilterValues matches the shared table for every field', () => {

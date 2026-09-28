@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1042,4 +1043,97 @@ func TestAmendDraftCmd_RefusesAnUnknownStatusBeforeReadingInput(t *testing.T) {
 
 	_, statErr := os.Stat(out)
 	assert.True(t, os.IsNotExist(statErr), "no draft file may be written when the filter is refused")
+}
+
+// Authoring and filtering ask different questions — which override types may be
+// WRITTEN versus which may be SELECTED — so they keep separate vocabularies
+// rather than one standing in for the other. They happen to coincide, because
+// every Override_Type is both authorable and filterable, and this asserts that:
+// if the two ever genuinely diverge it must be a deliberate edit that fails here
+// first, not a silent drift between two hand-typed lists.
+func TestAuthoringAndFilterOverrideVocabulariesAgree(t *testing.T) {
+	authoring := OverrideTypeValues()
+	assert.ElementsMatch(t, hdfengine.DispositionValues, authoring,
+		"the authorable and filterable override types must not silently diverge")
+
+	// And the authoring gate accepts exactly what it advertises — no more.
+	require.Len(t, validOverrideTypes, len(authoring))
+	for _, typ := range authoring {
+		assert.True(t, validOverrideTypes[typ], "%q must be accepted for authoring", typ)
+	}
+}
+
+// The --type help must name the authoring vocabulary rather than a transcription
+// of it, in both the flag and the create command's Long text: two hand-typed
+// copies of one list is the arrangement that let the filter helps drift.
+func TestOverrideTypeHelpIsDerived(t *testing.T) {
+	var draftUsage string
+	for _, sub := range NewAmendCmd().Commands() {
+		if sub.Name() == "draft" {
+			draftUsage = sub.Flags().Lookup("type").Usage
+		}
+	}
+	require.NotEmpty(t, draftUsage, "amend draft must take --type")
+
+	vocab := OverrideTypeHelpVocabulary()
+	require.NotEmpty(t, vocab)
+	assert.Contains(t, draftUsage, vocab, "--type help must carry the built vocabulary verbatim")
+	var createLong string
+	for _, sub := range NewAmendCmd().Commands() {
+		if sub.Name() == "create" {
+			createLong = sub.Long
+		}
+	}
+	require.NotEmpty(t, createLong)
+	assert.Contains(t, createLong, vocab,
+		"the create command's prose must name the same vocabulary, not a transcription")
+
+	for _, typ := range OverrideTypeValues() {
+		assert.Contains(t, draftUsage, typ, "--type help must name %q", typ)
+	}
+}
+
+// Contains(usage, vocab) cannot tell a built string from a byte-identical literal,
+// so the guard above catches drift but not reversion. This reads the SOURCE and
+// refuses the joined list appearing as a literal anywhere in it — the only way to
+// make typing it back go red rather than merely go stale later.
+func TestNoSourceFileTypesTheOverrideTypeListByHand(t *testing.T) {
+	joined := OverrideTypeHelpVocabulary()
+	require.Contains(t, joined, ", ", "precondition: the vocabulary is a joined list")
+
+	// Walk the package rather than naming files, so a new command cannot
+	// reintroduce the literal somewhere this test does not look.
+	entries, err := os.ReadDir(".")
+	require.NoError(t, err)
+
+	checked := 0
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		body, err := os.ReadFile(name)
+		require.NoError(t, err)
+		checked++
+		assert.NotContains(t, string(body), joined,
+			"%s types the override-type list by hand; call OverrideTypeHelpVocabulary() instead", name)
+	}
+	require.Greater(t, checked, 1, "the sweep must actually have read the package's sources")
+}
+
+// The interactive picker enumerates the override types with prose labels, so it
+// cannot render from a bare value list — but its MEMBERSHIP must still track the
+// vocabulary, or an eighth override type would be missing from the interactive
+// flow with nothing failing. Order is the picker's own and deliberately unpinned.
+func TestInteractivePickerOffersEveryOverrideType(t *testing.T) {
+	offered := map[string]bool{}
+	for _, o := range overrideTypeOptions() {
+		offered[o.Value] = true
+	}
+
+	for _, typ := range OverrideTypeValues() {
+		assert.True(t, offered[typ], "the interactive picker must offer %q", typ)
+	}
+	assert.Len(t, offered, len(OverrideTypeValues()),
+		"the picker must not offer a type the authoring gate would refuse")
 }

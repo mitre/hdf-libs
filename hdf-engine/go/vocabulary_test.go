@@ -221,3 +221,34 @@ func TestAdvertisedFilterValues(t *testing.T) {
 	assert.True(t, ValidSeverity("none"), "...and must still be accepted")
 	assert.Nil(t, AdvertisedFilterValues("nist"), "a field with no closed vocabulary advertises nothing")
 }
+
+// The shared table is the pinned authority in BOTH directions. Checking only
+// table -> engine (every listed alias is accepted) let the ACCEPTED set grow in
+// silence: an alias added to the engine with Advertise false appeared in no
+// advertised set, so nothing compared it to anything. That is exactly what the
+// "enumerated rather than derived" rule above exists to prevent — accepting a
+// form has to be a decision somebody recorded, and the table is where it is
+// recorded.
+func TestEveryEngineAliasIsListedInTheSharedTable(t *testing.T) {
+	table := loadVocabulary(t)
+
+	listed := map[string]map[string]string{}
+	for _, a := range table.Aliases {
+		if listed[a.Field] == nil {
+			listed[a.Field] = map[string]string{}
+		}
+		listed[a.Field][a.Form] = a.Means
+	}
+
+	for _, field := range []string{"status", "severity", "disposition"} {
+		for _, a := range FilterAliases(field) {
+			means, ok := listed[field][a.Form]
+			assert.True(t, ok,
+				"engine accepts %s alias %q but the shared table does not list it — add it to "+
+					"testdata/filter-vocabulary-cases.json so both languages record the decision", field, a.Form)
+			if ok {
+				assert.Equal(t, a.Means, means, "%s alias %q must mean the same thing in both", field, a.Form)
+			}
+		}
+	}
+}
