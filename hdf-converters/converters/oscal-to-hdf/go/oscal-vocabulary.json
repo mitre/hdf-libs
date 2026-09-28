@@ -13,6 +13,15 @@
       "legacy": true
     },
     {
+      "name": "requirement-title",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].findings[]"],
+      "meaning": "The exact HDF requirement title the finding reports. Requirement_Core.title is prose that may carry line breaks (§2); the finding title is display text OSCAL types single-line, so the exact title is preserved here while the display title is normalized (§4.3).",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].requirements[].title",
+      "legacy": false
+    },
+    {
       "name": "baseline-version",
       "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
       "objects": ["assessment-results.results[]"],
@@ -28,6 +37,15 @@
       "meaning": "The exact HDF baseline name the result reports, so an HDF-produced SAR round-trips the name that hdf-diff and baseline references key on. The result title is display text and is not injective, so two baselines sharing a title would otherwise collide (§4.3, §4.5).",
       "valueFormat": "String (§1.7)",
       "hdfField": "baselines[].name",
+      "legacy": false
+    },
+    {
+      "name": "baseline-title",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[]"],
+      "meaning": "The exact HDF baseline title the result reports, distinct from the baseline name (baseline-name). The result title is display text OSCAL types single-line, so a title carrying a line terminator is preserved here while the display title is normalized (§4.3).",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "baselines[].title",
       "legacy": false
     },
     {
@@ -202,6 +220,15 @@
       "meaning": "OSCAL requires a value the HDF field does not have, so the object holds display fallback text; the importer leaves the field absent and never reads the fallback as HDF data (§1.7.4).",
       "valueFormat": "The HDF JSON property name, dot-separated relative to the OSCAL object that carries the marker (e.g. systemRef, checksum.value); for props that share a group, the field within that group (e.g. key, fixedInVersion) (§1.7.5)",
       "hdfField": null,
+      "legacy": false
+    },
+    {
+      "name": "component-name",
+      "ns": "https://mitre.github.io/hdf-libs/ns/oscal",
+      "objects": ["assessment-results.results[].observations[].subjects[]"],
+      "meaning": "The exact HDF component name the assessment subject reconstitutes. The subject title is display text OSCAL types single-line, so a name carrying a line terminator is preserved here while the display title is normalized (§4.3).",
+      "valueFormat": "String (§1.7)",
+      "hdfField": "components[].name",
       "legacy": false
     },
     {

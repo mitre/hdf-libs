@@ -199,7 +199,7 @@ func subjectToComponent(subj *SubjectRef) hdf.Component {
 	uuid := subj.SubjectUUID
 	c := hdf.Component{
 		Type:        hdf.TargetType(subj.Type),
-		Name:        subj.Title,
+		Name:        sarComponentName(subj),
 		ComponentID: &uuid,
 	}
 	c.Description = VocabularyString(subj.Props, "component-description", "description", "")
@@ -258,6 +258,16 @@ func subjectToComponent(subj *SubjectRef) hdf.Component {
 	return c
 }
 
+// sarComponentName recovers the exact HDF component name: the namespaced
+// component-name prop for an HDF-produced subject (§4.3), else the subject title
+// for a foreign subject.
+func sarComponentName(subj *SubjectRef) string {
+	if m, ok := FindVocabularyProp(subj.Props, "component-name"); ok {
+		return m.Value
+	}
+	return subj.Title
+}
+
 // readComponentMap rebuilds a component string map from grouped key/value props.
 // Groups are numbered from 1 in the order the exporter emitted them (sorted key
 // order), so reading stops at the first group with neither a key nor a value.
@@ -308,7 +318,7 @@ func resultToEvaluatedBaseline(result *Result, order []string, groups map[string
 	status := "loaded"
 	baseline := hdf.EvaluatedBaseline{
 		Name:            name,
-		Title:           hdfutil.Ptr(result.Title),
+		Title:           hdfutil.Ptr(sarBaselineTitle(result)),
 		Status:          &status,
 		Integrity:       integrity,
 		ResultsChecksum: checksum,
@@ -334,7 +344,7 @@ func findingsToEvaluatedRequirement(
 ) hdf.EvaluatedRequirement {
 	// Use the first finding for title/description
 	firstFinding := findings[0]
-	title := firstFinding.Title
+	title := sarRequirementTitle(firstFinding)
 	if title == "" {
 		title = id
 	}
@@ -881,4 +891,24 @@ func sarBaselineName(result *Result) string {
 		return result.UUID
 	}
 	return kebab + "--" + result.UUID
+}
+
+// sarBaselineTitle recovers the exact HDF baseline title: the namespaced
+// baseline-title prop for an HDF-produced result (§4.3), else the result title
+// for a foreign result. Distinct from the baseline name (baseline-name prop).
+func sarBaselineTitle(result *Result) string {
+	if m, ok := FindVocabularyProp(result.Props, "baseline-title"); ok {
+		return m.Value
+	}
+	return result.Title
+}
+
+// sarRequirementTitle recovers the exact HDF requirement title: the namespaced
+// requirement-title prop for an HDF-produced finding (§4.3, prose home for the
+// §2 Requirement_Core.title), else the finding title for a foreign finding.
+func sarRequirementTitle(f *Finding) string {
+	if m, ok := FindVocabularyProp(f.Props, "requirement-title"); ok {
+		return m.Value
+	}
+	return f.Title
 }

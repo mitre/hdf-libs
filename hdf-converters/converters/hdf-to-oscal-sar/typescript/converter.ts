@@ -259,6 +259,13 @@ function baselineToResult(
   const resultProps: Property[] = [];
   pushVocabularyProp(resultProps, 'baseline-name', baseline.name);
 
+  // The result title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+  // so carry the exact baseline title in a namespaced prop and normalize the
+  // display title (§1.7.1). The baseline title is distinct from its name.
+  if (baseline.title && baseline.title !== '') {
+    pushVocabularyProp(resultProps, 'baseline-title', baseline.title);
+  }
+
   // baseline.version has no first-class SAR home; carry it as a result prop.
   if (typeof baseline.version === 'string') {
     pushVocabularyProp(resultProps, 'baseline-version', baseline.version);
@@ -319,7 +326,7 @@ function baselineToResult(
 
   const result = {
     uuid: crypto.randomUUID(),
-    title,
+    title: normalizePropValue(title),
     description,
     start: assessmentStart(baseline, timestamp),
     // Match Go's omitempty: an empty props list is omitted entirely.
@@ -371,7 +378,7 @@ function buildSubjects(components: HDFResults['components']): SubjectRef[] {
     const subject: SubjectRef = {
       'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
       type: String(c.type),
-      title: c.name,
+      title: normalizePropValue(c.name),
     };
     const props = componentSubjectProps(c);
     if (props.length > 0) subject.props = props;
@@ -388,6 +395,9 @@ function buildSubjects(components: HDFResults['components']): SubjectRef[] {
  */
 function componentSubjectProps(c: HDFComponent): Property[] {
   const props: Property[] = [];
+  // The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+  // so carry the exact component name here and normalize the display title (§1.7.1).
+  pushVocabularyProp(props, 'component-name', c.name);
   const emit = (name: string, field: string, val: string | undefined): void => {
     if (val === undefined) return;
     if (val === '') {
@@ -576,15 +586,19 @@ function requirementToFindingSet(
     if (typeof er.href === 'string' && er.href !== '') links.push({ href: er.href, rel: 'reference' });
   }
 
+  let title = req.id;
+  if (req.title && req.title !== '') {
+    title = req.title;
+    // The finding title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+    // and Requirement_Core.title is prose that may carry line breaks (§2), so carry
+    // the exact title in a namespaced prop and normalize the display title (§1.7.1).
+    pushVocabularyProp(props, 'requirement-title', req.title);
+  }
+
   // Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
   // finding's own props, deduped, in carried order.
   const carried = readCarriedProps(req.tags);
   appendCarriedProps(props, carriedFor(carried, 'finding'));
-
-  let title = req.id;
-  if (req.title && req.title !== '') {
-    title = req.title;
-  }
 
   // Source code is an artifact with a media type, not a StringDatatype prop:
   // embed it as a back-matter resource and point at it with a rel="code" link.
@@ -625,7 +639,7 @@ function requirementToFindingSet(
 
   const finding = {
     uuid: crypto.randomUUID(),
-    title,
+    title: normalizePropValue(title),
     // OSCAL requires a non-empty finding description; fall back to the title
     // when the requirement carries no description of its own.
     description: findingDesc || title,

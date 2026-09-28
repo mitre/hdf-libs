@@ -202,6 +202,13 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 	var resultProps []oscal.Property
 	resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-name", baseline.Name)
 
+	// The result title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+	// so carry the exact baseline title in a namespaced prop and normalize the
+	// display title (§1.7.1). The baseline title is distinct from its name.
+	if baseline.Title != nil && *baseline.Title != "" {
+		resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-title", *baseline.Title)
+	}
+
 	// baseline.version has no first-class SAR home; carry it as a result prop.
 	if baseline.Version != nil {
 		resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-version", *baseline.Version)
@@ -254,7 +261,7 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	return oscal.Result{
 		UUID:             oscal.GenerateUUID(),
-		Title:            title,
+		Title:            oscal.NormalizePropValue(title),
 		Description:      description,
 		Start:            assessmentStart(baseline, timestamp),
 		Props:            resultProps,
@@ -319,7 +326,7 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 		subjects = append(subjects, oscal.SubjectRef{
 			SubjectUUID: uid,
 			Type:        string(c.Type),
-			Title:       c.Name,
+			Title:       oscal.NormalizePropValue(c.Name),
 			Props:       componentSubjectProps(c),
 		})
 		warnUncarriedComponentFields(c)
@@ -332,6 +339,9 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 // carried by an empty-field marker (§1.7.3); an absent field emits nothing.
 func componentSubjectProps(c *hdf.Component) []oscal.Property {
 	var props []oscal.Property
+	// The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+	// so carry the exact component name here and normalize the display title (§1.7.1).
+	props = oscal.AppendVocabularyProp(props, "component-name", c.Name)
 	emit := func(name, field string, val *string) {
 		if val == nil {
 			return
@@ -593,6 +603,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	title := req.ID
 	if req.Title != nil && *req.Title != "" {
 		title = *req.Title
+		// The finding title is a single-line display sink OSCAL 1.2.3 types
+		// MarkupLine, and Requirement_Core.title is prose that may carry line
+		// breaks (§2), so carry the exact title in a namespaced prop and normalize
+		// the display title (§1.7.1).
+		props = oscal.AppendVocabularyProp(props, "requirement-title", *req.Title)
 	}
 
 	// Source code is an artifact with a media type, not a StringDatatype prop:
@@ -624,7 +639,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 
 	finding := oscal.Finding{
 		UUID:        oscal.GenerateUUID(),
-		Title:       title,
+		Title:       oscal.NormalizePropValue(title),
 		Description: findingDesc,
 		Props:       props,
 		Links:       links,

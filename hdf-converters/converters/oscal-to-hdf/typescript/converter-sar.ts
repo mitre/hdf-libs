@@ -168,7 +168,7 @@ function subjectToComponent(subj: IdentifiesTheSubject): Component {
   const props = subj.props;
   const c: Component = {
     type: subj.type as Component['type'],
-    name: subj.title ?? '',
+    name: sarComponentName(subj),
     componentId: subj['subject-uuid'],
   };
   // Literal prop names are required so the importer prop-read sweep can check
@@ -229,6 +229,16 @@ function subjectToComponent(subj: IdentifiesTheSubject): Component {
   );
   if (externalIds) c.externalIds = externalIds;
   return c;
+}
+
+/**
+ * Recovers the exact HDF component name: the namespaced component-name prop for
+ * an HDF-produced subject (§4.3), else the subject title for a foreign subject.
+ * Mirrors the Go peer.
+ */
+function sarComponentName(subj: IdentifiesTheSubject): string {
+  const match = findVocabularyProp(subj.props, 'component-name');
+  return match ? match.value : (subj.title ?? '');
 }
 
 /**
@@ -315,7 +325,7 @@ async function resultToEvaluatedBaseline(
     resultsChecksum: checksum,
     integrity: await inputIntegrity(rawInput),
     status: 'loaded',
-    title: result.title,
+    title: sarBaselineTitle(result),
   }) as EvaluatedBaseline;
 
   if (result.description) {
@@ -335,7 +345,7 @@ function findingsToEvaluatedRequirement(
 ): EvaluatedRequirement {
   // Use the first finding for title
   const firstFinding = findings[0]!;
-  const title = firstFinding.title || id;
+  const title = sarRequirementTitle(firstFinding) || id;
 
   // Determine impact from related risks
   const impact = sarFindingsImpact(findings, riskMap);
@@ -791,4 +801,21 @@ function sarBaselineName(result: AssessmentResult): string {
   if (match) return match.value;
   const kebab = toKebabCase(result.title ?? '', '');
   return kebab === '' ? result.uuid : `${kebab}--${result.uuid}`;
+}
+
+// Recovers the exact HDF baseline title: the namespaced baseline-title prop for
+// an HDF-produced result (§4.3), else the result title for a foreign result.
+// Distinct from the baseline name (baseline-name prop). Mirrors the Go peer.
+function sarBaselineTitle(result: AssessmentResult): string {
+  const match = findVocabularyProp(result.props, 'baseline-title');
+  return match ? match.value : (result.title ?? '');
+}
+
+// Recovers the exact HDF requirement title: the namespaced requirement-title
+// prop for an HDF-produced finding (§4.3, prose home for the §2
+// Requirement_Core.title), else the finding title for a foreign finding.
+// Mirrors the Go peer.
+function sarRequirementTitle(f: Finding): string {
+  const match = findVocabularyProp(f.props, 'requirement-title');
+  return match ? match.value : (f.title ?? '');
 }

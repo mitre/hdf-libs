@@ -1,14 +1,14 @@
 {
   "assessment-results": {
-    "uuid": "864d6f00-168c-4348-9348-8424719d6e39",
+    "uuid": "b488689c-04a9-4506-bf66-558261755f6c",
     "metadata": {
       "title": "HDF Assessment Results Export",
-      "last-modified": "2026-09-27T19:16:28Z",
+      "last-modified": "2026-09-28T00:16:54Z",
       "version": "1.0.0",
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "25cdf73b-bcfa-43a6-8cff-96562db1166a",
+          "uuid": "2ee06c9b-8679-4eb9-b945-1eb7a7bca734",
           "type": "organization",
           "name": "HDF Assessment Tool"
         }
@@ -19,7 +19,7 @@
     },
     "results": [
       {
-        "uuid": "cd2fb4a6-7bfb-4cc4-b043-e00f3582f8bc",
+        "uuid": "b7f806f7-f16c-443f-8112-760a88b9493e",
         "title": "Minimal Baseline",
         "description": "Converted from HDF results",
         "start": "2025-01-15T10:00:00Z",
@@ -48,7 +48,7 @@
         },
         "findings": [
           {
-            "uuid": "c28cb66f-fff3-4c37-a1c6-afdb2d0d46f9",
+            "uuid": "5834f63a-7ea0-4139-bae7-98535b94bac8",
             "title": "Test Requirement",
             "description": "This is a test requirement",
             "props": [
@@ -66,6 +66,11 @@
                 "name": "nist",
                 "value": "AC-2",
                 "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+              },
+              {
+                "name": "requirement-title",
+                "value": "Test Requirement",
+                "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
               }
             ],
             "target": {
@@ -77,19 +82,19 @@
             },
             "related-observations": [
               {
-                "observation-uuid": "f67b8b3e-fc1f-4ba1-93ef-fced032dc8b4"
+                "observation-uuid": "cf213754-e2d9-458e-bddd-46443e082c2e"
               }
             ],
             "related-risks": [
               {
-                "risk-uuid": "640e4b22-8dc0-41bf-9096-3fb3413815cd"
+                "risk-uuid": "520e2ad7-1bcf-4d0a-91c3-f1329c4fba51"
               }
             ]
           }
         ],
         "observations": [
           {
-            "uuid": "f67b8b3e-fc1f-4ba1-93ef-fced032dc8b4",
+            "uuid": "cf213754-e2d9-458e-bddd-46443e082c2e",
             "description": "[passed] Control check passed",
             "methods": [
               "TEST"
@@ -97,16 +102,23 @@
             "collected": "2025-01-15T10:00:00Z",
             "subjects": [
               {
-                "subject-uuid": "fd8dce68-cece-41df-8b63-018937156cb4",
+                "subject-uuid": "595edae1-b203-4c20-8b3a-b33313db5c8b",
                 "type": "host",
-                "title": "web-server-01"
+                "title": "web-server-01",
+                "props": [
+                  {
+                    "name": "component-name",
+                    "value": "web-server-01",
+                    "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+                  }
+                ]
               }
             ]
           }
         ],
         "risks": [
           {
-            "uuid": "640e4b22-8dc0-41bf-9096-3fb3413815cd",
+            "uuid": "520e2ad7-1bcf-4d0a-91c3-f1329c4fba51",
             "title": "Risk for REQ-001",
             "description": "Impact: 0.7 (high)",
             "statement": "Impact: 0.7 (high)",
@@ -117,7 +129,7 @@
                   "actors": [
                     {
                       "type": "party",
-                      "actor-uuid": "25cdf73b-bcfa-43a6-8cff-96562db1166a"
+                      "actor-uuid": "2ee06c9b-8679-4eb9-b945-1eb7a7bca734"
                     }
                   ]
                 },
