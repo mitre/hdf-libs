@@ -79,7 +79,7 @@ func CarriedFor(entries []CarriedProp, on string) []CarriedProp {
 // own props (ADR-0014 §3.4), skipping any entry whose (ns, name, value) is
 // already present — an absent ns compares equal to NIST's default namespace.
 func AppendCarriedProps(props []Property, entries []CarriedProp) []Property {
-	seen := make(map[[3]string]bool, len(props)+len(entries))
+	seen := make(map[[3]string]bool)
 	for i := range props {
 		seen[carriageKey(props[i].Ns, props[i].Name, props[i].Value)] = true
 	}

@@ -42,6 +42,7 @@ const OWNER_LABELS = {
 // suffixes in the meanings would otherwise read as HTML tags.
 function cell(text) {
   return String(text)
+    .replace(/\\/g, '\\\\')
     .replace(/\|/g, '\\|')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
@@ -50,7 +51,7 @@ function cell(text) {
 function code(text) {
   // A code span cannot escape `<`/`>` (they render literally inside it), so only
   // the table-breaking pipe needs handling here.
-  return '`' + String(text).replace(/\|/g, '\\|') + '`';
+  return '`' + String(text).replace(/\\/g, '\\\\').replace(/\|/g, '\\|') + '`';
 }
 
 function objectsCell(objects) {
