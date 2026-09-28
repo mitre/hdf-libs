@@ -137,22 +137,29 @@ const HDF_COMPONENT_TYPES = new Set<string>([
 ]);
 
 /**
- * Reconstitutes the top-level HDF components from the assessment subjects the
- * exporter attaches to every observation. Subjects are deduplicated by uuid in
- * first-seen document order, and a subject whose type is not an HDF component
- * type is left alone so foreign SARs gain no invalid components. Mirrors Go.
+ * Reconstitutes the top-level HDF components from a SAR. The authoritative home is
+ * each result's local-definitions.components (ADR-0014 §4.5), which survives even
+ * when no requirement produced an observation; the per-observation subjects are
+ * read too for documents exported before the result-level home existed. Components are deduplicated by uuid in first-seen document order — a
+ * component appears identically at the result level and on every observation — and
+ * one whose type is not an HDF component type is left alone so foreign SARs gain no
+ * invalid components. Mirrors Go.
  */
 function sarComponents(sar: SecurityAssessmentResultsSAR): Component[] {
   const components: Component[] = [];
   const seen = new Set<string>();
+  const add = (subj: IdentifiesTheSubject): void => {
+    const uuid = subj['subject-uuid'];
+    if (!uuid || seen.has(uuid) || !HDF_COMPONENT_TYPES.has(subj.type)) return;
+    seen.add(uuid);
+    components.push(subjectToComponent(subj));
+  };
   for (const result of sar.results) {
+    for (const sc of result['local-definitions']?.components ?? []) {
+      add({ 'subject-uuid': sc.uuid, type: sc.type, title: sc.title, props: sc.props });
+    }
     for (const obs of result.observations ?? []) {
-      for (const subj of obs.subjects ?? []) {
-        const uuid = subj['subject-uuid'];
-        if (!uuid || seen.has(uuid) || !HDF_COMPONENT_TYPES.has(subj.type)) continue;
-        seen.add(uuid);
-        components.push(subjectToComponent(subj));
-      }
+      for (const subj of obs.subjects ?? []) add(subj);
     }
   }
   return components;

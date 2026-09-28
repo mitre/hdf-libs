@@ -167,24 +167,35 @@ var hdfComponentTypes = map[string]bool{
 	string(hdf.Network): true, string(hdf.Database): true, string(hdf.AIModel): true, string(hdf.Dataset): true,
 }
 
-// sarComponents reconstitutes the top-level HDF components from the assessment
-// subjects the exporter attaches to every observation. Subjects are
-// deduplicated by uuid in first-seen document order (each component appears
-// identically on every observation), and a subject whose type is not an HDF
-// component type is left alone so foreign SARs gain no invalid components.
+// sarComponents reconstitutes the top-level HDF components from a SAR. The
+// authoritative home is each result's local-definitions.components (ADR-0014
+// §4.5), which survives even when no requirement produced an observation; the
+// per-observation subjects are read too for documents exported before the
+// result-level home existed. Components are deduplicated by uuid in first-seen
+// document order — a component appears identically at the result level and on
+// every observation — and one whose type is not an HDF component type is left
+// alone so foreign SARs gain no invalid components.
 func sarComponents(sar *AssessmentResults) []hdf.Component {
 	var components []hdf.Component
 	seen := make(map[string]bool)
+	add := func(subj *SubjectRef) {
+		if subj.SubjectUUID == "" || seen[subj.SubjectUUID] || !hdfComponentTypes[subj.Type] {
+			return
+		}
+		seen[subj.SubjectUUID] = true
+		components = append(components, subjectToComponent(subj))
+	}
 	for i := range sar.Results {
+		if ld := sar.Results[i].LocalDefinitions; ld != nil {
+			for j := range ld.Components {
+				sc := &ld.Components[j]
+				add(&SubjectRef{SubjectUUID: sc.UUID, Type: sc.Type, Title: sc.Title, Props: sc.Props})
+			}
+		}
 		for j := range sar.Results[i].Observations {
 			subjects := sar.Results[i].Observations[j].Subjects
 			for k := range subjects {
-				subj := &subjects[k]
-				if subj.SubjectUUID == "" || seen[subj.SubjectUUID] || !hdfComponentTypes[subj.Type] {
-					continue
-				}
-				seen[subj.SubjectUUID] = true
-				components = append(components, subjectToComponent(subj))
+				add(&subjects[k])
 			}
 		}
 	}

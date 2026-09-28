@@ -1471,6 +1471,132 @@ func TestConvert_OSCALSAR_WarnsOnUnrepresentableComponentField(t *testing.T) {
 	assert.Contains(t, out, "integrity", "the warning must name the dropped field")
 }
 
+// noResultComponentHDF has components[] but NO result-bearing requirement — the
+// requirement produces no result, so the exporter emits no observation. Before
+// the result-level subject home (ADR-0014 §4.5), the only carrier for components
+// was the observation, so every component was lost on round trip with no warning.
+const noResultComponentHDF = `{
+	"baselines": [{
+		"name": "b",
+		"requirements": [{
+			"id": "AC-1", "impact": 0.5, "tags": {},
+			"descriptions": [{ "label": "default", "data": "d" }],
+			"results": []
+		}]
+	}],
+	"components": [
+		{
+			"type": "host", "name": "web01",
+			"componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+			"hostname": "web01", "fqdn": "web01.prod.example.com",
+			"osName": "Ubuntu", "osVersion": "22.04 LTS",
+			"labels": { "environment": "production" }
+		},
+		{
+			"type": "containerImage", "name": "nginx",
+			"componentId": "b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+			"registry": "docker.io", "repository": "library/nginx", "tag": "1.25-alpine"
+		},
+		{
+			"type": "cloudAccount", "name": "Prod AWS",
+			"componentId": "c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+			"provider": "aws", "accountId": "123456789012", "region": "us-east-1",
+			"labels": { "boundary": "prod-authorization-boundary" }
+		}
+	]
+}`
+
+// The card's first-failing test: components must survive HDF -> SAR -> HDF even
+// when no requirement produces a result, because the subjects now ride at a
+// result-level home (ADR-0014 §4.5), not only on observations.
+func TestConvert_OSCALSAR_RoundTrip_PreservesComponentsWithoutResults(t *testing.T) {
+	sar, err := ConvertHDFToOSCALSAR([]byte(noResultComponentHDF), "1.0.0")
+	require.NoError(t, err)
+
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Components, 3, "every component must survive even with no result-bearing requirement")
+
+	byName := componentsByName(back.Components)
+
+	host, ok := byName["web01"]
+	require.True(t, ok, "host component lost")
+	assert.Equal(t, hdf.Host, host.Type)
+	require.NotNil(t, host.ComponentID)
+	assert.Equal(t, "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", *host.ComponentID)
+	require.NotNil(t, host.OSName)
+	assert.Equal(t, "Ubuntu", *host.OSName)
+	require.NotNil(t, host.FQDN)
+	assert.Equal(t, "web01.prod.example.com", *host.FQDN)
+	assert.Equal(t, "production", host.Labels["environment"])
+
+	img, ok := byName["nginx"]
+	require.True(t, ok, "container image component lost")
+	assert.Equal(t, hdf.ContainerImage, img.Type)
+	require.NotNil(t, img.Registry)
+	assert.Equal(t, "docker.io", *img.Registry)
+	require.NotNil(t, img.Tag)
+	assert.Equal(t, "1.25-alpine", *img.Tag)
+
+	acct, ok := byName["Prod AWS"]
+	require.True(t, ok, "cloudAccount component lost")
+	assert.Equal(t, hdf.CloudAccount, acct.Type)
+	require.NotNil(t, acct.AccountID)
+	assert.Equal(t, "123456789012", *acct.AccountID)
+	require.NotNil(t, acct.Provider)
+	assert.Equal(t, hdf.CloudProvider("aws"), *acct.Provider)
+
+	// The result-level component home must validate on both vendored OSCAL revisions.
+	for _, file := range arSchemaFiles {
+		t.Run(file, func(t *testing.T) {
+			requireValidAR(t, arSchemaFor(t, file), "no-result components", []byte(noResultComponentHDF))
+		})
+	}
+}
+
+// With results present, a component rides both an observation subject and the
+// result-level home; read-back must dedup on component uuid so none doubles.
+func TestConvert_OSCALSAR_RoundTrip_NoDoubleEmissionWithResults(t *testing.T) {
+	sar, err := ConvertHDFToOSCALSAR([]byte(multiComponentHDF), "1.0.0")
+	require.NoError(t, err)
+
+	back, err := oscal.ConvertAssessmentResultsToHDF(sar, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, back.Components, 3, "components carried at both homes must not double on read-back")
+
+	seen := make(map[string]int)
+	for i := range back.Components {
+		require.NotNil(t, back.Components[i].ComponentID)
+		seen[*back.Components[i].ComponentID]++
+	}
+	for id, n := range seen {
+		assert.Equal(t, 1, n, "component %s emitted more than once", id)
+	}
+}
+
+// A component with no type genuinely cannot be carried — an OSCAL subject and a
+// system-component both require a type. It must be warned about, not silently
+// dropped (ADR-0014 §4.5 AC5 edge).
+func TestConvert_OSCALSAR_WarnsOnTypelessComponentDrop(t *testing.T) {
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(prev)
+
+	input := []byte(`{"baselines":[{"name":"b","requirements":[` +
+		`{"id":"AC-1","impact":0,"tags":{},"descriptions":[{"label":"default","data":"d"}],` +
+		`"results":[{"status":"passed","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}` +
+		`]}],"components":[{"name":"web01"}]}`)
+
+	_, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+
+	out := buf.String()
+	assert.Contains(t, out, "WARNING")
+	assert.Contains(t, out, "web01", "the warning must name the dropped component")
+	assert.Contains(t, out, "type", "the warning must state why it cannot be carried")
+}
+
 // roundTripHDF exports an HDF Results document to an OSCAL SAR and imports it
 // back, returning the recovered HDF for baseline-identity assertions.
 func roundTripHDF(t *testing.T, doc hdf.HDFResults) *hdf.HDFResults {

@@ -1188,3 +1188,98 @@ describe('SAR component round trip', () => {
     expect(message).toContain('WARNING');
   });
 });
+
+// A v3 results doc with components[] but NO result-bearing requirement: the
+// requirement produces no result, so the exporter emits no observation. Subjects
+// now ride a result-level home (ADR-0014 §4.5), so components survive regardless.
+const noResultComponentHdf = JSON.stringify({
+  baselines: [{
+    name: 'b',
+    requirements: [{
+      id: 'AC-1', impact: 0.5, tags: {},
+      descriptions: [{ label: 'default', data: 'd' }],
+      results: [],
+    }],
+  }],
+  components: [
+    {
+      type: 'host', name: 'web01', componentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      hostname: 'web01', fqdn: 'web01.prod.example.com', osName: 'Ubuntu', osVersion: '22.04 LTS',
+      labels: { environment: 'production' },
+    },
+    {
+      type: 'containerImage', name: 'nginx', componentId: 'b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      registry: 'docker.io', repository: 'library/nginx', tag: '1.25-alpine',
+    },
+    {
+      type: 'cloudAccount', name: 'Prod AWS', componentId: 'c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      provider: 'aws', accountId: '123456789012', region: 'us-east-1',
+      labels: { boundary: 'prod-authorization-boundary' },
+    },
+  ],
+});
+
+describe('SAR component round trip at the result level (ADR-0014 §4.5)', () => {
+  const roundTrip = async (hdf: string): Promise<NonNullable<HDFResults['components']>> => {
+    const sar = await convertHdfToOscalSar(hdf);
+    const back = JSON.parse(await convertOscalSarToHdf(sar)) as HDFResults;
+    return back.components ?? [];
+  };
+  const byName = (components: NonNullable<HDFResults['components']>): Record<string, (typeof components)[number]> =>
+    Object.fromEntries(components.map((c) => [c.name, c]));
+
+  // The card's first-failing test: red today because subjects only ride on
+  // observations, and there is no observation when no requirement bears a result.
+  it('preserves every component when no requirement bears a result', async () => {
+    const components = await roundTrip(noResultComponentHdf);
+    expect(components).toHaveLength(3);
+    const found = byName(components);
+
+    const host = found['web01']!;
+    expect(host.type).toBe('host');
+    expect(host.componentId).toBe('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(host.osName).toBe('Ubuntu');
+    expect(host.fqdn).toBe('web01.prod.example.com');
+    expect(host.labels?.environment).toBe('production');
+
+    const img = found['nginx']!;
+    expect(img.type).toBe('containerImage');
+    expect(img.registry).toBe('docker.io');
+    expect(img.tag).toBe('1.25-alpine');
+
+    const acct = found['Prod AWS']!;
+    expect(acct.type).toBe('cloudAccount');
+    expect(acct.accountId).toBe('123456789012');
+    expect(acct.provider).toBe('aws');
+  });
+
+  // With results present a component rides both an observation subject and the
+  // result-level home; read-back dedups on component uuid so none doubles.
+  it('does not double-emit components carried at both homes', async () => {
+    const components = await roundTrip(multiComponentHdf);
+    expect(components).toHaveLength(3);
+    const ids = components.map((c) => c.componentId);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('warns on a typeless component that cannot be carried, never silently dropping it', async () => {
+    const hdf = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'AC-1', impact: 0, tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+        }],
+      }],
+      components: [{ name: 'web01' }],
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await convertHdfToOscalSar(hdf);
+    const calls = warn.mock.calls.map((c) => String(c[0]));
+    warn.mockRestore();
+    const message = calls.find((m) => m.includes('web01') && m.includes('type'));
+    expect(message, calls.join('\n')).toBeDefined();
+    expect(message).toContain('WARNING');
+  });
+});

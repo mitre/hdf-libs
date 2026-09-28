@@ -14,6 +14,7 @@ import type {
   DocumentMetadata,
   ImportAssessmentPlan,
   AssessmentResult,
+  AssessmentAssetsComponent,
   Finding,
   TargetClass,
   StatusClass,
@@ -25,6 +26,7 @@ import type {
   RelevantEvidence,
   RiskResponse,
 } from '../../oscal-to-hdf/typescript/types.js';
+import { ComponentStatusState } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlRef,
   oscalString,
@@ -331,6 +333,9 @@ function baselineToResult(
     start: assessmentStart(baseline, timestamp),
     // Match Go's omitempty: an empty props list is omitted entirely.
     ...(resultProps.length > 0 ? { props: resultProps } : {}),
+    // Assessed components at a result-level home so they survive even when no
+    // requirement produces an observation (ADR-0014 §4.5). Mirrors Go.
+    ...(subjects.length > 0 ? { 'local-definitions': { components: componentDefsFromSubjects(subjects) } } : {}),
     'reviewed-controls': { 'control-selections': [controlSelection] },
     // Match Go's omitempty on all three: OSCAL puts minItems 1 on each, so an
     // empty array is invalid where absence is fine. Emitting [] here made a
@@ -374,7 +379,15 @@ function buildSubjects(components: HDFResults['components']): SubjectRef[] {
   if (!Array.isArray(components) || components.length === 0) return [];
   const subjects: SubjectRef[] = [];
   for (const c of components) {
-    if (oscalString(c.type ?? '') === '') continue;
+    if (oscalString(c.type ?? '') === '') {
+      // Both an OSCAL assessment subject and a system-component require a type,
+      // and hdf-results defines no default, so a type-less component genuinely
+      // cannot be carried. Warn rather than drop it silently (§4.5). Mirrors Go.
+      emitConverterWarning(
+        `hdf-to-oscal-sar: component "${c.name}" has no type, which an OSCAL assessment subject requires; not carried`,
+      );
+      continue;
+    }
     const subject: SubjectRef = {
       'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
       type: String(c.type),
@@ -386,6 +399,28 @@ function buildSubjects(components: HDFResults['components']): SubjectRef[] {
     warnUncarriedComponentFields(c);
   }
   return subjects;
+}
+
+/**
+ * Turns the assessment subjects into result-level OSCAL system-components so the
+ * assessed components survive a round trip even when no requirement produces an
+ * observation (ADR-0014 §4.5). Each component keeps the subject's identity
+ * (uuid/type/title and the HDF-namespaced props); the OSCAL-required description
+ * and status have no HDF counterpart, so they are display fallbacks the importer
+ * never reads back — the exact identity lives entirely in the props. Mirrors Go.
+ */
+function componentDefsFromSubjects(subjects: SubjectRef[]): AssessmentAssetsComponent[] {
+  return subjects.map((s) => {
+    const display = s.title !== '' ? s.title : 'Assessed component';
+    return {
+      uuid: s['subject-uuid'],
+      type: s.type,
+      title: display,
+      description: display,
+      ...(s.props ? { props: s.props } : {}),
+      status: { state: ComponentStatusState.Other },
+    };
+  });
 }
 
 /**

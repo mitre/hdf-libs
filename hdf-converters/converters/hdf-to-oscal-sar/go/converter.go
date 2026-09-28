@@ -265,11 +265,41 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		Description:      description,
 		Start:            assessmentStart(baseline, timestamp),
 		Props:            resultProps,
+		LocalDefinitions: resultLocalDefinitions(subjects),
 		ReviewedControls: reviewedControls(includeControls),
 		Findings:         findings,
 		Observations:     observations,
 		Risks:            risks,
 	}, resources
+}
+
+// resultLocalDefinitions carries the assessed components at a result-level home so
+// they survive a round trip even when the result has no observation to hold a
+// subject (ADR-0014 §4.5). Each subject becomes a system-component with identical
+// identity (uuid/type/title and the HDF-namespaced props); the OSCAL-required
+// description and status have no HDF counterpart, so they are display fallbacks
+// the importer never reads back — the exact identity lives entirely in the props.
+func resultLocalDefinitions(subjects []oscal.SubjectRef) *oscal.ResultLocalDefinitions {
+	if len(subjects) == 0 {
+		return nil
+	}
+	comps := make([]oscal.SystemComponent, 0, len(subjects))
+	for i := range subjects {
+		s := &subjects[i]
+		display := s.Title
+		if display == "" {
+			display = "Assessed component"
+		}
+		comps = append(comps, oscal.SystemComponent{
+			UUID:        s.SubjectUUID,
+			Type:        s.Type,
+			Title:       display,
+			Description: display,
+			Props:       s.Props,
+			Status:      &oscal.ComponentStatus{State: "other"},
+		})
+	}
+	return &oscal.ResultLocalDefinitions{Components: comps}
 }
 
 // selectControl adds a control, or one statement of it, to the reviewed-controls
@@ -317,6 +347,11 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 	for i := range components {
 		c := &components[i]
 		if oscal.OSCALString(string(c.Type)) == "" {
+			// Both an OSCAL assessment subject and a system-component require a
+			// type, and hdf-results defines no default to fall back on, so a
+			// type-less component genuinely cannot be carried. Warn rather than
+			// drop it silently (§4.5).
+			log.Printf("WARNING: hdf-to-oscal-sar: component %q has no type, which an OSCAL assessment subject requires; not carried", c.Name)
 			continue
 		}
 		uid := oscal.GenerateUUID()

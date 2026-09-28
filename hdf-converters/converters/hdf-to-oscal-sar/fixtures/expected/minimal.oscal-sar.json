@@ -1,14 +1,14 @@
 {
   "assessment-results": {
-    "uuid": "b488689c-04a9-4506-bf66-558261755f6c",
+    "uuid": "de2d76f1-a59b-4e63-b2ed-31633d925027",
     "metadata": {
       "title": "HDF Assessment Results Export",
-      "last-modified": "2026-09-28T00:16:54Z",
+      "last-modified": "2026-09-28T00:53:57Z",
       "version": "1.0.0",
       "oscal-version": "1.1.2",
       "parties": [
         {
-          "uuid": "2ee06c9b-8679-4eb9-b945-1eb7a7bca734",
+          "uuid": "ad98ee43-2954-4b40-9813-36cd47049abd",
           "type": "organization",
           "name": "HDF Assessment Tool"
         }
@@ -19,7 +19,7 @@
     },
     "results": [
       {
-        "uuid": "b7f806f7-f16c-443f-8112-760a88b9493e",
+        "uuid": "08033939-89ed-4fe9-bc2f-f66a7d67085a",
         "title": "Minimal Baseline",
         "description": "Converted from HDF results",
         "start": "2025-01-15T10:00:00Z",
@@ -35,6 +35,26 @@
             "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
           }
         ],
+        "local-definitions": {
+          "components": [
+            {
+              "uuid": "74e9d9af-88bb-4ca8-a6d9-acadbee5be5d",
+              "type": "host",
+              "title": "web-server-01",
+              "description": "web-server-01",
+              "props": [
+                {
+                  "name": "component-name",
+                  "value": "web-server-01",
+                  "ns": "https://mitre.github.io/hdf-libs/ns/oscal"
+                }
+              ],
+              "status": {
+                "state": "other"
+              }
+            }
+          ]
+        },
         "reviewed-controls": {
           "control-selections": [
             {
@@ -48,7 +68,7 @@
         },
         "findings": [
           {
-            "uuid": "5834f63a-7ea0-4139-bae7-98535b94bac8",
+            "uuid": "b043645c-944d-458e-b37f-db116f37ffa8",
             "title": "Test Requirement",
             "description": "This is a test requirement",
             "props": [
@@ -82,19 +102,19 @@
             },
             "related-observations": [
               {
-                "observation-uuid": "cf213754-e2d9-458e-bddd-46443e082c2e"
+                "observation-uuid": "c10d74c3-3cea-410d-a052-98f587d9e740"
               }
             ],
             "related-risks": [
               {
-                "risk-uuid": "520e2ad7-1bcf-4d0a-91c3-f1329c4fba51"
+                "risk-uuid": "cba5172b-63ff-4a7e-9cef-f59069594616"
               }
             ]
           }
         ],
         "observations": [
           {
-            "uuid": "cf213754-e2d9-458e-bddd-46443e082c2e",
+            "uuid": "c10d74c3-3cea-410d-a052-98f587d9e740",
             "description": "[passed] Control check passed",
             "methods": [
               "TEST"
@@ -102,7 +122,7 @@
             "collected": "2025-01-15T10:00:00Z",
             "subjects": [
               {
-                "subject-uuid": "595edae1-b203-4c20-8b3a-b33313db5c8b",
+                "subject-uuid": "74e9d9af-88bb-4ca8-a6d9-acadbee5be5d",
                 "type": "host",
                 "title": "web-server-01",
                 "props": [
@@ -118,7 +138,7 @@
         ],
         "risks": [
           {
-            "uuid": "520e2ad7-1bcf-4d0a-91c3-f1329c4fba51",
+            "uuid": "cba5172b-63ff-4a7e-9cef-f59069594616",
             "title": "Risk for REQ-001",
             "description": "Impact: 0.7 (high)",
             "statement": "Impact: 0.7 (high)",
@@ -129,7 +149,7 @@
                   "actors": [
                     {
                       "type": "party",
-                      "actor-uuid": "2ee06c9b-8679-4eb9-b945-1eb7a7bca734"
+                      "actor-uuid": "ad98ee43-2954-4b40-9813-36cd47049abd"
                     }
                   ]
                 },
