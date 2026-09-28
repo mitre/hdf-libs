@@ -288,6 +288,59 @@ That is the whole integration. `hdf validate threshold` exits non-zero on a viol
 
 Keep the policy file in the repository next to the workflow that applies it. It is reviewed like code, and its history shows when a bound was loosened and by whom — which is usually the question being asked after an incident.
 
+## Running a SAF CLI threshold file
+
+A pipeline moving from `saf validate threshold` can point `hdf validate threshold -T` at its existing file. The formats are the same shape — `compliance`, then `passed` / `failed` / `skipped` / `error` / `no_impact`, each with severity sub-keys and `min` / `max` — and both count bound shapes SAF accepts are honoured:
+
+```yaml
+failed:
+  total:
+    max: 0        # object form
+passed:
+  total: 19       # scalar form — means EXACTLY 19, as it does in SAF
+```
+
+A bare number is an exact bound, not a minimum. That is SAF's own rule — though SAF applies it only to the `<status>.total` keys, where this tool applies it to any bound — and a bare value that is not a whole count (`total: 1.5`) is refused rather than truncated.
+
+### `none` is not a severity category
+
+The five severity categories are `critical`, `high`, `medium`, `low` and `informational`. `none` is an accepted alias that resolves onto `informational`, so a bound written with it is honoured — but there is no `none` bucket in the output, and a run using the key says so:
+
+```console
+warning: 'none' is not a severity category; no_impact.none is read as no_impact.informational
+```
+
+That is about the spec, not the document, so it does not depend on what the file being checked contains. A bulk run marks the per-file line — `<file>: ok (1 non-category severity key)` — since it prints one short line per file.
+
+### The severity bands differ at the bottom
+
+SAF's severity bands and this tool's agree everywhere except the lowest one:
+
+| impact | SAF CLI | hdf |
+|---|---|---|
+| `0` | `none` | `informational` |
+| `0 < impact < 0.1` | `none` | **`low`** |
+| `0.1` – `0.399` | `low` | `low` |
+| `0.4` – `0.699` | `medium` | `medium` |
+| `0.7` – `0.899` | `high` | `high` |
+| `0.9` and above | `critical` | `critical` |
+
+Two consequences worth knowing when a threshold moves across:
+
+- A requirement at `0 < impact < 0.1` is `none` to SAF and `low` here, so an `informational` bound counts one fewer and a `low` bound one more.
+- SAF's severity vocabulary is `none|low|medium|high|critical`, with no `informational`, so SAF ignores an explicit `severity: informational` tag and derives from impact; this tool honours it. At impact 0.5 that requirement is `medium` to SAF and `informational` here.
+
+Neither is reported at runtime — the bands are a property of the two tools, not of any one file.
+
+### Two differences that are not reconciled
+
+Both are visible on SAF's own sample threshold files, and both would change results for every non-SAF user if matched, so they are documented rather than changed:
+
+- **`no_impact.total.min` / `.max`** is enforced here and silently ignored by SAF, whose `min`/`max` total bounds cover `passed`, `failed`, `skipped` and `error` only. The *scalar* form (`no_impact:` / `total: 44`) SAF does enforce, and three of its seven sample files use exactly that — so it is the object form alone that asserts nothing there and something here. A fourth, `triple_overlay_profile_example.json.counts.totalMinMax.yml`, is the live example: it writes `no_impact:` / `total:` / `min: 44`, which SAF ignores and this tool enforces.
+- **Compliance rounding.** SAF rounds the percentage to a whole number; this tool keeps two decimals. A document at 95.6% passes `compliance.min: 96` under SAF and fails here.
+
+One more, in this tool's favour: SAF defines `none` only under `no_impact`, while it is accepted here under every status — so a key SAF would ignore is honoured.
+
 ## Where to go next
 
 - [Status determination](../architecture/status-determination.md) — how a requirement's status and severity are decided before a threshold ever counts them, including the effect of amendments

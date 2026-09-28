@@ -33,6 +33,14 @@ func checkRequirementFidelity(converter Converter, input, output []byte, inputPa
 // after each file; conversions are sequential, so one slot suffices.
 var fidelityNote string
 
+// noteLegacySeverityKey marks the per-file bulk line when a spec names a severity
+// bucket by a non-category name. The full note goes to stderr, which a bulk run
+// captures and discards — so it rides out on the same channel the fidelity
+// relation uses, and a directory run still says which files to look at.
+func noteLegacySeverityKey(n int) {
+	fidelityNote = fmt.Sprintf(" (%d non-category severity %s)", n, plural("key", n))
+}
+
 func takeFidelityNote() string {
 	n := fidelityNote
 	fidelityNote = ""

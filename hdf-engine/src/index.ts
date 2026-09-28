@@ -36,7 +36,11 @@ export {
   type RulePredicate,
   type RuleOptions,
 } from './rules.js';
-export { validateGrid, ruleRefusal } from './compliance.js';
+export {
+  validateGrid,
+  ruleRefusal,
+  normalizeThresholdConfig,
+} from './compliance.js';
 export {
   validStatus,
   validSeverity,

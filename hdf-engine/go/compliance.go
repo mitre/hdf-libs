@@ -5,6 +5,8 @@ import (
 	"math"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -76,6 +78,87 @@ type ThresholdSeverity struct {
 	// Informational by resolveLegacySeverity; never written.
 	None  *ThresholdBound `yaml:"none,omitempty" json:"none,omitempty"`
 	Total *ThresholdBound `yaml:"total,omitempty" json:"total,omitempty"`
+}
+
+// UnmarshalYAML accepts the two shapes a SAF CLI threshold file uses for a count
+// bound: the object form ({min, max}) and a bare scalar. A scalar means EXACTLY
+// that count — measured in SAF's own validate-threshold command, which guards the
+// scalar path with `typeof !== 'object'` and then fails on inequality — so it
+// expands to min == max rather than to a minimum.
+//
+// Four of SAF's seven published sample thresholds use the scalar form, so
+// rejecting it means rejecting real SAF specs. Unknown keys inside the object
+// form are still refused — by the key loop below, NOT by the decoder, whose
+// KnownFields setting a custom unmarshaller does not inherit.
+func (b *ThresholdBound) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.ScalarNode {
+		// The tag, not the destination type: node.Decode into an int accepts a
+		// !!float and TRUNCATES it, so without this `total: 1.5` would become a
+		// bound of 1 the author never wrote. A count is a whole number or it is a
+		// mistake. (Before this method existed a float was a hard parse error, as
+		// every scalar was — the truncation is a hazard this shorthand INTRODUCES,
+		// not one it inherited.)
+		if node.Tag != "!!int" {
+			return fmt.Errorf("a bound written as a bare value must be a whole number of controls, got %q", node.Value)
+		}
+		var exact int
+		if err := node.Decode(&exact); err != nil {
+			return fmt.Errorf("a bound written as a bare value must be a whole number of controls: %w", err)
+		}
+		b.Min = &exact
+		b.Max = &exact
+		return nil
+	}
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("a bound must be a whole number of controls or a min/max mapping, got a %s", nodeKindName(node.Kind))
+	}
+
+	// The keys are checked here rather than by the decoder's KnownFields setting,
+	// which a custom unmarshaller does not inherit: yaml.Node.Decode carries none
+	// of the parent decoder's strictness, so delegating would have accepted a typo
+	// inside a bound as a bound nobody wrote.
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		key := node.Content[i]
+		switch key.Value {
+		case "min", "max", "controls":
+		case "<<":
+			// go-yaml expands a merge key before the value reaches the struct, so
+			// refusing it here would reject legitimate YAML — and a repetitive
+			// threshold file is exactly where an author reaches for one.
+		default:
+			return fmt.Errorf("line %d: field %s is not a known bound", key.Line, key.Value)
+		}
+	}
+
+	// A distinct type, not ThresholdBound, or this method would recurse.
+	type bound struct {
+		Min      *int     `yaml:"min,omitempty"`
+		Max      *int     `yaml:"max,omitempty"`
+		Controls []string `yaml:"controls,omitempty"`
+	}
+	var decoded bound
+	if err := node.Decode(&decoded); err != nil {
+		return err
+	}
+	b.Min, b.Max, b.Controls = decoded.Min, decoded.Max, decoded.Controls
+	return nil
+}
+
+func nodeKindName(k yaml.Kind) string {
+	switch k {
+	case yaml.SequenceNode:
+		return "list"
+	case yaml.MappingNode:
+		return "mapping"
+	case yaml.ScalarNode:
+		return "value"
+	case yaml.AliasNode:
+		return "alias"
+	case yaml.DocumentNode:
+		return "document"
+	default:
+		return "unknown node"
+	}
 }
 
 // ComplianceBound is a min/max bound on the compliance percentage.

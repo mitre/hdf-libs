@@ -1281,3 +1281,134 @@ func TestValidateThreshold_InlineTypoIsDiagnosedInTheRightGrammar(t *testing.T) 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown severity field")
 }
+
+// The five severity categories are critical, high, medium, low and informational.
+// "none" is an accepted alias that resolves onto informational, so a bound written
+// with it is honoured — but a reader looking for a "none" bucket in the output
+// will not find one, so the run says what their key actually names.
+func TestValidateThreshold_SaysNoneIsNotASeverityCategory(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsEverySchemaSeverity)
+	spec := writeResultsAt(t, dir, "saf.yaml", "no_impact:\n  none:\n    max: 9\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec)
+	require.NoError(t, err, "the bound is honoured; the note must not fail the gate")
+	assert.Contains(t, stderr, "'none' is not a severity category")
+	assert.Contains(t, stderr, "no_impact.none is read as no_impact.informational",
+		"and must name what the key resolves to, in the author's own section")
+}
+
+// It reports the SPEC, not the document, so it does not depend on what the
+// document happens to contain — a note about a key cannot be conditional on data.
+func TestValidateThreshold_NoneNoteDoesNotDependOnTheDocument(t *testing.T) {
+	dir := t.TempDir()
+	spec := writeResultsAt(t, dir, "saf.yaml", "no_impact:\n  none:\n    max: 9\n")
+
+	for name, body := range map[string]string{
+		"document with informational requirements": testResultsEverySchemaSeverity,
+		"document with none at all":                testResultsNoFailures,
+	} {
+		t.Run(name, func(t *testing.T) {
+			doc := writeResultsAt(t, dir, "d.json", body)
+			_, stderr, err := executeCommand("validate", "threshold", doc, "-T", spec)
+			require.NoError(t, err)
+			assert.Contains(t, stderr, "'none' is not a severity category")
+		})
+	}
+}
+
+// A spec using the category name makes no such claim and says nothing.
+func TestValidateThreshold_InformationalSpellingSaysNothing(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsEverySchemaSeverity)
+	spec := writeResultsAt(t, dir, "hdf.yaml", "no_impact:\n  informational:\n    max: 9\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec)
+	require.NoError(t, err)
+	assert.NotContains(t, stderr, "not a severity category")
+}
+
+// A bulk run captures each file's stderr and prints one short line per file, so
+// without the note channel the remark is silent in exactly the directory shape
+// this command documents as a gate's primary use. It rides both the ok and the
+// error line, because a note explains the verdict at least as often when the file
+// failed.
+func TestValidateThreshold_BulkRunStillNamesTheNonCategoryKey(t *testing.T) {
+	dir := t.TempDir()
+	legacy := writeResultsAt(t, dir, "legacy.json", testResultsEverySchemaSeverity)
+	current := writeResultsAt(t, dir, "current.json", testResultsEverySchemaSeverity)
+	legacySpec := writeResultsAt(t, dir, "legacy.yaml", "no_impact:\n  none:\n    max: 9\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", legacy, current, "-T", legacySpec)
+	require.NoError(t, err)
+	// The spec is the same for both files, so both lines carry it — what this
+	// pins is that the note survives the capture at all.
+	assert.Equal(t, 2, strings.Count(stderr, "non-category severity key"),
+		"a bulk run must not swallow the note")
+}
+
+// And a spec with no such key leaves every line clean, so the note is not
+// attached to every bulk run.
+func TestValidateThreshold_BulkRunQuietWithoutALegacyKey(t *testing.T) {
+	dir := t.TempDir()
+	first := writeResultsAt(t, dir, "first.json", testResultsEverySchemaSeverity)
+	second := writeResultsAt(t, dir, "second.json", testResultsEverySchemaSeverity)
+	spec := writeResultsAt(t, dir, "hdf.yaml", "no_impact:\n  informational:\n    max: 9\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", first, second, "-T", spec)
+	require.NoError(t, err)
+	assert.NotContains(t, stderr, "non-category severity key")
+}
+
+// A section setting BOTH names is REFUSED, not resolved. Claiming "none is read
+// as informational" there asserts a resolution that does not happen, and the
+// refusal printed immediately afterwards contradicts it — the note must stay out
+// of the way and let the refusal explain itself.
+func TestValidateThreshold_NoNoneNoteWhenTheSpecIsRefusedForNamingBoth(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsEverySchemaSeverity)
+	spec := writeResultsAt(t, dir, "both.yaml",
+		"no_impact:\n  none:\n    max: 5\n  informational:\n    max: 5\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec)
+	require.Error(t, err, "a spec naming one bucket twice is refused")
+	assert.Contains(t, stderr, "both 'none' and 'informational' are set")
+	assert.NotContains(t, stderr, "is read as no_impact.informational",
+		"the note must not assert a resolution the refusal is about to deny")
+}
+
+// The note rides the ERROR line too, which the ok-only tests above cannot show.
+func TestValidateThreshold_BulkErrorLineCarriesTheNonCategoryNote(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.json", testResultsForThreshold)
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	// max: 0 against a document that has failures — the first file fails.
+	spec := writeResultsAt(t, dir, "legacy.yaml", "failed:\n  none:\n    max: 0\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", failing, clean, "-T", spec)
+	require.Error(t, err, "one file violates the bound")
+	assert.Contains(t, stderr, "failing.json: error (1 non-category severity key)",
+		"a failing file must still carry the note")
+}
+
+// Two specs naming the same key state one fact, so the note is emitted once —
+// but the behaviour has to be pinned rather than incidental, because a reader
+// counting lines would otherwise infer the spec count.
+func TestValidateThreshold_NonCategoryNoteIsPerKeyNotPerSpec(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsEverySchemaSeverity)
+	same := writeResultsAt(t, dir, "same.yaml", "no_impact:\n  none:\n    max: 9\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", same, "-T", same)
+	require.NoError(t, err)
+	assert.Equal(t, 1, strings.Count(stderr, "not a severity category"),
+		"one key named by two specs is one fact, not two")
+
+	// Distinct keys DO each get a note, so the dedup is by key and not a cap.
+	multi := writeResultsAt(t, dir, "multi.yaml",
+		"no_impact:\n  none:\n    max: 9\nfailed:\n  none:\n    max: 9\n")
+	_, stderr, err = executeCommand("validate", "threshold", results, "-T", multi)
+	require.NoError(t, err)
+	assert.Equal(t, 2, strings.Count(stderr, "not a severity category"),
+		"two distinct sections are two facts")
+}

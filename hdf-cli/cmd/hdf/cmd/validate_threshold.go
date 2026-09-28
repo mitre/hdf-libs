@@ -187,6 +187,58 @@ func inlineLabel(inline string) string {
 	return fmt.Sprintf("-I '%s'", inline)
 }
 
+// legacySeverityNotes reports a spec naming a severity bucket by a name that is
+// not one of the categories. The five categories are critical, high, medium, low
+// and informational; "none" is an accepted alias that resolves onto
+// informational, so the bound is honoured — but a reader looking for a "none"
+// bucket in the output will not find one, and should be told what their key
+// actually names.
+//
+// It reports the SPEC, not the document, so it does not depend on what the
+// document happens to contain.
+func legacySeverityNotes(specs []threshold.Spec) []string {
+	sections := func(c *hdfengine.ThresholdConfig) []struct {
+		name string
+		ts   *hdfengine.ThresholdSeverity
+	} {
+		return []struct {
+			name string
+			ts   *hdfengine.ThresholdSeverity
+		}{
+			{hdfengine.ThresholdPassed, c.Passed},
+			{hdfengine.ThresholdFailed, c.Failed},
+			{hdfengine.ThresholdSkipped, c.Skipped},
+			{hdfengine.ThresholdError, c.Error},
+			{hdfengine.ThresholdNoImpact, c.NoImpact},
+		}
+	}
+
+	seen := map[string]bool{}
+	var notes []string
+	for _, spec := range specs {
+		if spec.Config == nil {
+			continue
+		}
+		for _, section := range sections(spec.Config) {
+			if section.ts == nil || section.ts.None == nil || seen[section.name] {
+				continue
+			}
+			// A section setting BOTH names is refused, not resolved, so saying
+			// "none is read as informational" would assert a resolution that does
+			// not happen — and the refusal printed moments later says so. The
+			// refusal explains itself; this note would only contradict it.
+			if section.ts.Informational != nil {
+				continue
+			}
+			seen[section.name] = true
+			notes = append(notes, fmt.Sprintf(
+				"warning: 'none' is not a severity category; %s.none is read as %s.informational",
+				section.name, section.name))
+		}
+	}
+	return notes
+}
+
 // runValidateThresholdFile applies every parsed policy to one document.
 func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 	data, err := readInputFile(file)
@@ -203,6 +255,17 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 
 	if !quiet {
 		fmt.Fprintln(os.Stderr, agentOverrideReadout(countAgentOverrides(data)))
+		notes := legacySeverityNotes(specs)
+		for _, note := range notes {
+			fmt.Fprintln(os.Stderr, note)
+		}
+		// A bulk run captures the stderr above and prints only "<file>: ok", so
+		// without this the note is silent in exactly the directory shape this
+		// command documents as the gate's primary use. The note channel survives
+		// the capture.
+		if len(notes) > 0 {
+			noteLegacySeverityKey(len(notes))
+		}
 	}
 
 	var violations []string

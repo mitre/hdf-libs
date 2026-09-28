@@ -321,6 +321,59 @@ function reqSeverity(req: EvaluatedRequirement): Severity | null {
 }
 
 /**
+ * normalizeThresholdConfig folds SAF's scalar count bound into the object form a
+ * bound is otherwise written in: a bare `total: 19` means EXACTLY 19, measured in
+ * SAF's own validate-threshold command, which guards the scalar path with
+ * `typeof !== 'object'` and then fails on inequality.
+ *
+ * Go reaches this rule through ThresholdBound's YAML decoding; TypeScript does no
+ * YAML decoding of its own, so a consumer that parsed a SAF file itself calls
+ * this before evaluating. Both are pinned by testdata/saf-bound-shorthand-cases.json.
+ * The input is not mutated.
+ */
+export function normalizeThresholdConfig(config: ThresholdConfig): ThresholdConfig {
+  const bound = (value: unknown): ThresholdBound | undefined => {
+    if (value === undefined || value === null) return undefined;
+    if (typeof value === 'number') {
+      if (!Number.isInteger(value)) {
+        throw new Error(`a bound written as a bare value must be a whole number of controls, got ${value}`);
+      }
+      return { min: value, max: value };
+    }
+    // Anything that is not a mapping is refused rather than passed through: a
+    // "bound" whose min and max read undefined applies to nothing, which is the
+    // silent no-op this function exists to close. An array counts — it is
+    // typeof 'object' and carries no bound. Go refuses both for the same reason
+    // (a non-!!int scalar, and any node that is not a mapping).
+    if (typeof value !== 'object' || Array.isArray(value)) {
+      throw new Error(
+        `a bound must be a whole number of controls or a min/max mapping, got ${JSON.stringify(value)}`,
+      );
+    }
+    return value as ThresholdBound;
+  };
+
+  const section = (ts: ThresholdSeverity | undefined): ThresholdSeverity | undefined => {
+    if (!ts) return ts;
+    const out: ThresholdSeverity = {};
+    for (const key of ['critical', 'high', 'medium', 'low', 'informational', 'none', 'total'] as const) {
+      const normalized = bound((ts as Record<string, unknown>)[key]);
+      if (normalized !== undefined) out[key] = normalized;
+    }
+    return out;
+  };
+
+  return {
+    ...config,
+    passed: section(config.passed),
+    failed: section(config.failed),
+    skipped: section(config.skipped),
+    error: section(config.error),
+    noImpact: section(config.noImpact),
+  };
+}
+
+/**
  * calculateCompliance returns the compliance percentage rounded to two decimals:
  * passed / (passed + failed + skipped + error) * 100; notApplicable excluded.
  */
@@ -421,6 +474,13 @@ export function validateGrid(
   controlMap: ControlIDMapping[],
 ): string[] {
   const violations: string[] = [];
+
+  // Normalized here rather than in each caller: a consumer that parsed a SAF
+  // threshold file itself hands over a scalar bound, and a bound whose min and max
+  // both read undefined applies to nothing — a gate that reports green because it
+  // checked nothing. Go cannot reach that state because its YAML decoding
+  // normalizes on the way in; this is where TypeScript gets the same guarantee.
+  config = normalizeThresholdConfig(config);
 
   // Every construction path lands here, so the former name is resolved once
   // rather than in each caller. Resolved before the compliance bounds so a

@@ -54,7 +54,11 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) 
 		case result.Success:
 			fmt.Fprintf(os.Stderr, "%s: ok%s\n", file, note)
 		default:
-			fmt.Fprintf(os.Stderr, "%s: error\n", file)
+			// The note rides the failure line too. A note explains the verdict at
+			// least as often when the file failed — a threshold divergence is most
+			// worth saying when it is why the gate flipped — and printing it only
+			// on success hid it in exactly that case.
+			fmt.Fprintf(os.Stderr, "%s: error%s\n", file, note)
 		}
 
 		results = append(results, result)
