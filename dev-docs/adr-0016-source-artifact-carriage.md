@@ -1,6 +1,23 @@
-# ADR-0016: Source-artifact carriage — every converted document references its original, embedding optional
+# ADR-0016 (superseded): Source-artifact carriage — every converted document references its original, embedding optional
 
-- **Status:** Proposed — **DRAFT, needs heavy refinement.** This records a direction and the evidence behind it, not a settled design. The Open Questions section is load-bearing: several of its answers could change the Decision. Do not card implementation from this draft until the open questions are resolved.
+- **Status:** **Superseded by ADR-0017** (`adr-0017-raw-source-artifact-carriage-and-requirement-rollup.md`, branch `feat/passthrough-source-artifact`, 2026-09-27). This draft is kept for its measurements and its alternatives, which ADR-0017 cites; its Decision is no longer the project's direction. Do not implement from this file.
+
+### What ADR-0017 took, and what it decided differently
+
+Every strand of this draft is now covered there, several with a different answer:
+
+| This draft | ADR-0017 |
+|---|---|
+| Carrier is one `External_Reference` in root `externalReferences[]` with `rel: "source"` | Carrier is **`extensions.rawSourceArtifacts[]`**, an array of `External_Reference` entries with `rel: "raw-source"` — an array because the OSCAL profile path consumes a profile *and* a catalog, and named so "source" is not overloaded a seventh time |
+| Carriage required by policy, embedding opt-in (`--embed-source`) | Carriage of the artifact **verbatim** is required of converters by policy; embedding is how the artifact is carried, not an extra |
+| Embedded typing unresolved (Open Question 2) | **Decided:** `External_Reference` gains `content` + `encoding` (`utf-8` or `base64`); `document` stays JSON-only. Widening `document` to accept a string was considered and rejected — measured, 15 of 47 ingest converters cannot embed in `document` at all today, including all 9 XML converters, the CSV converter, the NDJSON paths and 4 JSON converters whose top level is an array |
+| `extensions.passthrough` "may remain right for legacy content" (Alternative C, Open Question 1) | **Decided:** `passthrough` becomes a formally defined catch-all for data with no other home — heimdall2's `auxiliary_data` role — and explicitly not the artifact's home |
+| Open Question 6: does document-level carriage make per-requirement raw `code` redundant? | **Answered:** `code` means the code that ran; raw payloads are a mapping error and move to the artifact. Measured: 19 converters, ~1,855 requirements |
+| Not in scope | Requirement roll-up merge rules, folded in because payload relocation and roll-up touch the same converters and must land in one pass per converter |
+
+Still open, and now tracked in ADR-0017's Open Questions rather than here: the reload-ceiling policy (this draft's Open Question 5), `href` content (4), the `resultsChecksum` overlap (3), sensitivity when embedding (8), whether reconstruction is in scope (9), and multi-artifact ordering (7). Open Question 10 (object-local OSCAL carriage coexists) is restated there as settled.
+
+**Note on numbering:** this file's number collides with `adr-0016-multi-scanner-results-merge.md` on `main`, which shipped first. Renumbering or retiring this file is housekeeping for whoever lands this branch.
 - **Date:** 2026-09-16
 - **Deciders:** Will Dower (pending review)
 - **Branch:** `feat/schema-greenfield` (may carry further schema adjustments)
