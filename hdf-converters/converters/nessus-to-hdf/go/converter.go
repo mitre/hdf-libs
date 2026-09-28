@@ -351,6 +351,18 @@ func calculateImpact(item *ReportItem, isCompliance bool) float64 {
 	return hdfutil.SeverityToImpactWithAliases(item.Severity, nessusAliases, 0.0)
 }
 
+// orDefaultNIST substitutes the shared remediation fallback when a lookup
+// resolved nothing, so the CCI path and the plugin-family path behave alike. A
+// finding the mapping tables do not cover is still a flaw to remediate, and an
+// empty nist tag would drop it from every NIST-based view. The result is a copy,
+// so a caller editing the tag cannot reach the shared constant.
+func orDefaultNIST(controls []string) []string {
+	if len(controls) == 0 {
+		return append([]string(nil), shared.DefaultRemediationNIST...)
+	}
+	return controls
+}
+
 func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 	tags := make(map[string]interface{})
 
@@ -366,13 +378,9 @@ func buildTags(item *ReportItem, isCompliance bool) map[string]interface{} {
 	if isCompliance && item.ComplianceReference != "" {
 		cciTags := parseComplianceRef(item.ComplianceReference, "CCI")
 		tags["cci"] = cciTags
-		tags["nist"] = cci.CCIToNIST(cciTags)
+		tags["nist"] = orDefaultNIST(cci.CCIToNIST(cciTags))
 	} else {
-		nist := nessusmappings.NISTControls(item.PluginFamily, item.PluginID)
-		if nist == nil {
-			nist = []string{}
-		}
-		tags["nist"] = nist
+		tags["nist"] = orDefaultNIST(nessusmappings.NISTControls(item.PluginFamily, item.PluginID))
 	}
 
 	// STIG ID for compliance
