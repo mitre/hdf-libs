@@ -148,7 +148,7 @@ describe('checklist shared model', () => {
     const bl = hdf.baselines[0];
     expect(bl.name).toBe('STIG Checklist Scan');
     expect(bl.title).toBe('Mozilla Firefox STIG');
-    expect((bl.extensions as Record<string, unknown>)['stigid']).toBe('MOZ_Firefox_STIG');
+    expect((bl.extensions?.passthrough as Record<string, unknown>)['stigid']).toBe('MOZ_Firefox_STIG');
     const r = bl.requirements[0];
     expect(r.id).toBe('V-251545');
     expect(r.impact).toBeCloseTo(0.7, 3);
@@ -157,7 +157,7 @@ describe('checklist shared model', () => {
     expect(r.verificationMethod).toBeUndefined();
     expect(r.applicability).toBeUndefined();
     expect(hdf.components?.[0].name).toBe('EXAMPLE-HOST');
-    expect((hdf.extensions as Record<string, unknown>)['checklistFormat']).toBe('ckl');
+    expect((hdf.extensions?.passthrough as Record<string, unknown>)['checklistFormat']).toBe('ckl');
   });
 
   it('round-trips CKL -> HDF -> model -> CKL', () => {
@@ -442,7 +442,7 @@ describe('checklist shared model', () => {
     expect(mk(0)).toBe('low');
   });
 
-  it('stashes all asset extras + STIG metadata in extensions and round-trips them', () => {
+  it('stashes all asset extras + STIG metadata in extensions.passthrough and round-trips them', () => {
     const cl: Checklist = {
       format: 'cklb',
       cklbVersion: '1.0',
@@ -459,11 +459,11 @@ describe('checklist shared model', () => {
       }],
     };
     const hdf = checklistToHdf(cl, CHECKSUM, 'test-converter');
-    const ext = hdf.extensions as Record<string, unknown>;
+    const ext = hdf.extensions?.passthrough as Record<string, unknown>;
     expect((ext.assetExtras as Record<string, unknown>).marking).toBe('CUI');
     expect((ext.assetExtras as Record<string, unknown>).webOrDatabase).toBe(true);
     expect(ext.cklbVersion).toBe('1.0');
-    const blExt = hdf.baselines[0].extensions as Record<string, unknown>;
+    const blExt = hdf.baselines[0].extensions?.passthrough as Record<string, unknown>;
     expect(blExt.stigid).toBe('S');
     expect(blExt.referenceIdentifier).toBe('ref');
 

@@ -155,8 +155,8 @@ func TestV3ToV2ToV3PreservesPassthroughProvenance(t *testing.T) {
 		Components: []hdf.Component{
 			{Type: hdf.CloudAccount, Name: "prod-account", AccountID: &accountID, Labels: map[string]string{"boundary": "sparc"}},
 		},
-		Extensions: map[string]interface{}{
-			"passthrough": map[string]interface{}{
+		Extensions: &hdf.Extensions{
+			Passthrough: map[string]interface{}{
 				"audit": map[string]interface{}{"runId": "r-123"},
 			},
 		},
@@ -185,8 +185,8 @@ func TestV3ToV2ToV3PreservesPassthroughProvenance(t *testing.T) {
 	require.NoError(t, json.Unmarshal(v3out, &restored))
 	assert.Equal(t, original.Components, restored.Components, "components restored")
 	require.NotNil(t, restored.Extensions, "extensions restored")
-	rpt, ok := restored.Extensions["passthrough"].(map[string]any)
-	require.True(t, ok, "extensions.passthrough restored")
+	rpt := restored.Extensions.Passthrough
+	require.NotEmpty(t, rpt, "extensions.passthrough restored")
 	raudit, ok := rpt["audit"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "r-123", raudit["runId"], "provenance round-trips losslessly")
@@ -209,8 +209,8 @@ func TestDowngradeV3ToV2_PreservesProvenanceWithoutComponents(t *testing.T) {
 				}},
 			}},
 		}},
-		Extensions: map[string]interface{}{
-			"passthrough": map[string]interface{}{
+		Extensions: &hdf.Extensions{
+			Passthrough: map[string]interface{}{
 				"audit": map[string]interface{}{"runId": "r-123"},
 			},
 		},
@@ -250,8 +250,8 @@ func TestDowngradeV3ToV2_ReservedComponentsKeyCollision(t *testing.T) {
 			}},
 		}},
 		Components: []hdf.Component{{Type: hdf.CloudAccount, Name: "prod-account", AccountID: &accountID}},
-		Extensions: map[string]interface{}{
-			"passthrough": map[string]interface{}{
+		Extensions: &hdf.Extensions{
+			Passthrough: map[string]interface{}{
 				"hdf_components": "USER_DATA_COLLIDES",
 				"audit":          map[string]interface{}{"runId": "r-123"},
 			},
@@ -278,8 +278,8 @@ func TestDowngradeV3ToV2_ReservedComponentsKeyCollision(t *testing.T) {
 	var restored hdf.HDFResults
 	require.NoError(t, json.Unmarshal(v3out, &restored))
 	assert.Equal(t, original.Components, restored.Components, "the real components carrier wins over the colliding key")
-	rpt, ok := restored.Extensions["passthrough"].(map[string]any)
-	require.True(t, ok, "non-colliding provenance still round-trips")
+	rpt := restored.Extensions.Passthrough
+	require.NotEmpty(t, rpt, "non-colliding provenance still round-trips")
 	assert.Equal(t, "r-123", rpt["audit"].(map[string]any)["runId"])
 }
 
@@ -301,8 +301,8 @@ func TestDowngradeV3ToV2_StripsReservedKeyWithoutComponents(t *testing.T) {
 			}},
 		}},
 		// No components.
-		Extensions: map[string]interface{}{
-			"passthrough": map[string]interface{}{
+		Extensions: &hdf.Extensions{
+			Passthrough: map[string]interface{}{
 				"hdf_components": "USER_DATA_COLLIDES",
 				"audit":          map[string]interface{}{"runId": "r-123"},
 			},

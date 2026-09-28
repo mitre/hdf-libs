@@ -117,12 +117,16 @@ func normalizeProfile(profile map[string]any) (hdf.EvaluatedBaseline, []string) 
 	baseline.Supports = normalizeSupports(profile)
 
 	// Inputs: legacy "attributes" are unstructured maps that don't conform to
-	// the typed Input schema. Store in extensions to preserve the data.
+	// the typed Input schema. Store in extensions.passthrough to preserve the
+	// data — `extensions` itself is closed to undeclared keys.
 	if attrs := normalizeInputs(profile); len(attrs) > 0 {
 		if baseline.Extensions == nil {
-			baseline.Extensions = make(map[string]interface{})
+			baseline.Extensions = &hdf.Extensions{}
 		}
-		baseline.Extensions["legacyAttributes"] = attrs
+		if baseline.Extensions.Passthrough == nil {
+			baseline.Extensions.Passthrough = make(map[string]interface{})
+		}
+		baseline.Extensions.Passthrough["legacyAttributes"] = attrs
 	}
 
 	// Controls -> Requirements

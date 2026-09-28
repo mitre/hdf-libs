@@ -104,9 +104,8 @@
       "description": "Cryptographic integrity information for verifying this comparison document."
     },
     "extensions": {
-      "type": "object",
-      "additionalProperties": true,
-      "description": "Reserved for tool-specific data not defined in the HDF standard."
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Extensions",
+      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this comparison was derived from."
     }
   },
   "description": "Structured comparison between two or more HDF security assessment documents. Supports temporal, baseline, fleet, and multi-source comparison modes.",

@@ -447,11 +447,11 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 
-  describe('report.cmds → baseline.extensions.neuvector (scan-scope metadata)', async () => {
+  describe('report.cmds → baseline.extensions.passthrough.neuvector (scan-scope metadata)', async () => {
     it('emits report.cmds once on baseline.extensions and never on requirement tags', async () => {
       const hdf = JSON.parse(await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json'))) as HDFResults;
       const baseline = hdf.baselines[0]!;
-      const ext = baseline.extensions?.['neuvector'] as { cmds?: string[] } | undefined;
+      const ext = baseline.extensions?.passthrough?.['neuvector'] as { cmds?: string[] } | undefined;
       expect(ext).toBeDefined();
       expect(ext!.cmds).toHaveLength(66);
       expect(ext!.cmds![0]).toBe('CMD ["/usr/local/bin/cmd.sh"]');

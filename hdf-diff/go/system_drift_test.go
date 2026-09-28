@@ -250,7 +250,7 @@ func TestDiffSystems_AuthorizationStatusChange(t *testing.T) {
 	if result.Extensions == nil {
 		t.Fatal("expected extensions to be set")
 	}
-	sysChanges, ok := result.Extensions["systemFieldChanges"].([]FieldChange)
+	sysChanges, ok := result.Extensions.Passthrough["systemFieldChanges"].([]FieldChange)
 	if !ok {
 		t.Fatal("expected systemFieldChanges in extensions")
 	}
@@ -590,7 +590,7 @@ func TestDiffSystems_DataFlowAdded(t *testing.T) {
 	if result.Extensions == nil {
 		t.Fatal("expected extensions with dataFlowChanges")
 	}
-	dfChanges, ok := result.Extensions["dataFlowChanges"]
+	dfChanges, ok := result.Extensions.Passthrough["dataFlowChanges"]
 	if !ok {
 		t.Fatal("expected dataFlowChanges in extensions")
 	}
@@ -631,7 +631,7 @@ func TestDiffSystems_DataFlowRemoved(t *testing.T) {
 	if result.Extensions == nil {
 		t.Fatal("expected extensions with dataFlowChanges")
 	}
-	changes := result.Extensions["dataFlowChanges"].([]DataFlowChange)
+	changes := result.Extensions.Passthrough["dataFlowChanges"].([]DataFlowChange)
 	if len(changes) != 1 {
 		t.Fatalf("expected 1 data flow change, got %d", len(changes))
 	}
@@ -672,7 +672,7 @@ func TestDiffSystems_DataFlowUpdated(t *testing.T) {
 	if result.Extensions == nil {
 		t.Fatal("expected extensions with dataFlowChanges")
 	}
-	changes := result.Extensions["dataFlowChanges"].([]DataFlowChange)
+	changes := result.Extensions.Passthrough["dataFlowChanges"].([]DataFlowChange)
 	if len(changes) != 1 {
 		t.Fatalf("expected 1 data flow change, got %d", len(changes))
 	}
@@ -700,7 +700,7 @@ func TestDiffSystems_NoDataFlowChanges_NoExtension(t *testing.T) {
 	}
 
 	if result.Extensions != nil {
-		if _, ok := result.Extensions["dataFlowChanges"]; ok {
+		if _, ok := result.Extensions.Passthrough["dataFlowChanges"]; ok {
 			t.Error("expected no dataFlowChanges extension when flows are identical")
 		}
 	}

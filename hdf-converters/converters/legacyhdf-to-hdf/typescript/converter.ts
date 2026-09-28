@@ -1146,17 +1146,15 @@ export function convertLegacyHdf(v1Data: LegacyHDFResults, converterVersion = '1
     }
   }
 
+  // `extensions` is closed, so the unknown v1 fields and the version marker
+  // both ride inside passthrough alongside any carried provenance.
+  const passthrough: Record<string, unknown> = {...carriedProvenance};
   if (Object.keys(extensionFields).length > 0) {
-    v2.extensions = {
-      ...extensionFields,
-      v1_version: v1Data.version, // Preserve original version for tracking
-    };
+    Object.assign(passthrough, extensionFields);
+    passthrough['v1_version'] = v1Data.version; // Preserve original version for tracking
   }
-
-  // extensions.passthrough is set independently of v1_version so a provenance-only
-  // round trip matches the Go peer, which stamps only extensions.passthrough.
-  if (carriedProvenance) {
-    v2.extensions = {...(v2.extensions ?? {}), passthrough: carriedProvenance};
+  if (Object.keys(passthrough).length > 0) {
+    v2.extensions = {passthrough};
   }
 
   // Flatten overlays: merge overlay/wrapper baselines so every requirement

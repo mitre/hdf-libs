@@ -15,7 +15,7 @@ import { statusFromHdf } from './status.js';
 
 /**
  * Map HDF Results back to the format-neutral Checklist model. When the HDF
- * carries checklist passthrough (extensions/tags from checklistToHdf), the
+ * carries checklist passthrough (extensions.passthrough/tags from checklistToHdf), the
  * original fields are reproduced losslessly; otherwise required checklist
  * fields are synthesized best-effort so any HDF yields a valid checklist.
  */
@@ -39,7 +39,7 @@ export function hdfToChecklist(input: string): Checklist {
     }
   });
 
-  const ext = (hdf.extensions ?? {}) as Record<string, unknown>;
+  const ext = (hdf.extensions?.passthrough ?? {}) as Record<string, unknown>;
   const format = strVal(ext, 'checklistFormat') || 'ckl';
   const cklbVersion = strVal(ext, 'cklbVersion');
 
@@ -92,7 +92,7 @@ function buildAsset(hdf: HDFResults, ext: Record<string, unknown>): Asset {
 }
 
 function baselineToStig(bl: EvaluatedBaseline): Stig {
-  const ext = (bl.extensions ?? {}) as Record<string, unknown>;
+  const ext = (bl.extensions?.passthrough ?? {}) as Record<string, unknown>;
   const stigID = strVal(ext, 'stigid') || bl.title || '';
   return {
     stigID,

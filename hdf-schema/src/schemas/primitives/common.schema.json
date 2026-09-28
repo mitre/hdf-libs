@@ -7,7 +7,7 @@
     "External_Reference": {
       "type": "object",
       "title": "External Reference",
-      "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property.\n\nPurpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category.\n\n`sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible.\n\nA reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+      "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property.\n\nPurpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category.\n\n`sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible.\n\nAn entry may also carry the artifact itself rather than point at it: `document` for a JSON object, `content` + `encoding` for anything else. Embedding satisfies the at-least-one rule on its own, so an artifact with no meaningful public location needs no synthetic `href`.\n\nA reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
       "required": [
         "sourceName"
       ],
@@ -26,8 +26,26 @@
           "required": [
             "description"
           ]
+        },
+        {
+          "required": [
+            "content"
+          ]
+        },
+        {
+          "required": [
+            "document"
+          ]
         }
       ],
+      "dependentRequired": {
+        "content": [
+          "encoding"
+        ],
+        "encoding": [
+          "content"
+        ]
+      },
       "properties": {
         "sourceName": {
           "type": "string",
@@ -41,7 +59,7 @@
         "href": {
           "type": "string",
           "format": "uri-reference",
-          "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. `checksum`/`mediaType` apply only to a retrievable `href`."
+          "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. Set it only when the location is meaningful to a reader — never a producer's local filesystem path."
         },
         "description": {
           "type": "string",
@@ -53,11 +71,11 @@
         },
         "mediaType": {
           "type": "string",
-          "description": "IANA media type of the referenced artifact when retrievable (RFC 6838), e.g., 'application/json'. Meaningful only with `href`."
+          "description": "IANA media type of the artifact (RFC 6838), e.g., 'application/json', 'application/xml', 'text/csv'. Applies both to an artifact retrievable at `href` and to one embedded here in `content` or `document`."
         },
         "checksum": {
           "$ref": "#/$defs/Checksum",
-          "description": "Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Meaningful only with a retrievable `href`."
+          "description": "Integrity hash of the artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Applies both to an artifact retrievable at `href` and to one embedded here in `content` or `document` — beside embedded bytes it is what makes the copy verifiable rather than merely present."
         },
         "addedBy": {
           "$ref": "#/$defs/Identity",
@@ -76,11 +94,24 @@
         "document": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim.\n\nComposes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed.\n\nHDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+          "description": "Optional lossless embedded copy of the referenced artifact as a JSON object — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim.\n\nJSON objects only. An artifact that is not a JSON object (XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not text at all) embeds through `content` + `encoding` instead.\n\nComposes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed.\n\nHDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+        },
+        "content": {
+          "type": "string",
+          "description": "Optional lossless embedded copy of the artifact's bytes as a string, for artifacts `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not valid UTF-8 text at all.\n\n`encoding` states how to read it back and is required alongside it. Set `mediaType` so a consumer knows what the bytes are, and `checksum` so the copy can be verified against the source.\n\nCarried verbatim — never reformatted, re-indented, or re-serialized."
+        },
+        "encoding": {
+          "type": "string",
+          "title": "External Reference Encoding",
+          "enum": [
+            "utf-8",
+            "base64"
+          ],
+          "description": "How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON, plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8 text.\n\nRequired whenever `content` is present, and meaningless without it — an embedded copy whose encoding a consumer has to guess is not lossless."
         }
       },
       "unevaluatedProperties": false,
-      "$comment": "Examples, in order: 1) By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228; 2) By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL; 3) By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution; 4) Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
+      "$comment": "Examples, in order: 1) By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228; 2) By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL; 3) By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution; 4) Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields; 5) Embed-only, text: an XCCDF results file carried in `content` as utf-8 with its media type and checksum, and no `href` at all — the artifact was read from a local file whose path means nothing to a reader; 6) Embed-only, non-text: a Fortify FPR (a zip) carried in `content` as base64, the case `document` and utf-8 both fail.",
       "examples": [
         {
           "sourceName": "cve",
@@ -125,6 +156,28 @@
                 "external_id": "CVE-2021-44228"
               }
             ]
+          }
+        },
+        {
+          "sourceName": "openscap",
+          "rel": "raw-source",
+          "mediaType": "application/xml",
+          "encoding": "utf-8",
+          "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Benchmark xmlns=\"http://checklists.nist.gov/xccdf/1.2\" id=\"xccdf_org.ssgproject.content_benchmark_RHEL-9\">\n  <TestResult id=\"xccdf_org.open-scap_testresult_default-profile\" start-time=\"2026-09-27T12:00:00+00:00\" end-time=\"2026-09-27T12:04:11+00:00\">\n    <rule-result idref=\"xccdf_org.ssgproject.content_rule_sshd_disable_root_login\" severity=\"medium\">\n      <result>fail</result>\n    </rule-result>\n  </TestResult>\n</Benchmark>",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "713b3ee32af5c14ac93e519b5025d760983607143dba3a0438f68667923beda1"
+          }
+        },
+        {
+          "sourceName": "fortify",
+          "rel": "raw-source",
+          "mediaType": "application/zip",
+          "encoding": "base64",
+          "content": "UEsDBBQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAYXVkaXQuZnZkbLOxr8jNUShLLSrOzM+zVTLUM1Cyt7NxC3Px0bcDAFBLAQIUAxQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAAAAAAAAAAACAAQAAAABhdWRpdC5mdmRsUEsFBgAAAAABAAEAOAAAAEYAAAAAAA==",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "c7e4cefceecb83511ae6174c7d22584061671dee6dc5f27243503b47532a66b1"
           }
         }
       ]
