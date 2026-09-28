@@ -29,6 +29,7 @@ import type {
 import { ComponentStatusState } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlRef,
+  oscalStatusToHdf,
   oscalString,
   oscalToken,
   impactToSeverity,
@@ -683,16 +684,16 @@ function requirementToFindingSet(
     target,
   } as Finding;
 
-  // Build observation from requirement results
+  // Build observation from requirement results. Its display description is
+  // synthesized below, after the risk is built, from the objects being emitted.
   let observation: Observation | undefined;
   if (results.length > 0) {
     const obsUUID = crypto.randomUUID();
-    const obsDesc = buildObservationDescription(results);
     const relevantEvidence = buildRelevantEvidence(req);
     const obsProps = appendCarriedProps([], carriedFor(carried, 'observation'));
     observation = {
       uuid: obsUUID,
-      description: obsDesc,
+      description: '',
       methods: ['TEST'],
       // When the evidence was gathered — the scan time for this requirement, not
       // when the file was converted.
@@ -755,6 +756,10 @@ function requirementToFindingSet(
       ...(riskProps.length > 0 ? { props: riskProps } : {}),
     } as unknown as IdentifiedRisk;
     finding['related-risks'] = [{ 'risk-uuid': riskUUID }];
+  }
+
+  if (observation) {
+    observation.description = observationDisplayDescription(roundTripStatus(state), observation, risk, title);
   }
 
   return { finding, observation, risk, resource };
@@ -961,21 +966,66 @@ function extractDefaultDescription(descriptions: Description[]): string {
 }
 
 /**
- * Concatenates result code descriptions and messages.
+ * Synthesizes an observation's display description from the OSCAL objects the
+ * exporter emits, mirroring how the reverse SAR importer reconstructs a result's
+ * status, codeDesc and message. Deriving it from the emitted observation and risk
+ * — not from the HDF result's stored codeDesc/message — makes the SAR round trip
+ * idempotent on observation.description (ADR-0014 §3.5): the string already equals
+ * what the importer reads back and the next export re-synthesizes, so the first
+ * HDF-produced export equals the second. observation.description is display text,
+ * not a prose home (ADR-0014 §2); the requirement's real prose rides its own homes
+ * (finding.target.description, relevant-evidence, risk.remediations).
  */
-function buildObservationDescription(results: RequirementResult[]): string {
+function observationDisplayDescription(
+  status: string,
+  obs: Observation,
+  risk: IdentifiedRisk | undefined,
+  fallbackTitle: string,
+): string {
+  let desc = `[${status}] ${reconstructedCodeDesc(obs, fallbackTitle)}`;
+  const msg = reconstructedRiskMessage(risk);
+  if (msg !== '') {
+    desc += ': ' + msg;
+  }
+  return desc;
+}
+
+/**
+ * The HDF status the emitted finding's target state maps back to on import
+ * (oscal-to-hdf mapFindingStatus): an unrecognized state is notReviewed, as there.
+ */
+function roundTripStatus(state: string): string {
+  return oscalStatusToHdf(state) ?? 'notReviewed';
+}
+
+/** Mirrors oscal-to-hdf buildCodeDesc for the single observation the exporter emits. */
+function reconstructedCodeDesc(obs: Observation, fallbackTitle: string): string {
   const parts: string[] = [];
-  for (const r of results) {
-    let desc = `[${r.status}] ${r.codeDesc}`;
-    if (r.message && r.message !== '') {
-      desc += ': ' + r.message;
+  if (obs.methods && obs.methods.length > 0) {
+    parts.push('Methods: ' + obs.methods.join(', '));
+  }
+  for (const subj of obs.subjects ?? []) {
+    let subjDesc = subj.type;
+    if (subj.title) {
+      subjDesc = subj.title + ' (' + subj.type + ')';
     }
-    parts.push(desc);
+    parts.push('Subject: ' + subjDesc);
   }
-  if (parts.length === 0) {
-    return 'No observations recorded';
+  if (parts.length === 0) return fallbackTitle;
+  return parts.join('; ');
+}
+
+/**
+ * Mirrors oscal-to-hdf buildRiskMessage for the single risk the exporter emits
+ * (undefined when the requirement's impact is 0).
+ */
+function reconstructedRiskMessage(risk: IdentifiedRisk | undefined): string {
+  if (!risk) return '';
+  let msg = risk.title;
+  if (risk.description) {
+    msg += ': ' + risk.description;
   }
-  return parts.join('\n');
+  return msg;
 }
 
 

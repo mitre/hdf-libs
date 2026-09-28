@@ -573,8 +573,12 @@ func TestConvertHDFToOSCALSAR_EffectiveStatusAndOverrideProvenance(t *testing.T)
 	assert.Contains(t, remarks, "Applied by: jdoe")
 	assert.Contains(t, remarks, "Expires at: 2099-12-31T00:00:00Z")
 
-	// Raw result status is preserved verbatim in the observation.
-	assert.Contains(t, doc.AssessmentResults.Results[0].Observations[0].Description, "[failed]")
+	// The observation's display description carries the effective status the
+	// finding state resolves to — the only status the round trip recovers, since
+	// the importer reads the finding state, never the observation description
+	// (ADR-0014 §2, §3.5). The raw failed result is preserved in HDF itself, not
+	// re-derivable from this SAR.
+	assert.Contains(t, doc.AssessmentResults.Results[0].Observations[0].Description, "[passed]")
 
 	risk := doc.AssessmentResults.Results[0].Risks[0]
 	assert.Equal(t, "2099-12-31T00:00:00Z", risk.Deadline)

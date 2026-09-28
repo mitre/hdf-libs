@@ -164,8 +164,11 @@ describe('convertHdfToOscalSar', () => {
     expect(status.remarks).toContain('Reason: scanner mis-detection');
     expect(status.remarks).toContain('Applied by: jdoe');
     expect(status.remarks).toContain('Expires at: 2099-12-31T00:00:00Z');
-    // Raw failed result preserved in the observation.
-    expect(result.observations[0].description).toContain('[failed]');
+    // The observation's display description carries the effective status the
+    // finding state resolves to — the only status the round trip recovers, since
+    // the importer reads the finding state, never the observation description
+    // (ADR-0014 §2, §3.5). The raw failed result lives in HDF, not this SAR.
+    expect(result.observations[0].description).toContain('[passed]');
     // Governing override expiry becomes the risk deadline + accepted remediation.
     expect(result.risks[0].deadline).toBe('2099-12-31T00:00:00Z');
     const accepted = result.risks[0].remediations.find((r: { lifecycle: string }) => r.lifecycle === 'accepted');

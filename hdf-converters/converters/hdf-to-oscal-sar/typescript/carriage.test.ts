@@ -111,16 +111,16 @@ describe('hdf-to-oscal-sar foreign-prop re-emission', () => {
     expect(result.risks[0].props).toHaveLength(1);
   });
 
-  // ADR-0014 §3.5 convergence. See the Go peer for why the pipeline input is the
-  // first HDF-produced export of the real FedRAMP SAR.
-  it('converges OSCAL→HDF→OSCAL→HDF→OSCAL, carrying foreign FedRAMP props', async () => {
+  // ADR-0014 §3.5 convergence from the RAW third-party SAR: the first HDF-produced
+  // export equals the second after masking. observation.description idempotency
+  // closed the last gap that once forced this to start from the first export.
+  it('converges OSCAL→HDF→OSCAL→HDF→OSCAL from the raw SAR, carrying foreign FedRAMP props', async () => {
     const raw = readFileSync(join(CONVERTERS, 'oscal-to-hdf', 'fixtures', 'input', 'sar-fedramp.json'), 'utf-8');
     const roundTrip = async (oscalDoc: string): Promise<string> => {
       const hdf = await convertOscalSarToHdf(oscalDoc);
       return convertHdfToOscalSar(hdf);
     };
-    const input = await roundTrip(raw);
-    const export1 = await roundTrip(input);
+    const export1 = await roundTrip(raw);
     const export2 = await roundTrip(export1);
 
     expect(export1).toContain('https://fedramp.gov/ns/oscal');

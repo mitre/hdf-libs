@@ -150,11 +150,10 @@ func TestReemitDedupTreatsAbsentNsAsNistDefault(t *testing.T) {
 	assert.Len(t, sar.Results[0].Risks[0].Props, 1, "absent ns == NIST default, so deduped")
 }
 
-// AC §3.5: convergence. The real FedRAMP SAR carries foreign props; the first
-// HDF-produced export is the input to the ADR's 5-stage pipeline (a raw
-// third-party SAR normalizes lossy prose on the first hop — out of scope here —
-// so convergence is asserted from the first HDF-produced export onward). The
-// second export equals the first after masking volatile uuids and timestamps.
+// AC §3.5: convergence from the RAW third-party SAR. OSCAL → HDF → OSCAL → HDF →
+// OSCAL is stable: the first HDF-produced export equals the second after masking
+// volatile uuids and timestamps. observation.description idempotency closed the
+// last gap that once forced this to start from the first HDF-produced export.
 func TestConvergenceCarriesForeignProps(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join(shared.GetConvertersDir(), "oscal-to-hdf", "fixtures", "input", "sar-fedramp.json"))
 	require.NoError(t, err)
@@ -169,8 +168,7 @@ func TestConvergenceCarriesForeignProps(t *testing.T) {
 		return out
 	}
 
-	input := roundTrip(raw) // first HDF-produced OSCAL SAR — the pipeline input
-	export1 := roundTrip(input)
+	export1 := roundTrip(raw) // first HDF-produced OSCAL SAR
 	export2 := roundTrip(export1)
 
 	// Foreign FedRAMP props survive round-tripping.

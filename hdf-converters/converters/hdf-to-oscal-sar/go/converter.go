@@ -693,15 +693,14 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		},
 	}
 
-	// Build observation from requirement results
+	// Build observation from requirement results. Its display description is
+	// synthesized below, after the risk is built, from the objects being emitted.
 	var observation *oscal.Observation
 	if len(req.Results) > 0 {
 		obsUUID := oscal.GenerateUUID()
-		obsDesc := buildObservationDescription(req.Results)
 		observation = &oscal.Observation{
-			UUID:        obsUUID,
-			Description: obsDesc,
-			Methods:     []string{"TEST"},
+			UUID:    obsUUID,
+			Methods: []string{"TEST"},
 			// When the evidence was gathered — the scan time for this requirement,
 			// not when the file was converted.
 			Collected: formatAssessmentTime(earliestResultTime(req.Results), timestamp),
@@ -768,6 +767,10 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		finding.RelatedRisks = []oscal.RelatedRef{
 			{RiskUUID: riskUUID},
 		}
+	}
+
+	if observation != nil {
+		observation.Description = observationDisplayDescription(roundTripStatus(state), observation, risk, title)
 	}
 
 	return finding, observation, risk, codeResource
@@ -996,20 +999,65 @@ func extractDefaultDescription(descriptions []hdf.Description) string {
 	return ""
 }
 
-// buildObservationDescription concatenates result code descriptions and messages.
-func buildObservationDescription(results []hdf.RequirementResult) string {
+// observationDisplayDescription synthesizes an observation's display description
+// from the OSCAL objects the exporter emits, mirroring how the reverse SAR
+// importer reconstructs a result's status, codeDesc and message. Deriving it from
+// the emitted observation and risk — not from the HDF result's stored codeDesc and
+// message — makes the SAR round trip idempotent on observation.description
+// (ADR-0014 §3.5): the string already equals what the importer reads back and the
+// next export re-synthesizes, so the first HDF-produced export equals the second.
+// observation.description is display text, not a prose home (ADR-0014 §2); the
+// requirement's real prose rides its own homes (finding.target.description,
+// relevant-evidence, risk.remediations).
+func observationDisplayDescription(status string, obs *oscal.Observation, risk *oscal.Risk, fallbackTitle string) string {
+	desc := fmt.Sprintf("[%s] %s", status, reconstructedCodeDesc(obs, fallbackTitle))
+	if msg := reconstructedRiskMessage(risk); msg != "" {
+		desc += ": " + msg
+	}
+	return desc
+}
+
+// roundTripStatus is the HDF status the emitted finding's target state maps back
+// to on import (oscal-to-hdf mapFindingStatus): an unrecognized state is
+// notReviewed, as there.
+func roundTripStatus(state string) string {
+	if s, ok := oscal.OscalStatusToHDF(state); ok {
+		return s
+	}
+	return string(hdf.NotReviewed)
+}
+
+// reconstructedCodeDesc mirrors oscal-to-hdf buildCodeDesc for the single
+// observation the exporter emits.
+func reconstructedCodeDesc(obs *oscal.Observation, fallbackTitle string) string {
 	var parts []string
-	for _, r := range results {
-		desc := fmt.Sprintf("[%s] %s", r.Status, r.CodeDesc)
-		if r.Message != nil && *r.Message != "" {
-			desc += ": " + *r.Message
+	if len(obs.Methods) > 0 {
+		parts = append(parts, "Methods: "+strings.Join(obs.Methods, ", "))
+	}
+	for _, subj := range obs.Subjects {
+		subjDesc := subj.Type
+		if subj.Title != "" {
+			subjDesc = subj.Title + " (" + subj.Type + ")"
 		}
-		parts = append(parts, desc)
+		parts = append(parts, "Subject: "+subjDesc)
 	}
 	if len(parts) == 0 {
-		return "No observations recorded"
+		return fallbackTitle
 	}
-	return strings.Join(parts, "\n")
+	return strings.Join(parts, "; ")
+}
+
+// reconstructedRiskMessage mirrors oscal-to-hdf buildRiskMessage for the single
+// risk the exporter emits (nil when the requirement's impact is 0).
+func reconstructedRiskMessage(risk *oscal.Risk) string {
+	if risk == nil {
+		return ""
+	}
+	msg := risk.Title
+	if risk.Description != "" {
+		msg += ": " + risk.Description
+	}
+	return msg
 }
 
 // riskStatusFromState maps OSCAL finding state to risk status.
