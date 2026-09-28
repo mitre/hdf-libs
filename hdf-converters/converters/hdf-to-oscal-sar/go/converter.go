@@ -80,7 +80,7 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 		Version:      "1.0.0",
 		OscalVersion: oscal.OscalVersion,
 		Parties: []oscal.Party{
-			{UUID: toolActorUUID, Type: "organization", Name: toolPartyName(hdfResults)},
+			{UUID: toolActorUUID, Type: "organization", Name: oscal.NormalizePropValue(toolPartyName(hdfResults))},
 		},
 	}
 
@@ -601,7 +601,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	if req.Code != nil && strings.TrimSpace(*req.Code) != "" {
 		codeResource = &oscal.Resource{
 			UUID:  oscal.GenerateUUID(),
-			Title: "Check source code for " + req.ID,
+			Title: oscal.NormalizePropValue("Check source code for " + req.ID),
 			Props: oscal.AppendVocabularyProp(nil, "type", "evidence"),
 			Base64: &oscal.Base64{
 				Value:     base64.StdEncoding.EncodeToString([]byte(*req.Code)),
@@ -687,7 +687,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		impactText := fmt.Sprintf("Impact: %s (%s)", hdfutil.FormatFixed(req.Impact, 1), severity)
 		risk = &oscal.Risk{
 			UUID:  riskUUID,
-			Title: fmt.Sprintf("Risk for %s", req.ID),
+			Title: oscal.NormalizePropValue(fmt.Sprintf("Risk for %s", req.ID)),
 			// OSCAL requires both description and statement on a risk.
 			Description: impactText,
 			Statement:   impactText,

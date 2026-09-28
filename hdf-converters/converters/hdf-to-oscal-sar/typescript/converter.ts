@@ -33,7 +33,7 @@ import {
   descriptionLabelProp,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
-import { emptyFieldProp, pushVocabularyProp, vocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import { emptyFieldProp, pushVocabularyProp, vocabularyProp, normalizePropValue } from '../../oscal-to-hdf/typescript/vocabulary.js';
 import { appendCarriedProps, carriedFor, readCarriedProps } from '../../oscal-to-hdf/typescript/carriage.js';
 
 /** A reviewed-controls include-controls entry. */
@@ -152,7 +152,7 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
     'last-modified': timestamp,
     version: '1.0.0',
     'oscal-version': OSCAL_VERSION,
-    parties: [{ uuid: toolActorUuid, type: 'organization', name: toolPartyName(hdfResults) }],
+    parties: [{ uuid: toolActorUuid, type: 'organization', name: normalizePropValue(toolPartyName(hdfResults)) }],
   } as unknown as DocumentMetadata;
 
   let importAP: ImportAssessmentPlan;
@@ -593,7 +593,7 @@ function requirementToFindingSet(
     const resourceUuid = crypto.randomUUID();
     resource = {
       uuid: resourceUuid,
-      title: `Check source code for ${req.id}`,
+      title: normalizePropValue(`Check source code for ${req.id}`),
       props: [vocabularyProp('type', 'evidence')!],
       base64: {
         value: encodeBase64Utf8(req.code),
@@ -678,7 +678,7 @@ function requirementToFindingSet(
     const riskProps = appendCarriedProps([], carriedFor(carried, 'risk'));
     risk = {
       uuid: riskUUID,
-      title: `Risk for ${req.id}`,
+      title: normalizePropValue(`Risk for ${req.id}`),
       description: `Impact: ${req.impact.toFixed(1)} (${severity})`,
       statement: `Impact: ${req.impact.toFixed(1)} (${severity})`,
       status: riskStatusFromState(state),
