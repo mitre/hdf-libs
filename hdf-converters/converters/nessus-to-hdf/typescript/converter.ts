@@ -1,6 +1,6 @@
 import { parseXmlWithArrays, parseTimestamp, replaceHtmlTags, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { getNessusNistControl, getCCINistMappings } from '@mitre/hdf-mappings';
-import { buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
+import { DEFAULT_REMEDIATION_NIST_TAGS, buildNoFindingsRequirement, deriveControlTypeFromTags, deriveVerificationMethod, inputChecksum, limitArray, validateInputSize } from '../../../shared/typescript/converterutil.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -536,6 +536,16 @@ function calculateImpact(item: ReportItem, isCompliance: boolean): number {
   return severityToImpactWithAliases(item['severity'], NESSUS_ALIASES, 0.0);
 }
 
+/**
+ * Substitutes the shared remediation fallback when a lookup resolved nothing, so
+ * the CCI path and the plugin-family path behave alike. A finding the mapping
+ * tables do not cover is still a flaw to remediate, and an empty nist tag would
+ * drop it from every NIST-based view.
+ */
+function orDefaultNist(controls: string[]): string[] {
+  return controls.length > 0 ? controls : [...DEFAULT_REMEDIATION_NIST_TAGS];
+}
+
 function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unknown> {
   const tags: Record<string, unknown> = {
     rid: isCompliance
@@ -550,10 +560,10 @@ function buildTags(item: ReportItem, isCompliance: boolean): Record<string, unkn
     // Map CCI IDs to NIST controls using hdf-mappings
     // Pattern: Extract source IDs → Map each ID → Flatten results → Deduplicate
     const mappedControls = cciTags.flatMap(cci => getCCINistMappings(cci) ?? []);
-    tags.nist = [...new Set(mappedControls)].sort();
+    tags.nist = orDefaultNist([...new Set(mappedControls)].sort());
   } else {
     const nistControls = getNessusNistControl(item['pluginFamily'], item['pluginID']);
-    tags.nist = nistControls ? nistControls.split('|') : [];
+    tags.nist = orDefaultNist(nistControls ? nistControls.split('|') : []);
   }
 
   // STIG ID for compliance
