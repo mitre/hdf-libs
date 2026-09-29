@@ -586,6 +586,7 @@ SUBCOMMANDS
   set           Set/unset top-level fields
   add-evidence  Reference external native-format evidence (logs/telemetry) by uri + hash + format
   add-reference Reference inert external context (CTI/STIX, advisories, BOMs); alias add-ref
+  update        Record newer results in an existing package, keeping its identity and history
   bundle        Bundle a package and every document it references into one portable archive
 
 EXAMPLES
@@ -598,6 +599,8 @@ EXAMPLES
   hdf evidence add-evidence q1.hdf-evidence-package.json --uri sbom.cdx.json --infer
   hdf evidence add-reference q1.hdf-evidence-package.json --source-name stix --kind threat-intel --href cti/bundle.json
   hdf evidence add-ref q1.hdf-evidence-package.json --source-name cve --external-id CVE-2021-44228 --rel reference
+  hdf evidence update q1.hdf-evidence-package.json --results scans/q4.json -o q4.hdf-evidence-package.json
+  hdf evidence update q1.hdf-evidence-package.json --results "scans/*.json" --overwrite
   hdf evidence bundle q1.hdf-evidence-package.json -o portal-q3-evidence.zip
 ```
 
@@ -608,6 +611,10 @@ EXAMPLES
 `add-reference` requires `--source-name` (the system being cited) plus at least one of `--external-id`, `--href` or `--description` — `External_Reference`'s own `anyOf`, the STIX 2.1 rule: naming a source without identifying anything within it cites nothing. `--kind` and `--rel` are deliberately open strings, not enums, so any value including `x-` customs is accepted. A local `--href` is hashed at attach time; a URL is left unhashed.
 
 To attach context to a **results** document's findings instead of to the package, use `hdf enrich <results> <bundle>`, which matches STIX objects by CVE. It does not accept an evidence package.
+
+**`update` accumulates; it does not supersede.** A results document is replaced only when it sits at the same `contents[]` reference — the same slot, a file refreshed in place. A document at any other path is ADDED, even when it covers a baseline the package already covers, because a baseline is a set of requirements that can apply to many components. Nothing is ever removed: the package is meant to hold the scan history, which is what makes a trend over time tellable. Two scans of one baseline are told apart by their own `timestamp` and `components`, both of which are optional in HDF — when they are absent the run says so rather than implying the entries are distinguishable.
+
+Because a package is an attestation, `update` never silently rewrites one: name the package to write with `-o`, or pass `--overwrite` deliberately. `--dry-run` reports what would change and writes nothing.
 
 `--uri` is repeatable. `--format` takes one value for every artifact, or one per `--uri` in the order given; any other count is refused rather than guessed. Omit `--format` and pass `--infer` to accept a format read from the artifact's own content discriminator (CycloneDX `bomFormat`, SPDX 2.x `spdxVersion`) — never from its filename; without `--infer` a missing format is an error naming what it would have inferred. The same URI twice is refused rather than ignored, because a repeat add usually means the artifact changed and its new checksum must be recorded deliberately.
 

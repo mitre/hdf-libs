@@ -28,6 +28,7 @@ Examples:
 	cmd.AddCommand(newEvidenceSetCmd())
 	cmd.AddCommand(newEvidenceAddEvidenceCmd())
 	cmd.AddCommand(newEvidenceAddReferenceCmd())
+	cmd.AddCommand(newEvidenceUpdateCmd())
 	cmd.AddCommand(newEvidenceBundleCmd())
 
 	return cmd
