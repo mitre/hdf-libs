@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -84,6 +85,13 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
 
+	// Validate every content reference's SHAPE before any IO. This cannot ride
+	// along with checksum verification: an entry carrying no checksum is skipped
+	// there, so a malformed reference on such an entry would never be looked at.
+	if err := validateContentRefs(pkgDir, planRef, contents); err != nil {
+		return err
+	}
+
 	// Always verify checksums. Path confinement stays here (the adapter); the
 	// engine performs no IO and classifies match/mismatch/skipped/error.
 	fetch := confinedFetch(pkgDir)
@@ -105,6 +113,54 @@ func runEvidenceVerify(pkgPath string, checksumsOnly bool) error {
 	}
 
 	return verifyCompleteness(pkgDir, planRef, contents)
+}
+
+// validateContentRefs enforces what a contents[] reference is: a path relative to
+// the evidence package's own directory, confined to that subtree. Absolute and
+// remote references are refused rather than reinterpreted — SafePath would
+// silently re-root "/etc/passwd" under the package directory, and turn a URL into
+// a path with a "https:" component, reporting on a file the reference never named.
+//
+// Scope is contents[] and planRef ONLY. externalEvidence URIs are absolute or
+// remote by design, and a bundled document's own externalReferences are bare URIs;
+// both are correct, neither is resolved here, and neither is inspected.
+func validateContentRefs(pkgDir, planRef string, contents []hdfengine.EvidenceContent) error {
+	refs := make([]string, 0, len(contents)+1)
+	if planRef != "" {
+		refs = append(refs, planRef)
+	}
+	for _, c := range contents {
+		if c.URI != "" {
+			refs = append(refs, c.URI)
+		}
+	}
+	for _, uri := range refs {
+		if err := checkContentRefShape(uri, "content reference"); err != nil {
+			return err
+		}
+		if _, err := hdfutil.SafePath(pkgDir, uri); err != nil {
+			return fmt.Errorf("content reference %q: %w", uri, err)
+		}
+	}
+	return nil
+}
+
+// checkContentRefShape refuses the two reference shapes the schema's description
+// once invited but nothing ever resolved.
+// label names the kind of reference being checked, so a caller applying this rule to
+// something other than contents[] does not report it as a content reference. Taking the
+// label extends the shared check rather than forking a near-duplicate of it.
+func checkContentRefShape(uri, label string) error {
+	if i := strings.Index(uri, "://"); i > 0 {
+		return fmt.Errorf("%s %q is remote; contents[] lists documents carried with the "+
+			"package and its references are relative to it — record a remote artifact under "+
+			"externalEvidence instead, where it is kept by URI and hash", label, uri)
+	}
+	if strings.HasPrefix(uri, "/") || filepath.IsAbs(uri) {
+		return fmt.Errorf("%s %q is absolute; references are relative to the evidence "+
+			"package's own directory", label, uri)
+	}
+	return nil
 }
 
 // confinedFetch returns a FetchFunc that resolves a content URI relative to the

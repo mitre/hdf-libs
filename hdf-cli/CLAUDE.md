@@ -101,6 +101,21 @@ Schema validation is provided by the sibling `hdf-validators/go` package (import
 
 Filters controls using AND logic across: `--status`, `--severity`, `--impact`, `--cci`, `--nist`, `--id` (requirement ID, STIG ID, GID, or group title), `--tag`, `--search`, `--baseline`. `safematch.go` provides panic-safe regex matching used throughout the query layer.
 
+## Verify CLI Behaviour Before Describing It
+
+Any claim about what a command does — help text (`Short`/`Long`), a code comment, a doc page, a README line, a card description, a commit message, or a statement to a reviewer — must come from **running the command on a freshly built binary**, or from a cited `file:line`. Never from recall.
+
+This is the most frequent defect class in this package's history: one card's review found eight separate instances of prose confidently describing behaviour the binary did not have, in help text, doc comments, struct field comments and test comments. None was caught by tests, lint or the type system — a wrong comment survives until a human reads it and believes it, and a false explanation is worse than none because it stops the next person from checking.
+
+Practical rules:
+
+- **Run it bare, not with `--help`.** Cobra falls through to the parent command's help for an unknown subcommand, so `hdf evidence add-reference --help` exits 0 for a subcommand that does not exist. To check registration, grep it: `grep -oE 'newEvidence[A-Za-z]+Cmd' cmd/hdf/cmd/evidence.go`.
+- **Read the schema before authoring a document.** Field types are not guessable — `owner` on a component is an `Identity` object requiring `identifier` and `type`, not a string.
+- **When fixing a false claim, grep for every occurrence of the assertion**, not just the line you were handed. Fixing one instance of a claim is not fixing the claim.
+- **Never paste command output that was not produced by running the command.** Where output is trimmed for length, say so inline.
+
+The `/project-ac-verify` gate is what catches this class in practice. This rule reduces how often it has to fire; it does not replace it.
+
 ## Monorepo Context
 
 This package lives in the `hdf-libs` monorepo. Key sibling packages (referenced via `go.mod` `replace` directives):
