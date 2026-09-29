@@ -53,12 +53,16 @@ const (
 
 // evidenceVerifyResult holds per-document verification status.
 type evidenceVerifyResult struct {
-	URI      string `json:"uri"`
-	Type     string `json:"type"`
-	Status   string `json:"status"` // "match", "mismatch", "skipped", "error"
-	Expected string `json:"expected,omitempty"`
-	Actual   string `json:"actual,omitempty"`
-	Error    string `json:"error,omitempty"`
+	URI  string `json:"uri"`
+	Type string `json:"type"`
+	// Algorithm is what the entry was verified with, not a fixed sha256: the
+	// package chooses, and the human output names it, so the line cannot claim an
+	// algorithm that was not used.
+	Algorithm string `json:"algorithm,omitempty"`
+	Status    string `json:"status"` // "match", "mismatch", "skipped", "error"
+	Expected  string `json:"expected,omitempty"`
+	Actual    string `json:"actual,omitempty"`
+	Error     string `json:"error,omitempty"`
 }
 
 type verifyCounts struct {
@@ -244,12 +248,13 @@ func toVerifyResults(checksums []hdfengine.ChecksumResult) ([]evidenceVerifyResu
 	var counts verifyCounts
 	for _, c := range checksums {
 		results = append(results, evidenceVerifyResult{
-			URI:      c.URI,
-			Type:     c.Type,
-			Status:   string(c.Status),
-			Expected: c.Expected,
-			Actual:   c.Actual,
-			Error:    c.Error,
+			URI:       c.URI,
+			Type:      c.Type,
+			Algorithm: c.Algorithm,
+			Status:    string(c.Status),
+			Expected:  c.Expected,
+			Actual:    c.Actual,
+			Error:     c.Error,
 		})
 		switch c.Status {
 		case hdfengine.ChecksumMatch:
@@ -287,9 +292,9 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 	for _, r := range results {
 		switch r.Status {
 		case verifyMatch:
-			fmt.Printf("  \u2713 %s (sha256 match)\n", sanitizeOutput(r.URI))
+			fmt.Printf("  \u2713 %s (%s match)\n", sanitizeOutput(r.URI), sanitizeOutput(r.Algorithm))
 		case verifyMismatch:
-			fmt.Printf("  \u2717 %s (sha256 MISMATCH)\n", sanitizeOutput(r.URI))
+			fmt.Printf("  \u2717 %s (%s MISMATCH)\n", sanitizeOutput(r.URI), sanitizeOutput(r.Algorithm))
 		case verifySkipped:
 			fmt.Printf("  - %s (no checksum)\n", sanitizeOutput(r.URI))
 		case verifyError:

@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"archive/zip"
-	"crypto/sha512"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -71,9 +69,9 @@ package 'hdf evidence verify' accepts verifies identically on the extracted copy
 rewriting.
 
 Bundle is deliberately more permissive than verify today, and a package can bundle that verify
-refuses: bundle carries an absolute systemRef or planRef, and honours a recorded sha384 or
-sha512 checksum, while verify requires every reference to be relative and hashes sha256 only.
-Reconciling the two is tracked separately.
+refuses: bundle carries an absolute systemRef or planRef, while verify requires every reference
+to be relative. Reconciling the two is tracked separately. Both honour the checksum algorithm
+the package records.
 
 What travels: the package, the documents named by systemRef and planRef, every document
 in contents[], and externalEvidence[] artifacts that live inside the package's
@@ -160,19 +158,14 @@ func recordedRefs(pkgData []byte, contents []hdfengine.EvidenceContent) ([]recor
 	if err := json.Unmarshal(pkgData, &doc); err != nil {
 		return nil, fmt.Errorf("read the package's references: %w", err)
 	}
-	sums := contentChecksums(pkgData)
-	if len(sums) != len(contents) {
-		return nil, fmt.Errorf("could not read the checksum of every content reference (%d of %d); "+
-			"refusing rather than hashing with an assumed algorithm", len(sums), len(contents))
-	}
 	refs := make([]recordedRef, 0, len(contents)+4)
 	refs = append(refs,
 		recordedRef{uri: doc.SystemRef, label: "system reference", field: "systemRef", kind: refDocument},
 		recordedRef{uri: doc.PlanRef, label: "plan reference", field: "planRef", kind: refDocument})
-	for i, c := range contents {
+	for _, c := range contents {
 		refs = append(refs, recordedRef{
 			uri: c.URI, label: "content reference", field: "contents", kind: refDocument,
-			checksum: sums[i].value, algorithm: sums[i].algorithm, checksumRecorded: sums[i].recorded,
+			checksum: c.Checksum, algorithm: c.ChecksumAlgorithm, checksumRecorded: c.ChecksumRecorded,
 		})
 	}
 	for _, e := range externalEvidenceRefs(pkgData) {
@@ -207,43 +200,6 @@ func externalContextRefs(pkg []byte) []string {
 	return out
 }
 
-// contentChecksum is what the document records for one contents[] entry.
-// hdfengine.ParseEvidencePackage flattens checksum to its value alone, so neither
-// the algorithm nor the difference between "no checksum" and "a checksum whose
-// value is empty" survives its parse — and both matter here. Extending the shared
-// engine type is the real fix and is a follow-up card, being a cross-module change
-// with a TypeScript peer to keep in step.
-type contentChecksum struct {
-	algorithm string
-	value     string
-	recorded  bool
-}
-
-// contentChecksums is index-aligned with ParseEvidencePackage's slice, which
-// appends one entry per contents[] element with no filtering. The caller REFUSES a
-// length mismatch rather than tolerating it: silently falling back to sha256 would
-// reintroduce exactly the "your file changed" lie this card already fixed once.
-func contentChecksums(pkg []byte) []contentChecksum {
-	var doc struct {
-		Contents []struct {
-			Checksum *struct {
-				Algorithm string `json:"algorithm"`
-				Value     string `json:"value"`
-			} `json:"checksum"`
-		} `json:"contents"`
-	}
-	if json.Unmarshal(pkg, &doc) != nil {
-		return nil
-	}
-	out := make([]contentChecksum, len(doc.Contents))
-	for i, c := range doc.Contents {
-		if c.Checksum != nil {
-			out[i] = contentChecksum{c.Checksum.Algorithm, c.Checksum.Value, true}
-		}
-	}
-	return out
-}
-
 func externalEvidenceRefs(pkg []byte) []externalRef {
 	var doc struct {
 		ExternalEvidence []struct {
@@ -270,26 +226,6 @@ func externalEvidenceRefs(pkg []byte) []externalRef {
 		out = append(out, ref)
 	}
 	return out
-}
-
-// hashHex computes the recorded algorithm's digest. sha256 goes through the shared
-// hdfutil helper rather than a second inline implementation. An algorithm this
-// cannot compute is refused, never reported as a mismatch: saying "the file hashes
-// to <sha256>" about a recorded sha512 names the wrong thing and tells the operator
-// their file changed when it did not.
-func hashHex(algorithm string, data []byte) (string, error) {
-	switch algorithm {
-	case "", "sha256":
-		return hdfutil.SHA256Hex(data), nil
-	case "sha384":
-		sum := sha512.Sum384(data)
-		return hex.EncodeToString(sum[:]), nil
-	case "sha512":
-		sum := sha512.Sum512(data)
-		return hex.EncodeToString(sum[:]), nil
-	default:
-		return "", fmt.Errorf("cannot verify a %s checksum: this command computes sha256, sha384 and sha512", algorithm)
-	}
 }
 
 // isRemoteURI reports whether a URI names something the archive cannot carry.
@@ -446,7 +382,7 @@ func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) arc
 			}
 			return nil
 		}
-		got, hashErr := hashHex(t.algorithm, data)
+		got, hashErr := hdfengine.ChecksumHex(t.algorithm, data)
 		if hashErr != nil {
 			return fmt.Errorf("%s %q cannot be bundled: %w", label, subject, hashErr)
 		}

@@ -18,12 +18,30 @@ export interface EvidenceContent {
   uri: string;
   type: string;
   checksum: string;
+  /** The algorithm the package recorded, '' when it stated none. Optional so an
+   * omitted field behaves exactly like Go's zero-valued string: absent means
+   * sha256 at verification time. The sha256 default belongs to verification, not
+   * to the parse, so an unstated algorithm is not invented here. */
+  checksumAlgorithm?: string;
+  /** Distinguishes an entry carrying no checksum object from one carrying a
+   * checksum whose value is empty. `checksum` alone conflates them, and the
+   * difference matters: a recorded-but-blank value is unverifiable, whereas an
+   * absent checksum is simply not a claim. Optional so an omitted field behaves
+   * like Go's zero-valued bool. */
+  checksumRecorded?: boolean;
 }
 
 /** The verification outcome for one content entry. */
 export interface ChecksumResult {
   uri: string;
   type: string;
+  /** The algorithm this entry's checksum is recorded under, with an unstated one
+   * reported as the sha256 it defaults to. Absent for a skipped entry — one with no
+   * checksum VALUE to verify, whether it carries no checksum at all or one whose
+   * value is blank (Checksum.value has no minLength, so a blank value is
+   * schema-valid and may still name an algorithm). Nothing was hashed in either
+   * case, and naming an algorithm would imply a computation that never ran. */
+  algorithm?: string;
   status: ChecksumStatus;
   expected?: string;
   actual?: string;
@@ -84,23 +102,34 @@ export function parseEvidencePackage(pkg: string): { planRef: string; contents: 
   const doc = parseDocument(pkg, 'evidence package');
   const contents: EvidenceContent[] = objectArray(doc.contents, 'evidence package', 'contents').map((c) => {
     const checksum = c.checksum;
+    const isObject = typeof checksum === 'object' && checksum !== null;
     return {
       uri: str(c.uri),
       type: str(c.type),
-      checksum: typeof checksum === 'object' && checksum !== null ? str((checksum as RawObject).value) : '',
+      checksum: isObject ? str((checksum as RawObject).value) : '',
+      checksumAlgorithm: isObject ? str((checksum as RawObject).algorithm) : '',
+      checksumRecorded: isObject,
     };
   });
   return { planRef: str(doc.planRef), contents };
 }
 
-/** Verifies each content entry's sha256 against fetch(uri), preserving entry
- * order. No checksum → skipped; a fetch throw → error; hash mismatch → mismatch
- * (carrying expected+actual). */
+/** Verifies each content entry against fetch(uri) using the algorithm the entry
+ * recorded, preserving entry order. No checksum → skipped; an algorithm this
+ * build cannot compute → error, never mismatch, because a mismatch would tell
+ * the operator their evidence changed when it did not; a fetch throw → error;
+ * hash mismatch → mismatch (carrying expected+actual). */
 export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): ChecksumResult[] {
   return contents.map((c) => {
     const r: ChecksumResult = { uri: c.uri, type: c.type, status: 'skipped' };
     if (c.checksum === '') {
       return r;
+    }
+    r.algorithm = effectiveAlgorithm(c.checksumAlgorithm);
+    // The algorithm is checked before any IO: whether this build can compute it
+    // is a property of the package, not of the filesystem.
+    if (!supportedAlgorithm(c.checksumAlgorithm)) {
+      return { ...r, status: 'error', error: unsupportedAlgorithmMessage(c.checksumAlgorithm) };
     }
     let data: Uint8Array;
     try {
@@ -108,7 +137,7 @@ export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): Ch
     } catch (e) {
       return { ...r, status: 'error', error: e instanceof Error ? e.message : String(e) };
     }
-    const actual = sha256Hex(data);
+    const actual = checksumHex(c.checksumAlgorithm, data);
     if (actual === c.checksum) {
       return { ...r, status: 'match' };
     }
@@ -195,8 +224,35 @@ export function completeness(planned: string[], covered: string[]): Completeness
   return { planned, covered, missing, complete: missing.length === 0 };
 }
 
-function sha256Hex(data: Uint8Array): string {
-  return createHash('sha256').update(data).digest('hex');
+/** The algorithms this build can verify. blake3 is in the schema's Hash_Algorithm
+ * enum but is not computable here, so it is refused by name rather than silently
+ * treated as something else. Kept identical to Go's ChecksumHex. */
+const SUPPORTED_ALGORITHMS = ['sha256', 'sha384', 'sha512'] as const;
+
+/** Names the algorithm an entry's checksum is verified under: an unstated
+ * algorithm means sha256, so reporting '' would understate it. */
+function effectiveAlgorithm(recorded: string | undefined): string {
+  return !recorded ? 'sha256' : recorded;
+}
+
+function supportedAlgorithm(algorithm: string | undefined): boolean {
+  return !algorithm || (SUPPORTED_ALGORITHMS as readonly string[]).includes(algorithm);
+}
+
+function unsupportedAlgorithmMessage(algorithm: string | undefined): string {
+  return `unsupported checksum algorithm "${algorithm}": this build computes ${SUPPORTED_ALGORITHMS.join(', ')}`;
+}
+
+/** Hashes data with the named Hash_Algorithm, hex-encoded. An empty algorithm
+ * means sha256, so a package that records only a value keeps its meaning. Throws
+ * for an algorithm this build cannot compute. */
+export function checksumHex(algorithm: string | undefined, data: Uint8Array): string {
+  if (!supportedAlgorithm(algorithm)) {
+    throw new Error(unsupportedAlgorithmMessage(algorithm));
+  }
+  return createHash(!algorithm ? 'sha256' : algorithm)
+    .update(data)
+    .digest('hex');
 }
 
 function dedupe(input: string[]): string[] {

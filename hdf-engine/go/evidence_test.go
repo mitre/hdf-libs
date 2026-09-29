@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -175,5 +176,127 @@ func TestAgentOverridesInPackage_CountsSchemaInvalidDocuments(t *testing.T) {
 	fetch := memFetch(map[string][]byte{"bad.json": invalid})
 	if got := AgentOverridesInPackage(contents, fetch); got != 1 {
 		t.Fatalf("agent overrides = %d, want 1 — schema validity is deliberately not required", got)
+	}
+}
+
+// The schema's Hash_Algorithm enum is sha256|sha384|sha512|blake3, so flattening
+// a checksum to its value loses which algorithm the package recorded and leaves
+// every caller guessing. VerifyChecksums guessed sha256, which reports a correct
+// sha512 as a mismatch — telling an operator their evidence changed when it did not.
+func TestParseEvidencePackage_KeepsTheChecksumAlgorithm(t *testing.T) {
+	pkg := []byte(`{
+	  "name": "p",
+	  "contents": [
+	    {"type": "hdf-results", "uri": "a.json", "checksum": {"algorithm": "sha512", "value": "abc"}},
+	    {"type": "hdf-plan",    "uri": "b.json", "checksum": {"value": "def"}},
+	    {"type": "bom",         "uri": "c.json"}
+	  ]
+	}`)
+
+	_, contents, err := ParseEvidencePackage(pkg)
+	if err != nil {
+		t.Fatalf("ParseEvidencePackage: %v", err)
+	}
+	if len(contents) != 3 {
+		t.Fatalf("contents = %d entries, want 3", len(contents))
+	}
+	if got := contents[0].ChecksumAlgorithm; got != "sha512" {
+		t.Errorf("entry 0 algorithm = %q, want sha512", got)
+	}
+	// An absent algorithm stays absent on the struct; the sha256 default belongs
+	// to verification, not to the parse, so a round-trip cannot invent a value.
+	if got := contents[1].ChecksumAlgorithm; got != "" {
+		t.Errorf("entry 1 algorithm = %q, want empty for an unstated algorithm", got)
+	}
+	if got := contents[2].ChecksumAlgorithm; got != "" {
+		t.Errorf("entry 2 algorithm = %q, want empty when there is no checksum", got)
+	}
+	if contents[0].Checksum != "abc" || contents[1].Checksum != "def" || contents[2].Checksum != "" {
+		t.Errorf("values = %q/%q/%q, want abc/def/empty",
+			contents[0].Checksum, contents[1].Checksum, contents[2].Checksum)
+	}
+}
+
+// VerifyChecksums hashed sha256 regardless of what the entry recorded, so a
+// package carrying a CORRECT sha512 was reported as a mismatch. The statuses
+// below are the contract: an algorithm this build cannot compute is an error and
+// never a mismatch, because a mismatch asserts the evidence changed.
+func TestVerifyChecksums_HonoursTheRecordedAlgorithm(t *testing.T) {
+	data := []byte(`{"hello":"world"}`)
+	fetch := func(string) ([]byte, error) { return data, nil }
+
+	hexOf := func(algorithm string) string {
+		t.Helper()
+		h, err := ChecksumHex(algorithm, data)
+		if err != nil {
+			t.Fatalf("ChecksumHex(%q): %v", algorithm, err)
+		}
+		return h
+	}
+
+	for _, tc := range []struct {
+		name      string
+		algorithm string
+		value     string
+		want      ChecksumStatus
+		wantErr   string
+	}{
+		{name: "sha256 stated", algorithm: "sha256", value: hexOf("sha256"), want: ChecksumMatch},
+		{name: "sha384 stated", algorithm: "sha384", value: hexOf("sha384"), want: ChecksumMatch},
+		{name: "sha512 stated", algorithm: "sha512", value: hexOf("sha512"), want: ChecksumMatch},
+		// An unstated algorithm must keep meaning sha256, or every package already
+		// written changes meaning under this change.
+		{name: "algorithm absent defaults to sha256", algorithm: "", value: hexOf("sha256"), want: ChecksumMatch},
+		// The sha256 of the same bytes is not its sha512, so guessing sha256 for a
+		// sha512 entry is exactly the false mismatch this card removes.
+		{name: "sha512 entry is not compared as sha256", algorithm: "sha512", value: hexOf("sha256"), want: ChecksumMismatch},
+		{name: "a genuinely wrong sha512 still mismatches", algorithm: "sha512", value: "00", want: ChecksumMismatch},
+		{
+			name: "blake3 is an error, not a mismatch", algorithm: "blake3", value: hexOf("sha256"),
+			want: ChecksumError, wantErr: `unsupported checksum algorithm "blake3"`,
+		},
+		{
+			name: "an off-enum algorithm is an error too", algorithm: "md5", value: hexOf("sha256"),
+			want: ChecksumError, wantErr: `unsupported checksum algorithm "md5"`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := VerifyChecksums([]EvidenceContent{{
+				URI: "a.json", Type: "hdf-results",
+				Checksum: tc.value, ChecksumAlgorithm: tc.algorithm,
+			}}, fetch)
+			if len(got) != 1 {
+				t.Fatalf("got %d results, want 1", len(got))
+			}
+			if got[0].Status != tc.want {
+				t.Errorf("status = %s, want %s (error: %q)", got[0].Status, tc.want, got[0].Error)
+			}
+			if tc.wantErr != "" && !strings.Contains(got[0].Error, tc.wantErr) {
+				t.Errorf("error = %q, want it to contain %q", got[0].Error, tc.wantErr)
+			}
+			if tc.want == ChecksumError && got[0].Actual != "" {
+				t.Errorf("an unverifiable entry must not report an actual hash, got %q", got[0].Actual)
+			}
+		})
+	}
+}
+
+// A skipped entry has no checksum VALUE to verify. It either carries no checksum at
+// all, or carries one whose value is blank — schema-valid, since Checksum.value has
+// no minLength — and that second case DOES name an algorithm, which is why the
+// rationale is "nothing was hashed" rather than "the package made no claim".
+func TestVerifyChecksums_ReportsNoAlgorithmForAnEntryItNeverHashed(t *testing.T) {
+	fetch := func(string) ([]byte, error) { return []byte("x"), nil }
+	got := VerifyChecksums([]EvidenceContent{
+		{URI: "none.json", Type: "bom"},
+		{URI: "empty.json", Type: "bom", Checksum: "", ChecksumAlgorithm: "sha512", ChecksumRecorded: true},
+	}, fetch)
+	for i, r := range got {
+		if r.Status != ChecksumSkipped {
+			t.Fatalf("entry %d status = %s, want skipped", i, r.Status)
+		}
+		if r.Algorithm != "" {
+			t.Errorf("entry %d reported algorithm %q; a skipped entry was never hashed", i, r.Algorithm)
+		}
 	}
 }

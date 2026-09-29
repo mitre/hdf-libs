@@ -3,6 +3,7 @@ package hdfengine
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -50,7 +51,10 @@ func TestEvidence_CrossLanguageParity(t *testing.T) {
 	}
 
 	// Checksums: a correct hash matches, a wrong hash mismatches, empty skips.
-	goodHash := sha256HexOf(read("rhel-results.json"))
+	goodHash, hashErr := ChecksumHex("sha256", read("rhel-results.json"))
+	if hashErr != nil {
+		t.Fatalf("ChecksumHex: %v", hashErr)
+	}
 	contents := []EvidenceContent{
 		{URI: "rhel-results.json", Type: "hdf-results", Checksum: goodHash},
 		{URI: "plan.json", Type: "hdf-plan", Checksum: "0000000000000000000000000000000000000000000000000000000000000000"},
@@ -92,5 +96,51 @@ func TestEvidence_PackageAggregation_CrossLanguageParity(t *testing.T) {
 	}
 	if got := AgentOverridesInPackage(contents, fetch); got != 2 {
 		t.Fatalf("agent overrides = %d, want 2 (system and username overrides excluded)", got)
+	}
+}
+
+// The checksum-algorithm contract, pinned on the SHARED package fixture so both
+// languages read the same recorded algorithms rather than two hand-kept copies.
+// test/evidence.test.ts asserts these same four outcomes over the same file.
+// The fixture states an algorithm on every entry because the schema's Checksum
+// requires one — the sha256 default for an omitted algorithm is defensive
+// handling of off-schema input and is pinned by each language's unit tests.
+func TestEvidence_ChecksumAlgorithm_CrossLanguageParity(t *testing.T) {
+	dir := filepath.Join("..", "testdata", "evidence")
+	pkg, err := os.ReadFile(filepath.Join(dir, "package.json"))
+	if err != nil {
+		t.Fatalf("read package.json: %v", err)
+	}
+	fetch := func(uri string) ([]byte, error) { return os.ReadFile(filepath.Join(dir, uri)) }
+
+	_, contents, err := ParseEvidencePackage(pkg)
+	if err != nil {
+		t.Fatalf("ParseEvidencePackage: %v", err)
+	}
+
+	wantAlgorithms := []string{"sha512", "sha384", "sha256", "blake3"}
+	for i, want := range wantAlgorithms {
+		if got := contents[i].ChecksumAlgorithm; got != want {
+			t.Errorf("contents[%d] algorithm = %q, want %q", i, got, want)
+		}
+	}
+
+	// sha512 and sha384 entries record CORRECT hashes, so guessing sha256 would
+	// report them as mismatches — the defect this card fixes. blake3 is in the
+	// schema's enum but not computable here, so it is an error, never a mismatch,
+	// and it is reported without ever reading the (absent) file.
+	got := VerifyChecksums(contents, fetch)
+	wantStatus := []ChecksumStatus{ChecksumMatch, ChecksumMatch, ChecksumMatch, ChecksumError}
+	for i, want := range wantStatus {
+		if got[i].Status != want {
+			t.Errorf("checksum[%d] (%s) status = %s, want %s — error %q",
+				i, contents[i].ChecksumAlgorithm, got[i].Status, want, got[i].Error)
+		}
+	}
+	if !strings.Contains(got[3].Error, `unsupported checksum algorithm "blake3"`) {
+		t.Errorf("blake3 error = %q, want it to name the unsupported algorithm", got[3].Error)
+	}
+	if got[3].Actual != "" {
+		t.Errorf("an unverifiable entry must report no actual hash, got %q", got[3].Actual)
 	}
 }

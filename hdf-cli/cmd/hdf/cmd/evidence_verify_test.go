@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -228,4 +229,66 @@ func TestEvidenceVerify_StillRefusesTraversal(t *testing.T) {
 
 	_, _, err := executeCommand("evidence", "verify", pkg)
 	require.Error(t, err, "a traversing content reference must stay refused")
+}
+
+// The human line named a fixed "sha256" regardless of what the entry recorded.
+// Once the engine honoured the recorded algorithm that label became a false
+// statement — a sha512 verification reported as "(sha256 match)". Live testing
+// caught it; this test keeps it caught, and pins the --json field beside it.
+func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		p := filepath.Join(dir, name)
+		require.NoError(t, os.WriteFile(p, []byte(body), 0o600))
+		return p
+	}
+	// Real documents, so the recorded digests are of real bytes.
+	for _, n := range []string{"system.json", "rhel9-results.json"} {
+		body, readErr := os.ReadFile(filepath.Join(evidenceFixtureDir, n))
+		require.NoError(t, readErr)
+		write(n, string(body))
+	}
+	sum := func(name, algorithm string) string {
+		body, readErr := os.ReadFile(filepath.Join(dir, name))
+		require.NoError(t, readErr)
+		h, hashErr := hdfengine.ChecksumHex(algorithm, body)
+		require.NoError(t, hashErr)
+		return h
+	}
+
+	pkg := map[string]interface{}{
+		"name": "algorithm-labels",
+		"contents": []map[string]interface{}{
+			{"type": "hdf-system", "uri": "system.json",
+				"checksum": map[string]string{"algorithm": "sha512", "value": sum("system.json", "sha512")}},
+			{"type": "hdf-results", "uri": "rhel9-results.json",
+				"checksum": map[string]string{"algorithm": "sha384", "value": sum("rhel9-results.json", "sha384")}},
+		},
+	}
+	body, marshalErr := json.Marshal(pkg)
+	require.NoError(t, marshalErr)
+	pkgPath := write("pkg.json", string(body))
+
+	stdout, _, err := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "(sha512 match)", "the line must name the algorithm the entry recorded")
+	assert.Contains(t, stdout, "(sha384 match)")
+	assert.NotContains(t, stdout, "(sha256 match)",
+		"neither entry recorded sha256, so no line may claim it")
+
+	jsonOut, _, jsonErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--json")
+	require.NoError(t, jsonErr)
+	var parsed struct {
+		Results []struct {
+			URI       string `json:"uri"`
+			Algorithm string `json:"algorithm"`
+			Status    string `json:"status"`
+		} `json:"results"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(jsonOut), &parsed))
+	require.Len(t, parsed.Results, 2)
+	assert.Equal(t, "sha512", parsed.Results[0].Algorithm)
+	assert.Equal(t, "sha384", parsed.Results[1].Algorithm)
+	assert.Equal(t, "match", parsed.Results[0].Status)
+	assert.Equal(t, "match", parsed.Results[1].Status)
 }

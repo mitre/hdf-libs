@@ -7,6 +7,8 @@
 package hdfengine
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -32,16 +34,32 @@ type EvidenceContent struct {
 	URI      string `json:"uri"`
 	Type     string `json:"type"`
 	Checksum string `json:"checksum"`
+	// ChecksumAlgorithm is the algorithm the package recorded, empty when it
+	// stated none. The sha256 default belongs to verification, not to the parse,
+	// so an unstated algorithm is not invented here.
+	ChecksumAlgorithm string `json:"checksumAlgorithm"`
+	// ChecksumRecorded distinguishes an entry carrying no checksum object from one
+	// carrying a checksum whose value is empty. Checksum alone conflates them, and
+	// the difference matters: a recorded-but-blank value is unverifiable, whereas an
+	// absent checksum is simply not a claim.
+	ChecksumRecorded bool `json:"checksumRecorded"`
 }
 
 // ChecksumResult is the verification outcome for one content entry.
 type ChecksumResult struct {
-	URI      string         `json:"uri"`
-	Type     string         `json:"type"`
-	Status   ChecksumStatus `json:"status"`
-	Expected string         `json:"expected,omitempty"`
-	Actual   string         `json:"actual,omitempty"`
-	Error    string         `json:"error,omitempty"`
+	URI  string `json:"uri"`
+	Type string `json:"type"`
+	// Algorithm is the algorithm this entry's checksum is recorded under, with an
+	// unstated one reported as the sha256 it defaults to. It is EMPTY for a skipped
+	// entry — one with no checksum VALUE to verify, whether it carries no checksum at
+	// all or one whose value is blank (Checksum.value has no minLength, so a blank
+	// value is schema-valid and may still name an algorithm). Nothing was hashed in
+	// either case, and naming an algorithm would imply a computation that never ran.
+	Algorithm string         `json:"algorithm,omitempty"`
+	Status    ChecksumStatus `json:"status"`
+	Expected  string         `json:"expected,omitempty"`
+	Actual    string         `json:"actual,omitempty"`
+	Error     string         `json:"error,omitempty"`
 }
 
 // CompletenessResult reports which planned baselines are covered by results.
@@ -65,7 +83,8 @@ func ParseEvidencePackage(pkg []byte) (string, []EvidenceContent, error) {
 			URI      string `json:"uri"`
 			Type     string `json:"type"`
 			Checksum *struct {
-				Value string `json:"value"`
+				Algorithm string `json:"algorithm"`
+				Value     string `json:"value"`
 			} `json:"checksum"`
 		} `json:"contents"`
 	}
@@ -77,25 +96,38 @@ func ParseEvidencePackage(pkg []byte) (string, []EvidenceContent, error) {
 		ec := EvidenceContent{URI: c.URI, Type: c.Type}
 		if c.Checksum != nil {
 			ec.Checksum = c.Checksum.Value
+			ec.ChecksumAlgorithm = c.Checksum.Algorithm
+			ec.ChecksumRecorded = true
 		}
 		contents = append(contents, ec)
 	}
 	return doc.PlanRef, contents, nil
 }
 
-// VerifyChecksums verifies each content entry's sha256 against fetch(uri),
-// preserving entry order. No checksum → skipped; a fetch error → error; hash
-// mismatch → mismatch (carrying expected+actual).
+// VerifyChecksums verifies each content entry against fetch(uri) using the
+// algorithm the entry recorded, preserving entry order. No checksum → skipped;
+// an algorithm this build cannot compute → error, never mismatch, because a
+// mismatch would tell the operator their evidence changed when it did not; a
+// fetch error → error; hash mismatch → mismatch (carrying expected+actual).
 func VerifyChecksums(contents []EvidenceContent, fetch FetchFunc) []ChecksumResult {
 	out := make([]ChecksumResult, 0, len(contents))
 	for _, c := range contents {
 		r := ChecksumResult{URI: c.URI, Type: c.Type}
 		if c.Checksum == "" {
 			r.Status = ChecksumSkipped
+			out = append(out, r)
+			continue
+		}
+		r.Algorithm = effectiveAlgorithm(c.ChecksumAlgorithm)
+		// The algorithm is checked before any IO: whether this build can compute
+		// it is a property of the package, not of the filesystem.
+		if _, hashErr := ChecksumHex(c.ChecksumAlgorithm, nil); hashErr != nil {
+			r.Status = ChecksumError
+			r.Error = hashErr.Error()
 		} else if data, err := fetch(c.URI); err != nil {
 			r.Status = ChecksumError
 			r.Error = err.Error()
-		} else if actual := sha256HexOf(data); actual == c.Checksum {
+		} else if actual, _ := ChecksumHex(c.ChecksumAlgorithm, data); actual == c.Checksum {
 			r.Status = ChecksumMatch
 		} else {
 			r.Status = ChecksumMismatch
@@ -219,8 +251,34 @@ func Completeness(planned, covered []string) CompletenessResult {
 	}
 }
 
-func sha256HexOf(b []byte) string {
-	return hdfutil.SHA256Hex(b)
+// effectiveAlgorithm names the algorithm an entry's checksum is verified under:
+// an unstated algorithm means sha256, so reporting "" would understate it.
+func effectiveAlgorithm(recorded string) string {
+	if recorded == "" {
+		return "sha256"
+	}
+	return recorded
+}
+
+// ChecksumHex hashes data with the named Hash_Algorithm, hex-encoded. An empty
+// algorithm means sha256, so a package that records only a value keeps its
+// meaning. blake3 is in the schema's enum but not computable here, so it is
+// refused by name rather than silently treated as something else. This is the
+// single definition of which algorithms this codebase can verify — the CLI
+// reads it rather than keeping its own copy.
+func ChecksumHex(algorithm string, data []byte) (string, error) {
+	switch algorithm {
+	case "", "sha256":
+		return hdfutil.SHA256Hex(data), nil
+	case "sha384":
+		sum := sha512.Sum384(data)
+		return hex.EncodeToString(sum[:]), nil
+	case "sha512":
+		sum := sha512.Sum512(data)
+		return hex.EncodeToString(sum[:]), nil
+	default:
+		return "", fmt.Errorf("unsupported checksum algorithm %q: this build computes sha256, sha384 and sha512", algorithm)
+	}
 }
 
 func dedupe(in []string) []string {

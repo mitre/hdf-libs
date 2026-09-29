@@ -166,6 +166,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 
 - `parseEvidencePackage` / `ParseEvidencePackage` — package name and contents
 - `verifyChecksums` / `VerifyChecksums` — per-reference checksum status
+- `checksumHex` / `ChecksumHex` — hash bytes under a named `Hash_Algorithm`; the one definition of which algorithms this codebase can verify
 - `plannedBaselineRefs`, `coveredBaselineNames`, `coveredBaselinesInPackage` — plan coverage inputs
 - `agentOverridesInPackage` / `AgentOverridesInPackage` — agent-attributed overrides across a package
 - `completeness` / `Completeness` — planned versus covered

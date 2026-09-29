@@ -599,8 +599,10 @@ func TestEvidenceBundle_HonoursTheRecordedChecksumAlgorithm(t *testing.T) {
 		{"sha384", hex.EncodeToString(sum384[:]), ""},
 		{"sha512", hex.EncodeToString(sum512[:]), ""},
 		{"sha512", strings.Repeat("b", 128), "checksum mismatch"},
-		// No stdlib blake3. Refused honestly rather than reported as a mismatch.
-		{"blake3", strings.Repeat("c", 64), "cannot verify a blake3 checksum"},
+		// No stdlib blake3. Refused honestly rather than reported as a mismatch. The
+		// wording is the shared engine's, since hdfengine.ChecksumHex is now the one
+		// definition of which algorithms this codebase can verify.
+		{"blake3", strings.Repeat("c", 64), `unsupported checksum algorithm "blake3"`},
 	} {
 		t.Run(tc.algorithm+"/"+tc.wantErr, func(t *testing.T) {
 			dir := t.TempDir()
