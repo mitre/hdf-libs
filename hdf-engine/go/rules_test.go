@@ -12,6 +12,7 @@ import (
 	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -166,22 +167,23 @@ func TestValidateThresholdsRefusesToSilentlySkipRules(t *testing.T) {
 // each one reaches Options, which is the wiring the name lists cannot see.
 func TestRulePredicateFieldsReachTheFilterOptions(t *testing.T) {
 	where := RulePredicate{
-		Status:      []string{"failed"},
-		Severity:    []string{"critical"},
-		Impact:      ">=0.7",
-		RawImpact:   ">=0.9",
-		Cvss:        ">=7",
-		Epss:        ">=0.5",
-		Kev:         "true",
-		Cwe:         []string{"CWE-79"},
-		CCI:         []string{"CCI-000366"},
-		NIST:        []string{"AC-2"},
-		ID:          "V-1",
-		Tag:         []string{"k:v"},
-		Search:      "password",
-		Baseline:    "b",
-		Disposition: []string{"waiver"},
-		Poams:       PoamNoneValid,
+		Status:        []string{"failed"},
+		Severity:      []string{"critical"},
+		Impact:        ">=0.7",
+		RawImpact:     ">=0.9",
+		Cvss:          ">=7",
+		Epss:          ">=0.5",
+		Kev:           "true",
+		Cwe:           []string{"CWE-79"},
+		CCI:           []string{"CCI-000366"},
+		NIST:          []string{"AC-2"},
+		ID:            "V-1",
+		Tag:           []string{"k:v"},
+		Search:        "password",
+		Baseline:      "b",
+		BaselineLabel: []string{"environment:production"},
+		Disposition:   []string{"waiver"},
+		Poams:         PoamNoneValid,
 	}
 	opts := where.filterOptions(RuleOptions{})
 
@@ -287,4 +289,68 @@ func TestCountBoundFindingsAreNarrowedBySeverity(t *testing.T) {
 	require.Len(t, violations[0].Findings, counts.Failed.Critical,
 		"a severity label lists only that severity, not the whole status")
 	assert.Equal(t, "CRIT-1", violations[0].Findings[0].ID)
+}
+
+// The card's motivating policy — "no failures in anything labelled
+// environment=production" — is a RULE, not a query, so the predicate has to
+// carry the key or the capability does not exist where it was asked for.
+func TestRulePredicateSelectsByBaselineLabel(t *testing.T) {
+	results := loadQueryFixtureForRules(t)
+	zero := 0
+
+	breached := &ThresholdConfig{Rules: []ThresholdRule{{
+		Name:  "nothing fails in production",
+		Where: RulePredicate{Status: []string{"failed"}, BaselineLabel: []string{"environment:production"}},
+		Max:   &zero,
+	}}}
+	violations := EvaluateRules(breached, results, RuleOptions{StatusOf: schemaStatusForRules})
+	require.Len(t, violations, 1, "the labelled baseline has a failure, so the bound is breached")
+	require.NotEmpty(t, violations[0].Findings)
+	assert.Equal(t, "SV-230221", violations[0].Findings[0].ID)
+
+	// The positive case above survives a predicate that is ignored entirely, since
+	// the fixture's only failure happens to sit in the labelled baseline. Bounding
+	// the label alone is what shows the selection NARROWS: the unlabelled
+	// baseline's requirements must be absent, and the match must be a strict
+	// subset of the document.
+	all := &ThresholdConfig{Rules: []ThresholdRule{{
+		Name:  "nothing in production",
+		Where: RulePredicate{BaselineLabel: []string{"environment:production"}},
+		Max:   &zero,
+	}}}
+	narrowed := EvaluateRules(all, results, RuleOptions{StatusOf: schemaStatusForRules})
+	require.Len(t, narrowed, 1)
+	matchedIDs := make([]string, 0, len(narrowed[0].Findings))
+	for _, f := range narrowed[0].Findings {
+		matchedIDs = append(matchedIDs, f.ID)
+	}
+	assert.NotContains(t, matchedIDs, "SV-100001", "the unlabelled baseline must not be selected")
+	assert.Less(t, len(matchedIDs), len(Filter(context.Background(), results, Options{StatusOf: schemaStatusForRules})),
+		"a label that selects the whole document narrows nothing")
+
+	// The same rule against a label nothing carries selects nothing and passes —
+	// which is what makes the predicate load-bearing rather than ignored.
+	quiet := &ThresholdConfig{Rules: []ThresholdRule{{
+		Name:  "nothing fails in staging",
+		Where: RulePredicate{Status: []string{"failed"}, BaselineLabel: []string{"environment:staging"}},
+		Max:   &zero,
+	}}}
+	assert.Empty(t, EvaluateRules(quiet, results, RuleOptions{StatusOf: schemaStatusForRules}))
+}
+
+func loadQueryFixtureForRules(t *testing.T) hdf.HDFResults {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "query-fixture.json"))
+	require.NoError(t, err)
+	var results hdf.HDFResults
+	require.NoError(t, json.Unmarshal(data, &results))
+	return results
+}
+
+func schemaStatusForRules(req hdf.EvaluatedRequirement) string {
+	statuses := make([]string, 0, len(req.Results))
+	for _, r := range req.Results {
+		statuses = append(statuses, string(r.Status))
+	}
+	return hdfutil.WorstStatus(statuses)
 }

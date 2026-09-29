@@ -44,6 +44,9 @@ type queryInput struct {
 	Tag       []string        `json:"tag,omitempty" jsonschema:"key:value (OR)"`
 	Search    string          `json:"search,omitempty" jsonschema:"text match over id/title/descriptions"`
 	Baseline  string          `json:"baseline,omitempty" jsonschema:"baseline name, glob allowed"`
+	// Labels live on the BASELINE, so this selects every requirement in a
+	// baseline carrying one. A baseline with no labels matches nothing.
+	BaselineLabel []string `json:"baselineLabel,omitempty" jsonschema:"baseline labels as key:value, glob on value (OR)"`
 	// The amendments layer: what adjudicated the requirement, and whether a
 	// remediation plan is still in force.
 	Disposition []string `json:"disposition,omitempty" jsonschema:"governing override type: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)"`
@@ -240,6 +243,12 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 				}
 			}
 		}
+		for _, v := range in.BaselineLabel {
+			if !hdfengine.ValidBaselineLabel(v) {
+				return argError(fmt.Sprintf("malformed baselineLabel %q", v),
+					"baselineLabel takes a key:value expression, e.g. environment:production"), errorQueryOutput(), nil
+			}
+		}
 		for _, d := range in.Disposition {
 			if !hdfengine.ValidDisposition(d) {
 				return argError(fmt.Sprintf("unknown disposition %q", d),
@@ -275,7 +284,7 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 			RawImpact: in.RawImpact,
 			Cvss:      in.Cvss, Epss: in.Epss, Kev: in.Kev, Cwe: in.Cwe,
 			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
-			Search: in.Search, Baseline: in.Baseline,
+			Search: in.Search, Baseline: in.Baseline, BaselineLabel: in.BaselineLabel,
 			Disposition: in.Disposition, Poams: in.Poams,
 			Count:    true, // return every match; the tool applies limit + token paging
 			StatusOf: shared.RequirementEffectiveStatus,

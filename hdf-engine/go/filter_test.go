@@ -25,7 +25,16 @@ func loadQueryFixture(t *testing.T) hdf.HDFResults {
 	t.Helper()
 	// Shared cross-language fixture at hdf-engine/testdata (also read by
 	// src/query.test.ts), so both Filter implementations run the same input.
-	data, err := os.ReadFile(filepath.Join("..", "testdata", "query-fixture.json"))
+	return loadResultsFixture(t, "query-fixture.json")
+}
+
+// loadResultsFixture reads a results fixture by NAME so a case table naming the
+// fixture it describes is actually followed, rather than documenting a path the
+// test hardcodes separately.
+func loadResultsFixture(t *testing.T, name string) hdf.HDFResults {
+	t.Helper()
+	require.NotEmpty(t, name, "the case table must name its fixture")
+	data, err := os.ReadFile(filepath.Join("..", "testdata", name))
 	require.NoError(t, err)
 	var results hdf.HDFResults
 	require.NoError(t, json.Unmarshal(data, &results))
@@ -656,4 +665,107 @@ func TestFilterVulnerabilityFields(t *testing.T) {
 			})))
 		})
 	}
+}
+
+// A baseline's labels say which system, component or environment it covers, and
+// nothing could ask about them — so "no failures in anything labelled
+// environment=production" was a policy that could not be written.
+//
+// The predicate is BASELINE-level, checked once per baseline beside the existing
+// name filter rather than per requirement, because a label is a property of the
+// baseline and not of any requirement in it.
+type baselineLabelCases struct {
+	FixtureFile           string   `json:"fixtureFile"`
+	UnfilteredCount       int      `json:"unfilteredCount"`
+	UnlabelledBaselineIDs []string `json:"unlabelledBaselineIDs"`
+	Cases                 []struct {
+		Name   string   `json:"name"`
+		Labels []string `json:"labels"`
+		Expect []string `json:"expect"`
+	} `json:"cases"`
+	Validity []struct {
+		Value string `json:"value"`
+		Valid bool   `json:"valid"`
+	} `json:"validity"`
+}
+
+func loadBaselineLabelCases(t *testing.T) baselineLabelCases {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "baseline-label-filter-cases.json"))
+	require.NoError(t, err)
+	var table baselineLabelCases
+	require.NoError(t, json.Unmarshal(data, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+	require.NotEmpty(t, table.Validity)
+	return table
+}
+
+func TestFilterByBaselineLabel(t *testing.T) {
+	table := loadBaselineLabelCases(t)
+	results := loadResultsFixture(t, table.FixtureFile)
+
+	require.Len(t, ids(Filter(context.Background(), results, Options{StatusOf: testStatusOf})),
+		table.UnfilteredCount, "the table describes a different fixture than the one loaded")
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got := ids(Filter(context.Background(), results, Options{
+				BaselineLabel: tc.Labels,
+				StatusOf:      testStatusOf,
+			}))
+			if len(tc.Expect) == 0 {
+				assert.Empty(t, got)
+				return
+			}
+			assert.Equal(t, tc.Expect, got)
+		})
+	}
+}
+
+// A colonless value names no key, so it can never match any document. Selecting
+// nothing and being ignored are the same forever-green gate under a max bound,
+// which is why the CLI refuses one rather than relying on the filter's silence.
+func TestValidBaselineLabel(t *testing.T) {
+	for _, tc := range loadBaselineLabelCases(t).Validity {
+		t.Run(tc.Value, func(t *testing.T) {
+			assert.Equal(t, tc.Valid, ValidBaselineLabel(tc.Value))
+		})
+	}
+}
+
+// The second baseline carries NO labels, so it must never satisfy a label
+// predicate — an absent label is not a wildcard. Asserted as an exclusion
+// because an inclusion-only check passes against a filter that never ran.
+func TestFilterByBaselineLabel_UnlabelledBaselineMatchesNothing(t *testing.T) {
+	table := loadBaselineLabelCases(t)
+	results := loadResultsFixture(t, table.FixtureFile)
+
+	unfiltered := ids(Filter(context.Background(), results, Options{StatusOf: testStatusOf}))
+	for _, id := range table.UnlabelledBaselineIDs {
+		require.Contains(t, unfiltered, id,
+			"precondition: the unlabelled baseline's requirements are reachable without the predicate")
+	}
+
+	got := ids(Filter(context.Background(), results, Options{
+		BaselineLabel: []string{"environment:production"},
+		StatusOf:      testStatusOf,
+	}))
+	for _, id := range table.UnlabelledBaselineIDs {
+		assert.NotContains(t, got, id, "an unlabelled baseline must not match")
+	}
+	assert.NotEmpty(t, got, "and the labelled one must still match, or this proves nothing")
+}
+
+// A label value is exactly one string by schema, where a tag value may be a list.
+// Reusing the tag matcher would have meant converting a map[string]string into
+// map[string]any to ask a question the simpler shape answers directly.
+func TestLabelMatchesGlob(t *testing.T) {
+	labels := map[string]string{"environment": "production", "team": "platform-sre"}
+
+	assert.True(t, labelMatchesGlob(labels, "environment", "production"))
+	assert.True(t, labelMatchesGlob(labels, "environment", "prod*"))
+	assert.True(t, labelMatchesGlob(labels, "team", "platform-*"))
+	assert.False(t, labelMatchesGlob(labels, "environment", "staging"))
+	assert.False(t, labelMatchesGlob(labels, "region", "*"), "an absent key matches nothing, not everything")
+	assert.False(t, labelMatchesGlob(nil, "environment", "*"), "and neither does an absent map")
 }

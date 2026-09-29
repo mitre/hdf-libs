@@ -44,22 +44,26 @@ type ThresholdRule struct {
 // invocation then mean the same thing, so a gate can be prototyped with query and
 // pasted into a spec. Values within a field OR; fields AND.
 type RulePredicate struct {
-	Status      []string `yaml:"status,omitempty" json:"status,omitempty"`
-	Severity    []string `yaml:"severity,omitempty" json:"severity,omitempty"`
-	Impact      string   `yaml:"impact,omitempty" json:"impact,omitempty"`
-	RawImpact   string   `yaml:"rawImpact,omitempty" json:"rawImpact,omitempty"`
-	Cvss        string   `yaml:"cvss,omitempty" json:"cvss,omitempty"`
-	Epss        string   `yaml:"epss,omitempty" json:"epss,omitempty"`
-	Kev         string   `yaml:"kev,omitempty" json:"kev,omitempty"`
-	Cwe         []string `yaml:"cwe,omitempty" json:"cwe,omitempty"`
-	CCI         []string `yaml:"cci,omitempty" json:"cci,omitempty"`
-	NIST        []string `yaml:"nist,omitempty" json:"nist,omitempty"`
-	ID          string   `yaml:"id,omitempty" json:"id,omitempty"`
-	Tag         []string `yaml:"tag,omitempty" json:"tag,omitempty"`
-	Search      string   `yaml:"search,omitempty" json:"search,omitempty"`
-	Baseline    string   `yaml:"baseline,omitempty" json:"baseline,omitempty"`
-	Disposition []string `yaml:"disposition,omitempty" json:"disposition,omitempty"`
-	Poams       string   `yaml:"poams,omitempty" json:"poams,omitempty"`
+	Status    []string `yaml:"status,omitempty" json:"status,omitempty"`
+	Severity  []string `yaml:"severity,omitempty" json:"severity,omitempty"`
+	Impact    string   `yaml:"impact,omitempty" json:"impact,omitempty"`
+	RawImpact string   `yaml:"rawImpact,omitempty" json:"rawImpact,omitempty"`
+	Cvss      string   `yaml:"cvss,omitempty" json:"cvss,omitempty"`
+	Epss      string   `yaml:"epss,omitempty" json:"epss,omitempty"`
+	Kev       string   `yaml:"kev,omitempty" json:"kev,omitempty"`
+	Cwe       []string `yaml:"cwe,omitempty" json:"cwe,omitempty"`
+	CCI       []string `yaml:"cci,omitempty" json:"cci,omitempty"`
+	NIST      []string `yaml:"nist,omitempty" json:"nist,omitempty"`
+	ID        string   `yaml:"id,omitempty" json:"id,omitempty"`
+	Tag       []string `yaml:"tag,omitempty" json:"tag,omitempty"`
+	Search    string   `yaml:"search,omitempty" json:"search,omitempty"`
+	Baseline  string   `yaml:"baseline,omitempty" json:"baseline,omitempty"`
+	// BaselineLabel selects by the labels of the baseline a requirement sits in,
+	// which is what makes "nothing fails in anything labelled
+	// environment=production" expressible as a policy rather than only as a query.
+	BaselineLabel []string `yaml:"baselineLabel,omitempty" json:"baselineLabel,omitempty"`
+	Disposition   []string `yaml:"disposition,omitempty" json:"disposition,omitempty"`
+	Poams         string   `yaml:"poams,omitempty" json:"poams,omitempty"`
 }
 
 // RuleOptions carries what rule evaluation needs beyond the document: the
@@ -76,23 +80,24 @@ type RuleOptions struct {
 // translate, and a new filter field becomes a rule field by adding it here.
 func (p RulePredicate) filterOptions(opts RuleOptions) Options {
 	return Options{
-		Status:      p.Status,
-		Severity:    p.Severity,
-		Impact:      p.Impact,
-		RawImpact:   p.RawImpact,
-		Cvss:        p.Cvss,
-		Epss:        p.Epss,
-		Kev:         p.Kev,
-		Cwe:         p.Cwe,
-		CCI:         p.CCI,
-		NIST:        p.NIST,
-		ID:          p.ID,
-		Tag:         p.Tag,
-		Search:      p.Search,
-		Baseline:    p.Baseline,
-		Disposition: p.Disposition,
-		Poams:       p.Poams,
-		Now:         opts.Now,
+		Status:        p.Status,
+		Severity:      p.Severity,
+		Impact:        p.Impact,
+		RawImpact:     p.RawImpact,
+		Cvss:          p.Cvss,
+		Epss:          p.Epss,
+		Kev:           p.Kev,
+		Cwe:           p.Cwe,
+		CCI:           p.CCI,
+		NIST:          p.NIST,
+		ID:            p.ID,
+		Tag:           p.Tag,
+		Search:        p.Search,
+		Baseline:      p.Baseline,
+		BaselineLabel: p.BaselineLabel,
+		Disposition:   p.Disposition,
+		Poams:         p.Poams,
+		Now:           opts.Now,
 		// Inert while a rule sets no Limit — Filter only consults Count to decide
 		// whether a Limit may stop the scan — but set anyway so a bound can never
 		// be judged against a truncated population if one is ever introduced.

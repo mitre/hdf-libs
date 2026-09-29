@@ -193,6 +193,57 @@ rules:
 
 A rule bounds a count, not a percentage — `compliance` remains the only percentage bound — and it evaluates over the whole document. To narrow it to one baseline, say so in the predicate with `baseline`.
 
+### Selecting by the baseline's labels
+
+A baseline carries `labels` — a free-form map whose well-known keys include `system`, `component` and `environment` — so a results document already records which environment or component a baseline covers. `baselineLabel` selects on them, as `key:value`, with the value globbable.
+
+The checkov scan used above carries no labels, so this section runs against a different document: `labelled.json`, a two-baseline results file whose first baseline is labelled `environment: production` and whose second carries no labels at all.
+
+```yaml
+rules:
+  - name: nothing fails in production
+    where:
+      status: [failed]
+      baselineLabel: [environment:production]
+    max: 0
+```
+
+```console
+$ hdf validate threshold labelled.json -T production.yaml
+Agent-attributed overrides: 0
+✗ labelled.json — 1 threshold violation
+
+  Violations:
+    nothing fails in production: 1 matched, maximum 0
+      SV-230221  Configure password complexity  [failed/critical]
+```
+
+The same key works on `hdf query`:
+
+```console
+$ hdf query labelled.json --baseline-label environment:production
+Found 3 matching requirement(s):
+
+ID         Status          Severity  Title
+---------  --------------  --------  -----------------------------
+SV-230221  failed          CRIT      Configure password complexity
+SV-230222  passed          HIGH      Enable auditing
+SV-230223  not_applicable  MED       Configure remote logging
+```
+
+Three things to know about it:
+
+- **A label belongs to the baseline, not the requirement**, so the predicate is applied once per baseline and selects every requirement inside a matching one. There is no requirement-level label, which is why the key is named for the baseline.
+- **A baseline carrying no labels matches nothing.** An absent label is not a wildcard — including against `*`, which asks about a label the baseline does not have. In the run above, the document's second baseline is unlabelled and its two requirements are excluded; without the predicate the same query returns 5.
+- **A value carrying no colon is refused.** It names no key, so it could never match any document — and under a `max` bound, "matched nothing" and "was never applied" produce the identical clean run:
+
+  ```console
+  $ hdf query labelled.json --baseline-label production
+  Error: unknown --baseline-label value "production" (expected a key:value expression, e.g. environment:production)
+  ```
+
+Label keys are open by schema, so a key nothing in the document carries simply selects nothing. That is correct rather than an error, and differs from the closed vocabularies — `status`, `severity`, `disposition` — where an unrecognized value is refused because it could only ever match nothing. The colon is not part of that distinction: a `key:value` expression missing its colon is malformed rather than unrecognized, and is refused on the separate grounds below.
+
 ### A predicate that can never match is refused
 
 A value outside its vocabulary returns nothing for every document, so a rule built on one passes forever while looking like a gate:

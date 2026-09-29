@@ -61,6 +61,19 @@ export interface FilterOptions {
   search?: string;
   baseline?: string;
   /**
+   * Selects requirements by the labels of the baseline they sit in, as
+   * `key:value`, OR across values, with the value globbable exactly as a tag
+   * value is. Named for the baseline rather than `label` alone because there is
+   * no requirement-level label, and because system documents carry component
+   * labels that may one day want their own key.
+   *
+   * A label is a property of the BASELINE, so this is applied once per baseline
+   * beside `baseline` rather than per requirement. A baseline carrying no labels
+   * therefore matches nothing: an absent label is not a wildcard.
+   * Parity: Options.BaselineLabel in go/filter.go.
+   */
+  baselineLabel?: string[];
+  /**
    * The TYPE of the override that governs the requirement (waiver,
    * falsePositive, riskAdjustment, …), OR across values. The governing override
    * is the most recent non-expired one of ANY kind, so it may differ from the one
@@ -112,6 +125,9 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
 
   for (const [baselineIndex, baseline] of (results.baselines ?? []).entries()) {
     if (options.baseline && !matchesGlob(baseline.name, options.baseline)) {
+      continue;
+    }
+    if (!baselineLabelsMatch(baseline.labels, options.baselineLabel)) {
       continue;
     }
     for (const [index, control] of (baseline.requirements ?? []).entries()) {
@@ -368,6 +384,63 @@ export function tagMatchesGlob(tags: Record<string, unknown>, key: string, patte
     return tagVal.some((item) => typeof item === 'string' && safeGlobMatch(item, pattern));
   }
   return false;
+}
+
+/**
+ * validBaselineLabel reports whether s is a label expression at all. A value
+ * carrying no colon names no key, so it can never match any document — the same
+ * forever-green gate a misspelled status value produces, which is why it is
+ * refused rather than allowed to select nothing.
+ * Parity: ValidBaselineLabel in go/filter.go.
+ */
+export function validBaselineLabel(s: string): boolean {
+  const colon = s.indexOf(':');
+  return colon > 0;
+}
+
+/**
+ * baselineLabelsMatch reports whether a baseline satisfies any of the
+ * `key:value` label predicates. No predicates means every baseline qualifies;
+ * otherwise one must match, so several values OR the way every other multi-value
+ * filter does.
+ *
+ * A predicate without a colon is refused at the boundary by validBaselineLabel
+ * rather than handled here, because selecting nothing and being ignored produce
+ * the SAME false green under a max bound: the gate passes while the caller
+ * believes a filter was applied. Reaching this function it selects nothing,
+ * which is the safe half of that pair.
+ * Parity: baselineLabelsMatch in go/filter.go.
+ */
+export function baselineLabelsMatch(
+  labels: Record<string, string> | undefined,
+  predicates: string[] | undefined,
+): boolean {
+  if (!predicates || predicates.length === 0) return true;
+  for (const p of predicates) {
+    const colon = p.indexOf(':');
+    if (colon === -1) continue;
+    if (labelMatchesGlob(labels, p.slice(0, colon), p.slice(colon + 1))) return true;
+  }
+  return false;
+}
+
+/**
+ * labelMatchesGlob reports whether a label KEY is present and its value matches
+ * the pattern. Deliberately not tagMatchesGlob: a tag value may be a list, which
+ * is why that one goes through the tag helpers, while a label is exactly one
+ * string by schema (`additionalProperties: {type: string}`). An absent key
+ * matches nothing, including against `*` — the predicate asks about a label the
+ * baseline does not carry, and there is nothing to match.
+ * Parity: labelMatchesGlob in go/filter.go.
+ */
+export function labelMatchesGlob(
+  labels: Record<string, string> | undefined,
+  key: string,
+  pattern: string,
+): boolean {
+  const value = labels?.[key];
+  if (value === undefined) return false;
+  return safeGlobMatch(value, pattern);
 }
 
 /** matchesGlob reports whether s matches the glob pattern (case-insensitive). */

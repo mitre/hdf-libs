@@ -35,6 +35,7 @@ export const PREDICATE_FIELDS = [
   'tag',
   'search',
   'baseline',
+  'baselineLabel',
   'disposition',
   'poams',
 ] as const;
@@ -59,6 +60,12 @@ export interface RulePredicate {
   tag?: string[];
   search?: string;
   baseline?: string;
+  /**
+   * Selects by the labels of the baseline a requirement sits in, which is what
+   * makes 'nothing fails in anything labelled environment=production'
+   * expressible as a policy rather than only as a query.
+   */
+  baselineLabel?: string[];
   disposition?: string[];
   poams?: string;
 }

@@ -337,6 +337,52 @@ describe('threshold rules (parity with go/rules.go)', () => {
     expect([...PREDICATE_FIELDS].sort()).toEqual(ruleTable.predicateFields.slice().sort());
   });
 
+  // The motivating policy — "no failures in anything labelled
+  // environment=production" — is a RULE, not a query, so the predicate has to
+  // carry the key or the capability does not exist where it was asked for.
+  // Parity: go/rules_test.go TestRulePredicateSelectsByBaselineLabel.
+  describe('a rule selects by the labels of the baseline a requirement sits in', () => {
+    const statusOf = effectiveStatusOf(false);
+
+    it('a labelled baseline with a failure breaches the bound', () => {
+      const violations = evaluateRules(
+        { rules: [{ name: 'nothing fails in production', where: { status: ['failed'], baselineLabel: ['environment:production'] }, max: 0 }] },
+        results,
+        { statusOf },
+      );
+      expect(violations).toHaveLength(1);
+      expect(violations[0].findings.length).toBeGreaterThan(0);
+      expect(violations[0].findings[0].id).toBe('SV-230221');
+    });
+
+    // The case above survives a predicate that is ignored entirely, since the
+    // fixture's only failure happens to sit in the labelled baseline. Bounding
+    // the label alone is what shows the selection NARROWS.
+    it('the label narrows — the unlabelled baseline is absent', () => {
+      const violations = evaluateRules(
+        { rules: [{ name: 'nothing in production', where: { baselineLabel: ['environment:production'] }, max: 0 }] },
+        results,
+        { statusOf },
+      );
+      expect(violations).toHaveLength(1);
+      const matched = violations[0].findings.map((f) => f.id);
+      expect(matched, 'the unlabelled baseline must not be selected').not.toContain('SV-100001');
+      expect(matched.length, 'a label that selects the whole document narrows nothing').toBeLessThan(
+        filter(results, { statusOf }).length,
+      );
+    });
+
+    it('a label nothing carries selects nothing and passes', () => {
+      expect(
+        evaluateRules(
+          { rules: [{ name: 'nothing fails in staging', where: { status: ['failed'], baselineLabel: ['environment:staging'] }, max: 0 }] },
+          results,
+          { statusOf },
+        ),
+      ).toEqual([]);
+    });
+  });
+
   // The refusal is user-facing text emitted by both languages, so its wording
   // lives in the shared table rather than in two hand-written copies — which is
   // how the two had already drifted apart in text and position.

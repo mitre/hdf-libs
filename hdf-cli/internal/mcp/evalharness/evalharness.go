@@ -44,9 +44,15 @@ const (
 	// 5444 with the descriptions already trimmed twice.
 	// Raised to 5580 (owner decision 2026-09-25) with hdf_query's four
 	// vulnerability filters; measured 5567. This is the fifth raise and the
-	// ratchet has never been examined as a whole — hdf-libs-5cim9 is that audit,
-	// and no further raise should land before it runs.
-	ToolsListTotalBudget = 5580
+	// ratchet has never been examined as a whole — hdf-libs-5cim9 is that audit.
+	// Raised to 5600 (owner decision 2026-09-28) for hdf_query's baselineLabel;
+	// measured 5599. This one lands BEFORE that audit deliberately: the audit is
+	// scoped beyond the threshold epic, and holding a filter out of the MCP
+	// meanwhile would leave an agent unable to ask what a CLI user can — the
+	// exact divergence the reflective guard exists to catch, and which caught
+	// this. The cost is 19 tokens and the wording is already at its floor
+	// (trimming the description twice measured 988 either way).
+	ToolsListTotalBudget = 5600
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -67,7 +73,8 @@ const (
 	// Raised to 970 (owner decision 2026-09-25) for hdf_query's cvss, epss, kev
 	// and cwe; measured 956. hdf_query is now roughly a fifth of the whole
 	// listing, which is the specific thing hdf-libs-5cim9 exists to weigh.
-	ToolsListPerToolBudget = 970
+	// Raised to 990 (owner decision 2026-09-28) for baselineLabel; measured 988.
+	ToolsListPerToolBudget = 990
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -82,8 +89,9 @@ const (
 	// measured 3744. The read profile still sits far below the full surface,
 	// which is what this ceiling exists to protect.
 	// Raised to 3880 (owner decision 2026-09-25) with the vulnerability filters;
-	// measured 3867.
-	ReadProfileBudget = 3880
+	// measured 3867. Raised to 3900 (owner decision 2026-09-28) with
+	// baselineLabel; measured 3899.
+	ReadProfileBudget = 3900
 )
 
 var (

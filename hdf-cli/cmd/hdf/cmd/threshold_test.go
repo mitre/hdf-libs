@@ -1263,6 +1263,29 @@ func TestValidateThreshold_InlineAcceptsAnythingAFileAccepts(t *testing.T) {
 	})
 }
 
+// A colonless baselineLabel names no key, so it can never match any document —
+// and under a max bound "matched nothing" is indistinguishable from "was never
+// applied": the gate reports a clean run forever. It is refused for the same
+// reason a misspelled status value is, reached through a malformed expression
+// rather than an unknown one.
+func TestValidateThreshold_ColonlessBaselineLabelIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	_, _, err := executeCommand("validate", "threshold", results,
+		"-I", "{rules: [{name: colonless, where: {baselineLabel: [production]}, max: 0}]}")
+	require.Error(t, err, "a colonless label must be refused, not pass as a gate that never ran")
+	assert.Contains(t, err.Error(), "is not a key:value expression")
+	assert.Contains(t, err.Error(), "colonless", "the refusal names the rule it came from")
+
+	// A well-formed one is accepted and evaluated. This document carries no
+	// labels, so the rule matches nothing and the bound of 0 HOLDS — the run
+	// passes, which is the correct clean run rather than the false one above.
+	_, _, err = executeCommand("validate", "threshold", results,
+		"-I", "{rules: [{name: labelled, where: {baselineLabel: [environment:production]}, max: 0}]}")
+	require.NoError(t, err)
+}
+
 // A typo in a STRUCTURED inline spec must be diagnosed as a structured spec. It
 // would otherwise fail the strict decode, fall through to the dotted parser,
 // fail there too, and report "invalid inline threshold entry" — sending the

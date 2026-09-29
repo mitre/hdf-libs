@@ -62,6 +62,16 @@ type Options struct {
 	Tag      []string
 	Search   string
 	Baseline string
+	// BaselineLabel selects requirements by the labels of the baseline they sit
+	// in, as "key:value", OR across values, with the value globbable exactly as a
+	// tag value is. Named for the baseline rather than "label" alone because
+	// there is no requirement-level label, and because system documents carry
+	// component labels that may one day want their own key.
+	//
+	// A label is a property of the BASELINE, so this is applied once per baseline
+	// beside Baseline rather than per requirement. A baseline carrying no labels
+	// therefore matches nothing: an absent label is not a wildcard.
+	BaselineLabel []string
 	// Disposition selects by the TYPE of the override that governs the
 	// requirement (waiver, falsePositive, riskAdjustment, …), OR across values.
 	// The governing override is the most recent non-expired one of ANY kind, so
@@ -121,6 +131,9 @@ func Filter(ctx context.Context, results hdf.HDFResults, opts Options) []Match {
 	for bi := range results.Baselines {
 		baseline := results.Baselines[bi]
 		if opts.Baseline != "" && !matchesGlob(baseline.Name, opts.Baseline) {
+			continue
+		}
+		if !baselineLabelsMatch(baseline.Labels, opts.BaselineLabel) {
 			continue
 		}
 		for ri := range baseline.Requirements {
@@ -489,6 +502,54 @@ func tagMatchesGlob(tags map[string]any, key, pattern string) bool {
 		}
 	}
 	return false
+}
+
+// ValidBaselineLabel reports whether s is a label expression at all. A value
+// carrying no colon names no key, so it can never match any document — the same
+// forever-green gate a misspelled status value produces, which is why it is
+// refused rather than allowed to select nothing.
+func ValidBaselineLabel(s string) bool {
+	key, _, found := strings.Cut(s, ":")
+	return found && key != ""
+}
+
+// baselineLabelsMatch reports whether a baseline satisfies any of the "key:value"
+// label predicates. No predicates means every baseline qualifies; otherwise one
+// must match, so several values OR the way every other multi-value filter does.
+//
+// A predicate without a colon is refused at the boundary by ValidBaselineLabel
+// rather than handled here, because selecting nothing and being ignored produce
+// the SAME false green under a max bound: the gate passes while the caller
+// believes a filter was applied. Reaching this function it selects nothing, which
+// is the safe half of that pair.
+func baselineLabelsMatch(labels map[string]string, predicates []string) bool {
+	if len(predicates) == 0 {
+		return true
+	}
+	for _, p := range predicates {
+		key, value, found := strings.Cut(p, ":")
+		if !found {
+			continue
+		}
+		if labelMatchesGlob(labels, key, value) {
+			return true
+		}
+	}
+	return false
+}
+
+// labelMatchesGlob reports whether a label KEY is present and its value matches
+// the pattern. Deliberately not tagMatchesGlob: a tag value may be a list, which
+// is why that one goes through TagStrings, while a label is exactly one string by
+// schema (additionalProperties: {type: string}). An absent key matches nothing,
+// including against "*" — the predicate asks about a label the baseline does not
+// carry, and there is nothing to match.
+func labelMatchesGlob(labels map[string]string, key, pattern string) bool {
+	value, ok := labels[key]
+	if !ok {
+		return false
+	}
+	return safeGlobMatch(value, pattern)
 }
 
 // matchesGlob reports whether s matches the glob pattern (case-insensitive,

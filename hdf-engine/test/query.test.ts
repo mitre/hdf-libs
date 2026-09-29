@@ -13,6 +13,8 @@ import {
   tagMatchesGlob,
   matchesGlob,
   validPoamFilter,
+  labelMatchesGlob,
+  validBaselineLabel,
   validDisposition,
   DISPOSITION_VALUES,
   POAM_VALID,
@@ -530,5 +532,79 @@ describe('advertised vs merely accepted filter forms', () => {
     expect(advertisedFilterValues('severity')).not.toContain('none');
     expect(validSeverity('none'), 'the retired name must still be accepted').toBe(true);
     expect(advertisedFilterValues('nist')).toBeUndefined();
+  });
+});
+
+// Parity: go/filter_test.go TestFilterByBaselineLabel and its two siblings. The
+// shared fixture labels its FIRST baseline and deliberately leaves the second
+// unlabelled, which is what makes "an unlabelled baseline matches nothing"
+// assertable rather than assumed.
+interface BaselineLabelCases {
+  fixtureFile: string;
+  unfilteredCount: number;
+  unlabelledBaselineIDs: string[];
+  cases: { name: string; labels: string[]; expect: string[] }[];
+  validity: { value: string; valid: boolean }[];
+}
+
+// The same table go/filter_test.go reads, so a case cannot be added or changed
+// in one language only.
+const labelTable = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'baseline-label-filter-cases.json'),
+    'utf-8'
+  )
+) as BaselineLabelCases;
+
+describe('filter by the baseline s labels', () => {
+  // Load through the name the table gives, so the field is followed rather than
+  // documenting a path the test hardcodes separately. Parity: loadResultsFixture
+  // in go/filter_test.go.
+  const labelResults = JSON.parse(
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', labelTable.fixtureFile),
+      'utf-8'
+    )
+  ) as HDFResults;
+
+  for (const c of labelTable.cases) {
+    it(c.name, () => {
+      const got = ids(filter(labelResults, { baselineLabel: c.labels, statusOf: testStatusOf }));
+      expect(got).toEqual(c.expect);
+    });
+  }
+
+  it('the table describes the fixture actually loaded', () => {
+    expect(ids(filter(labelResults, { statusOf: testStatusOf }))).toHaveLength(labelTable.unfilteredCount);
+  });
+
+  // A colonless value names no key, so it can never match any document.
+  // Selecting nothing and being ignored are the same forever-green gate under a
+  // max bound, which is why the CLI refuses one rather than relying on silence.
+  it.each(labelTable.validity)('validBaselineLabel($value) is $valid', ({ value, valid }) => {
+    expect(validBaselineLabel(value)).toBe(valid);
+  });
+
+  it('an unlabelled baseline matches nothing', () => {
+    const unfiltered = ids(filter(labelResults, { statusOf: testStatusOf }));
+    for (const id of labelTable.unlabelledBaselineIDs) {
+      expect(unfiltered, 'precondition: reachable without the predicate').toContain(id);
+    }
+
+    const got = ids(filter(labelResults, { baselineLabel: ['environment:production'], statusOf: testStatusOf }));
+    for (const id of labelTable.unlabelledBaselineIDs) {
+      expect(got, 'an unlabelled baseline must not match').not.toContain(id);
+    }
+    expect(got.length, 'and the labelled one must still match, or this proves nothing').toBeGreaterThan(0);
+  });
+
+  it('labelMatchesGlob: an absent key matches nothing, including against *', () => {
+    const labels = { environment: 'production', team: 'platform-sre' };
+    expect(labelMatchesGlob(labels, 'environment', 'production')).toBe(true);
+    expect(labelMatchesGlob(labels, 'environment', 'prod*')).toBe(true);
+    expect(labelMatchesGlob(labels, 'team', 'platform-*')).toBe(true);
+    expect(labelMatchesGlob(labels, 'environment', 'staging')).toBe(false);
+    expect(labelMatchesGlob(labels, 'region', '*')).toBe(false);
+    expect(labelMatchesGlob(undefined, 'environment', '*')).toBe(false);
   });
 });

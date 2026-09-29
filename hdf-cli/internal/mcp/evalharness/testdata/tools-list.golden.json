@@ -1176,6 +1176,16 @@
             "description": "baseline name, glob allowed",
             "type": "string"
           },
+          "baselineLabel": {
+            "description": "baseline labels as key:value, glob on value (OR)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
           "cci": {
             "items": {
               "type": "string"

@@ -652,6 +652,9 @@ func TestQuery_AmendmentFiltersRefuseUnknownValues(t *testing.T) {
 		// never did, so an agent's typo read as a clean empty result.
 		{"status", queryInput{Source: src, Status: []string{"faild"}}, "unknown status"},
 		{"severity", queryInput{Source: src, Severity: []string{"crit"}}, "unknown severity"},
+		// A colonless label names no key, so it can never match — the same empty
+		// result an agent cannot tell from "asked and found none".
+		{"baselineLabel", queryInput{Source: src, BaselineLabel: []string{"production"}}, "malformed baselineLabel"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res, _ := callQuery(t, tc.in)

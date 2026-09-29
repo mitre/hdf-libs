@@ -12,48 +12,50 @@ import (
 
 // Global flag variables for query command (used by runQuery).
 var (
-	queryStatus      []string
-	querySeverity    []string
-	queryImpact      string
-	queryRawImpact   string
-	queryCvss        string
-	queryEpss        string
-	queryKev         string
-	queryCwe         []string
-	queryCCI         []string
-	queryNIST        []string
-	querySTIGID      string
-	queryTag         []string
-	queryDisposition []string
-	queryPoams       string
-	querySearch      string
-	queryProfile     string
-	queryCount       bool
-	queryLimit       int
+	queryStatus        []string
+	querySeverity      []string
+	queryImpact        string
+	queryRawImpact     string
+	queryCvss          string
+	queryEpss          string
+	queryKev           string
+	queryCwe           []string
+	queryCCI           []string
+	queryNIST          []string
+	querySTIGID        string
+	queryTag           []string
+	queryDisposition   []string
+	queryPoams         string
+	querySearch        string
+	queryProfile       string
+	queryBaselineLabel []string
+	queryCount         bool
+	queryLimit         int
 )
 
 // NewQueryCmd creates a new query command with fresh state.
 func NewQueryCmd() *cobra.Command {
 	// Local flag variables for this command instance
 	var (
-		localQueryStatus      []string
-		localQuerySeverity    []string
-		localQueryImpact      string
-		localQueryRawImpact   string
-		localQueryCvss        string
-		localQueryEpss        string
-		localQueryKev         string
-		localQueryCwe         []string
-		localQueryCCI         []string
-		localQueryNIST        []string
-		localQuerySTIGID      string
-		localQueryTag         []string
-		localQueryDisposition []string
-		localQueryPoams       string
-		localQuerySearch      string
-		localQueryProfile     string
-		localQueryCount       bool
-		localQueryLimit       int
+		localQueryStatus        []string
+		localQuerySeverity      []string
+		localQueryImpact        string
+		localQueryRawImpact     string
+		localQueryCvss          string
+		localQueryEpss          string
+		localQueryKev           string
+		localQueryCwe           []string
+		localQueryCCI           []string
+		localQueryNIST          []string
+		localQuerySTIGID        string
+		localQueryTag           []string
+		localQueryDisposition   []string
+		localQueryPoams         string
+		localQuerySearch        string
+		localQueryProfile       string
+		localQueryBaselineLabel []string
+		localQueryCount         bool
+		localQueryLimit         int
 	)
 
 	cmd := &cobra.Command{
@@ -114,6 +116,11 @@ Examples:
 					return err
 				}
 			}
+			for _, value := range localQueryBaselineLabel {
+				if !hdfengine.ValidBaselineLabel(value) {
+					return fmt.Errorf("unknown --baseline-label value %q (expected a key:value expression, e.g. environment:production)", value)
+				}
+			}
 			for _, severity := range querySeverity {
 				if !hdfengine.ValidSeverity(severity) {
 					return fmt.Errorf("unknown --severity value %q (expected one of: %s)",
@@ -145,6 +152,7 @@ Examples:
 			}
 			querySearch = localQuerySearch
 			queryProfile = localQueryProfile
+			queryBaselineLabel = localQueryBaselineLabel
 			queryCount = localQueryCount
 			queryLimit = localQueryLimit
 			files, err := expandGlobs(args)
@@ -178,6 +186,8 @@ Examples:
 		"Filter by remediation-plan validity: valid (a POA&M still in force) or none-valid (none, empty, or only lapsed)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
 	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
+	cmd.Flags().StringArrayVar(&localQueryBaselineLabel, "baseline-label", nil,
+		"Filter by the baseline's labels as key:value (repeatable, OR logic; glob allowed on the value, e.g. environment:prod*)")
 	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching requirements")
 	cmd.Flags().IntVarP(&localQueryLimit, "limit", "l", 0, "Limit number of results (0 = unlimited)")
 
@@ -209,25 +219,26 @@ func runQuery(_ *cobra.Command, args []string) error {
 	// Filtering is delegated to the shared hdf-engine library; the CLI supplies
 	// its display-status resolver so the engine stays convention-agnostic.
 	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{
-		Status:      queryStatus,
-		Severity:    querySeverity,
-		Impact:      queryImpact,
-		RawImpact:   queryRawImpact,
-		Cvss:        queryCvss,
-		Epss:        queryEpss,
-		Kev:         queryKev,
-		Cwe:         queryCwe,
-		CCI:         queryCCI,
-		NIST:        queryNIST,
-		ID:          querySTIGID,
-		Tag:         queryTag,
-		Disposition: queryDisposition,
-		Poams:       queryPoams,
-		Search:      querySearch,
-		Baseline:    queryProfile,
-		Limit:       queryLimit,
-		Count:       queryCount,
-		StatusOf:    determineControlStatus,
+		Status:        queryStatus,
+		Severity:      querySeverity,
+		Impact:        queryImpact,
+		RawImpact:     queryRawImpact,
+		Cvss:          queryCvss,
+		Epss:          queryEpss,
+		Kev:           queryKev,
+		Cwe:           queryCwe,
+		CCI:           queryCCI,
+		NIST:          queryNIST,
+		ID:            querySTIGID,
+		Tag:           queryTag,
+		Disposition:   queryDisposition,
+		Poams:         queryPoams,
+		Search:        querySearch,
+		Baseline:      queryProfile,
+		BaselineLabel: queryBaselineLabel,
+		Limit:         queryLimit,
+		Count:         queryCount,
+		StatusOf:      determineControlStatus,
 	})
 
 	return outputQueryResults(matches)

@@ -137,6 +137,12 @@ func validateRules(rules []hdfengine.ThresholdRule, label string) error {
 			return fmt.Errorf("%s: %s: poams %q is not a known value (expected one of: %s, %s)",
 				label, name, rule.Where.Poams, hdfengine.PoamValid, hdfengine.PoamNoneValid)
 		}
+		for _, value := range rule.Where.BaselineLabel {
+			if !hdfengine.ValidBaselineLabel(value) {
+				return fmt.Errorf("%s: %s: baselineLabel %q is not a key:value expression (expected e.g. \"environment:production\")",
+					label, name, value)
+			}
+		}
 		// A slice, not a map: two malformed comparisons in one rule must always
 		// report the same one first.
 		if rule.Where.Kev != "" && !hdfengine.ValidKevFilter(rule.Where.Kev) {

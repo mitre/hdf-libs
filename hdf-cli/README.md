@@ -264,6 +264,10 @@ FLAGS
                                none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description
   -p, --baseline string        Filter by profile name
+      --baseline-label stringArray  Filter by the BASELINE's labels as key:value (repeatable, OR logic;
+                               glob allowed on the value, e.g. environment:prod*). Labels say which
+                               system, component or environment a baseline covers. A baseline carrying
+                               no labels matches nothing — an absent label is not a wildcard.
   -c, --count                  Show only the count of matching controls
   -l, --limit int              Limit number of results (0 = unlimited)
 

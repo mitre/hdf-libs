@@ -553,6 +553,27 @@ func TestQueryStatusAndSeverity_UnknownValuesAreRejected(t *testing.T) {
 	}
 }
 
+// A colonless --baseline-label names no key, so it can never match any document.
+// Refusing it is not pedantry: under a threshold max bound, selecting nothing
+// and being ignored produce the identical clean run, which is the false green
+// this vocabulary exists to prevent.
+func TestQueryBaselineLabel_ColonlessValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--baseline-label", "production")
+	require.Error(t, err, "a colonless label must be refused, not silently match nothing")
+	assert.Contains(t, err.Error(), "unknown --baseline-label value")
+
+	// And a well-formed one reaches the filter, or the refusal above proves only
+	// that the flag is broken. This fixture carries no labels, so it correctly
+	// matches nothing — what matters is that it is not REFUSED.
+	_, _, err = executeCommand("query", resultsPath, "--baseline-label", "environment:production")
+	if err != nil {
+		assert.NotContains(t, err.Error(), "unknown --baseline-label value",
+			"a well-formed key:value expression must reach the filter")
+	}
+}
+
 // And every spelling the engine normalizes reaches the filter through the CLI,
 // so a saved command line keeps working and the two surfaces agree.
 func TestQueryStatusAndSeverity_AcceptedSpellingsReachTheFilter(t *testing.T) {
