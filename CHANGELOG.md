@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **`hadolint` converter — Dockerfile linter output to HDF, in Go and TypeScript.** `hdf convert --from hadolint`, auto-detected from a bare findings array, with `convertHadolintToHdf` exported from `@mitre/hdf-converters`. One requirement per distinct rule code and one result per finding, so a rule that fires on several lines keeps every occurrence; `sourceLocation` carries the file and line, `requirement.code` the finding itself, and one `repository` component names each distinct scanned file. hadolint's four severity levels map to impact (error 0.7, warning 0.5, info 0.3, style 0.1), and a SARIF-shaped input routes to the SARIF converter, though hadolint's SARIF collapses info and style to `note` so the JSON path carries more detail. A clean run is the literal `[]` and converts to the standard passed no-findings placeholder. hadolint reports a single line per finding and nothing else, so every requirement links its rule's published documentation in `refs[]`, deriving the URL from the rule code — hadolint's own rules point at the hadolint wiki, the shellcheck rules it surfaces at shellcheck's. The code is validated against the rule-code pattern before it reaches a URL, so a report carrying a crafted code cannot steer the link. The converter performs no network I/O. The rule→NIST table is a new `hadolint` package in `hdf-mappings` covering both hadolint's own `DL` rules and the `SC` rules it surfaces from its embedded shellcheck; it is authored at NIST Rev 5, and because `SR-4` has no Rev 4 equivalent a rule whose controls do not survive translation falls through to the shared static-analysis controls rather than emitting an empty `nist` tag. (#391)
+
 ## [3.7.0] - 2026-09-21
 
 Minor release. The Amendments schema gains one optional field, `Milestone.title`, and the Evidence type tightens its `data` constraint, so every schema `$id` moves to v3.7.0. Alongside the schema change: an in-memory multi-scanner merge with `sources[]` across the MCP read tools, a threshold vocabulary that drops the non-schema `none` bucket in favour of `informational`, HDF v2 (legacy InSpec exec-json) validation through a new `hdf validate --schema-ver` selector, and a broad batch of converter/exporter fidelity, schema-conformance, and CLI input-gating fixes. The entries marked BREAKING will surface on first run.

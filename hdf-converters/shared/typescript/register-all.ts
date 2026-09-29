@@ -19,6 +19,7 @@ import { deptrackFingerprint } from '../../converters/deptrack-to-hdf/typescript
 import { gitlabFingerprint } from '../../converters/gitlab-to-hdf/typescript/fingerprint.js';
 import { gosecFingerprint } from '../../converters/gosec-to-hdf/typescript/fingerprint.js';
 import { grypeFingerprint } from '../../converters/grype-to-hdf/typescript/fingerprint.js';
+import { hadolintFingerprint } from '../../converters/hadolint-to-hdf/typescript/fingerprint.js';
 import { jfrogXrayFingerprint } from '../../converters/jfrog-xray-to-hdf/typescript/fingerprint.js';
 import { kicsFingerprint } from '../../converters/kics-to-hdf/typescript/fingerprint.js';
 import { msftDefenderCloudFingerprint } from '../../converters/msft-defender-cloud-to-hdf/typescript/fingerprint.js';
@@ -84,6 +85,7 @@ const allFingerprints: ConverterFingerprint[] = [
   gitlabFingerprint,
   gosecFingerprint,
   grypeFingerprint,
+  hadolintFingerprint,
   jfrogXrayFingerprint,
   kicsFingerprint,
   msftDefenderCloudFingerprint,

@@ -1,0 +1,145 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Last USER should not be root",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: Dockerfile | Line: 11 | Column: 1",
+              "message": "Last USER should not be root",
+              "startTime": "2026-09-28T21:14:19.858862Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 11,
+            "ref": "Dockerfile"
+          },
+          "id": "DL3002",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000225"
+            ],
+            "nist": [
+              "AC-6"
+            ]
+          },
+          "code": "{\"code\":\"DL3002\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"warning\",\"line\":11,\"message\":\"Last USER should not be root\"}",
+          "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/hadolint/hadolint/wiki/DL3002"
+            }
+          ],
+          "title": "Last USER should not be root",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: Dockerfile | Line: 15 | Column: 1",
+              "message": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+              "startTime": "2026-09-28T21:14:19.858862Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "File: Dockerfile | Line: 42 | Column: 1",
+              "message": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+              "startTime": "2026-09-28T21:14:19.858862Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 15,
+            "ref": "Dockerfile"
+          },
+          "id": "DL3041",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "CM-2"
+            ]
+          },
+          "code": "{\"code\":\"DL3041\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"warning\",\"line\":15,\"message\":\"Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.\"}",
+          "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://github.com/hadolint/hadolint/wiki/DL3041"
+            }
+          ],
+          "title": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Multiple consecutive `RUN` instructions. Consider consolidation.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: Dockerfile | Line: 26 | Column: 1",
+              "message": "Multiple consecutive `RUN` instructions. Consider consolidation.",
+              "startTime": "2026-09-28T21:14:19.858862Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 26,
+            "ref": "Dockerfile"
+          },
+          "id": "DL3059",
+          "impact": 0.3,
+          "tags": {
+            "nist": [
+              "CM-7"
+            ]
+          },
+          "code": "{\"code\":\"DL3059\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"info\",\"line\":26,\"message\":\"Multiple consecutive `RUN` instructions. Consider consolidation.\"}",
+          "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://github.com/hadolint/hadolint/wiki/DL3059"
+            }
+          ],
+          "title": "Multiple consecutive `RUN` instructions. Consider consolidation.",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "537b6dc0bd5f429801b74a44c166a1d6f519e1fc809eb064e6c3b15f2d7ca42c"
+      },
+      "name": "Hadolint Scan",
+      "title": "Hadolint Scan of Dockerfile"
+    }
+  ],
+  "components": [
+    {
+      "name": "Dockerfile",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "hadolint-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-28T21:14:19.858862Z",
+  "tool": {
+    "name": "hadolint"
+  }
+}
