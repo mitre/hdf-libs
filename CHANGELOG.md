@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **TIGHTENING (CLI) — `hdf evidence build --amendments` and `--comparison` now refuse a document that is not what the flag names.** `--plan` and `--baseline` have always fingerprint-checked their input; these two accepted anything readable, so a mistyped path filed an assessment plan under `hdf-amendments`, or a results document under `hdf-comparison`, and the resulting package still passed `hdf validate`. `hdf evidence verify` reads `contents[].type` to judge completeness, so a wrong type produced a confident wrong verdict rather than an error. All four content-carrying flags now behave identically, refusing the document and writing no package. **Consequences for consumers:** two kinds of input that previously built a package now fail. A file that detects as no HDF document type at all — a stub like `{"amendments": []}`, whose only key is named after the type but carries none of its content — is refused with `is not a recognized HDF document`. A file that detects as a *different* HDF type is refused with `is an HDF <actual> document, expected <flag>`. Supply a real document of the flag's type, or move the file to the flag that matches it; an empty element such as `--amendments ""` is still dropped as a no-op. `--bom` stays deliberately unchecked, because a BOM is not one of the HDF document types and its kind is carried in the referenced document's own `bomType`. (hdf-libs-52n0c.6)
+
 ## [3.7.0] - 2026-09-21
 
 Minor release. The Amendments schema gains one optional field, `Milestone.title`, and the Evidence type tightens its `data` constraint, so every schema `$id` moves to v3.7.0. Alongside the schema change: an in-memory multi-scanner merge with `sources[]` across the MCP read tools, a threshold vocabulary that drops the non-schema `none` bucket in favour of `informational`, HDF v2 (legacy InSpec exec-json) validation through a new `hdf validate --schema-ver` selector, and a broad batch of converter/exporter fidelity, schema-conformance, and CLI input-gating fixes. The entries marked BREAKING will surface on first run.

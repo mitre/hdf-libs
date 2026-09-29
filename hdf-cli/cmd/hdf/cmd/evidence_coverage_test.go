@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -111,8 +112,14 @@ func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 
 	systemDoc := `{"name": "my-system", "components": [{"name": "c1", "type": "application"}]}`
 	resultsDoc := noTargetsJSON
-	amendDoc := `{"amendments": []}`
-	compDoc := `{"comparison": {}}`
+	// Real documents, not placeholders: every content-carrying flag now
+	// fingerprint-checks its input, and {"amendments": []} / {"comparison": {}}
+	// detect as no HDF type at all. The comparison fixture was produced by running
+	// `hdf diff rhel9-results.json postgres-results.json --format json` over the
+	// two sibling results fixtures in testdata/evidence-verify.
+	amendDoc := fixtures.Amendments.UC01Fixed
+	compDoc, compErr := os.ReadFile(filepath.Join("testdata", "evidence-verify", "comparison.json"))
+	require.NoError(t, compErr)
 
 	systemPath := filepath.Join(tmpDir, "system.json")
 	resultsPath := filepath.Join(tmpDir, "results.json")
@@ -122,8 +129,8 @@ func TestEvidenceBuildWithOptionalDocs(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(systemPath, []byte(systemDoc), 0o600))
 	require.NoError(t, os.WriteFile(resultsPath, []byte(resultsDoc), 0o600))
-	require.NoError(t, os.WriteFile(amendPath, []byte(amendDoc), 0o600))
-	require.NoError(t, os.WriteFile(compPath, []byte(compDoc), 0o600))
+	require.NoError(t, os.WriteFile(amendPath, amendDoc, 0o600))
+	require.NoError(t, os.WriteFile(compPath, compDoc, 0o600))
 
 	_, stderr, err := executeCommand("evidence", "build",
 		"--system", systemPath,

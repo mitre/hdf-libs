@@ -389,18 +389,14 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 		}
 	}
 
-	// Optional: amendments and comparisons. These are NOT fingerprint-checked,
-	// because they never were: making them repeatable must not also tighten what
-	// they accept. That asymmetry against --plan/--baseline is tracked on its own card.
-	for _, ap := range opts.amendmentsPaths {
-		if aerr := addEntry("hdf-amendments", ap); aerr != nil {
-			return aerr
-		}
+	// Optional: amendments and comparisons, fingerprint-checked like --plan and
+	// --baseline. verify reads contents[].type to judge completeness, so filing a
+	// document under the wrong type yields a confident wrong verdict, not an error.
+	if contents, err = appendTyped(contents, baseDir, opts.amendmentsPaths, "amendments", "hdf-amendments", "amendments"); err != nil {
+		return err
 	}
-	for _, cp := range opts.comparisonPaths {
-		if aerr := addEntry("hdf-comparison", cp); aerr != nil {
-			return aerr
-		}
+	if contents, err = appendTyped(contents, baseDir, opts.comparisonPaths, "comparison", "hdf-comparison", "comparison"); err != nil {
+		return err
 	}
 
 	// Extract system name for package name

@@ -586,3 +586,85 @@ func TestEvidenceBuild_DanglingSymlinkDocumentSurfacesTheFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "vanished-results.json", "the error must name the document")
 	assert.NoFileExists(t, outputPath)
 }
+
+// evidence verify reads contents[].type to judge completeness, so a document
+// filed under the wrong Content_Type produces a confident wrong verdict rather
+// than an error. --plan and --baseline have always refused a mistyped document;
+// --amendments and --comparison accepted anything readable, because card .1 made
+// them repeatable under an AC that forbade tightening what they took. All four
+// are checked here together so the asymmetry cannot come back on one flag.
+func TestEvidenceBuild_RefusesAMistypedDocumentOnEveryContentFlag(t *testing.T) {
+	for _, tc := range []struct {
+		flag     string
+		wrongDoc string
+		gotType  string
+	}{
+		{flag: "plan", wrongDoc: "rhel9-results.json", gotType: "results"},
+		{flag: "baseline", wrongDoc: "rhel9-results.json", gotType: "results"},
+		{flag: "amendments", wrongDoc: "plan.json", gotType: "plan"},
+		{flag: "comparison", wrongDoc: "rhel9-results.json", gotType: "results"},
+	} {
+		t.Run(tc.flag, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, n := range []string{"system.json", "rhel9-results.json", "plan.json"} {
+				body, readErr := os.ReadFile(filepath.Join("testdata", "evidence-verify", n))
+				require.NoError(t, readErr)
+				require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
+			}
+			out := filepath.Join(dir, "pkg.json")
+
+			_, _, err := executeCommand("evidence", "build",
+				"--system", filepath.Join(dir, "system.json"),
+				"--results", filepath.Join(dir, "rhel9-results.json"),
+				"--"+tc.flag, filepath.Join(dir, tc.wrongDoc),
+				"-o", out,
+			)
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(),
+				"is an HDF "+tc.gotType+" document, expected "+tc.flag,
+				"the refusal must name both the detected type and what the flag promised")
+			assert.NoFileExists(t, out, "a refused build must not leave a package behind")
+		})
+	}
+}
+
+// Card .1 made the repeatable flags drop an empty path element, so a shell that
+// expands an unset variable into `--baseline ""` builds a package rather than
+// failing. Fingerprint-checking must not turn those back into errors: an empty
+// element has no document to detect, so it has to be dropped before the guard.
+func TestEvidenceBuild_AnEmptyPathElementStaysANoOpOnEveryContentFlag(t *testing.T) {
+	for _, flag := range []string{"plan", "baseline", "amendments", "comparison"} {
+		t.Run(flag, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, n := range []string{"system.json", "rhel9-results.json"} {
+				body, readErr := os.ReadFile(filepath.Join("testdata", "evidence-verify", n))
+				require.NoError(t, readErr)
+				require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
+			}
+			out := filepath.Join(dir, "pkg.json")
+
+			_, _, err := executeCommand("evidence", "build",
+				"--system", filepath.Join(dir, "system.json"),
+				"--results", filepath.Join(dir, "rhel9-results.json"),
+				"--"+flag, "",
+				"-o", out,
+			)
+			require.NoError(t, err)
+
+			data, readErr := os.ReadFile(out)
+			require.NoError(t, readErr)
+			var pkg struct {
+				Contents []struct{ Type string } `json:"contents"`
+			}
+			require.NoError(t, json.Unmarshal(data, &pkg))
+
+			types := make([]string, len(pkg.Contents))
+			for i, c := range pkg.Contents {
+				types[i] = c.Type
+			}
+			assert.Equal(t, []string{"hdf-system", "hdf-results"}, types,
+				"the empty element must add nothing, so only system and results are listed")
+		})
+	}
+}
