@@ -91,6 +91,7 @@ var fixtureTests = []struct {
 	{"deptrack-to-hdf", "fpf-default.json", "deptrack-to-hdf"},
 	{"gitlab-to-hdf", "minimal-sast.json", "gitlab-to-hdf"},
 	{"gosec-to-hdf", "real.json", "gosec-to-hdf"},
+	{"hadolint-to-hdf", "real.json", "hadolint-to-hdf"},
 	{"grype-to-hdf", "anchore_grype.json", "grype-to-hdf"},
 	{"jfrog-xray-to-hdf", "jfrog_xray_sample.json", "jfrog-xray-to-hdf"},
 	{"kics-to-hdf", "minimal.json", "kics-to-hdf"},

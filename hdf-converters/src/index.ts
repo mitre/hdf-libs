@@ -50,6 +50,7 @@ export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js'
 
 // Grype to HDF converter
 export { convertGrypeToHdf } from '../converters/grype-to-hdf/typescript/index.js';
+export { convertHadolintToHdf } from '../converters/hadolint-to-hdf/typescript/index.js';
 
 // DefectDojo to HDF converter
 export { convertDefectDojoToHdf } from '../converters/defectdojo-to-hdf/typescript/index.js';

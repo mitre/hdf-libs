@@ -139,6 +139,12 @@
       "acceptsEmpty": false
     },
     {
+      "source": "hadolint",
+      "dest": "hdf",
+      "name": "hadolint to HDF",
+      "acceptsEmpty": false
+    },
+    {
       "source": "hdf",
       "dest": "asff",
       "name": "HDF Results to ASFF Findings",
