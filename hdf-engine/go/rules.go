@@ -149,18 +149,31 @@ func (r ThresholdRule) label() string {
 // breached bound. Evaluation is filter → count → compare, calling the engine's
 // own filter rather than a second matcher: the duplication this repo flags as its
 // most common defect is exactly what a private rule matcher would be.
-func EvaluateRules(config *ThresholdConfig, results hdf.HDFResults, opts RuleOptions) []string {
+func EvaluateRules(config *ThresholdConfig, results hdf.HDFResults, opts RuleOptions) []Violation {
 	if config == nil || len(config.Rules) == 0 {
 		return nil
 	}
-	var violations []string
+	var violations []Violation
 	for _, rule := range config.Rules {
-		matched := len(Filter(context.Background(), results, rule.Where.filterOptions(opts)))
+		// The matches, not just their count: naming which requirements broke a
+		// gate is the difference between a red check a reader can act on and one
+		// that sends them to an artifact and a script. This filter already ran.
+		matches := Filter(context.Background(), results, rule.Where.filterOptions(opts))
+		matched := len(matches)
 		if rule.Max != nil && matched > *rule.Max {
-			violations = append(violations, fmt.Sprintf("%s: %d matched, maximum %d", rule.label(), matched, *rule.Max))
+			violations = append(violations, Violation{
+				Message:  fmt.Sprintf("%s: %d matched, maximum %d", rule.label(), matched, *rule.Max),
+				Findings: matches,
+			})
 		}
 		if rule.Min != nil && matched < *rule.Min {
-			violations = append(violations, fmt.Sprintf("%s: %d matched, minimum %d", rule.label(), matched, *rule.Min))
+			// A minimum is breached by what is ABSENT, so the matches are the
+			// requirements that DID qualify — fewer than required. Naming them
+			// still helps: it says what the gate found rather than what it wanted.
+			violations = append(violations, Violation{
+				Message:  fmt.Sprintf("%s: %d matched, minimum %d", rule.label(), matched, *rule.Min),
+				Findings: matches,
+			})
 		}
 	}
 	return violations
@@ -211,10 +224,43 @@ func NewThresholdInput(results hdf.HDFResults, statusOf func(hdf.EvaluatedRequir
 // violation. This is the entry point a surface should call: ValidateThresholds
 // evaluates the grid alone and refuses a config carrying rules, so a caller
 // cannot half-implement a policy without being told.
-func Evaluate(config *ThresholdConfig, in ThresholdInput) []string {
+func Evaluate(config *ThresholdConfig, in ThresholdInput) []Violation {
 	violations := validateGrid(config, in.Counts, in.Compliance, in.ControlMap)
 	return append(violations, EvaluateRules(config, in.Results, RuleOptions{
 		Now:      in.Now,
 		StatusOf: in.StatusOf,
 	})...)
+}
+
+// Violation is one breached bound together with the requirements that breached
+// it. Findings is empty in two cases, for two different reasons: a compliance
+// percentage is a property of the whole document, so it has no offending
+// requirement to name; and a controls list already names its requirement in the
+// message, so repeating it would say the same thing twice.
+//
+// Findings from a RULE are the filter's own matches and carry every field. Those
+// from a COUNT bound are rebuilt from the control map, which holds only id,
+// title, status and severity — so Impact, Baseline, BaselineIndex and Index are
+// zero there rather than the requirement's real values. The CLI prints none of
+// them; a consumer serializing Findings should not read them as data.
+type Violation struct {
+	Message  string
+	Findings []Match
+}
+
+// String is the message alone, so a caller that only wants the verdict reads the
+// same text it always did.
+func (v Violation) String() string { return v.Message }
+
+// ViolationMessages is the messages of a violation list, for a caller that wants
+// the verdict without the findings.
+func ViolationMessages(violations []Violation) []string {
+	if len(violations) == 0 {
+		return nil
+	}
+	messages := make([]string, 0, len(violations))
+	for _, v := range violations {
+		messages = append(messages, v.Message)
+	}
+	return messages
 }

@@ -995,7 +995,7 @@ func TestCompliance_RulesAreEvaluatedAndCanNeverMatchIsRefused(t *testing.T) {
 		ControlMap: hdfengine.MapControlIDsByStatus(results, statusOf),
 		StatusOf:   statusOf,
 	})
-	if len(failures) != 1 || !strings.Contains(failures[0], "no failures: 1 matched, maximum 0") {
+	if len(failures) != 1 || !strings.Contains(failures[0].Message, "no failures: 1 matched, maximum 0") {
 		t.Errorf("failures = %v, want the rule's own violation", failures)
 	}
 

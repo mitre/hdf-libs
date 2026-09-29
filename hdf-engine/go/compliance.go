@@ -57,6 +57,11 @@ type ControlIDMapping struct {
 	// name a bucket the counts do not have, and a bound listing the control
 	// would report a mismatch against the bucket that control was counted in.
 	Severity string
+	// Title is the requirement's title when it has one, carried so a breached
+	// count bound can name its offenders the way a rule violation does. A reader
+	// should not have to know which kind of bound produced a line to know whether
+	// it will be readable.
+	Title string
 }
 
 // ThresholdBound is a min/max/controls bound on a single count.
@@ -255,6 +260,7 @@ func MapControlIDs(results hdf.HDFResults) []ControlIDMapping {
 				ID:       req.ID,
 				Status:   statusToThresholdKey(status),
 				Severity: SeverityBucket(sev),
+				Title:    requirementTitle(req),
 			})
 		}
 	}
@@ -282,10 +288,42 @@ func MapControlIDsByStatus(results hdf.HDFResults, statusOf func(hdf.EvaluatedRe
 				// Effective impact, matching CountControlsByStatus, so a control
 				// listing and the counts it is listed alongside cannot disagree.
 				Severity: SeverityBucket(DeriveSeverity(EffectiveImpactOf(req, time.Time{}), req.Severity)),
+				Title:    requirementTitle(req),
 			})
 		}
 	}
 	return mappings
+}
+
+// requirementTitle is the requirement's title, or empty when it has none —
+// title is optional on the schema.
+func requirementTitle(req hdf.EvaluatedRequirement) string {
+	if req.Title == nil {
+		return ""
+	}
+	return *req.Title
+}
+
+// thresholdKeyToStatus is statusToThresholdKey's inverse, for reporting a
+// requirement found via the control map. A finding line describes the
+// REQUIREMENT, so it names the requirement's own status — which is also the only
+// vocabulary `hdf query --status` accepts, so a reader can paste the value
+// straight into a query. The threshold key is a bucket name and is refused there.
+func thresholdKeyToStatus(key string) string {
+	switch key {
+	case ThresholdPassed:
+		return string(hdf.Passed)
+	case ThresholdFailed:
+		return string(hdf.Failed)
+	case ThresholdSkipped:
+		return string(hdf.NotReviewed)
+	case ThresholdError:
+		return string(hdf.Error)
+	case ThresholdNoImpact:
+		return string(hdf.NotApplicable)
+	default:
+		return key
+	}
 }
 
 // statusToThresholdKey converts a ResultStatus to the threshold key name.
@@ -397,7 +435,7 @@ func CalculateCompliance(counts *StatusCounts) float64 {
 // compliance, returning a list of human-readable violation messages (empty when
 // all pass).
 func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
-	violations := validateGrid(config, counts, compliance, controlMap)
+	violations := ViolationMessages(validateGrid(config, counts, compliance, controlMap))
 	// A config carrying rules cannot be judged by the grid alone. Returning the
 	// grid's verdict as though the rules were satisfied would report a passing
 	// gate over policy nobody applied, so the caller is told to use Evaluate
@@ -410,8 +448,8 @@ func ValidateThresholds(config *ThresholdConfig, counts *StatusCounts, complianc
 
 // validateGrid is the status × severity half of a policy, shared by
 // ValidateThresholds and Evaluate.
-func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []string {
-	var violations []string
+func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance float64, controlMap []ControlIDMapping) []Violation {
+	var violations []Violation
 
 	// Every construction path lands here, so the former name is resolved once
 	// rather than in each of the file, inline and MCP callers. Resolved
@@ -426,7 +464,7 @@ func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance floa
 	for i := range sections {
 		resolved, wroteNone, refusal := resolveLegacySeverity(sections[i].name, sections[i].threshold)
 		if refusal != "" {
-			violations = append(violations, refusal)
+			violations = append(violations, Violation{Message: refusal})
 		}
 		sections[i].threshold = resolved
 		sections[i].wroteNone = wroteNone
@@ -438,18 +476,20 @@ func validateGrid(config *ThresholdConfig, counts *StatusCounts, compliance floa
 	}
 
 	if config.Compliance != nil {
+		// No Findings: a compliance percentage is a property of the whole
+		// document, so there is no offending requirement to name.
 		if config.Compliance.Min != nil && compliance < *config.Compliance.Min {
-			violations = append(violations, fmt.Sprintf(
-				"compliance %.2f%% is below minimum %.2f%%", compliance, *config.Compliance.Min))
+			violations = append(violations, Violation{Message: fmt.Sprintf(
+				"compliance %.2f%% is below minimum %.2f%%", compliance, *config.Compliance.Min)})
 		}
 		if config.Compliance.Max != nil && compliance > *config.Compliance.Max {
-			violations = append(violations, fmt.Sprintf(
-				"compliance %.2f%% exceeds maximum %.2f%%", compliance, *config.Compliance.Max))
+			violations = append(violations, Violation{Message: fmt.Sprintf(
+				"compliance %.2f%% exceeds maximum %.2f%%", compliance, *config.Compliance.Max)})
 		}
 	}
 
 	for _, s := range sections {
-		violations = append(violations, checkSeverityThreshold(s.name, s.threshold, s.counts, actualControls, s.wroteNone)...)
+		violations = append(violations, checkSeverityThreshold(s.name, s.threshold, s.counts, actualControls, s.wroteNone, controlMap)...)
 	}
 
 	return violations
@@ -490,7 +530,7 @@ func resolveLegacySeverity(name string, ts *ThresholdSeverity) (*ThresholdSeveri
 }
 
 // checkSeverityThreshold validates all severity bounds within a status category.
-func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping, wroteNone bool) []string {
+func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual *SeverityCounts, actualControls map[string]ControlIDMapping, wroteNone bool, controlMap []ControlIDMapping) []Violation {
 	if threshold == nil {
 		return nil
 	}
@@ -506,26 +546,52 @@ func checkSeverityThreshold(status string, threshold *ThresholdSeverity, actual 
 		return label
 	}
 
-	var violations []string
+	// The requirements a count bound counted, so a breached bound can name them.
+	// "total" is the whole status bucket; a severity label narrows it further.
+	inBucket := func(label string) []Match {
+		var found []Match
+		for _, m := range controlMap {
+			if m.Status != status {
+				continue
+			}
+			if label != "total" && m.Severity != label {
+				continue
+			}
+			found = append(found, Match{ID: m.ID, Title: m.Title, Status: thresholdKeyToStatus(m.Status), Severity: m.Severity})
+		}
+		return found
+	}
+
+	var violations []Violation
 	check := func(label string, bound *ThresholdBound, actualCount int) {
 		if bound == nil {
 			return
 		}
 		path := status + "." + pathLabel(label)
 		if bound.Min != nil && actualCount < *bound.Min {
-			violations = append(violations, fmt.Sprintf("%s: %d is below minimum %d", path, actualCount, *bound.Min))
+			violations = append(violations, Violation{
+				Message:  fmt.Sprintf("%s: %d is below minimum %d", path, actualCount, *bound.Min),
+				Findings: inBucket(label),
+			})
 		}
 		if bound.Max != nil && actualCount > *bound.Max {
-			violations = append(violations, fmt.Sprintf("%s: %d exceeds maximum %d", path, actualCount, *bound.Max))
+			violations = append(violations, Violation{
+				Message:  fmt.Sprintf("%s: %d exceeds maximum %d", path, actualCount, *bound.Max),
+				Findings: inBucket(label),
+			})
 		}
 		for _, expectedID := range bound.Controls {
+			// A controls list already names its requirement in the message, so
+			// these carry no Findings: repeating the id underneath would say the
+			// same thing twice.
 			ac, found := actualControls[expectedID]
 			if !found {
-				violations = append(violations, fmt.Sprintf("%s: expected control %s not found in results", path, expectedID))
+				violations = append(violations, Violation{Message: fmt.Sprintf(
+					"%s: expected control %s not found in results", path, expectedID)})
 			} else if ac.Status != status || ac.Severity != label {
-				violations = append(violations, fmt.Sprintf(
+				violations = append(violations, Violation{Message: fmt.Sprintf(
 					"%s: control %s expected %s/%s but found %s/%s",
-					path, expectedID, status, label, ac.Status, ac.Severity))
+					path, expectedID, status, label, ac.Status, ac.Severity)})
 			}
 		}
 	}

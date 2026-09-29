@@ -145,6 +145,7 @@ USAGE
 FLAGS
   -T, --template stringArray   Threshold YAML template file (repeatable; every spec must pass)
   -I, --inline stringArray     Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+      --no-findings            Suppress the list of requirements printed under each violation
 
 EXAMPLES
   hdf validate threshold results.json -T threshold.yaml

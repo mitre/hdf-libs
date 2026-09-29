@@ -71,9 +71,10 @@ Agent-attributed overrides: 0
 
   Violations:
     failed.total: 1 exceeds maximum 0
+      CKV_TF_1  Ensure Terraform module sources use a commit hash  [failed/medium]
 ```
 
-`-I` takes bounds inline instead of from a file. It is useful for a one-off check or for trying a bound before committing it; a real gate belongs in a file, under review, next to the code it governs.
+Each violation lists the requirements that breached it; `--no-findings` suppresses that list. `-I` takes bounds inline instead of from a file. It is useful for a one-off check or for trying a bound before committing it; a real gate belongs in a file, under review, next to the code it governs.
 
 A compliance floor reads the same way:
 
@@ -99,10 +100,12 @@ hdf validate threshold results.json -T baseline.yaml -T repo.yaml
 
 ```
 Agent-attributed overrides: 0
-✗ results.json — 1 threshold violation
+✗ results.json — 2 threshold violations
 
   Violations:
-    [baseline.yaml] failed.critical: 2 exceeds maximum 0
+    [baseline.yaml] failed.medium: 1 exceeds maximum 0
+      CKV_TF_1  Ensure Terraform module sources use a commit hash  [failed/medium]
+    [repo.yaml] compliance 25.00% is below minimum 50.00%
 ```
 
 The specs are never merged into one policy. Each is evaluated on its own and the violations are pooled, so two specs bounding the same key need no precedence rule — the stricter one simply fails on its own terms. A violation names the spec it came from, and so does a pass:
@@ -119,6 +122,7 @@ An inline spec names itself by its own text, because that is what you typed:
 
 ```
     [-I '{failed.total.max: 0}'] failed.total: 1 exceeds maximum 0
+      CKV_TF_1  Ensure Terraform module sources use a commit hash  [failed/medium]
 ```
 
 `-F` operates on files, not specs: every spec is always evaluated against a document, so one run shows every policy it broke, and `-F` decides only whether the next document is read.
@@ -145,6 +149,7 @@ rules:
 
   Violations:
     nothing fails without a plan: 1 matched, maximum 0
+      CKV_TF_1  Ensure Terraform module sources use a commit hash  [failed/medium]
 ```
 
 The predicate is the filter vocabulary `hdf query` already speaks, so a gate can be prototyped with a query and pasted into a spec. Values within a field OR together; different fields AND. Rules sit beside the bounds and control lists rather than replacing them — all of them are assertions in one policy, and every one must hold.
@@ -271,6 +276,38 @@ failed:
 ```
 
 Now the gate fails if `CKV_TF_1` starts passing, or if a different control fails in its place. That is stricter than a count and suits a baseline you expect to be stable; it is noisy for a scan whose findings move around.
+
+## A failure names what caused it
+
+A breached bound lists the requirements underneath it, so a red check answers "which finding broke the build" without downloading an artifact:
+
+```console
+$ hdf validate threshold results.json -I "{failed.total.max: 0}"
+Agent-attributed overrides: 0
+✗ results.json — 1 threshold violation
+
+  Violations:
+    failed.total: 1 exceeds maximum 0
+      CKV_TF_1  Ensure Terraform module sources use a commit hash  [failed/medium]
+```
+
+Rules and count bounds read alike, so a reader does not have to know which kind of bound produced a line. The status shown is the requirement's own — the vocabulary `hdf query --status` accepts — not the threshold bucket name, so a value read off a finding line can be pasted straight into a query. Two bounds deliberately list nothing:
+
+- **`compliance`** — a percentage is a property of the whole document, so there is no offending requirement to name.
+- **A `controls:` list** — the message already names the requirement it asserted, and repeating it underneath would say the same thing twice.
+
+Every match is listed, not a sample: a gate over thousands of findings is what `--no-findings` is for, rather than a reason to truncate and leave the reader guessing.
+
+```console
+$ hdf validate threshold results.json -I "{failed.total.max: 0}" --no-findings
+Agent-attributed overrides: 0
+✗ results.json — 1 threshold violation
+
+  Violations:
+    failed.total: 1 exceeds maximum 0
+```
+
+The verdict and exit code are identical either way — the flag only changes what is printed.
 
 ## Gate a GitHub pipeline
 

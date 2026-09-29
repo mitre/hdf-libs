@@ -14,10 +14,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// noFindings suppresses the per-requirement list under each violation. It is a
+// package var rather than a closure capture because the printer that reads it is
+// a free function, matching how `quiet` is carried on the sibling command.
+var noFindings bool
+
 func newValidateThresholdCmd() *cobra.Command {
 	var (
 		templateFiles   []string
 		templateInlines []string
+		localNoFindings bool
 	)
 
 	cmd := &cobra.Command{
@@ -49,6 +55,7 @@ Designed for CI/CD compliance gates.`,
 		// glob must be an error, never a vacuous pass.
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
+			noFindings = localNoFindings
 			// The template is the same for every file, so resolve it once.
 			specs, cfgErr := resolveThresholdSpecs(templateFiles, templateInlines)
 			if cfgErr != nil {
@@ -73,6 +80,12 @@ Designed for CI/CD compliance gates.`,
 	// fragments. Repeating either flag adds a policy; every policy must pass.
 	cmd.Flags().StringArrayVarP(&templateFiles, "template", "T", nil, "Threshold YAML template file (repeatable; every spec must pass)")
 	cmd.Flags().StringArrayVarP(&templateInlines, "inline", "I", nil, `Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")`)
+	// On by default: a contributor who hits a red check has no reason to know a
+	// flag exists, so the findings have to be there without being asked for. The
+	// flag is for the pipeline that greps this output and wants them gone — and
+	// that author will think to read --help.
+	cmd.Flags().BoolVar(&localNoFindings, "no-findings", false,
+		"Suppress the list of requirements printed under each violation")
 
 	return cmd
 }
@@ -239,6 +252,16 @@ func legacySeverityNotes(specs []threshold.Spec) []string {
 	return notes
 }
 
+// describeFinding renders one offending requirement: the id a reader will grep
+// for, its title when it has one, and the bucket that put it in breach.
+func describeFinding(f hdfengine.Match) string {
+	line := f.ID
+	if f.Title != "" {
+		line += "  " + f.Title
+	}
+	return fmt.Sprintf("%s  [%s/%s]", line, f.Status, f.Severity)
+}
+
 // runValidateThresholdFile applies every parsed policy to one document.
 func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 	data, err := readInputFile(file)
@@ -268,7 +291,7 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 		}
 	}
 
-	var violations []string
+	var violations []hdfengine.Violation
 	for _, spec := range specs {
 		// Evaluate, not ValidateThresholds: the grid alone cannot apply a rule,
 		// and returning its verdict over a rules-bearing policy would report a
@@ -276,11 +299,11 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 		for _, violation := range hdfengine.Evaluate(spec.Config, input) {
 			// Attribute only when there is something to disambiguate, so the
 			// single-policy output — nearly every run — is unchanged. The label
-			// goes into the violation STRING rather than only the printed line,
+			// goes into the violation MESSAGE rather than only the printed line,
 			// so it survives into the error and therefore into the bulk summary,
 			// which reports the first violation per file.
 			if len(specs) > 1 {
-				violation = fmt.Sprintf("[%s] %s", spec.Label, violation)
+				violation.Message = fmt.Sprintf("[%s] %s", spec.Label, violation.Message)
 			}
 			violations = append(violations, violation)
 		}
@@ -293,11 +316,20 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 		fmt.Fprintf(os.Stderr, "✗ %s — %d threshold %s\n", displayNameFor(file), len(violations), plural("violation", len(violations)))
 		fmt.Fprintf(os.Stderr, "\n  Violations:\n")
 		for _, violation := range violations {
-			fmt.Fprintf(os.Stderr, "    %s\n", violation)
+			fmt.Fprintf(os.Stderr, "    %s\n", violation.Message)
+			// Under the violation it explains, indented beneath it, so a reader
+			// scanning the block sees which bound each finding belongs to. Every
+			// one of them: a gate over thousands of findings is why --no-findings
+			// exists, not a reason to truncate and leave the reader guessing.
+			if !noFindings {
+				for _, f := range violation.Findings {
+					fmt.Fprintf(os.Stderr, "      %s\n", describeFinding(f))
+				}
+			}
 		}
 		return &exitCodeError{
 			code:    1,
-			message: fmt.Sprintf("threshold validation failed: %s", violations[0]),
+			message: fmt.Sprintf("threshold validation failed: %s", violations[0].Message),
 		}
 	}
 

@@ -161,7 +161,14 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 				input := hdfengine.NewThresholdInput(results, shared.RequirementEffectiveStatus)
 				var failures []string
 				for _, spec := range specs {
-					for _, failure := range hdfengine.Evaluate(spec.Config, input) {
+					for _, violation := range hdfengine.Evaluate(spec.Config, input) {
+						// The message alone. A violation now carries the
+						// requirements that breached it, and the CLI prints them
+						// — but an unbounded list of ids in a tool response is a
+						// per-call token cost with no flag to turn it off, and an
+						// agent that wants them can ask hdf_query. Revisit with
+						// the MCP token audit (hdf-libs-5cim9).
+						failure := violation.Message
 						// Attribute only when there is something to
 						// disambiguate, so the ordinary single-policy verdict
 						// reads exactly as it did before.

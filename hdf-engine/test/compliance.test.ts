@@ -19,12 +19,14 @@ import {
   type StatusCounts,
   type SeverityCounts,
   validateThresholds,
+  violationMessages,
   overallStatus,
   deriveSeverity,
   severityBucket,
   type ThresholdConfig,
 } from '../src/compliance.js';
 import { evaluateRules, evaluate, PREDICATE_FIELDS, type ThresholdRule } from '../src/rules.js';
+import { filter } from '../src/query.js';
 import { ruleRefusal } from '../src/compliance.js';
 import type { Severity } from '@mitre/hdf-schema';
 
@@ -317,10 +319,12 @@ describe('threshold rules (parity with go/rules.go)', () => {
 
   for (const c of ruleTable.cases) {
     it(c.name, () => {
-      const got = evaluateRules({ rules: c.rules }, ruleTable.fixture, {
-        now: ruleTable.now,
-        statusOf: effectiveStatusOf(false),
-      });
+      const got = violationMessages(
+        evaluateRules({ rules: c.rules }, ruleTable.fixture, {
+          now: ruleTable.now,
+          statusOf: effectiveStatusOf(false),
+        }),
+      );
       expect(got).toEqual(c.expect);
     });
   }
@@ -382,8 +386,9 @@ describe('threshold rules (parity with go/rules.go)', () => {
         statusOf,
       }
     );
-    expect(violations).toContain('nothing fails without a plan: 1 matched, maximum 0');
-    expect(violations).toContain('failed.total: 2 exceeds maximum 0');
+    const messages = violationMessages(violations);
+    expect(messages).toContain('nothing fails without a plan: 1 matched, maximum 0');
+    expect(messages).toContain('failed.total: 2 exceeds maximum 0');
   });
 });
 
@@ -576,5 +581,198 @@ describe('the former `none` name and severity bucketing — parity with go/compl
     ).toEqual([]);
 
     expect(mapControlIDsByStatus(malformed, () => 'failed')[0].severity).toBe('informational');
+  });
+});
+
+// A violation that names only a count sends the reader to an artifact and a
+// script. The matches are already computed, so carrying them costs nothing but
+// keeping what was thrown away. Parity: go/rules_test.go
+// TestRuleViolationCarriesTheMatchingFindings and its two siblings.
+describe('a violation carries the requirements that breached it', () => {
+  const statusOf = effectiveStatusOf(false);
+
+  it('a rule names every match, not a sample', () => {
+    const violations = evaluateRules(
+      { rules: [{ name: 'no failures', where: { status: ['failed'] }, max: 0 }] },
+      ruleTable.fixture,
+      { now: ruleTable.now, statusOf },
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].message).toContain('no failures');
+
+    const matched = filter(ruleTable.fixture, { status: ['failed'], statusOf });
+    expect(violations[0].findings).toHaveLength(matched.length);
+    expect(violations[0].findings.length).toBeGreaterThan(0);
+    for (const f of violations[0].findings) {
+      expect(f.id).toBeTruthy();
+      expect(f.status).toBe('failed');
+    }
+  });
+
+  it('a count bound names the requirements in the bucket it bounded', () => {
+    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
+    const violations = evaluate(
+      { failed: { total: { max: 0 } } },
+      {
+        results: ruleTable.fixture,
+        counts,
+        compliance: calculateCompliance(counts),
+        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
+        now: ruleTable.now,
+        statusOf,
+      },
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].message).toContain('failed.total');
+    expect(violations[0].findings.length).toBeGreaterThan(0);
+    for (const f of violations[0].findings) {
+      expect(f.status, 'only the bucket that was bounded').toBe('failed');
+      expect(f.id).toBeTruthy();
+    }
+
+    // The title is the middle of the three things a finding line promises, and
+    // it was the one nothing asserted: mapControlIDsByStatus could stop carrying
+    // it and every test still passed. Pinned against the fixture's own text so a
+    // dropped field cannot pass as an untitled requirement.
+    // Parity: TestValidateThreshold_FindingLineCarriesTheTitle in hdf-cli.
+    const noPlan = violations[0].findings.find((f) => f.id === 'NO-PLAN');
+    expect(noPlan, 'precondition: the bounded bucket contains the titled requirement').toBeDefined();
+    expect(noPlan?.title).toBe('Failing with no remediation plan');
+  });
+
+  it('a compliance bound names none — it is a property of the whole document', () => {
+    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
+    const violations = evaluate(
+      { compliance: { min: 99 } },
+      {
+        results: ruleTable.fixture,
+        counts,
+        compliance: calculateCompliance(counts),
+        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
+        now: ruleTable.now,
+        statusOf,
+      },
+    );
+    expect(violations.length).toBeGreaterThan(0);
+    expect(violations[0].message).toContain('compliance');
+    expect(violations[0].findings).toEqual([]);
+  });
+
+  it('a count bound names exactly as many findings as its message counts', () => {
+    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
+    const violations = evaluate(
+      { failed: { total: { max: 0 } } },
+      {
+        results: ruleTable.fixture,
+        counts,
+        compliance: calculateCompliance(counts),
+        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
+        now: ruleTable.now,
+        statusOf,
+      },
+    );
+    // The invariant that makes the list trustworthy: a reader counting the lines
+    // must get the number the message reported.
+    const reported = Number(/: (\d+) exceeds/.exec(violations[0].message)![1]);
+    expect(violations[0].findings).toHaveLength(reported);
+  });
+
+  // The control map holds the THRESHOLD key (no_impact) while the filter holds
+  // the SCHEMA status (notApplicable). A finding names the requirement, so both
+  // report the schema status — the only vocabulary `hdf query --status` accepts.
+  // Parity: CLI TestValidateThreshold_CountAndRuleFindingsReadAlike.
+  it('a count bound reports the schema status, not the threshold key', () => {
+    // Its own fixture: the shared rule fixture carries only passed and failed
+    // requirements, and those are two of the three buckets where the two
+    // vocabularies coincide — so it cannot show this difference at all.
+    const notApplicable = {
+      baselines: [
+        {
+          requirements: [
+            { id: 'SV-NA-1', title: 'Not applicable one', impact: 0, results: [{ status: 'notApplicable' }] },
+          ],
+        },
+      ],
+    } as unknown as HDFResults;
+    const naStatusOf = () => 'notApplicable';
+
+    const counts = countControlsByStatus(notApplicable, naStatusOf);
+    const violations = evaluate(
+      { noImpact: { total: { max: 0 } } },
+      {
+        results: notApplicable,
+        counts,
+        compliance: calculateCompliance(counts),
+        controlMap: mapControlIDsByStatus(notApplicable, naStatusOf),
+        statusOf: naStatusOf,
+      },
+    );
+    const findings = violations.flatMap((v) => v.findings);
+    expect(findings.length, 'precondition: the bound must actually be breached').toBeGreaterThan(0);
+    for (const f of findings) {
+      expect(f.status, 'a threshold key is refused by hdf query --status').toBe('notApplicable');
+    }
+  });
+
+  it('a controls list names none — the message already names the requirement', () => {
+    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
+    const violations = evaluate(
+      // failed/critical, not passed/high: the fixture HAS failed/critical
+      // requirements, so inBucket would return a non-empty list if a controls
+      // violation wrongly carried one. Asserting on an empty bucket proved
+      // nothing.
+      { failed: { critical: { controls: ['NO-SUCH-ID'] } } },
+      {
+        results: ruleTable.fixture,
+        counts,
+        compliance: calculateCompliance(counts),
+        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
+        now: ruleTable.now,
+        statusOf,
+      },
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].message).toContain('NO-SUCH-ID');
+    expect(violations[0].findings).toEqual([]);
+  });
+});
+
+// The Go engine has a severity-narrowing test and TypeScript had none, so the TS
+// inBucket's narrowing was unprotected. Its own fixture with two failed
+// severities: the shared rule fixture's failed requirements are all critical, so
+// bounding failed.critical there lists the whole status either way.
+// Parity: go/rules_test.go TestCountBoundFindingsAreNarrowedBySeverity.
+describe('a severity label narrows the bucket it lists', () => {
+  it('lists only the bounded severity, not the whole status', () => {
+    const results = {
+      baselines: [
+        {
+          requirements: [
+            { id: 'CRIT-1', title: 'Critical one', impact: 0.9, severity: 'critical', results: [{ status: 'failed' }] },
+            { id: 'HIGH-1', title: 'High one', impact: 0.7, severity: 'high', results: [{ status: 'failed' }] },
+          ],
+        },
+      ],
+    } as unknown as HDFResults;
+    const statusOf = () => 'failed';
+
+    const counts = countControlsByStatus(results, statusOf);
+    expect(counts.failed.critical, 'precondition: a STRICT subset, or narrowing is unobservable').toBeLessThan(
+      counts.failed.total,
+    );
+
+    const violations = evaluate(
+      { failed: { critical: { max: 0 } } },
+      {
+        results,
+        counts,
+        compliance: calculateCompliance(counts),
+        controlMap: mapControlIDsByStatus(results, statusOf),
+        statusOf,
+      },
+    );
+    expect(violations).toHaveLength(1);
+    expect(violations[0].findings).toHaveLength(counts.failed.critical);
+    expect(violations[0].findings[0].id).toBe('CRIT-1');
   });
 });

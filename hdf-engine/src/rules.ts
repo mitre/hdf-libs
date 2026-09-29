@@ -6,6 +6,7 @@
 
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { filter, type FilterOptions } from './query.js';
+import type { Violation } from './compliance.js';
 import {
   validateGrid,
   type ThresholdConfig,
@@ -139,15 +140,22 @@ export function evaluateRules(
   config: ThresholdConfig,
   results: HDFResults,
   options: RuleOptions = {}
-): string[] {
-  const violations: string[] = [];
+): Violation[] {
+  const violations: Violation[] = [];
   for (const rule of config.rules ?? []) {
-    const matched = filter(results, filterOptions(rule.where, options)).length;
+    // The matches, not just their count: naming which requirements broke a gate
+    // is the difference between a red check a reader can act on and one that
+    // sends them to an artifact and a script. This filter already ran.
+    const matches = filter(results, filterOptions(rule.where, options));
+    const matched = matches.length;
     if (rule.max !== undefined && matched > rule.max) {
-      violations.push(`${label(rule)}: ${matched} matched, maximum ${rule.max}`);
+      violations.push({ message: `${label(rule)}: ${matched} matched, maximum ${rule.max}`, findings: matches });
     }
     if (rule.min !== undefined && matched < rule.min) {
-      violations.push(`${label(rule)}: ${matched} matched, minimum ${rule.min}`);
+      // A minimum is breached by what is ABSENT, so the matches are the
+      // requirements that DID qualify — fewer than required. Naming them still
+      // says what the gate found rather than what it wanted.
+      violations.push({ message: `${label(rule)}: ${matched} matched, minimum ${rule.min}`, findings: matches });
     }
   }
   return violations;
@@ -174,7 +182,7 @@ export interface ThresholdInput {
  * grid alone and refuses a config carrying rules, so a caller cannot
  * half-implement a policy without being told. Parity: Evaluate in go/rules.go.
  */
-export function evaluate(config: ThresholdConfig, input: ThresholdInput): string[] {
+export function evaluate(config: ThresholdConfig, input: ThresholdInput): Violation[] {
   const violations = validateGrid(config, input.counts, input.compliance, input.controlMap);
   return violations.concat(
     evaluateRules(config, input.results, { now: input.now, statusOf: input.statusOf })

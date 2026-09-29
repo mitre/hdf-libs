@@ -1,6 +1,7 @@
 package hdfengine
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -54,10 +55,10 @@ func TestEvaluateRules(t *testing.T) {
 	for _, tc := range table.Cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			config := &ThresholdConfig{Rules: tc.Rules}
-			got := EvaluateRules(config, table.Fixture, RuleOptions{
+			got := ViolationMessages(EvaluateRules(config, table.Fixture, RuleOptions{
 				Now:      now,
 				StatusOf: effectiveStatusOf(false),
-			})
+			}))
 			if len(tc.Expect) == 0 {
 				assert.Empty(t, got, "a satisfied rule reports nothing")
 				return
@@ -96,9 +97,10 @@ func TestEvaluateAppliesTheGridAndTheRules(t *testing.T) {
 		StatusOf:   statusOf,
 	})
 
-	assert.Contains(t, violations, "nothing fails without a plan: 1 matched, maximum 0",
+	messages := ViolationMessages(violations)
+	assert.Contains(t, messages, "nothing fails without a plan: 1 matched, maximum 0",
 		"the rule must be applied")
-	assert.Contains(t, violations, "failed.total: 2 exceeds maximum 0",
+	assert.Contains(t, messages, "failed.total: 2 exceeds maximum 0",
 		"and the grid's own bound must still be reported alongside it")
 }
 
@@ -195,4 +197,94 @@ func TestRulePredicateFieldsReachTheFilterOptions(t *testing.T) {
 				"%s is declared on the predicate but never mapped onto Options — declared and inert", name)
 		})
 	}
+}
+
+// A violation that names only a count sends the reader to an artifact and a
+// script to find out which requirement broke the build. The matches are already
+// computed — EvaluateRules called len(Filter(...)) and discarded the slice — so
+// carrying them costs nothing but keeping what was thrown away.
+func TestRuleViolationCarriesTheMatchingFindings(t *testing.T) {
+	table := loadRuleCases(t)
+	now, err := time.Parse(time.RFC3339, table.Now)
+	require.NoError(t, err)
+
+	zero := 0
+	config := &ThresholdConfig{Rules: []ThresholdRule{{
+		Name:  "no failures",
+		Where: RulePredicate{Status: []string{"failed"}},
+		Max:   &zero,
+	}}}
+	violations := EvaluateRules(config, table.Fixture, RuleOptions{Now: now, StatusOf: effectiveStatusOf(false)})
+	require.Len(t, violations, 1)
+
+	v := violations[0]
+	assert.Contains(t, v.Message, "no failures", "the message is unchanged")
+	require.NotEmpty(t, v.Findings, "the requirements that matched must be carried")
+	for _, f := range v.Findings {
+		assert.NotEmpty(t, f.ID, "a finding must be identifiable")
+		assert.Equal(t, "failed", f.Status)
+	}
+	// Every match, not a sample: the caller decides whether to elide.
+	matched := Filter(context.Background(), table.Fixture, Options{
+		Status:   []string{"failed"},
+		StatusOf: effectiveStatusOf(false),
+	})
+	assert.Len(t, v.Findings, len(matched))
+}
+
+// A count bound has no filter behind it, but the control map ValidateThresholds
+// already receives names every requirement and its bucket — so the offenders are
+// recoverable there too.
+func TestCountBoundViolationCarriesTheFindingsInThatBucket(t *testing.T) {
+	table := loadRuleCases(t)
+	now, err := time.Parse(time.RFC3339, table.Now)
+	require.NoError(t, err)
+
+	zero := 0
+	config := &ThresholdConfig{Failed: &ThresholdSeverity{Total: &ThresholdBound{Max: &zero}}}
+	in := NewThresholdInput(table.Fixture, effectiveStatusOf(false))
+	in.Now = now
+
+	violations := Evaluate(config, in)
+	require.Len(t, violations, 1)
+
+	v := violations[0]
+	assert.Contains(t, v.Message, "failed.total")
+	require.NotEmpty(t, v.Findings, "a count bound must name what it counted")
+	for _, f := range v.Findings {
+		assert.Equal(t, "failed", f.Status, "only the bucket that was bounded")
+	}
+
+	// The invariant that makes the list trustworthy: a reader counting the lines
+	// must get the number the message reported. NotEmpty alone would pass against
+	// a list that named one of five.
+	counts := CountControlsByStatus(table.Fixture, effectiveStatusOf(false))
+	assert.Len(t, v.Findings, counts.Failed.Total,
+		"exactly as many findings as the bound counted")
+}
+
+// A severity label narrows the bucket; only `total` is the whole status. Its own
+// fixture, because the shared one's failed requirements are ALL critical — so
+// bounding failed.critical there lists the whole status either way and the test
+// cannot fail. The precondition asserts the discriminating fact directly.
+func TestCountBoundFindingsAreNarrowedBySeverity(t *testing.T) {
+	critical, high := hdf.SeverityCritical, hdf.SeverityHigh
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{Requirements: []hdf.EvaluatedRequirement{
+		{ID: "CRIT-1", Impact: 0.9, Severity: &critical, Results: []hdf.RequirementResult{{Status: hdf.Failed}}},
+		{ID: "HIGH-1", Impact: 0.7, Severity: &high, Results: []hdf.RequirementResult{{Status: hdf.Failed}}},
+	}}}}
+	statusOf := func(hdf.EvaluatedRequirement) string { return string(hdf.Failed) }
+
+	counts := CountControlsByStatus(results, statusOf)
+	require.Less(t, counts.Failed.Critical, counts.Failed.Total,
+		"precondition: the bounded severity must be a STRICT subset, or narrowing is unobservable")
+
+	zero := 0
+	config := &ThresholdConfig{Failed: &ThresholdSeverity{Critical: &ThresholdBound{Max: &zero}}}
+	violations := Evaluate(config, NewThresholdInput(results, statusOf))
+	require.Len(t, violations, 1)
+
+	require.Len(t, violations[0].Findings, counts.Failed.Critical,
+		"a severity label lists only that severity, not the whole status")
+	assert.Equal(t, "CRIT-1", violations[0].Findings[0].ID)
 }

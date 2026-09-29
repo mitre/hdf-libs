@@ -4,6 +4,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -1411,4 +1412,204 @@ func TestValidateThreshold_NonCategoryNoteIsPerKeyNotPerSpec(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 2, strings.Count(stderr, "not a severity category"),
 		"two distinct sections are two facts")
+}
+
+// A gate failure that names only a count sends the reader to an artifact and a
+// script. The requirements that breached the bound are already computed, so the
+// failure names them.
+func TestValidateThreshold_FailureNamesTheOffendingRequirements(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	for name, spec := range map[string]string{
+		"count bound": "failed:\n  total:\n    max: 0\n",
+		"rule":        "rules:\n  - name: no failures\n    where: {status: [failed]}\n    max: 0\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := writeResultsAt(t, dir, "t.yaml", spec)
+			_, stderr, err := executeCommand("validate", "threshold", results, "-T", path)
+			require.Error(t, err)
+			assert.Contains(t, stderr, "SV-003",
+				"the failure must name a requirement, not only a count")
+			assert.Contains(t, stderr, "failed", "and the status that put it in the bucket")
+		})
+	}
+}
+
+// --no-findings suppresses the list for a pipeline that greps the output, and is
+// discoverable from the help text. The verdict itself is unchanged.
+func TestValidateThreshold_NoFindingsSuppressesTheList(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	spec := writeResultsAt(t, dir, "t.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec, "--no-findings")
+	require.Error(t, err, "suppressing the list must not change the verdict")
+	assert.Contains(t, stderr, "failed.total: 1 exceeds maximum 0", "the violation still prints")
+	assert.NotContains(t, stderr, "SV-003", "but not the requirements under it")
+}
+
+// The CHANGELOG and every console block in the guide promise three things on a
+// finding line: the id, the TITLE, and the bucket. Nothing asserted the middle
+// one, so describeFinding could stop rendering it and the whole suite stayed
+// green — the docs would have been the only thing left claiming it.
+func TestValidateThreshold_FindingLineCarriesTheTitle(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	spec := writeResultsAt(t, dir, "t.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec)
+	require.Error(t, err, "the gate must fire, or there is no finding line to inspect")
+	assert.Contains(t, stderr, "SV-003  Failed High  [failed/high]",
+		"a finding line renders id, title and bucket together, as the docs show it")
+}
+
+// A bound with no determinable offender names none, rather than every
+// requirement in the document.
+func TestValidateThreshold_ComplianceFailureNamesNoRequirements(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	spec := writeResultsAt(t, dir, "t.yaml", "compliance:\n  min: 99\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "compliance")
+	assert.NotContains(t, stderr, "SV-003",
+		"a document-wide percentage has no offending requirement to name")
+}
+
+// A controls list already names its requirement in the message, so nothing is
+// repeated underneath it.
+func TestValidateThreshold_ControlsListDoesNotRepeatTheRequirement(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	spec := writeResultsAt(t, dir, "t.yaml", "passed:\n  high:\n    controls: [SV-NOPE]\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "expected control SV-NOPE not found")
+	// A finding line renders its bucket in brackets; none should appear, because
+	// the message already names the requirement this violation is about.
+	assert.NotContains(t, stderr, "[passed/high]",
+		"a controls violation names its requirement in the message and lists none beneath it")
+}
+
+// A reader should not have to know which kind of bound produced a line, so both
+// name the requirement identically. Asserted on the buckets where the two paths'
+// vocabularies DIFFER — the control map holds the threshold key ("no_impact",
+// "skipped") and the filter holds the schema status ("notApplicable",
+// "notReviewed") — because the three that coincide cannot show a divergence.
+//
+// The schema status is what both report, because it is the only vocabulary
+// `hdf query --status` accepts: a reader pasting "no_impact" off a finding line
+// would be refused.
+//
+// Each subcase REQUIRES the gate to fire. An earlier version discarded the
+// command error and compared two empty lists for `notReviewed`, whose bucket this
+// fixture did not populate — a gate that never ran read as a gate that agreed.
+func TestValidateThreshold_CountAndRuleFindingsReadAlike(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsEveryStatus)
+
+	for name, pair := range map[string][2]string{
+		"failed (vocabularies coincide)": {
+			"failed:\n  total:\n    max: 0\n",
+			"rules:\n  - name: r\n    where: {status: [failed]}\n    max: 0\n",
+		},
+		"notApplicable (vocabularies differ)": {
+			"no_impact:\n  total:\n    max: 0\n",
+			"rules:\n  - name: r\n    where: {status: [notApplicable]}\n    max: 0\n",
+		},
+		"notReviewed (vocabularies differ)": {
+			"skipped:\n  total:\n    max: 0\n",
+			"rules:\n  - name: r\n    where: {status: [notReviewed]}\n    max: 0\n",
+		},
+		"error (vocabularies coincide)": {
+			"error:\n  total:\n    max: 0\n",
+			"rules:\n  - name: r\n    where: {status: [error]}\n    max: 0\n",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			countPath := writeResultsAt(t, dir, "count.yaml", pair[0])
+			rulePath := writeResultsAt(t, dir, "rule.yaml", pair[1])
+
+			_, countErr, countCmdErr := executeCommand("validate", "threshold", results, "-T", countPath)
+			_, ruleErr, ruleCmdErr := executeCommand("validate", "threshold", results, "-T", rulePath)
+			// Both gates MUST fire, or the comparison below is two empty lists.
+			require.Error(t, countCmdErr, "the count bound must be breached for this to compare anything")
+			require.Error(t, ruleCmdErr, "and so must the rule")
+
+			lines := findingLines(countErr)
+			require.NotEmpty(t, lines, "the count bound must have named a requirement")
+			assert.Equal(t, findingLines(ruleErr), lines,
+				"a count bound and a rule must describe the same requirement identically")
+		})
+	}
+}
+
+// testResultsEveryStatus carries one requirement in each of the five buckets, so
+// a per-status sweep actually fires in every one. testResultsForThreshold has no
+// notReviewed or error requirement, which is what let a subcase pass vacuously.
+const testResultsEveryStatus = `{
+	"generator": {"name": "test", "version": "1.0"},
+	"timestamp": "2026-01-01T00:00:00Z",
+	"statistics": {"duration": 1.0},
+	"baselines": [{
+		"name": "b", "checksum": {"algorithm": "sha256", "value": "x"},
+		"depends": [], "groups": [], "inspecVersion": "5", "supports": [],
+		"requirements": [
+			{"id": "R-PASS", "title": "Passing one", "descriptions": [{"label": "default", "data": "d"}],
+			 "impact": 0.7, "tags": {}, "code": "", "refs": [], "sourceLocation": {"line": 1, "ref": "t.rb"},
+			 "statusOverrides": [], "evidence": [], "poams": [],
+			 "results": [{"status": "passed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z"}]},
+			{"id": "R-FAIL", "title": "Failing one", "descriptions": [{"label": "default", "data": "d"}],
+			 "impact": 0.9, "tags": {}, "code": "", "refs": [], "sourceLocation": {"line": 2, "ref": "t.rb"},
+			 "statusOverrides": [], "evidence": [], "poams": [],
+			 "results": [{"status": "failed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z"}]},
+			{"id": "R-NA", "title": "Not applicable one", "descriptions": [{"label": "default", "data": "d"}],
+			 "impact": 0.0, "tags": {}, "code": "", "refs": [], "sourceLocation": {"line": 3, "ref": "t.rb"},
+			 "statusOverrides": [], "evidence": [], "poams": [],
+			 "results": [{"status": "notApplicable", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z"}]},
+			{"id": "R-NR", "title": "Not reviewed one", "descriptions": [{"label": "default", "data": "d"}],
+			 "impact": 0.5, "tags": {}, "code": "", "refs": [], "sourceLocation": {"line": 4, "ref": "t.rb"},
+			 "statusOverrides": [], "evidence": [], "poams": [],
+			 "results": [{"status": "notReviewed", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z"}]},
+			{"id": "R-ERR", "title": "Errored one", "descriptions": [{"label": "default", "data": "d"}],
+			 "impact": 0.5, "tags": {}, "code": "", "refs": [], "sourceLocation": {"line": 5, "ref": "t.rb"},
+			 "statusOverrides": [], "evidence": [], "poams": [],
+			 "results": [{"status": "error", "codeDesc": "c", "startTime": "2026-01-01T00:00:00Z"}]}
+		]
+	}]
+}`
+
+// findingLines is the indented per-finding lines of a verdict, which are the part
+// the two paths must agree on — the violation message above them names the bound
+// and legitimately differs.
+func findingLines(output string) []string {
+	var lines []string
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(line, "      ") && strings.Contains(line, "[") {
+			lines = append(lines, strings.TrimSpace(line))
+		}
+	}
+	sort.Strings(lines)
+	return lines
+}
+
+// A finding line's status must be a value `hdf query --status` accepts, or a
+// reader cannot act on what they just read. The threshold key is refused there.
+func TestValidateThreshold_FindingStatusIsQueryable(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	spec := writeResultsAt(t, dir, "t.yaml", "no_impact:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", results, "-T", spec)
+	require.Error(t, err)
+	lines := findingLines(stderr)
+	require.NotEmpty(t, lines)
+
+	status := lines[0][strings.Index(lines[0], "[")+1 : strings.Index(lines[0], "/")]
+	require.NotEmpty(t, status, "precondition: extracted a status from the finding line")
+	_, _, queryErr := executeCommand("query", results, "--status", status)
+	assert.NoError(t, queryErr, "the status printed on a finding line must be queryable")
 }

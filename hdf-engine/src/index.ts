@@ -40,6 +40,8 @@ export {
   validateGrid,
   ruleRefusal,
   normalizeThresholdConfig,
+  violationMessages,
+  type Violation,
 } from './compliance.js';
 export {
   validStatus,

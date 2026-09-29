@@ -7,6 +7,7 @@ import type { HDFResults, EvaluatedRequirement, RequirementResult, Severity } fr
 import { worstStatus, impactToSeverity } from '@mitre/hdf-utilities';
 import { effectiveImpactOf } from './effective.js';
 import type { ThresholdRule } from './rules.js';
+import type { Match } from './query.js';
 
 /** Threshold status-key constants (SAF CLI-compatible keys). */
 export const THRESHOLD_PASSED = 'passed';
@@ -51,6 +52,13 @@ export interface ControlIDMapping {
    * that control was counted in.
    */
   severity: string;
+  /**
+   * The requirement's title when it has one, carried so a breached count bound
+   * can name its offenders the way a rule violation does. A reader should not
+   * have to know which kind of bound produced a line to know whether it will be
+   * readable. Parity: ControlIDMapping.Title in go/compliance.go.
+   */
+  title?: string;
 }
 
 export interface ThresholdBound {
@@ -191,6 +199,31 @@ function addCount(counts: StatusCounts, status: string, severity: string): void 
   }
 }
 
+/**
+ * statusToThresholdKey's inverse, for reporting a requirement found via the
+ * control map. A finding line describes the REQUIREMENT, so it names the
+ * requirement's own status — which is also the only vocabulary
+ * `hdf query --status` accepts, so a reader can paste the value straight into a
+ * query. The threshold key is a bucket name and is refused there.
+ * Parity: thresholdKeyToStatus in go/compliance.go.
+ */
+function thresholdKeyToStatus(key: string): string {
+  switch (key) {
+    case THRESHOLD_PASSED:
+      return 'passed';
+    case THRESHOLD_FAILED:
+      return 'failed';
+    case THRESHOLD_SKIPPED:
+      return 'notReviewed';
+    case THRESHOLD_ERROR:
+      return 'error';
+    case THRESHOLD_NO_IMPACT:
+      return 'notApplicable';
+    default:
+      return key;
+  }
+}
+
 function statusToThresholdKey(status: string): string {
   switch (status) {
     case 'passed':
@@ -281,6 +314,7 @@ export function mapControlIDs(results: HDFResults): ControlIDMapping[] {
         id: req.id,
         status: statusToThresholdKey(status),
         severity: severityBucket(deriveSeverity(req.impact, reqSeverity(req))),
+        title: req.title ?? '',
       });
     }
   }
@@ -310,6 +344,7 @@ export function mapControlIDsByStatus(
         // Effective impact, matching countControlsByStatus, so a control
         // listing and the counts it is listed alongside cannot disagree.
         severity: severityBucket(deriveSeverity(effectiveImpactOf(req), reqSeverity(req))),
+        title: req.title ?? '',
       });
     }
   }
@@ -429,6 +464,30 @@ function resolveLegacySeverity(
 }
 
 /**
+ * Violation is one breached bound together with the requirements that breached
+ * it. `findings` is empty in two cases, for two different reasons: a compliance
+ * percentage is a property of the whole document, so it has no offending
+ * requirement to name; and a controls list already names its requirement in the
+ * message, so repeating it would say the same thing twice.
+ *
+ * Findings from a RULE are the filter's own matches and carry every field. Those
+ * from a COUNT bound are rebuilt from the control map, which holds only id,
+ * title, status and severity — so `impact`, `baseline`, `baselineIndex` and
+ * `index` are zero there rather than the requirement's real values. The CLI
+ * prints none of them; a consumer serializing `findings` should not read them as
+ * data. Parity: Violation in go/rules.go.
+ */
+export interface Violation {
+  message: string;
+  findings: Match[];
+}
+
+/** The messages of a violation list, for a caller that wants the verdict alone. */
+export function violationMessages(violations: Violation[]): string[] {
+  return violations.map((v) => v.message);
+}
+
+/**
  * validateThresholds checks all threshold bounds against observed counts and
  * compliance, returning human-readable violation messages (empty when all pass).
  */
@@ -438,7 +497,7 @@ export function validateThresholds(
   compliance: number,
   controlMap: ControlIDMapping[],
 ): string[] {
-  const violations = validateGrid(config, counts, compliance, controlMap);
+  const violations = violationMessages(validateGrid(config, counts, compliance, controlMap));
   // A config carrying rules cannot be judged by the grid alone. Returning the
   // grid's verdict as though the rules were satisfied would report a passing
   // gate over policy nobody applied, so the caller is told rather than quietly
@@ -472,8 +531,8 @@ export function validateGrid(
   counts: StatusCounts,
   compliance: number,
   controlMap: ControlIDMapping[],
-): string[] {
-  const violations: string[] = [];
+): Violation[] {
+  const violations: Violation[] = [];
 
   // Normalized here rather than in each caller: a consumer that parsed a SAF
   // threshold file itself hands over a scalar bound, and a bound whose min and max
@@ -495,7 +554,7 @@ export function validateGrid(
   for (const section of sections) {
     const { threshold, wroteNone, refusal } = resolveLegacySeverity(section.name, section.threshold);
     if (refusal) {
-      violations.push(refusal);
+      violations.push({ message: refusal, findings: [] });
     }
     section.threshold = threshold;
     section.wroteNone = wroteNone;
@@ -507,17 +566,32 @@ export function validateGrid(
   }
 
   if (config.compliance) {
+    // No findings: a compliance percentage is a property of the whole document,
+    // so there is no offending requirement to name.
     if (config.compliance.min !== undefined && compliance < config.compliance.min) {
-      violations.push(`compliance ${compliance.toFixed(2)}% is below minimum ${config.compliance.min.toFixed(2)}%`);
+      violations.push({
+        message: `compliance ${compliance.toFixed(2)}% is below minimum ${config.compliance.min.toFixed(2)}%`,
+        findings: [],
+      });
     }
     if (config.compliance.max !== undefined && compliance > config.compliance.max) {
-      violations.push(`compliance ${compliance.toFixed(2)}% exceeds maximum ${config.compliance.max.toFixed(2)}%`);
+      violations.push({
+        message: `compliance ${compliance.toFixed(2)}% exceeds maximum ${config.compliance.max.toFixed(2)}%`,
+        findings: [],
+      });
     }
   }
 
   for (const section of sections) {
     violations.push(
-      ...checkSeverityThreshold(section.name, section.threshold, section.counts, actualControls, section.wroteNone),
+      ...checkSeverityThreshold(
+        section.name,
+        section.threshold,
+        section.counts,
+        actualControls,
+        section.wroteNone,
+        controlMap,
+      ),
     );
   }
 
@@ -530,7 +604,8 @@ function checkSeverityThreshold(
   actual: SeverityCounts,
   actualControls: Map<string, ControlIDMapping>,
   wroteNone: boolean,
-): string[] {
+  controlMap: ControlIDMapping[],
+): Violation[] {
   if (!threshold) {
     return [];
   }
@@ -540,26 +615,46 @@ function checkSeverityThreshold(
   // that does not exist.
   const pathLabel = (label: string): string =>
     wroteNone && label === 'informational' ? LEGACY_INFORMATIONAL_KEY : label;
-  const violations: string[] = [];
+
+  // The requirements a count bound counted, so a breached bound can name them.
+  // `total` is the whole status bucket; a severity label narrows it further.
+  const inBucket = (label: string): Match[] =>
+    controlMap
+      .filter((m) => m.status === status && (label === 'total' || m.severity === label))
+      .map((m) => ({
+        id: m.id,
+        title: m.title ?? '',
+        status: thresholdKeyToStatus(m.status),
+        impact: 0,
+        severity: m.severity,
+        baseline: '',
+        baselineIndex: 0,
+        index: 0,
+      }));
+
+  const violations: Violation[] = [];
   const check = (label: string, bound: ThresholdBound | undefined, actualCount: number): void => {
     if (!bound) {
       return;
     }
     const path = `${status}.${pathLabel(label)}`;
     if (bound.min !== undefined && actualCount < bound.min) {
-      violations.push(`${path}: ${actualCount} is below minimum ${bound.min}`);
+      violations.push({ message: `${path}: ${actualCount} is below minimum ${bound.min}`, findings: inBucket(label) });
     }
     if (bound.max !== undefined && actualCount > bound.max) {
-      violations.push(`${path}: ${actualCount} exceeds maximum ${bound.max}`);
+      violations.push({ message: `${path}: ${actualCount} exceeds maximum ${bound.max}`, findings: inBucket(label) });
     }
     for (const expectedID of bound.controls ?? []) {
+      // A controls list already names its requirement in the message, so these
+      // carry no findings: repeating the id underneath would say it twice.
       const ac = actualControls.get(expectedID);
       if (!ac) {
-        violations.push(`${path}: expected control ${expectedID} not found in results`);
+        violations.push({ message: `${path}: expected control ${expectedID} not found in results`, findings: [] });
       } else if (ac.status !== status || ac.severity !== label) {
-        violations.push(
-          `${path}: control ${expectedID} expected ${status}/${label} but found ${ac.status}/${ac.severity}`,
-        );
+        violations.push({
+          message: `${path}: control ${expectedID} expected ${status}/${label} but found ${ac.status}/${ac.severity}`,
+          findings: [],
+        });
       }
     }
   };
