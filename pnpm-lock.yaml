@@ -57,6 +57,9 @@ importers:
       cpy-cli:
         specifier: ^7.0.0
         version: 7.0.0
+      es-module-lexer:
+        specifier: ^2.3.2
+        version: 2.3.2
       eslint:
         specifier: ^10.11.0
         version: 10.11.0(supports-color@5.5.0)
@@ -101,6 +104,12 @@ importers:
       '@mitre/hdf-utilities':
         specifier: workspace:^
         version: link:../hdf-utilities
+      ajv:
+        specifier: 8.18.0
+        version: 8.18.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.18.0)
     devDependencies:
       '@aws-sdk/client-securityhub':
         specifier: ^3
@@ -111,12 +120,6 @@ importers:
       '@mitre/hdf-validators':
         specifier: workspace:^
         version: link:../hdf-validators
-      ajv:
-        specifier: 8.18.0
-        version: 8.18.0
-      ajv-formats:
-        specifier: ^3.0.0
-        version: 3.0.1(ajv@8.18.0)
       xmllint-wasm:
         specifier: ^5.3.0
         version: 5.3.0(@types/node@26.6.2)
