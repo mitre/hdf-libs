@@ -2,7 +2,9 @@
 package cmd
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -135,56 +137,104 @@ func TestEvidenceExport_RejectsOversizeReferencedFile(t *testing.T) {
 	assert.Contains(t, stderr, "too large")
 }
 
-// writeVerifyPackage drops a package and its documents into a temp tree and
-// returns the package path. Content refs are written verbatim so a test can put
-// a deliberately-bad one in.
-func writeVerifyPackage(t *testing.T, body string) string {
-	t.Helper()
+// An absolute content ref must never be re-rooted under the package directory:
+// "/etc/passwd" silently becoming "<pkgdir>/etc/passwd" made verify report on a
+// different file than the reference named. It is now classified as unreachable
+// instead, which is honest about both the reference and what was read.
+// An evidence package may record a reference to something it does not contain, so
+// an unreachable one is reported rather than refusing the package. The property
+// that must NOT move is containment: nothing outside the package directory is ever
+// read. Each case below plants a real file at the escaping location and records its
+// CORRECT checksum, so a status of "match" would prove the file was read. Only
+// "unreachable" passes.
+func TestEvidenceVerify_ReportsAnUnreachableReferenceWithoutReadingIt(t *testing.T) {
+	for _, tc := range []struct {
+		name, uri, wantReason string
+		plantOutside          bool
+	}{
+		{name: "absolute path outside the package", uri: "", wantReason: "outside the package's directory", plantOutside: true},
+		{name: "parent traversal", uri: "../escape.json", wantReason: "outside the package's directory"},
+		{name: "root-anchored path", uri: "/scans/rhel9-results.json", wantReason: "outside the package's directory"},
+		{name: "remote", uri: "https://example.com/results.json", wantReason: "remote"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			outside := t.TempDir()
+			body := []byte(`{"planted":"must never be read"}`)
+			plantedSum := fmt.Sprintf("%x", sha256.Sum256(body))
+
+			uri := tc.uri
+			if tc.plantOutside {
+				planted := filepath.Join(outside, "escape.json")
+				require.NoError(t, os.WriteFile(planted, body, 0o600))
+				uri = planted
+			} else {
+				// Plant at the traversal/root-anchored target too where it is expressible,
+				// so a read would succeed and be visible as a match.
+				require.NoError(t, os.WriteFile(filepath.Join(outside, "escape.json"), body, 0o600))
+			}
+
+			pkg := map[string]interface{}{
+				"name": "unreachable",
+				"contents": []map[string]interface{}{{
+					"type": "hdf-results", "uri": uri,
+					"checksum": map[string]string{"algorithm": "sha256", "value": plantedSum},
+				}},
+			}
+			raw, err := json.Marshal(pkg)
+			require.NoError(t, err)
+			pkgPath := filepath.Join(dir, "pkg.json")
+			require.NoError(t, os.WriteFile(pkgPath, raw, 0o600))
+
+			stdout, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--json")
+			require.NoError(t, verifyErr, "an unreachable reference is reported, not a package-level refusal")
+
+			var parsed struct {
+				Results []struct {
+					URI    string `json:"uri"`
+					Status string `json:"status"`
+					Error  string `json:"error"`
+				} `json:"results"`
+				UnreachableReferences []struct {
+					Field    string `json:"field"`
+					Recorded string `json:"recorded"`
+					Reason   string `json:"reason"`
+				} `json:"unreachableReferences"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(stdout), &parsed))
+			require.Len(t, parsed.Results, 1)
+
+			assert.Equal(t, "unreachable", parsed.Results[0].Status,
+				"a match here would mean the file outside the package was read")
+			assert.Equal(t, tc.wantReason, parsed.Results[0].Error)
+			require.Len(t, parsed.UnreachableReferences, 1)
+			assert.Equal(t, "contents", parsed.UnreachableReferences[0].Field)
+			assert.Equal(t, tc.wantReason, parsed.UnreachableReferences[0].Reason)
+		})
+	}
+}
+
+// --require-reachable is the opt-in that turns the report above into a failure, for
+// an assessor who needs the package self-contained.
+func TestEvidenceVerify_RequireReachableFailsOnAnUnreachableReference(t *testing.T) {
 	dir := t.TempDir()
-	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
-	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "rhel9-results.json"), src, 0o600))
-	pkg := filepath.Join(dir, "pkg.json")
-	require.NoError(t, os.WriteFile(pkg, []byte(body), 0o600))
-	return pkg
+	pkg := `{"name":"u","contents":[{"type":"hdf-results","uri":"https://example.com/r.json"}]}`
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, []byte(pkg), 0o600))
+
+	_, _, err := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	require.NoError(t, err, "the default reports and succeeds")
+
+	_, _, strictErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--require-reachable")
+	require.Error(t, strictErr, "--require-reachable must fail on the same package")
+	assert.Contains(t, strictErr.Error(), "--require-reachable",
+		"the error must name the flag that caused the failure")
 }
 
-// An absolute content ref used to be re-rooted under the package directory:
-// "/etc/passwd" silently became "<pkgdir>/etc/passwd", so verify reported on a
-// different file than the reference named. Refusing is the only honest outcome —
-// a content reference is relative to the package by definition.
-func TestEvidenceVerify_RejectsAbsoluteContentURI(t *testing.T) {
-	pkg := writeVerifyPackage(t, `{
-		"name": "Absolute Ref Package",
-		"contents": [{"type": "hdf-results", "uri": "/etc/passwd"}]
-	}`)
-
-	_, _, err := executeCommand("evidence", "verify", pkg)
-	require.Error(t, err, "an absolute content reference must be refused, not re-rooted")
-	assert.Contains(t, err.Error(), "relative",
-		"the message must say content references are package-relative")
-}
-
-// A URL-shaped content ref became a local path with a "https:" component and
-// failed as file-not-found. The schema's contents[] carries documents bundled
-// with the package; remote artifacts belong in externalEvidence.
-func TestEvidenceVerify_RejectsRemoteContentURI(t *testing.T) {
-	pkg := writeVerifyPackage(t, `{
-		"name": "Remote Ref Package",
-		"contents": [{"type": "hdf-results", "uri": "https://example.com/results.json"}]
-	}`)
-
-	_, _, err := executeCommand("evidence", "verify", pkg)
-	require.Error(t, err, "a remote content reference must be refused")
-	assert.Contains(t, err.Error(), "externalEvidence",
-		"the message must point at externalEvidence as the place for remote artifacts")
-}
-
-// The boundary: the refusal above covers contents[] ONLY. A package may carry
-// externalEvidence with absolute or remote URIs, and a bundled document may carry
-// its own externalReferences as bare URIs — both are correct and common, and
-// neither is ever resolved or downloaded. An over-broad check here would reject
-// packages that are valid today.
+// externalEvidence with absolute or remote URIs, and a bundled document's own
+// externalReferences as bare URIs, are correct and common — and neither is ever
+// resolved or downloaded. This is the shape that always had the posture the rest of
+// the package's references were brought to: recorded, reported, never fetched.
 func TestEvidenceVerify_AllowsRemoteExternalEvidenceAndDocumentRefs(t *testing.T) {
 	dir := t.TempDir()
 
@@ -218,17 +268,6 @@ func TestEvidenceVerify_AllowsRemoteExternalEvidenceAndDocumentRefs(t *testing.T
 	_, _, verifyErr := executeCommand("evidence", "verify", pkg, "--checksums-only")
 	require.NoError(t, verifyErr,
 		"remote externalEvidence and a document's own externalReferences must not be refused")
-}
-
-// Traversal was already refused by SafePath; the new checks must not weaken it.
-func TestEvidenceVerify_StillRefusesTraversal(t *testing.T) {
-	pkg := writeVerifyPackage(t, `{
-		"name": "Traversal Package",
-		"contents": [{"type": "hdf-results", "uri": "../escape.json"}]
-	}`)
-
-	_, _, err := executeCommand("evidence", "verify", pkg)
-	require.Error(t, err, "a traversing content reference must stay refused")
 }
 
 // The human line named a fixed "sha256" regardless of what the entry recorded.
@@ -291,4 +330,155 @@ func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
 	assert.Equal(t, "sha384", parsed.Results[1].Algorithm)
 	assert.Equal(t, "match", parsed.Results[0].Status)
 	assert.Equal(t, "match", parsed.Results[1].Status)
+}
+
+// An evidence package may reference artifacts it does not contain — an absolute
+// local path, or a URI on another system. Carrying copies is expected but not
+// required, so a reference a consumer cannot reach is a legitimate shape, not a
+// malformed package. bundle already has that posture for externalEvidence (it
+// reports "not carried" and succeeds); verify refused whole packages on the shape
+// of a reference before reading anything. This table pins that the two commands
+// reach the SAME verdict on every shape either one accepts.
+func TestEvidence_BundleAndVerifyAgreeOnTheSamePackage(t *testing.T) {
+	fixture := func(t *testing.T, name string) []byte {
+		t.Helper()
+		b, err := os.ReadFile(filepath.Join(evidenceFixtureDir, name))
+		require.NoError(t, err)
+		return b
+	}
+
+	for _, field := range []string{"planRef", "systemRef", "contents", "externalEvidence"} {
+		// parentTraversal is here because its absence hid a real divergence: the first
+		// version of this table tested absolute and remote shapes only, and a "../" ref
+		// still made verify exit 1 where bundle exited 0.
+		for _, shape := range []string{"relative", "absoluteInside", "absoluteOutside", "remote", "parentTraversal"} {
+			t.Run(field+"/"+shape, func(t *testing.T) {
+				dir := t.TempDir()
+				outside := t.TempDir()
+				// postgres-results.json is carried because plan.json names TWO baselines;
+				// without it completeness fails for a reason unrelated to references, which
+				// is what the default-path assertion below would otherwise be measuring.
+				for _, n := range []string{"system.json", "rhel9-results.json", "postgres-results.json", "plan.json"} {
+					require.NoError(t, os.WriteFile(filepath.Join(dir, n), fixture(t, n), 0o600))
+				}
+				require.NoError(t, os.WriteFile(filepath.Join(outside, "plan.json"), fixture(t, "plan.json"), 0o600))
+
+				var ref string
+				switch shape {
+				case "relative":
+					ref = "plan.json"
+				case "absoluteInside":
+					ref = filepath.Join(dir, "plan.json")
+				case "absoluteOutside":
+					ref = filepath.Join(outside, "plan.json")
+				case "remote":
+					ref = "https://example.com/plan.json"
+				case "parentTraversal":
+					ref = filepath.Join("..", filepath.Base(outside), "plan.json")
+				}
+
+				pkg := map[string]interface{}{
+					"name": "agreement",
+					"contents": []map[string]interface{}{
+						{"type": "hdf-system", "uri": "system.json"},
+						{"type": "hdf-results", "uri": "rhel9-results.json"},
+						{"type": "hdf-results", "uri": "postgres-results.json"},
+					},
+				}
+				switch field {
+				case "planRef", "systemRef":
+					pkg[field] = ref
+				case "contents":
+					// Typed hdf-results, NOT hdf-plan: verifyCompleteness reads only
+					// hdf-results entries, so a plan-typed reference never reaches the
+					// resolution the completeness path performs. Typing it hdf-plan is why
+					// an earlier version of this table still failed to pin that path.
+					pkg["contents"] = append(pkg["contents"].([]map[string]interface{}),
+						map[string]interface{}{"type": "hdf-results", "uri": ref})
+				case "externalEvidence":
+					pkg["externalEvidence"] = []map[string]interface{}{
+						{"uri": ref, "format": "raw-log", "description": "a corpus kept elsewhere"},
+					}
+				}
+				body, err := json.Marshal(pkg)
+				require.NoError(t, err)
+				pkgPath := filepath.Join(dir, "pkg.json")
+				require.NoError(t, os.WriteFile(pkgPath, body, 0o600))
+
+				// Both commands must accept it. A shape one takes and the other refuses is
+				// the defect this card closes, whichever direction it runs in.
+				//
+				// BOTH verify paths are exercised. --checksums-only returns before the
+				// completeness check, and the completeness path was where the two commands
+				// still disagreed after the first fix — a table running only the short path
+				// could not see it. The default run carries a planRef whose plan names two
+				// baselines, both covered by the two results documents above, so the only
+				// thing that can fail it is reference handling.
+				_, _, checksumErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+				_, _, bundleErr := executeCommand("evidence", "bundle", pkgPath,
+					"-o", filepath.Join(dir, "out.tar.gz"))
+				assert.NoError(t, checksumErr, "verify --checksums-only refused a legitimate shape")
+				assert.NoError(t, bundleErr, "bundle refused a shape the package may legitimately record")
+
+				if field != "planRef" {
+					// planRef is the shape under test in those rows, so pointing it at the
+					// plan as well would not be testing the same thing.
+					pkg["planRef"] = "plan.json"
+					withPlan, marshalErr := json.Marshal(pkg)
+					require.NoError(t, marshalErr)
+					planPath := filepath.Join(dir, "with-plan.json")
+					require.NoError(t, os.WriteFile(planPath, withPlan, 0o600))
+
+					_, _, fullErr := executeCommand("evidence", "verify", planPath)
+					_, _, fullBundleErr := executeCommand("evidence", "bundle", planPath,
+						"-o", filepath.Join(dir, "with-plan.tar.gz"))
+					assert.NoError(t, fullErr,
+						"verify refused a legitimate shape on the default (completeness) path")
+					assert.NoError(t, fullBundleErr, "bundle refused it on the same package")
+				}
+			})
+		}
+	}
+}
+
+// The completeness check must not credit a baseline from a document the same run
+// reported as unreachable. It did: SafePath joins a root-anchored "/results.json"
+// back under the package directory, so completeness read <pkgDir>/results.json — a
+// file the reference never named — and printed "Completeness check passed" directly
+// beneath "not reachable here: /results.json". A verdict that contradicts itself in
+// the same output is worse than either answer alone.
+func TestEvidenceVerify_CompletenessNeverCreditsAnUnreachableDocument(t *testing.T) {
+	dir := t.TempDir()
+	for _, n := range []string{"system.json", "rhel9-results.json", "postgres-results.json", "plan.json"} {
+		body, err := os.ReadFile(filepath.Join(evidenceFixtureDir, n))
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
+	}
+
+	// Root-anchored, so a naive filepath.Join re-roots it back inside the package and
+	// finds the real rhel9-results.json. Only resolving the reference the same way the
+	// checksum path does keeps that file from being read.
+	pkg := map[string]interface{}{
+		"name":    "reroot",
+		"planRef": "plan.json",
+		"contents": []map[string]interface{}{
+			{"type": "hdf-results", "uri": "/rhel9-results.json"},
+			{"type": "hdf-results", "uri": "postgres-results.json"},
+		},
+	}
+	body, err := json.Marshal(pkg)
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, body, 0o600))
+
+	stdout, stderr, verifyErr := executeCommand("evidence", "verify", pkgPath)
+
+	// RHEL9-STIG is planned, and its only results document is unreachable, so
+	// completeness must FAIL rather than pass on a file the reference never named.
+	require.Error(t, verifyErr, "a planned baseline whose results are unreachable is not covered")
+	combined := stdout + stderr
+	assert.Contains(t, combined, "not reachable here: /rhel9-results.json")
+	assert.Contains(t, combined, "Missing results for baseline: RHEL9-STIG")
+	assert.NotContains(t, combined, "Completeness check passed",
+		"the run must not report completeness passing beside a reference it could not reach")
 }

@@ -632,7 +632,7 @@ func TestConfinedFetch_VerifiesChecksums(t *testing.T) {
 		{URI: "file.txt", Type: "hdf-results", Checksum: "badhash"},
 		{URI: "file.txt", Type: "hdf-results", Checksum: ""},
 		{URI: "missing.json", Type: "hdf-results", Checksum: "abc"},
-	}, confinedFetch(tmpDir))
+	}, confinedFetch(tmpDir, nil))
 	assert.Equal(t, hdfengine.ChecksumMatch, got[0].Status)
 	assert.Equal(t, hdfengine.ChecksumMismatch, got[1].Status)
 	assert.Equal(t, hdfengine.ChecksumSkipped, got[2].Status)
@@ -641,7 +641,9 @@ func TestConfinedFetch_VerifiesChecksums(t *testing.T) {
 }
 
 func TestConfinedFetch_RejectsTraversal(t *testing.T) {
-	_, err := confinedFetch(t.TempDir())("../../../etc/passwd")
+	// nil resolution map: the recorded reference is used as-is, which is what a
+	// traversal attempt looks like before any classifier has seen it.
+	_, err := confinedFetch(t.TempDir(), nil)("../../../etc/passwd")
 	assert.Error(t, err)
 }
 

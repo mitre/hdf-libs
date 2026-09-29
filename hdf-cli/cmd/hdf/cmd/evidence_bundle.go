@@ -68,10 +68,14 @@ relative to the package, so extracting anywhere reproduces the layout it was bui
 package 'hdf evidence verify' accepts verifies identically on the extracted copy with no path
 rewriting.
 
-Bundle is deliberately more permissive than verify today, and a package can bundle that verify
-refuses: bundle carries an absolute systemRef or planRef, while verify requires every reference
-to be relative. Reconciling the two is tracked separately. Both honour the checksum algorithm
-the package records.
+Bundle and verify resolve references identically, and neither refuses a package for the shape of
+one: a reference to something the package does not contain — an absolute path elsewhere, a parent
+traversal, or a URI on another system — is reported by both. Verify additionally checks
+completeness, which bundle does not, so verify can still fail a package bundle accepts — for
+instance when a planned baseline's only results document is one of those unreachable references. Both honour the
+checksum algorithm the package records. Nothing outside the package directory is read: such a
+reference is never resolved into a path, and a symlink that leaves the package is refused at the
+read boundary.
 
 What travels: the package, the documents named by systemRef and planRef, every document
 in contents[], and externalEvidence[] artifacts that live inside the package's
@@ -440,24 +444,14 @@ func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) arc
 			aside("remote")
 			continue
 		}
-		// A contents[] reference is package-relative and confined BY CONTRACT, so it
-		// keeps the strict shape check: an absolute or escaping one is a contract
-		// violation and must be refused, not quietly dropped from the manifest.
-		if r.field == "contents" {
-			if err := collect(target{
-				uri: r.uri, label: r.label,
-				checksum: r.checksum, algorithm: r.algorithm, checksumRecorded: r.checksumRecorded,
-			}); err != nil {
-				return err
-			}
-			carried[r.kind]++
-			continue
-		}
-		// A root or external reference is a LOCATION and may legitimately be absolute —
-		// `evidence set --plan-ref /abs/path` and `add-evidence --uri /abs/path` both
-		// record one. Resolved, so an absolute path landing inside the package is
-		// carried; routing these through the contents[] shape check instead aborted the
-		// bundle and described a plan reference as a "content reference".
+		// EVERY reference is a LOCATION and may legitimately be absolute — `evidence set
+		// --plan-ref /abs/path` and `add-evidence --uri /abs/path` both record one, and
+		// the schema's own description of contents[].uri says "Can be a relative path or
+		// absolute URL". Resolved, so an absolute path landing inside the package is
+		// carried and one outside it is reported rather than refused. contents[] used to
+		// be special-cased through the strict shape check on the belief that it was
+		// "package-relative by contract"; nothing in the schema says so, and refusing it
+		// made bundle reject packages `evidence verify` now accepts.
 		ref, inTree := packageSubtreeRef(pkgDir, r.uri)
 		if !inTree {
 			aside("outside the package's directory")

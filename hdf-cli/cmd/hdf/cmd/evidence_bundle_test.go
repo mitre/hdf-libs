@@ -362,19 +362,30 @@ func TestEvidenceBundle_RefusesHostileContentRefs(t *testing.T) {
 		return path
 	}
 
-	t.Run("an absolute uri is refused", func(t *testing.T) {
+	t.Run("an absolute uri never becomes an archive entry", func(t *testing.T) {
 		// Root-anchored, NOT a full absolute path: filepath.Join(pkgDir, "/scans/x")
-		// resolves back INSIDE the package, so SafePath accepts the read and the
-		// only thing standing between it and an absolute archive entry is the shape
-		// check. A full absolute path would leave the base and fail on a missing
-		// file instead, which would pass this test without exercising the guard.
+		// resolves back INSIDE the package, so SafePath would accept the read and the
+		// only thing standing between it and an absolute archive entry is how the
+		// reference is resolved. A full absolute path would leave the base and fail on
+		// a missing file instead, which would pass this test without exercising it.
+		//
+		// The package is no longer REFUSED for recording this — a reference to
+		// something the package does not contain is legitimate — but the entry must
+		// still never appear, under any spelling. That is the security property; the
+		// refusal was only ever the mechanism.
 		abs := "/scans/rhel9-results.json"
 		pkgPath := write("abs.json", abs, sum(filepath.Join("scans", "rhel9-results.json")))
 		out := filepath.Join(dir, "abs.zip")
-		_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", out)
-		require.Error(t, err, "an absolute ref must not become an absolute archive entry")
-		assert.Contains(t, err.Error(), abs, "and the error must name the offending reference")
-		assert.NoFileExists(t, out)
+		_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", out)
+		require.NoError(t, err, "an out-of-package reference is reported, not refused")
+		assert.Contains(t, stderr, abs, "the not-carried report must name the reference")
+		assert.Contains(t, stderr, "outside the package's directory")
+		for name := range zipEntries(t, out) {
+			assert.False(t, strings.HasPrefix(name, "/"), "no absolute archive entry: %q", name)
+			assert.NotContains(t, name, "..", "no traversal segment in an archive entry: %q", name)
+			assert.NotEqual(t, "scans/rhel9-results.json", name,
+				"the document was not carried, so it must not appear under a cleaned name either")
+		}
 	})
 
 	t.Run("a traversal segment is normalized away, not written", func(t *testing.T) {
