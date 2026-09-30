@@ -9,6 +9,7 @@ import { nistTagToControlId as nistTagToControlID, impactToSeverity } from '../.
 import { maskVolatileJson } from '../../../shared/typescript/golden-mask.js';
 import { loadSchemaValidator, assertSchemaValid } from '../../../shared/typescript/schema-validation.js';
 import { convertOscalSarToHdf } from '../../oscal-to-hdf/typescript/converter-sar.js';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -163,8 +164,11 @@ describe('convertHdfToOscalSar', () => {
     expect(status.remarks).toContain('Reason: scanner mis-detection');
     expect(status.remarks).toContain('Applied by: jdoe');
     expect(status.remarks).toContain('Expires at: 2099-12-31T00:00:00Z');
-    // Raw failed result preserved in the observation.
-    expect(result.observations[0].description).toContain('[failed]');
+    // The observation's display description carries the effective status the
+    // finding state resolves to — the only status the round trip recovers, since
+    // the importer reads the finding state, never the observation description
+    // (ADR-0014 §2, §3.5). The raw failed result lives in HDF, not this SAR.
+    expect(result.observations[0].description).toContain('[passed]');
     // Governing override expiry becomes the risk deadline + accepted remediation.
     expect(result.risks[0].deadline).toBe('2099-12-31T00:00:00Z');
     const accepted = result.risks[0].remediations.find((r: { lifecycle: string }) => r.lifecycle === 'accepted');
@@ -803,6 +807,93 @@ describe('requirement ids round-trip through OSCAL SAR', () => {
   });
 });
 
+describe('baseline names round-trip through OSCAL SAR', () => {
+  const HDF_NS = 'https://mitre.github.io/hdf-libs/ns/oscal';
+
+  // A HDF Results document whose baselines carry the given name/title, each with
+  // one control-shaped requirement so it survives the export.
+  const twoBaselineDoc = (specs: Array<{ name: string; title?: string; reqId: string }>): string =>
+    JSON.stringify({
+      baselines: specs.map((s) => ({
+        name: s.name,
+        ...(s.title ? { title: s.title } : {}),
+        requirements: [{
+          id: s.reqId, impact: 0.5, tags: { nist: [s.reqId] },
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      })),
+    });
+
+  it('recovers two same-title baseline names byte-exact', async () => {
+    const doc = twoBaselineDoc([
+      { name: 'rhel9-stig-host-a', title: 'RHEL 9 STIG', reqId: 'AC-2' },
+      { name: 'rhel9-stig-host-b', title: 'RHEL 9 STIG', reqId: 'AC-3' },
+    ]);
+    const sar = JSON.parse(await convertHdfToOscalSar(doc))['assessment-results'];
+    // The human-facing title still reaches the SAR result title.
+    expect(sar.results.map((r: { title: string }) => r.title)).toEqual(['RHEL 9 STIG', 'RHEL 9 STIG']);
+
+    const back = JSON.parse(await convertOscalSarToHdf(JSON.stringify({ 'assessment-results': sar })));
+    expect(back.baselines.map((b: { name: string }) => b.name)).toEqual(['rhel9-stig-host-a', 'rhel9-stig-host-b']);
+  });
+
+  it('recovers a name that is not a valid StringDatatype via prop remarks', async () => {
+    const name = 'rhel9-stig\nhost-c';
+    const doc = twoBaselineDoc([{ name, title: 'RHEL 9 STIG', reqId: 'AC-2' }]);
+    const sar = JSON.parse(await convertHdfToOscalSar(doc))['assessment-results'];
+    const prop = sar.results[0].props.find((p: { name: string }) => p.name === 'baseline-name');
+    expect(prop.value).toBe('rhel9-stig host-c');
+    expect(prop.remarks).toBe(name);
+
+    const back = JSON.parse(await convertOscalSarToHdf(JSON.stringify({ 'assessment-results': sar })));
+    expect(back.baselines[0].name).toBe(name);
+  });
+
+  // Mirrors the Go reader unit tests: a foreign result (no baseline-name prop)
+  // is named <kebab-title>--<uuid>, and same-title foreign results stay distinct.
+  const foreignSar = (results: Array<{ uuid: string; title: string; props?: unknown[] }>): string =>
+    JSON.stringify({
+      'assessment-results': {
+        uuid: '11111111-1111-4111-8111-111111111111',
+        metadata: { title: 't', 'last-modified': '2026-01-01T00:00:00Z', version: '1', 'oscal-version': '1.1.2' },
+        'import-ap': { href: '#' },
+        results: results.map((r) => ({
+          uuid: r.uuid, title: r.title, description: 'd', start: '2026-01-01T00:00:00Z',
+          ...(r.props ? { props: r.props } : {}),
+          'reviewed-controls': { 'control-selections': [{ 'include-all': {} }] },
+          findings: [{ uuid: `f-${r.uuid}`, title: 'F', description: 'd', target: { type: 'objective-id', 'target-id': 'ac-1', status: { state: 'satisfied' } } }],
+        })),
+      },
+    });
+
+  it('names same-title foreign results distinctly with the result uuid', async () => {
+    const back = JSON.parse(await convertOscalSarToHdf(foreignSar([
+      { uuid: 'aaaaaaaa-1111-4111-8111-111111111111', title: 'RHEL 9 STIG' },
+      { uuid: 'bbbbbbbb-2222-4222-8222-222222222222', title: 'RHEL 9 STIG' },
+    ])));
+    expect(back.baselines.map((b: { name: string }) => b.name)).toEqual([
+      'rhel-9-stig--aaaaaaaa-1111-4111-8111-111111111111',
+      'rhel-9-stig--bbbbbbbb-2222-4222-8222-222222222222',
+    ]);
+  });
+
+  it('falls back to the bare uuid when the kebab-cased title is empty', async () => {
+    const back = JSON.parse(await convertOscalSarToHdf(foreignSar([
+      { uuid: '33333333-3333-4333-8333-333333333333', title: '***' },
+    ])));
+    expect(back.baselines[0].name).toBe('33333333-3333-4333-8333-333333333333');
+  });
+
+  it('prefers a baseline-name prop over the title', async () => {
+    const back = JSON.parse(await convertOscalSarToHdf(foreignSar([
+      { uuid: '44444444-4444-4444-8444-444444444444', title: 'RHEL 9 STIG',
+        props: [{ name: 'baseline-name', ns: HDF_NS, value: 'rhel9-stig-host-a' }] },
+    ])));
+    expect(back.baselines[0].name).toBe('rhel9-stig-host-a');
+  });
+});
+
 describe('nistTagToControlID', () => {
   it.each([
     ['AC-1', 'ac-1'],
@@ -997,6 +1088,271 @@ describe('NIST requirement id control references', () => {
       assertSchemaValid(validate, file, JSON.parse(await convertHdfToOscalSar(input)));
     },
   );
+});
+
+// A v3 results doc whose components[] carries three component types, each with
+// type-specific identity fields, to prove every component (not just the first)
+// round-trips HDF -> OSCAL-SAR -> HDF with those fields. Mirrors the Go peer.
+const multiComponentHdf = JSON.stringify({
+  baselines: [{
+    name: 'b',
+    requirements: [{
+      id: 'AC-1', impact: 0.5, tags: {},
+      descriptions: [{ label: 'default', data: 'd' }],
+      results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+    }],
+  }],
+  components: [
+    {
+      type: 'host', name: 'web01', componentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      hostname: 'web01', fqdn: 'web01.prod.example.com', osName: 'Ubuntu', osVersion: '22.04 LTS',
+      labels: { environment: 'production' },
+    },
+    {
+      type: 'containerImage', name: 'nginx', componentId: 'b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      registry: 'docker.io', repository: 'library/nginx', tag: '1.25-alpine',
+    },
+    {
+      type: 'cloudAccount', name: 'Prod AWS', componentId: 'c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      provider: 'aws', accountId: '123456789012', region: 'us-east-1',
+      labels: { boundary: 'prod-authorization-boundary' },
+    },
+  ],
+});
+
+describe('SAR component round trip', () => {
+  const roundTrip = async (hdf: string): Promise<NonNullable<HDFResults['components']>> => {
+    const sar = await convertHdfToOscalSar(hdf);
+    const back = JSON.parse(await convertOscalSarToHdf(sar)) as HDFResults;
+    return back.components ?? [];
+  };
+  const byName = (components: NonNullable<HDFResults['components']>): Record<string, (typeof components)[number]> =>
+    Object.fromEntries(components.map((c) => [c.name, c]));
+
+  it('preserves every component with its type-specific identity fields', async () => {
+    const components = await roundTrip(multiComponentHdf);
+    expect(components).toHaveLength(3);
+    const found = byName(components);
+
+    const host = found['web01']!;
+    expect(host.type).toBe('host');
+    expect(host.componentId).toBe('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(host.osName).toBe('Ubuntu');
+    expect(host.osVersion).toBe('22.04 LTS');
+    expect(host.fqdn).toBe('web01.prod.example.com');
+    expect(host.hostname).toBe('web01');
+    expect(host.labels?.environment).toBe('production');
+
+    const img = found['nginx']!;
+    expect(img.type).toBe('containerImage');
+    expect(img.componentId).toBe('b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(img.registry).toBe('docker.io');
+    expect(img.repository).toBe('library/nginx');
+    expect(img.tag).toBe('1.25-alpine');
+
+    const acct = found['Prod AWS']!;
+    expect(acct.type).toBe('cloudAccount');
+    expect(acct.componentId).toBe('c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(acct.accountId).toBe('123456789012');
+    expect(acct.provider).toBe('aws');
+    expect(acct.region).toBe('us-east-1');
+  });
+
+  // The SAF-normalized assessed target arrives as a cloudAccount component
+  // (ADR-0008); it must round-trip with accountId and labels.boundary intact (#234).
+  it('round-trips the cloudAccount assessed target identity', async () => {
+    const acct = byName(await roundTrip(multiComponentHdf))['Prod AWS']!;
+    expect(acct.accountId).toBe('123456789012');
+    expect(acct.labels?.boundary).toBe('prod-authorization-boundary');
+  });
+
+  it('warns on a component field a SAR subject cannot represent, never silently dropping it', async () => {
+    const hdf = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'AC-1', impact: 0.5, tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      }],
+      components: [{
+        type: 'host', name: 'web01', componentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+        osName: 'Ubuntu',
+        integrity: [{ algorithm: 'sha256', value: 'd1f2e3a4b5c6978869504132a1b2c3d4e5f6071829304152637485960a1b2c3d' }],
+      }],
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await convertHdfToOscalSar(hdf);
+    const calls = warn.mock.calls.map((c) => String(c[0]));
+    warn.mockRestore();
+    const message = calls.find((m) => m.includes('web01') && m.includes('integrity'));
+    expect(message, calls.join('\n')).toBeDefined();
+    expect(message).toContain('WARNING');
+  });
+});
+
+// A v3 results doc with components[] but NO result-bearing requirement: the
+// requirement produces no result, so the exporter emits no observation. Subjects
+// now ride a result-level home (ADR-0014 §4.5), so components survive regardless.
+const noResultComponentHdf = JSON.stringify({
+  baselines: [{
+    name: 'b',
+    requirements: [{
+      id: 'AC-1', impact: 0.5, tags: {},
+      descriptions: [{ label: 'default', data: 'd' }],
+      results: [],
+    }],
+  }],
+  components: [
+    {
+      type: 'host', name: 'web01', componentId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      hostname: 'web01', fqdn: 'web01.prod.example.com', osName: 'Ubuntu', osVersion: '22.04 LTS',
+      labels: { environment: 'production' },
+    },
+    {
+      type: 'containerImage', name: 'nginx', componentId: 'b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      registry: 'docker.io', repository: 'library/nginx', tag: '1.25-alpine',
+    },
+    {
+      type: 'cloudAccount', name: 'Prod AWS', componentId: 'c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      provider: 'aws', accountId: '123456789012', region: 'us-east-1',
+      labels: { boundary: 'prod-authorization-boundary' },
+    },
+  ],
+});
+
+describe('SAR component round trip at the result level (ADR-0014 §4.5)', () => {
+  const roundTrip = async (hdf: string): Promise<NonNullable<HDFResults['components']>> => {
+    const sar = await convertHdfToOscalSar(hdf);
+    const back = JSON.parse(await convertOscalSarToHdf(sar)) as HDFResults;
+    return back.components ?? [];
+  };
+  const byName = (components: NonNullable<HDFResults['components']>): Record<string, (typeof components)[number]> =>
+    Object.fromEntries(components.map((c) => [c.name, c]));
+
+  // The card's first-failing test: red today because subjects only ride on
+  // observations, and there is no observation when no requirement bears a result.
+  it('preserves every component when no requirement bears a result', async () => {
+    const components = await roundTrip(noResultComponentHdf);
+    expect(components).toHaveLength(3);
+    const found = byName(components);
+
+    const host = found['web01']!;
+    expect(host.type).toBe('host');
+    expect(host.componentId).toBe('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+    expect(host.osName).toBe('Ubuntu');
+    expect(host.fqdn).toBe('web01.prod.example.com');
+    expect(host.labels?.environment).toBe('production');
+
+    const img = found['nginx']!;
+    expect(img.type).toBe('containerImage');
+    expect(img.registry).toBe('docker.io');
+    expect(img.tag).toBe('1.25-alpine');
+
+    const acct = found['Prod AWS']!;
+    expect(acct.type).toBe('cloudAccount');
+    expect(acct.accountId).toBe('123456789012');
+    expect(acct.provider).toBe('aws');
+  });
+
+  // With results present a component rides both an observation subject and the
+  // result-level home; read-back dedups on component uuid so none doubles.
+  it('does not double-emit components carried at both homes', async () => {
+    const components = await roundTrip(multiComponentHdf);
+    expect(components).toHaveLength(3);
+    const ids = components.map((c) => c.componentId);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('warns on a typeless component that cannot be carried, never silently dropping it', async () => {
+    const hdf = JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'AC-1', impact: 0, tags: {},
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2020-01-01T00:00:00Z' }],
+        }],
+      }],
+      components: [{ name: 'web01' }],
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await convertHdfToOscalSar(hdf);
+    const calls = warn.mock.calls.map((c) => String(c[0]));
+    warn.mockRestore();
+    const message = calls.find((m) => m.includes('web01') && m.includes('type'));
+    expect(message, calls.join('\n')).toBeDefined();
+    expect(message).toContain('WARNING');
+  });
+});
+
+interface ComponentGroupKeyCase {
+  label: string;
+  entries: Record<string, string>;
+  order: string[];
+  why: string;
+}
+
+const COMPONENT_GROUP_KEY_CASES = (
+  JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'oscal-component-group-key-cases.json'), 'utf-8'),
+  ) as { cases: ComponentGroupKeyCase[] }
+).cases;
+
+interface SarProp {
+  name: string;
+  value: string;
+  group?: string;
+}
+
+/** The key each of the exported subject's prop groups carries for prefix, group 1 first. */
+function subjectGroupKeys(props: SarProp[], prefix: string): string[] {
+  const keys: string[] = [];
+  for (let n = 1; ; n++) {
+    const group = `${prefix}-${n}`;
+    const p = props.find((x) => x.group === group && x.name === `${prefix}-key`);
+    if (!p) return keys;
+    keys.push(p.value);
+  }
+}
+
+// AC (§4.5): a component's label and external-id groups are numbered in Unicode
+// code-point order, so the same key takes the same slot whichever language
+// exported the SAR. The expectations live in one shared table both suites read.
+describe('SAR component map group numbering', () => {
+  const hdfWithComponentMap = (field: string, entries: Record<string, string>): string =>
+    JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'AC-1', impact: 0,
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      }],
+      components: [{ type: 'host', name: 'web01', [field]: entries }],
+    });
+
+  it('reads a non-empty shared group-key table, so the cases below cannot vanish silently', () => {
+    expect(COMPONENT_GROUP_KEY_CASES.length).toBeGreaterThan(0);
+  });
+
+  it.each(
+    COMPONENT_GROUP_KEY_CASES.flatMap((c) =>
+      (
+        [
+          ['labels', 'component-label'],
+          ['externalIds', 'component-external-id'],
+        ] as const
+      ).map(([field, prefix]) => [`${c.label}/${field}`, c, field, prefix] as const),
+    ),
+  )('numbers %s in code-point order', async (_label, c, field, prefix) => {
+    const sar = JSON.parse(await convertHdfToOscalSar(hdfWithComponentMap(field, c.entries)));
+    const components = sar['assessment-results'].results[0]['local-definitions'].components;
+    expect(components).toHaveLength(1);
+    expect(subjectGroupKeys(components[0].props as SarProp[], prefix), c.why).toStrictEqual(c.order);
+  });
 });
 
 // Parity: TestConvertHDFToOSCALSAR_GoverningOverrideNotArrayPosition in go/.

@@ -101,7 +101,7 @@ func (r *partyRegistry) getOrAdd(id hdf.Identity) string {
 	if uuid, ok := r.byKey[key]; ok {
 		return uuid
 	}
-	party := oscal.Party{UUID: oscal.GenerateUUID(), Type: "person", Name: oscal.OSCALString(id.Identifier)}
+	party := oscal.Party{UUID: oscal.GenerateUUID(), Type: "person", Name: oscal.NormalizePropValue(id.Identifier)}
 	party.Props = oscal.AppendVocabularyProp(nil, "identity-identifier", id.Identifier)
 	party.Props = oscal.AppendVocabularyProp(party.Props, "identity-type", string(id.Type))
 	switch {
@@ -428,7 +428,7 @@ func (b *poamBuilder) milestoneRemediations(milestones []hdf.Milestone) []oscal.
 // name is schema-required, so the fallbacks only matter for a document that
 // slipped through some other producer's validation.
 func poamTitle(a *hdf.HDFAmendments) string {
-	return shared.FirstNonEmpty(a.Name, derefString(a.AmendmentID), "HDF Amendments")
+	return oscal.NormalizePropValue(shared.FirstNonEmpty(a.Name, derefString(a.AmendmentID), "HDF Amendments"))
 }
 
 // unidentifiedRequirementTitle stands in for an empty requirementId: HDF puts no
@@ -438,7 +438,7 @@ const unidentifiedRequirementTitle = "Unidentified requirement"
 
 // requirementTitle is the title of the risk and POA&M item an override produces.
 func requirementTitle(override *hdf.StandaloneOverride) string {
-	return shared.FirstNonEmpty(override.RequirementID, unidentifiedRequirementTitle)
+	return oscal.NormalizePropValue(shared.FirstNonEmpty(override.RequirementID, unidentifiedRequirementTitle))
 }
 
 // riskRationale supplies the text OSCAL requires for a risk's description and
@@ -652,7 +652,7 @@ func cvssCharacterizations(c *hdf.Cvss, applier string) []oscal.Characterization
 
 // referenceResource carries one external reference as a back-matter resource.
 func (b *poamBuilder) referenceResource(ref *hdf.ExternalReference) (oscal.Resource, error) {
-	res := oscal.Resource{UUID: oscal.GenerateUUID(), Title: ref.SourceName}
+	res := oscal.Resource{UUID: oscal.GenerateUUID(), Title: oscal.NormalizePropValue(ref.SourceName)}
 	props := oscal.AppendVocabularyProp(nil, "source-name", ref.SourceName)
 	props = appendOptionalString(props, "external-id", "externalId", ref.ExternalID)
 	switch {

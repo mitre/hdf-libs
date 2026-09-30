@@ -24,7 +24,7 @@ overrides:
   yaml@>=2.0.0 <2.8.3: 2.8.3
   browserslist@<4.28.7: 4.28.7
   vite@>=6.0.0 <6.4.3: 6.4.3
-  brace-expansion@<5.0.9: 5.0.9
+  brace-expansion@<5.0.12: 5.0.12
   fast-xml-builder@<1.1.9: 1.1.9
   follow-redirects@<1.16.0: 1.16.0
   postcss@<8.5.23: 8.5.23
@@ -57,6 +57,9 @@ importers:
       cpy-cli:
         specifier: ^7.0.0
         version: 7.0.0
+      es-module-lexer:
+        specifier: ^2.3.2
+        version: 2.3.2
       eslint:
         specifier: ^10.11.0
         version: 10.11.0(supports-color@5.5.0)
@@ -101,6 +104,12 @@ importers:
       '@mitre/hdf-utilities':
         specifier: workspace:^
         version: link:../hdf-utilities
+      ajv:
+        specifier: 8.18.0
+        version: 8.18.0
+      ajv-formats:
+        specifier: ^3.0.1
+        version: 3.0.1(ajv@8.18.0)
     devDependencies:
       '@aws-sdk/client-securityhub':
         specifier: ^3
@@ -111,12 +120,6 @@ importers:
       '@mitre/hdf-validators':
         specifier: workspace:^
         version: link:../hdf-validators
-      ajv:
-        specifier: 8.18.0
-        version: 8.18.0
-      ajv-formats:
-        specifier: ^3.0.0
-        version: 3.0.1(ajv@8.18.0)
       xmllint-wasm:
         specifier: ^5.3.0
         version: 5.3.0(@types/node@26.6.2)
@@ -2293,8 +2296,8 @@ packages:
   bowser@2.14.1:
     resolution: {integrity: sha512-tzPjzCxygAKWFOJP011oxFHs57HzIhOEracIgAePE4pqB3LikALKnSzUyU4MGs9/iCEUuHlAJTjTc5M+u7YEGg==}
 
-  brace-expansion@5.0.9:
-    resolution: {integrity: sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==}
+  brace-expansion@5.0.12:
+    resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
     engines: {node: 20 || >=22}
 
   braces@3.0.3:
@@ -6302,7 +6305,7 @@ snapshots:
 
   bowser@2.14.1: {}
 
-  brace-expansion@5.0.9:
+  brace-expansion@5.0.12:
     dependencies:
       balanced-match: 4.0.4
 
@@ -7273,15 +7276,15 @@ snapshots:
 
   minimatch@10.2.3:
     dependencies:
-      brace-expansion: 5.0.9
+      brace-expansion: 5.0.12
 
   minimatch@10.2.6:
     dependencies:
-      brace-expansion: 5.0.9
+      brace-expansion: 5.0.12
 
   minimatch@3.1.4:
     dependencies:
-      brace-expansion: 5.0.9
+      brace-expansion: 5.0.12
 
   minimist@1.2.8: {}
 

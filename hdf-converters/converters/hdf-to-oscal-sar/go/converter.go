@@ -79,7 +79,7 @@ func buildOSCALDocument(hdfResults *hdf.HDFResults) *oscalSARDocument {
 		Version:      "1.0.0",
 		OscalVersion: oscal.OscalVersion,
 		Parties: []oscal.Party{
-			{UUID: toolActorUUID, Type: "organization", Name: toolPartyName(hdfResults)},
+			{UUID: toolActorUUID, Type: "organization", Name: oscal.NormalizePropValue(toolPartyName(hdfResults))},
 		},
 	}
 
@@ -196,8 +196,19 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 		description = *baseline.Description
 	}
 
-	// baseline.version has no first-class SAR home; carry it as a result prop.
+	// The result title is display text and not injective, so carry the exact HDF
+	// baseline name in a namespaced prop for a lossless round trip (§4.3).
 	var resultProps []oscal.Property
+	resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-name", baseline.Name)
+
+	// The result title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+	// so carry the exact baseline title in a namespaced prop and normalize the
+	// display title (§1.7.1). The baseline title is distinct from its name.
+	if baseline.Title != nil && *baseline.Title != "" {
+		resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-title", *baseline.Title)
+	}
+
+	// baseline.version has no first-class SAR home; carry it as a result prop.
 	if baseline.Version != nil {
 		resultProps = oscal.AppendVocabularyProp(resultProps, "baseline-version", *baseline.Version)
 	}
@@ -249,15 +260,45 @@ func baselineToResult(baseline *hdf.EvaluatedBaseline, timestamp string, toolAct
 
 	return oscal.Result{
 		UUID:             oscal.GenerateUUID(),
-		Title:            title,
+		Title:            oscal.NormalizePropValue(title),
 		Description:      description,
 		Start:            assessmentStart(baseline, timestamp),
 		Props:            resultProps,
+		LocalDefinitions: resultLocalDefinitions(subjects),
 		ReviewedControls: reviewedControls(includeControls),
 		Findings:         findings,
 		Observations:     observations,
 		Risks:            risks,
 	}, resources
+}
+
+// resultLocalDefinitions carries the assessed components at a result-level home so
+// they survive a round trip even when the result has no observation to hold a
+// subject (ADR-0014 §4.5). Each subject becomes a system-component with identical
+// identity (uuid/type/title and the HDF-namespaced props); the OSCAL-required
+// description and status have no HDF counterpart, so they are display fallbacks
+// the importer never reads back — the exact identity lives entirely in the props.
+func resultLocalDefinitions(subjects []oscal.SubjectRef) *oscal.ResultLocalDefinitions {
+	if len(subjects) == 0 {
+		return nil
+	}
+	comps := make([]oscal.SystemComponent, 0, len(subjects))
+	for i := range subjects {
+		s := &subjects[i]
+		display := s.Title
+		if display == "" {
+			display = "Assessed component"
+		}
+		comps = append(comps, oscal.SystemComponent{
+			UUID:        s.SubjectUUID,
+			Type:        s.Type,
+			Title:       display,
+			Description: display,
+			Props:       s.Props,
+			Status:      &oscal.ComponentStatus{State: "other"},
+		})
+	}
+	return &oscal.ResultLocalDefinitions{Components: comps}
 }
 
 // selectControl adds a control, or one statement of it, to the reviewed-controls
@@ -288,7 +329,10 @@ func selectControl(controls []oscal.SelectControl, index map[string]int, control
 // buildSubjects turns the top-level HDF components[] into OSCAL assessment
 // subjects. Each component's UUID (componentId when present, otherwise a fresh
 // one) identifies the subject; the HDF component type is a valid OSCAL subject
-// type token and its name becomes the subject title.
+// type token and its name becomes the subject title. A subject holds only
+// uuid/type/title, so each component's type-specific identity fields ride as
+// HDF-namespaced props on the subject (ADR-0014 §1.5) and reconstitute on
+// read-back.
 //
 // A component with no type is skipped rather than given one. OSCAL requires both
 // subject-uuid and type on a subject-reference, so the type cannot simply be
@@ -302,19 +346,58 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 	for i := range components {
 		c := &components[i]
 		if oscal.OSCALString(string(c.Type)) == "" {
+			// Both an OSCAL assessment subject and a system-component require a
+			// type, and hdf-results defines no default to fall back on, so a
+			// type-less component genuinely cannot be carried. Warn rather than
+			// drop it silently (§4.5).
+			log.Printf("WARNING: hdf-to-oscal-sar: component %q has no type, which an OSCAL assessment subject requires; not carried", c.Name)
 			continue
 		}
 		uid := oscal.GenerateUUID()
 		if c.ComponentID != nil && *c.ComponentID != "" {
 			uid = *c.ComponentID
 		}
+		// The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+		// so the exact component name rides in the component-name prop (§1.7.1).
 		subjects = append(subjects, oscal.SubjectRef{
 			SubjectUUID: uid,
 			Type:        string(c.Type),
-			Title:       c.Name,
+			Title:       oscal.NormalizePropValue(c.Name),
+			Props:       oscal.ComponentSubjectProps(c),
 		})
+		warnUncarriedComponentFields(c)
 	}
 	return subjects
+}
+
+// warnUncarriedComponentFields reports component identity beyond the type-
+// specific fields a SAR subject can hold — owner, BOMs, artifact integrity, and
+// the migration-only fields — so it is not silently dropped (matching the
+// lossy-conversion warning UX).
+func warnUncarriedComponentFields(c *hdf.Component) {
+	var dropped []string
+	if c.Owner != nil {
+		dropped = append(dropped, "owner")
+	}
+	if len(c.Boms) > 0 {
+		dropped = append(dropped, "boms")
+	}
+	if len(c.Integrity) > 0 {
+		dropped = append(dropped, "integrity")
+	}
+	if len(c.BaselineRefs) > 0 {
+		dropped = append(dropped, "baselineRefs")
+	}
+	if len(c.InputOverrides) > 0 {
+		dropped = append(dropped, "inputOverrides")
+	}
+	if len(c.TargetSelector) > 0 {
+		dropped = append(dropped, "targetSelector")
+	}
+	if len(dropped) == 0 {
+		return
+	}
+	log.Printf("WARNING: hdf-to-oscal-sar: component %q carries %s, which an OSCAL SAR assessment subject cannot represent; not carried", c.Name, strings.Join(dropped, ", "))
 }
 
 // noIdentifiableControlsRemark accompanies the include-all selection of a result
@@ -456,6 +539,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	title := req.ID
 	if req.Title != nil && *req.Title != "" {
 		title = *req.Title
+		// The finding title is a single-line display sink OSCAL 1.2.3 types
+		// MarkupLine, and Requirement_Core.title is prose that may carry line
+		// breaks (§2), so carry the exact title in a namespaced prop and normalize
+		// the display title (§1.7.1).
+		props = oscal.AppendVocabularyProp(props, "requirement-title", *req.Title)
 	}
 
 	// Source code is an artifact with a media type, not a StringDatatype prop:
@@ -464,7 +552,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 	if req.Code != nil && strings.TrimSpace(*req.Code) != "" {
 		codeResource = &oscal.Resource{
 			UUID:  oscal.GenerateUUID(),
-			Title: "Check source code for " + req.ID,
+			Title: oscal.NormalizePropValue("Check source code for " + req.ID),
 			Props: oscal.AppendVocabularyProp(nil, "type", "evidence"),
 			Base64: &oscal.Base64{
 				Value:     base64.StdEncoding.EncodeToString([]byte(*req.Code)),
@@ -474,6 +562,11 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		links = append(links, oscal.Link{Href: "#" + codeResource.UUID, Rel: "code"})
 	}
 
+	// Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
+	// finding's own props, deduped, in carried order.
+	carried := oscal.ReadCarriedProps(req.Tags, req.ID)
+	props = oscal.AppendCarriedProps(props, oscal.CarriedFor(carried, "finding"))
+
 	// OSCAL requires a non-empty finding description; fall back to the title
 	// when the requirement carries no description of its own.
 	if findingDesc == "" {
@@ -482,7 +575,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 
 	finding := oscal.Finding{
 		UUID:        oscal.GenerateUUID(),
-		Title:       title,
+		Title:       oscal.NormalizePropValue(title),
 		Description: findingDesc,
 		Props:       props,
 		Links:       links,
@@ -501,15 +594,14 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		},
 	}
 
-	// Build observation from requirement results
+	// Build observation from requirement results. Its display description is
+	// synthesized below, after the risk is built, from the objects being emitted.
 	var observation *oscal.Observation
 	if len(req.Results) > 0 {
 		obsUUID := oscal.GenerateUUID()
-		obsDesc := buildObservationDescription(req.Results)
 		observation = &oscal.Observation{
-			UUID:        obsUUID,
-			Description: obsDesc,
-			Methods:     []string{"TEST"},
+			UUID:    obsUUID,
+			Methods: []string{"TEST"},
 			// When the evidence was gathered — the scan time for this requirement,
 			// not when the file was converted.
 			Collected: formatAssessmentTime(earliestResultTime(req.Results), timestamp),
@@ -518,6 +610,9 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 			// reads back.
 			Subjects:         subjects,
 			RelevantEvidence: buildRelevantEvidence(req),
+			// Carried observation props (ADR-0014 §3.4); the observation has no
+			// own props, so these are all it carries.
+			Props: oscal.AppendCarriedProps(nil, oscal.CarriedFor(carried, "observation")),
 		}
 		finding.RelatedObservations = []oscal.RelatedRef{
 			{ObservationUUID: obsUUID},
@@ -542,7 +637,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 		impactText := fmt.Sprintf("Impact: %s (%s)", hdfutil.FormatFixed(req.Impact, 1), severity)
 		risk = &oscal.Risk{
 			UUID:  riskUUID,
-			Title: fmt.Sprintf("Risk for %s", req.ID),
+			Title: oscal.NormalizePropValue(fmt.Sprintf("Risk for %s", req.ID)),
 			// OSCAL requires both description and statement on a risk.
 			Description: impactText,
 			Statement:   impactText,
@@ -567,10 +662,16 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 			},
 			Remediations: buildRemediations(req),
 			Deadline:     riskDeadline(req),
+			// Carried risk props (ADR-0014 §3.4); the risk has no own props.
+			Props: oscal.AppendCarriedProps(nil, oscal.CarriedFor(carried, "risk")),
 		}
 		finding.RelatedRisks = []oscal.RelatedRef{
 			{RiskUUID: riskUUID},
 		}
+	}
+
+	if observation != nil {
+		observation.Description = observationDisplayDescription(roundTripStatus(state), observation, risk, title)
 	}
 
 	return finding, observation, risk, codeResource
@@ -807,20 +908,65 @@ func extractDefaultDescription(descriptions []hdf.Description) string {
 	return ""
 }
 
-// buildObservationDescription concatenates result code descriptions and messages.
-func buildObservationDescription(results []hdf.RequirementResult) string {
+// observationDisplayDescription synthesizes an observation's display description
+// from the OSCAL objects the exporter emits, mirroring how the reverse SAR
+// importer reconstructs a result's status, codeDesc and message. Deriving it from
+// the emitted observation and risk — not from the HDF result's stored codeDesc and
+// message — makes the SAR round trip idempotent on observation.description
+// (ADR-0014 §3.5): the string already equals what the importer reads back and the
+// next export re-synthesizes, so the first HDF-produced export equals the second.
+// observation.description is display text, not a prose home (ADR-0014 §2); the
+// requirement's real prose rides its own homes (finding.target.description,
+// relevant-evidence, risk.remediations).
+func observationDisplayDescription(status string, obs *oscal.Observation, risk *oscal.Risk, fallbackTitle string) string {
+	desc := fmt.Sprintf("[%s] %s", status, reconstructedCodeDesc(obs, fallbackTitle))
+	if msg := reconstructedRiskMessage(risk); msg != "" {
+		desc += ": " + msg
+	}
+	return desc
+}
+
+// roundTripStatus is the HDF status the emitted finding's target state maps back
+// to on import (oscal-to-hdf mapFindingStatus): an unrecognized state is
+// notReviewed, as there.
+func roundTripStatus(state string) string {
+	if s, ok := oscal.OscalStatusToHDF(state); ok {
+		return s
+	}
+	return string(hdf.NotReviewed)
+}
+
+// reconstructedCodeDesc mirrors oscal-to-hdf buildCodeDesc for the single
+// observation the exporter emits.
+func reconstructedCodeDesc(obs *oscal.Observation, fallbackTitle string) string {
 	var parts []string
-	for _, r := range results {
-		desc := fmt.Sprintf("[%s] %s", r.Status, r.CodeDesc)
-		if r.Message != nil && *r.Message != "" {
-			desc += ": " + *r.Message
+	if len(obs.Methods) > 0 {
+		parts = append(parts, "Methods: "+strings.Join(obs.Methods, ", "))
+	}
+	for _, subj := range obs.Subjects {
+		subjDesc := subj.Type
+		if subj.Title != "" {
+			subjDesc = subj.Title + " (" + subj.Type + ")"
 		}
-		parts = append(parts, desc)
+		parts = append(parts, "Subject: "+subjDesc)
 	}
 	if len(parts) == 0 {
-		return "No observations recorded"
+		return fallbackTitle
 	}
-	return strings.Join(parts, "\n")
+	return strings.Join(parts, "; ")
+}
+
+// reconstructedRiskMessage mirrors oscal-to-hdf buildRiskMessage for the single
+// risk the exporter emits (nil when the requirement's impact is 0).
+func reconstructedRiskMessage(risk *oscal.Risk) string {
+	if risk == nil {
+		return ""
+	}
+	msg := risk.Title
+	if risk.Description != "" {
+		msg += ": " + risk.Description
+	}
+	return msg
 }
 
 // riskStatusFromState maps OSCAL finding state to risk status.
