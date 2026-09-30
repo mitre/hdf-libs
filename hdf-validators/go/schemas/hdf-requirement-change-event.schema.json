@@ -1811,6 +1811,10 @@
                 "type": "string"
               },
               "description": "The stacktrace/backtrace of the exception if one occurred."
+            },
+            "rawSourceRecord": {
+              "$ref": "#/$defs/Raw_Source_Record",
+              "description": "The source tool's own record for this result, verbatim."
             }
           },
           "examples": [
@@ -1840,6 +1844,64 @@
           ],
           "description": "A test within a requirement and its results and findings such as how long it took to run.",
           "title": "Requirement Result"
+        },
+        "Raw_Source_Record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "content",
+            "encoding",
+            "mediaType"
+          ],
+          "properties": {
+            "content": {
+              "type": "string",
+              "description": "The record's bytes, exactly as the source tool wrote them."
+            },
+            "encoding": {
+              "type": "string",
+              "enum": [
+                "utf-8",
+                "base64"
+              ],
+              "description": "How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "The record's IANA media type — the type of this record, which for a fragment of a larger artifact may be narrower than the artifact's own. Example: 'application/json' for one match object out of a JSON report."
+            },
+            "pointer": {
+              "type": "string",
+              "description": "Where this record sits inside the artifact it came from, as a JSON Pointer (RFC 6901) for JSON sources or an XPath for XML ones. Example: '/matches/3'.\n\nOptional, and the link that makes carriage verifiable rather than merely present: with it a consumer can confirm the record really is the subtree of `extensions.rawSourceArtifacts[]` it claims to be. Omit it when the source's shape gives a record no addressable location."
+            }
+          },
+          "description": "The source tool's own record for this result, verbatim — the one entry in the converter's input that produced it.\n\nSCOPED TO THE RESULT DELIBERATELY. For a vulnerability scanner the native record is one (vulnerability, package) pair, which is exactly one result: a CVE reported against two packages yields two entries whose records differ only in the package they matched. Held on the requirement instead, those two records would collide, and merging entries that share an id would have to discard one — so the result is not merely an available home but the correct one.\n\nDistinct from `extensions.rawSourceArtifacts[]`, which carries whole input artifacts: this carries the one record inside one of them, and `pointer` ties the two together. A consumer that wants the whole input reads the artifact; one that wants provenance for a single finding reads this.\n\nDistinct from `code`, which means the code that ran to evaluate the requirement — an InSpec control's source, or a check reference. A serialized finding is not code, and putting one there overloaded a field whose meaning came from InSpec.\n\nCLOSED, and deliberately not a passthrough bag: three required members and an optional pointer are the whole of it. Producer data that HDF does not model belongs in `extensions.passthrough`, which is document-scoped and permissive by design; this field is neither.\n\nClosed with `additionalProperties` rather than the house `unevaluatedProperties` because this definition composes nothing, and the shipped Go validator is a draft-07 engine that does not implement `unevaluatedProperties` — a closure only one of the two validators enforces is not a closure.",
+          "$comment": "Examples, in order: 1) one grype match — the shape that moves out of `code` — located in the carried artifact by pointer; 2) an XCCDF rule-result, where the record is XML although the document embedding it is JSON, so mediaType is per record and not per document; 3) a record whose bytes are not text, carried as base64; 4) the minimum: a record whose source shape gives it no addressable location, so pointer is omitted.",
+          "examples": [
+            {
+              "content": "{\"vulnerability\":{\"id\":\"CVE-2022-48174\",\"severity\":\"Critical\"},\"artifact\":{\"name\":\"ssl_client\",\"version\":\"1.31.1-r9\",\"type\":\"apk\"}}",
+              "encoding": "utf-8",
+              "mediaType": "application/json",
+              "pointer": "/matches/3"
+            },
+            {
+              "content": "<rule-result idref=\"xccdf_org.ssgproject.content_rule_sshd_disable_root_login\" severity=\"medium\">\n  <result>fail</result>\n</rule-result>",
+              "encoding": "utf-8",
+              "mediaType": "application/xml",
+              "pointer": "/Benchmark/TestResult/rule-result[4]"
+            },
+            {
+              "content": "UEsDBBQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAYXVkaXQuZnZkbA==",
+              "encoding": "base64",
+              "mediaType": "application/octet-stream"
+            },
+            {
+              "content": "host-01,Ubuntu 22.04,CVE-2021-36159,,image,critical,apk-tools,apk-tools,2.12.5-r1",
+              "encoding": "utf-8",
+              "mediaType": "text/csv"
+            }
+          ],
+          "title": "Raw Source Record"
         },
         "Requirement_Description": {
           "type": "object",
