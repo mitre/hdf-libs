@@ -111,9 +111,30 @@ The policy belongs in the converter documentation and in the `build-converter` s
 
 **It is satisfiable for every converter**, because §1 declares `extensions` on every document type a converter can emit. That needed establishing: ingest converters emit five output types, not three — results, amendments (five converters, including one declared in a table rather than a flat registration), baseline (three), plan (one), and one genuine ingest case declared as raw output, which is itself a misdeclaration worth fixing separately since it returns an HDF system document.
 
-### 5. `code` means the code that ran; raw payloads move out
+### 5. `code` means the code that ran; raw payloads move to `results[].rawSourceRecord`
 
-`Requirement_Core.code` carries the source code, query or check that executed to produce a result, where one exists. It does **not** carry the record that running it produced. A converter writing a finding's raw payload into `code` is making a mapping error, and the payload's home is `rawSourceArtifacts`.
+`Requirement_Core.code` carries the source code, query or check that executed to produce a result, where one exists. It does **not** carry the record that running it produced. A converter writing a finding's raw payload into `code` is making a mapping error.
+
+**The payload's home is `results[].rawSourceRecord`, not `rawSourceArtifacts`.** The two are different granularities and neither substitutes for the other: `extensions.rawSourceArtifacts[]` (§2) carries whole input artifacts, one per file the converter read; a misplaced `code` payload is a *fragment* — the one record inside that file which produced this finding. Nothing can reconstruct the fragment from the artifact without re-parsing the source format backwards, which is the converter run in reverse.
+
+`Raw_Source_Record` is therefore defined on `Requirement_Result`, closed, with three required members and one optional locator:
+
+| Member | Value |
+|---|---|
+| `content` | the record's bytes, as the tool wrote them |
+| `encoding` | `utf-8` or `base64`, the same pair §3 gives artifacts |
+| `mediaType` | the **record's** IANA media type, which may be narrower than its artifact's — an XCCDF `rule-result` is `application/xml` even when the document embedding it is JSON |
+| `pointer` | optional: a JSON Pointer (RFC 6901) or XPath locating the record inside its artifact, e.g. `/matches/3` |
+
+**The result, not the requirement, is the correct scope** — established from the data, not chosen for convenience. For a vulnerability scanner the native record is one (vulnerability, package) pair, which is exactly one result. In `grype-to-hdf`'s golden, 42 of 89 requirement ids are duplicated and *every* pair carries a different `code` payload, distinguished only by the package matched: `CVE-2022-48174` holds one record for `busybox` and another for `ssl_client`, `CVE-2024-5535` one for `libcrypto1.1` and one for `libssl1.1`. A requirement-scoped field cannot hold both.
+
+**This is also what makes §6 lossless.** §6 merges entries sharing an id and rules `code` first-wins. Applied to payloads still sitting in `code`, that rule would discard 42 distinct match records from that one file — the same loss §6 rejects first-wins for on `affectedPackages`, one field over. Because `results[]` concatenate, a record carried on the result survives the merge untouched, and `code` first-wins becomes correct rather than lossy: once payloads move, a rolled-up requirement's `code` is genuinely shared or absent.
+
+`pointer` is what makes carriage verifiable rather than merely present: with the artifact from §2 and the pointer from §5, a consumer can confirm the record really is the subtree it claims to be. That is the check `hdf verify` would run; nothing in this ADR requires it yet.
+
+**Consequences this ADR previously missed.** The v2 downgrade populates `control.code` from `requirement.code` (`shared/go/hdfversion/hdf_version.go:311`), and Heimdall renders that field in its CODE tab — `hdf-libs-dggj` was closed specifically to fill it, after an empty tab was observed against heimdall2's native mapper. Emptying `code` without a replacement would regress that. With the record on the result the downgrade has a local mapping available again; the exact rule (which result's record populates a control's single `code`, or whether they concatenate) is decided by the card that migrates the downgrade. Separately, `.claude/commands/build-converter.md` still instructs the prohibited behaviour — *"put the finding's raw source … in `requirement.code` so Heimdall's CODE tab renders"* — and must be rewritten to name `rawSourceRecord`, or every new converter will keep reintroducing the error.
+
+Note also that `Requirement_Core.code` is `{"type": "string"}` while its own description says *"Set to null for manual-only requirements"* — so `"code": null` fails validation today. That contradiction predates this ADR and is fixed separately; this section's rule is that an absent check leaves `code` **absent**, never null.
 
 The 19 converters above need **per-converter judgment, not a blanket move**. Two examples from the measurement:
 
