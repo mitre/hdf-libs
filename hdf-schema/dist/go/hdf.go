@@ -2333,8 +2333,11 @@ const (
 	Username           IdentityType = "username"
 )
 
-// Supported cryptographic hash algorithms for checksums and integrity verification. blake3 covers
-// container-image and other artifact digests that use it.
+// Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers
+// container-image and other artifact digests that use it, and a producer may record one — but HDF
+// tooling does NOT verify blake3: Go and Node both lack it in their standard libraries, so a blake3
+// checksum is reported as unverified rather than checked. Record sha256, sha384 or sha512 where the
+// checksum needs to be verifiable.
 type HashAlgorithm string
 
 const (

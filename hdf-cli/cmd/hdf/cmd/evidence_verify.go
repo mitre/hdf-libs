@@ -62,6 +62,11 @@ const (
 	verifyMismatch = "mismatch"
 	verifySkipped  = "skipped"
 	verifyError    = "error"
+	// verifyUnsupported mirrors the engine's own status: a recorded algorithm this
+	// build cannot compute. Reported and counted, never fatal by default — the bytes
+	// may be intact, and a digest we cannot compute is the same kind of claim as a
+	// reference we cannot reach.
+	verifyUnsupported = "unsupported"
 	// verifyUnreachable is a CLI-level status, deliberately not an engine one: the
 	// engine classifies what it could hash, and whether a reference resolves on THIS
 	// machine is the adapter's question. Keeping it here also avoids adding a value
@@ -89,6 +94,7 @@ type verifyCounts struct {
 	skipped     int
 	errors      int
 	unreachable int
+	unsupported int
 }
 
 func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable bool) error {
@@ -161,9 +167,19 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable bool) err
 	if counts.mismatch > 0 || counts.errors > 0 {
 		return fmt.Errorf("%d checksum mismatches, %d errors", counts.mismatch, counts.errors)
 	}
-	if requireReachable && len(unreachableBy) > 0 {
-		return fmt.Errorf("%d recorded reference(s) could not be resolved and --require-reachable was given",
-			len(unreachableBy))
+	if requireReachable && (len(unreachableBy) > 0 || counts.unsupported > 0) {
+		// Only what actually happened is named. Reporting "0 references could not be
+		// resolved" alongside a real checksum problem reads as noise and invites the
+		// operator to look for a reference fault that is not there.
+		var why []string
+		if n := len(unreachableBy); n > 0 {
+			why = append(why, fmt.Sprintf("%d recorded reference(s) could not be resolved", n))
+		}
+		if counts.unsupported > 0 {
+			why = append(why, fmt.Sprintf("%d checksum(s) name an algorithm this build cannot compute",
+				counts.unsupported))
+		}
+		return fmt.Errorf("%s; --require-reachable was given", strings.Join(why, " and "))
 	}
 
 	// Completeness checking (default behavior unless --checksums-only)
@@ -370,6 +386,8 @@ func toVerifyResults(checksums []hdfengine.ChecksumResult) ([]evidenceVerifyResu
 			counts.skipped++
 		case hdfengine.ChecksumError:
 			counts.errors++
+		case hdfengine.ChecksumUnsupported:
+			counts.unsupported++
 		}
 	}
 	return results, counts
@@ -399,6 +417,7 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 			// happened to each content entry, and what this consumer cannot reach.
 			"unreachableReferences": unreachable,
 			"unreachable":           counts.unreachable,
+			"unsupported":           counts.unsupported,
 			"agentOverrides":        agentOverrides,
 		}
 		output, _ := json.MarshalIndent(out, "", "  ")
@@ -422,6 +441,8 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 			fmt.Printf("  ! %s (error: %s)\n", sanitizeOutput(r.URI), r.Error)
 		case verifyUnreachable:
 			fmt.Printf("  ? %s (not reachable here: %s)\n", sanitizeOutput(r.URI), sanitizeOutput(r.Error))
+		case verifyUnsupported:
+			fmt.Printf("  ? %s (not verified here: %s)\n", sanitizeOutput(r.URI), sanitizeOutput(r.Error))
 		}
 	}
 	total := counts.match + counts.mismatch
@@ -434,6 +455,9 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 	}
 	if counts.unreachable > 0 {
 		fmt.Printf(", %d not reachable here", counts.unreachable)
+	}
+	if counts.unsupported > 0 {
+		fmt.Printf(", %d not verifiable here", counts.unsupported)
 	}
 	fmt.Println()
 	fmt.Println(agentOverrideReadout(agentOverrides))

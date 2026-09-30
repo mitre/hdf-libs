@@ -126,11 +126,12 @@ func TestEvidence_ChecksumAlgorithm_CrossLanguageParity(t *testing.T) {
 	}
 
 	// sha512 and sha384 entries record CORRECT hashes, so guessing sha256 would
-	// report them as mismatches — the defect this card fixes. blake3 is in the
-	// schema's enum but not computable here, so it is an error, never a mismatch,
-	// and it is reported without ever reading the (absent) file.
+	// report them as mismatches. blake3 is in the schema's enum but not computable
+	// here, so it is UNSUPPORTED — never a mismatch (which would say the evidence
+	// changed) and never an error (the bytes may be intact) — and it is reported
+	// without ever reading the (absent) file.
 	got := VerifyChecksums(contents, fetch)
-	wantStatus := []ChecksumStatus{ChecksumMatch, ChecksumMatch, ChecksumMatch, ChecksumError}
+	wantStatus := []ChecksumStatus{ChecksumMatch, ChecksumMatch, ChecksumMatch, ChecksumUnsupported}
 	for i, want := range wantStatus {
 		if got[i].Status != want {
 			t.Errorf("checksum[%d] (%s) status = %s, want %s — error %q",

@@ -482,3 +482,69 @@ func TestEvidenceVerify_CompletenessNeverCreditsAnUnreachableDocument(t *testing
 	assert.NotContains(t, combined, "Completeness check passed",
 		"the run must not report completeness passing beside a reference it could not reach")
 }
+
+// A recorded algorithm this build cannot compute is reported, not fatal — the same
+// posture as a reference it cannot reach, because both are claims the tool cannot
+// check and the bytes may be perfectly intact. What must NOT happen is the entry
+// disappearing: when the engine gained a distinct status, every consumer switch that
+// did not handle it dropped the entry from the per-entry list AND from every count,
+// so a package with an unverifiable checksum reported "0/0 valid" and exited 0 with
+// no mention of it at all. Silence is worse than either verdict.
+func TestEvidenceVerify_ReportsAnUncomputableAlgorithmWithoutFailing(t *testing.T) {
+	dir := t.TempDir()
+	for _, n := range []string{"system.json", "rhel9-results.json", "postgres-results.json", "plan.json"} {
+		body, err := os.ReadFile(filepath.Join(evidenceFixtureDir, n))
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
+	}
+	pkg := map[string]interface{}{
+		// Deliberately NOT named after the algorithm: the header line prints the package
+		// name, so calling it "blake3" made the assertion below pass whether or not the
+		// entry was ever rendered.
+		"name":    "unverifiable-algorithm",
+		"planRef": "plan.json",
+		"contents": []map[string]interface{}{
+			// A published BLAKE3 vector for the empty input, so the value is a real
+			// blake3 digest rather than an invented hex string. It cannot match this
+			// file, but nothing computes it, so no comparison ever happens.
+			{"type": "hdf-system", "uri": "system.json", "checksum": map[string]string{
+				"algorithm": "blake3",
+				"value":     "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+			}},
+			{"type": "hdf-results", "uri": "rhel9-results.json"},
+			{"type": "hdf-results", "uri": "postgres-results.json"},
+		},
+	}
+	body, err := json.Marshal(pkg)
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, body, 0o600))
+
+	stdout, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	require.NoError(t, verifyErr, "an uncomputable algorithm is reported, not fatal")
+	assert.Contains(t, stdout, "system.json",
+		"the entry must still appear; vanishing from the output is the fail-open this pins")
+	assert.Contains(t, stdout, "blake3", "and the line must name the algorithm it could not compute")
+
+	jsonOut, _, jsonErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--json")
+	require.NoError(t, jsonErr)
+	var parsed struct {
+		Results []struct {
+			URI    string `json:"uri"`
+			Status string `json:"status"`
+		} `json:"results"`
+		Unsupported int `json:"unsupported"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(jsonOut), &parsed))
+	require.Len(t, parsed.Results, 3, "every contents entry must be listed, including the unverifiable one")
+	assert.Equal(t, "unsupported", parsed.Results[0].Status)
+	assert.Equal(t, 1, parsed.Unsupported, "and it must be counted, not silently dropped")
+
+	// The opt-in that an assessor needing everything verified would use.
+	_, _, strictErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--require-reachable")
+	require.Error(t, strictErr, "--require-reachable must fail on an unverifiable checksum too")
+	assert.Contains(t, strictErr.Error(), "1 checksum(s) name an algorithm this build cannot compute",
+		"the message must name what actually happened")
+	assert.NotContains(t, strictErr.Error(), "0 recorded reference(s)",
+		"and must not name a count of zero, which sends the operator hunting a reference fault")
+}

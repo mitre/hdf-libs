@@ -167,6 +167,7 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 	}
 	fetch := confinedFetchAt(baseDir)
 	out.Valid = true
+	var unverifiable []string
 	for _, r := range hdfengine.VerifyChecksums(contents, fetch) {
 		switch r.Status {
 		case hdfengine.ChecksumMismatch:
@@ -175,7 +176,21 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 		case hdfengine.ChecksumError:
 			out.Valid = false
 			out.Errors = append(out.Errors, validateError{Path: r.URI, Message: "cannot verify checksum: " + r.Error})
+		case hdfengine.ChecksumUnsupported:
+			// NOT an error and NOT invalid: the recorded algorithm is one this build
+			// cannot compute (Hash_Algorithm admits blake3), so the bytes may be intact
+			// and the document schema-valid. Reported in the notice so the caller knows a
+			// checksum went unchecked — falling through to no case at all would have
+			// reported an unverified entry as verified.
+			// The algorithm is named alongside the entry: a caller told a checksum went
+			// unverified cannot act on that without knowing which algorithm it was.
+			unverifiable = append(unverifiable, r.URI+" ("+r.Algorithm+")")
 		}
+	}
+	if len(unverifiable) > 0 {
+		out.Notice = appendNotice(out.Notice, fmt.Sprintf(
+			"%d checksum(s) record an algorithm this build cannot compute and were not verified: %s",
+			len(unverifiable), strings.Join(unverifiable, ", ")))
 	}
 	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)
 }

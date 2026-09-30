@@ -610,10 +610,11 @@ func TestEvidenceBundle_HonoursTheRecordedChecksumAlgorithm(t *testing.T) {
 		{"sha384", hex.EncodeToString(sum384[:]), ""},
 		{"sha512", hex.EncodeToString(sum512[:]), ""},
 		{"sha512", strings.Repeat("b", 128), "checksum mismatch"},
-		// No stdlib blake3. Refused honestly rather than reported as a mismatch. The
-		// wording is the shared engine's, since hdfengine.ChecksumHex is now the one
-		// definition of which algorithms this codebase can verify.
-		{"blake3", strings.Repeat("c", 64), `unsupported checksum algorithm "blake3"`},
+		// blake3 is deliberately absent from this table. There is no stdlib blake3, and
+		// an algorithm this build cannot compute is no longer a bundle failure — the
+		// document is carried and the checksum reported as unverified, which
+		// TestEvidenceBundle_CarriesADocumentWhoseAlgorithmItCannotVerify pins. A
+		// mismatch row stays above, because a WRONG sha512 is still a failure.
 	} {
 		t.Run(tc.algorithm+"/"+tc.wantErr, func(t *testing.T) {
 			dir := t.TempDir()
@@ -1439,4 +1440,56 @@ func TestEvidenceBundle_RequiresAnOutputPath(t *testing.T) {
 		"the error must not name an internal temp file")
 	assert.NotContains(t, err.Error(), "rename",
 		"nor surface as a filesystem failure after the work is done")
+}
+
+// A schema-valid package recording a blake3 checksum could not be bundled at all:
+// the recompute refused and no archive was written. That made the schema's own enum
+// unusable. Bundle already has this exact case — a recorded-but-blank checksum value
+// is carried, counted and reported — so an algorithm it cannot compute is treated the
+// same way rather than aborting. The document still travels; what the archive cannot
+// claim is that its checksum was verified, and the report says so.
+func TestEvidenceBundle_CarriesADocumentWhoseAlgorithmItCannotVerify(t *testing.T) {
+	dir, _ := bundleTree(t)
+	pkg := map[string]any{
+		"name": "blake3",
+		"contents": []map[string]any{{
+			"type": "hdf-results", "uri": "scans/rhel9-results.json",
+			// A published BLAKE3 vector for the empty input — a real digest, not an
+			// invented one. Nothing computes it, so it is never compared.
+			"checksum": map[string]string{
+				"algorithm": "blake3",
+				"value":     "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+			},
+		}},
+	}
+	data, err := json.Marshal(pkg)
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "b3.json")
+	require.NoError(t, os.WriteFile(pkgPath, data, 0o600))
+	out := filepath.Join(dir, "b3.zip")
+
+	_, stderr, bundleErr := executeCommand("evidence", "bundle", pkgPath, "-o", out)
+	require.NoError(t, bundleErr, "an uncomputable algorithm must not abort the bundle")
+
+	names := make([]string, 0, 2)
+	for name := range zipEntries(t, out) {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	assert.Equal(t, []string{"b3.json", "scans/rhel9-results.json"}, names,
+		"the document travels even though its checksum could not be verified")
+	assert.Contains(t, stderr, "could not be verified",
+		"and the report must say the checksum was not verified")
+	assert.Contains(t, stderr, "blake3", "naming the algorithm it could not compute")
+
+	// The help used to promise "Every recorded checksum on a reference that travels is
+	// verified before anything is written", which this behaviour falsified. Guarding the
+	// unconditional phrasing only — freezing the whole paragraph would rot on the next
+	// wording change and pin nothing worth pinning.
+	help, _, helpErr := executeCommand("evidence", "bundle", "--help")
+	require.NoError(t, helpErr)
+	assert.NotContains(t, help, "Every recorded checksum on a reference that travels is verified",
+		"an unconditional guarantee is false while any algorithm cannot be computed")
+	assert.Contains(t, help, "cannot compute",
+		"the help must name the uncomputable-algorithm exception it now carries")
 }

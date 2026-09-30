@@ -67,10 +67,11 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
 
     // The sha512 and sha384 entries record CORRECT hashes, so guessing sha256
     // would report them as mismatches \u2014 the defect this card fixes. blake3 is in
-    // the schema's enum but not computable here, so it is an error, never a
-    // mismatch, and is reported without ever reading the (absent) file.
+    // the schema's enum but not computable here, so it is UNSUPPORTED — never a
+    // mismatch (which would say the evidence changed) and never an error (the bytes
+    // may be intact) — and is reported without ever reading the (absent) file.
     const got = verifyChecksums(contents, fetch);
-    expect(got.map((r) => r.status)).toEqual(['match', 'match', 'match', 'error']);
+    expect(got.map((r) => r.status)).toEqual(['match', 'match', 'match', 'unsupported']);
     expect(got[3]?.error).toContain('unsupported checksum algorithm "blake3"');
     expect(got[3]?.actual).toBeUndefined();
   });

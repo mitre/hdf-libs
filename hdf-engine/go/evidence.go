@@ -26,6 +26,12 @@ const (
 	ChecksumMismatch ChecksumStatus = "mismatch"
 	ChecksumSkipped  ChecksumStatus = "skipped"
 	ChecksumError    ChecksumStatus = "error"
+	// ChecksumUnsupported is a recorded algorithm this build cannot compute. It is
+	// deliberately NOT an error: the bytes may be intact and the package valid, and a
+	// document recording a digest we cannot compute is the same shape as one
+	// referencing an artifact we cannot reach. Every caller switching on this type
+	// must handle it — leaving it to a default reports an unverified entry as verified.
+	ChecksumUnsupported ChecksumStatus = "unsupported"
 )
 
 // EvidenceContent is one content entry of an evidence package: a referenced
@@ -106,9 +112,10 @@ func ParseEvidencePackage(pkg []byte) (string, []EvidenceContent, error) {
 
 // VerifyChecksums verifies each content entry against fetch(uri) using the
 // algorithm the entry recorded, preserving entry order. No checksum → skipped;
-// an algorithm this build cannot compute → error, never mismatch, because a
-// mismatch would tell the operator their evidence changed when it did not; a
-// fetch error → error; hash mismatch → mismatch (carrying expected+actual).
+// an algorithm this build cannot compute → unsupported, never mismatch (that would
+// say their evidence changed when it did not) and never error (the bytes may be
+// intact); a fetch error → error; hash mismatch → mismatch (carrying
+// expected+actual).
 func VerifyChecksums(contents []EvidenceContent, fetch FetchFunc) []ChecksumResult {
 	out := make([]ChecksumResult, 0, len(contents))
 	for _, c := range contents {
@@ -122,7 +129,7 @@ func VerifyChecksums(contents []EvidenceContent, fetch FetchFunc) []ChecksumResu
 		// The algorithm is checked before any IO: whether this build can compute
 		// it is a property of the package, not of the filesystem.
 		if _, hashErr := ChecksumHex(c.ChecksumAlgorithm, nil); hashErr != nil {
-			r.Status = ChecksumError
+			r.Status = ChecksumUnsupported
 			r.Error = hashErr.Error()
 		} else if data, err := fetch(c.URI); err != nil {
 			r.Status = ChecksumError

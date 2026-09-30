@@ -375,3 +375,41 @@ func TestSchemaTypeForDoc_CoversEngineKnownTypes(t *testing.T) {
 		}
 	}
 }
+
+// A recorded algorithm this build cannot compute must reach the caller. The switch
+// in validate.go handled two statuses — mismatch and error — with no default, so when
+// the engine gained a distinct unsupported status the entry fell through: the package
+// reported valid with no mention that a checksum had gone unchecked, telling a caller
+// "valid" about bytes nobody verified. It is NOT an error (Hash_Algorithm admits
+// blake3 and the bytes may be intact), so it belongs in the notice, not in errors.
+func TestHdfValidate_NoticesAnAlgorithmItCannotCompute(t *testing.T) {
+	results := fixtures.Results.Minimal
+	pkg := evidencePkg("", map[string]any{
+		"type": "hdf-results", "uri": "r.json",
+		// A published BLAKE3 vector for the empty input — a real digest, never computed
+		// here, so it is never compared against the file.
+		"checksum": map[string]any{
+			"algorithm": "blake3",
+			"value":     "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+		},
+	})
+	writeRoot(t, "ev.json", pkg)
+	writeInRoot(t, "r.json", results)
+
+	errRes, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "checksums"})
+	if errRes != nil && errRes.IsError {
+		t.Fatalf("an unverifiable algorithm is not a tool error: %+v", errRes)
+	}
+	if !out.Valid {
+		t.Errorf("valid = false; an algorithm this build cannot compute does not make the package invalid")
+	}
+	if len(out.Errors) != 0 {
+		t.Errorf("errors = %+v, want none — this is reported in the notice, not as an error", out.Errors)
+	}
+	if !strings.Contains(out.Notice, "blake3") {
+		t.Errorf("notice = %q, want it to name the algorithm that went unverified", out.Notice)
+	}
+	if !strings.Contains(out.Notice, "r.json") {
+		t.Errorf("notice = %q, want it to name the entry", out.Notice)
+	}
+}

@@ -3,6 +3,7 @@ package hdfengine
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -218,9 +219,10 @@ func TestParseEvidencePackage_KeepsTheChecksumAlgorithm(t *testing.T) {
 }
 
 // VerifyChecksums hashed sha256 regardless of what the entry recorded, so a
-// package carrying a CORRECT sha512 was reported as a mismatch. The statuses
-// below are the contract: an algorithm this build cannot compute is an error and
-// never a mismatch, because a mismatch asserts the evidence changed.
+// package carrying a CORRECT sha512 was reported as a mismatch. The statuses below
+// are the contract: an algorithm this build cannot compute is UNSUPPORTED — never a
+// mismatch, which asserts the evidence changed, and never an error, which asserts
+// something went wrong when the bytes may be perfectly intact.
 func TestVerifyChecksums_HonoursTheRecordedAlgorithm(t *testing.T) {
 	data := []byte(`{"hello":"world"}`)
 	fetch := func(string) ([]byte, error) { return data, nil }
@@ -252,12 +254,15 @@ func TestVerifyChecksums_HonoursTheRecordedAlgorithm(t *testing.T) {
 		{name: "sha512 entry is not compared as sha256", algorithm: "sha512", value: hexOf("sha256"), want: ChecksumMismatch},
 		{name: "a genuinely wrong sha512 still mismatches", algorithm: "sha512", value: "00", want: ChecksumMismatch},
 		{
-			name: "blake3 is an error, not a mismatch", algorithm: "blake3", value: hexOf("sha256"),
-			want: ChecksumError, wantErr: `unsupported checksum algorithm "blake3"`,
+			name: "blake3 is unsupported, not a mismatch and not an error", algorithm: "blake3", value: hexOf("sha256"),
+			want: ChecksumUnsupported, wantErr: `unsupported checksum algorithm "blake3"`,
 		},
 		{
-			name: "an off-enum algorithm is an error too", algorithm: "md5", value: hexOf("sha256"),
-			want: ChecksumError, wantErr: `unsupported checksum algorithm "md5"`,
+			// md5 can only arrive in an off-schema document: Hash_Algorithm admits only
+			// sha256, sha384, sha512 and blake3. Classified the same as blake3 because the
+			// reason is the same — this build cannot compute it.
+			name: "an off-enum algorithm is unsupported too", algorithm: "md5", value: hexOf("sha256"),
+			want: ChecksumUnsupported, wantErr: `unsupported checksum algorithm "md5"`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -274,7 +279,7 @@ func TestVerifyChecksums_HonoursTheRecordedAlgorithm(t *testing.T) {
 			if tc.wantErr != "" && !strings.Contains(got[0].Error, tc.wantErr) {
 				t.Errorf("error = %q, want it to contain %q", got[0].Error, tc.wantErr)
 			}
-			if tc.want == ChecksumError && got[0].Actual != "" {
+			if tc.want == ChecksumUnsupported && got[0].Actual != "" {
 				t.Errorf("an unverifiable entry must not report an actual hash, got %q", got[0].Actual)
 			}
 		})
@@ -298,5 +303,39 @@ func TestVerifyChecksums_ReportsNoAlgorithmForAnEntryItNeverHashed(t *testing.T)
 		if r.Algorithm != "" {
 			t.Errorf("entry %d reported algorithm %q; a skipped entry was never hashed", i, r.Algorithm)
 		}
+	}
+}
+
+// An algorithm this build cannot compute is not the same failure as a file it
+// cannot read: the bytes may be perfectly intact and the package perfectly valid.
+// Conflating the two made a schema-valid blake3 package fail verification, while a
+// package recording a reference nobody can reach passes — both are claims this tool
+// cannot check, so the asymmetry was accidental. Kept distinct so each caller
+// chooses: the CLI reports it and does not fail, the MCP notices it and stays valid.
+func TestVerifyChecksums_SeparatesAnUncomputableAlgorithmFromAReadFailure(t *testing.T) {
+	data := []byte(`{"hello":"world"}`)
+	present := func(string) ([]byte, error) { return data, nil }
+	absent := func(string) ([]byte, error) { return nil, errors.New("file not found") }
+
+	got := VerifyChecksums([]EvidenceContent{
+		{URI: "a.json", Type: "hdf-system", Checksum: "ab", ChecksumAlgorithm: "blake3", ChecksumRecorded: true},
+	}, present)
+	if got[0].Status != ChecksumUnsupported {
+		t.Errorf("blake3 status = %s, want %s", got[0].Status, ChecksumUnsupported)
+	}
+	if !strings.Contains(got[0].Error, `unsupported checksum algorithm "blake3"`) {
+		t.Errorf("error = %q, want it to name the algorithm", got[0].Error)
+	}
+	if got[0].Actual != "" {
+		t.Errorf("nothing was hashed, so actual must be empty, got %q", got[0].Actual)
+	}
+
+	// A genuine read failure stays an error — this is the distinction, so it is
+	// asserted alongside rather than in a separate test.
+	readFail := VerifyChecksums([]EvidenceContent{
+		{URI: "b.json", Type: "hdf-results", Checksum: "ab", ChecksumAlgorithm: "sha256", ChecksumRecorded: true},
+	}, absent)
+	if readFail[0].Status != ChecksumError {
+		t.Errorf("unreadable file status = %s, want %s", readFail[0].Status, ChecksumError)
 	}
 }

@@ -9,8 +9,11 @@ import { createHash } from 'node:crypto';
 import { agentOverrideCount } from './compliance.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
-/** Classifies a single content entry's checksum verification. */
-export type ChecksumStatus = 'match' | 'mismatch' | 'skipped' | 'error';
+/** Classifies a single content entry's checksum verification. 'unsupported' is a
+ * recorded algorithm this build cannot compute — deliberately NOT 'error', since the
+ * bytes may be intact and the package valid. Every consumer switching on this type
+ * must handle it; leaving it to a default reports an unverified entry as verified. */
+export type ChecksumStatus = 'match' | 'mismatch' | 'skipped' | 'error' | 'unsupported';
 
 /** One content entry of an evidence package: a referenced document and its
  * recorded checksum ('' when the entry carries none). */
@@ -129,7 +132,7 @@ export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): Ch
     // The algorithm is checked before any IO: whether this build can compute it
     // is a property of the package, not of the filesystem.
     if (!supportedAlgorithm(c.checksumAlgorithm)) {
-      return { ...r, status: 'error', error: unsupportedAlgorithmMessage(c.checksumAlgorithm) };
+      return { ...r, status: 'unsupported', error: unsupportedAlgorithmMessage(c.checksumAlgorithm) };
     }
     let data: Uint8Array;
     try {

@@ -85,12 +85,13 @@ field that records it — with one deliberate exception, a remote externalRefere
 since inert context was never a candidate. Everything stays recorded in the package,
 which travels in the archive and is the durable list.
 
-Every recorded checksum on a reference that travels is verified before anything is written. A
-reference recording a checksum with an empty value cannot be verified: it travels and the run
-says so. A reference recording no checksum at all also travels, but silently — 'hdf evidence
-verify' is what reports those. A reference that cannot travel is not verified either, because
-its bytes are not here to check. A mismatch or a missing document fails the command and writes
-no archive — a partial bundle is worse than none, because it looks complete.
+Every recorded checksum this build can compute is verified before anything is written. Three
+kinds cannot be: one recording an empty value, one naming an algorithm this build cannot compute
+(Hash_Algorithm admits blake3, which neither Go nor Node implements), and one on a reference that
+cannot travel, whose bytes are not here to check. The first two travel and the run says so; a
+reference recording no checksum at all travels silently — 'hdf evidence verify' reports those. A
+mismatch or a missing document fails the command and writes no archive — a partial bundle is
+worse than none, because it looks complete.
 
 -o refuses a path naming the package or anything it references, so bundling cannot
 destroy the evidence it is packaging.
@@ -330,6 +331,8 @@ func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) arc
 	// artifact travelling unverified behind an externalEvidence entry whose recorded
 	// checksum value was empty.
 	var emptyChecksum int
+	// Recorded checksums this build cannot compute, reported by subject and reason.
+	var unverifiable []string
 	collect := func(t target) error {
 		uri, label, checksum := t.uri, t.label, t.checksum
 		subject := t.subject
@@ -388,7 +391,12 @@ func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) arc
 		}
 		got, hashErr := hdfengine.ChecksumHex(t.algorithm, data)
 		if hashErr != nil {
-			return fmt.Errorf("%s %q cannot be bundled: %w", label, subject, hashErr)
+			// Not a refusal. The bytes may be intact and the package is schema-valid —
+			// Hash_Algorithm admits blake3, which this build cannot compute. Aborting here
+			// made a valid package unbundleable; carried and reported instead, exactly as a
+			// recorded-but-blank checksum value already is.
+			unverifiable = append(unverifiable, fmt.Sprintf("%s (%s)", subject, hashErr))
+			return nil
 		}
 		if got != checksum {
 			return fmt.Errorf("checksum mismatch for %s: the package records %s but the file hashes to %s; "+
@@ -483,6 +491,9 @@ func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) arc
 	}
 	if emptyChecksum > 0 {
 		fmt.Fprintf(os.Stderr, "  %d reference(s) record an empty checksum value and could not be verified\n", emptyChecksum)
+	}
+	for _, u := range unverifiable {
+		fmt.Fprintf(os.Stderr, "  checksum could not be verified for %s\n", sanitizeOutput(u))
 	}
 
 	// The satisfiable half of "report what is NOT in here": bundle cannot know what

@@ -607,15 +607,21 @@ func TestToVerifyResults_MapsStatusesAndCounts(t *testing.T) {
 		{URI: "b", Type: "hdf-plan", Status: hdfengine.ChecksumMismatch, Expected: "x", Actual: "y"},
 		{URI: "c", Type: "hdf-system", Status: hdfengine.ChecksumSkipped},
 		{URI: "d", Type: "hdf-results", Status: hdfengine.ChecksumError, Error: "boom"},
+		// The table enumerates the WHOLE status type on purpose: a status this function
+		// does not translate becomes an entry with an empty status and no count, which is
+		// how an unverified entry gets reported as verified.
+		{URI: "e", Type: "hdf-results", Status: hdfengine.ChecksumUnsupported, Error: "no blake3"},
 	}
 	results, counts := toVerifyResults(in)
-	require.Len(t, results, 4)
+	require.Len(t, results, 5)
 	assert.Equal(t, "match", results[0].Status)
 	assert.Equal(t, "y", results[1].Actual)
+	assert.Equal(t, "unsupported", results[4].Status)
 	assert.Equal(t, 1, counts.match)
 	assert.Equal(t, 1, counts.mismatch)
 	assert.Equal(t, 1, counts.skipped)
 	assert.Equal(t, 1, counts.errors)
+	assert.Equal(t, 1, counts.unsupported)
 
 	empty, ec := toVerifyResults(nil)
 	assert.Empty(t, empty)
