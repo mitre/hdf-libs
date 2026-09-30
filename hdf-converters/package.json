@@ -52,14 +52,14 @@
     "@mitre/hdf-mappings": "workspace:^",
     "@mitre/hdf-parsers": "workspace:^",
     "@mitre/hdf-schema": "workspace:^",
-    "@mitre/hdf-utilities": "workspace:^"
+    "@mitre/hdf-utilities": "workspace:^",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
     "@aws-sdk/client-securityhub": "^3",
     "@mitre/hdf-fixtures": "workspace:^",
     "@mitre/hdf-validators": "workspace:^",
-    "ajv": "^8.17.0",
-    "ajv-formats": "^3.0.0",
     "xmllint-wasm": "^5.3.0"
   },
   "engines": {
