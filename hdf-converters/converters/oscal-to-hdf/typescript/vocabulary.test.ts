@@ -600,7 +600,11 @@ describe('vocabulary: importer prop reads', () => {
     // vocabulary.ts is the helpers themselves, which forward a caller's name.
     const files = readdirSync(__dirname).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts') && f !== 'vocabulary.ts');
     for (const f of files) {
+      // component-props.ts forwards its table's names, which its own test pins to
+      // the rows, so only its literal reads are checked here.
+      const tableDriven = f === 'component-props.ts';
       for (const r of scanPropReads(readFileSync(join(__dirname, f), 'utf-8'))) {
+        if (!r.literal && tableDriven) continue;
         if (!r.literal) {
           problems.push(`${f}:${r.line} reads a prop whose name is not a string literal (${r.name}), so the sweep cannot check it`);
         } else if (!rows.has(r.name)) {

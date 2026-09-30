@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -358,115 +357,17 @@ func buildSubjects(components []hdf.Component) []oscal.SubjectRef {
 		if c.ComponentID != nil && *c.ComponentID != "" {
 			uid = *c.ComponentID
 		}
+		// The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+		// so the exact component name rides in the component-name prop (§1.7.1).
 		subjects = append(subjects, oscal.SubjectRef{
 			SubjectUUID: uid,
 			Type:        string(c.Type),
 			Title:       oscal.NormalizePropValue(c.Name),
-			Props:       componentSubjectProps(c),
+			Props:       oscal.ComponentSubjectProps(c),
 		})
 		warnUncarriedComponentFields(c)
 	}
 	return subjects
-}
-
-// componentSubjectProps carries a component's identity fields as HDF-namespaced
-// props on its assessment subject. A present-but-empty optional string is
-// carried by an empty-field marker (§1.7.3); an absent field emits nothing.
-func componentSubjectProps(c *hdf.Component) []oscal.Property {
-	var props []oscal.Property
-	// The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
-	// so carry the exact component name here and normalize the display title (§1.7.1).
-	props = oscal.AppendVocabularyProp(props, "component-name", c.Name)
-	emit := func(name, field string, val *string) {
-		if val == nil {
-			return
-		}
-		if *val == "" {
-			p := oscal.EmptyFieldProp(field)
-			props = append(props, p)
-			return
-		}
-		props = oscal.AppendVocabularyProp(props, name, *val)
-	}
-	emit("component-description", "description", c.Description)
-	emit("component-hostname", "hostname", c.Hostname)
-	emit("component-fqdn", "fqdn", c.FQDN)
-	emit("component-domain", "domain", c.Domain)
-	emit("component-ip-address", "ipAddress", c.IPAddress)
-	emit("component-mac-address", "macAddress", c.MACAddress)
-	emit("component-os-name", "osName", c.OSName)
-	emit("component-os-version", "osVersion", c.OSVersion)
-	emit("component-image-id", "imageId", c.ImageID)
-	emit("component-registry", "registry", c.Registry)
-	emit("component-repository", "repository", c.Repository)
-	emit("component-tag", "tag", c.Tag)
-	emit("component-container-id", "containerId", c.ContainerID)
-	emit("component-image", "image", c.Image)
-	emit("component-runtime", "runtime", c.Runtime)
-	emit("component-platform-type", "platformType", c.PlatformType)
-	emit("component-cluster-name", "clusterName", c.ClusterName)
-	emit("component-namespace", "namespace", c.Namespace)
-	emit("component-version", "version", c.Version)
-	if c.Provider != nil {
-		emit("component-provider", "provider", (*string)(c.Provider))
-	}
-	emit("component-account-id", "accountId", c.AccountID)
-	emit("component-region", "region", c.Region)
-	emit("component-resource-type", "resourceType", c.ResourceType)
-	emit("component-resource-id", "resourceId", c.ResourceID)
-	emit("component-arn", "arn", c.Arn)
-	emit("component-url", "url", c.URL)
-	emit("component-branch", "branch", c.Branch)
-	emit("component-commit", "commit", c.Commit)
-	emit("component-environment", "environment", c.Environment)
-	emit("component-package-manager", "packageManager", c.PackageManager)
-	emit("component-package-name", "packageName", c.PackageName)
-	emit("component-cidr", "cidr", c.CIDR)
-	emit("component-gateway", "gateway", c.Gateway)
-	emit("component-engine", "engine", c.Engine)
-	emit("component-host", "host", c.Host)
-	if c.Port != nil {
-		props = oscal.AppendVocabularyProp(props, "component-port", strconv.FormatInt(*c.Port, 10))
-	}
-	emit("component-model-id", "modelId", c.ModelID)
-	emit("component-dataset-id", "datasetId", c.DatasetID)
-	props = appendComponentMap(props, "component-label-key", "component-label-value", "component-label", c.Labels)
-	props = appendComponentMap(props, "component-external-id-key", "component-external-id-value", "component-external-id", c.ExternalIDS)
-	return props
-}
-
-// appendComponentMap carries a component's string map (labels or externalIds) as
-// grouped key/value props in sorted key order, one group per entry, so the
-// reverse importer can rebuild the map. An empty key or value is carried by an
-// empty-field marker in the same group (§1.7.3).
-func appendComponentMap(props []oscal.Property, keyName, valueName, groupPrefix string, m map[string]string) []oscal.Property {
-	if len(m) == 0 {
-		return props
-	}
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for i, k := range keys {
-		group := fmt.Sprintf("%s-%d", groupPrefix, i+1)
-		props = append(props, groupedComponentProp(keyName, "key", group, k))
-		props = append(props, groupedComponentProp(valueName, "value", group, m[k]))
-	}
-	return props
-}
-
-// groupedComponentProp builds one grouped map prop, degrading to an empty-field
-// marker (§1.7.3) when the value is empty.
-func groupedComponentProp(name, field, group, value string) oscal.Property {
-	if value == "" {
-		p := oscal.EmptyFieldProp(field)
-		p.Group = group
-		return p
-	}
-	p, _ := oscal.VocabularyProp(name, value)
-	p.Group = group
-	return p
 }
 
 // warnUncarriedComponentFields reports component identity beyond the type-

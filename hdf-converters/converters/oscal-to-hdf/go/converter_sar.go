@@ -1,9 +1,7 @@
 package oscal
 
 import (
-	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -205,97 +203,17 @@ func sarComponents(sar *AssessmentResults) []hdf.Component {
 // subjectToComponent rebuilds one HDF component from an assessment subject: the
 // subject uuid is the componentId (ADR-0014 §4.5 SSP analog), and every
 // type-specific identity field comes from the HDF-namespaced props the exporter
-// stamped on the subject.
+// stamped on the subject. The subject title is the name a foreign subject carries
+// no component-name prop for (§4.3, §4.5).
 func subjectToComponent(subj *SubjectRef) hdf.Component {
 	uuid := subj.SubjectUUID
 	c := hdf.Component{
 		Type:        hdf.TargetType(subj.Type),
-		Name:        sarComponentName(subj),
+		Name:        subj.Title,
 		ComponentID: &uuid,
 	}
-	c.Description = VocabularyString(subj.Props, "component-description", "description", "")
-	c.Hostname = VocabularyString(subj.Props, "component-hostname", "hostname", "")
-	c.FQDN = VocabularyString(subj.Props, "component-fqdn", "fqdn", "")
-	c.Domain = VocabularyString(subj.Props, "component-domain", "domain", "")
-	c.IPAddress = VocabularyString(subj.Props, "component-ip-address", "ipAddress", "")
-	c.MACAddress = VocabularyString(subj.Props, "component-mac-address", "macAddress", "")
-	c.OSName = VocabularyString(subj.Props, "component-os-name", "osName", "")
-	c.OSVersion = VocabularyString(subj.Props, "component-os-version", "osVersion", "")
-	c.ImageID = VocabularyString(subj.Props, "component-image-id", "imageId", "")
-	c.Registry = VocabularyString(subj.Props, "component-registry", "registry", "")
-	c.Repository = VocabularyString(subj.Props, "component-repository", "repository", "")
-	c.Tag = VocabularyString(subj.Props, "component-tag", "tag", "")
-	c.ContainerID = VocabularyString(subj.Props, "component-container-id", "containerId", "")
-	c.Image = VocabularyString(subj.Props, "component-image", "image", "")
-	c.Runtime = VocabularyString(subj.Props, "component-runtime", "runtime", "")
-	c.PlatformType = VocabularyString(subj.Props, "component-platform-type", "platformType", "")
-	c.ClusterName = VocabularyString(subj.Props, "component-cluster-name", "clusterName", "")
-	c.Namespace = VocabularyString(subj.Props, "component-namespace", "namespace", "")
-	c.Version = VocabularyString(subj.Props, "component-version", "version", "")
-	if v := VocabularyString(subj.Props, "component-provider", "provider", ""); v != nil {
-		p := hdf.CloudProvider(*v)
-		c.Provider = &p
-	}
-	c.AccountID = VocabularyString(subj.Props, "component-account-id", "accountId", "")
-	c.Region = VocabularyString(subj.Props, "component-region", "region", "")
-	c.ResourceType = VocabularyString(subj.Props, "component-resource-type", "resourceType", "")
-	c.ResourceID = VocabularyString(subj.Props, "component-resource-id", "resourceId", "")
-	c.Arn = VocabularyString(subj.Props, "component-arn", "arn", "")
-	c.URL = VocabularyString(subj.Props, "component-url", "url", "")
-	c.Branch = VocabularyString(subj.Props, "component-branch", "branch", "")
-	c.Commit = VocabularyString(subj.Props, "component-commit", "commit", "")
-	c.Environment = VocabularyString(subj.Props, "component-environment", "environment", "")
-	c.PackageManager = VocabularyString(subj.Props, "component-package-manager", "packageManager", "")
-	c.PackageName = VocabularyString(subj.Props, "component-package-name", "packageName", "")
-	c.CIDR = VocabularyString(subj.Props, "component-cidr", "cidr", "")
-	c.Gateway = VocabularyString(subj.Props, "component-gateway", "gateway", "")
-	c.Engine = VocabularyString(subj.Props, "component-engine", "engine", "")
-	c.Host = VocabularyString(subj.Props, "component-host", "host", "")
-	if v := VocabularyString(subj.Props, "component-port", "port", ""); v != nil {
-		if n, err := strconv.ParseInt(*v, 10, 64); err == nil {
-			c.Port = &n
-		}
-	}
-	c.ModelID = VocabularyString(subj.Props, "component-model-id", "modelId", "")
-	c.DatasetID = VocabularyString(subj.Props, "component-dataset-id", "datasetId", "")
-	c.Labels = readComponentMap(
-		func(g string) *string { return VocabularyString(subj.Props, "component-label-key", "key", g) },
-		func(g string) *string { return VocabularyString(subj.Props, "component-label-value", "value", g) },
-		"component-label")
-	c.ExternalIDS = readComponentMap(
-		func(g string) *string { return VocabularyString(subj.Props, "component-external-id-key", "key", g) },
-		func(g string) *string { return VocabularyString(subj.Props, "component-external-id-value", "value", g) },
-		"component-external-id")
+	ReadComponentSubjectProps(&c, subj.Props)
 	return c
-}
-
-// sarComponentName recovers the exact HDF component name: the namespaced
-// component-name prop for an HDF-produced subject (§4.3), else the subject title
-// for a foreign subject.
-func sarComponentName(subj *SubjectRef) string {
-	if m, ok := FindVocabularyProp(subj.Props, "component-name"); ok {
-		return m.Value
-	}
-	return subj.Title
-}
-
-// readComponentMap rebuilds a component string map from grouped key/value props.
-// Groups are numbered from 1 in the order the exporter emitted them (sorted key
-// order), so reading stops at the first group with neither a key nor a value.
-func readComponentMap(readKey, readValue func(group string) *string, prefix string) map[string]string {
-	m := map[string]string{}
-	for n := 1; ; n++ {
-		group := fmt.Sprintf("%s-%d", prefix, n)
-		key, value := readKey(group), readValue(group)
-		if key == nil && value == nil {
-			break
-		}
-		m[strOrEmpty(key)] = strOrEmpty(value)
-	}
-	if len(m) == 0 {
-		return nil
-	}
-	return m
 }
 
 // strOrEmpty dereferences an optional string, treating absence as empty.
