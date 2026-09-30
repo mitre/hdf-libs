@@ -117,7 +117,8 @@ Nothing here is fetched, resolved or transcoded. A reference records where the
 context lives and, when it is a local file, what it hashed to at attach time.
 
 To attach context to a RESULTS document's findings rather than to the package, use
-'hdf enrich <results> <bundle>', which matches STIX objects to findings by CVE.
+'hdf enrich <document> <bundle>', which matches STIX objects to findings by CVE
+for a results document and attaches at the root for a system, plan or comparison.
 
 --source-name is required, and so is at least one of --external-id, --href or
 --description: External_Reference's own anyOf, the STIX 2.1 rule. sourceName names

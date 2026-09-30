@@ -164,3 +164,157 @@ func TestEnrichCmd_Recompute(t *testing.T) {
 	assert.InDelta(t, 0.98, authored.Impact.Value, 1e-9, "E:H recompute of the 9.8 base vector → impact 0.98")
 	assert.True(t, authored.ExpiresAt.After(time.Now()), "review horizon is in the future")
 }
+
+// externalReferences[] is declared on five document types — results, system, plan,
+// comparison and evidence-package — but enrich read its first argument as results
+// and refused everything else, so there was no way to attach threat intel or an
+// advisory to a system or a plan even though the schema models it. evidence-package
+// is deliberately excluded here: hdf evidence add-reference owns that array on that
+// type, and two commands writing one field on one document is the ambiguity worth
+// avoiding.
+func TestEnrich_AttachesReferencesToASystemDocument(t *testing.T) {
+	dir := t.TempDir()
+	sysBody, err := os.ReadFile(filepath.Join("cmd", "hdf", "cmd", "testdata", "evidence-verify", "system.json"))
+	if err != nil {
+		// The test runs with the package dir as CWD, so try the direct path too.
+		sysBody, err = os.ReadFile(filepath.Join("testdata", "evidence-verify", "system.json"))
+	}
+	require.NoError(t, err)
+	sysPath := filepath.Join(dir, "system.json")
+	require.NoError(t, os.WriteFile(sysPath, sysBody, 0o600))
+	out := filepath.Join(dir, "enriched.json")
+
+	_, _, enrichErr := executeCommand("enrich", sysPath, enrichFixturePath("poison-ivy-stix21.json"), "-o", out)
+	require.NoError(t, enrichErr, "a system document declares externalReferences and must be enrichable")
+
+	data, readErr := os.ReadFile(out)
+	require.NoError(t, readErr)
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &doc))
+
+	refs, ok := doc["externalReferences"].([]interface{})
+	require.True(t, ok, "the references must land at the system document's root")
+	assert.NotEmpty(t, refs, "at least one STIX object should have been attached")
+
+	// A system document has no requirements, so nothing may be invented to match on.
+	assert.NotContains(t, string(data), `"requirements"`,
+		"enrich must not fabricate a requirement to hang a reference from")
+
+	// And the enriched document must still be a valid system document.
+	_, _, validateErr := executeCommand("validate", out)
+	require.NoError(t, validateErr, "the enriched system document must still validate")
+}
+
+// The acceptance surface, as one table so a type cannot be added to the code without
+// a row here. Four types declare externalReferences AND are enrichment targets;
+// evidence-package declares the field but `hdf evidence add-reference` owns it; and
+// baseline and amendments declare it nowhere. Each refusal must say WHY and, where
+// there is somewhere better to go, where.
+func TestEnrich_AcceptsEveryTypeThatDeclaresExternalReferences(t *testing.T) {
+	bundle := enrichFixturePath("poison-ivy-stix21.json")
+	evidenceFixture := func(t *testing.T, name string) []byte {
+		t.Helper()
+		b, err := os.ReadFile(filepath.Join("testdata", "evidence-verify", name))
+		require.NoError(t, err)
+		return b
+	}
+
+	for _, tc := range []struct {
+		name, fixture, wantErr string
+	}{
+		{name: "results", fixture: "rhel9-results.json"},
+		{name: "system", fixture: "system.json"},
+		{name: "plan", fixture: "plan.json"},
+		{name: "comparison", fixture: "comparison.json"},
+		{
+			name: "evidence-package", fixture: "evidence.json",
+			wantErr: "`hdf evidence add-reference`",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			in := filepath.Join(dir, tc.fixture)
+			require.NoError(t, os.WriteFile(in, evidenceFixture(t, tc.fixture), 0o600))
+			out := filepath.Join(dir, "enriched.json")
+
+			_, _, err := executeCommand("enrich", in, bundle, "-o", out)
+			if tc.wantErr != "" {
+				require.Error(t, err, "%s must be refused", tc.name)
+				assert.Contains(t, err.Error(), tc.wantErr,
+					"the refusal must point at the command that owns that array")
+				assert.NoFileExists(t, out, "a refused enrich must write nothing")
+				return
+			}
+			require.NoError(t, err, "%s declares externalReferences and must be enrichable", tc.name)
+			// Every enriched document must still validate against its OWN schema.
+			_, _, validateErr := executeCommand("validate", out)
+			require.NoError(t, validateErr, "the enriched %s must still validate", tc.name)
+		})
+	}
+}
+
+// baseline and amendments declare no externalReferences[] anywhere, so the refusal
+// has to say that rather than pointing at another command — there is nowhere to go.
+func TestEnrich_RefusesATypeThatDeclaresNoExternalReferences(t *testing.T) {
+	dir := t.TempDir()
+	amendments := filepath.Join(dir, "amendments.json")
+	body, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "hdf-fixtures", "amendments", "uc-01-fixed-amendments.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(amendments, body, 0o600))
+
+	_, _, enrichErr := executeCommand("enrich", amendments, enrichFixturePath("poison-ivy-stix21.json"),
+		"-o", filepath.Join(dir, "out.json"))
+	require.Error(t, enrichErr)
+	assert.Contains(t, enrichErr.Error(), "declares no externalReferences[]",
+		"the refusal must name the reason, not just decline")
+}
+
+// The type comes from the document's own content, never from its name. A system
+// document called results.json is still a system document, and enriching it must not
+// validate it against the results schema.
+func TestEnrich_DetectsTheTypeFromContentNotTheFilename(t *testing.T) {
+	dir := t.TempDir()
+	body, err := os.ReadFile(filepath.Join("testdata", "evidence-verify", "system.json"))
+	require.NoError(t, err)
+	misleading := filepath.Join(dir, "definitely-results.json")
+	require.NoError(t, os.WriteFile(misleading, body, 0o600))
+	out := filepath.Join(dir, "out.json")
+
+	_, stderr, enrichErr := executeCommand("enrich", misleading, enrichFixturePath("poison-ivy-stix21.json"), "-o", out)
+	require.NoError(t, enrichErr, "the filename must not make this a results document")
+	assert.Contains(t, stderr, "at the document root",
+		"a system document has no findings, so everything attaches at the root")
+
+	data, readErr := os.ReadFile(out)
+	require.NoError(t, readErr)
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &doc))
+	assert.Contains(t, doc, "externalReferences")
+	assert.NotContains(t, doc, "baselines", "nothing may be invented to make it look like results")
+}
+
+// --recompute-cvss authors a riskAdjustment on a finding. The other three types have
+// no findings, so the flag is refused with the reason rather than silently ignored —
+// silently ignoring it would let an operator believe a posture change was applied.
+func TestEnrich_RecomputeCVSSIsResultsOnly(t *testing.T) {
+	dir := t.TempDir()
+	body, err := os.ReadFile(filepath.Join("testdata", "evidence-verify", "system.json"))
+	require.NoError(t, err)
+	sys := filepath.Join(dir, "system.json")
+	require.NoError(t, os.WriteFile(sys, body, 0o600))
+	out := filepath.Join(dir, "out.json")
+
+	_, _, enrichErr := executeCommand("enrich", sys, enrichFixturePath("poison-ivy-stix21.json"),
+		"--recompute-cvss", "-o", out)
+	require.Error(t, enrichErr, "--recompute-cvss must be refused on a system document")
+	assert.Contains(t, enrichErr.Error(), "results-only")
+	assert.Contains(t, enrichErr.Error(), "no findings to apply one to",
+		"the message must explain why, not just refuse")
+	assert.NoFileExists(t, out, "a refused run writes nothing")
+
+	// Unchanged for results: the flag still works where findings exist.
+	_, _, resultsErr := executeCommand("enrich", enrichFixturePath("results-input.json"),
+		enrichFixturePath("poison-ivy-exploited-stix21.json"), "--recompute-cvss",
+		"-o", filepath.Join(dir, "results-out.json"))
+	require.NoError(t, resultsErr, "results must keep accepting --recompute-cvss")
+}

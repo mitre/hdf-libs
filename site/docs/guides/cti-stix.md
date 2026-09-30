@@ -8,7 +8,7 @@ the wild*. An HDF results document describes *what a scan found on a system*.
 findings it explains — and, opt-in, recomputing a CVSS Threat score when the
 intel shows active exploitation.
 
-This is **enrichment**, not conversion: STIX rides into an *existing* results
+This is **enrichment**, not conversion: STIX rides into an *existing* HDF
 document as inert context, never a standalone HDF file. This guide explains why
 that model was chosen, what `hdf enrich` attaches and where, and the CVSS
 Exploit Maturity bridge that lets exploitation intel adjust risk *without
@@ -22,22 +22,35 @@ invent findings from thin air or emit an empty shell. Both correlate "this CVE"
 to "this finding" — which is a merge over a results document the converter does
 not have.
 
-So STIX integrates as a pass over a results doc you already have:
+So STIX integrates as a pass over an HDF document you already have:
 
 ```bash
-hdf enrich <results> <source>
+hdf enrich <document> <source>
 ```
 
-Positional parity with `hdf convert` (`<results> <source>`), with `--from` as an
+Positional parity with `hdf convert` (`<document> <source>`), with `--from` as an
 optional format assertion. The input is the raw STIX bundle; the output is the
-same results document with references appended. **No new HDF document type is
+same document with references appended. **No new HDF document type is
 introduced.**
+
+The document may be any of the four types that declare `externalReferences` and
+can carry enrichment: results, system, plan or comparison. Only a results
+document has findings to match a CVE against, so for the other three every
+reference lands at the document root — nothing is invented to hang one from. An
+evidence package declares the field too, but `hdf evidence add-reference` owns
+that array on that type, so `enrich` refuses one and says where to go.
+`--recompute-cvss` stays results-only, because a `riskAdjustment` needs a finding
+to apply to.
 
 ## The command
 
 ```bash
 # Attach STIX context (source format auto-detected)
 hdf enrich results.json log4shell-bundle.json -o enriched.json
+
+# A system, plan or comparison document has no findings to match, so everything
+# attaches at the document root
+hdf enrich system.json cti-bundle.json -o enriched.json
 
 # Assert the source format explicitly
 hdf enrich results.json feed.json --from stix -o enriched.json
@@ -65,7 +78,9 @@ purpose-agnostic reference primitive — appended to the document:
   every matching finding, with `rel: "investigate"` (a live pivot).
 - **Everything else** — non-CVE objects (`threat-actor`, `campaign`, plain
   `identity`/`location`) and CVEs with no matching finding — attaches to the
-  **results root** with `rel: "reference"`.
+  **document root** with `rel: "reference"`. For a system, plan or comparison
+  document there are no findings to match against, so this is where every
+  reference lands.
 
 Each reference is an **enrichment envelope**: it both cites the source and
 carries the raw STIX object losslessly.

@@ -93,14 +93,14 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 
 ### Enrichment
 
-Enrichment overlays external context onto an existing HDF results document as inert `externalReferences[]` (matched to findings by CVE, else the results root). It is informational — it never changes a finding's status or impact — and is distinct from a converter (it takes a results doc *plus* a source, and returns the enriched results doc).
+Enrichment overlays external context onto an existing HDF document as inert `externalReferences[]` (matched to findings by CVE for a results document, else the document root; a system, plan or comparison document has no findings, so everything lands at the root). It is informational by default — it never changes a finding's status or impact unless the CLI's `--recompute-cvss` is passed — and is distinct from a converter (it takes a document *plus* a source, and returns the enriched document).
 
 | Source | Function | Format |
 |---|---|---|
-| STIX 2.1 bundle → results `externalReferences[]` | `enrichStix` | JSON |
+| STIX 2.1 bundle → a document's `externalReferences[]` | `enrichStix` | JSON |
 | Detect / parse a STIX 2.1 bundle | `detectStixBundle` / `parseStixBundle` | JSON |
 
-CLI: `hdf enrich <results> <source>` (see the [hdf-cli README](../hdf-cli/README.md#enrich)).
+CLI: `hdf enrich <document> <source>` (see the [hdf-cli README](../hdf-cli/README.md#enrich)).
 
 ## Installation
 

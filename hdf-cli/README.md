@@ -20,7 +20,7 @@ The CLI is **Go only, by design.** Most packages in this monorepo ship a TypeScr
   - [system](#system) -- View and manage HDF system documents
   - [plan](#plan) -- View and manage HDF assessment plans
   - [amend](#amend) -- Apply, list, and verify amendments (waivers/attestations)
-  - [enrich](#enrich) -- Attach external context (STIX CTI) to results
+  - [enrich](#enrich) -- Attach external context (STIX CTI) to a document
   - [evidence](#evidence) -- Build and inspect evidence packages
   - [label](#label) -- Add, remove, or show labels on targets
   - [generate](#generate) -- Generate InSpec profiles, thresholds, and baseline upgrades
@@ -548,11 +548,15 @@ merging them, as does the `hdf_apply_amendment` MCP tool.
 
 ### enrich
 
-Overlay an **enrichment source** onto an HDF results document, attaching inert `externalReferences[]` to findings (matched by CVE) or to the results root. Enrichment is informational — it adds context and never changes a finding's status or impact. Positional parity with `convert`: `<results> <source>`, with `--from` as the optional format assertion.
+Overlay an **enrichment source** onto an HDF document, attaching inert `externalReferences[]` to it. Enrichment is informational **by default** — it adds context and never changes a finding's status or impact unless `--recompute-cvss` is passed. Positional parity with `convert`: `<document> <source>`, with `--from` as the optional format assertion.
+
+Accepts the four document types that declare `externalReferences` and can carry enrichment: **results, system, plan and comparison**. A results document is matched by CVE, so a reference lands on the findings citing it and anything unmatched lands at the root; the other three have no findings to match on, so every reference lands at the root and nothing is invented to hang one from. The command reports how many landed where. An **evidence package** also declares the field, but `hdf evidence add-reference` owns that array on that type, so `enrich` refuses one and points there — two commands writing one field on one document is an ambiguity worth refusing. A **baseline** and an **amendments** document declare no `externalReferences` at all and are refused with that reason.
+
+`--recompute-cvss` is **results-only**: it authors a `riskAdjustment` on a finding, and the other three types have no findings to apply one to, so the flag is refused rather than silently ignored.
 
 ```
 USAGE
-  hdf enrich <results> <source> [flags]
+  hdf enrich <document> <source> [flags]
 
 FLAGS
   --from string           Enrichment source format (auto-detected if omitted; e.g. stix)
@@ -561,12 +565,13 @@ FLAGS
 
 EXAMPLES
   hdf enrich results.json log4shell-bundle.json -o enriched.json       # auto-detect STIX
+  hdf enrich system.json cti-bundle.json -o enriched.json              # attaches at the root
   hdf enrich results.json feed.json --from stix -o enriched.json        # assert the format
   hdf enrich results.json bundle.json --recompute-cvss -o enriched.json # + CVSS E:H recompute
   hdf enrich results.json bundle.json                                   # write to stdout
 ```
 
-Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the results root. Each reference carries the raw STIX object losslessly in `document`.
+Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the document root — which is where everything lands for a system, plan or comparison document, since those have no findings to match. Each reference carries the raw STIX object losslessly in `document`.
 
 With **`--recompute-cvss`**, when a matched STIX object shows active exploitation (a sighting, a `targets`/`exploits` relationship, or an indicator/report reference) and the finding carries a CVSS **3.1** base vector, an inline `riskAdjustment` is authored: Exploit Maturity `E:H` is applied and the Threat score recomputed via the CVSS engine, with `impact.value = computedScore/10` and an `externalReferences[]` back to the STIX source. Findings with no base vector, or a CVSS **4.0** base vector, are left unchanged (no fabrication). Enrichment without `--recompute-cvss` never changes status or impact.
 
@@ -611,7 +616,7 @@ EXAMPLES
 
 `add-reference` requires `--source-name` (the system being cited) plus at least one of `--external-id`, `--href` or `--description` — `External_Reference`'s own `anyOf`, the STIX 2.1 rule: naming a source without identifying anything within it cites nothing. `--kind` and `--rel` are deliberately open strings, not enums, so any value including `x-` customs is accepted. A local `--href` is hashed at attach time; a URL is left unhashed.
 
-To attach context to a **results** document's findings instead of to the package, use `hdf enrich <results> <bundle>`, which matches STIX objects by CVE. It does not accept an evidence package.
+To attach context to a **results** document's findings instead of to the package, use `hdf enrich <document> <bundle>`, which matches STIX objects by CVE. `enrich` also accepts a system, plan or comparison document, attaching at the root. It refuses an evidence package and points back here, so only one command writes this array on this type.
 
 **`update` accumulates; it does not supersede.** A results document is replaced only when it sits at the same `contents[]` reference — the same slot, a file refreshed in place. A document at any other path is ADDED, even when it covers a baseline the package already covers, because a baseline is a set of requirements that can apply to many components. Nothing is ever removed: the package is meant to hold the scan history, which is what makes a trend over time tellable. Two scans of one baseline are told apart by their own `timestamp` and `components`, both of which are optional in HDF — when they are absent the run says so rather than implying the entries are distinguishable.
 
