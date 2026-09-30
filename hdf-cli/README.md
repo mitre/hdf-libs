@@ -248,11 +248,11 @@ Example output:
 
 ```console
 $ hdf query results.json --status failed --limit 5
-Found 5 matching requirement(s):
+Found 4 matching requirement(s):
 
 ID         Status  Severity  Title
 ---------  ------  --------  -------------------------------------------------------
-SV-257777  failed  NONE      RHEL 9 must be a vendor-supported release.
+SV-257777  failed  HIGH      RHEL 9 must be a vendor-supported release.
 V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
 V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
 V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...

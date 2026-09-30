@@ -339,6 +339,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
+      # A publishable package importing a module it does not declare only
+      # breaks for consumers, so scan every built dist before anything ships.
+      - name: Published packages declare every runtime import
+        run: pnpm run lint:published-deps
       # One eslint.config.mjs at the root governs every package, so one
       # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.

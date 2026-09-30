@@ -739,9 +739,15 @@ func TestVocabulary_ImporterPropReadsAreRows(t *testing.T) {
 		if strings.HasSuffix(f, "_test.go") || f == "vocabulary.go" {
 			continue
 		}
+		// component_props.go forwards its table's names, which its own test pins to
+		// the rows, so only its literal reads are checked here.
+		tableDriven := f == "component_props.go"
 		raw, err := os.ReadFile(f)
 		require.NoError(t, err)
 		for _, r := range scanPropReads(string(raw)) {
+			if !r.literal && tableDriven {
+				continue
+			}
 			switch {
 			case !r.literal:
 				t.Errorf("%s:%d reads a prop whose name is not a string literal (%s), so the sweep cannot check it", f, r.line, r.name)

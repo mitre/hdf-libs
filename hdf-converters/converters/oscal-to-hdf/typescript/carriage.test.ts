@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Ajv from 'ajv';
 import { convertOscalSarToHdf } from './converter-sar.js';
-import { readCarriedProps, carryForeignProps, OSCAL_PROPS_TAG, type CarriedProp } from './carriage.js';
+import { readCarriedProps, carryForeignProps, carriedFor, appendCarriedProps, validCarriedProp, OSCAL_PROPS_TAG, type CarriedProp } from './carriage.js';
 import { vocabularyNamespace, consumedVocabularyProp } from './vocabulary.js';
 import { type Property } from './types.js';
 
@@ -75,7 +75,7 @@ async function importCarriage(): Promise<CarriedProp[]> {
   const hdf = JSON.parse(await convertOscalSarToHdf(sarWithProps));
   expect(hdf.baselines).toHaveLength(1);
   expect(hdf.baselines[0].requirements).toHaveLength(1);
-  return readCarriedProps(hdf.baselines[0].requirements[0].tags);
+  return readCarriedProps(hdf.baselines[0].requirements[0].tags, hdf.baselines[0].requirements[0].id);
 }
 
 describe('oscal-to-hdf SAR foreign-prop carriage', () => {
@@ -118,7 +118,7 @@ describe('oscal-to-hdf SAR foreign-prop carriage', () => {
     let total = 0;
     for (const b of hdf.baselines) {
       for (const req of b.requirements) {
-        const entries = readCarriedProps(req.tags);
+        const entries = readCarriedProps(req.tags, req.id);
         total += entries.length;
         for (const e of entries) {
           expect(e.on).toBeTruthy();
@@ -147,5 +147,111 @@ describe('oscal-to-hdf SAR foreign-prop carriage', () => {
     carryForeignProps(entries, 'risk', [thirdParty, legacy]);
     expect(entries).toHaveLength(1);
     expect(entries[0]).toEqual({ on: 'risk', name: 'impacted-control-id', value: 'ac-2', ns: fedrampNs });
+  });
+});
+
+interface CarriageCase {
+  label: string;
+  entry: unknown;
+  valid: boolean;
+  why: string;
+}
+
+const CARRIAGE_CASES = (
+  JSON.parse(readFileSync(join(CONVERTERS, '..', 'shared', 'oscal-carriage-cases.json'), 'utf-8')) as { cases: CarriageCase[] }
+).cases;
+
+/** Reads the tag and returns the entries with everything the converter warned. */
+function readWithWarnings(tags: Record<string, unknown>, requirementId: string): { entries: CarriedProp[]; warnings: string[] } {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const entries = readCarriedProps(tags, requirementId);
+  const warnings = warn.mock.calls.map((c) => String(c[0]));
+  warn.mockRestore();
+  return { entries, warnings };
+}
+
+describe('oscal-props carriage read-back tolerance', () => {
+  // AC (ADR-0014 §3.3): carriage is per-entry tolerant — one malformed entry must
+  // not erase the rest of the requirement's carried props, and the drop is
+  // reported once for the requirement rather than silently.
+  it('keeps the valid entries when a sibling is malformed, warning once', () => {
+    const { entries, warnings } = readWithWarnings(
+      {
+        'oscal-props': [
+          { on: 'finding', name: 'a', value: '1' },
+          { on: 'finding', name: 'b', value: '2', ns: 42 },
+        ],
+      },
+      'V-1234',
+    );
+    expect(entries).toEqual([{ on: 'finding', name: 'a', value: '1' }]);
+    expect(warnings).toEqual(['WARNING: Dropping 1 malformed oscal-props entry on requirement "V-1234"']);
+  });
+
+  it('warns once with the dropped count when several entries are malformed', () => {
+    const { entries, warnings } = readWithWarnings(
+      {
+        'oscal-props': [
+          { on: 'task', name: 'a', value: '1' },
+          { on: 'finding', name: 'b', value: '2', remarks: true },
+          { on: 'risk', name: 'ok', value: '3' },
+        ],
+      },
+      'AC-1',
+    );
+    expect(entries).toEqual([{ on: 'risk', name: 'ok', value: '3' }]);
+    expect(warnings).toEqual(['WARNING: Dropping 2 malformed oscal-props entries on requirement "AC-1"']);
+  });
+
+  it('is silent for a well-formed tag', () => {
+    const { entries, warnings } = readWithWarnings({ 'oscal-props': [{ on: 'finding', name: 'a', value: '1' }] }, 'AC-1');
+    expect(entries).toHaveLength(1);
+    expect(warnings).toEqual([]);
+  });
+
+  it('is silent when the tag is absent', () => {
+    const { entries, warnings } = readWithWarnings({ nist: ['AC-1'] }, 'AC-1');
+    expect(entries).toEqual([]);
+    expect(warnings).toEqual([]);
+  });
+
+  it.each([
+    ['object', { on: 'finding' }],
+    ['string', 'finding'],
+    ['null', null],
+  ])('carries nothing and says so when the tag is a %s', (_label, tag) => {
+    const { entries, warnings } = readWithWarnings({ 'oscal-props': tag }, 'AC-1');
+    expect(entries).toEqual([]);
+    expect(warnings).toEqual(['WARNING: Dropping the oscal-props tag on requirement "AC-1": it is not an array']);
+  });
+
+  // AC: the predicate that decides whether an entry is carried agrees with
+  // shared/oscal-props.schema.json for every case in the shared table, so the two
+  // languages' read paths cannot drift from the shape the schema pins.
+  it.each(CARRIAGE_CASES.map((c) => [c.label, c] as const))('agrees with the oscal-props schema: %s', (_label, c) => {
+    expect(CARRIAGE_CASES.length).toBeGreaterThan(0);
+    expect(validateOscalProps([c.entry]), c.why).toBe(c.valid);
+    expect(validCarriedProp(c.entry), c.why).toBe(c.valid);
+  });
+
+  it('keeps exactly the shared table’s valid entries', () => {
+    const want = CARRIAGE_CASES.filter((c) => c.valid).length;
+    const { entries, warnings } = readWithWarnings({ 'oscal-props': CARRIAGE_CASES.map((c) => c.entry) }, 'AC-1');
+    expect(entries).toHaveLength(want);
+    expect(warnings).toEqual([
+      `WARNING: Dropping ${CARRIAGE_CASES.length - want} malformed oscal-props entries on requirement "AC-1"`,
+    ]);
+  });
+});
+
+describe('carriage: empty optionals', () => {
+  it('treats an empty optional as absent when carrying and when re-emitting, as Go does', () => {
+    const entries: CarriedProp[] = [];
+    carryForeignProps(entries, 'finding', [{ name: 'a', value: '1', ns: '', remarks: '' }]);
+    expect(entries).toStrictEqual([{ on: 'finding', name: 'a', value: '1' }]);
+
+    const read = readCarriedProps({ [OSCAL_PROPS_TAG]: [{ on: 'finding', name: 'a', value: '1', ns: '', remarks: '' }] }, 'V-1');
+    expect(read).toHaveLength(1);
+    expect(appendCarriedProps([], carriedFor(read, 'finding'))).toStrictEqual([{ name: 'a', value: '1' }]);
   });
 });

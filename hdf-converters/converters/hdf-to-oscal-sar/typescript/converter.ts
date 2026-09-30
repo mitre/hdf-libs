@@ -36,7 +36,8 @@ import {
   descriptionLabelProp,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
-import { emptyFieldProp, pushVocabularyProp, vocabularyProp, normalizePropValue } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import { pushVocabularyProp, vocabularyProp, normalizePropValue } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import { componentSubjectProps } from '../../oscal-to-hdf/typescript/component-props.js';
 import { appendCarriedProps, carriedFor, readCarriedProps } from '../../oscal-to-hdf/typescript/carriage.js';
 
 /** A reviewed-controls include-controls entry. */
@@ -389,6 +390,8 @@ function buildSubjects(components: HDFResults['components']): SubjectRef[] {
       );
       continue;
     }
+    // The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+    // so the exact component name rides in the component-name prop (§1.7.1).
     const subject: SubjectRef = {
       'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
       type: String(c.type),
@@ -422,96 +425,6 @@ function componentDefsFromSubjects(subjects: SubjectRef[]): AssessmentAssetsComp
       status: { state: ComponentStatusState.Other },
     };
   });
-}
-
-/**
- * Carries a component's identity fields as HDF-namespaced props on its
- * assessment subject. A present-but-empty optional string is carried by an
- * empty-field marker (§1.7.3); an absent field emits nothing. Mirrors the Go peer.
- */
-function componentSubjectProps(c: HDFComponent): Property[] {
-  const props: Property[] = [];
-  // The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
-  // so carry the exact component name here and normalize the display title (§1.7.1).
-  pushVocabularyProp(props, 'component-name', c.name);
-  const emit = (name: string, field: string, val: string | undefined): void => {
-    if (val === undefined) return;
-    if (val === '') {
-      props.push(emptyFieldProp(field));
-      return;
-    }
-    pushVocabularyProp(props, name, val);
-  };
-  emit('component-description', 'description', c.description);
-  emit('component-hostname', 'hostname', c.hostname);
-  emit('component-fqdn', 'fqdn', c.fqdn);
-  emit('component-domain', 'domain', c.domain);
-  emit('component-ip-address', 'ipAddress', c.ipAddress);
-  emit('component-mac-address', 'macAddress', c.macAddress);
-  emit('component-os-name', 'osName', c.osName);
-  emit('component-os-version', 'osVersion', c.osVersion);
-  emit('component-image-id', 'imageId', c.imageId);
-  emit('component-registry', 'registry', c.registry);
-  emit('component-repository', 'repository', c.repository);
-  emit('component-tag', 'tag', c.tag);
-  emit('component-container-id', 'containerId', c.containerId);
-  emit('component-image', 'image', c.image);
-  emit('component-runtime', 'runtime', c.runtime);
-  emit('component-platform-type', 'platformType', c.platformType);
-  emit('component-cluster-name', 'clusterName', c.clusterName);
-  emit('component-namespace', 'namespace', c.namespace);
-  emit('component-version', 'version', c.version);
-  emit('component-provider', 'provider', c.provider ?? undefined);
-  emit('component-account-id', 'accountId', c.accountId);
-  emit('component-region', 'region', c.region);
-  emit('component-resource-type', 'resourceType', c.resourceType);
-  emit('component-resource-id', 'resourceId', c.resourceId);
-  emit('component-arn', 'arn', c.arn);
-  emit('component-url', 'url', c.url);
-  emit('component-branch', 'branch', c.branch);
-  emit('component-commit', 'commit', c.commit);
-  emit('component-environment', 'environment', c.environment);
-  emit('component-package-manager', 'packageManager', c.packageManager);
-  emit('component-package-name', 'packageName', c.packageName);
-  emit('component-cidr', 'cidr', c.cidr);
-  emit('component-gateway', 'gateway', c.gateway);
-  emit('component-engine', 'engine', c.engine);
-  emit('component-host', 'host', c.host);
-  if (c.port !== undefined) pushVocabularyProp(props, 'component-port', String(c.port));
-  emit('component-model-id', 'modelId', c.modelId);
-  emit('component-dataset-id', 'datasetId', c.datasetId);
-  appendComponentMap(props, 'component-label-key', 'component-label-value', 'component-label', c.labels);
-  appendComponentMap(props, 'component-external-id-key', 'component-external-id-value', 'component-external-id', c.externalIds);
-  return props;
-}
-
-/**
- * Carries a component's string map (labels or externalIds) as grouped key/value
- * props in sorted key order, one group per entry. An empty key or value is
- * carried by an empty-field marker in the same group (§1.7.3). Mirrors the Go peer.
- */
-function appendComponentMap(
-  props: Property[],
-  keyName: string,
-  valueName: string,
-  groupPrefix: string,
-  m: Record<string, string> | undefined,
-): void {
-  if (!m) return;
-  const keys = Object.keys(m).sort();
-  keys.forEach((k, i) => {
-    const group = `${groupPrefix}-${i + 1}`;
-    props.push(groupedComponentProp(keyName, 'key', group, k));
-    props.push(groupedComponentProp(valueName, 'value', group, m[k]!));
-  });
-}
-
-/** Builds one grouped map prop, degrading to an empty-field marker when empty. */
-function groupedComponentProp(name: string, field: string, group: string, value: string): Property {
-  if (value === '') {
-    return { ...emptyFieldProp(field), group };
-  }
-  return { ...vocabularyProp(name, value)!, group };
 }
 
 /**
@@ -633,7 +546,7 @@ function requirementToFindingSet(
 
   // Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
   // finding's own props, deduped, in carried order.
-  const carried = readCarriedProps(req.tags);
+  const carried = readCarriedProps(req.tags, req.id);
   appendCarriedProps(props, carriedFor(carried, 'finding'));
 
   // Source code is an artifact with a media type, not a StringDatatype prop:

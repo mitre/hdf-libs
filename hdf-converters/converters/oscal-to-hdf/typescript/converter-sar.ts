@@ -42,7 +42,8 @@ import {
   toKebabCase,
   descriptionLabel,
 } from './shared.js';
-import { findVocabularyProp, vocabularyString } from './vocabulary.js';
+import { findVocabularyProp } from './vocabulary.js';
+import { readComponentSubjectProps } from './component-props.js';
 import { OSCAL_PROPS_TAG, carryForeignProps, type CarriedProp } from './carriage.js';
 import type { IdentifiesTheSubject } from './types.js';
 
@@ -168,105 +169,18 @@ function sarComponents(sar: SecurityAssessmentResultsSAR): Component[] {
 /**
  * Rebuilds one HDF component from an assessment subject: the subject uuid is the
  * componentId (ADR-0014 §4.5 SSP analog), and every type-specific identity field
- * comes from the HDF-namespaced props the exporter stamped on the subject.
- * Mirrors the Go peer.
+ * comes from the HDF-namespaced props the exporter stamped on the subject. The
+ * subject title is the name a foreign subject carries no component-name prop for
+ * (§4.3, §4.5). Mirrors the Go peer.
  */
 function subjectToComponent(subj: IdentifiesTheSubject): Component {
-  const props = subj.props;
   const c: Component = {
     type: subj.type as Component['type'],
-    name: sarComponentName(subj),
+    name: subj.title ?? '',
     componentId: subj['subject-uuid'],
   };
-  // Literal prop names are required so the importer prop-read sweep can check
-  // each one is a vocabulary row (ADR-0014 §1.5).
-  c.description = vocabularyString(props, 'component-description', 'description', '');
-  c.hostname = vocabularyString(props, 'component-hostname', 'hostname', '');
-  c.fqdn = vocabularyString(props, 'component-fqdn', 'fqdn', '');
-  c.domain = vocabularyString(props, 'component-domain', 'domain', '');
-  c.ipAddress = vocabularyString(props, 'component-ip-address', 'ipAddress', '');
-  c.macAddress = vocabularyString(props, 'component-mac-address', 'macAddress', '');
-  c.osName = vocabularyString(props, 'component-os-name', 'osName', '');
-  c.osVersion = vocabularyString(props, 'component-os-version', 'osVersion', '');
-  c.imageId = vocabularyString(props, 'component-image-id', 'imageId', '');
-  c.registry = vocabularyString(props, 'component-registry', 'registry', '');
-  c.repository = vocabularyString(props, 'component-repository', 'repository', '');
-  c.tag = vocabularyString(props, 'component-tag', 'tag', '');
-  c.containerId = vocabularyString(props, 'component-container-id', 'containerId', '');
-  c.image = vocabularyString(props, 'component-image', 'image', '');
-  c.runtime = vocabularyString(props, 'component-runtime', 'runtime', '');
-  c.platformType = vocabularyString(props, 'component-platform-type', 'platformType', '');
-  c.clusterName = vocabularyString(props, 'component-cluster-name', 'clusterName', '');
-  c.namespace = vocabularyString(props, 'component-namespace', 'namespace', '');
-  c.version = vocabularyString(props, 'component-version', 'version', '');
-  const provider = vocabularyString(props, 'component-provider', 'provider', '');
-  if (provider !== undefined) c.provider = provider as Component['provider'];
-  c.accountId = vocabularyString(props, 'component-account-id', 'accountId', '');
-  c.region = vocabularyString(props, 'component-region', 'region', '');
-  c.resourceType = vocabularyString(props, 'component-resource-type', 'resourceType', '');
-  c.resourceId = vocabularyString(props, 'component-resource-id', 'resourceId', '');
-  c.arn = vocabularyString(props, 'component-arn', 'arn', '');
-  c.url = vocabularyString(props, 'component-url', 'url', '');
-  c.branch = vocabularyString(props, 'component-branch', 'branch', '');
-  c.commit = vocabularyString(props, 'component-commit', 'commit', '');
-  c.environment = vocabularyString(props, 'component-environment', 'environment', '');
-  c.packageManager = vocabularyString(props, 'component-package-manager', 'packageManager', '');
-  c.packageName = vocabularyString(props, 'component-package-name', 'packageName', '');
-  c.cidr = vocabularyString(props, 'component-cidr', 'cidr', '');
-  c.gateway = vocabularyString(props, 'component-gateway', 'gateway', '');
-  c.engine = vocabularyString(props, 'component-engine', 'engine', '');
-  c.host = vocabularyString(props, 'component-host', 'host', '');
-  const port = vocabularyString(props, 'component-port', 'port', '');
-  if (port !== undefined) {
-    const n = Number.parseInt(port, 10);
-    if (!Number.isNaN(n)) c.port = n;
-  }
-  c.modelId = vocabularyString(props, 'component-model-id', 'modelId', '');
-  c.datasetId = vocabularyString(props, 'component-dataset-id', 'datasetId', '');
-  const labels = readComponentMap(
-    (g) => vocabularyString(props, 'component-label-key', 'key', g),
-    (g) => vocabularyString(props, 'component-label-value', 'value', g),
-    'component-label',
-  );
-  if (labels) c.labels = labels;
-  const externalIds = readComponentMap(
-    (g) => vocabularyString(props, 'component-external-id-key', 'key', g),
-    (g) => vocabularyString(props, 'component-external-id-value', 'value', g),
-    'component-external-id',
-  );
-  if (externalIds) c.externalIds = externalIds;
+  readComponentSubjectProps(c, subj.props);
   return c;
-}
-
-/**
- * Recovers the exact HDF component name: the namespaced component-name prop for
- * an HDF-produced subject (§4.3), else the subject title for a foreign subject.
- * Mirrors the Go peer.
- */
-function sarComponentName(subj: IdentifiesTheSubject): string {
-  const match = findVocabularyProp(subj.props, 'component-name');
-  return match ? match.value : (subj.title ?? '');
-}
-
-/**
- * Rebuilds a component string map from grouped key/value props. Groups are
- * numbered from 1 in the order the exporter emitted them (sorted key order), so
- * reading stops at the first group with neither a key nor a value. Mirrors Go.
- */
-function readComponentMap(
-  readKey: (group: string) => string | undefined,
-  readValue: (group: string) => string | undefined,
-  prefix: string,
-): Record<string, string> | undefined {
-  const m: Record<string, string> = {};
-  for (let n = 1; ; n++) {
-    const group = `${prefix}-${n}`;
-    const key = readKey(group);
-    const value = readValue(group);
-    if (key === undefined && value === undefined) break;
-    m[key ?? ''] = value ?? '';
-  }
-  return Object.keys(m).length > 0 ? m : undefined;
 }
 
 /**

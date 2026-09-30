@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -1676,4 +1677,68 @@ func mustMarshal(t *testing.T, doc hdf.HDFResults) []byte {
 	b, err := json.Marshal(doc)
 	require.NoError(t, err)
 	return b
+}
+
+type componentGroupKeyCase struct {
+	Label   string            `json:"label"`
+	Entries map[string]string `json:"entries"`
+	Order   []string          `json:"order"`
+	Why     string            `json:"why"`
+}
+
+func loadComponentGroupKeyCases(t *testing.T) []componentGroupKeyCase {
+	t.Helper()
+	var table struct {
+		Cases []componentGroupKeyCase `json:"cases"`
+	}
+	shared.LoadJSON(t, filepath.Join("..", "..", "..", "shared", "oscal-component-group-key-cases.json"), &table)
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+	return table.Cases
+}
+
+// subjectGroupKeys returns the key each of the exported subject's prop groups
+// carries for prefix, group 1 first.
+func subjectGroupKeys(props []oscal.Property, prefix string) []string {
+	var keys []string
+	for n := 1; ; n++ {
+		group := fmt.Sprintf("%s-%d", prefix, n)
+		found := false
+		for i := range props {
+			if props[i].Group == group && props[i].Name == prefix+"-key" {
+				keys = append(keys, props[i].Value)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return keys
+		}
+	}
+}
+
+// AC (§4.5): a component's label and external-id groups are numbered in Unicode
+// code-point order, so the same key takes the same slot whichever language
+// exported the SAR. The expectations live in one shared table both suites read.
+func TestConvertHDFToOSCALSAR_NumbersComponentMapGroupsInCodePointOrder(t *testing.T) {
+	for _, c := range loadComponentGroupKeyCases(t) {
+		for _, field := range []struct{ hdfField, prefix string }{
+			{"labels", "component-label"},
+			{"externalIds", "component-external-id"},
+		} {
+			t.Run(c.Label+"/"+field.hdfField, func(t *testing.T) {
+				entries, err := json.Marshal(c.Entries)
+				require.NoError(t, err)
+				in := []byte(`{"baselines":[{"name":"b","requirements":[{"id":"AC-1","impact":0,` +
+					`"descriptions":[{"label":"default","data":"d"}],` +
+					`"results":[{"status":"passed","codeDesc":"c","startTime":"2026-01-01T00:00:00Z"}]}]}],` +
+					`"components":[{"type":"host","name":"web01","` + field.hdfField + `":` + string(entries) + `}]}`)
+
+				sar := exportRequirement(t, in)
+				require.Len(t, sar.Results, 1)
+				require.NotNil(t, sar.Results[0].LocalDefinitions)
+				require.Len(t, sar.Results[0].LocalDefinitions.Components, 1)
+				assert.Equal(t, c.Order, subjectGroupKeys(sar.Results[0].LocalDefinitions.Components[0].Props, field.prefix), c.Why)
+			})
+		}
+	}
 }
