@@ -1263,6 +1263,86 @@ func TestValidateThreshold_InlineAcceptsAnythingAFileAccepts(t *testing.T) {
 	})
 }
 
+// A single document's failure names the file and lists the offending
+// requirements; a BULK run over several documents used to name the files and then
+// throw both away, printing only the first line of each error. CI loops a
+// per-tool threshold over one file at a time, so the single-file path was the one
+// that mattered and the bulk path silently kept the old shape — the same command
+// answering the same question two different ways depending on the argument count.
+func TestValidateThreshold_BulkFailureCarriesTheSameVerdictAsSingle(t *testing.T) {
+	dir := t.TempDir()
+	a := writeResultsAt(t, dir, "a.json", testResultsForThreshold)
+	b := writeResultsAt(t, dir, "b.json", testResultsForThreshold)
+	spec := writeResultsAt(t, dir, "t.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, single, err := executeCommand("validate", "threshold", a, "-T", spec)
+	require.Error(t, err)
+	require.Contains(t, single, "SV-003", "precondition: the single-file path lists findings")
+
+	stdout, bulk, err := executeCommand("validate", "threshold", a, b, "-T", spec)
+	require.Error(t, err, "two failing documents must still fail the run")
+
+	// The verdict shape, per file, is the one a reader already knows. Matched on
+	// the basename rather than the whole line: the verdict names the path it was
+	// given, which here is a temp dir.
+	assert.Contains(t, bulk, "a.json — 1 threshold violation")
+	assert.Contains(t, bulk, "b.json — 1 threshold violation")
+	assert.Contains(t, bulk, "✗ ", "the verdict keeps its mark")
+	assert.Contains(t, bulk, "failed.total: 1 exceeds maximum 0")
+
+	// And the findings survive, which is the whole point: a CI log that names the
+	// file but not the finding still sends the reader to the artifact.
+	assert.Contains(t, bulk, "SV-003", "a bulk failure must name the requirements too")
+
+	// The old vocabulary is gone. A threshold violation is not an "error", and
+	// calling it one made a policy failure look like a broken file.
+	assert.NotContains(t, bulk, "a.json: error")
+	assert.NotContains(t, bulk, "threshold validation failed:")
+
+	// The run summary still reports the tally — on stdout, as bulk summaries always
+	// have, so a caller redirecting the two streams separately is unaffected.
+	assert.Contains(t, stdout, "0/2 passed thresholds")
+}
+
+// A file that fails BEFORE a verdict can be rendered — unreadable, not HDF,
+// schema-invalid — has no verdict to show, so it must keep the collapsed error
+// line that says WHY. Suppressing that wholesale traded one diagnostic-loss bug
+// for a narrower one: the CI log named the file and not the reason, which is the
+// exact complaint the verdict change was written to fix.
+func TestValidateThreshold_BulkBrokenInputStillSaysWhy(t *testing.T) {
+	dir := t.TempDir()
+	good := writeResultsAt(t, dir, "good.json", testResultsForThreshold)
+	broken := writeResultsAt(t, dir, "broken.json", `{"not":"hdf"}`)
+	spec := writeResultsAt(t, dir, "t.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommand("validate", "threshold", good, broken, "-T", spec)
+	require.Error(t, err)
+
+	// The good file keeps its full verdict...
+	assert.Contains(t, stderr, "good.json — 1 threshold violation")
+	assert.Contains(t, stderr, "SV-003", "a document that parsed still lists its findings")
+
+	// ...and the broken one still says what went wrong with it.
+	assert.Contains(t, stderr, "broken.json")
+	assert.Regexp(t, `(?s)broken\.json:.*(schema validation|failed to parse)`, stderr,
+		"a file that never reached a verdict must still report its reason")
+}
+
+// --no-findings suppresses the list in bulk exactly as it does for one file, or
+// the flag means different things at different argument counts.
+func TestValidateThreshold_BulkHonoursNoFindings(t *testing.T) {
+	dir := t.TempDir()
+	a := writeResultsAt(t, dir, "a.json", testResultsForThreshold)
+	b := writeResultsAt(t, dir, "b.json", testResultsForThreshold)
+	spec := writeResultsAt(t, dir, "t.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, out, err := executeCommand("validate", "threshold", a, b, "-T", spec, "--no-findings")
+	require.Error(t, err)
+	assert.Contains(t, out, "a.json — 1 threshold violation")
+	assert.Contains(t, out, "failed.total: 1 exceeds maximum 0", "the bound is still named")
+	assert.NotContains(t, out, "SV-003", "the list is suppressed, the verdict is not")
+}
+
 // A typo INSIDE a negation must be refused exactly as one outside it is.
 // Unrefused it is worse: {not: [waver]} excludes nothing, so the predicate
 // matches EVERYTHING rather than nothing — a false green under any max bound,
@@ -1470,7 +1550,12 @@ func TestValidateThreshold_NoNoneNoteWhenTheSpecIsRefusedForNamingBoth(t *testin
 		"the note must not assert a resolution the refusal is about to deny")
 }
 
-// The note rides the ERROR line too, which the ok-only tests above cannot show.
+// The note rides a FAILING file's verdict too, which the ok-only tests above
+// cannot show. It used to ride a "file: error" line; that line is gone for this
+// command now that a bulk failure renders the same verdict a single file does, so
+// the note moved onto the ✗ line — which names the file, and is where a note about
+// the file belongs. Deliberately NOT the end of the block: the last line there is
+// a finding, and the note then read as though it described that one requirement.
 func TestValidateThreshold_BulkErrorLineCarriesTheNonCategoryNote(t *testing.T) {
 	dir := t.TempDir()
 	failing := writeResultsAt(t, dir, "failing.json", testResultsForThreshold)
@@ -1480,8 +1565,15 @@ func TestValidateThreshold_BulkErrorLineCarriesTheNonCategoryNote(t *testing.T) 
 
 	_, stderr, err := executeCommand("validate", "threshold", failing, clean, "-T", spec)
 	require.Error(t, err, "one file violates the bound")
-	assert.Contains(t, stderr, "failing.json: error (1 non-category severity key)",
-		"a failing file must still carry the note")
+	assert.Contains(t, stderr, "failing.json — 1 threshold violation (1 non-category severity key)",
+		"a failing file must still carry the note, on the line that names it")
+
+	// And not on a finding line, where it would read as a property of that one
+	// requirement rather than of the file.
+	assert.NotContains(t, stderr, "[failed/high] (1 non-category severity key)")
+
+	// The clean file keeps the ok line, so the two shapes stay distinguishable.
+	assert.Contains(t, stderr, "clean.json: ok (1 non-category severity key)")
 }
 
 // Two specs naming the same key state one fact, so the note is emitted once —

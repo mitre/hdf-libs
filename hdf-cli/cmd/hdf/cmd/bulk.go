@@ -17,6 +17,12 @@ type BulkResult struct {
 	Success bool        `json:"success"`
 	Error   string      `json:"error,omitempty"`
 	Output  interface{} `json:"output,omitempty"`
+
+	// detail is the inner command's own captured output for a failed file, kept
+	// only when withFailureDetail is in effect. Unexported so it never reaches
+	// the --json array: that shape is a published contract and this is a
+	// human-readable rendering, not a new field.
+	detail string
 }
 
 // BulkProcessFn processes a single file and returns an error if it fails.
@@ -25,7 +31,29 @@ type BulkProcessFn func(file string) error
 // runBulk processes multiple files with the given function.
 // By default, continues processing all files and reports failures at the end (POSIX convention).
 // With -F/--fail-fast, aborts on first failure.
-func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) error {
+// bulkOption configures one runBulk call. Variadic so the five callers that want
+// the default shape stay untouched — changing bulk output for convert, list,
+// query, validate and add-component to fix a threshold-reporting gap would be a
+// rider on five unrelated commands.
+type bulkOption func(*bulkConfig)
+
+type bulkConfig struct{ failureDetail bool }
+
+// withFailureDetail prints the inner command's OWN captured output under a failed
+// file, instead of collapsing it to the first line of its error. Use it where the
+// inner command already renders a self-contained per-file verdict worth keeping:
+// `validate threshold` names the document and lists the requirements that
+// breached each bound, and discarding that made the same command answer the same
+// question differently depending on how many files were passed.
+func withFailureDetail() bulkOption {
+	return func(c *bulkConfig) { c.failureDetail = true }
+}
+
+func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn, opts ...bulkOption) error {
+	cfg := bulkConfig{}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 	var results []BulkResult
 
 	for _, file := range files {
@@ -41,6 +69,9 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) 
 		if fnErr != nil {
 			result.Success = false
 			result.Error = firstLine(fnErr.Error())
+			if cfg.failureDetail {
+				result.detail = captured.stderr
+			}
 		}
 
 		switch {
@@ -53,6 +84,11 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) 
 			// JSON failure: error is captured in result.Error for the array output.
 		case result.Success:
 			fmt.Fprintf(os.Stderr, "%s: ok%s\n", file, note)
+		case cfg.failureDetail && strings.TrimSpace(result.detail) != "":
+			// The inner verdict already names the file and says why, so reprinting
+			// "file: error" above it would say it twice in two vocabularies. The
+			// note still rides along, for the same reason it does below.
+			fmt.Fprint(os.Stderr, withNoteOnVerdictLine(result.detail, note))
 		default:
 			// The note rides the failure line too. A note explains the verdict at
 			// least as often when the file failed — a threshold divergence is most
@@ -76,7 +112,14 @@ func runBulk(files []string, verb, successVerb string, processFn BulkProcessFn) 
 		printBulkJSON(results)
 	} else {
 		printBulkSummary(results, successVerb)
-		printBulkErrors(results)
+		// Under failureDetail a file that rendered its own verdict has already
+		// said everything; reprinting a collapsed line would say it twice. But a
+		// file that failed BEFORE reaching a verdict — unreadable, not HDF,
+		// schema-invalid — has no detail, and suppressing its error too would
+		// leave the log naming the file without saying why. That is the very
+		// defect the detail option exists to cure, so it must not be reintroduced
+		// one class of failure to the left.
+		printBulkErrors(withoutDetail(results))
 	}
 
 	if bulkHasFailure(results) {
@@ -152,6 +195,39 @@ func printBulkSummary(results []BulkResult, successVerb string) {
 	} else {
 		fmt.Printf("Results: %d/%d %s, %d failed\n", passed, total, successVerb, failed)
 	}
+}
+
+// withNoteOnVerdictLine attaches a fidelity note to the captured block's VERDICT
+// line — the one carrying the ✗ and the file name. Neither end of the block works:
+// the last line of a threshold verdict is a FINDING, so the note read as though it
+// described that one requirement, and the first line is the agent-override count.
+// Falls back to appending when no verdict line is found, so a caller that renders
+// a different shape still sees the note rather than losing it.
+func withNoteOnVerdictLine(detail, note string) string {
+	if note == "" {
+		return detail
+	}
+	lines := strings.Split(detail, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "✗ ") {
+			lines[i] = line + note
+			return strings.Join(lines, "\n")
+		}
+	}
+	return strings.TrimRight(detail, "\n") + note + "\n"
+}
+
+// withoutDetail selects the failed results that rendered no verdict of their own,
+// so their collapsed error line is still printed. A caller that did not ask for
+// failure detail has no details at all, so every failure survives this filter.
+func withoutDetail(results []BulkResult) []BulkResult {
+	kept := make([]BulkResult, 0, len(results))
+	for _, r := range results {
+		if strings.TrimSpace(r.detail) == "" {
+			kept = append(kept, r)
+		}
+	}
+	return kept
 }
 
 // printBulkErrors prints the full error message for each failed file.
