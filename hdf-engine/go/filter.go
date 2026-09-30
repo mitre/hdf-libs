@@ -626,12 +626,36 @@ func poamFilterWantsValid(s string) (wantValid, known bool) {
 // "what is the latest thing anyone did to this requirement", not "what set its
 // status".
 func governingDisposition(control hdf.EvaluatedRequirement, ref time.Time) string {
-	anyOverride := func(int) bool { return true }
-	i := hdfutil.GoverningOverrideIndex(statusOverrideInputs(control.StatusOverrides), anyOverride, ref)
+	// Overrides and POA&Ms are ONE ordered set, not two tiers: the schema defines
+	// disposition as "the most recent non-expired override or POAM governing this
+	// requirement". Both carry appliedAt and expiresAt with the same meaning, so
+	// the existing resolver decides between them without inventing a comparison —
+	// its input set widens rather than the rule changing.
+	entries := statusOverrideInputs(control.StatusOverrides)
+	entries = append(entries, poamInputs(control.Poams)...)
+
+	i := hdfutil.GoverningOverrideIndex(entries, func(int) bool { return true }, ref)
 	if i < 0 {
 		return ""
 	}
-	return string(control.StatusOverrides[i].Type)
+	if i < len(control.StatusOverrides) {
+		return string(control.StatusOverrides[i].Type)
+	}
+	// A POA&M's own kind — remediation, mitigation, riskAcceptance,
+	// vendorDependency — is not a member of Override_Type, which is what
+	// disposition is typed as, so every governing POA&M reports the flat "poam".
+	return string(hdf.Poam)
+}
+
+// poamInputs projects POA&Ms onto the same shape the override resolver compares,
+// carrying no status or impact because a POA&M changes neither: it tracks the
+// work being done about a failure rather than adjudicating it.
+func poamInputs(poams []hdf.PoamElement) []hdfutil.StatusOverrideInput {
+	inputs := make([]hdfutil.StatusOverrideInput, len(poams))
+	for i, p := range poams {
+		inputs[i] = hdfutil.StatusOverrideInput{AppliedAt: p.AppliedAt, ExpiresAt: p.ExpiresAt}
+	}
+	return inputs
 }
 
 // hasValidPoam reports whether the requirement carries a POA&M that is still in

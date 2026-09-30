@@ -495,6 +495,7 @@ type amendmentCases struct {
 			Status      []string `json:"status"`
 			Disposition []string `json:"disposition"`
 			Poams       string   `json:"poams"`
+			ID          string   `json:"id"`
 			Impact      string   `json:"impact"`
 			RawImpact   string   `json:"rawImpact"`
 		} `json:"options"`
@@ -529,6 +530,7 @@ func TestFilterAmendmentVocabulary(t *testing.T) {
 				Status:      tc.Options.Status,
 				Disposition: tc.Options.Disposition,
 				Poams:       tc.Options.Poams,
+				ID:          tc.Options.ID,
 				Impact:      tc.Options.Impact,
 				RawImpact:   tc.Options.RawImpact,
 				Now:         now,

@@ -4,7 +4,12 @@
 // runs both over the same fixture).
 
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
-import { governingOverrideIndex, parseTimestamp, extractCWEIDs } from '@mitre/hdf-utilities';
+import {
+  governingOverrideIndex,
+  parseTimestamp,
+  extractCWEIDs,
+  type StatusOverrideInput,
+} from '@mitre/hdf-utilities';
 import { deriveSeverity } from './compliance.js';
 import { effectiveImpactOf, overrideInputs } from './effective.js';
 import { normalizeKey, normalizeFilterValue } from './vocabulary.js';
@@ -518,9 +523,34 @@ function poamFilterWantsValid(s: string): boolean | undefined {
  * per-field eligibility means rather than a contradiction.
  */
 function governingDisposition(control: EvaluatedRequirement, now?: string): string {
+  // Overrides and POA&Ms are ONE ordered set, not two tiers: the schema defines
+  // disposition as 'the most recent non-expired override or POAM governing this
+  // requirement'. Both carry appliedAt and expiresAt with the same meaning, so
+  // the existing resolver decides between them without inventing a comparison.
+  // Parity: governingDisposition in go/filter.go.
   const overrides = control.statusOverrides ?? [];
-  const index = governingOverrideIndex(overrideInputs(control), () => true, now);
-  return index < 0 ? '' : (overrides[index]?.type ?? '');
+  const entries = [...overrideInputs(control), ...poamInputs(control)];
+
+  const index = governingOverrideIndex(entries, () => true, now);
+  if (index < 0) return '';
+  if (index < overrides.length) return overrides[index]?.type ?? '';
+  // A POA&M's own kind — remediation, mitigation, riskAcceptance,
+  // vendorDependency — is not a member of Override_Type, which is what
+  // disposition is typed as, so every governing POA&M reports the flat 'poam'.
+  return 'poam';
+}
+
+/**
+ * Projects POA&Ms onto the shape the override resolver compares, carrying no
+ * status or impact because a POA&M changes neither: it tracks the work being
+ * done about a failure rather than adjudicating it.
+ * Parity: poamInputs in go/filter.go.
+ */
+function poamInputs(control: EvaluatedRequirement): StatusOverrideInput[] {
+  return (control.poams ?? []).map((p) => ({
+    appliedAt: new Date(p.appliedAt).toISOString(),
+    expiresAt: new Date(p.expiresAt).toISOString(),
+  }));
 }
 
 /**

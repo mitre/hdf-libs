@@ -52,7 +52,9 @@ const (
 	// exact divergence the reflective guard exists to catch, and which caught
 	// this. The cost is 19 tokens and the wording is already at its floor
 	// (trimming the description twice measured 988 either way).
-	ToolsListTotalBudget = 5600
+	// Raised to 5630 (owner decision 2026-09-29) when hdf_query's disposition
+	// description had to say a governing POA&M counts too; measured 5617.
+	ToolsListTotalBudget = 5630
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -74,7 +76,12 @@ const (
 	// and cwe; measured 956. hdf_query is now roughly a fifth of the whole
 	// listing, which is the specific thing hdf-libs-5cim9 exists to weigh.
 	// Raised to 990 (owner decision 2026-09-28) for baselineLabel; measured 988.
-	ToolsListPerToolBudget = 990
+	// Raised to 1020 (owner decision 2026-09-29): the disposition description named
+	// only the override and was FALSE once a governing POA&M began resolving, so
+	// this raise buys correctness rather than surface. Trimmed twice before raising
+	// (22 tokens down to 17); measured 1006. hdf_query is now about a fifth of the
+	// listing and this is its fourth raise — hdf-libs-5cim9 should run before a fifth.
+	ToolsListPerToolBudget = 1020
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -90,8 +97,13 @@ const (
 	// which is what this ceiling exists to protect.
 	// Raised to 3880 (owner decision 2026-09-25) with the vulnerability filters;
 	// measured 3867. Raised to 3900 (owner decision 2026-09-28) with
-	// baselineLabel; measured 3899.
-	ReadProfileBudget = 3900
+	// baselineLabel; measured 3899. Raised to 3930 (owner decision 2026-09-29) when
+	// hdf_query's disposition description had to say that a governing POA&M counts
+	// too — the old wording named only the override and was false after that change;
+	// measured 3917. The description was trimmed twice before raising, which
+	// recovered 5 of the 22 tokens. This is the eighth raise and the ratchet has
+	// still never been examined as a whole; hdf-libs-5cim9 is that audit.
+	ReadProfileBudget = 3930
 )
 
 var (

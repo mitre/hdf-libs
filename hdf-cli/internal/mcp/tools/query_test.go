@@ -523,7 +523,7 @@ func TestQuery_AmendmentFiltersReachTheEngine(t *testing.T) {
 		in   queryInput
 		want []string
 	}{
-		{"disposition selects the governing override's type",
+		{"disposition selects the type of the governing override or POA&M",
 			queryInput{Source: src, Disposition: []string{"riskAdjustment"}}, []string{"ADJUSTED"}},
 		{"disposition ORs across values",
 			queryInput{Source: src, Disposition: []string{"waiver", "riskAdjustment"}}, []string{"ADJUSTED", "WAIVED"}},

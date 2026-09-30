@@ -118,7 +118,15 @@ The consequence is worth stating plainly, because it looks like a contradiction 
 
 Filtering it required a status-carrying override until the change that introduced this section, which meant `--disposition riskAdjustment` could not match the shape a `riskAdjustment` normally has — one carrying an impact and no status. That shape is not hypothetical: `hdf enrich --recompute-cvss` authors exactly it, and appends it to whatever overrides a requirement already carries, so a waived finding that is later enriched acquires a newer impact-only override with no human deciding it.
 
-**Known gap:** the schema says disposition may also name a governing **POA&M** (`disposition: poam`), and no implementation does that. Neither the filter nor the effective checksum considers POA&Ms when resolving disposition.
+**POA&Ms participate.** The schema defines disposition as "the type of the most recent non-expired override **or POAM** governing this requirement", and for a long time only the override half was implemented. The distinction that matters: a `poam`-TYPED entry in `statusOverrides[]` always resolved, because it went through the override path like any other type — that is what `hdf amend apply` and the OSCAL POA&M importer write. What never resolved was a `poams[]` entry, the schema's actual POA&M array, so `disposition` answered a narrower question than it appeared to. Overrides and POA&Ms are now resolved as **one ordered set**, not two tiers: the most recently applied non-expired entry governs, whichever kind it is. No new comparison was invented for this. `POAM` requires `[type, explanation, appliedBy, appliedAt, expiresAt]` and `Status_Override` requires `[type, reason, appliedBy, appliedAt, expiresAt]`, so the same `appliedAt` drives recency and the same `expiresAt` drives expiry, and the existing `governingOverrideIndex` simply receives a wider input set.
+
+Expiry still outranks recency: a waiver applied more recently than a POA&M but already lapsed does not displace a plan still in force.
+
+Two alternatives were considered and rejected, recorded here because the question will be asked again. **Overrides always outrank POA&Ms** — consult a plan only when no live override exists — on the reasoning that an override adjudicates while a plan only tracks. **POA&Ms always outrank** — a live plan means the finding is still being worked, whatever was decided about it. Both invent a tier the schema does not describe, and each has a case that reads wrong: under the second, a waiver filed after a plan could never take effect on disposition, which is exactly what an accepted risk superseding a remediation looks like.
+
+A POA&M's **own kind is not representable** in this field. `disposition` is typed as `Override_Type` (`waiver`, `attestation`, `poam`, `inherited`, `falsePositive`, `riskAdjustment`, `operationalRequirement`), while a POA&M's `type` is one of `remediation`, `mitigation`, `riskAcceptance`, `vendorDependency` — none of them members. So every governing POA&M reports the flat value `poam`, and which of the four kinds it is cannot be read from disposition. Distinguishing them would mean widening `Override_Type`, which is a schema change.
+
+**This moved the effective checksum.** `effectiveChecksum` hashes `{status, impact, disposition}`, so any requirement whose governing entry is now a POA&M — one carrying a live plan and either no override or only older or lapsed ones — hashes differently than it did before. That is a **checksum epoch**: stored checksums computed by an earlier version will not match a recomputation, and a continuous-monitoring consumer comparing across the boundary sees a one-time flip on those requirements. One further class moves with it: a requirement with no overrides, only lapsed plans, and a stored `disposition` field previously fell back to that cached value and now correctly resolves to none, because a lapsed entry governs nothing and a stored effective* field is an output cache rather than an input. A requirement carrying no `poams[]` entry at all is unaffected and hashes exactly as before.
 
 ### effectiveImpact Field
 
@@ -186,7 +194,7 @@ With **no override**, `effectiveStatus` equals the ladder's computation from the
 
 ### Disposition branching
 
-Not every override suppresses the finding. The `disposition` (the governing override's type) determines whether the finding leaves the actionable set or merely gets re-scored:
+Not every override suppresses the finding. The `disposition` — the type of the governing override or POA&M, whichever was most recently applied and is unexpired — determines whether the finding leaves the actionable set or merely gets re-scored:
 
 | Disposition | Typical `effectiveStatus` | Still an open finding? | Meaning |
 |---|---|---|---|

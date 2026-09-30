@@ -67,8 +67,9 @@ Different flags are combined with AND logic. Repeating the same flag
 uses OR logic within that filter.
 
 --status reports EFFECTIVE status, so a requirement with a governing waiver is
-already off "failed" before the filter sees it. --disposition names the type of
-the override doing that, and --poams reports whether a remediation plan is still
+already off "failed" before the filter sees it. --disposition names what governs
+it — the most recently applied non-expired override OR POA&M, whichever it is,
+where a governing plan reports "poam" — and --poams reports whether a plan is still
 in force; "none-valid" covers no POA&M, an empty list, and only-lapsed ones
 alike, because a plan that has expired is not a plan.
 
@@ -181,7 +182,7 @@ Examples:
 	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
 	cmd.Flags().StringArrayVarP(&localQueryTag, "tag", "t", nil, "Filter by tag key:value (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryDisposition, "disposition", nil,
-		"Filter by the governing override's type (repeatable, OR logic): "+FilterHelpVocabulary("disposition"))
+		"Filter by what governs the requirement — the most recently applied non-expired override or POA&M (repeatable, OR logic): "+FilterHelpVocabulary("disposition"))
 	cmd.Flags().StringVar(&localQueryPoams, "poams", "",
 		"Filter by remediation-plan validity: valid (a POA&M still in force) or none-valid (none, empty, or only lapsed)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")

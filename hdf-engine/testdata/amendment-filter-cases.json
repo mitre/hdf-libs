@@ -1,5 +1,5 @@
 {
-  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass \u2014 both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver.",
+  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass — both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver.",
   "now": "2026-01-01T00:00:00Z",
   "fixture": {
     "baselines": [
@@ -346,6 +346,138 @@
               }
             ],
             "tags": {}
+          },
+          {
+            "id": "POAM-NEWER-THAN-WAIVER",
+            "title": "Live waiver, then a newer live plan",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "test",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "WAIVER-NEWER-THAN-POAM",
+            "title": "Live plan, then a newer live waiver",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "test",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-OVER-LAPSED-WAIVER",
+            "title": "A newer waiver that has lapsed, and an older plan still in force",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "test",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
           }
         ],
         "supports": [],
@@ -363,14 +495,15 @@
   },
   "cases": [
     {
-      "name": "disposition waiver excludes a lapsed waiver, and a waiver a NEWER override has superseded \u2014 WAIVED-THEN-ADJUSTED is governed by its riskAdjustment now",
+      "name": "disposition waiver excludes a lapsed waiver, a waiver a NEWER override has superseded (WAIVED-THEN-ADJUSTED is governed by its riskAdjustment now), and a waiver a NEWER POA&M has superseded (POAM-NEWER-THAN-WAIVER)",
       "options": {
         "disposition": [
           "waiver"
         ]
       },
       "expect": [
-        "WAIVED"
+        "WAIVED",
+        "WAIVER-NEWER-THAN-POAM"
       ]
     },
     {
@@ -383,6 +516,7 @@
       },
       "expect": [
         "WAIVED",
+        "WAIVER-NEWER-THAN-POAM",
         "FALSE-POSITIVE"
       ]
     },
@@ -398,7 +532,7 @@
       ]
     },
     {
-      "name": "disposition names the governing override even when it carries only an impact \u2014 a riskAdjustment typically does, so requiring a status made this filter unable to match its own canonical shape",
+      "name": "disposition names the governing override even when it carries only an impact — a riskAdjustment typically does, so requiring a status made this filter unable to match its own canonical shape",
       "options": {
         "disposition": [
           "riskAdjustment"
@@ -425,7 +559,10 @@
       },
       "expect": [
         "POAM-CURRENT",
-        "POAM-MIDWINDOW"
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "WAIVER-NEWER-THAN-POAM",
+        "POAM-OVER-LAPSED-WAIVER"
       ]
     },
     {
@@ -453,7 +590,7 @@
       "expect": []
     },
     {
-      "name": "the motivating policy: still failing after amendments, with no current plan. WAIVED-THEN-ADJUSTED is absent because its effective STATUS still comes from the older waiver even though its disposition names the newer riskAdjustment \u2014 the two may name different overrides, which is what per-field eligibility means",
+      "name": "the motivating policy: still failing after amendments, with no current plan. WAIVED-THEN-ADJUSTED is absent because its effective STATUS still comes from the older waiver even though its disposition names the newer riskAdjustment — the two may name different overrides, which is what per-field eligibility means",
       "options": {
         "status": [
           "failed"
@@ -510,6 +647,59 @@
         "ADJUSTED-DOWN",
         "WAIVED-THEN-ADJUSTED"
       ]
+    },
+    {
+      "name": "disposition poam — a governing POA&M names itself, which the schema has always said and nothing implemented",
+      "options": {
+        "disposition": [
+          "poam"
+        ]
+      },
+      "expect": [
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "POAM-OVER-LAPSED-WAIVER"
+      ]
+    },
+    {
+      "name": "a POA&M and an override are ONE ordered set: the most recently applied non-expired entry governs, whichever kind it is",
+      "options": {
+        "disposition": [
+          "poam",
+          "waiver"
+        ]
+      },
+      "expect": [
+        "WAIVED",
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "WAIVER-NEWER-THAN-POAM",
+        "POAM-OVER-LAPSED-WAIVER"
+      ]
+    },
+    {
+      "name": "expiry outranks recency across kinds — POAM-OVER-LAPSED-WAIVER's waiver is newer by appliedAt but lapsed, so the older live plan governs",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "id": "POAM-OVER-LAPSED-WAIVER"
+      },
+      "expect": [
+        "POAM-OVER-LAPSED-WAIVER"
+      ]
+    },
+    {
+      "name": "a lapsed POA&M governs nothing, exactly as a lapsed override does",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "id": "POAM-LAPSED"
+      },
+      "expect": []
     }
   ],
   "dispositionValues": [

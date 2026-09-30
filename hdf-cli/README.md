@@ -257,9 +257,11 @@ FLAGS
       --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
                                not_applicable and notApplicable are one value; the pre-3.7 severity
                                "none" still names informational.
-      --disposition stringArray  Filter by the governing override's type (repeatable, OR logic): waiver,
-                               attestation, poam, inherited, falsePositive, riskAdjustment,
-                               operationalRequirement (false_positive also accepted)
+      --disposition stringArray  Filter by what governs the requirement — the most recently applied
+                               non-expired override or POA&M, where a governing plan reports "poam"
+                               (repeatable, OR logic): waiver, attestation, poam, inherited,
+                               falsePositive, riskAdjustment, operationalRequirement (false_positive
+                               also accepted)
       --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
                                none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description

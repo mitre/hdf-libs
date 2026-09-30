@@ -49,7 +49,7 @@ type queryInput struct {
 	BaselineLabel []string `json:"baselineLabel,omitempty" jsonschema:"baseline labels as key:value, glob on value (OR)"`
 	// The amendments layer: what adjudicated the requirement, and whether a
 	// remediation plan is still in force.
-	Disposition []string `json:"disposition,omitempty" jsonschema:"governing override type: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)"`
+	Disposition []string `json:"disposition,omitempty" jsonschema:"governing override or POA&M type, most recent unexpired; a plan reports poam: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)"`
 	Poams       string   `json:"poams,omitempty" jsonschema:"valid | none-valid (none, empty, or lapsed)"`
 	Verbosity   string   `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
 	Limit       int      `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`

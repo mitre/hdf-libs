@@ -1210,7 +1210,7 @@
             ]
           },
           "disposition": {
-            "description": "governing override type: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)",
+            "description": "governing override or POA\u0026M type, most recent unexpired; a plan reports poam: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)",
             "items": {
               "type": "string"
             },

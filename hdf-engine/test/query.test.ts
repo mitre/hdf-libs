@@ -274,7 +274,18 @@ interface AmendmentCases {
   fixture: HDFResults;
   cases: {
     name: string;
-    options: { status?: string[]; disposition?: string[]; poams?: string; impact?: string; rawImpact?: string };
+    // Declared explicitly rather than relying on the spread of an untyped parse:
+    // Go's struct forces an edit when the table gains an option, and without
+    // this the TS side would silently drop it — the exact drift the shared table
+    // exists to prevent. Parity: amendmentCases in go/filter_test.go.
+    options: {
+      status?: string[];
+      disposition?: string[];
+      poams?: string;
+      id?: string;
+      impact?: string;
+      rawImpact?: string;
+    };
     effectiveStatus?: boolean;
     expect: string[];
   }[];
