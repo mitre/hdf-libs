@@ -56,6 +56,7 @@ type bundleEntry struct {
 
 func newEvidenceBundleCmd() *cobra.Command {
 	var outputPath string
+	var overwrite bool
 
 	cmd := &cobra.Command{
 		Use:   "bundle <package-file>",
@@ -94,7 +95,11 @@ mismatch or a missing document fails the command and writes no archive — a par
 worse than none, because it looks complete.
 
 -o refuses a path naming the package or anything it references, so bundling cannot
-destroy the evidence it is packaging.
+destroy the evidence it is packaging. It also refuses a path that already exists, so a
+previous archive is never replaced silently; pass --overwrite to replace it deliberately.
+--overwrite does not lift the refusals above it: a path naming an input is refused with or
+without the flag. Under --overwrite a failed run leaves whatever was already at that path
+untouched rather than deleting it, and says so on stderr naming the path.
 
 Examples:
   hdf evidence bundle boe.json -o boe.zip
@@ -104,10 +109,12 @@ Examples:
 			if outputPath == "" {
 				return fmt.Errorf("-o is required: name the archive to write")
 			}
-			return runEvidenceBundle(args[0], outputPath, newArchiveWriter)
+			return runEvidenceBundle(args[0], outputPath, overwrite, newArchiveWriter)
 		},
 	}
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Archive to write (required)")
+	cmd.Flags().BoolVar(&overwrite, "overwrite", false,
+		"Replace an existing archive at -o (without this, an existing path is refused)")
 	return cmd
 }
 
@@ -284,7 +291,7 @@ func packageSubtreeRef(pkgDir, uri string) (string, bool) {
 
 // makeWriter is threaded from the caller so a test can drive this command through
 // the seam itself, rather than only constructing an alternative writer beside it.
-func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) archiveWriter) error {
+func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter func(*os.File) archiveWriter) (err error) {
 	pkgData, err := readInputFile(pkgPath)
 	if err != nil {
 		return fmt.Errorf("failed to read evidence package: %w", err)
@@ -309,8 +316,24 @@ func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) arc
 	if err != nil {
 		return fmt.Errorf("evidence package %s: %w", pkgPath, err)
 	}
-	if err := refuseOutputOverAnInput(outputPath, pkgDir, pkgPath, refs); err != nil {
+	if err := refuseOutputOverAnInput(outputPath, pkgDir, pkgPath, refs, overwrite); err != nil {
 		return err
+	}
+	// Past the pre-flight refusals, so whatever is still at outputPath is a file the operator
+	// asked to replace rather than an input we refuse outright. It need NOT be an archive — it
+	// may be any pre-existing file they pointed at — so this says only what is known: nothing
+	// replaced it. Without it, "no archive written" alone reads as "the path is empty", and an
+	// operator can ship a stale deliverable on that reading.
+	if overwrite {
+		if info, statErr := os.Stat(outputPath); statErr == nil && !info.IsDir() {
+			defer func() {
+				if err != nil {
+					fmt.Fprintf(os.Stderr,
+						"Note: %s was not replaced; the file already at that path is unchanged.\n",
+						outputPath)
+				}
+			}()
+		}
 	}
 
 	// Collect and verify EVERYTHING before opening the output. Nothing is written
@@ -531,8 +554,10 @@ func runEvidenceBundle(pkgPath, outputPath string, makeWriter func(*os.File) arc
 }
 
 // refuseOutputOverAnInput refuses an -o that names the package or anything it
-// references. Every message quotes the uri as RECORDED, never a ref derived from it.
-func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recordedRef) error {
+// references, and then an -o that already exists unless overwrite is set. Every message
+// quotes the uri as RECORDED, never a ref derived from it. The order is load-bearing: see
+// the comment on the existence check.
+func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recordedRef, overwrite bool) error {
 	if info, err := os.Stat(outputPath); err == nil && info.IsDir() {
 		return fmt.Errorf("-o %s is a directory; name the archive file to write", outputPath)
 	}
@@ -559,6 +584,14 @@ func refuseOutputOverAnInput(outputPath, pkgDir, pkgPath string, refs []recorded
 		if samePath(outputPath, candidate) {
 			return fmt.Errorf("refusing to write the archive over %q, the %s this package records; name a different -o", r.uri, r.label)
 		}
+	}
+	// LAST, so --overwrite is never offered for a path the checks above refuse outright:
+	// suggesting it for an input would invite the operator to destroy the evidence, and no
+	// flag makes that acceptable. A prior archive, by contrast, is the operator's own
+	// deliverable and is replaced on request — still before any document is read, so a run
+	// that will not proceed costs nothing and reports nothing else first.
+	if info, err := os.Stat(outputPath); err == nil && !info.IsDir() && !overwrite {
+		return fmt.Errorf("-o %s already exists; pass --overwrite to replace it", outputPath)
 	}
 	return nil
 }
@@ -614,6 +647,12 @@ func writeArchiveAtomically(outputPath string, entries []bundleEntry, makeWriter
 	}
 	if err := w.Close(); err != nil {
 		return fmt.Errorf("failed to finalize the archive: %w", err)
+	}
+	// Before the rename, not after: a crash can otherwise make the rename durable while the
+	// bytes are not, leaving a present-but-truncated archive — the exact failure the
+	// write-then-rename exists to prevent.
+	if err := tmp.Sync(); err != nil {
+		return fmt.Errorf("failed to flush the archive to disk: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("failed to close the archive: %w", err)

@@ -143,6 +143,141 @@ func TestEvidenceBundle_RefusesAMissingDocument(t *testing.T) {
 	assert.NoFileExists(t, archive)
 }
 
+// A prior archive at -o is the operator's existing deliverable, so it is not replaced
+// without being asked. The refusal lands before any document is read or hashed, which
+// is what the byte-identity assertion below pins.
+func TestEvidenceBundle_RefusesAnExistingArchiveUnlessOverwrite(t *testing.T) {
+	const prior = "not really a zip, but the operator's file"
+
+	t.Run("refuses and leaves the prior archive untouched", func(t *testing.T) {
+		dir, pkgPath := bundleTree(t)
+		archive := filepath.Join(dir, "boe.zip")
+		require.NoError(t, os.WriteFile(archive, []byte(prior), 0o600))
+
+		_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), archive, "the error must name the path it refused")
+		assert.Contains(t, err.Error(), "--overwrite", "and must name the flag that proceeds")
+		got, readErr := os.ReadFile(archive)
+		require.NoError(t, readErr)
+		assert.Equal(t, prior, string(got), "the prior archive must be byte-identical")
+	})
+
+	t.Run("--overwrite replaces it", func(t *testing.T) {
+		dir, pkgPath := bundleTree(t)
+		archive := filepath.Join(dir, "boe.zip")
+		require.NoError(t, os.WriteFile(archive, []byte(prior), 0o600))
+
+		_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive, "--overwrite")
+		require.NoError(t, err)
+		assert.Contains(t, zipEntries(t, archive), "pkg.json", "a real archive replaced the file")
+	})
+}
+
+// Ordering, stated as a test: with both faults present the existence refusal wins,
+// because it is reached before the first document is read. Without this, a refusal
+// added anywhere after the read loop would still satisfy the test above.
+func TestEvidenceBundle_RefusesAnExistingArchiveBeforeReadingDocuments(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "rhel9-results.json"),
+		[]byte(`{"baselines":[]}`), 0o600))
+	archive := filepath.Join(dir, "boe.zip")
+	require.NoError(t, os.WriteFile(archive, []byte("prior"), 0o600))
+
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--overwrite")
+	assert.NotContains(t, err.Error(), "rhel9-results.json",
+		"the checksum mismatch must not be reported: the run stopped before reading it")
+}
+
+// --overwrite must never become a way to destroy an input. The existence refusal is
+// ordered after the input-overlap refusals for exactly this reason: an earlier
+// placement answered "-o system.json already exists; pass --overwrite to replace it",
+// inviting the operator to overwrite a document the package records.
+func TestEvidenceBundle_OverwriteNeverDestroysAnInput(t *testing.T) {
+	for _, target := range []string{"system.json", "plan.json"} {
+		t.Run(target, func(t *testing.T) {
+			dir, pkgPath := bundleTree(t)
+			victim := filepath.Join(dir, target)
+			before, err := os.ReadFile(victim)
+			require.NoError(t, err)
+
+			_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", victim, "--overwrite")
+			require.Error(t, err, "--overwrite may not override the input boundary")
+			assert.Contains(t, err.Error(), "refusing to write the archive over",
+				"the specific refusal must win, not the generic existence one")
+			assert.NotContains(t, err.Error(), "--overwrite",
+				"and it must not suggest a flag that would destroy evidence")
+			// The WHOLE report, not just the error: a note describing this recorded document
+			// as a leftover archive would re-create the defect the ordering fix removed. The
+			// second assertion is the load-bearing one — it fails if the note is registered
+			// before the pre-flight refusals. The first is a tripwire: that phrase exists
+			// nowhere now, so it guards against the old wording coming back, not against a
+			// live defect.
+			assert.NotContains(t, stderr, "previous run",
+				"a recorded document must never be described as a prior archive")
+			assert.NotContains(t, stderr, "was not replaced",
+				"and the not-replaced note belongs only past the pre-flight refusals")
+			after, err := os.ReadFile(victim)
+			require.NoError(t, err)
+			assert.Equal(t, before, after, "the recorded document must be untouched")
+		})
+	}
+}
+
+// Past the pre-flight refusals the file at -o need not be an archive at all — it may be
+// any pre-existing file the operator pointed at. The note may therefore say only what is
+// known: it was not replaced and is unchanged. Calling it "the archive from a previous
+// run" would assert something the code never established.
+func TestEvidenceBundle_NoteDoesNotCallAnUnrelatedFileAnArchive(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	target := filepath.Join(dir, "notes.txt")
+	require.NoError(t, os.WriteFile(target, []byte("operator's notes, never an archive"), 0o600))
+	// Fail AFTER the pre-flight refusals, so the note is reached.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "rhel9-results.json"),
+		[]byte(`{"baselines":[]}`), 0o600))
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", target, "--overwrite")
+	require.Error(t, err)
+	assert.Contains(t, stderr, target, "the note must name the path")
+	assert.NotContains(t, stderr, "archive from a previous run",
+		"the file there was never an archive; the note may not claim it was")
+	body, readErr := os.ReadFile(target)
+	require.NoError(t, readErr)
+	assert.Equal(t, "operator's notes, never an archive", string(body), "and it is untouched")
+}
+
+// "no archive written" is true but not the whole truth when --overwrite was asked for and
+// the run then failed: the PREVIOUS run's archive is still sitting at that path. An
+// operator who reads only "no archive written" can ship a stale deliverable believing the
+// path is empty, so the report must name what is actually there.
+func TestEvidenceBundle_SaysThePriorArchiveSurvivedAFailedOverwrite(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	archive := filepath.Join(dir, "boe.zip")
+
+	// A good archive from an earlier run.
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err)
+	before, err := os.ReadFile(archive)
+	require.NoError(t, err)
+
+	// Now a referenced document changes, so the re-run fails after the output check.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "rhel9-results.json"),
+		[]byte(`{"baselines":[]}`), 0o600))
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive, "--overwrite")
+	require.Error(t, err)
+	after, readErr := os.ReadFile(archive)
+	require.NoError(t, readErr)
+	require.Equal(t, before, after, "precondition: the prior archive is still on disk")
+
+	assert.Contains(t, stderr, archive,
+		"the report must name the path whose file survived")
+	assert.Contains(t, stderr, "was not replaced",
+		"and must say it was not replaced, so the path is not read as empty")
+}
+
 // Local external evidence travels; a remote URI cannot, so it is reported — and it
 // stays recorded in the package's own externalEvidence[], which travels in the
 // archive. No separate manifest file is written: that would duplicate the
@@ -323,7 +458,7 @@ func TestEvidenceBundle_WriterSeamAcceptsAnotherImplementation(t *testing.T) {
 	// The command is driven THROUGH the seam. Constructing the fake and calling
 	// Add on it directly would only prove the interface compiles; it would pass
 	// with the command still making zip calls of its own.
-	require.NoError(t, runEvidenceBundle(pkgPath, filepath.Join(dir, "seam.zip"),
+	require.NoError(t, runEvidenceBundle(pkgPath, filepath.Join(dir, "seam.zip"), false,
 		func(*os.File) archiveWriter { return fake }))
 
 	assert.Equal(t, []string{
