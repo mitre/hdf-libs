@@ -846,3 +846,83 @@ func TestEvidenceUpdate_RefusesAMissingSystemDocument(t *testing.T) {
 	assert.Contains(t, err.Error(), "is referenced but could not be read")
 	assert.NoFileExists(t, out)
 }
+
+// systemDocForPackage's doc comment worries that an UNRESOLVABLE systemRef would mint
+// a green verdict from nothing. The sharper failure is the opposite: SafePath JOINS, so
+// a root-anchored "/system.json" re-roots to <pkgDir>/system.json and the reference
+// RESOLVES — to a different document than it names. Completeness is then computed
+// against a document the package never pointed at, which is worse than not computing
+// it, because the verdict looks earned.
+//
+// The relative case is the CONTROL and is what makes the assertion mean anything: both
+// packages carry results for both planned baselines, so a resolving systemRef yields
+// allBaselinesAssessed=true. An earlier version of this test supplied only ONE results
+// document, so false was true for an unrelated reason and the test passed before the fix.
+func TestEvidenceUpdate_DoesNotResolveSystemRefOntoADifferentDocument(t *testing.T) {
+	for _, tc := range []struct {
+		name, systemRef string
+		wantAssessed    bool
+		// wantNamed: the run must print the reference the package records. An absent or
+		// unrecorded systemRef has no reference to name.
+		wantNamed bool
+	}{
+		{name: "relative reference resolves", systemRef: "system.json", wantAssessed: true, wantNamed: false},
+		{name: "root-anchored reference must not re-root", systemRef: "/system.json", wantAssessed: false, wantNamed: true},
+		// These two aborted the run by NAME before references were classified here.
+		// Classifying them turned the abort into a success, and without these rows the
+		// suite stayed green while the reference vanished from the output entirely — the
+		// regression was invisible because nothing covered a non-root-anchored reject.
+		{name: "parent traversal is named, not silent", systemRef: "../system.json", wantAssessed: false, wantNamed: true},
+		{name: "absolute outside the package is named, not silent", systemRef: "/etc/hosts", wantAssessed: false, wantNamed: true},
+		// The contrast case: a systemRef the package never recorded is NOT a rejected
+		// reference, and the two must not read identically on stderr.
+		{name: "absent systemRef reports no reference", systemRef: "", wantAssessed: false, wantNamed: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, n := range []string{"system.json", "rhel9-results.json", "postgres-results.json"} {
+				body, err := os.ReadFile(filepath.Join("testdata", "evidence-verify", n))
+				require.NoError(t, err)
+				require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
+			}
+			pkg := map[string]interface{}{
+				"name": "reroot",
+				"contents": []map[string]interface{}{
+					{"type": "hdf-results", "uri": "rhel9-results.json"},
+					{"type": "hdf-results", "uri": "postgres-results.json"},
+				},
+			}
+			if tc.systemRef != "" {
+				pkg["systemRef"] = tc.systemRef
+			}
+			raw, err := json.Marshal(pkg)
+			require.NoError(t, err)
+			pkgPath := filepath.Join(dir, "pkg.json")
+			require.NoError(t, os.WriteFile(pkgPath, raw, 0o600))
+			out := filepath.Join(dir, "updated.json")
+
+			_, stderr, updateErr := executeCommand("evidence", "update", pkgPath,
+				"--results", filepath.Join(dir, "rhel9-results.json"), "-o", out)
+			require.NoError(t, updateErr)
+
+			if tc.wantNamed {
+				assert.Contains(t, stderr, tc.systemRef,
+					"a systemRef the package records and this run rejected must be named, "+
+						"not reduced to a generic no-system-document line")
+			} else {
+				assert.NotContains(t, stderr, "does not resolve inside",
+					"a resolving or absent systemRef must not be reported as rejected")
+			}
+
+			data, readErr := os.ReadFile(out)
+			require.NoError(t, readErr)
+			var updated map[string]interface{}
+			require.NoError(t, json.Unmarshal(data, &updated))
+			check, ok := updated["completenessCheck"].(map[string]interface{})
+			require.True(t, ok, "update records a completenessCheck")
+			assert.Equal(t, tc.wantAssessed, check["allBaselinesAssessed"],
+				"a systemRef that does not resolve inside the package must not be substituted "+
+					"by a same-basename document that happens to be there")
+		})
+	}
+}

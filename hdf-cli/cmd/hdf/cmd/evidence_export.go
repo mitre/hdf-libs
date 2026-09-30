@@ -84,8 +84,16 @@ func runEvidenceExport(pkgPath, format, outputDir string) error {
 			continue // Skip non-convertible types
 		}
 
-		// Read the referenced document (validate path stays within package directory)
-		refPath, pathErr := hdfutil.SafePath(pkgDir, uri)
+		// Resolve the reference the same way verify and bundle do, and NEVER hand
+		// SafePath the raw one: SafePath JOINS, so a root-anchored "/results.json"
+		// re-roots to <pkgDir>/results.json — a different file, which export then
+		// converted and reported under the reference it had not opened.
+		ref, inTree := packageSubtreeRef(pkgDir, uri)
+		if !inTree {
+			fmt.Fprintf(os.Stderr, "Warning: skipping %s: it does not resolve inside the package's directory\n", uri)
+			continue
+		}
+		refPath, pathErr := hdfutil.SafePath(pkgDir, ref)
 		if pathErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", uri, pathErr)
 			continue

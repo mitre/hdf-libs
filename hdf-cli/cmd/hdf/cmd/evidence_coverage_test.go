@@ -932,3 +932,47 @@ func TestEvidenceExport_RejectsOversizeInput(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "too large")
 }
+
+// SafePath JOINS a reference under the package directory, so a root-anchored
+// "/rhel9-results.json" resolves back to <pkgDir>/rhel9-results.json — a real file
+// with a different name than the reference. export read it, converted it, and
+// reported "Exported /rhel9-results.json", naming a path it never opened. Reference
+// resolution now goes through the same predicate verify and bundle use, so a
+// reference that does not resolve inside the package is skipped and reported
+// instead of being substituted by a same-basename file that happens to be there.
+func TestEvidenceExport_DoesNotSubstituteAReRootedDocument(t *testing.T) {
+	dir := t.TempDir()
+	// The file the re-root would reach. Real, readable, and convertible — so a
+	// successful export is proof the substitution happened, not proof of a missing file.
+	body, err := os.ReadFile(filepath.Join("testdata", "evidence-verify", "rhel9-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "rhel9-results.json"), body, 0o600))
+
+	pkg := map[string]interface{}{
+		"name": "reroot",
+		"contents": []map[string]interface{}{
+			{"type": "hdf-results", "uri": "/rhel9-results.json"},
+		},
+	}
+	raw, marshalErr := json.Marshal(pkg)
+	require.NoError(t, marshalErr)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, raw, 0o600))
+
+	outDir := filepath.Join(dir, "out")
+	require.NoError(t, os.MkdirAll(outDir, 0o750))
+	stdout, stderr, exportErr := executeCommand("evidence", "export", pkgPath, "-o", outDir)
+	combined := stdout + stderr
+
+	// The reference does not resolve inside the package, so nothing may be exported
+	// from it — and the run must say so rather than claiming a successful export.
+	assert.NotContains(t, combined, "Exported /rhel9-results.json",
+		"export must not claim to have exported a reference it never opened")
+	entries, readErr := os.ReadDir(outDir)
+	require.NoError(t, readErr)
+	assert.Empty(t, entries,
+		"nothing may be written from a reference that does not resolve inside the package")
+	assert.Contains(t, combined, "/rhel9-results.json",
+		"the skip must name the reference as the package records it")
+	_ = exportErr // skip-and-report is export's posture; the exit code is not the assertion
+}

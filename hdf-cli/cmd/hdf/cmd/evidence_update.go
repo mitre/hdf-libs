@@ -189,7 +189,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	// Recomputed from the POST-update content, never carried forward: a package that
 	// claims coverage it no longer has is worse than one that fails validation. Reuses
 	// build's computeCompleteness rather than a second implementation of it.
-	sysDoc, haveSystem, sysErr := systemDocForPackage(pkgDir, doc)
+	sysDoc, haveSystem, unresolvedRef, sysErr := systemDocForPackage(pkgDir, doc)
 	if sysErr != nil {
 		return sysErr
 	}
@@ -202,7 +202,15 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		// Nothing was available to check against, so "all baselines assessed" would be a
 		// claim minted from no system document at all.
 		completeness["allBaselinesAssessed"] = false
-		fmt.Fprintf(os.Stderr, "  no system document resolved; completeness cannot claim full baseline coverage\n")
+		if unresolvedRef != "" {
+			// Named, because a systemRef the package RECORDS and this run rejected is a
+			// different situation from one it never recorded, and the two used to be
+			// indistinguishable on stderr.
+			fmt.Fprintf(os.Stderr, "  systemRef %s does not resolve inside the package's directory; "+
+				"completeness cannot claim full baseline coverage\n", sanitizeOutput(unresolvedRef))
+		} else {
+			fmt.Fprintf(os.Stderr, "  no system document resolved; completeness cannot claim full baseline coverage\n")
+		}
 	}
 	doc["completenessCheck"] = completeness
 	doc["preparedAt"] = time.Now().UTC().Format(time.RFC3339)
@@ -286,7 +294,14 @@ func baselinesByRef(pkgDir string, contents []interface{}) map[string][]string {
 		if uri == "" {
 			continue
 		}
-		path, err := hdfutil.SafePath(pkgDir, uri)
+		// Classified first: SafePath JOINS, so a root-anchored reference re-roots onto a
+		// same-basename file inside the package and this scan would credit coverage to a
+		// document the package never named.
+		ref, inTree := packageSubtreeRef(pkgDir, uri)
+		if !inTree {
+			continue
+		}
+		path, err := hdfutil.SafePath(pkgDir, ref)
 		if err != nil {
 			continue
 		}
@@ -324,7 +339,12 @@ func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, err
 		if uri == "" {
 			continue
 		}
-		path, err := hdfutil.SafePath(pkgDir, uri)
+		ref, inTree := packageSubtreeRef(pkgDir, uri)
+		if !inTree {
+			return nil, fmt.Errorf("results reference %q cannot be resolved: it is outside the package's "+
+				"directory", uri)
+		}
+		path, err := hdfutil.SafePath(pkgDir, ref)
 		if err != nil {
 			return nil, fmt.Errorf("results reference %q cannot be resolved: %w", uri, err)
 		}
@@ -339,24 +359,41 @@ func resultsPathsInPackage(pkgDir string, contents []interface{}) ([]string, err
 // check against": it sets allBaselinesAssessed from the results alone, so an unresolvable
 // systemRef would mint a green verdict from nothing. systemRef is optional in the schema,
 // and a remote one is never fetched, so both cases are reachable on valid input.
-func systemDocForPackage(pkgDir string, doc map[string]interface{}) (map[string]interface{}, bool, error) {
+//
+// A MIS-resolved systemRef is worse than an unresolvable one and was the live defect:
+// SafePath JOINS, so a root-anchored "/system.json" re-rooted to <pkgDir>/system.json
+// and the reference RESOLVED — to a document it did not name — and completeness was
+// asserted from it, so the verdict looked earned. Classified through the same predicate
+// verify and bundle use, a reference that does not resolve inside the package is reported
+// as unresolved rather than substituted.
+// unresolvedSystemRef names a systemRef the package records but this run could not
+// resolve, empty when there was nothing to resolve. It exists so the caller can print
+// the reference: returning only "no system document" made a REJECTED systemRef
+// indistinguishable from one the package never recorded, and a rejected one used to
+// abort the run by name. A remote systemRef is still reported as no system document,
+// since it is recorded but was never a candidate to resolve.
+func systemDocForPackage(pkgDir string, doc map[string]interface{}) (map[string]interface{}, bool, string, error) {
 	ref, _ := doc["systemRef"].(string)
 	if ref == "" || isRemoteURI(ref) {
-		return map[string]interface{}{}, false, nil
+		return map[string]interface{}{}, false, "", nil
 	}
-	path, err := hdfutil.SafePath(pkgDir, ref)
+	resolved, inTree := packageSubtreeRef(pkgDir, ref)
+	if !inTree {
+		return map[string]interface{}{}, false, ref, nil
+	}
+	path, err := hdfutil.SafePath(pkgDir, resolved)
 	if err != nil {
-		return nil, false, fmt.Errorf("systemRef %q cannot be resolved: %w", ref, err)
+		return nil, false, "", fmt.Errorf("systemRef %q cannot be resolved: %w", ref, err)
 	}
 	data, err := readFromFile(path, true)
 	if err != nil {
-		return nil, false, fmt.Errorf("systemRef %q is referenced but could not be read: %w", ref, err)
+		return nil, false, "", fmt.Errorf("systemRef %q is referenced but could not be read: %w", ref, err)
 	}
 	var sysDoc map[string]interface{}
 	if err := json.Unmarshal(data, &sysDoc); err != nil {
-		return nil, false, fmt.Errorf("systemRef %q is not readable JSON: %w", ref, err)
+		return nil, false, "", fmt.Errorf("systemRef %q is not readable JSON: %w", ref, err)
 	}
-	return sysDoc, true, nil
+	return sysDoc, true, "", nil
 }
 
 // reportUpdate says what changed, and for an added document covering a baseline the
