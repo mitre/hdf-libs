@@ -2,8 +2,11 @@ package oscal
 
 import (
 	"fmt"
+	"log"
+	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
@@ -20,8 +23,13 @@ type ComponentProp struct {
 	// Required marks a field HDF always defines, which therefore never carries an
 	// empty-field marker: an empty value omits the prop instead (§1.7.3).
 	Required bool
-	Get      func(*hdf.Component) *string
-	Set      func(*hdf.Component, string)
+	// Accepts names the domain of a field HDF does not type as a free string, for
+	// the warning a rejected value earns; it is empty for a plain string field.
+	Accepts string
+	Get     func(*hdf.Component) *string
+	// Set reports false when the prop's value is outside the HDF field's domain,
+	// which a foreign or hand-edited subject can put there.
+	Set func(*hdf.Component, string) bool
 }
 
 // ComponentGroupProp maps one HDF component string map to the grouped key/value
@@ -48,7 +56,10 @@ func stringField(prop, field string, at func(*hdf.Component) **string) Component
 		Prop:  prop,
 		Field: field,
 		Get:   func(c *hdf.Component) *string { return *at(c) },
-		Set:   func(c *hdf.Component, v string) { *at(c) = &v },
+		Set: func(c *hdf.Component, v string) bool {
+			*at(c) = &v
+			return true
+		},
 	}
 }
 
@@ -69,7 +80,7 @@ var componentProps = []ComponentProp{
 	{
 		Prop: "component-name", Field: "name", Required: true,
 		Get: func(c *hdf.Component) *string { return &c.Name },
-		Set: func(c *hdf.Component, v string) { c.Name = v },
+		Set: func(c *hdf.Component, v string) bool { c.Name = v; return true },
 	},
 	stringField("component-description", "description", func(c *hdf.Component) **string { return &c.Description }),
 	stringField("component-hostname", "hostname", func(c *hdf.Component) **string { return &c.Hostname }),
@@ -92,8 +103,16 @@ var componentProps = []ComponentProp{
 	stringField("component-version", "version", func(c *hdf.Component) **string { return &c.Version }),
 	{
 		Prop: "component-provider", Field: "provider",
-		Get: func(c *hdf.Component) *string { return (*string)(c.Provider) },
-		Set: func(c *hdf.Component, v string) { p := hdf.CloudProvider(v); c.Provider = &p },
+		Accepts: "one of " + strings.Join(CloudProviderValues(), ", "),
+		Get:     func(c *hdf.Component) *string { return (*string)(c.Provider) },
+		Set: func(c *hdf.Component, v string) bool {
+			if !validCloudProvider(v) {
+				return false
+			}
+			p := hdf.CloudProvider(v)
+			c.Provider = &p
+			return true
+		},
 	},
 	stringField("component-account-id", "accountId", func(c *hdf.Component) **string { return &c.AccountID }),
 	stringField("component-region", "region", func(c *hdf.Component) **string { return &c.Region }),
@@ -112,6 +131,7 @@ var componentProps = []ComponentProp{
 	stringField("component-host", "host", func(c *hdf.Component) **string { return &c.Host }),
 	{
 		Prop: "component-port", Field: "port",
+		Accepts: fmt.Sprintf("a decimal integer in %d..%d", minComponentPort, maxComponentPort),
 		Get: func(c *hdf.Component) *string {
 			if c.Port == nil {
 				return nil
@@ -119,14 +139,66 @@ var componentProps = []ComponentProp{
 			s := strconv.FormatInt(*c.Port, 10)
 			return &s
 		},
-		Set: func(c *hdf.Component, v string) {
-			if n, err := strconv.ParseInt(v, 10, 64); err == nil {
-				c.Port = &n
+		Set: func(c *hdf.Component, v string) bool {
+			n, ok := componentPort(v)
+			if !ok {
+				return false
 			}
+			c.Port = &n
+			return true
 		},
 	},
 	stringField("component-model-id", "modelId", func(c *hdf.Component) **string { return &c.ModelID }),
 	stringField("component-dataset-id", "datasetId", func(c *hdf.Component) **string { return &c.DatasetID }),
+}
+
+// The hdf-results bounds on Component.port; a value outside them is a document
+// the HDF validator rejects, so the importer must not build one.
+const (
+	minComponentPort = 1
+	maxComponentPort = 65535
+)
+
+// decimalDigits is the whole grammar a port prop may use. Go and JavaScript
+// disagree over what a lenient numeric parse accepts ("80abc", "1e3"), so the
+// grammar is spelled out rather than left to either language's parser.
+var decimalDigits = regexp.MustCompile(`^[0-9]+$`)
+
+// componentPort parses a port prop, reporting false for anything outside the
+// decimal-integer grammar or the schema's range.
+func componentPort(v string) (int64, bool) {
+	if !decimalDigits.MatchString(v) {
+		return 0, false
+	}
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || n < minComponentPort || n > maxComponentPort {
+		return 0, false
+	}
+	return n, true
+}
+
+// cloudProviders are the Cloud_Provider values HDF admits, named through the
+// generated schema types; a test pins them to the bundled schema's own enum.
+var cloudProviders = []hdf.CloudProvider{hdf.Aws, hdf.Azure, hdf.Gcp, hdf.Oci, hdf.CloudProviderOther}
+
+// CloudProviderValues returns the Cloud_Provider enum in sorted order, which is
+// also the order the TypeScript peer reports so the two warnings read alike.
+func CloudProviderValues() []string {
+	out := make([]string, 0, len(cloudProviders))
+	for _, p := range cloudProviders {
+		out = append(out, string(p))
+	}
+	sort.Strings(out)
+	return out
+}
+
+func validCloudProvider(v string) bool {
+	for _, p := range cloudProviders {
+		if string(p) == v {
+			return true
+		}
+	}
+	return false
 }
 
 var componentGroupProps = []ComponentGroupProp{
@@ -169,11 +241,15 @@ func ComponentSubjectProps(c *hdf.Component) []Property {
 
 // ReadComponentSubjectProps fills a component's identity fields from the
 // HDF-namespaced props on its subject, leaving a field the props do not carry as
-// the caller set it.
+// the caller set it. A value outside its HDF field's domain — which a foreign or
+// hand-edited SAR can carry — is dropped with a warning rather than written into
+// a document the HDF validator would reject.
 func ReadComponentSubjectProps(c *hdf.Component, props []Property) {
 	for _, e := range componentProps {
 		if v := e.read(props); v != nil {
-			e.Set(c, *v)
+			if !e.Set(c, *v) {
+				log.Printf("WARNING: Dropping %s %q on component %q: not %s", e.Prop, *v, c.Name, e.Accepts)
+			}
 		}
 	}
 	for _, g := range componentGroupProps {

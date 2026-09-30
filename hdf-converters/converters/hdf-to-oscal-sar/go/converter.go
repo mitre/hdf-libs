@@ -564,7 +564,7 @@ func requirementToFindingSet(req *hdf.EvaluatedRequirement, timestamp string, to
 
 	// Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
 	// finding's own props, deduped, in carried order.
-	carried := oscal.ReadCarriedProps(req.Tags)
+	carried := oscal.ReadCarriedProps(req.Tags, req.ID)
 	props = oscal.AppendCarriedProps(props, oscal.CarriedFor(carried, "finding"))
 
 	// OSCAL requires a non-empty finding description; fall back to the title

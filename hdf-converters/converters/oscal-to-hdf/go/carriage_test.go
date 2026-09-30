@@ -1,9 +1,13 @@
 package oscal
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,8 +70,7 @@ func importCarriage(t *testing.T) []CarriedProp {
 	require.NoError(t, err)
 	require.Len(t, results.Baselines, 1)
 	require.Len(t, results.Baselines[0].Requirements, 1)
-	entries := ReadCarriedProps(results.Baselines[0].Requirements[0].Tags)
-	return entries
+	return ReadCarriedProps(results.Baselines[0].Requirements[0].Tags, results.Baselines[0].Requirements[0].ID)
 }
 
 // AC: foreign-namespace and unconsumed props on a SAR finding survive import in
@@ -157,7 +160,7 @@ func TestImportRealFedRAMPFixtureCarriesProps(t *testing.T) {
 	var total int
 	for _, b := range results.Baselines {
 		for _, req := range b.Requirements {
-			entries := ReadCarriedProps(req.Tags)
+			entries := ReadCarriedProps(req.Tags, req.ID)
 			total += len(entries)
 			for _, e := range entries {
 				assert.NotEmpty(t, e.On, "on is required")
@@ -194,6 +197,132 @@ func TestCarryRecognisedThirdPartyProp(t *testing.T) {
 	assert.Equal(t, CarriedProp{On: "risk", Name: "impacted-control-id", Value: "ac-2", Ns: fedrampNs}, entries[0])
 }
 
+// tagsFromJSON decodes an HDF requirement's tags the way the reader leaves them.
+func tagsFromJSON(t *testing.T, raw string) map[string]interface{} {
+	t.Helper()
+	var tags map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(raw), &tags))
+	return tags
+}
+
+// readCarriageWithLog reads the tag and returns the entries plus everything logged.
+func readCarriageWithLog(t *testing.T, tags map[string]interface{}, requirementID string) ([]CarriedProp, string) {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(prev)
+	return ReadCarriedProps(tags, requirementID), buf.String()
+}
+
+// AC (ADR-0014 §3.3): carriage is per-entry tolerant — one malformed entry must
+// not erase the rest of the requirement's carried props, and the drop is reported
+// once for the requirement rather than silently.
+func TestReadCarriedPropsKeepsValidEntriesWhenOneIsMalformed(t *testing.T) {
+	tags := tagsFromJSON(t, `{"oscal-props":[
+		{"on":"finding","name":"a","value":"1"},
+		{"on":"finding","name":"b","value":"2","ns":42}]}`)
+
+	entries, logged := readCarriageWithLog(t, tags, "V-1234")
+	require.Len(t, entries, 1, "the valid entry survives a malformed sibling")
+	assert.Equal(t, CarriedProp{On: "finding", Name: "a", Value: "1"}, entries[0])
+	assert.Contains(t, logged, `WARNING: Dropping 1 malformed oscal-props entry on requirement "V-1234"`)
+	assert.Equal(t, 1, strings.Count(logged, "WARNING:"), "one warning per requirement, not one per entry")
+}
+
+// AC: several malformed entries still produce exactly one warning, naming the count.
+func TestReadCarriedPropsWarnsOncePerRequirementWithTheDroppedCount(t *testing.T) {
+	tags := tagsFromJSON(t, `{"oscal-props":[
+		{"on":"task","name":"a","value":"1"},
+		{"on":"finding","name":"b","value":"2","remarks":true},
+		{"on":"risk","name":"ok","value":"3"}]}`)
+
+	entries, logged := readCarriageWithLog(t, tags, "AC-1")
+	require.Len(t, entries, 1)
+	assert.Equal(t, CarriedProp{On: "risk", Name: "ok", Value: "3"}, entries[0])
+	assert.Contains(t, logged, `WARNING: Dropping 2 malformed oscal-props entries on requirement "AC-1"`)
+	assert.Equal(t, 1, strings.Count(logged, "WARNING:"))
+}
+
+// AC: a well-formed tag is read without a warning.
+func TestReadCarriedPropsIsSilentForAWellFormedTag(t *testing.T) {
+	tags := tagsFromJSON(t, `{"oscal-props":[{"on":"finding","name":"a","value":"1"}]}`)
+	entries, logged := readCarriageWithLog(t, tags, "AC-1")
+	require.Len(t, entries, 1)
+	assert.Empty(t, logged)
+}
+
+// AC: an absent tag is not a drop, so it warns nothing.
+func TestReadCarriedPropsIsSilentWhenTheTagIsAbsent(t *testing.T) {
+	entries, logged := readCarriageWithLog(t, tagsFromJSON(t, `{"nist":["AC-1"]}`), "AC-1")
+	assert.Empty(t, entries)
+	assert.Empty(t, logged)
+}
+
+// AC: a tag that is not an array carries nothing, and says so.
+func TestReadCarriedPropsWarnsWhenTheTagIsNotAnArray(t *testing.T) {
+	for _, raw := range []string{`{"oscal-props":{"on":"finding"}}`, `{"oscal-props":"finding"}`, `{"oscal-props":null}`} {
+		entries, logged := readCarriageWithLog(t, tagsFromJSON(t, raw), "AC-1")
+		assert.Empty(t, entries, raw)
+		assert.Contains(t, logged, `WARNING: Dropping the oscal-props tag on requirement "AC-1": it is not an array`, raw)
+	}
+}
+
+type carriageCase struct {
+	Label string      `json:"label"`
+	Entry interface{} `json:"entry"`
+	Valid bool        `json:"valid"`
+	Why   string      `json:"why"`
+}
+
+func loadCarriageCases(t *testing.T) []carriageCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "shared", "oscal-carriage-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Cases []carriageCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+	return table.Cases
+}
+
+// AC: the predicate that decides whether an entry is carried agrees with
+// shared/oscal-props.schema.json for every case in the shared table, so the two
+// languages' read paths cannot drift from the shape the schema pins.
+func TestCarriagePredicateAgreesWithTheOscalPropsSchema(t *testing.T) {
+	schema := loadOscalPropsSchema(t)
+	for _, c := range loadCarriageCases(t) {
+		t.Run(c.Label, func(t *testing.T) {
+			data, err := json.Marshal([]interface{}{c.Entry})
+			require.NoError(t, err)
+			res, err := schema.Validate(gojsonschema.NewBytesLoader(data))
+			require.NoError(t, err)
+			assert.Equal(t, c.Valid, res.Valid(), "the shared table's verdict must be the schema's: %s", c.Why)
+			assert.Equal(t, c.Valid, ValidCarriedProp(c.Entry), "the predicate must match the schema: %s", c.Why)
+		})
+	}
+}
+
+// AC: the read path keeps exactly the entries the predicate accepts.
+func TestReadCarriedPropsKeepsExactlyTheSharedTablesValidEntries(t *testing.T) {
+	cases := loadCarriageCases(t)
+	list := make([]interface{}, 0, len(cases))
+	want := 0
+	for _, c := range cases {
+		list = append(list, c.Entry)
+		if c.Valid {
+			want++
+		}
+	}
+	data, err := json.Marshal(map[string]interface{}{OscalPropsTag: list})
+	require.NoError(t, err)
+
+	entries, logged := readCarriageWithLog(t, tagsFromJSON(t, string(data)), "AC-1")
+	assert.Len(t, entries, want)
+	assert.Contains(t, logged, fmt.Sprintf(`WARNING: Dropping %d malformed oscal-props entries on requirement "AC-1"`, len(cases)-want))
+}
+
 func loadOscalPropsSchema(t *testing.T) *gojsonschema.Schema {
 	t.Helper()
 	path := filepath.Join("..", "..", "..", "shared", "oscal-props.schema.json")
@@ -202,4 +331,26 @@ func loadOscalPropsSchema(t *testing.T) *gojsonschema.Schema {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(raw))
 	require.NoError(t, err, "load oscal-props schema")
 	return schema
+}
+
+// An empty optional is absent: neither the tag entry nor the re-emitted prop
+// carries an ns/class/group/uuid/remarks member for "", matching the TS peer.
+func TestCarriageTreatsAnEmptyOptionalAsAbsent(t *testing.T) {
+	entries := CarryForeignProps(nil, "finding", []Property{{Name: "a", Value: "1", Ns: "", Remarks: ""}})
+	require.Len(t, entries, 1)
+	tagJSON, err := json.Marshal(entries)
+	require.NoError(t, err)
+	assert.NotContains(t, string(tagJSON), `"ns"`)
+	assert.NotContains(t, string(tagJSON), `"remarks"`)
+
+	tags := map[string]interface{}{OscalPropsTag: []interface{}{
+		map[string]interface{}{"on": "finding", "name": "a", "value": "1", "ns": "", "remarks": ""},
+	}}
+	read := ReadCarriedProps(tags, "V-1")
+	require.Len(t, read, 1)
+	props := AppendCarriedProps(nil, CarriedFor(read, "finding"))
+	propJSON, err := json.Marshal(props)
+	require.NoError(t, err)
+	assert.NotContains(t, string(propJSON), `"ns"`)
+	assert.NotContains(t, string(propJSON), `"remarks"`)
 }

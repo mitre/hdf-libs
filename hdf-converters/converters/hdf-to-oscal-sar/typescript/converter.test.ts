@@ -1286,3 +1286,71 @@ describe('SAR component round trip at the result level (ADR-0014 §4.5)', () => 
     expect(message).toContain('WARNING');
   });
 });
+
+interface ComponentGroupKeyCase {
+  label: string;
+  entries: Record<string, string>;
+  order: string[];
+  why: string;
+}
+
+const COMPONENT_GROUP_KEY_CASES = (
+  JSON.parse(
+    readFileSync(join(__dirname, '..', '..', '..', 'shared', 'oscal-component-group-key-cases.json'), 'utf-8'),
+  ) as { cases: ComponentGroupKeyCase[] }
+).cases;
+
+interface SarProp {
+  name: string;
+  value: string;
+  group?: string;
+}
+
+/** The key each of the exported subject's prop groups carries for prefix, group 1 first. */
+function subjectGroupKeys(props: SarProp[], prefix: string): string[] {
+  const keys: string[] = [];
+  for (let n = 1; ; n++) {
+    const group = `${prefix}-${n}`;
+    const p = props.find((x) => x.group === group && x.name === `${prefix}-key`);
+    if (!p) return keys;
+    keys.push(p.value);
+  }
+}
+
+// AC (§4.5): a component's label and external-id groups are numbered in Unicode
+// code-point order, so the same key takes the same slot whichever language
+// exported the SAR. The expectations live in one shared table both suites read.
+describe('SAR component map group numbering', () => {
+  const hdfWithComponentMap = (field: string, entries: Record<string, string>): string =>
+    JSON.stringify({
+      baselines: [{
+        name: 'b',
+        requirements: [{
+          id: 'AC-1', impact: 0,
+          descriptions: [{ label: 'default', data: 'd' }],
+          results: [{ status: 'passed', codeDesc: 'c', startTime: '2026-01-01T00:00:00Z' }],
+        }],
+      }],
+      components: [{ type: 'host', name: 'web01', [field]: entries }],
+    });
+
+  it('reads a non-empty shared group-key table, so the cases below cannot vanish silently', () => {
+    expect(COMPONENT_GROUP_KEY_CASES.length).toBeGreaterThan(0);
+  });
+
+  it.each(
+    COMPONENT_GROUP_KEY_CASES.flatMap((c) =>
+      (
+        [
+          ['labels', 'component-label'],
+          ['externalIds', 'component-external-id'],
+        ] as const
+      ).map(([field, prefix]) => [`${c.label}/${field}`, c, field, prefix] as const),
+    ),
+  )('numbers %s in code-point order', async (_label, c, field, prefix) => {
+    const sar = JSON.parse(await convertHdfToOscalSar(hdfWithComponentMap(field, c.entries)));
+    const components = sar['assessment-results'].results[0]['local-definitions'].components;
+    expect(components).toHaveLength(1);
+    expect(subjectGroupKeys(components[0].props as SarProp[], prefix), c.why).toStrictEqual(c.order);
+  });
+});

@@ -4,7 +4,9 @@
  * the SAR exporter and the SAR importer. Mirrors the Go peer component_props.go.
  */
 
-import type { Component } from '@mitre/hdf-schema';
+import { CloudProvider, type Component } from '@mitre/hdf-schema';
+import { byCodePoint } from '../../../shared/typescript/exportmap.js';
+import { emitConverterWarning } from '../../../shared/typescript/converterutil.js';
 import type { Property } from './types.js';
 import { emptyFieldProp, findVocabularyProp, pushVocabularyProp, vocabularyProp, vocabularyString } from './vocabulary.js';
 
@@ -16,8 +18,42 @@ export interface ComponentProp {
   field: string;
   /** A field HDF always defines carries no empty-field marker: an empty value omits the prop (§1.7.3). */
   required?: boolean;
+  /** The domain of a field HDF does not type as a free string, for the warning a rejected value earns. */
+  accepts?: string;
   get: (c: Component) => string | undefined;
-  set: (c: Component, v: string) => void;
+  /** Returns false when the value is outside the HDF field's domain, which a foreign or hand-edited subject can put there. */
+  set: (c: Component, v: string) => boolean;
+}
+
+/** The hdf-results bounds on Component.port. */
+const MIN_PORT = 1;
+const MAX_PORT = 65535;
+
+/**
+ * The whole grammar a port prop may use. Go and JavaScript disagree over what a
+ * lenient numeric parse accepts ("80abc", "1e3"), so the grammar is spelled out
+ * rather than left to either language's parser.
+ */
+const DECIMAL_DIGITS = /^[0-9]+$/;
+
+function componentPort(v: string): number | undefined {
+  if (!DECIMAL_DIGITS.test(v)) return undefined;
+  const n = Number(v);
+  if (!Number.isSafeInteger(n) || n < MIN_PORT || n > MAX_PORT) return undefined;
+  return n;
+}
+
+/**
+ * The Cloud_Provider enum in sorted order, read from the generated schema types'
+ * runtime enum rather than a hand-kept copy; the Go peer reports the same order so
+ * the two warnings read alike.
+ */
+export function cloudProviderValues(): string[] {
+  return Object.values(CloudProvider).map(String).sort();
+}
+
+function validCloudProvider(v: string): v is Component['provider'] & string {
+  return Object.values(CloudProvider).some((p) => String(p) === v);
 }
 
 /** One HDF component string map and the grouped key/value props that carry it. */
@@ -50,6 +86,7 @@ function stringField(prop: string, field: ComponentStringField): ComponentProp {
     get: (c) => c[field],
     set: (c, v) => {
       c[field] = v;
+      return true;
     },
   };
 }
@@ -79,6 +116,7 @@ const COMPONENT_PROPS: ComponentProp[] = [
     get: (c) => c.name,
     set: (c, v) => {
       c.name = v;
+      return true;
     },
   },
   stringField('component-description', 'description'),
@@ -103,10 +141,13 @@ const COMPONENT_PROPS: ComponentProp[] = [
   {
     prop: 'component-provider',
     field: 'provider',
+    accepts: `one of ${cloudProviderValues().join(', ')}`,
     // HDF allows an explicit null provider, which carries as absence.
     get: (c) => c.provider ?? undefined,
     set: (c, v) => {
-      c.provider = v as Component['provider'];
+      if (!validCloudProvider(v)) return false;
+      c.provider = v;
+      return true;
     },
   },
   stringField('component-account-id', 'accountId'),
@@ -127,10 +168,13 @@ const COMPONENT_PROPS: ComponentProp[] = [
   {
     prop: 'component-port',
     field: 'port',
+    accepts: `a decimal integer in ${MIN_PORT}..${MAX_PORT}`,
     get: (c) => (c.port === undefined ? undefined : String(c.port)),
     set: (c, v) => {
-      const n = Number.parseInt(v, 10);
-      if (!Number.isNaN(n)) c.port = n;
+      const n = componentPort(v);
+      if (n === undefined) return false;
+      c.port = n;
+      return true;
     },
   },
   stringField('component-model-id', 'modelId'),
@@ -174,13 +218,18 @@ export function componentSubjectProps(c: Component): Property[] {
 
 /**
  * Fills a component's identity fields from the HDF-namespaced props on its
- * subject, leaving a field the props do not carry as the caller set it. Mirrors
- * the Go peer.
+ * subject, leaving a field the props do not carry as the caller set it. A value
+ * outside its HDF field's domain — which a foreign or hand-edited SAR can carry —
+ * is dropped with a warning rather than written into a document the HDF validator
+ * would reject. Mirrors the Go peer.
  */
 export function readComponentSubjectProps(c: Component, props: Property[] | undefined): void {
   for (const e of COMPONENT_PROPS) {
     const v = readComponentProp(props, e);
-    if (v !== undefined) e.set(c, v);
+    if (v === undefined) continue;
+    if (!e.set(c, v)) {
+      emitConverterWarning(`Dropping ${e.prop} ${JSON.stringify(v)} on component ${JSON.stringify(c.name)}: not ${e.accepts}`);
+    }
   }
   for (const g of COMPONENT_GROUP_PROPS) {
     const m = readComponentMap(props, g);
@@ -201,12 +250,14 @@ function readComponentProp(props: Property[] | undefined, e: ComponentProp): str
 /**
  * Carries a component string map as grouped key/value props in sorted key order,
  * one group per entry, so the importer can rebuild the map. An empty key or value
- * is carried by an empty-field marker in the same group (§1.7.3).
+ * is carried by an empty-field marker in the same group (§1.7.3). Keys sort by
+ * Unicode code point, which is what Go's map-key sort produces; the default sort
+ * compares UTF-16 code units and would number the groups differently.
  */
 function appendComponentMap(props: Property[], g: ComponentGroupProp, m: Record<string, string> | undefined): void {
   if (!m) return;
   Object.keys(m)
-    .sort()
+    .sort(byCodePoint)
     .forEach((k, i) => {
       const group = `${g.prefix}-${i + 1}`;
       props.push(groupedComponentProp(g.keyProp, 'key', group, k));

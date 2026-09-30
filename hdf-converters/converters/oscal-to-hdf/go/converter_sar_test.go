@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 func TestConvertAssessmentResultsToHDF_EmptyInput(t *testing.T) {
@@ -1042,6 +1043,70 @@ func TestConvertAssessmentResultsToHDF_ReconstitutesAllComponents(t *testing.T) 
 	require.NotNil(t, acct.Provider)
 	assert.Equal(t, hdf.CloudProvider("aws"), *acct.Provider)
 	assert.Equal(t, "prod-authorization-boundary", acct.Labels["boundary"])
+}
+
+// sarWithComponentProp builds a one-finding SAR whose observation carries a
+// single typed subject with one HDF-namespaced component prop, which is what a
+// hand-edited or third-party SAR hands the importer.
+func sarWithComponentProp(subjectType, title, prop, value string) []byte {
+	obs := `[{"uuid":"o1","description":"d","collected":"2026-01-01T00:00:00Z","subjects":[
+		{"subject-uuid":"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"` + subjectType + `","title":"` + title + `","props":[
+			{"name":"` + prop + `","ns":"` + hdfNS + `","value":` + strconv.Quote(value) + `}]}]}]`
+	finding := `[{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},"related-observations":[{"observation-uuid":"o1"}]}]`
+	return sarWithProse(finding, obs, `[]`)
+}
+
+// importComponentWithLog imports the document and returns its sole component
+// together with everything the converter logged.
+func importComponentWithLog(t *testing.T, input []byte) (hdf.Component, string) {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	log.SetOutput(prev)
+	require.NoError(t, err)
+	require.Len(t, results.Components, 1)
+
+	out, err := json.Marshal(results)
+	require.NoError(t, err)
+	vr := validators.ValidateResults(out)
+	assert.True(t, vr.Valid, "the imported document must satisfy hdf-results: %v", vr.Error())
+	return results.Components[0], buf.String()
+}
+
+// AC: a foreign component-port outside the decimal-integer grammar or the
+// schema's 1..65535 is dropped with a warning, and the document still validates.
+func TestConvertAssessmentResultsToHDF_DropsAnInvalidComponentPort(t *testing.T) {
+	for _, value := range []string{"80abc", "1e3", "0", "65536", " 80"} {
+		t.Run(value, func(t *testing.T) {
+			c, logged := importComponentWithLog(t, sarWithComponentProp("database", "db1", "component-port", value))
+			assert.Nil(t, c.Port, "an out-of-domain port is not carried into HDF")
+			assert.Contains(t, logged, `WARNING: Dropping component-port `+strconv.Quote(value)+` on component "db1": not a decimal integer in 1..65535`)
+		})
+	}
+}
+
+func TestConvertAssessmentResultsToHDF_KeepsAValidComponentPort(t *testing.T) {
+	c, logged := importComponentWithLog(t, sarWithComponentProp("database", "db1", "component-port", "443"))
+	require.NotNil(t, c.Port)
+	assert.Equal(t, int64(443), *c.Port)
+	assert.NotContains(t, logged, "component-port")
+}
+
+// AC: a foreign component-provider outside the Cloud_Provider enum is dropped
+// with a warning instead of yielding HDF the validator rejects.
+func TestConvertAssessmentResultsToHDF_DropsAnInvalidComponentProvider(t *testing.T) {
+	c, logged := importComponentWithLog(t, sarWithComponentProp("cloudAccount", "acct", "component-provider", "digitalocean"))
+	assert.Nil(t, c.Provider, "an out-of-enum provider is not carried into HDF")
+	assert.Contains(t, logged, `WARNING: Dropping component-provider "digitalocean" on component "acct": not one of `+strings.Join(CloudProviderValues(), ", "))
+}
+
+func TestConvertAssessmentResultsToHDF_KeepsAValidComponentProvider(t *testing.T) {
+	c, logged := importComponentWithLog(t, sarWithComponentProp("cloudAccount", "acct", "component-provider", "aws"))
+	require.NotNil(t, c.Provider)
+	assert.Equal(t, hdf.CloudProvider("aws"), *c.Provider)
+	assert.NotContains(t, logged, "component-provider")
 }
 
 // A subject whose type is not an HDF component type (a foreign SAR's

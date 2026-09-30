@@ -546,7 +546,7 @@ function requirementToFindingSet(
 
   // Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
   // finding's own props, deduped, in carried order.
-  const carried = readCarriedProps(req.tags);
+  const carried = readCarriedProps(req.tags, req.id);
   appendCarriedProps(props, carriedFor(carried, 'finding'));
 
   // Source code is an artifact with a media type, not a StringDatatype prop:
