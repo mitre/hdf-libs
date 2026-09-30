@@ -563,3 +563,70 @@ describe('typeless component', () => {
     expect(validateAR(JSON.parse(out)), JSON.stringify(validateAR.errors)).toBe(true);
   });
 });
+
+// Mirrors the Go TestConvertHDFToOSCALSAR_ToolPartyNameNormalized and
+// TestConvertHDFToOSCALSAR_ConstructedTitlesNormalized. Non-prop single-line sinks
+// the SAR exporter fills from HDF text — the tool party name (StringDatatype) and
+// the two constructed titles that embed a requirement id (MarkupLineDatatype) —
+// normalize through the ADR-0014 §1.7.1 helper, so a line terminator or edge
+// whitespace no longer yields a document either vendored schema rejects.
+describe('hdf-to-oscal-sar single-line display sinks (ADR-0014 §1.7.1)', () => {
+  interface SarOut {
+    'assessment-results': {
+      metadata: { parties: Array<{ name?: string }> };
+      results: Array<{ risks?: Array<{ title: string }> }>;
+      'back-matter'?: { resources?: Array<{ title: string }> };
+    };
+  }
+
+  it.each([
+    ['interior line feed', 'In\nSpec', 'In Spec'],
+    ['carriage return', 'In\rSpec', 'In Spec'],
+    ['line separator U+2028', 'In\u2028Spec', 'In Spec'],
+    ['paragraph separator U+2029', 'In\u2029Spec', 'In Spec'],
+    ['leading and trailing whitespace', '  InSpec  ', 'InSpec'],
+    ['already valid unchanged', 'InSpec 5.22.65', 'InSpec 5.22.65'],
+  ])('normalizes the tool party name for a %s', async (_label, toolName, want) => {
+    const input = JSON.stringify({
+      tool: { name: toolName, format: 'exec-json' },
+      baselines: [{
+        name: 'b1',
+        requirements: [{
+          id: 'AC-3', impact: 0.5, tags: { nist: ['AC-3'] },
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }],
+        }],
+      }],
+    });
+    const out = JSON.parse(await convertHdfToOscalSar(input)) as SarOut;
+    for (const [version, validator] of AR_VALIDATORS) {
+      expect(validator(out), `${version}: ${JSON.stringify(validator.errors)}`).toBe(true);
+    }
+    const parties = out['assessment-results'].metadata.parties;
+    expect(parties).toHaveLength(1);
+    expect(parties[0]!.name, 'tool party name is normalized display text').toBe(want);
+  });
+
+  it('normalizes the constructed risk and check-source titles that embed a requirement id', async () => {
+    const input = JSON.stringify({
+      baselines: [{
+        name: 'b1',
+        requirements: [{
+          id: 'AC-4\ntrailing', title: 'Access control', impact: 0.5, code: 'describe x',
+          tags: { nist: ['AC-4'] },
+          results: [{ status: 'failed', codeDesc: 'c', startTime: '2026-06-01T00:00:00Z' }],
+        }],
+      }],
+    });
+    const out = JSON.parse(await convertHdfToOscalSar(input)) as SarOut;
+    for (const [version, validator] of AR_VALIDATORS) {
+      expect(validator(out), `${version}: ${JSON.stringify(validator.errors)}`).toBe(true);
+    }
+    const risk = out['assessment-results'].results[0]!.risks![0]!;
+    expect(risk.title).toBe('Risk for AC-4 trailing');
+    const codeRes = (out['assessment-results']['back-matter']?.resources ?? []).find((r) =>
+      r.title.startsWith('Check source code'),
+    );
+    expect(codeRes, 'the check-source resource is present').toBeDefined();
+    expect(codeRes!.title).toBe('Check source code for AC-4 trailing');
+  });
+});

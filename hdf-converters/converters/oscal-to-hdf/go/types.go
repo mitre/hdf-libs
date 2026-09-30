@@ -608,16 +608,25 @@ type ARLocalDefinitions struct {
 
 // Result contains assessment findings for a specific assessment cycle.
 type Result struct {
-	UUID             string            `json:"uuid"`
-	Title            string            `json:"title"`
-	Description      string            `json:"description,omitempty"`
-	Start            string            `json:"start"`
-	End              string            `json:"end,omitempty"`
-	Props            []Property        `json:"props,omitempty"`
-	ReviewedControls *ReviewedControls `json:"reviewed-controls,omitempty"`
-	Findings         []Finding         `json:"findings,omitempty"`
-	Observations     []Observation     `json:"observations,omitempty"`
-	Risks            []Risk            `json:"risks,omitempty"`
+	UUID             string                  `json:"uuid"`
+	Title            string                  `json:"title"`
+	Description      string                  `json:"description,omitempty"`
+	Start            string                  `json:"start"`
+	End              string                  `json:"end,omitempty"`
+	Props            []Property              `json:"props,omitempty"`
+	LocalDefinitions *ResultLocalDefinitions `json:"local-definitions,omitempty"`
+	ReviewedControls *ReviewedControls       `json:"reviewed-controls,omitempty"`
+	Findings         []Finding               `json:"findings,omitempty"`
+	Observations     []Observation           `json:"observations,omitempty"`
+	Risks            []Risk                  `json:"risks,omitempty"`
+}
+
+// ResultLocalDefinitions holds data objects scoped to one result. The SAR
+// exporter carries the assessed components here so they survive a round trip even
+// when no requirement produces an observation (ADR-0014 §4.5); the per-result
+// home exists independently of findings, unlike the observation subjects.
+type ResultLocalDefinitions struct {
+	Components []SystemComponent `json:"components,omitempty"`
 }
 
 // Finding is an assessment determination about a control.

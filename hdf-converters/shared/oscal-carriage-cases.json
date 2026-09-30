@@ -1,0 +1,143 @@
+{
+  "$comment": "Shared case set for the oscal-props carriage predicate (ADR-0014 §3.3). Go (ValidCarriedProp) and TypeScript (validCarriedProp) both read it, and both suites additionally validate each entry as a one-item array against shared/oscal-props.schema.json, so the predicate and the schema are pinned to the same verdict. Carriage is per-entry tolerant: an invalid entry is dropped and its valid siblings are kept.",
+  "cases": [
+    {
+      "label": "minimal entry",
+      "entry": {"on": "finding", "name": "a", "value": "1"},
+      "valid": true,
+      "why": "on/name/value are the only required members"
+    },
+    {
+      "label": "every member present",
+      "entry": {"on": "risk", "name": "priority", "value": "high", "ns": "https://fedramp.gov/ns/oscal", "class": "scanner", "group": "g1", "uuid": "6a5b1d0e-0000-4000-8000-000000000000", "remarks": "r"},
+      "valid": true,
+      "why": "an entry mirrors all seven members of an OSCAL prop plus on"
+    },
+    {
+      "label": "empty value",
+      "entry": {"on": "observation", "name": "a", "value": ""},
+      "valid": true,
+      "why": "an OSCAL prop value may be empty; only name has a minimum length"
+    },
+    {
+      "label": "on outside the enum",
+      "entry": {"on": "task", "name": "a", "value": "1"},
+      "valid": false,
+      "why": "on names the OSCAL object the prop hung on: finding, observation or risk"
+    },
+    {
+      "label": "on not a string",
+      "entry": {"on": 1, "name": "a", "value": "1"},
+      "valid": false,
+      "why": "on is a string"
+    },
+    {
+      "label": "on absent",
+      "entry": {"name": "a", "value": "1"},
+      "valid": false,
+      "why": "without on the exporter cannot place the prop back on its object"
+    },
+    {
+      "label": "name absent",
+      "entry": {"on": "finding", "value": "1"},
+      "valid": false,
+      "why": "name is required"
+    },
+    {
+      "label": "name empty",
+      "entry": {"on": "finding", "name": "", "value": "1"},
+      "valid": false,
+      "why": "an OSCAL prop name is a non-empty token"
+    },
+    {
+      "label": "name not a string",
+      "entry": {"on": "finding", "name": 5, "value": "1"},
+      "valid": false,
+      "why": "name is a string"
+    },
+    {
+      "label": "value absent",
+      "entry": {"on": "finding", "name": "a"},
+      "valid": false,
+      "why": "value is required"
+    },
+    {
+      "label": "value not a string",
+      "entry": {"on": "finding", "name": "a", "value": 2},
+      "valid": false,
+      "why": "value is a string, carried verbatim"
+    },
+    {
+      "label": "numeric ns",
+      "entry": {"on": "finding", "name": "b", "value": "2", "ns": 42},
+      "valid": false,
+      "why": "a non-string optional would reach the emitted OSCAL prop as a non-string"
+    },
+    {
+      "label": "null ns",
+      "entry": {"on": "finding", "name": "b", "value": "2", "ns": null},
+      "valid": false,
+      "why": "an optional member is present exactly when it is a string"
+    },
+    {
+      "label": "numeric class",
+      "entry": {"on": "finding", "name": "b", "value": "2", "class": 1},
+      "valid": false,
+      "why": "class is a string when present"
+    },
+    {
+      "label": "object group",
+      "entry": {"on": "finding", "name": "b", "value": "2", "group": {}},
+      "valid": false,
+      "why": "group is a string when present"
+    },
+    {
+      "label": "array uuid",
+      "entry": {"on": "finding", "name": "b", "value": "2", "uuid": []},
+      "valid": false,
+      "why": "uuid is a string when present"
+    },
+    {
+      "label": "boolean remarks",
+      "entry": {"on": "finding", "name": "b", "value": "2", "remarks": true},
+      "valid": false,
+      "why": "remarks is a string when present"
+    },
+    {
+      "label": "unknown member",
+      "entry": {"on": "finding", "name": "b", "value": "2", "onn": "finding"},
+      "valid": false,
+      "why": "the tag admits no member beyond on plus OSCAL's seven, so a typo is a malformed entry rather than silent data loss"
+    },
+    {
+      "label": "entry is a string",
+      "entry": "on=finding",
+      "valid": false,
+      "why": "each entry is an object"
+    },
+    {
+      "label": "entry is null",
+      "entry": null,
+      "valid": false,
+      "why": "each entry is an object"
+    },
+    {
+      "label": "entry is an array",
+      "entry": ["finding", "a", "1"],
+      "valid": false,
+      "why": "each entry is an object, not a positional tuple"
+    },
+    {
+      "label": "entry is a number",
+      "entry": 7,
+      "valid": false,
+      "why": "each entry is an object"
+    },
+    {
+      "label": "empty optional",
+      "entry": {"on": "finding", "name": "a", "value": "1", "ns": ""},
+      "valid": true,
+      "why": "an empty optional is a string the schema admits; both languages then treat it as absent, so nothing re-emits an empty ns"
+    }
+  ]
+}

@@ -7,6 +7,12 @@
  * mapping they had before it: type "poam", with their own extension props not
  * carried (§3.6).
  *
+ * Foreign-prop carriage is SAR-only (ADR-0014 §3.6): unlike a SAR requirement's
+ * tags, Standalone_Override has no extension slot (unevaluatedProperties: false),
+ * so a foreign POA&M's own extension props are a stated loss on import — there is
+ * no oscal-props tag here and none is invented. HDF-produced POA&Ms are
+ * unaffected; every HDF field round-trips through §4.6.
+ *
  * Mirrors the Go implementation in converters/oscal-to-hdf/go/converter_poam.go.
  */
 

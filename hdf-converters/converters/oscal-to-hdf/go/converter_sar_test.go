@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 func TestConvertAssessmentResultsToHDF_EmptyInput(t *testing.T) {
@@ -473,23 +474,76 @@ func TestConvertAssessmentResultsToHDF_EmptyTargetSkippedWithWarning(t *testing.
 }
 
 func TestSarBaselineName(t *testing.T) {
-	tests := []struct {
-		resultTitle string
-		sarTitle    string
-		expected    string
-	}{
-		{"2023 Annual Assessment", "", "2023-annual-assessment"},
-		{"", "FedRAMP SAR", "fedramp-sar"},
-		{"", "", "oscal-assessment-results"},
-	}
+	const ns = "https://mitre.github.io/hdf-libs/ns/oscal"
 
-	for _, tt := range tests {
-		t.Run(tt.resultTitle+"/"+tt.sarTitle, func(t *testing.T) {
-			result := &Result{Title: tt.resultTitle}
-			sar := &AssessmentResults{Metadata: Metadata{Title: tt.sarTitle}}
-			assert.Equal(t, tt.expected, sarBaselineName(result, sar))
-		})
-	}
+	// A foreign result (no baseline-name prop) is named <kebab-title>--<uuid>,
+	// or the bare uuid when the kebab-cased title is empty (ADR-0014 §4.5).
+	t.Run("foreign result uses kebab title and uuid", func(t *testing.T) {
+		result := &Result{Title: "2023 Annual Assessment", UUID: "af0c8632-e994-48a7-924e-2354b6abace7"}
+		assert.Equal(t, "2023-annual-assessment--af0c8632-e994-48a7-924e-2354b6abace7", sarBaselineName(result))
+	})
+	t.Run("empty title falls back to the bare uuid", func(t *testing.T) {
+		result := &Result{Title: "", UUID: "22222222-2222-4222-8222-222222222222"}
+		assert.Equal(t, "22222222-2222-4222-8222-222222222222", sarBaselineName(result))
+	})
+	t.Run("title that kebabs to empty falls back to the bare uuid", func(t *testing.T) {
+		result := &Result{Title: "***", UUID: "33333333-3333-4333-8333-333333333333"}
+		assert.Equal(t, "33333333-3333-4333-8333-333333333333", sarBaselineName(result))
+	})
+
+	// An HDF-produced result carries the exact baseline name in a namespaced
+	// prop, which takes precedence over the title (ADR-0014 §4.3).
+	t.Run("baseline-name prop takes precedence over title", func(t *testing.T) {
+		result := &Result{
+			Title: "RHEL 9 STIG",
+			UUID:  "44444444-4444-4444-8444-444444444444",
+			Props: []Property{{Name: "baseline-name", Ns: ns, Value: "rhel9-stig-host-a"}},
+		}
+		assert.Equal(t, "rhel9-stig-host-a", sarBaselineName(result))
+	})
+	t.Run("baseline-name prop reads its exact value from remarks", func(t *testing.T) {
+		result := &Result{
+			Title: "RHEL 9 STIG",
+			UUID:  "55555555-5555-4555-8555-555555555555",
+			Props: []Property{{Name: "baseline-name", Ns: ns, Value: "rhel9-stig host-c", Remarks: "rhel9-stig\nhost-c"}},
+		}
+		assert.Equal(t, "rhel9-stig\nhost-c", sarBaselineName(result))
+	})
+	// A baseline-name prop in a foreign namespace is not HDF's and is ignored.
+	t.Run("foreign-namespace baseline-name is ignored", func(t *testing.T) {
+		result := &Result{
+			Title: "RHEL 9 STIG",
+			UUID:  "66666666-6666-4666-8666-666666666666",
+			Props: []Property{{Name: "baseline-name", Ns: "https://fedramp.gov/ns/oscal", Value: "not-ours"}},
+		}
+		assert.Equal(t, "rhel-9-stig--66666666-6666-4666-8666-666666666666", sarBaselineName(result))
+	})
+}
+
+// TestConvertAssessmentResultsToHDF_SameTitleForeignResultsStayDistinct proves
+// two foreign results sharing a title never collide on a baseline name.
+func TestConvertAssessmentResultsToHDF_SameTitleForeignResultsStayDistinct(t *testing.T) {
+	input := []byte(`{"assessment-results":{
+		"uuid":"11111111-1111-4111-8111-111111111111",
+		"metadata":{"title":"t","last-modified":"2026-01-01T00:00:00Z","version":"1","oscal-version":"1.1.2"},
+		"import-ap":{"href":"#"},
+		"results":[
+		  {"uuid":"aaaaaaaa-1111-4111-8111-111111111111","title":"RHEL 9 STIG","description":"d","start":"2026-01-01T00:00:00Z",
+			"reviewed-controls":{"control-selections":[{"include-all":{}}]},
+			"findings":[{"uuid":"f1","title":"F1","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}}}]},
+		  {"uuid":"bbbbbbbb-2222-4222-8222-222222222222","title":"RHEL 9 STIG","description":"d","start":"2026-01-01T00:00:00Z",
+			"reviewed-controls":{"control-selections":[{"include-all":{}}]},
+			"findings":[{"uuid":"f2","title":"F2","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}}}]}
+		]}}`)
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Baselines, 2)
+	names := []string{results.Baselines[0].Name, results.Baselines[1].Name}
+	assert.Equal(t, []string{
+		"rhel-9-stig--aaaaaaaa-1111-4111-8111-111111111111",
+		"rhel-9-stig--bbbbbbbb-2222-4222-8222-222222222222",
+	}, names)
+	assert.NotEqual(t, names[0], names[1], "same-title foreign results must not collide")
 }
 
 // findReqByID returns the requirement with the given ID from the first
@@ -941,4 +995,130 @@ func TestMapFindingStatus(t *testing.T) {
 			assert.Equal(t, tt.expected, mapFindingStatus(f))
 		})
 	}
+}
+
+// The SAR importer reconstitutes every top-level component from the assessment
+// subjects, with type-specific identity fields read back from the
+// HDF-namespaced props the exporter stamps on each subject (ADR-0014 §1.5).
+func TestConvertAssessmentResultsToHDF_ReconstitutesAllComponents(t *testing.T) {
+	obs := `[{"uuid":"o1","description":"d","collected":"2026-01-01T00:00:00Z","subjects":[
+		{"subject-uuid":"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"host","title":"web01","props":[
+			{"name":"component-os-name","ns":"` + hdfNS + `","value":"Ubuntu"},
+			{"name":"component-os-version","ns":"` + hdfNS + `","value":"22.04 LTS"},
+			{"name":"component-label-key","ns":"` + hdfNS + `","value":"environment","group":"component-label-1"},
+			{"name":"component-label-value","ns":"` + hdfNS + `","value":"production","group":"component-label-1"}]},
+		{"subject-uuid":"c1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"cloudAccount","title":"Prod AWS","props":[
+			{"name":"component-account-id","ns":"` + hdfNS + `","value":"123456789012"},
+			{"name":"component-region","ns":"` + hdfNS + `","value":"us-east-1"},
+			{"name":"component-provider","ns":"` + hdfNS + `","value":"aws"},
+			{"name":"component-label-key","ns":"` + hdfNS + `","value":"boundary","group":"component-label-1"},
+			{"name":"component-label-value","ns":"` + hdfNS + `","value":"prod-authorization-boundary","group":"component-label-1"}]}]}]`
+	finding := `[{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},"related-observations":[{"observation-uuid":"o1"}]}]`
+
+	results, err := ConvertAssessmentResultsToHDF(sarWithProse(finding, obs, `[]`), "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, results.Components, 2, "importer must reconstitute every component from the SAR subjects")
+
+	byName := make(map[string]hdf.Component, len(results.Components))
+	for _, c := range results.Components {
+		byName[c.Name] = c
+	}
+
+	host, ok := byName["web01"]
+	require.True(t, ok)
+	assert.Equal(t, hdf.Host, host.Type)
+	require.NotNil(t, host.ComponentID)
+	assert.Equal(t, "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", *host.ComponentID)
+	require.NotNil(t, host.OSName)
+	assert.Equal(t, "Ubuntu", *host.OSName)
+	require.NotNil(t, host.OSVersion)
+	assert.Equal(t, "22.04 LTS", *host.OSVersion)
+	assert.Equal(t, "production", host.Labels["environment"])
+
+	acct, ok := byName["Prod AWS"]
+	require.True(t, ok)
+	assert.Equal(t, hdf.CloudAccount, acct.Type)
+	require.NotNil(t, acct.AccountID)
+	assert.Equal(t, "123456789012", *acct.AccountID)
+	require.NotNil(t, acct.Provider)
+	assert.Equal(t, hdf.CloudProvider("aws"), *acct.Provider)
+	assert.Equal(t, "prod-authorization-boundary", acct.Labels["boundary"])
+}
+
+// sarWithComponentProp builds a one-finding SAR whose observation carries a
+// single typed subject with one HDF-namespaced component prop, which is what a
+// hand-edited or third-party SAR hands the importer.
+func sarWithComponentProp(subjectType, title, prop, value string) []byte {
+	obs := `[{"uuid":"o1","description":"d","collected":"2026-01-01T00:00:00Z","subjects":[
+		{"subject-uuid":"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"` + subjectType + `","title":"` + title + `","props":[
+			{"name":"` + prop + `","ns":"` + hdfNS + `","value":` + strconv.Quote(value) + `}]}]}]`
+	finding := `[{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},"related-observations":[{"observation-uuid":"o1"}]}]`
+	return sarWithProse(finding, obs, `[]`)
+}
+
+// importComponentWithLog imports the document and returns its sole component
+// together with everything the converter logged.
+func importComponentWithLog(t *testing.T, input []byte) (hdf.Component, string) {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	results, err := ConvertAssessmentResultsToHDF(input, "1.0.0")
+	log.SetOutput(prev)
+	require.NoError(t, err)
+	require.Len(t, results.Components, 1)
+
+	out, err := json.Marshal(results)
+	require.NoError(t, err)
+	vr := validators.ValidateResults(out)
+	assert.True(t, vr.Valid, "the imported document must satisfy hdf-results: %v", vr.Error())
+	return results.Components[0], buf.String()
+}
+
+// AC: a foreign component-port outside the decimal-integer grammar or the
+// schema's 1..65535 is dropped with a warning, and the document still validates.
+func TestConvertAssessmentResultsToHDF_DropsAnInvalidComponentPort(t *testing.T) {
+	for _, value := range []string{"80abc", "1e3", "0", "65536", " 80"} {
+		t.Run(value, func(t *testing.T) {
+			c, logged := importComponentWithLog(t, sarWithComponentProp("database", "db1", "component-port", value))
+			assert.Nil(t, c.Port, "an out-of-domain port is not carried into HDF")
+			assert.Contains(t, logged, `WARNING: Dropping component-port `+strconv.Quote(value)+` on component "db1": not a decimal integer in 1..65535`)
+		})
+	}
+}
+
+func TestConvertAssessmentResultsToHDF_KeepsAValidComponentPort(t *testing.T) {
+	c, logged := importComponentWithLog(t, sarWithComponentProp("database", "db1", "component-port", "443"))
+	require.NotNil(t, c.Port)
+	assert.Equal(t, int64(443), *c.Port)
+	assert.NotContains(t, logged, "component-port")
+}
+
+// AC: a foreign component-provider outside the Cloud_Provider enum is dropped
+// with a warning instead of yielding HDF the validator rejects.
+func TestConvertAssessmentResultsToHDF_DropsAnInvalidComponentProvider(t *testing.T) {
+	c, logged := importComponentWithLog(t, sarWithComponentProp("cloudAccount", "acct", "component-provider", "digitalocean"))
+	assert.Nil(t, c.Provider, "an out-of-enum provider is not carried into HDF")
+	assert.Contains(t, logged, `WARNING: Dropping component-provider "digitalocean" on component "acct": not one of `+strings.Join(CloudProviderValues(), ", "))
+}
+
+func TestConvertAssessmentResultsToHDF_KeepsAValidComponentProvider(t *testing.T) {
+	c, logged := importComponentWithLog(t, sarWithComponentProp("cloudAccount", "acct", "component-provider", "aws"))
+	require.NotNil(t, c.Provider)
+	assert.Equal(t, hdf.CloudProvider("aws"), *c.Provider)
+	assert.NotContains(t, logged, "component-provider")
+}
+
+// A subject whose type is not an HDF component type (a foreign SAR's
+// "inventory-item", "party", etc.) is not turned into a component, so foreign
+// documents keep importing without gaining invalid components.
+func TestConvertAssessmentResultsToHDF_SkipsNonComponentSubjects(t *testing.T) {
+	obs := `[{"uuid":"o1","description":"d","collected":"2026-01-01T00:00:00Z","subjects":[
+		{"subject-uuid":"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"inventory-item","title":"asset"},
+		{"subject-uuid":"b1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d","type":"party","title":"person"}]}]`
+	finding := `[{"uuid":"f1","title":"t","description":"d","target":{"type":"objective-id","target-id":"ac-1","status":{"state":"satisfied"}},"related-observations":[{"observation-uuid":"o1"}]}]`
+
+	results, err := ConvertAssessmentResultsToHDF(sarWithProse(finding, obs, `[]`), "1.0.0")
+	require.NoError(t, err)
+	assert.Empty(t, results.Components)
 }

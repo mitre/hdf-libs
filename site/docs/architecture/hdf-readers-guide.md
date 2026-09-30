@@ -645,8 +645,8 @@ HDF documents map to OSCAL document types:
 |-------------|-----------------|-----------|
 | hdf-baseline | Catalog + Profile | Convert from OSCAL |
 | hdf-results | Assessment Results (AR) | Bidirectional |
-| hdf-system | SSP system-characteristics | Bidirectional |
-| hdf-plan | Assessment Plan (SAP) | Bidirectional |
+| hdf-system | SSP system-characteristics | Convert from OSCAL |
+| hdf-plan | Assessment Plan (SAP) | Convert from OSCAL |
 | hdf-amendments | POA&M risk-response | Bidirectional |
 | hdf-comparison | *(HDF original)* | Export summaries |
 | hdf-evidence | AR + POA&M bundle | Export to OSCAL |

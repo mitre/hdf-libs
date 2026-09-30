@@ -203,23 +203,25 @@ if (isValidCsv(fileContent)) {
   const parsed = parseCsv(fileContent);
 }
 
-// Sanitize individual values (escape special characters)
-const safe = sanitizeCsvValue('Value with "quotes" and, commas');
-console.log(safe); // "Value with ""quotes"" and, commas"
+// Sanitize individual values (neutralize formula injection)
+console.log(sanitizeCsvValue('=1+1')); // "'=1+1"
+console.log(sanitizeCsvValue(' -2+3')); // "' -2+3" (leading whitespace kept)
+console.log(sanitizeCsvValue('Value with "quotes" and, commas'));
+// 'Value with "quotes" and, commas' — unchanged; quoting is the serializer's job
 
 // Sanitize arrays
-const tags = ['AC-1', 'AC-2', null, undefined];
+const tags = ['AC-1', '=cmd|calc', null];
 const safeTags = sanitizeCsvArray(tags);
-console.log(safeTags); // ['AC-1', 'AC-2', '', '']
+console.log(safeTags); // ['AC-1', "'=cmd|calc", 'null']
 
-// Sanitize entire objects
+// Sanitize entire objects (flat string map; values stringified)
 const requirement = {
   id: 'REQ-001',
   title: 'Title with "quotes"',
   tags: ['AC-1', null]
 };
 const safeReq = sanitizeCsvObject(requirement);
-// All string values escaped, nulls converted to empty strings
+// { id: 'REQ-001', title: 'Title with "quotes"', tags: 'AC-1,' }
 ```
 
 ## API Reference
@@ -357,7 +359,7 @@ Parse CSV string to array of objects.
 
 - **Parameters:**
   - `csv` - CSV string to parse
-  - `options` - PapaParse options (optional)
+  - `options` - `Partial<CsvParseOptions>` (header, delimiter, typing and size limit; optional)
 - **Returns:** Array of objects (headers become keys)
 - **Throws:** Error if CSV is malformed
 
@@ -367,7 +369,7 @@ Build CSV string from array of objects.
 
 - **Parameters:**
   - `data` - Array of objects to convert
-  - `options` - PapaParse unparse options (optional)
+  - `options` - `Partial<CsvBuildOptions> & { sanitize?: boolean }` (optional)
 - **Returns:** CSV string with headers
 
 #### `isValidCsv(csv: string): boolean`
@@ -380,27 +382,31 @@ Check if string can be parsed as CSV.
 
 #### `sanitizeCsvValue(value: unknown): string`
 
-Escape value for safe CSV output.
+Neutralize formula injection in a value bound for CSV.
 
 - **Parameters:**
   - `value` - Value to sanitize
-- **Returns:** Escaped string (quotes escaped, nulls → empty string)
+- **Returns:** `String(value)`, prefixed with `'` when its first non-whitespace
+  character is `=`, `+`, `-`, `@`, `|`, or `%`. Nothing else is altered: quotes,
+  commas and newlines are passed through for the serializer to quote, and `null`
+  / `undefined` stringify to `"null"` / `"undefined"`.
 
 #### `sanitizeCsvArray(values: unknown[]): string[]`
 
-Sanitize array of values for CSV.
+Apply `sanitizeCsvValue` to each element.
 
 - **Parameters:**
   - `values` - Array to sanitize
 - **Returns:** Array of sanitized strings
 
-#### `sanitizeCsvObject<T>(obj: T): T`
+#### `sanitizeCsvObject<T extends Record<string, unknown>>(obj: T): Record<string, string>`
 
-Recursively sanitize all string values in object.
+Apply `sanitizeCsvValue` to each own enumerable value of an object.
 
 - **Parameters:**
   - `obj` - Object to sanitize
-- **Returns:** New object with sanitized values
+- **Returns:** A flat string map — one level only, every value stringified (an
+  array value becomes its comma-joined `String()` form)
 
 ## Development
 

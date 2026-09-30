@@ -782,11 +782,10 @@ hdf-results. Each OSCAL document type maps to a specific HDF document type:
 | Catalog | hdf-baseline | Security requirements |
 | Profile | hdf-baseline | Tailored requirements |
 
-These converters cannot be implemented until the target schemas exist. They are
-tracked under Phase 5 (hdf-libs-qcj7) with a converter alignment audit card
-(hdf-libs-ccp0) to ensure all converters reflect current schema changes.
-
-Reverse converters (HDF → OSCAL) are also needed for OSCAL export from Heimdall.
+All of these importers ship, along with two reverse converters for OSCAL export:
+`hdf → oscal-sar` and `hdf-amendments → oscal-poam`. Field correspondences,
+limitations and the HDF extension namespace are documented in the
+[OSCAL alignment guide](../guides/oscal-alignment.md).
 
 ---
 
@@ -894,8 +893,8 @@ a record of the intent behind v3's shape.
 | hdf-baseline | Catalog + Profile | Convert from OSCAL |
 | hdf-results | Assessment Results (AR) | Bidirectional convert |
 | hdf-comparison | (none — HDF original) | Export summaries |
-| hdf-system | SSP system-characteristics | Bidirectional convert |
-| hdf-plan | Assessment Plan (SAP) | Bidirectional convert |
+| hdf-system | SSP system-characteristics | Convert from OSCAL |
+| hdf-plan | Assessment Plan (SAP) | Convert from OSCAL |
 | hdf-amendments | POA&M risk-response | Bidirectional convert |
 | hdf-evidence | (AR + POA&M bundle) | Export to OSCAL |
 

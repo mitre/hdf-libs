@@ -14,6 +14,7 @@ import type {
   DocumentMetadata,
   ImportAssessmentPlan,
   AssessmentResult,
+  AssessmentAssetsComponent,
   Finding,
   TargetClass,
   StatusClass,
@@ -25,15 +26,19 @@ import type {
   RelevantEvidence,
   RiskResponse,
 } from '../../oscal-to-hdf/typescript/types.js';
+import { ComponentStatusState } from '../../oscal-to-hdf/typescript/types.js';
 import {
   nistTagToControlRef,
+  oscalStatusToHdf,
   oscalString,
   oscalToken,
   impactToSeverity,
   descriptionLabelProp,
   OSCAL_VERSION,
 } from '../../oscal-to-hdf/typescript/shared.js';
-import { pushVocabularyProp, vocabularyProp } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import { pushVocabularyProp, vocabularyProp, normalizePropValue } from '../../oscal-to-hdf/typescript/vocabulary.js';
+import { componentSubjectProps } from '../../oscal-to-hdf/typescript/component-props.js';
+import { appendCarriedProps, carriedFor, readCarriedProps } from '../../oscal-to-hdf/typescript/carriage.js';
 
 /** A reviewed-controls include-controls entry. */
 interface SelectControl {
@@ -151,7 +156,7 @@ function buildOSCALDocument(hdfResults: HDFResults): OscalSARDocument {
     'last-modified': timestamp,
     version: '1.0.0',
     'oscal-version': OSCAL_VERSION,
-    parties: [{ uuid: toolActorUuid, type: 'organization', name: toolPartyName(hdfResults) }],
+    parties: [{ uuid: toolActorUuid, type: 'organization', name: normalizePropValue(toolPartyName(hdfResults)) }],
   } as unknown as DocumentMetadata;
 
   let importAP: ImportAssessmentPlan;
@@ -253,8 +258,19 @@ function baselineToResult(
     description = baseline.description;
   }
 
-  // baseline.version has no first-class SAR home; carry it as a result prop.
+  // The result title is display text and not injective, so carry the exact HDF
+  // baseline name in a namespaced prop for a lossless round trip (§4.3).
   const resultProps: Property[] = [];
+  pushVocabularyProp(resultProps, 'baseline-name', baseline.name);
+
+  // The result title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+  // so carry the exact baseline title in a namespaced prop and normalize the
+  // display title (§1.7.1). The baseline title is distinct from its name.
+  if (baseline.title && baseline.title !== '') {
+    pushVocabularyProp(resultProps, 'baseline-title', baseline.title);
+  }
+
+  // baseline.version has no first-class SAR home; carry it as a result prop.
   if (typeof baseline.version === 'string') {
     pushVocabularyProp(resultProps, 'baseline-version', baseline.version);
   }
@@ -314,11 +330,14 @@ function baselineToResult(
 
   const result = {
     uuid: crypto.randomUUID(),
-    title,
+    title: normalizePropValue(title),
     description,
     start: assessmentStart(baseline, timestamp),
     // Match Go's omitempty: an empty props list is omitted entirely.
     ...(resultProps.length > 0 ? { props: resultProps } : {}),
+    // Assessed components at a result-level home so they survive even when no
+    // requirement produces an observation (ADR-0014 §4.5). Mirrors Go.
+    ...(subjects.length > 0 ? { 'local-definitions': { components: componentDefsFromSubjects(subjects) } } : {}),
     'reviewed-controls': { 'control-selections': [controlSelection] },
     // Match Go's omitempty on all three: OSCAL puts minItems 1 on each, so an
     // empty array is invalid where absence is fine. Emitting [] here made a
@@ -337,13 +356,19 @@ interface SubjectRef {
   'subject-uuid': string;
   type: string;
   title: string;
+  props?: Property[];
 }
+
+/** One top-level HDF component. */
+type HDFComponent = NonNullable<HDFResults['components']>[number];
 
 /**
  * Turns the top-level HDF components[] into OSCAL assessment subjects. Each
  * component's UUID (componentId when present, otherwise a fresh one) identifies
  * the subject; the HDF component type is a valid OSCAL subject type token and
- * its name becomes the subject title.
+ * its name becomes the subject title. A subject holds only uuid/type/title, so
+ * each component's type-specific identity fields ride as HDF-namespaced props on
+ * the subject (ADR-0014 §1.5) and reconstitute on read-back.
  *
  * A component with no type is skipped rather than given one. OSCAL requires both
  * subject-uuid and type on a subject-reference, so the type cannot simply be
@@ -354,13 +379,71 @@ interface SubjectRef {
  */
 function buildSubjects(components: HDFResults['components']): SubjectRef[] {
   if (!Array.isArray(components) || components.length === 0) return [];
-  return components
-    .filter((c) => oscalString(c.type ?? '') !== '')
-    .map((c) => ({
+  const subjects: SubjectRef[] = [];
+  for (const c of components) {
+    if (oscalString(c.type ?? '') === '') {
+      // Both an OSCAL assessment subject and a system-component require a type,
+      // and hdf-results defines no default, so a type-less component genuinely
+      // cannot be carried. Warn rather than drop it silently (§4.5). Mirrors Go.
+      emitConverterWarning(
+        `hdf-to-oscal-sar: component "${c.name}" has no type, which an OSCAL assessment subject requires; not carried`,
+      );
+      continue;
+    }
+    // The subject title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+    // so the exact component name rides in the component-name prop (§1.7.1).
+    const subject: SubjectRef = {
       'subject-uuid': c.componentId && c.componentId !== '' ? c.componentId : crypto.randomUUID(),
       type: String(c.type),
-      title: c.name,
-    }));
+      title: normalizePropValue(c.name),
+    };
+    const props = componentSubjectProps(c);
+    if (props.length > 0) subject.props = props;
+    subjects.push(subject);
+    warnUncarriedComponentFields(c);
+  }
+  return subjects;
+}
+
+/**
+ * Turns the assessment subjects into result-level OSCAL system-components so the
+ * assessed components survive a round trip even when no requirement produces an
+ * observation (ADR-0014 §4.5). Each component keeps the subject's identity
+ * (uuid/type/title and the HDF-namespaced props); the OSCAL-required description
+ * and status have no HDF counterpart, so they are display fallbacks the importer
+ * never reads back — the exact identity lives entirely in the props. Mirrors Go.
+ */
+function componentDefsFromSubjects(subjects: SubjectRef[]): AssessmentAssetsComponent[] {
+  return subjects.map((s) => {
+    const display = s.title !== '' ? s.title : 'Assessed component';
+    return {
+      uuid: s['subject-uuid'],
+      type: s.type,
+      title: display,
+      description: display,
+      ...(s.props ? { props: s.props } : {}),
+      status: { state: ComponentStatusState.Other },
+    };
+  });
+}
+
+/**
+ * Reports component identity beyond the type-specific fields a SAR subject can
+ * hold — owner, BOMs, artifact integrity, and the migration-only fields — so it
+ * is not silently dropped (matching the lossy-conversion warning UX). Mirrors Go.
+ */
+function warnUncarriedComponentFields(c: HDFComponent): void {
+  const dropped: string[] = [];
+  if (c.owner) dropped.push('owner');
+  if (Array.isArray(c.boms) && c.boms.length > 0) dropped.push('boms');
+  if (Array.isArray(c.integrity) && c.integrity.length > 0) dropped.push('integrity');
+  if (Array.isArray(c.baselineRefs) && c.baselineRefs.length > 0) dropped.push('baselineRefs');
+  if (Array.isArray(c.inputOverrides) && c.inputOverrides.length > 0) dropped.push('inputOverrides');
+  if (c.targetSelector && Object.keys(c.targetSelector).length > 0) dropped.push('targetSelector');
+  if (dropped.length === 0) return;
+  emitConverterWarning(
+    `hdf-to-oscal-sar: component "${c.name}" carries ${dropped.join(', ')}, which an OSCAL SAR assessment subject cannot represent; not carried`,
+  );
 }
 
 /**
@@ -455,7 +538,16 @@ function requirementToFindingSet(
   let title = req.id;
   if (req.title && req.title !== '') {
     title = req.title;
+    // The finding title is a single-line display sink OSCAL 1.2.3 types MarkupLine,
+    // and Requirement_Core.title is prose that may carry line breaks (§2), so carry
+    // the exact title in a namespaced prop and normalize the display title (§1.7.1).
+    pushVocabularyProp(props, 'requirement-title', req.title);
   }
+
+  // Foreign props carried through HDF (ADR-0014 §3.4): re-emitted after the
+  // finding's own props, deduped, in carried order.
+  const carried = readCarriedProps(req.tags, req.id);
+  appendCarriedProps(props, carriedFor(carried, 'finding'));
 
   // Source code is an artifact with a media type, not a StringDatatype prop:
   // embed it as a back-matter resource and point at it with a rel="code" link.
@@ -464,7 +556,7 @@ function requirementToFindingSet(
     const resourceUuid = crypto.randomUUID();
     resource = {
       uuid: resourceUuid,
-      title: `Check source code for ${req.id}`,
+      title: normalizePropValue(`Check source code for ${req.id}`),
       props: [vocabularyProp('type', 'evidence')!],
       base64: {
         value: encodeBase64Utf8(req.code),
@@ -496,7 +588,7 @@ function requirementToFindingSet(
 
   const finding = {
     uuid: crypto.randomUUID(),
-    title,
+    title: normalizePropValue(title),
     // OSCAL requires a non-empty finding description; fall back to the title
     // when the requirement carries no description of its own.
     description: findingDesc || title,
@@ -505,15 +597,16 @@ function requirementToFindingSet(
     target,
   } as Finding;
 
-  // Build observation from requirement results
+  // Build observation from requirement results. Its display description is
+  // synthesized below, after the risk is built, from the objects being emitted.
   let observation: Observation | undefined;
   if (results.length > 0) {
     const obsUUID = crypto.randomUUID();
-    const obsDesc = buildObservationDescription(results);
     const relevantEvidence = buildRelevantEvidence(req);
+    const obsProps = appendCarriedProps([], carriedFor(carried, 'observation'));
     observation = {
       uuid: obsUUID,
-      description: obsDesc,
+      description: '',
       methods: ['TEST'],
       // When the evidence was gathered — the scan time for this requirement, not
       // when the file was converted.
@@ -523,6 +616,8 @@ function requirementToFindingSet(
       // reads back. Match Go's omitempty: empty arrays are omitted.
       ...(subjects.length > 0 ? { subjects } : {}),
       ...(relevantEvidence.length > 0 ? { 'relevant-evidence': relevantEvidence } : {}),
+      // Carried observation props (ADR-0014 §3.4); the observation has no own props.
+      ...(obsProps.length > 0 ? { props: obsProps } : {}),
     } as unknown as Observation;
     finding['related-observations'] = [{ 'observation-uuid': obsUUID }];
   } else {
@@ -543,9 +638,10 @@ function requirementToFindingSet(
     }
     const remediations = buildRemediations(req);
     const deadline = riskDeadline(req);
+    const riskProps = appendCarriedProps([], carriedFor(carried, 'risk'));
     risk = {
       uuid: riskUUID,
-      title: `Risk for ${req.id}`,
+      title: normalizePropValue(`Risk for ${req.id}`),
       description: `Impact: ${req.impact.toFixed(1)} (${severity})`,
       statement: `Impact: ${req.impact.toFixed(1)} (${severity})`,
       status: riskStatusFromState(state),
@@ -569,8 +665,14 @@ function requirementToFindingSet(
       // Match Go's omitempty: empty remediations / deadline are omitted.
       ...(remediations.length > 0 ? { remediations } : {}),
       ...(deadline ? { deadline } : {}),
+      // Carried risk props (ADR-0014 §3.4); the risk has no own props.
+      ...(riskProps.length > 0 ? { props: riskProps } : {}),
     } as unknown as IdentifiedRisk;
     finding['related-risks'] = [{ 'risk-uuid': riskUUID }];
+  }
+
+  if (observation) {
+    observation.description = observationDisplayDescription(roundTripStatus(state), observation, risk, title);
   }
 
   return { finding, observation, risk, resource };
@@ -777,21 +879,66 @@ function extractDefaultDescription(descriptions: Description[]): string {
 }
 
 /**
- * Concatenates result code descriptions and messages.
+ * Synthesizes an observation's display description from the OSCAL objects the
+ * exporter emits, mirroring how the reverse SAR importer reconstructs a result's
+ * status, codeDesc and message. Deriving it from the emitted observation and risk
+ * — not from the HDF result's stored codeDesc/message — makes the SAR round trip
+ * idempotent on observation.description (ADR-0014 §3.5): the string already equals
+ * what the importer reads back and the next export re-synthesizes, so the first
+ * HDF-produced export equals the second. observation.description is display text,
+ * not a prose home (ADR-0014 §2); the requirement's real prose rides its own homes
+ * (finding.target.description, relevant-evidence, risk.remediations).
  */
-function buildObservationDescription(results: RequirementResult[]): string {
+function observationDisplayDescription(
+  status: string,
+  obs: Observation,
+  risk: IdentifiedRisk | undefined,
+  fallbackTitle: string,
+): string {
+  let desc = `[${status}] ${reconstructedCodeDesc(obs, fallbackTitle)}`;
+  const msg = reconstructedRiskMessage(risk);
+  if (msg !== '') {
+    desc += ': ' + msg;
+  }
+  return desc;
+}
+
+/**
+ * The HDF status the emitted finding's target state maps back to on import
+ * (oscal-to-hdf mapFindingStatus): an unrecognized state is notReviewed, as there.
+ */
+function roundTripStatus(state: string): string {
+  return oscalStatusToHdf(state) ?? 'notReviewed';
+}
+
+/** Mirrors oscal-to-hdf buildCodeDesc for the single observation the exporter emits. */
+function reconstructedCodeDesc(obs: Observation, fallbackTitle: string): string {
   const parts: string[] = [];
-  for (const r of results) {
-    let desc = `[${r.status}] ${r.codeDesc}`;
-    if (r.message && r.message !== '') {
-      desc += ': ' + r.message;
+  if (obs.methods && obs.methods.length > 0) {
+    parts.push('Methods: ' + obs.methods.join(', '));
+  }
+  for (const subj of obs.subjects ?? []) {
+    let subjDesc = subj.type;
+    if (subj.title) {
+      subjDesc = subj.title + ' (' + subj.type + ')';
     }
-    parts.push(desc);
+    parts.push('Subject: ' + subjDesc);
   }
-  if (parts.length === 0) {
-    return 'No observations recorded';
+  if (parts.length === 0) return fallbackTitle;
+  return parts.join('; ');
+}
+
+/**
+ * Mirrors oscal-to-hdf buildRiskMessage for the single risk the exporter emits
+ * (undefined when the requirement's impact is 0).
+ */
+function reconstructedRiskMessage(risk: IdentifiedRisk | undefined): string {
+  if (!risk) return '';
+  let msg = risk.title;
+  if (risk.description) {
+    msg += ': ' + risk.description;
   }
-  return parts.join('\n');
+  return msg;
 }
 
 

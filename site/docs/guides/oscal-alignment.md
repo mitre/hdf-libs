@@ -115,34 +115,78 @@ Key field correspondences:
 
 `oscal-poam-to-hdf` emits an HDF **Amendments** document (top-level `overrides[]`), not Results — joining the VEX family (`openvex`, `csaf-vex`, `cyclonedx-vex`) as the second class of amendment-output converters. Consumer-attached remediation context is an amendment act, not a scan finding.
 
-Key field correspondences:
-- OSCAL `plan-of-action-and-milestones.poam-items[]` map to HDF `overrides[]`, each with `type: "poam"`
+Which mapping applies depends on who produced the POA&M. A `poam-item` whose
+related risk carries an `override-type` prop in the HDF namespace is read as
+HDF-produced and round-trips. The same prop with no namespace marks an export
+from before the namespace existed and is read with the legacy rule. Anything
+else takes the foreign-document mapping.
+
+In every case:
+- OSCAL `plan-of-action-and-milestones.poam-items[]` map to HDF `overrides[]`
 - OSCAL `import-ssp.href` maps to HDF `systemRef`
 - OSCAL metadata `responsible-parties[role-id=prepared-by]` maps to HDF `appliedBy`
-- OSCAL `risks[]` referenced by a `poam-item.related-risks[]` populate the override's `requirementId` (from `impacted-control-id` props) and `status` (`open`/`investigating` → `failed`, `closed`/`risk-accepted` → `passed`)
-- OSCAL `risks[].remediations[lifecycle=planned]` map to HDF `Milestone[]` entries on the override (`description`, `status: "pending"`, `estimatedCompletion`)
+- OSCAL `risks[].remediations[lifecycle=planned]` map to HDF `Milestone[]` entries on the override (`description`, `estimatedCompletion`, `status` defaulting to `pending`); an HDF-produced POA&M also restores each milestone's `title`, `status`, `completedAt` and `completedBy` from its task
+
+**HDF-produced POA&M (round-trip).** Every override field returns from the prop
+or object the exporter wrote it to — no field is derived from titles or UUIDs,
+and an absent prop is an absent field:
+- HDF-namespaced props restore `type` (`override-type`), `requirementId` (`hdf-requirement-id`), `status` (`override-status`), `impact` (`impact-override`), `justification`, `baselineRef`, `componentRef`, `inheritedFrom` and `affectedPackages`
+- the risk's `risk-log` "Override applied" entry restores `appliedBy`; CVSS `characterizations` restore `cvss`; the item's related observations restore `evidence`; the risk's `links[rel=reference]` and their back-matter resources restore `externalReferences`
+
+**Pre-namespace HDF export (legacy rule).** When the related risk's
+`override-type` prop carries no namespace, `requirementId` is taken from the
+risk's `impacted-control-id` prop alone — never from a title — and an item
+without one is skipped with a warning. The un-namespaced spelling is a
+one-release compatibility window.
+
+**Foreign POA&M.** With no `override-type` prop at all, each item becomes an
+override with `type: "poam"`; its `status` is `passed` when the related risk's
+status is `closed` (or `satisfied`) and `failed` otherwise, which covers `open`,
+`investigating` and every other OSCAL risk status.
+`requirementId` comes from the risk's `impacted-control-id` prop, then the
+item's `POAM-ID` prop, then the item title, and is `unknown` when none is
+present.
 
 ### Amendments to POA&M (reverse)
 
 **CLI:** `hdf convert --from hdf-amendments --to oscal-poam amendments.json -o poam.json`
 
-Key field correspondences:
-- HDF `overrides[]` map to OSCAL `poam-items[]`
+The exporter writes everything the importer needs to return every override
+field, so an HDF-produced POA&M read back through `oscal-poam-to-hdf`
+round-trips:
+- HDF `overrides[]` map to OSCAL `poam-items[]`, each with one related risk carrying the override's identity and disposition as HDF-namespaced props (`hdf-requirement-id`, `override-type`, `override-status`, `impact-override`, `justification`, `baseline-ref`, `component-ref`, `inherited-from`, and the `affectedPackages` entries)
+- a `requirementId` that NIST defines also gets FedRAMP's `impacted-control-id` prop, so a FedRAMP consumer reads the control without the HDF vocabulary
 - HDF `Milestone[]` entries on each override map to OSCAL remediation tasks
-- HDF `appliedBy` populates OSCAL responsible-party entries
+- HDF `appliedBy` populates OSCAL responsible-party entries and the risk's `risk-log` "Override applied" entry
+- HDF `cvss` becomes a risk characterization; `evidence` and `externalReferences` become observations and risk links backed by back-matter resources
 
 ## Limitations
 
 1. **Profile resolution is partial.** The converter handles `include-controls`, `exclude-controls`, `modify.set-parameters`, and `modify.alters` (adds/removes on parts and props), but does not resolve multi-level profile chains or `import-resource` references. For deeply chained profiles, resolve them using the OSCAL resolver tooling first.
 
-2. **Field loss in some directions.** OSCAL documents often contain metadata (responsible parties, roles, locations, back-matter) that has no direct HDF equivalent. This metadata is not preserved in the OSCAL-to-HDF direction. Similarly, HDF fields like `effectiveStatus` and `statusOverrides` have no direct OSCAL SAR equivalent.
+2. **Field loss in some directions.** OSCAL documents often contain metadata (responsible parties, roles, locations, back-matter) that has no direct HDF equivalent; that metadata is not preserved in the OSCAL-to-HDF direction. Props are the exception: props on a SAR finding and its related observations and risks that HDF does not consume are carried through HDF and re-emitted on export (see below). Similarly, HDF fields like `effectiveStatus` and `statusOverrides` have no direct OSCAL SAR equivalent.
 
 3. **Component definition is one-way.** There is no HDF-to-OSCAL component definition converter. Component definitions map to baselines (requirements extracted from implemented controls), but the reverse mapping is ambiguous.
 
 4. **SSP conversion is one-way.** HDF system documents can be created from OSCAL SSPs, but the reverse (HDF system to OSCAL SSP) is not yet implemented. The SSP format contains extensive narrative content that cannot be synthesized from HDF system metadata alone.
 
+## HDF extension namespace
+
+Every property hdf-libs invents in the OSCAL it writes carries the namespace
+`https://mitre.github.io/hdf-libs/ns/oscal`; properties defined by NIST or
+FedRAMP keep their owner's namespace instead. The [vocabulary](/ns/oscal) is
+published at that URI, with one row per property — the OSCAL objects it attaches
+to, its meaning, and the HDF field it carries. It is generated from
+`hdf-converters/converters/oscal-to-hdf/go/oscal-vocabulary.json`, the single
+table the exporters, the importers and that page all read, so it cannot drift
+from what the converters emit.
+
+- Importers match HDF properties by name *and* namespace, so a familiar name in another namespace is treated as foreign.
+- Foreign properties on a SAR finding and its related observations and risks are carried through HDF in the reserved `oscal-props` requirement tag — one entry per source property, recording the object it hung on (shape: `hdf-converters/shared/oscal-props.schema.json`).
+- The SAR exporter re-emits each carried property after that object's own properties, skipping any already present: finding entries on the finding, observation entries on the requirement's first observation, risk entries on its risk. An entry whose object the exporter does not write for that requirement (a risk entry for a requirement whose impact is 0, for which no risk is written) is not re-emitted; it stays in the HDF tag unchanged.
+
 ## Future Work
 
-- **ARF/XCCDF output converters** -- Export HDF results as SCAP Assessment Results Format (ARF) or XCCDF results for consumption by SCAP-compatible tools.
-- **Full profile resolver** -- Handle `modify.alters` for complete profile resolution without external tooling.
+- **ARF output converter** -- Export HDF results as SCAP Assessment Results Format (ARF) for consumption by SCAP-compatible tools. (XCCDF results already ship: `hdf convert --from hdf --to xccdf`.)
+- **Full profile resolver** -- Resolve multi-level profile chains and `import-resource` references without external tooling.
 - **HDF system to OSCAL SSP** -- Generate SSP system-characteristics from HDF system documents.

@@ -62,6 +62,10 @@ site/.vitepress/versions.json
 # committed and golden-tested against the registry) by generate-converters.mjs.
 site/docs/guides/converters.md
 site/docs/packages/
+# OSCAL extension vocabulary page — rendered from the single vocabulary table at
+# hdf-converters/converters/oscal-to-hdf/go/oscal-vocabulary.json by
+# generate-oscal-vocabulary.mjs.
+site/ns/
 # Per-version raw schema archive IS committed (backs the canonical $id
 # URL e.g. /schemas/hdf-amendments/v3.2.0/ and the per-version rendered
 # docs). ~70 KB per release; storage cost trivial. See site/seed-archive.mjs.

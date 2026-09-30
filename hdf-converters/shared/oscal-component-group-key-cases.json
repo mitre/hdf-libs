@@ -1,0 +1,41 @@
+{
+  "$comment": "Shared table for the group numbering of an HDF component's string maps on an OSCAL assessment subject (ADR-0014 §4.5): one prop group per map entry, numbered from 1 in sorted key order. Go sorts map keys bytewise over their UTF-8 encoding, which is Unicode code-point order; JavaScript's Array.prototype.sort compares UTF-16 code units, which orders a supplementary-plane key (>= U+10000, encoded as a lead surrogate in [U+D800,U+DBFF]) before a BMP key in [U+E000,U+FFFF] instead of after it. `order` is the code-point order both languages must emit, so group N is the key at index N-1. Read by Go (component_props_test.go, hdf-to-oscal-sar/go/converter_test.go) and TypeScript (component-props.test.ts, hdf-to-oscal-sar/typescript/converter.test.ts).",
+  "cases": [
+    {
+      "label": "ascii keys",
+      "entries": {"zone": "b", "environment": "prod"},
+      "order": ["environment", "zone"],
+      "why": "control case: UTF-16 and code-point order agree over ASCII"
+    },
+    {
+      "label": "astral key against an ascii key",
+      "entries": {"😀": "grin", "a": "1"},
+      "order": ["a", "😀"],
+      "why": "control case: a lead surrogate (U+D83D) still sorts after ASCII under both orders"
+    },
+    {
+      "label": "astral key against a fullwidth BMP key",
+      "entries": {"～": "tilde", "😀": "grin"},
+      "order": ["～", "😀"],
+      "why": "U+FF5E (65374) precedes U+1F600 (128512) by code point, but its UTF-16 unit follows the lead surrogate U+D83D (55357)"
+    },
+    {
+      "label": "astral key against a BMP private-use key",
+      "entries": {"": "private", "😀": "grin"},
+      "order": ["", "😀"],
+      "why": "U+F8FF (63743) precedes U+1F600 by code point and follows it under UTF-16 code units"
+    },
+    {
+      "label": "mixed ascii, BMP private-use, fullwidth and astral keys",
+      "entries": {"～": "tilde", "😀": "grin", "": "private", "z": "26", "a": "1"},
+      "order": ["a", "z", "", "～", "😀"],
+      "why": "the astral key takes the last group under code-point order and the third under UTF-16 code units"
+    },
+    {
+      "label": "shared prefix, differing length",
+      "entries": {"env": "1", "environment": "2", "envs": "3"},
+      "order": ["env", "environment", "envs"],
+      "why": "a prefix sorts before its extensions, and 'i' (105) before 's' (115)"
+    }
+  ]
+}

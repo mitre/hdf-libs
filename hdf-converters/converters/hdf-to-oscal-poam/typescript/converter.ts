@@ -104,7 +104,7 @@ const OVERRIDE_APPLIED_TITLE = 'Override applied';
 function poamTitle(a: HDFAmendments): string {
   // amendmentId is optional in HDF; main's firstNonEmpty takes strings, so the
   // absent case is coerced here rather than widening the shared helper's contract.
-  return firstNonEmpty(a.name, a.amendmentId ?? '', 'HDF Amendments');
+  return normalizePropValue(firstNonEmpty(a.name, a.amendmentId ?? '', 'HDF Amendments'));
 }
 
 /**
@@ -117,7 +117,7 @@ const UNIDENTIFIED_REQUIREMENT_TITLE = 'Unidentified requirement';
 
 /** The title of the risk and POA&M item an override produces. */
 function requirementTitle(override: StandaloneOverride): string {
-  return firstNonEmpty(override.requirementId, UNIDENTIFIED_REQUIREMENT_TITLE);
+  return normalizePropValue(firstNonEmpty(override.requirementId, UNIDENTIFIED_REQUIREMENT_TITLE));
 }
 
 /**
@@ -156,7 +156,7 @@ class PartyRegistry {
     if (existing) return existing.uuid as string;
     // name is omitted, not emptied, when the source identity carries none:
     // OSCAL requires only uuid and type on a party. Mirrors Go's omitempty.
-    const name = oscalString(id.identifier);
+    const name = normalizePropValue(id.identifier ?? '');
     const props: Property[] = [];
     pushVocabularyProp(props, 'identity-identifier', id.identifier ?? '');
     pushVocabularyProp(props, 'identity-type', String(id.type));
@@ -667,7 +667,7 @@ function referenceResource(ref: ExternalReference, b: PoamBuilder): Resource {
 
   return {
     uuid: crypto.randomUUID(),
-    title: ref.sourceName,
+    title: normalizePropValue(ref.sourceName ?? ''),
     ...(ref.description ? { description: ref.description } : {}),
     ...(props.length > 0 ? { props } : {}),
     ...(ref.href ? { rlinks: [{ href: ref.href }] } : {}),
