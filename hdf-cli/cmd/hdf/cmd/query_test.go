@@ -553,6 +553,43 @@ func TestQueryStatusAndSeverity_UnknownValuesAreRejected(t *testing.T) {
 	}
 }
 
+// disposition flattens every governing plan to "poam", so --poam-type is the
+// only way to tell a bare risk acceptance from an unstarted remediation. An
+// unknown kind is refused rather than matched against nothing.
+func TestQueryPoamType_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--poam-type", "remediaton")
+	require.Error(t, err, "a typo must be refused, not silently match nothing")
+	assert.Contains(t, err.Error(), "unknown --poam-type value")
+
+	_, _, err = executeCommand("query", resultsPath, "--poam-type", "riskAcceptance")
+	if err != nil {
+		assert.NotContains(t, err.Error(), "unknown --poam-type value",
+			"a legal kind must reach the filter")
+	}
+}
+
+// A colonless --tag is worse than the label case it mirrors: a label predicate
+// merely selected nothing, while a tag predicate was DROPPED from the filter
+// list, so a query made only of colonless values returned the whole document —
+// widening a gate instead of narrowing it.
+func TestQueryTag_ColonlessValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--tag", "production")
+	require.Error(t, err, "a colonless tag must be refused, not silently match everything")
+	assert.Contains(t, err.Error(), "unknown --tag value")
+
+	// A well-formed one reaches the filter. This fixture may match nothing, which
+	// is fine — what matters is that it is not REFUSED.
+	_, _, err = executeCommand("query", resultsPath, "--tag", "nist:AC-2")
+	if err != nil {
+		assert.NotContains(t, err.Error(), "unknown --tag value",
+			"a well-formed key:value expression must reach the filter")
+	}
+}
+
 // A colonless --baseline-label names no key, so it can never match any document.
 // Refusing it is not pedantry: under a threshold max bound, selecting nothing
 // and being ignored produce the identical clean run, which is the false green

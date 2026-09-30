@@ -1,5 +1,5 @@
 {
-  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass — both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver.",
+  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass — both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver. poamType: disposition collapses every governing plan to the flat 'poam' because the field is typed Override_Type, whose members do not include a plan's own kind. poamType recovers it as a SEPARATE predicate rather than a dotted or colon-joined value inside disposition — a label is a key=value pair and a plan's type is a typed enum, so borrowing the label separator would signal the wrong shape, and mixing two separators in one policy file invites typos that are hard to diagnose. It reads the GOVERNING plan only: a requirement that CARRIES a remediation but is governed by a newer mitigation matches mitigation and not remediation, which is what stops a lapsed plan answering for a live one.",
   "now": "2026-01-01T00:00:00Z",
   "fixture": {
     "baselines": [
@@ -461,7 +461,7 @@
                   "type": "simple",
                   "identifier": "test"
                 },
-                "appliedAt": "2025-01-01T00:00:00Z",
+                "appliedAt": "2025-06-01T00:00:00Z",
                 "expiresAt": "2020-01-01T00:00:00Z"
               }
             ],
@@ -474,6 +474,140 @@
                   "identifier": "test"
                 },
                 "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-MITIGATION",
+            "title": "Governed by a live mitigation plan",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "mitigation",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-RISK-ACCEPTED",
+            "title": "Governed by a live risk acceptance",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "riskAcceptance",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-VENDOR",
+            "title": "Governed by a live vendor dependency",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "vendorDependency",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+            "title": "A lapsed remediation and a newer live mitigation",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              },
+              {
+                "type": "mitigation",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
                 "expiresAt": "2099-12-31T00:00:00Z"
               }
             ],
@@ -562,7 +696,11 @@
         "POAM-MIDWINDOW",
         "POAM-NEWER-THAN-WAIVER",
         "WAIVER-NEWER-THAN-POAM",
-        "POAM-OVER-LAPSED-WAIVER"
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-MITIGATION",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
       ]
     },
     {
@@ -659,7 +797,11 @@
         "POAM-CURRENT",
         "POAM-MIDWINDOW",
         "POAM-NEWER-THAN-WAIVER",
-        "POAM-OVER-LAPSED-WAIVER"
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-MITIGATION",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
       ]
     },
     {
@@ -676,7 +818,11 @@
         "POAM-MIDWINDOW",
         "POAM-NEWER-THAN-WAIVER",
         "WAIVER-NEWER-THAN-POAM",
-        "POAM-OVER-LAPSED-WAIVER"
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-MITIGATION",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
       ]
     },
     {
@@ -700,6 +846,114 @@
         "id": "POAM-LAPSED"
       },
       "expect": []
+    },
+    {
+      "name": "poamType selects the GOVERNING plan's kind, which disposition collapses to the flat poam",
+      "options": {
+        "poamType": [
+          "mitigation"
+        ]
+      },
+      "expect": [
+        "POAM-MITIGATION",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
+      ]
+    },
+    {
+      "name": "poamType ORs across kinds",
+      "options": {
+        "poamType": [
+          "riskAcceptance",
+          "vendorDependency"
+        ]
+      },
+      "expect": [
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR"
+      ]
+    },
+    {
+      "name": "a kind nothing is governed by selects nothing — POAM-LAPSED-REMEDIATION-LIVE-MITIGATION CARRIES a remediation but is not GOVERNED by it",
+      "options": {
+        "poamType": [
+          "remediation"
+        ],
+        "id": "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
+      },
+      "expect": []
+    },
+    {
+      "name": "poamType narrows disposition rather than replacing it: both together mean the governing entry is a plan AND of that kind",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "poamType": [
+          "vendorDependency"
+        ]
+      },
+      "expect": [
+        "POAM-VENDOR"
+      ]
+    },
+    {
+      "name": "a requirement governed by an OVERRIDE matches no poamType, whatever plans it also carries",
+      "options": {
+        "poamType": [
+          "remediation"
+        ],
+        "id": "WAIVER-NEWER-THAN-POAM"
+      },
+      "expect": []
+    },
+    {
+      "name": "not on poamType: absence satisfies it, so everything without a governing mitigation matches",
+      "options": {
+        "poamType": {
+          "not": [
+            "mitigation"
+          ]
+        }
+      },
+      "expect": [
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED",
+        "FALSE-POSITIVE",
+        "PLAIN",
+        "POAM-CURRENT",
+        "POAM-EMPTY",
+        "POAM-LAPSED",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "WAIVED",
+        "WAIVED-THEN-ADJUSTED",
+        "WAIVER-LAPSED",
+        "WAIVER-NEWER-THAN-POAM"
+      ]
+    },
+    {
+      "name": "not on disposition and not on poamType compose — a governing plan that is not a mitigation",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "poamType": {
+          "not": [
+            "mitigation"
+          ]
+        }
+      },
+      "expect": [
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR"
+      ]
     }
   ],
   "dispositionValues": [
@@ -710,5 +964,11 @@
     "falsePositive",
     "riskAdjustment",
     "operationalRequirement"
+  ],
+  "poamTypeValues": [
+    "remediation",
+    "mitigation",
+    "riskAcceptance",
+    "vendorDependency"
   ]
 }

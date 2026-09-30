@@ -28,10 +28,39 @@ type ruleCases struct {
 	RefusalByCount  map[string]string `json:"refusalByCount"`
 	Fixture         hdf.HDFResults    `json:"fixture"`
 	Cases           []struct {
-		Name   string          `json:"name"`
-		Rules  []ThresholdRule `json:"rules"`
-		Expect []string        `json:"expect"`
+		Name           string            `json:"name"`
+		Rules          []ThresholdRule   `json:"rules"`
+		Expect         []string          `json:"expect"`
+		ExpectFindings [][]expectFinding `json:"expectFindings"`
 	} `json:"cases"`
+	GridCases []struct {
+		Name           string            `json:"name"`
+		Config         ThresholdConfig   `json:"config"`
+		Expect         []string          `json:"expect"`
+		ExpectFindings [][]expectFinding `json:"expectFindings"`
+	} `json:"gridCases"`
+}
+
+// expectFinding is the shared shape a violation's findings are pinned to. Title
+// is carried deliberately rather than ids alone: it is the field that ended up
+// unasserted in BOTH languages at once, which is what this section prevents.
+type expectFinding struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Status   string `json:"status"`
+	Severity string `json:"severity"`
+}
+
+// assertFindings compares one violation's findings against the shared table.
+func assertFindings(t *testing.T, want []expectFinding, got []Match) {
+	t.Helper()
+	require.Len(t, got, len(want), "a violation must name exactly the requirements the table lists")
+	for i, w := range want {
+		assert.Equal(t, w.ID, got[i].ID)
+		assert.Equal(t, w.Title, got[i].Title, "the title is promised by the docs and was once unasserted")
+		assert.Equal(t, w.Status, got[i].Status)
+		assert.Equal(t, w.Severity, got[i].Severity)
+	}
 }
 
 func loadRuleCases(t *testing.T) ruleCases {
@@ -56,15 +85,24 @@ func TestEvaluateRules(t *testing.T) {
 	for _, tc := range table.Cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			config := &ThresholdConfig{Rules: tc.Rules}
-			got := ViolationMessages(EvaluateRules(config, table.Fixture, RuleOptions{
+			violations := EvaluateRules(config, table.Fixture, RuleOptions{
 				Now:      now,
 				StatusOf: effectiveStatusOf(false),
-			}))
+			})
+			got := ViolationMessages(violations)
 			if len(tc.Expect) == 0 {
 				assert.Empty(t, got, "a satisfied rule reports nothing")
 				return
 			}
 			assert.Equal(t, tc.Expect, got)
+
+			// The findings half, pinned by the same table so it cannot diverge
+			// between languages the way it already did once.
+			require.Len(t, tc.ExpectFindings, len(tc.Expect),
+				"the table must state findings for every expected violation")
+			for i, want := range tc.ExpectFindings {
+				assertFindings(t, want, violations[i].Findings)
+			}
 		})
 	}
 }
@@ -83,7 +121,7 @@ func TestEvaluateAppliesTheGridAndTheRules(t *testing.T) {
 		Failed: &ThresholdSeverity{Total: &ThresholdBound{Max: &zero}},
 		Rules: []ThresholdRule{{
 			Name:  "nothing fails without a plan",
-			Where: RulePredicate{Status: []string{"failed"}, Poams: "none-valid"},
+			Where: RulePredicate{Status: In("failed"), Poams: "none-valid"},
 			Max:   &zero,
 		}},
 	}
@@ -145,7 +183,7 @@ func TestValidateThresholdsRefusesToSilentlySkipRules(t *testing.T) {
 	zero := 0
 	config := &ThresholdConfig{Rules: []ThresholdRule{{
 		Name:  "nothing fails without a plan",
-		Where: RulePredicate{Status: []string{"failed"}},
+		Where: RulePredicate{Status: In("failed")},
 		Max:   &zero,
 	}}}
 
@@ -167,22 +205,23 @@ func TestValidateThresholdsRefusesToSilentlySkipRules(t *testing.T) {
 // each one reaches Options, which is the wiring the name lists cannot see.
 func TestRulePredicateFieldsReachTheFilterOptions(t *testing.T) {
 	where := RulePredicate{
-		Status:        []string{"failed"},
-		Severity:      []string{"critical"},
+		Status:        In("failed"),
+		Severity:      In("critical"),
 		Impact:        ">=0.7",
 		RawImpact:     ">=0.9",
 		Cvss:          ">=7",
 		Epss:          ">=0.5",
 		Kev:           "true",
-		Cwe:           []string{"CWE-79"},
-		CCI:           []string{"CCI-000366"},
-		NIST:          []string{"AC-2"},
+		Cwe:           In("CWE-79"),
+		CCI:           In("CCI-000366"),
+		NIST:          In("AC-2"),
 		ID:            "V-1",
-		Tag:           []string{"k:v"},
+		Tag:           In("k:v"),
 		Search:        "password",
 		Baseline:      "b",
-		BaselineLabel: []string{"environment:production"},
-		Disposition:   []string{"waiver"},
+		BaselineLabel: In("environment:production"),
+		Disposition:   In("waiver"),
+		PoamType:      In("remediation"),
 		Poams:         PoamNoneValid,
 	}
 	opts := where.filterOptions(RuleOptions{})
@@ -201,69 +240,45 @@ func TestRulePredicateFieldsReachTheFilterOptions(t *testing.T) {
 	}
 }
 
-// A violation that names only a count sends the reader to an artifact and a
-// script to find out which requirement broke the build. The matches are already
-// computed — EvaluateRules called len(Filter(...)) and discarded the slice — so
-// carrying them costs nothing but keeping what was thrown away.
-func TestRuleViolationCarriesTheMatchingFindings(t *testing.T) {
+// The grid's bounds resolve their offenders from the control map rather than
+// from a filter, so they are pinned by their own section of the same table. The
+// two that deliberately name NOTHING sit beside a count bound that names two, on
+// the same fixture — so an empty expectation here is a real assertion.
+func TestEvaluateGridFindings(t *testing.T) {
 	table := loadRuleCases(t)
 	now, err := time.Parse(time.RFC3339, table.Now)
 	require.NoError(t, err)
+	require.NotEmpty(t, table.GridCases, "an empty section would pass vacuously")
 
-	zero := 0
-	config := &ThresholdConfig{Rules: []ThresholdRule{{
-		Name:  "no failures",
-		Where: RulePredicate{Status: []string{"failed"}},
-		Max:   &zero,
-	}}}
-	violations := EvaluateRules(config, table.Fixture, RuleOptions{Now: now, StatusOf: effectiveStatusOf(false)})
-	require.Len(t, violations, 1)
+	statusOf := effectiveStatusOf(false)
+	for _, tc := range table.GridCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			cfg := tc.Config
+			in := NewThresholdInput(table.Fixture, statusOf)
+			in.Now = now
+			violations := Evaluate(&cfg, in)
+			got := ViolationMessages(violations)
+			if len(tc.Expect) == 0 {
+				assert.Empty(t, got)
+				return
+			}
+			assert.Equal(t, tc.Expect, got)
 
-	v := violations[0]
-	assert.Contains(t, v.Message, "no failures", "the message is unchanged")
-	require.NotEmpty(t, v.Findings, "the requirements that matched must be carried")
-	for _, f := range v.Findings {
-		assert.NotEmpty(t, f.ID, "a finding must be identifiable")
-		assert.Equal(t, "failed", f.Status)
+			require.Len(t, tc.ExpectFindings, len(tc.Expect))
+			for i, want := range tc.ExpectFindings {
+				assertFindings(t, want, violations[i].Findings)
+			}
+		})
 	}
-	// Every match, not a sample: the caller decides whether to elide.
-	matched := Filter(context.Background(), table.Fixture, Options{
-		Status:   []string{"failed"},
-		StatusOf: effectiveStatusOf(false),
-	})
-	assert.Len(t, v.Findings, len(matched))
 }
 
-// A count bound has no filter behind it, but the control map ValidateThresholds
-// already receives names every requirement and its bucket — so the offenders are
-// recoverable there too.
-func TestCountBoundViolationCarriesTheFindingsInThatBucket(t *testing.T) {
-	table := loadRuleCases(t)
-	now, err := time.Parse(time.RFC3339, table.Now)
-	require.NoError(t, err)
-
-	zero := 0
-	config := &ThresholdConfig{Failed: &ThresholdSeverity{Total: &ThresholdBound{Max: &zero}}}
-	in := NewThresholdInput(table.Fixture, effectiveStatusOf(false))
-	in.Now = now
-
-	violations := Evaluate(config, in)
-	require.Len(t, violations, 1)
-
-	v := violations[0]
-	assert.Contains(t, v.Message, "failed.total")
-	require.NotEmpty(t, v.Findings, "a count bound must name what it counted")
-	for _, f := range v.Findings {
-		assert.Equal(t, "failed", f.Status, "only the bucket that was bounded")
-	}
-
-	// The invariant that makes the list trustworthy: a reader counting the lines
-	// must get the number the message reported. NotEmpty alone would pass against
-	// a list that named one of five.
-	counts := CountControlsByStatus(table.Fixture, effectiveStatusOf(false))
-	assert.Len(t, v.Findings, counts.Failed.Total,
-		"exactly as many findings as the bound counted")
-}
+// NOTE: the two tests that used to sit here — TestRuleViolationCarriesTheMatchingFindings
+// and TestCountBoundViolationCarriesTheFindingsInThatBucket — were deleted when
+// the shared case table gained expectFindings/gridCases. They asserted COUNTS
+// (findings length equals the filter's, or the bound's); the table pins exact
+// membership by id, title, status and severity, which is strictly stronger and
+// is read by both languages. Keeping both would have left two sources of truth,
+// which is the defect this card exists to remove.
 
 // A severity label narrows the bucket; only `total` is the whole status. Its own
 // fixture, because the shared one's failed requirements are ALL critical — so
@@ -300,7 +315,7 @@ func TestRulePredicateSelectsByBaselineLabel(t *testing.T) {
 
 	breached := &ThresholdConfig{Rules: []ThresholdRule{{
 		Name:  "nothing fails in production",
-		Where: RulePredicate{Status: []string{"failed"}, BaselineLabel: []string{"environment:production"}},
+		Where: RulePredicate{Status: In("failed"), BaselineLabel: In("environment:production")},
 		Max:   &zero,
 	}}}
 	violations := EvaluateRules(breached, results, RuleOptions{StatusOf: schemaStatusForRules})
@@ -315,7 +330,7 @@ func TestRulePredicateSelectsByBaselineLabel(t *testing.T) {
 	// subset of the document.
 	all := &ThresholdConfig{Rules: []ThresholdRule{{
 		Name:  "nothing in production",
-		Where: RulePredicate{BaselineLabel: []string{"environment:production"}},
+		Where: RulePredicate{BaselineLabel: In("environment:production")},
 		Max:   &zero,
 	}}}
 	narrowed := EvaluateRules(all, results, RuleOptions{StatusOf: schemaStatusForRules})
@@ -332,7 +347,7 @@ func TestRulePredicateSelectsByBaselineLabel(t *testing.T) {
 	// which is what makes the predicate load-bearing rather than ignored.
 	quiet := &ThresholdConfig{Rules: []ThresholdRule{{
 		Name:  "nothing fails in staging",
-		Where: RulePredicate{Status: []string{"failed"}, BaselineLabel: []string{"environment:staging"}},
+		Where: RulePredicate{Status: In("failed"), BaselineLabel: In("environment:staging")},
 		Max:   &zero,
 	}}}
 	assert.Empty(t, EvaluateRules(quiet, results, RuleOptions{StatusOf: schemaStatusForRules}))

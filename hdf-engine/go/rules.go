@@ -44,26 +44,30 @@ type ThresholdRule struct {
 // invocation then mean the same thing, so a gate can be prototyped with query and
 // pasted into a spec. Values within a field OR; fields AND.
 type RulePredicate struct {
-	Status    []string `yaml:"status,omitempty" json:"status,omitempty"`
-	Severity  []string `yaml:"severity,omitempty" json:"severity,omitempty"`
-	Impact    string   `yaml:"impact,omitempty" json:"impact,omitempty"`
-	RawImpact string   `yaml:"rawImpact,omitempty" json:"rawImpact,omitempty"`
-	Cvss      string   `yaml:"cvss,omitempty" json:"cvss,omitempty"`
-	Epss      string   `yaml:"epss,omitempty" json:"epss,omitempty"`
-	Kev       string   `yaml:"kev,omitempty" json:"kev,omitempty"`
-	Cwe       []string `yaml:"cwe,omitempty" json:"cwe,omitempty"`
-	CCI       []string `yaml:"cci,omitempty" json:"cci,omitempty"`
-	NIST      []string `yaml:"nist,omitempty" json:"nist,omitempty"`
-	ID        string   `yaml:"id,omitempty" json:"id,omitempty"`
-	Tag       []string `yaml:"tag,omitempty" json:"tag,omitempty"`
-	Search    string   `yaml:"search,omitempty" json:"search,omitempty"`
-	Baseline  string   `yaml:"baseline,omitempty" json:"baseline,omitempty"`
+	Status    Values `yaml:"status,omitempty" json:"status,omitempty"`
+	Severity  Values `yaml:"severity,omitempty" json:"severity,omitempty"`
+	Impact    string `yaml:"impact,omitempty" json:"impact,omitempty"`
+	RawImpact string `yaml:"rawImpact,omitempty" json:"rawImpact,omitempty"`
+	Cvss      string `yaml:"cvss,omitempty" json:"cvss,omitempty"`
+	Epss      string `yaml:"epss,omitempty" json:"epss,omitempty"`
+	Kev       string `yaml:"kev,omitempty" json:"kev,omitempty"`
+	Cwe       Values `yaml:"cwe,omitempty" json:"cwe,omitempty"`
+	CCI       Values `yaml:"cci,omitempty" json:"cci,omitempty"`
+	NIST      Values `yaml:"nist,omitempty" json:"nist,omitempty"`
+	ID        string `yaml:"id,omitempty" json:"id,omitempty"`
+	Tag       Values `yaml:"tag,omitempty" json:"tag,omitempty"`
+	Search    string `yaml:"search,omitempty" json:"search,omitempty"`
+	Baseline  string `yaml:"baseline,omitempty" json:"baseline,omitempty"`
 	// BaselineLabel selects by the labels of the baseline a requirement sits in,
 	// which is what makes "nothing fails in anything labelled
 	// environment=production" expressible as a policy rather than only as a query.
-	BaselineLabel []string `yaml:"baselineLabel,omitempty" json:"baselineLabel,omitempty"`
-	Disposition   []string `yaml:"disposition,omitempty" json:"disposition,omitempty"`
-	Poams         string   `yaml:"poams,omitempty" json:"poams,omitempty"`
+	BaselineLabel Values `yaml:"baselineLabel,omitempty" json:"baselineLabel,omitempty"`
+	Disposition   Values `yaml:"disposition,omitempty" json:"disposition,omitempty"`
+	// PoamType names the KIND of the governing POA&M, which disposition collapses
+	// to the flat "poam" because it is typed Override_Type and a plan's kind is
+	// not an override type.
+	PoamType Values `yaml:"poamType,omitempty" json:"poamType,omitempty"`
+	Poams    string `yaml:"poams,omitempty" json:"poams,omitempty"`
 }
 
 // RuleOptions carries what rule evaluation needs beyond the document: the
@@ -96,6 +100,7 @@ func (p RulePredicate) filterOptions(opts RuleOptions) Options {
 		Baseline:      p.Baseline,
 		BaselineLabel: p.BaselineLabel,
 		Disposition:   p.Disposition,
+		PoamType:      p.PoamType,
 		Poams:         p.Poams,
 		Now:           opts.Now,
 		// Inert while a rule sets no Limit — Filter only consults Count to decide
@@ -111,9 +116,16 @@ func (p RulePredicate) filterOptions(opts RuleOptions) Options {
 // which is what they mean.
 func (p RulePredicate) describe() string {
 	var parts []string
-	add := func(key string, values []string) {
-		if len(values) > 0 {
-			parts = append(parts, key+": "+strings.Join(values, "|"))
+	// A negated field renders as "not X|Y" so an unnamed rule's identity says
+	// which way round its predicate ran — "disposition: waiver" and
+	// "disposition: not waiver" select opposite populations and would otherwise
+	// print identically.
+	add := func(key string, values Values) {
+		if len(values.In) > 0 {
+			parts = append(parts, key+": "+strings.Join(values.In, "|"))
+		}
+		if len(values.Not) > 0 {
+			parts = append(parts, key+": not "+strings.Join(values.Not, "|"))
 		}
 	}
 	addOne := func(key, value string) {
@@ -133,6 +145,8 @@ func (p RulePredicate) describe() string {
 	addOne("epss", p.Epss)
 	addOne("kev", p.Kev)
 	add("cwe", p.Cwe)
+	add("baselineLabel", p.BaselineLabel)
+	add("poamType", p.PoamType)
 	addOne("id", p.ID)
 	addOne("search", p.Search)
 	addOne("baseline", p.Baseline)

@@ -284,7 +284,7 @@ func TestAssertionCount_CountsRuleBounds(t *testing.T) {
 	zero := 0
 	rulesOnly := &hdfengine.ThresholdConfig{Rules: []hdfengine.ThresholdRule{{
 		Name:  "nothing fails without a plan",
-		Where: hdfengine.RulePredicate{Status: []string{"failed"}, Poams: "none-valid"},
+		Where: hdfengine.RulePredicate{Status: hdfengine.In("failed"), Poams: "none-valid"},
 		Max:   &zero,
 	}}}
 	if got := AssertionCount(rulesOnly); got != 1 {
@@ -295,7 +295,7 @@ func TestAssertionCount_CountsRuleBounds(t *testing.T) {
 	// for the case it was written for.
 	boundless := &hdfengine.ThresholdConfig{Rules: []hdfengine.ThresholdRule{{
 		Name:  "asserts nothing",
-		Where: hdfengine.RulePredicate{Status: []string{"failed"}},
+		Where: hdfengine.RulePredicate{Status: hdfengine.In("failed")},
 	}}}
 	if got := AssertionCount(boundless); got != 0 {
 		t.Errorf("AssertionCount() = %d, want 0 — a rule with neither min nor max bounds nothing", got)

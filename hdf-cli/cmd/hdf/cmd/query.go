@@ -24,6 +24,7 @@ var (
 	queryNIST          []string
 	querySTIGID        string
 	queryTag           []string
+	queryPoamType      []string
 	queryDisposition   []string
 	queryPoams         string
 	querySearch        string
@@ -54,6 +55,7 @@ func NewQueryCmd() *cobra.Command {
 		localQuerySearch        string
 		localQueryProfile       string
 		localQueryBaselineLabel []string
+		localQueryPoamType      []string
 		localQueryCount         bool
 		localQueryLimit         int
 	)
@@ -117,6 +119,17 @@ Examples:
 					return err
 				}
 			}
+			for _, value := range localQueryPoamType {
+				if !hdfengine.ValidPoamType(value) {
+					return fmt.Errorf("unknown --poam-type value %q (expected one of: %s)",
+						value, strings.Join(hdfengine.PoamTypeValues, ", "))
+				}
+			}
+			for _, value := range queryTag {
+				if !hdfengine.ValidTag(value) {
+					return fmt.Errorf("unknown --tag value %q (expected a key:value expression, e.g. nist:AC-2)", value)
+				}
+			}
 			for _, value := range localQueryBaselineLabel {
 				if !hdfengine.ValidBaselineLabel(value) {
 					return fmt.Errorf("unknown --baseline-label value %q (expected a key:value expression, e.g. environment:production)", value)
@@ -154,6 +167,7 @@ Examples:
 			querySearch = localQuerySearch
 			queryProfile = localQueryProfile
 			queryBaselineLabel = localQueryBaselineLabel
+			queryPoamType = localQueryPoamType
 			queryCount = localQueryCount
 			queryLimit = localQueryLimit
 			files, err := expandGlobs(args)
@@ -187,6 +201,9 @@ Examples:
 		"Filter by remediation-plan validity: valid (a POA&M still in force) or none-valid (none, empty, or only lapsed)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
 	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
+	cmd.Flags().StringArrayVar(&localQueryPoamType, "poam-type", nil,
+		"Filter by the KIND of the governing POA&M (repeatable, OR logic): "+strings.Join(hdfengine.PoamTypeValues, ", ")+
+			". disposition reports every governing plan as \"poam\"; this names which kind it is")
 	cmd.Flags().StringArrayVar(&localQueryBaselineLabel, "baseline-label", nil,
 		"Filter by the baseline's labels as key:value (repeatable, OR logic; glob allowed on the value, e.g. environment:prod*)")
 	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching requirements")
@@ -220,23 +237,24 @@ func runQuery(_ *cobra.Command, args []string) error {
 	// Filtering is delegated to the shared hdf-engine library; the CLI supplies
 	// its display-status resolver so the engine stays convention-agnostic.
 	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{
-		Status:        queryStatus,
-		Severity:      querySeverity,
+		Status:        hdfengine.In(queryStatus...),
+		Severity:      hdfengine.In(querySeverity...),
 		Impact:        queryImpact,
 		RawImpact:     queryRawImpact,
 		Cvss:          queryCvss,
 		Epss:          queryEpss,
 		Kev:           queryKev,
-		Cwe:           queryCwe,
-		CCI:           queryCCI,
-		NIST:          queryNIST,
+		Cwe:           hdfengine.In(queryCwe...),
+		CCI:           hdfengine.In(queryCCI...),
+		NIST:          hdfengine.In(queryNIST...),
 		ID:            querySTIGID,
-		Tag:           queryTag,
-		Disposition:   queryDisposition,
+		Tag:           hdfengine.In(queryTag...),
+		Disposition:   hdfengine.In(queryDisposition...),
 		Poams:         queryPoams,
+		PoamType:      hdfengine.In(queryPoamType...),
 		Search:        querySearch,
 		Baseline:      queryProfile,
-		BaselineLabel: queryBaselineLabel,
+		BaselineLabel: hdfengine.In(queryBaselineLabel...),
 		Limit:         queryLimit,
 		Count:         queryCount,
 		StatusOf:      determineControlStatus,

@@ -30,8 +30,8 @@ var decimalFloat = regexp.MustCompile(`^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$
 // determineControlStatus; another consumer may map statuses differently). When
 // nil, the resolved status is the empty string.
 type Options struct {
-	Status   []string
-	Severity []string
+	Status   Values
+	Severity Values
 	// Impact compares the EFFECTIVE impact — the governing non-expired impact
 	// override's value, else the requirement's own.
 	Impact string
@@ -55,11 +55,11 @@ type Options struct {
 	// CWE-79, "CWE 79" and cwe79 are one value. It reads the first-class cwe[]
 	// field ONLY and never falls back to tags.cwe, so the filter means the same
 	// thing on every document.
-	Cwe      []string
-	CCI      []string
-	NIST     []string
+	Cwe      Values
+	CCI      Values
+	NIST     Values
 	ID       string
-	Tag      []string
+	Tag      Values
 	Search   string
 	Baseline string
 	// BaselineLabel selects requirements by the labels of the baseline they sit
@@ -71,7 +71,7 @@ type Options struct {
 	// A label is a property of the BASELINE, so this is applied once per baseline
 	// beside Baseline rather than per requirement. A baseline carrying no labels
 	// therefore matches nothing: an absent label is not a wildcard.
-	BaselineLabel []string
+	BaselineLabel Values
 	// Disposition selects by the TYPE of the override that governs the
 	// requirement (waiver, falsePositive, riskAdjustment, …), OR across values.
 	// The governing override is the most recent non-expired one of ANY kind, so
@@ -79,7 +79,7 @@ type Options struct {
 	// Resolved rather than read from the stored disposition field, which is an
 	// output cache: a reader that trusted the cache would disagree with the
 	// status it is filtering alongside.
-	Disposition []string
+	Disposition Values
 	// Poams selects by remediation-plan validity: "valid" for a requirement
 	// carrying a POA&M that is still in force, "none-valid" for one carrying
 	// none, an empty list, or only lapsed ones. Absence and expiry are one
@@ -87,6 +87,15 @@ type Options struct {
 	// whether it is still current, so a presence-only test would exist only to
 	// mislead.
 	Poams string
+	// PoamType selects by the KIND of the governing POA&M — remediation,
+	// mitigation, riskAcceptance or vendorDependency. It exists because
+	// disposition is typed Override_Type and collapses every governing plan to
+	// the flat "poam", so the four kinds are otherwise indistinguishable. A
+	// separate key rather than a subtype spelling inside disposition: the four
+	// are not override types, and a punctuation-joined value would either borrow
+	// the label separator (signalling a key=value pair for a typed enum) or add a
+	// second separator to files that already use one.
+	PoamType Values
 	// Now is the reference clock for expiry. Zero means time.Now(), matching
 	// hdfutil's convention, so a test pins the date and production does not.
 	Now      time.Time
@@ -190,65 +199,54 @@ func buildFilters(opts Options) []filterFunc {
 	// CLI's display spelling and the schema's camelCase are one value: a filter
 	// copied from `hdf query` and a rule written against the schema must select
 	// the same requirements, or ji20j's decision 2 is not true.
-	if len(opts.Status) > 0 {
-		statuses := make([]string, len(opts.Status))
-		for i, s := range opts.Status {
-			statuses[i] = normalizeKey(NormalizeFilterValue("status", s))
-		}
+	if opts.Status.Active() {
 		filters = append(filters, func(_ hdf.EvaluatedRequirement, s, _ string) bool {
 			// BOTH sides go through the same alias map. The resolver a caller
 			// injects may speak the CLI's display vocabulary (not_applicable)
 			// while the spec speaks the schema's (notApplicable); canonicalizing
 			// the actual value as well as the requested one is what reconciles
 			// them without fuzzily stripping punctuation out of typos.
-			s = normalizeKey(NormalizeFilterValue("status", s))
-			for _, status := range statuses {
-				if s == status {
-					return true
-				}
-			}
-			return false
+			actual := normalizeKey(NormalizeFilterValue("status", s))
+			return opts.Status.Match(func(want string) bool {
+				return actual == normalizeKey(NormalizeFilterValue("status", want))
+			})
 		})
 	}
 
 	// Severity filter (OR across values). Normalized the same way, and through
 	// the alias map as well, so "none" — the name informational replaced in
 	// 3.7.0 — keeps selecting it on every surface, not only in the CLI.
-	if len(opts.Severity) > 0 {
-		severities := make([]string, len(opts.Severity))
-		for i, s := range opts.Severity {
-			severities[i] = normalizeKey(NormalizeFilterValue("severity", s))
-		}
+	if opts.Severity.Active() {
 		filters = append(filters, func(_ hdf.EvaluatedRequirement, _, severity string) bool {
-			severity = normalizeKey(NormalizeFilterValue("severity", severity))
-			for _, sev := range severities {
-				if severity == sev {
-					return true
-				}
-			}
-			return false
+			actual := normalizeKey(NormalizeFilterValue("severity", severity))
+			return opts.Severity.Match(func(want string) bool {
+				return actual == normalizeKey(NormalizeFilterValue("severity", want))
+			})
 		})
 	}
 
 	// Disposition filter (OR across values). Matches the governing override's
 	// type; a requirement with no governing override matches nothing, which is
 	// what makes "waived" and "not waived" answerable as opposites.
-	if len(opts.Disposition) > 0 {
-		wanted := make([]string, len(opts.Disposition))
-		for i, d := range opts.Disposition {
-			wanted[i] = normalizeKey(NormalizeFilterValue("disposition", d))
-		}
+	if opts.Disposition.Active() {
 		filters = append(filters, func(control hdf.EvaluatedRequirement, _, _ string) bool {
 			governing := governingDisposition(control, opts.Now)
-			if governing == "" {
-				return false
-			}
-			for _, want := range wanted {
-				if normalizeKey(NormalizeFilterValue("disposition", governing)) == want {
-					return true
-				}
-			}
-			return false
+			// Nothing governing matches no VALUE, which is what makes an
+			// inclusive predicate exclude it and a negation accept it — a
+			// failure nobody adjudicated is correctly "not waived".
+			actual := normalizeKey(NormalizeFilterValue("disposition", governing))
+			return opts.Disposition.Match(func(want string) bool {
+				return governing != "" && actual == normalizeKey(NormalizeFilterValue("disposition", want))
+			})
+		})
+	}
+
+	if opts.PoamType.Active() {
+		filters = append(filters, func(control hdf.EvaluatedRequirement, _, _ string) bool {
+			kind := governingPoamType(control, opts.Now)
+			return opts.PoamType.Match(func(want string) bool {
+				return kind != "" && normalizeKey(kind) == normalizeKey(want)
+			})
 		})
 	}
 
@@ -309,50 +307,40 @@ func buildFilters(opts Options) []filterFunc {
 			return ok && inKev(c) == want
 		})
 	}
-	if len(opts.Cwe) > 0 {
-		wanted := map[string]bool{}
-		for _, v := range opts.Cwe {
-			for _, id := range hdfutil.ExtractCWEIDs(v) {
-				wanted[id] = true
-			}
-		}
+	if opts.Cwe.Active() {
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+			carried := map[string]bool{}
 			for _, raw := range c.Cwe {
 				for _, id := range hdfutil.ExtractCWEIDs(raw) {
-					if wanted[id] {
+					carried[id] = true
+				}
+			}
+			return opts.Cwe.Match(func(want string) bool {
+				for _, id := range hdfutil.ExtractCWEIDs(want) {
+					if carried[id] {
 						return true
 					}
 				}
-			}
-			return false
+				return false
+			})
 		})
 	}
 
 	// CCI filter (OR across values)
-	if len(opts.CCI) > 0 {
-		ccis := make([]string, len(opts.CCI))
-		for i, c := range opts.CCI {
-			ccis[i] = strings.ToUpper(c)
-		}
+	if opts.CCI.Active() {
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			for _, cci := range ccis {
-				if tagContains(c.Tags, "cci", cci) {
-					return true
-				}
-			}
-			return false
+			return opts.CCI.Match(func(want string) bool {
+				return tagContains(c.Tags, "cci", strings.ToUpper(want))
+			})
 		})
 	}
 
 	// NIST filter (OR across values)
-	if len(opts.NIST) > 0 {
+	if opts.NIST.Active() {
 		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			for _, nist := range opts.NIST {
-				if tagMatchesGlob(c.Tags, "nist", nist) {
-					return true
-				}
-			}
-			return false
+			return opts.NIST.Match(func(want string) bool {
+				return tagMatchesGlob(c.Tags, "nist", want)
+			})
 		})
 	}
 
@@ -368,27 +356,17 @@ func buildFilters(opts Options) []filterFunc {
 	}
 
 	// Generic tag filter (OR across values)
-	if len(opts.Tag) > 0 {
-		type tagFilter struct {
-			key, value string
-		}
-		var tagFilters []tagFilter
-		for _, t := range opts.Tag {
-			parts := strings.SplitN(t, ":", 2)
-			if len(parts) == 2 {
-				tagFilters = append(tagFilters, tagFilter{key: parts[0], value: parts[1]})
-			}
-		}
-		if len(tagFilters) > 0 {
-			filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-				for _, tf := range tagFilters {
-					if tagMatchesGlob(c.Tags, tf.key, tf.value) {
-						return true
-					}
-				}
-				return false
+	if opts.Tag.Active() {
+		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+			return opts.Tag.Match(func(want string) bool {
+				// A colonless value names no key, so it matches nothing rather
+				// than disappearing and letting the whole document through. The
+				// CLI refuses one before it reaches here; this is the safe floor
+				// for any caller that does not.
+				key, value, found := strings.Cut(want, ":")
+				return found && key != "" && tagMatchesGlob(c.Tags, key, value)
 			})
-		}
+		})
 	}
 
 	// Text search filter
@@ -486,6 +464,16 @@ func compareImpact(impact float64, op string, val float64) bool {
 	}
 }
 
+// ValidTag reports whether s is a tag expression at all. A value carrying no
+// colon names no key, so it can never match — and unlike the label filter, which
+// merely selected nothing, a colonless tag was DROPPED from the filter list
+// entirely, so a predicate made only of colonless values matched the whole
+// document. Refused rather than tolerated in either direction.
+func ValidTag(s string) bool {
+	key, _, found := strings.Cut(s, ":")
+	return found && key != ""
+}
+
 func tagContains(tags map[string]any, key, value string) bool {
 	for _, s := range hdfutil.TagStrings(tags, key) {
 		if strings.EqualFold(s, value) {
@@ -513,6 +501,27 @@ func ValidBaselineLabel(s string) bool {
 	return found && key != ""
 }
 
+// governingPoamType returns the KIND of the governing POA&M, or "" when the
+// governing entry is an override or nothing governs. It resolves through the
+// same index governingDisposition uses, so disposition and poamType can never
+// name different entries — a requirement reporting disposition "poam" and one
+// reporting a poamType are by construction the same requirement.
+//
+// Reading the GOVERNING plan rather than any carried plan is the whole point: a
+// requirement carrying a lapsed remediation under a live mitigation is governed
+// by the mitigation, and matching it on "remediation" would let a dead plan
+// answer for a live one.
+func governingPoamType(control hdf.EvaluatedRequirement, ref time.Time) string {
+	entries := statusOverrideInputs(control.StatusOverrides)
+	entries = append(entries, poamInputs(control.Poams)...)
+
+	i := hdfutil.GoverningOverrideIndex(entries, func(int) bool { return true }, ref)
+	if i < len(control.StatusOverrides) {
+		return ""
+	}
+	return string(control.Poams[i-len(control.StatusOverrides)].Type)
+}
+
 // baselineLabelsMatch reports whether a baseline satisfies any of the "key:value"
 // label predicates. No predicates means every baseline qualifies; otherwise one
 // must match, so several values OR the way every other multi-value filter does.
@@ -522,20 +531,14 @@ func ValidBaselineLabel(s string) bool {
 // the SAME false green under a max bound: the gate passes while the caller
 // believes a filter was applied. Reaching this function it selects nothing, which
 // is the safe half of that pair.
-func baselineLabelsMatch(labels map[string]string, predicates []string) bool {
-	if len(predicates) == 0 {
+func baselineLabelsMatch(labels map[string]string, predicates Values) bool {
+	if !predicates.Active() {
 		return true
 	}
-	for _, p := range predicates {
+	return predicates.Match(func(p string) bool {
 		key, value, found := strings.Cut(p, ":")
-		if !found {
-			continue
-		}
-		if labelMatchesGlob(labels, key, value) {
-			return true
-		}
-	}
-	return false
+		return found && labelMatchesGlob(labels, key, value)
+	})
 }
 
 // labelMatchesGlob reports whether a label KEY is present and its value matches
@@ -575,6 +578,26 @@ var DispositionValues = []string{
 	string(hdf.FalsePositive),
 	string(hdf.RiskAdjustment),
 	string(hdf.OperationalRequirement),
+}
+
+// PoamTypeValues is the closed vocabulary the poamType filter accepts: the
+// schema's POA&M type enum. It is deliberately NOT merged into DispositionValues
+// — disposition answers which Override_Type governs, and a plan's kind is not an
+// override type. Naming the generated constants pins their VALUES, not the
+// membership, exactly as DispositionValues does; hdf-libs-g2suj is the assertion
+// against the bundled schema enum that would close that for both.
+var PoamTypeValues = []string{
+	string(hdf.POAMTypeRemediation),
+	string(hdf.Mitigation),
+	string(hdf.RiskAcceptance),
+	string(hdf.VendorDependency),
+}
+
+// ValidPoamType reports whether s names a POA&M kind. A value outside the
+// vocabulary can only ever match nothing, so callers refuse it rather than
+// letting it read as "asked and found none".
+func ValidPoamType(s string) bool {
+	return canonical(PoamTypeValues, nil, s) != ""
 }
 
 // ValidDisposition reports whether s names an override type. Callers validate

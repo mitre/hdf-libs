@@ -50,6 +50,7 @@ type queryInput struct {
 	// The amendments layer: what adjudicated the requirement, and whether a
 	// remediation plan is still in force.
 	Disposition []string `json:"disposition,omitempty" jsonschema:"governing override or POA&M type, most recent unexpired; a plan reports poam: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)"`
+	PoamType    []string `json:"poamType,omitempty" jsonschema:"kind of the governing POA&M: remediation|mitigation|riskAcceptance|vendorDependency (OR); disposition reports every plan as poam"`
 	Poams       string   `json:"poams,omitempty" jsonschema:"valid | none-valid (none, empty, or lapsed)"`
 	Verbosity   string   `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
 	Limit       int      `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
@@ -243,6 +244,18 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 				}
 			}
 		}
+		for _, v := range in.PoamType {
+			if !hdfengine.ValidPoamType(v) {
+				return argError(fmt.Sprintf("unknown poamType %q", v),
+					fmt.Sprintf("poamType accepts only: %s", strings.Join(hdfengine.PoamTypeValues, ", "))), errorQueryOutput(), nil
+			}
+		}
+		for _, v := range in.Tag {
+			if !hdfengine.ValidTag(v) {
+				return argError(fmt.Sprintf("malformed tag %q", v),
+					"tag takes a key:value expression, e.g. nist:AC-2"), errorQueryOutput(), nil
+			}
+		}
 		for _, v := range in.BaselineLabel {
 			if !hdfengine.ValidBaselineLabel(v) {
 				return argError(fmt.Sprintf("malformed baselineLabel %q", v),
@@ -280,12 +293,12 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 
 		results := view.Results
 		matches := hdfengine.Filter(ctx, results, hdfengine.Options{
-			Status: in.Status, Severity: in.Severity, Impact: in.Impact,
+			Status: hdfengine.In(in.Status...), Severity: hdfengine.In(in.Severity...), Impact: in.Impact,
 			RawImpact: in.RawImpact,
-			Cvss:      in.Cvss, Epss: in.Epss, Kev: in.Kev, Cwe: in.Cwe,
-			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
-			Search: in.Search, Baseline: in.Baseline, BaselineLabel: in.BaselineLabel,
-			Disposition: in.Disposition, Poams: in.Poams,
+			Cvss:      in.Cvss, Epss: in.Epss, Kev: in.Kev, Cwe: hdfengine.In(in.Cwe...),
+			CCI: hdfengine.In(in.CCI...), NIST: hdfengine.In(in.NIST...), ID: in.ID, Tag: hdfengine.In(in.Tag...),
+			Search: in.Search, Baseline: in.Baseline, BaselineLabel: hdfengine.In(in.BaselineLabel...),
+			Disposition: hdfengine.In(in.Disposition...), PoamType: hdfengine.In(in.PoamType...), Poams: in.Poams,
 			Count:    true, // return every match; the tool applies limit + token paging
 			StatusOf: shared.RequirementEffectiveStatus,
 		})

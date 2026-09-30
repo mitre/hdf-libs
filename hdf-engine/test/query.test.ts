@@ -15,6 +15,9 @@ import {
   validPoamFilter,
   labelMatchesGlob,
   validBaselineLabel,
+  validPoamType,
+  POAM_TYPE_VALUES,
+  validTag,
   validDisposition,
   DISPOSITION_VALUES,
   POAM_VALID,
@@ -23,6 +26,7 @@ import {
   type Match,
 } from '../src/query.js';
 import { globToRegex, safeGlobMatch } from '../src/safematch.js';
+import type { PredicateValue } from '../src/values.js';
 import { computeEffectiveStatus } from '@mitre/hdf-utilities';
 import {
   validStatus,
@@ -134,9 +138,16 @@ describe('hdf-engine filter — cross-language parity with go/filter.go', () => 
     expect(lower).toEqual(camel);
   });
 
-  it('a --tag value without a colon adds no tag filter', () => {
+  // This previously asserted the OPPOSITE — that a colonless value "adds no tag
+  // filter", returning the whole document — which pinned a gate-widening bug as
+  // though it were intended. A predicate that names no key can never match, so
+  // it must select nothing here and be refused at the CLI boundary. BOTH
+  // languages pinned the old behaviour — go/filter_test.go had its own twin with
+  // its own comment calling it intended — which is how it survived.
+  it('a tag value without a colon selects nothing rather than everything', () => {
     const all = ids(filter(results, { statusOf: testStatusOf }));
-    expect(ids(filter(results, { tag: ['nocolonhere'], statusOf: testStatusOf }))).toEqual(all);
+    expect(all.length, 'precondition: the document is non-empty').toBeGreaterThan(0);
+    expect(ids(filter(results, { tag: ['nocolonhere'], statusOf: testStatusOf }))).toEqual([]);
   });
 });
 
@@ -271,6 +282,7 @@ describe('match indices — parity with go/filter_test.go TestFilter_MatchCarrie
 interface AmendmentCases {
   now: string;
   dispositionValues: string[];
+  poamTypeValues: string[];
   fixture: HDFResults;
   cases: {
     name: string;
@@ -280,8 +292,9 @@ interface AmendmentCases {
     // exists to prevent. Parity: amendmentCases in go/filter_test.go.
     options: {
       status?: string[];
-      disposition?: string[];
+      disposition?: PredicateValue;
       poams?: string;
+      poamType?: PredicateValue;
       id?: string;
       impact?: string;
       rawImpact?: string;
@@ -333,6 +346,34 @@ describe('amendment filters — disposition and poams (parity with go/filter.go)
   }
 });
 
+// Both closed vocabularies are asserted against the SCHEMA ITSELF, not only
+// against each other. Two languages can agree on a list that has fallen behind
+// the schema, and then a value the schema admits is silently unfilterable on
+// every surface with no test failing. TypeScript is the weaker half — its lists
+// are raw string literals, so even a RENAME would not break the build without
+// this. Parity: TestAmendmentVocabulariesMatchTheSchema in go/filter_test.go.
+describe('amendment vocabularies match the schema', () => {
+  const schemaDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'hdf-schema', 'src', 'schemas', 'primitives');
+  const readEnum = (file: string, path: string[]): string[] => {
+    const doc = JSON.parse(readFileSync(join(schemaDir, file), 'utf-8')) as Record<string, unknown>;
+    let node: unknown = doc;
+    for (const key of path) node = (node as Record<string, unknown>)[key];
+    return node as string[];
+  };
+
+  it('poamType is the schema POA&M type enum', () => {
+    const fromSchema = readEnum('extensions.schema.json', ['$defs', 'POAM', 'properties', 'type', 'enum']);
+    expect(fromSchema.length, 'an empty enum would pass vacuously').toBeGreaterThan(0);
+    expect([...POAM_TYPE_VALUES].sort()).toEqual([...fromSchema].sort());
+  });
+
+  it('disposition is the schema Override_Type enum', () => {
+    const fromSchema = readEnum('amendments.schema.json', ['$defs', 'Override_Type', 'enum']);
+    expect(fromSchema.length).toBeGreaterThan(0);
+    expect([...DISPOSITION_VALUES].sort()).toEqual([...fromSchema].sort());
+  });
+});
+
 describe('amendment vocabularies match the shared table', () => {
   it('disposition values are the schema enum, in both languages', () => {
     expect(amendments.dispositionValues.length).toBeGreaterThan(0);
@@ -340,6 +381,23 @@ describe('amendment vocabularies match the shared table', () => {
     for (const value of amendments.dispositionValues) {
       expect(validDisposition(value)).toBe(true);
     }
+  });
+
+  it('poamType values are the schema enum, in both languages', () => {
+    expect(amendments.poamTypeValues.length).toBeGreaterThan(0);
+    expect([...POAM_TYPE_VALUES].sort()).toEqual(amendments.poamTypeValues.slice().sort());
+    for (const value of amendments.poamTypeValues) {
+      expect(validPoamType(value)).toBe(true);
+    }
+  });
+
+  // The two vocabularies must stay DISJOINT. They are separate predicates, and a
+  // value in both would make riskAdjustment (an override) and riskAcceptance (a
+  // plan) neighbours in one namespace — one letter apart mid-word, selecting
+  // entirely different populations.
+  it('the two vocabularies are disjoint', () => {
+    for (const d of DISPOSITION_VALUES) expect(validPoamType(d)).toBe(false);
+    for (const k of POAM_TYPE_VALUES) expect(validDisposition(k)).toBe(false);
   });
 
   it('refuses a typo rather than letting it match nothing', () => {
@@ -550,6 +608,48 @@ describe('advertised vs merely accepted filter forms', () => {
 // shared fixture labels its FIRST baseline and deliberately leaves the second
 // unlabelled, which is what makes "an unlabelled baseline matches nothing"
 // assertable rather than assumed.
+interface TagCases {
+  fixtureFile: string;
+  unfilteredCount: number;
+  cases: { name: string; tags: string[]; expect: string[] }[];
+  validity: { value: string; valid: boolean }[];
+}
+
+// The same table go/filter_test.go reads, so a case cannot be added or changed
+// in one language only.
+const tagTable = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'tag-filter-cases.json'),
+    'utf-8'
+  )
+) as TagCases;
+
+// A colonless tag predicate used to be DROPPED rather than applied, so a
+// predicate made only of colonless values matched the whole document — widening
+// what a rule bounded instead of narrowing it.
+describe('filter by tag', () => {
+  const tagResults = JSON.parse(
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', tagTable.fixtureFile),
+      'utf-8'
+    )
+  ) as HDFResults;
+
+  it('the table describes the fixture actually loaded', () => {
+    expect(ids(filter(tagResults, { statusOf: testStatusOf }))).toHaveLength(tagTable.unfilteredCount);
+  });
+
+  for (const c of tagTable.cases) {
+    it(c.name, () => {
+      expect(ids(filter(tagResults, { tag: c.tags, statusOf: testStatusOf }))).toEqual(c.expect);
+    });
+  }
+
+  it.each(tagTable.validity)('validTag($value) is $valid', ({ value, valid }) => {
+    expect(validTag(value)).toBe(valid);
+  });
+});
+
 interface BaselineLabelCases {
   fixtureFile: string;
   unfilteredCount: number;

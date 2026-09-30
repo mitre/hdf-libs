@@ -1263,6 +1263,75 @@ func TestValidateThreshold_InlineAcceptsAnythingAFileAccepts(t *testing.T) {
 	})
 }
 
+// A typo INSIDE a negation must be refused exactly as one outside it is.
+// Unrefused it is worse: {not: [waver]} excludes nothing, so the predicate
+// matches EVERYTHING rather than nothing — a false green under any max bound,
+// and the inverse of the inclusive typo it mirrors. Deleting the .All() call
+// that reaches inside a negation produced zero failures across this whole suite
+// before this test existed.
+func TestValidateThreshold_TypoInsideNotIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	for _, tc := range []struct{ name, spec, want string }{
+		{"disposition", "{rules: [{name: r, where: {disposition: {not: [waver]}}, max: 0}]}", "disposition \"waver\""},
+		{"status", "{rules: [{name: r, where: {status: {not: [faild]}}, max: 0}]}", "status \"faild\""},
+		{"severity", "{rules: [{name: r, where: {severity: {not: [crit]}}, max: 0}]}", "severity \"crit\""},
+		{"poamType", "{rules: [{name: r, where: {poamType: {not: [remediaton]}}, max: 0}]}", "poamType \"remediaton\""},
+		{"tag", "{rules: [{name: r, where: {tag: {not: [production]}}, max: 0}]}", "tag \"production\""},
+		{"baselineLabel", "{rules: [{name: r, where: {baselineLabel: {not: [production]}}, max: 0}]}", "baselineLabel \"production\""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := executeCommand("validate", "threshold", results, "-I", tc.spec)
+			require.Error(t, err, "a typo inside not must be refused, or the predicate matches everything")
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
+
+	// And a legal value inside not is still accepted, or the refusal above
+	// proves only that negation is broken.
+	_, _, err := executeCommand("validate", "threshold", results,
+		"-I", "{rules: [{name: ok, where: {disposition: {not: [waiver]}}, max: 99}]}")
+	require.NoError(t, err)
+}
+
+// A rule can bound by the KIND of plan governing a requirement, which
+// disposition alone cannot express. An unknown kind is refused at parse.
+func TestValidateThreshold_UnknownPoamTypeIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	_, _, err := executeCommand("validate", "threshold", results,
+		"-I", "{rules: [{name: kinds, where: {poamType: [remediaton]}, max: 0}]}")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "poamType \"remediaton\" is not a known value")
+	assert.Contains(t, err.Error(), "kinds", "the refusal names the rule it came from")
+
+	_, _, err = executeCommand("validate", "threshold", results,
+		"-I", "{rules: [{name: kinds, where: {poamType: [riskAcceptance]}, max: 0}]}")
+	require.NoError(t, err)
+}
+
+// A colonless tag in a rule predicate is the gate-widening half of this bug: the
+// predicate was dropped, so the rule bounded the whole document. Under a min
+// bound that is a false green, and under a max bound it fails against
+// requirements the author never meant to include.
+func TestValidateThreshold_ColonlessTagIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+
+	_, _, err := executeCommand("validate", "threshold", results,
+		"-I", "{rules: [{name: colonless, where: {tag: [production]}, min: 1}]}")
+	require.Error(t, err, "a colonless tag must be refused, not pass by matching everything")
+	assert.Contains(t, err.Error(), "is not a key:value expression")
+	assert.Contains(t, err.Error(), "colonless", "the refusal names the rule it came from")
+
+	// A well-formed one is accepted and evaluated.
+	_, _, err = executeCommand("validate", "threshold", results,
+		"-I", "{rules: [{name: tagged, where: {tag: [nist:AC-2]}, max: 99}]}")
+	require.NoError(t, err)
+}
+
 // A colonless baselineLabel names no key, so it can never match any document —
 // and under a max bound "matched nothing" is indistinguishable from "was never
 // applied": the gate reports a clean run forever. It is refused for the same

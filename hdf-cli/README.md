@@ -262,6 +262,10 @@ FLAGS
                                (repeatable, OR logic): waiver, attestation, poam, inherited,
                                falsePositive, riskAdjustment, operationalRequirement (false_positive
                                also accepted)
+      --poam-type stringArray  Filter by the KIND of the governing POA&M (repeatable, OR logic):
+                               remediation, mitigation, riskAcceptance, vendorDependency.
+                               disposition reports every governing plan as "poam"; this names
+                               which kind it is, and reads the GOVERNING plan only
       --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
                                none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description

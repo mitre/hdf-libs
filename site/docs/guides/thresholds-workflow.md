@@ -193,6 +193,83 @@ rules:
 
 A rule bounds a count, not a percentage — `compliance` remains the only percentage bound — and it evaluates over the whole document. To narrow it to one baseline, say so in the predicate with `baseline`.
 
+### Three ways to write a value
+
+Every multi-value field in a predicate accepts the same three spellings, so a policy file reads consistently rather than one field at a time:
+
+```yaml
+rules:
+  - name: mixed forms
+    where:
+      status: failed                  # a scalar is the one-element list
+      severity: [critical, high]      # a list, as before
+      disposition: {not: [waiver]}    # everything except these
+    max: 0
+```
+
+The scalar is sugar and nothing more — `status: failed` and `status: [failed]` are the same predicate. Existing files are unaffected.
+
+**`not` is a pure negation, and that matters most where a field is ABSENT.** `disposition: {not: [waiver]}` selects everything not governed by a waiver, *including* requirements nothing governs at all. That is deliberate. The gate this vocabulary exists for is "nothing fails unless somebody waived it", and the requirement it most needs to catch is the failure nobody has adjudicated:
+
+```console
+$ hdf query plans.json --disposition poam
+Found 7 matching requirement(s):
+
+$ hdf query plans.json
+Found 18 matching requirement(s):
+```
+
+A rule bounding `{disposition: {not: [poam]}}` on that document matches **11** — the other side of the same 18. Had absence been excluded, those two would not sum, and a failure with no disposition would fall through every gate written this way.
+
+The cost is worth stating: a narrow-looking predicate can select broadly. `poamType: {not: [remediation]}` matches every requirement with no governing plan at all, because having no plan is indeed not being governed by a remediation. When you mean "governed by a plan, but not that kind", say both:
+
+```yaml
+    where:
+      disposition: [poam]
+      poamType: {not: [remediation]}
+```
+
+**`not` is a policy-file form, not a flag form.** `hdf query`'s repeatable flags stay positive-only — there is no `--status '{not: [passed]}'`, and passing one is refused as an unrecognized value:
+
+```console
+$ hdf query labelled.json --status '{not: [passed]}'
+Error: unknown --status value "{not: [passed]}" (expected one of: passed, failed, notApplicable, notReviewed, error)
+```
+
+That is deliberate rather than an oversight: a shell flag carrying YAML would need quoting rules of its own, and the query surface exists for exploration where re-running with a different value is cheap. Negation earns its place in a committed policy, where the alternative is enumerating a complement by hand and maintaining it. Express a negated query as a rule and run it through `hdf validate threshold`.
+
+A value inside `not` is checked against the same closed vocabulary as one outside it — `{not: [waver]}` is refused, because unrefused it would exclude nothing and the predicate would quietly match everything. `{not: []}` is refused for the same reason it asserts nothing at all.
+
+### Naming which kind of plan governs
+
+`disposition` reports the type of whatever governs a requirement — the most recently applied non-expired override or POA&M. Because the field is typed as the schema's `Override_Type`, every governing plan reports the flat `poam`: a plan's own kind (`remediation`, `mitigation`, `riskAcceptance`, `vendorDependency`) is not a member of that enum. `poamType` recovers it:
+
+```yaml
+rules:
+  - name: no bare risk acceptance
+    where:
+      poamType: [riskAcceptance]
+    max: 0
+
+  - name: a vendor dependency is tolerated, up to a point
+    where:
+      poamType: [vendorDependency]
+    max: 5
+```
+
+It is a separate key rather than a spelling inside `disposition` — the four kinds are not override types, and joining them with `:` would borrow the `key:value` shape `tag` and `baselineLabel` use for something that is a closed enum rather than a free-form pair.
+
+`poamType` reads the **governing** plan, not any plan a requirement carries. That distinction is the whole point:
+
+```console
+$ hdf query plans.json --poam-type remediation --id POAM-LAPSED-REMEDIATION-LIVE-MITIGATION
+No matching requirements found.
+```
+
+That requirement carries a `remediation` — but it lapsed, and a newer `mitigation` is in force, so the mitigation governs. Matching it on `remediation` would let a dead plan answer for a live one. It matches `--poam-type mitigation`, and `--disposition poam` too, since the governing entry is still a plan.
+
+`disposition: [poam]` remains the way to ask "is a plan governing this at all", whatever kind — a fifth kind added to the schema would still match it with no change here. An unrecognized kind is refused, as every closed vocabulary is.
+
 ### Selecting by the baseline's labels
 
 A baseline carries `labels` — a free-form map whose well-known keys include `system`, `component` and `environment` — so a results document already records which environment or component a baseline covers. `baselineLabel` selects on them, as `key:value`, with the value globbable.
@@ -241,6 +318,15 @@ Three things to know about it:
   $ hdf query labelled.json --baseline-label production
   Error: unknown --baseline-label value "production" (expected a key:value expression, e.g. environment:production)
   ```
+
+The same colon rule applies to `tag`, whose form this mirrors — `tag: [nist:AC-2]`, glob allowed on the value:
+
+```console
+$ hdf query labelled.json --tag production
+Error: unknown --tag value "production" (expected a key:value expression, e.g. nist:AC-2)
+```
+
+A colonless `tag` was worse than a colonless `baselineLabel` before both were refused: a label predicate merely selected nothing, while a tag predicate was dropped from the filter entirely, so a rule made only of colonless tags bounded the **whole document** — a false green under any `min` and a failure against uninvolved requirements under any `max`. The two are now refused identically.
 
 Label keys are open by schema, so a key nothing in the document carries simply selects nothing. That is correct rather than an error, and differs from the closed vocabularies — `status`, `severity`, `disposition` — where an unrecognized value is refused because it could only ever match nothing. The colon is not part of that distinction: a `key:value` expression missing its colon is malformed rather than unrecognized, and is refused on the separate grounds below.
 

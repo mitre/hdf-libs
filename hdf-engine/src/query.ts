@@ -14,6 +14,7 @@ import { deriveSeverity } from './compliance.js';
 import { effectiveImpactOf, overrideInputs } from './effective.js';
 import { normalizeKey, normalizeFilterValue } from './vocabulary.js';
 import { safeGlobMatch } from './safematch.js';
+import { valuesActive, valuesMatch, normalizeValues, type Values, type PredicateValue } from './values.js';
 
 /**
  * FilterOptions configures a requirements query. Every filter input arrives here;
@@ -22,8 +23,8 @@ import { safeGlobMatch } from './safematch.js';
  * agnostic to the caller's status-string convention (undefined → empty status).
  */
 export interface FilterOptions {
-  status?: string[];
-  severity?: string[];
+  status?: PredicateValue;
+  severity?: PredicateValue;
   /**
    * Compares the EFFECTIVE impact — the governing non-expired impact override's
    * value, else the requirement's own.
@@ -58,11 +59,11 @@ export interface FilterOptions {
    * 'CWE 79' and cwe79 are one value. Reads the first-class cwe[] field ONLY and
    * never falls back to tags.cwe.
    */
-  cwe?: string[];
-  cci?: string[];
-  nist?: string[];
+  cwe?: PredicateValue;
+  cci?: PredicateValue;
+  nist?: PredicateValue;
   id?: string;
-  tag?: string[];
+  tag?: PredicateValue;
   search?: string;
   baseline?: string;
   /**
@@ -77,7 +78,7 @@ export interface FilterOptions {
    * therefore matches nothing: an absent label is not a wildcard.
    * Parity: Options.BaselineLabel in go/filter.go.
    */
-  baselineLabel?: string[];
+  baselineLabel?: PredicateValue;
   /**
    * The TYPE of the override that governs the requirement (waiver,
    * falsePositive, riskAdjustment, …), OR across values. The governing override
@@ -85,13 +86,15 @@ export interface FilterOptions {
    * that set the status — see governingDisposition. Resolved rather than read
    * from the stored disposition field, which is an output cache.
    */
-  disposition?: string[];
+  disposition?: PredicateValue;
   /**
    * Remediation-plan validity: 'valid' for a requirement carrying a POA&M still
    * in force, 'none-valid' for one carrying none, an empty list, or only lapsed
    * ones. Absence and expiry are one concept on purpose.
    */
   poams?: string;
+  /** Kind of the governing POA&M: remediation|mitigation|riskAcceptance|vendorDependency. */
+  poamType?: PredicateValue;
   /** RFC3339 reference clock for expiry; undefined means now. */
   now?: string;
   limit?: number;
@@ -124,7 +127,11 @@ type FilterFunc = (control: EvaluatedRequirement, status: string, severity: stri
  * options. Applies to requirement collections (results/baseline documents); the
  * calling adapter rejects document types that carry no requirements.
  */
-export function filter(results: HDFResults, options: FilterOptions): Match[] {
+export function filter(results: HDFResults, rawOptions: FilterOptions): Match[] {
+  // Normalized ONCE here, so every caller — a decoded policy, the CLI, the MCP,
+  // or a TypeScript consumer passing a plain array — reaches the matchers with
+  // the same shape. Parity: Go reaches it by type, through Values' unmarshaller.
+  const options = normalizeOptions(rawOptions);
   const filters = buildFilters(options);
   const matches: Match[] = [];
 
@@ -171,36 +178,76 @@ export function filter(results: HDFResults, options: FilterOptions): Match[] {
   return matches;
 }
 
-function buildFilters(options: FilterOptions): FilterFunc[] {
+/** The value fields, normalized; every other option passes through unchanged. */
+type NormalizedOptions = Omit<FilterOptions, (typeof VALUE_FIELDS)[number]> & {
+  [K in (typeof VALUE_FIELDS)[number]]?: Values;
+};
+
+export const VALUE_FIELDS = [
+  'status',
+  'severity',
+  'cwe',
+  'cci',
+  'nist',
+  'tag',
+  'baselineLabel',
+  'disposition',
+  'poamType',
+] as const;
+
+function normalizeOptions(options: FilterOptions): NormalizedOptions {
+  const out: Record<string, unknown> = { ...options };
+  for (const field of VALUE_FIELDS) {
+    if (out[field] !== undefined) out[field] = normalizeValues(out[field]);
+  }
+  return out as NormalizedOptions;
+}
+
+function buildFilters(options: NormalizedOptions): FilterFunc[] {
   const filters: FilterFunc[] = [];
 
   // Compared through normalizeKey so the CLI's display spelling and the schema's
   // camelCase are one value: a filter copied from `hdf query` and a rule written
   // against the schema must select the same requirements.
-  if (options.status && options.status.length > 0) {
-    const statuses = options.status.map((s) => normalizeKey(normalizeFilterValue('status', s)));
+  if (valuesActive(options.status)) {
     // BOTH sides go through the same alias map: the injected resolver may speak
     // the CLI's display vocabulary while the spec speaks the schema's.
-    filters.push((_c, s) => statuses.includes(normalizeKey(normalizeFilterValue('status', s))));
+    filters.push((_c, s) => {
+      const actual = normalizeKey(normalizeFilterValue('status', s));
+      return valuesMatch(options.status!, (want) => actual === normalizeKey(normalizeFilterValue('status', want)));
+    });
   }
 
   // Normalized the same way, and through the alias map as well, so 'none' — the
   // name informational replaced in 3.7.0 — keeps selecting it on every surface,
   // not only in the CLI.
-  if (options.severity && options.severity.length > 0) {
-    const severities = options.severity.map((s) => normalizeKey(normalizeFilterValue('severity', s)));
-    filters.push((_c, _s, severity) =>
-      severities.includes(normalizeKey(normalizeFilterValue('severity', severity)))
-    );
+  if (valuesActive(options.severity)) {
+    filters.push((_c, _s, severity) => {
+      const actual = normalizeKey(normalizeFilterValue('severity', severity));
+      return valuesMatch(options.severity!, (want) => actual === normalizeKey(normalizeFilterValue('severity', want)));
+    });
   }
 
   // Disposition (OR across values). A requirement with no governing override
   // matches nothing, which is what makes "waived" and "not waived" opposites.
-  if (options.disposition && options.disposition.length > 0) {
-    const wanted = options.disposition.map((d) => normalizeKey(normalizeFilterValue('disposition', d)));
+  if (valuesActive(options.disposition)) {
     filters.push((c) => {
       const governing = governingDisposition(c, options.now);
-      return governing !== '' && wanted.includes(normalizeKey(normalizeFilterValue('disposition', governing)));
+      // Nothing governing matches no VALUE, which is what makes an inclusive
+      // predicate exclude it and a negation accept it — a failure nobody
+      // adjudicated is correctly 'not waived'.
+      const actual = normalizeKey(normalizeFilterValue('disposition', governing));
+      return valuesMatch(
+        options.disposition!,
+        (want) => governing !== '' && actual === normalizeKey(normalizeFilterValue('disposition', want)),
+      );
+    });
+  }
+
+  if (valuesActive(options.poamType)) {
+    filters.push((c) => {
+      const kind = governingPoamType(c, options.now);
+      return valuesMatch(options.poamType!, (want) => kind !== '' && normalizeKey(kind) === normalizeKey(want));
     });
   }
 
@@ -246,21 +293,19 @@ function buildFilters(options: FilterOptions): FilterFunc[] {
     const want = parseKevFilter(options.kev);
     filters.push((c) => want !== undefined && inKev(c) === want);
   }
-  if (options.cwe && options.cwe.length > 0) {
-    const wanted = new Set(options.cwe.flatMap((v) => extractCWEIDs(v)));
-    filters.push((c) =>
-      (c.cwe ?? []).some((raw) => extractCWEIDs(String(raw)).some((id) => wanted.has(id)))
-    );
+  if (valuesActive(options.cwe)) {
+    filters.push((c) => {
+      const carried = new Set((c.cwe ?? []).flatMap((raw) => extractCWEIDs(String(raw))));
+      return valuesMatch(options.cwe!, (want) => extractCWEIDs(want).some((id) => carried.has(id)));
+    });
   }
 
-  if (options.cci && options.cci.length > 0) {
-    const ccis = options.cci.map((c) => c.toUpperCase());
-    filters.push((c) => ccis.some((cci) => tagContains(c.tags, 'cci', cci)));
+  if (valuesActive(options.cci)) {
+    filters.push((c) => valuesMatch(options.cci!, (want) => tagContains(c.tags, 'cci', want.toUpperCase())));
   }
 
-  if (options.nist && options.nist.length > 0) {
-    const nist = options.nist;
-    filters.push((c) => nist.some((n) => tagMatchesGlob(c.tags, 'nist', n)));
+  if (valuesActive(options.nist)) {
+    filters.push((c) => valuesMatch(options.nist!, (want) => tagMatchesGlob(c.tags, 'nist', want)));
   }
 
   if (options.id) {
@@ -274,17 +319,17 @@ function buildFilters(options: FilterOptions): FilterFunc[] {
     );
   }
 
-  if (options.tag && options.tag.length > 0) {
-    const tagFilters: { key: string; value: string }[] = [];
-    for (const t of options.tag) {
-      const idx = t.indexOf(':');
-      if (idx >= 0) {
-        tagFilters.push({ key: t.slice(0, idx), value: t.slice(idx + 1) });
-      }
-    }
-    if (tagFilters.length > 0) {
-      filters.push((c) => tagFilters.some((tf) => tagMatchesGlob(c.tags, tf.key, tf.value)));
-    }
+  if (valuesActive(options.tag)) {
+    filters.push((c) =>
+      valuesMatch(options.tag!, (want) => {
+        // A colonless value names no key, so it matches nothing rather than
+        // disappearing and letting the whole document through. The CLI refuses
+        // one before it reaches here; this is the safe floor for any caller
+        // that does not.
+        const idx = want.indexOf(':');
+        return idx > 0 && tagMatchesGlob(c.tags, want.slice(0, idx), want.slice(idx + 1));
+      }),
+    );
   }
 
   if (options.search) {
@@ -392,6 +437,38 @@ export function tagMatchesGlob(tags: Record<string, unknown>, key: string, patte
 }
 
 /**
+ * validTag reports whether s is a tag expression at all. A value carrying no
+ * colon names no key, so it can never match — and unlike the label filter, which
+ * merely selected nothing, a colonless tag was DROPPED from the filter list
+ * entirely, so a predicate made only of colonless values matched the whole
+ * document. Refused rather than tolerated in either direction.
+ * Parity: ValidTag in go/filter.go.
+ */
+export function validTag(s: string): boolean {
+  const colon = s.indexOf(':');
+  return colon > 0;
+}
+
+/**
+ * The KIND of the governing POA&M, or '' when the governing entry is an override
+ * or nothing governs. Resolves through the same index governingDisposition uses,
+ * so disposition and poamType can never name different entries.
+ *
+ * Reading the GOVERNING plan rather than any carried plan is the whole point: a
+ * requirement carrying a lapsed remediation under a live mitigation is governed
+ * by the mitigation, and matching it on 'remediation' would let a dead plan
+ * answer for a live one.
+ * Parity: governingPoamType in go/filter.go.
+ */
+function governingPoamType(control: EvaluatedRequirement, now?: string): string {
+  const overrides = control.statusOverrides ?? [];
+  const entries = [...overrideInputs(control), ...poamInputs(control)];
+  const index = governingOverrideIndex(entries, () => true, now);
+  if (index < overrides.length) return '';
+  return (control.poams ?? [])[index - overrides.length]?.type ?? '';
+}
+
+/**
  * validBaselineLabel reports whether s is a label expression at all. A value
  * carrying no colon names no key, so it can never match any document — the same
  * forever-green gate a misspelled status value produces, which is why it is
@@ -418,15 +495,13 @@ export function validBaselineLabel(s: string): boolean {
  */
 export function baselineLabelsMatch(
   labels: Record<string, string> | undefined,
-  predicates: string[] | undefined,
+  predicates: Values | undefined,
 ): boolean {
-  if (!predicates || predicates.length === 0) return true;
-  for (const p of predicates) {
+  if (!valuesActive(predicates)) return true;
+  return valuesMatch(predicates!, (p) => {
     const colon = p.indexOf(':');
-    if (colon === -1) continue;
-    if (labelMatchesGlob(labels, p.slice(0, colon), p.slice(colon + 1))) return true;
-  }
-  return false;
+    return colon > 0 && labelMatchesGlob(labels, p.slice(0, colon), p.slice(colon + 1));
+  });
 }
 
 /**
@@ -470,6 +545,24 @@ export const DISPOSITION_VALUES = [
   'riskAdjustment',
   'operationalRequirement',
 ] as const;
+
+/**
+ * The closed vocabulary the poamType filter accepts: the schema's POA&M type
+ * enum. Deliberately NOT merged into DISPOSITION_VALUES — disposition answers
+ * which Override_Type governs, and a plan's kind is not an override type.
+ * Parity: PoamTypeValues in go/filter.go, pinned by the shared case table.
+ */
+export const POAM_TYPE_VALUES = ['remediation', 'mitigation', 'riskAcceptance', 'vendorDependency'] as const;
+
+/**
+ * Reports whether s names a POA&M kind. A value outside the vocabulary can only
+ * ever match nothing, so callers refuse it rather than letting it read as
+ * "asked and found none".
+ * Parity: ValidPoamType in go/filter.go.
+ */
+export function validPoamType(s: string): boolean {
+  return POAM_TYPE_VALUES.some((v) => normalizeKey(v) === normalizeKey(s));
+}
 
 /**
  * Reports whether s names an override type. Callers validate with this and

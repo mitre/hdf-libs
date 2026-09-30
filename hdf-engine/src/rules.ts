@@ -7,6 +7,7 @@
 import type { HDFResults, EvaluatedRequirement } from '@mitre/hdf-schema';
 import { filter, type FilterOptions } from './query.js';
 import type { Violation } from './compliance.js';
+import { normalizeValues, type PredicateValue } from './values.js';
 import {
   validateGrid,
   type ThresholdConfig,
@@ -37,6 +38,7 @@ export const PREDICATE_FIELDS = [
   'baseline',
   'baselineLabel',
   'disposition',
+  'poamType',
   'poams',
 ] as const;
 
@@ -46,18 +48,18 @@ export const PREDICATE_FIELDS = [
  * mean the same thing. Values within a field OR; fields AND.
  */
 export interface RulePredicate {
-  status?: string[];
-  severity?: string[];
+  status?: PredicateValue;
+  severity?: PredicateValue;
   impact?: string;
   rawImpact?: string;
   cvss?: string;
   epss?: string;
   kev?: string;
-  cwe?: string[];
-  cci?: string[];
-  nist?: string[];
+  cwe?: PredicateValue;
+  cci?: PredicateValue;
+  nist?: PredicateValue;
   id?: string;
-  tag?: string[];
+  tag?: PredicateValue;
   search?: string;
   baseline?: string;
   /**
@@ -65,8 +67,13 @@ export interface RulePredicate {
    * makes 'nothing fails in anything labelled environment=production'
    * expressible as a policy rather than only as a query.
    */
-  baselineLabel?: string[];
-  disposition?: string[];
+  baselineLabel?: PredicateValue;
+  disposition?: PredicateValue;
+  /**
+   * The KIND of the governing POA&M, which disposition collapses to the flat
+   * 'poam' because it is typed Override_Type and a plan's kind is not one.
+   */
+  poamType?: PredicateValue;
   poams?: string;
 }
 
@@ -124,11 +131,22 @@ function filterOptions(where: RulePredicate, options: RuleOptions): FilterOption
 function describe(where: RulePredicate): string {
   const parts: string[] = [];
   for (const [key, value] of Object.entries(where)) {
+    if (value === undefined || value === null || value === '') continue;
+    if (typeof value === 'string') {
+      // A scalar is the one-element list, and reads as one.
+      parts.push(`${key}: ${value}`);
+      continue;
+    }
     if (Array.isArray(value)) {
       if (value.length > 0) parts.push(`${key}: ${value.join('|')}`);
-    } else if (value) {
-      parts.push(`${key}: ${String(value)}`);
+      continue;
     }
+    // A negated field renders as "not X|Y" so an unnamed rule's identity says
+    // which way round its predicate ran — without this it rendered
+    // "[object Object]". Parity: add() in go/rules.go.
+    const v = normalizeValues(value);
+    if (v.in.length > 0) parts.push(`${key}: ${v.in.join('|')}`);
+    if (v.not.length > 0) parts.push(`${key}: not ${v.not.join('|')}`);
   }
   parts.sort();
   return `{${parts.join(', ')}}`;

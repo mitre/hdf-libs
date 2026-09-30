@@ -26,7 +26,8 @@ import {
   type ThresholdConfig,
 } from '../src/compliance.js';
 import { evaluateRules, evaluate, PREDICATE_FIELDS, type ThresholdRule } from '../src/rules.js';
-import { filter } from '../src/query.js';
+import { VALUE_FIELDS } from '../src/query.js';
+import { filter, type Match } from '../src/query.js';
 import { ruleRefusal } from '../src/compliance.js';
 import type { Severity } from '@mitre/hdf-schema';
 
@@ -287,12 +288,40 @@ describe('agent-override detective surface — parity with go/compliance_test.go
 // the SAME file and runs the SAME cases, so the two evaluators cannot drift. The
 // reference clock lives in the file, which keeps expiry a property of the fixture
 // rather than of the day the suite runs.
+// The shared shape a violation's findings are pinned to. Title is carried
+// deliberately rather than ids alone: it is the field that ended up unasserted
+// in BOTH languages at once, which is what this section prevents.
+interface ExpectFinding {
+  id: string;
+  title: string;
+  status: string;
+  severity: string;
+}
+
 interface RuleCases {
   now: string;
   predicateFields: string[];
   refusalByCount: Record<string, string>;
   fixture: HDFResults;
-  cases: { name: string; rules: ThresholdRule[]; expect: string[] }[];
+  cases: { name: string; rules: ThresholdRule[]; expect: string[]; expectFindings: ExpectFinding[][] }[];
+  gridCases: {
+    name: string;
+    config: ThresholdConfig;
+    expect: string[];
+    expectFindings: ExpectFinding[][];
+  }[];
+}
+
+// Compares one violation's findings against the shared table. Parity:
+// assertFindings in go/rules_test.go.
+function assertFindings(want: ExpectFinding[], got: Match[]): void {
+  expect(got, 'a violation must name exactly the requirements the table lists').toHaveLength(want.length);
+  want.forEach((w, i) => {
+    expect(got[i]?.id).toBe(w.id);
+    expect(got[i]?.title, 'the title is promised by the docs and was once unasserted').toBe(w.title);
+    expect(got[i]?.status).toBe(w.status);
+    expect(got[i]?.severity).toBe(w.severity);
+  });
 }
 
 const rulePath = join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'threshold-rule-cases.json');
@@ -319,19 +348,92 @@ describe('threshold rules (parity with go/rules.go)', () => {
 
   for (const c of ruleTable.cases) {
     it(c.name, () => {
-      const got = violationMessages(
-        evaluateRules({ rules: c.rules }, ruleTable.fixture, {
-          now: ruleTable.now,
-          statusOf: effectiveStatusOf(false),
-        }),
+      const violations = evaluateRules({ rules: c.rules }, ruleTable.fixture, {
+        now: ruleTable.now,
+        statusOf: effectiveStatusOf(false),
+      });
+      expect(violationMessages(violations)).toEqual(c.expect);
+
+      // The findings half, pinned by the same table so it cannot diverge
+      // between languages the way it already did once.
+      expect(c.expectFindings, 'the table must state findings for every expected violation').toHaveLength(
+        c.expect.length,
       );
-      expect(got).toEqual(c.expect);
+      c.expectFindings.forEach((want, i) => assertFindings(want, violations[i]!.findings));
     });
   }
+
+  // The grid's bounds resolve their offenders from the control map rather than
+  // from a filter, so they are pinned by their own section of the same table. The
+  // two that deliberately name NOTHING sit beside a count bound that names two,
+  // on the same fixture — so an empty expectation here is a real assertion.
+  // Parity: TestEvaluateGridFindings in go/rules_test.go.
+  describe('grid bounds name their offenders, pinned by the shared table', () => {
+    it('has cases to run', () => {
+      expect(ruleTable.gridCases.length).toBeGreaterThan(0);
+    });
+
+    // The table states config in the POLICY vocabulary an author writes
+    // (no_impact, skipped), which is what Go's YAML decoding accepts. TypeScript
+    // does no YAML decoding, so its ThresholdConfig uses the camelCase type key
+    // (noImpact). Translating here rather than duplicating the table is the
+    // point — but an UNRECOGNIZED key must be loud: passing one through silently
+    // creates no bound, and a case whose expectation is empty then passes for
+    // the wrong reason. That is exactly how the no_impact case was vacuous.
+    const CONFIG_KEYS: Record<string, keyof ThresholdConfig> = {
+      compliance: 'compliance',
+      passed: 'passed',
+      failed: 'failed',
+      skipped: 'skipped',
+      error: 'error',
+      no_impact: 'noImpact',
+      rules: 'rules',
+    };
+    const toTsConfig = (raw: Record<string, unknown>): ThresholdConfig => {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(raw)) {
+        const mapped = CONFIG_KEYS[k];
+        if (mapped === undefined) {
+          throw new Error(`threshold key "${k}" is not translatable to the TypeScript config; it would create no bound`);
+        }
+        out[mapped] = v;
+      }
+      return out as ThresholdConfig;
+    };
+
+    for (const c of ruleTable.gridCases) {
+      it(c.name, () => {
+        const statusOf = effectiveStatusOf(false);
+        const counts = countControlsByStatus(ruleTable.fixture, statusOf);
+        const violations = evaluate(toTsConfig(c.config as unknown as Record<string, unknown>), {
+          results: ruleTable.fixture,
+          counts,
+          compliance: calculateCompliance(counts),
+          controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
+          now: ruleTable.now,
+          statusOf,
+        });
+        expect(violationMessages(violations)).toEqual(c.expect);
+        expect(c.expectFindings).toHaveLength(c.expect.length);
+        c.expectFindings.forEach((want, i) => assertFindings(want, violations[i]!.findings));
+      });
+    }
+  });
 
   // Go maps predicate fields onto the filter explicitly while TypeScript spreads
   // the object, so a field added to one language reaches the filter there and
   // silently does nothing in the other. Both definitions are pinned to one list.
+  // TypeScript reaches the one decoder through a hand-maintained field list
+  // where Go reaches it by type, so that list can silently fall behind the
+  // predicate surface and a new field would lose scalar sugar and negation in
+  // one language only. Pinned to the same table PREDICATE_FIELDS is pinned to.
+  it('every multi-value predicate field reaches the decoder', () => {
+    const scalarFields = ['impact', 'rawImpact', 'cvss', 'epss', 'kev', 'id', 'search', 'baseline', 'poams'];
+    const expected = ruleTable.predicateFields.filter((f) => !scalarFields.includes(f)).sort();
+    expect(expected.length).toBeGreaterThan(0);
+    expect([...VALUE_FIELDS].sort()).toEqual(expected);
+  });
+
   it('the predicate surface matches the shared table', () => {
     expect(ruleTable.predicateFields.length).toBeGreaterThan(0);
     expect([...PREDICATE_FIELDS].sort()).toEqual(ruleTable.predicateFields.slice().sort());
@@ -635,93 +737,14 @@ describe('the former `none` name and severity bucketing — parity with go/compl
 // keeping what was thrown away. Parity: go/rules_test.go
 // TestRuleViolationCarriesTheMatchingFindings and its two siblings.
 describe('a violation carries the requirements that breached it', () => {
-  const statusOf = effectiveStatusOf(false);
+  // NOTE: five tests that used to sit in this block were deleted when the shared
+  // case table gained expectFindings/gridCases. They asserted COUNTS or mere
+  // non-emptiness; the table pins exact membership by id, title, status and
+  // severity and is read by both languages, which is strictly stronger. The two
+  // that remain are kept because each brings its OWN fixture for a discrimination
+  // the shared fixture cannot make — each declares its own status resolver, so
+  // the block-level one the deleted tests shared is gone with them.
 
-  it('a rule names every match, not a sample', () => {
-    const violations = evaluateRules(
-      { rules: [{ name: 'no failures', where: { status: ['failed'] }, max: 0 }] },
-      ruleTable.fixture,
-      { now: ruleTable.now, statusOf },
-    );
-    expect(violations).toHaveLength(1);
-    expect(violations[0].message).toContain('no failures');
-
-    const matched = filter(ruleTable.fixture, { status: ['failed'], statusOf });
-    expect(violations[0].findings).toHaveLength(matched.length);
-    expect(violations[0].findings.length).toBeGreaterThan(0);
-    for (const f of violations[0].findings) {
-      expect(f.id).toBeTruthy();
-      expect(f.status).toBe('failed');
-    }
-  });
-
-  it('a count bound names the requirements in the bucket it bounded', () => {
-    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
-    const violations = evaluate(
-      { failed: { total: { max: 0 } } },
-      {
-        results: ruleTable.fixture,
-        counts,
-        compliance: calculateCompliance(counts),
-        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
-        now: ruleTable.now,
-        statusOf,
-      },
-    );
-    expect(violations).toHaveLength(1);
-    expect(violations[0].message).toContain('failed.total');
-    expect(violations[0].findings.length).toBeGreaterThan(0);
-    for (const f of violations[0].findings) {
-      expect(f.status, 'only the bucket that was bounded').toBe('failed');
-      expect(f.id).toBeTruthy();
-    }
-
-    // The title is the middle of the three things a finding line promises, and
-    // it was the one nothing asserted: mapControlIDsByStatus could stop carrying
-    // it and every test still passed. Pinned against the fixture's own text so a
-    // dropped field cannot pass as an untitled requirement.
-    // Parity: TestValidateThreshold_FindingLineCarriesTheTitle in hdf-cli.
-    const noPlan = violations[0].findings.find((f) => f.id === 'NO-PLAN');
-    expect(noPlan, 'precondition: the bounded bucket contains the titled requirement').toBeDefined();
-    expect(noPlan?.title).toBe('Failing with no remediation plan');
-  });
-
-  it('a compliance bound names none — it is a property of the whole document', () => {
-    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
-    const violations = evaluate(
-      { compliance: { min: 99 } },
-      {
-        results: ruleTable.fixture,
-        counts,
-        compliance: calculateCompliance(counts),
-        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
-        now: ruleTable.now,
-        statusOf,
-      },
-    );
-    expect(violations.length).toBeGreaterThan(0);
-    expect(violations[0].message).toContain('compliance');
-    expect(violations[0].findings).toEqual([]);
-  });
-
-  it('a count bound names exactly as many findings as its message counts', () => {
-    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
-    const violations = evaluate(
-      { failed: { total: { max: 0 } } },
-      {
-        results: ruleTable.fixture,
-        counts,
-        compliance: calculateCompliance(counts),
-        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
-        now: ruleTable.now,
-        statusOf,
-      },
-    );
-    // The invariant that makes the list trustworthy: a reader counting the lines
-    // must get the number the message reported.
-    const reported = Number(/: (\d+) exceeds/.exec(violations[0].message)![1]);
-    expect(violations[0].findings).toHaveLength(reported);
-  });
 
   // The control map holds the THRESHOLD key (no_impact) while the filter holds
   // the SCHEMA status (notApplicable). A finding names the requirement, so both
@@ -760,27 +783,6 @@ describe('a violation carries the requirements that breached it', () => {
     }
   });
 
-  it('a controls list names none — the message already names the requirement', () => {
-    const counts = countControlsByStatus(ruleTable.fixture, statusOf);
-    const violations = evaluate(
-      // failed/critical, not passed/high: the fixture HAS failed/critical
-      // requirements, so inBucket would return a non-empty list if a controls
-      // violation wrongly carried one. Asserting on an empty bucket proved
-      // nothing.
-      { failed: { critical: { controls: ['NO-SUCH-ID'] } } },
-      {
-        results: ruleTable.fixture,
-        counts,
-        compliance: calculateCompliance(counts),
-        controlMap: mapControlIDsByStatus(ruleTable.fixture, statusOf),
-        now: ruleTable.now,
-        statusOf,
-      },
-    );
-    expect(violations).toHaveLength(1);
-    expect(violations[0].message).toContain('NO-SUCH-ID');
-    expect(violations[0].findings).toEqual([]);
-  });
 });
 
 // The Go engine has a severity-narrowing test and TypeScript had none, so the TS

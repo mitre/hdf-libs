@@ -54,7 +54,9 @@ const (
 	// (trimming the description twice measured 988 either way).
 	// Raised to 5630 (owner decision 2026-09-29) when hdf_query's disposition
 	// description had to say a governing POA&M counts too; measured 5617.
-	ToolsListTotalBudget = 5630
+	// Raised to 5700 (owner decision 2026-09-29) for hdf_query's poamType;
+	// measured 5669.
+	ToolsListTotalBudget = 5700
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -81,7 +83,11 @@ const (
 	// this raise buys correctness rather than surface. Trimmed twice before raising
 	// (22 tokens down to 17); measured 1006. hdf_query is now about a fifth of the
 	// listing and this is its fourth raise — hdf-libs-5cim9 should run before a fifth.
-	ToolsListPerToolBudget = 1020
+	// Raised to 1080 (owner decision 2026-09-29) for poamType; measured 1058.
+	// hdf_query is now roughly a fifth of the listing and this is its fifth raise
+	// — the audit in hdf-libs-5cim9 was named as the thing to do before a fifth,
+	// and it has not run. Say so rather than let the ratchet look routine.
+	ToolsListPerToolBudget = 1080
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -103,7 +109,12 @@ const (
 	// measured 3917. The description was trimmed twice before raising, which
 	// recovered 5 of the 22 tokens. This is the eighth raise and the ratchet has
 	// still never been examined as a whole; hdf-libs-5cim9 is that audit.
-	ReadProfileBudget = 3930
+	// Raised to 4000 (owner decision 2026-09-29) for hdf_query's poamType, which
+	// recovers the POA&M kind that disposition flattens to "poam"; measured 3969.
+	// Unlike the raise above, trimming did NOT help — three wordings measured
+	// 3969/3971/3972, so the cheapest was the clearest and the cost is the field
+	// itself, not its prose. Ninth raise; hdf-libs-5cim9 should run before a tenth.
+	ReadProfileBudget = 4000
 )
 
 var (

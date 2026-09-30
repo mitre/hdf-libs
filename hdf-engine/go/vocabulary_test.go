@@ -145,15 +145,15 @@ func TestFilterAliasesSelectTheSameRequirements(t *testing.T) {
 			canonOpts := Options{StatusOf: schemaStatus}
 			switch alias.Field {
 			case "status":
-				aliasOpts.Status = []string{alias.Form}
-				canonOpts.Status = []string{alias.Means}
+				aliasOpts.Status = In(alias.Form)
+				canonOpts.Status = In(alias.Means)
 			case "severity":
-				aliasOpts.Severity = []string{alias.Form}
-				canonOpts.Severity = []string{alias.Means}
+				aliasOpts.Severity = In(alias.Form)
+				canonOpts.Severity = In(alias.Means)
 			case "disposition":
 				subject = amendments
-				aliasOpts.Disposition = []string{alias.Form}
-				canonOpts.Disposition = []string{alias.Means}
+				aliasOpts.Disposition = In(alias.Form)
+				canonOpts.Disposition = In(alias.Means)
 			default:
 				t.Skipf("no filter-selection shape for field %q", alias.Field)
 			}

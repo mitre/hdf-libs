@@ -655,6 +655,11 @@ func TestQuery_AmendmentFiltersRefuseUnknownValues(t *testing.T) {
 		// A colonless label names no key, so it can never match — the same empty
 		// result an agent cannot tell from "asked and found none".
 		{"baselineLabel", queryInput{Source: src, BaselineLabel: []string{"production"}}, "malformed baselineLabel"},
+		// A colonless tag was DROPPED rather than applied, so an agent's
+		// malformed predicate returned the whole document as though it had asked
+		// for it.
+		{"tag", queryInput{Source: src, Tag: []string{"production"}}, "malformed tag"},
+		{"poamType", queryInput{Source: src, PoamType: []string{"remediaton"}}, "unknown poamType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			res, _ := callQuery(t, tc.in)

@@ -114,8 +114,12 @@ func validateRules(rules []hdfengine.ThresholdRule, label string) error {
 		if name == "" {
 			name = fmt.Sprintf("rule %d", i+1)
 		}
-		check := func(field string, values []string, valid func(string) bool, legal []string) error {
-			for _, value := range values {
+		// All() covers BOTH modes: a typo inside not must be refused exactly as one
+		// outside it is. Unrefused, "{not: [waver]}" excludes nothing and the
+		// predicate silently matches everything — the inverse of the false green
+		// an unrefused inclusive typo produces, and harder to spot.
+		check := func(field string, values hdfengine.Values, valid func(string) bool, legal []string) error {
+			for _, value := range values.All() {
 				if valid(value) {
 					continue
 				}
@@ -137,7 +141,19 @@ func validateRules(rules []hdfengine.ThresholdRule, label string) error {
 			return fmt.Errorf("%s: %s: poams %q is not a known value (expected one of: %s, %s)",
 				label, name, rule.Where.Poams, hdfengine.PoamValid, hdfengine.PoamNoneValid)
 		}
-		for _, value := range rule.Where.BaselineLabel {
+		for _, value := range rule.Where.PoamType.All() {
+			if !hdfengine.ValidPoamType(value) {
+				return fmt.Errorf("%s: %s: poamType %q is not a known value (expected one of: %s)",
+					label, name, value, strings.Join(hdfengine.PoamTypeValues, ", "))
+			}
+		}
+		for _, value := range rule.Where.Tag.All() {
+			if !hdfengine.ValidTag(value) {
+				return fmt.Errorf("%s: %s: tag %q is not a key:value expression (expected e.g. \"nist:AC-2\")",
+					label, name, value)
+			}
+		}
+		for _, value := range rule.Where.BaselineLabel.All() {
 			if !hdfengine.ValidBaselineLabel(value) {
 				return fmt.Errorf("%s: %s: baselineLabel %q is not a key:value expression (expected e.g. \"environment:production\")",
 					label, name, value)
