@@ -1,21 +1,20 @@
 name: CI
 
 on:
+  # NO paths-ignore, deliberately. The `main` ruleset requires three checks that
+  # only this workflow reports, so any PR whose every changed file was filtered
+  # out could never satisfy them: mergeable but BLOCKED forever, with admin
+  # bypass the only way through (seen on #272, a docs-only PR). The filter also
+  # cannot be made safe — GitHub `paths` matches ANY changed file, never "all of
+  # them", so "only docs changed" is inexpressible and a same-named shim
+  # workflow would double-report a required check on a mixed PR. The cost is a
+  # full run on documentation edits, which is the trade this repo already makes:
+  # it is public, so minutes are free and latency isn't.
   push:
     # Scoped to main so a branch with an open PR doesn't run CI twice per
     # update (once for the branch push, once for the PR synchronize).
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.beads/**'
-      - 'LICENSE*'
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.beads/**'
-      - 'LICENSE*'
 
 permissions:
   contents: read
