@@ -36,8 +36,9 @@ const FEDRAMP_NAMESPACE = 'https://fedramp.gov/ns/oscal';
 
 /** Exercises every prop the SAR exporter can emit. Mirrors the Go peer's input. */
 const ALL_SAR_PROPS = `{
+  "components": [{ "type": "host", "name": "host-a" }],
   "baselines": [{
-    "name": "b", "version": "1.2.0",
+    "name": "b", "title": "b title", "version": "1.2.0",
     "requirements": [{
       "id": "SV-230221r858734_rule", "impact": 0.7, "title": "req",
       "tags": { "nist": ["AC-2"], "cci": ["CCI-000012"] },
@@ -234,7 +235,8 @@ describe('vocabulary: emitted props are rows', () => {
   it('hdf-to-oscal-sar', async () => {
     const seen = await emittedPropNames(sarInputs(), convertHdfToOscalSar);
     for (const name of [
-      'hdf-requirement-id', 'baseline-version', 'nist', 'cci', 'control-type', 'verification-method',
+      'hdf-requirement-id', 'baseline-name', 'baseline-title', 'baseline-version', 'requirement-title',
+      'component-name', 'nist', 'cci', 'control-type', 'verification-method',
       'applicability', 'cwe', 'epss-score', 'epss-percentile', 'kev', 'kev-due-date', 'cvss-base-score',
       'cvss-base-vector', 'reference', 'description-label', 'type',
     ]) {

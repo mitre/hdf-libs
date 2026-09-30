@@ -397,3 +397,103 @@ describe('hdf-to-oscal-poam milestone titles', () => {
     expect(back.overrides[0].milestones[0].title).toBe(title);
   });
 });
+
+// Mirrors the Go TestConvertHDFToOSCALPOAM_SingleLineSinks_1_2_3 and
+// TestConvertHDFToOSCALPOAM_AlreadyValidSingleLineUnchanged. OSCAL 1.2.3 rejects a
+// title with a line feed (MarkupLineDatatype ^[^\n]+$) and a party name or resource
+// title with any line terminator or edge whitespace (StringDatatype), while 1.1.2
+// does not. Every non-prop single-line sink normalizes through the ADR-0014 §1.7.1
+// helper; the exact value rides in that sink's §4.6 prop home.
+const ADVERSARIAL_LINE_VALUES: Array<[string, string, string]> = [
+  ['trailing line feed', 'SV-001\n', 'SV-001'],
+  ['interior line feed', 'first\nsecond', 'first second'],
+  ['lone carriage return', 'first\rsecond', 'first second'],
+  ['CRLF is one run', 'first\r\nsecond', 'first second'],
+  ['line separator U+2028', 'a\u2028b', 'a b'],
+  ['paragraph separator U+2029', 'a\u2029b', 'a b'],
+  ['leading and trailing whitespace', '  SV-001  ', 'SV-001'],
+];
+
+interface SinkOut {
+  'plan-of-action-and-milestones': {
+    metadata: {
+      title: string;
+      props?: Array<{ name: string; value: string; remarks?: string }>;
+      parties: Array<{ name?: string; props?: Array<{ name: string; value: string; remarks?: string }> }>;
+    };
+    risks: Array<{ title: string; props?: Array<{ name: string; value: string; remarks?: string }> }>;
+    'poam-items': Array<{ title: string }>;
+    'back-matter': { resources: Array<{ title: string; props?: Array<{ name: string; value: string; remarks?: string }> }> };
+  };
+}
+
+function poamWithSinks(name: string, requirementId: string, sourceName: string, identifier: string): string {
+  return JSON.stringify({
+    name,
+    overrides: [{
+      requirementId, type: 'waiver', status: 'notApplicable', reason: 'r',
+      appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+      appliedBy: { identifier, type: 'username' },
+      externalReferences: [{ sourceName, href: 'https://example.com/a' }],
+    }],
+  });
+}
+
+async function convertSinks(input: string): Promise<SinkOut> {
+  assertSchemaValid(validateHdfAmendments, 'test input', JSON.parse(input));
+  const poam = await convertHdfToOscalPoam(input);
+  const out = JSON.parse(poam) as SinkOut;
+  for (const [file, validateFile] of POAM_SCHEMAS) {
+    assertSchemaValid(validateFile, file, out as unknown);
+  }
+  return out;
+}
+
+const homeValue = (props: Array<{ name: string; value: string; remarks?: string }> | undefined, name: string) => {
+  const p = (props ?? []).find((q) => q.name === name);
+  expect(p, `prop ${name} must be present`).toBeDefined();
+  return p!.remarks ?? p!.value;
+};
+
+describe('hdf-to-oscal-poam single-line sinks (ADR-0014 §1.7.1)', () => {
+  it.each(ADVERSARIAL_LINE_VALUES)('normalizes requirementId titles for a %s', async (_label, raw, normalized) => {
+    const doc = await convertSinks(poamWithSinks('doc', raw, 'cve', 'analyst'));
+    const p = doc['plan-of-action-and-milestones'];
+    expect(p.risks[0]!.title, 'risk title is normalized display text').toBe(normalized);
+    expect(p['poam-items'][0]!.title, 'poam-item title is normalized display text').toBe(normalized);
+    expect(homeValue(p.risks[0]!.props, 'hdf-requirement-id'), 'exact requirementId rides in its §4.6 home').toBe(raw);
+  });
+
+  it.each(ADVERSARIAL_LINE_VALUES)('normalizes the metadata title for a %s', async (_label, raw, normalized) => {
+    const doc = await convertSinks(poamWithSinks(raw, 'AC-1', 'cve', 'analyst'));
+    const p = doc['plan-of-action-and-milestones'];
+    expect(p.metadata.title).toBe(normalized);
+    expect(homeValue(p.metadata.props, 'amendments-name'), 'exact name rides in its §4.6 home').toBe(raw);
+  });
+
+  it.each(ADVERSARIAL_LINE_VALUES)('normalizes the resource title for a %s', async (_label, raw, normalized) => {
+    const doc = await convertSinks(poamWithSinks('doc', 'AC-1', raw, 'analyst'));
+    const res = doc['plan-of-action-and-milestones']['back-matter'].resources[0]!;
+    expect(res.title).toBe(normalized);
+    expect(homeValue(res.props, 'source-name'), 'exact sourceName rides in its §4.6 home').toBe(raw);
+  });
+
+  it.each(ADVERSARIAL_LINE_VALUES)('normalizes the party name for a %s', async (_label, raw, normalized) => {
+    const doc = await convertSinks(poamWithSinks('doc', 'AC-1', 'cve', raw));
+    const party = doc['plan-of-action-and-milestones'].metadata.parties[0]!;
+    expect(party.name).toBe(normalized);
+    expect(homeValue(party.props, 'identity-identifier'), 'exact identifier rides in its §4.6 home').toBe(raw);
+  });
+
+  it('emits an already-valid single line unchanged (no golden churn)', async () => {
+    const v = 'SV-230221r858734_rule';
+    const doc = await convertSinks(poamWithSinks(v, v, v, v));
+    const p = doc['plan-of-action-and-milestones'];
+    expect(p.risks[0]!.title).toBe(v);
+    expect(p['poam-items'][0]!.title).toBe(v);
+    expect(p.metadata.title).toBe(v);
+    expect(p.metadata.parties[0]!.name).toBe(v);
+    expect(p['back-matter'].resources[0]!.title).toBe(v);
+    expect(homeValue(p.risks[0]!.props, 'hdf-requirement-id')).toBe(v);
+  });
+});

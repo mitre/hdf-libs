@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/oscal-props.schema.json",
+  "title": "HDF oscal-props carriage tag",
+  "description": "Shape of the reserved HDF requirement tag `oscal-props` (ADR-0014 §3.3): the OSCAL SAR props the importer carries losslessly through HDF, one entry per source prop in source order. It is a converter convention inside HDF tags, not an HDF schema field. Both the Go and TypeScript carriage tests validate every emitted tag against this file.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["on", "name", "value"],
+    "properties": {
+      "on": {
+        "description": "The OSCAL object the prop was attached to.",
+        "type": "string",
+        "enum": ["finding", "observation", "risk"]
+      },
+      "name": {
+        "description": "The OSCAL prop name, verbatim.",
+        "type": "string",
+        "minLength": 1
+      },
+      "value": {
+        "description": "The OSCAL prop value, verbatim.",
+        "type": "string"
+      },
+      "ns": {
+        "description": "The prop namespace, present exactly when the source prop has one.",
+        "type": "string"
+      },
+      "class": {
+        "description": "The prop class, present exactly when the source prop has one.",
+        "type": "string"
+      },
+      "group": {
+        "description": "The prop group, present exactly when the source prop has one.",
+        "type": "string"
+      },
+      "uuid": {
+        "description": "The prop uuid, present exactly when the source prop has one.",
+        "type": "string"
+      },
+      "remarks": {
+        "description": "The prop remarks, present exactly when the source prop has them.",
+        "type": "string"
+      }
+    }
+  }
+}

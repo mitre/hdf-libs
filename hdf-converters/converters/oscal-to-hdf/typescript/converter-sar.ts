@@ -12,6 +12,7 @@ import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
   RequirementResult,
+  Component,
 } from '@mitre/hdf-schema';
 import {
   ResultStatus,
@@ -41,7 +42,9 @@ import {
   toKebabCase,
   descriptionLabel,
 } from './shared.js';
-import { findVocabularyProp } from './vocabulary.js';
+import { findVocabularyProp, vocabularyString } from './vocabulary.js';
+import { OSCAL_PROPS_TAG, carryForeignProps, type CarriedProp } from './carriage.js';
+import type { IdentifiesTheSubject } from './types.js';
 
 /**
  * Converts an OSCAL Assessment Results (SAR) document to HDF Results JSON.
@@ -87,7 +90,7 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
       emitConverterWarning(`Skipping assessment result "${title}": no finding has a target-id`);
       continue;
     }
-    const baseline = await resultToEvaluatedBaseline(result, groups, sar, input, scanTime);
+    const baseline = await resultToEvaluatedBaseline(result, groups, input, scanTime);
     baselines.push(baseline);
   }
 
@@ -103,6 +106,8 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
     }
   }
 
+  const components = sarComponents(sar);
+
   const hdf: HDFResults = {
     baselines,
     generator: {
@@ -115,9 +120,153 @@ export async function convertOscalSarToHdf(input: string): Promise<string> {
     },
     timestamp: timestamp ?? new Date(),
     planRef,
+    ...(components.length > 0 ? { components } : {}),
   };
 
   return serializeHdf(hdf);
+}
+
+/**
+ * The set of OSCAL subject types that are HDF component types. A foreign SAR's
+ * subject types (component, inventory-item, party, …) are not among them, so
+ * those subjects do not reconstitute as HDF components. Mirrors the Go peer.
+ */
+const HDF_COMPONENT_TYPES = new Set<string>([
+  'host', 'containerImage', 'containerInstance', 'containerPlatform', 'cloudAccount',
+  'cloudResource', 'repository', 'application', 'artifact', 'network', 'database', 'aiModel', 'dataset',
+]);
+
+/**
+ * Reconstitutes the top-level HDF components from a SAR. The authoritative home is
+ * each result's local-definitions.components (ADR-0014 §4.5), which survives even
+ * when no requirement produced an observation; the per-observation subjects are
+ * read too for documents exported before the result-level home existed. Components are deduplicated by uuid in first-seen document order — a
+ * component appears identically at the result level and on every observation — and
+ * one whose type is not an HDF component type is left alone so foreign SARs gain no
+ * invalid components. Mirrors Go.
+ */
+function sarComponents(sar: SecurityAssessmentResultsSAR): Component[] {
+  const components: Component[] = [];
+  const seen = new Set<string>();
+  const add = (subj: IdentifiesTheSubject): void => {
+    const uuid = subj['subject-uuid'];
+    if (!uuid || seen.has(uuid) || !HDF_COMPONENT_TYPES.has(subj.type)) return;
+    seen.add(uuid);
+    components.push(subjectToComponent(subj));
+  };
+  for (const result of sar.results) {
+    for (const sc of result['local-definitions']?.components ?? []) {
+      add({ 'subject-uuid': sc.uuid, type: sc.type, title: sc.title, props: sc.props });
+    }
+    for (const obs of result.observations ?? []) {
+      for (const subj of obs.subjects ?? []) add(subj);
+    }
+  }
+  return components;
+}
+
+/**
+ * Rebuilds one HDF component from an assessment subject: the subject uuid is the
+ * componentId (ADR-0014 §4.5 SSP analog), and every type-specific identity field
+ * comes from the HDF-namespaced props the exporter stamped on the subject.
+ * Mirrors the Go peer.
+ */
+function subjectToComponent(subj: IdentifiesTheSubject): Component {
+  const props = subj.props;
+  const c: Component = {
+    type: subj.type as Component['type'],
+    name: sarComponentName(subj),
+    componentId: subj['subject-uuid'],
+  };
+  // Literal prop names are required so the importer prop-read sweep can check
+  // each one is a vocabulary row (ADR-0014 §1.5).
+  c.description = vocabularyString(props, 'component-description', 'description', '');
+  c.hostname = vocabularyString(props, 'component-hostname', 'hostname', '');
+  c.fqdn = vocabularyString(props, 'component-fqdn', 'fqdn', '');
+  c.domain = vocabularyString(props, 'component-domain', 'domain', '');
+  c.ipAddress = vocabularyString(props, 'component-ip-address', 'ipAddress', '');
+  c.macAddress = vocabularyString(props, 'component-mac-address', 'macAddress', '');
+  c.osName = vocabularyString(props, 'component-os-name', 'osName', '');
+  c.osVersion = vocabularyString(props, 'component-os-version', 'osVersion', '');
+  c.imageId = vocabularyString(props, 'component-image-id', 'imageId', '');
+  c.registry = vocabularyString(props, 'component-registry', 'registry', '');
+  c.repository = vocabularyString(props, 'component-repository', 'repository', '');
+  c.tag = vocabularyString(props, 'component-tag', 'tag', '');
+  c.containerId = vocabularyString(props, 'component-container-id', 'containerId', '');
+  c.image = vocabularyString(props, 'component-image', 'image', '');
+  c.runtime = vocabularyString(props, 'component-runtime', 'runtime', '');
+  c.platformType = vocabularyString(props, 'component-platform-type', 'platformType', '');
+  c.clusterName = vocabularyString(props, 'component-cluster-name', 'clusterName', '');
+  c.namespace = vocabularyString(props, 'component-namespace', 'namespace', '');
+  c.version = vocabularyString(props, 'component-version', 'version', '');
+  const provider = vocabularyString(props, 'component-provider', 'provider', '');
+  if (provider !== undefined) c.provider = provider as Component['provider'];
+  c.accountId = vocabularyString(props, 'component-account-id', 'accountId', '');
+  c.region = vocabularyString(props, 'component-region', 'region', '');
+  c.resourceType = vocabularyString(props, 'component-resource-type', 'resourceType', '');
+  c.resourceId = vocabularyString(props, 'component-resource-id', 'resourceId', '');
+  c.arn = vocabularyString(props, 'component-arn', 'arn', '');
+  c.url = vocabularyString(props, 'component-url', 'url', '');
+  c.branch = vocabularyString(props, 'component-branch', 'branch', '');
+  c.commit = vocabularyString(props, 'component-commit', 'commit', '');
+  c.environment = vocabularyString(props, 'component-environment', 'environment', '');
+  c.packageManager = vocabularyString(props, 'component-package-manager', 'packageManager', '');
+  c.packageName = vocabularyString(props, 'component-package-name', 'packageName', '');
+  c.cidr = vocabularyString(props, 'component-cidr', 'cidr', '');
+  c.gateway = vocabularyString(props, 'component-gateway', 'gateway', '');
+  c.engine = vocabularyString(props, 'component-engine', 'engine', '');
+  c.host = vocabularyString(props, 'component-host', 'host', '');
+  const port = vocabularyString(props, 'component-port', 'port', '');
+  if (port !== undefined) {
+    const n = Number.parseInt(port, 10);
+    if (!Number.isNaN(n)) c.port = n;
+  }
+  c.modelId = vocabularyString(props, 'component-model-id', 'modelId', '');
+  c.datasetId = vocabularyString(props, 'component-dataset-id', 'datasetId', '');
+  const labels = readComponentMap(
+    (g) => vocabularyString(props, 'component-label-key', 'key', g),
+    (g) => vocabularyString(props, 'component-label-value', 'value', g),
+    'component-label',
+  );
+  if (labels) c.labels = labels;
+  const externalIds = readComponentMap(
+    (g) => vocabularyString(props, 'component-external-id-key', 'key', g),
+    (g) => vocabularyString(props, 'component-external-id-value', 'value', g),
+    'component-external-id',
+  );
+  if (externalIds) c.externalIds = externalIds;
+  return c;
+}
+
+/**
+ * Recovers the exact HDF component name: the namespaced component-name prop for
+ * an HDF-produced subject (§4.3), else the subject title for a foreign subject.
+ * Mirrors the Go peer.
+ */
+function sarComponentName(subj: IdentifiesTheSubject): string {
+  const match = findVocabularyProp(subj.props, 'component-name');
+  return match ? match.value : (subj.title ?? '');
+}
+
+/**
+ * Rebuilds a component string map from grouped key/value props. Groups are
+ * numbered from 1 in the order the exporter emitted them (sorted key order), so
+ * reading stops at the first group with neither a key nor a value. Mirrors Go.
+ */
+function readComponentMap(
+  readKey: (group: string) => string | undefined,
+  readValue: (group: string) => string | undefined,
+  prefix: string,
+): Record<string, string> | undefined {
+  const m: Record<string, string> = {};
+  for (let n = 1; ; n++) {
+    const group = `${prefix}-${n}`;
+    const key = readKey(group);
+    const value = readValue(group);
+    if (key === undefined && value === undefined) break;
+    m[key ?? ''] = value ?? '';
+  }
+  return Object.keys(m).length > 0 ? m : undefined;
 }
 
 /**
@@ -162,7 +311,6 @@ export function sarRequirementId(f: Finding): string | undefined {
 async function resultToEvaluatedBaseline(
   result: AssessmentResult,
   groups: Map<string, Finding[]>,
-  sar: SecurityAssessmentResultsSAR,
   rawInput: string,
   scanTime: Date,
 ): Promise<EvaluatedBaseline> {
@@ -178,13 +326,13 @@ async function resultToEvaluatedBaseline(
   }
 
   // Derive baseline name
-  const name = sarBaselineName(result, sar);
+  const name = sarBaselineName(result);
 
   const baseline = createMinimalBaseline(name, requirements, {
     resultsChecksum: checksum,
     integrity: await inputIntegrity(rawInput),
     status: 'loaded',
-    title: result.title,
+    title: sarBaselineTitle(result),
   }) as EvaluatedBaseline;
 
   if (result.description) {
@@ -204,7 +352,7 @@ function findingsToEvaluatedRequirement(
 ): EvaluatedRequirement {
   // Use the first finding for title
   const firstFinding = findings[0]!;
-  const title = firstFinding.title || id;
+  const title = sarRequirementTitle(firstFinding) || id;
 
   // Determine impact from related risks
   const impact = sarFindingsImpact(findings, riskMap);
@@ -226,6 +374,12 @@ function findingsToEvaluatedRequirement(
   // map to none), matching how sibling converters emit both.
   const nistTags = sarConfirmedNistTags(findings);
   const tags: Record<string, unknown> = buildNistCciTags(nistTags, nistToCci(nistTags));
+
+  // Foreign and otherwise-unconsumed props on this requirement's finding(s),
+  // observations and risks ride through HDF in the reserved oscal-props tag
+  // (ADR-0014 §3) so re-export can reproduce them.
+  const carried = sarCarriedProps(findings, obsMap, riskMap);
+  if (carried.length > 0) tags[OSCAL_PROPS_TAG] = carried;
 
   const req = createRequirement(id, title, descriptions, impact, results, {
     tags,
@@ -274,6 +428,42 @@ function sarConfirmedNistTags(findings: Finding[]): string[] {
     if (controlId !== undefined) controlIds.push(controlId);
   }
   return controlIdsToNistTags(controlIds);
+}
+
+/**
+ * Collects the carriage entries for a requirement (ADR-0014 §3.1): every
+ * unconsumed prop on its finding(s), then on their related observations, then on
+ * their related risks. Observations and risks are read once each (deduplicated
+ * by UUID). Mirrors Go's sarCarriedProps.
+ */
+function sarCarriedProps(
+  findings: Finding[],
+  obsMap: Map<string, Observation>,
+  riskMap: Map<string, IdentifiedRisk>,
+): CarriedProp[] {
+  const entries: CarriedProp[] = [];
+  for (const f of findings) carryForeignProps(entries, 'finding', f.props);
+  const seenObs = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-observations'] ?? []) {
+      const uuid = ref['observation-uuid'];
+      if (!uuid || seenObs.has(uuid)) continue;
+      seenObs.add(uuid);
+      const obs = obsMap.get(uuid);
+      if (obs) carryForeignProps(entries, 'observation', obs.props);
+    }
+  }
+  const seenRisk = new Set<string>();
+  for (const f of findings) {
+    for (const ref of f['related-risks'] ?? []) {
+      const uuid = ref['risk-uuid'];
+      if (!uuid || seenRisk.has(uuid)) continue;
+      seenRisk.add(uuid);
+      const risk = riskMap.get(uuid);
+      if (risk) carryForeignProps(entries, 'risk', risk.props);
+    }
+  }
+  return entries;
 }
 
 function mapFindingStatus(f: Finding): ResultStatus {
@@ -608,7 +798,31 @@ function parseResultStartTime(result: AssessmentResult): Date {
   return new Date(0);
 }
 
-function sarBaselineName(result: AssessmentResult, sar: SecurityAssessmentResultsSAR): string {
-  const title = result.title || sar.metadata.title;
-  return toKebabCase(title, 'oscal-assessment-results');
+// sarBaselineName recovers the HDF baseline name. An HDF-produced result carries
+// it exactly in the namespaced baseline-name prop (§4.3). A foreign result has
+// none, so the name is <kebab-title>--<result-uuid> — the bare uuid when the
+// kebab-cased title is empty — which keeps same-title results distinct because
+// OSCAL guarantees uniqueness only for uuid (§4.5).
+function sarBaselineName(result: AssessmentResult): string {
+  const match = findVocabularyProp(result.props, 'baseline-name');
+  if (match) return match.value;
+  const kebab = toKebabCase(result.title ?? '', '');
+  return kebab === '' ? result.uuid : `${kebab}--${result.uuid}`;
+}
+
+// Recovers the exact HDF baseline title: the namespaced baseline-title prop for
+// an HDF-produced result (§4.3), else the result title for a foreign result.
+// Distinct from the baseline name (baseline-name prop). Mirrors the Go peer.
+function sarBaselineTitle(result: AssessmentResult): string {
+  const match = findVocabularyProp(result.props, 'baseline-title');
+  return match ? match.value : (result.title ?? '');
+}
+
+// Recovers the exact HDF requirement title: the namespaced requirement-title
+// prop for an HDF-produced finding (§4.3, prose home for the §2
+// Requirement_Core.title), else the finding title for a foreign finding.
+// Mirrors the Go peer.
+function sarRequirementTitle(f: Finding): string {
+  const match = findVocabularyProp(f.props, 'requirement-title');
+  return match ? match.value : (f.title ?? '');
 }
