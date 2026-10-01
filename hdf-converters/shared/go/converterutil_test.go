@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -116,6 +117,52 @@ func TestValidateXMLInput_WithEntities(t *testing.T) {
 	err := ValidateXMLInput(xml, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "entity declarations")
+}
+
+// The gate follows OWASP's second sanctioned option — allow an internal DTD, refuse
+// external entities and expansion — because the primary control already holds at the
+// parser: Go's encoding/xml does not process DTDs and fast-xml-parser refuses external
+// entities. OWASP's own summary is to do this "rather than attempting to validate DTD
+// contents", which is why an inert subset is accepted rather than proven inert.
+func TestValidateXMLInput_DTDPolicy(t *testing.T) {
+	cases := []struct {
+		name    string
+		xml     string
+		wantErr string // "" means the input must be accepted
+	}{
+		{"plain document", `<root/>`, ""},
+		{
+			"inert internal subset (real Burp Suite export shape)",
+			`<?xml version="1.0"?><!DOCTYPE issues [<!ELEMENT issues (issue*)><!ATTLIST issues burpVersion CDATA "">]><issues/>`,
+			"",
+		},
+		{"inline entity declaration", `<!DOCTYPE foo [<!ENTITY x "y">]><foo/>`, "entity declarations"},
+		{
+			"entity hidden behind a quoted ]> in the subset",
+			`<!DOCTYPE l [<!ATTLIST l v CDATA "]>"><!ENTITY e "boom">]><l>&e;</l>`,
+			"entity declarations",
+		},
+		{"external DTD reference", `<!DOCTYPE l SYSTEM "http://evil.invalid/e.dtd"><l/>`, "external"},
+		{"external identifier inside the subset", `<!DOCTYPE l [<!NOTATION g SYSTEM "http://evil.invalid/x">]><l/>`, "external"},
+		{"entity beyond the old 4 KB window", `<!--` + strings.Repeat("x", 5000) + `--><!DOCTYPE l [<!ENTITY e "v">]><l/>`, "entity declarations"},
+		{
+			"a DOCTYPE with unparseable declarations is refused, not accepted",
+			`<!DOCTYPE l [<!ATTLIST l v CDATA "unterminated`,
+			"could not be fully parsed",
+		},
+		{"a non-XML buffer is left to the parser, not refused here", "not xml at all", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := ValidateXMLInput([]byte(c.xml), 0)
+			if c.wantErr == "" {
+				assert.NoError(t, err, "must be accepted: the parser, not this gate, is the control")
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), c.wantErr)
+		})
+	}
 }
 
 func TestValidateXMLInput_TooLarge(t *testing.T) {
