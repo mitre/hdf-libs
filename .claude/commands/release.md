@@ -319,11 +319,14 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
 
 **Steps (after the release PR is merged to `main`):**
 
-0. **Prepare-release commit — REQUIRED before the tag, and the step this phase most often skips.** Rewrite every intra-repo `go.mod` require to the exact prerelease version, then commit that:
+0. **Prepare-release commit — REQUIRED before the tag, and the step this phase most often skips.** Rewrite every intra-repo `go.mod` require to the exact prerelease version, commit that on a short branch, and land it through a PR — the `main` ruleset blocks direct pushes even for the owner:
 
    ```bash
+   git checkout -b release/vNEW-rc.1-prepare main
    scripts/set-go-module-versions.sh vNEW-rc.1
    git commit -s -am "chore(release): prepare vNEW-rc.1"
+   # push, open the PR, merge; then tag the SQUASH-MERGE COMMIT ON MAIN —
+   # the branch commit has a different SHA and is not what main carries.
    ```
 
    Without it the tag publishes Go modules that resolve for nobody: Go reads each module's `go.mod` from the tagged commit and ignores its `replace` directives, so requires naming the stable `vNEW` point at a version no tag provides. `go get` still succeeds and only `go build` fails, which is why rc.1 through rc.4 of 3.6.0 all shipped broken. This mirrors etcd's `release_mod.sh` and opentelemetry-go's `multimod prerelease`; both commit the rewrite before tagging.
@@ -332,7 +335,7 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
 
    Two modules stay at their zero pseudo-version because no release tags them (`hdf-fixtures`, `hdf-schema/testhdf/go`) — the script names them. Until `hdf-libs-gqw5k` is fixed they keep `go list -m all` and `go mod tidy` broken for consumers, at stable as much as at a prerelease, so do not read a green `go build` as proof the module graph is sound.
 
-   After the prerelease, the stable cut needs the same rewrite at the stable version — Phase 2 covers it, but re-run the script if a prerelease moved the requires in between.
+   After the prerelease, the stable cut needs the same rewrite at the stable version, through the same short-PR flow (`release/vNEW-stable-prepare`) — a prerelease always moves the requires, so this is not optional. The stable tag then lands on its own squash commit, which is what keeps it off the rc's commit (goreleaser prefers an `-rc` tag sharing a commit with the stable; `GORELEASER_CURRENT_TAG` is the proven backstop, the separate commit is the first line).
 
 1. Push the prerelease tag: `git push origin vNEW-rc.1` (the sanctioned manual tag from Phase 7 note 6). This triggers `release.yml` in prerelease mode — it is NOT a manual `npm publish`/`pnpm publish`.
 2. Watch the workflow run to green (`gh run watch`, or the Actions UI). A failed prerelease run is the whole point — diagnose and fix the pipeline, then cut `-rc.2`, etc.
