@@ -1160,6 +1160,29 @@ func TestValidateThreshold_SingleSpecOutputIsUnlabelled(t *testing.T) {
 	assert.NotContains(t, stderr, only, "a lone spec needs no attribution")
 }
 
+// A document arriving on stdin has no filename, and displayNameFor exists to give
+// it one rather than printing a bare dash. Nothing asserted that: mutating the
+// label to "-" passed the whole suite, so the one case the helper was written for
+// was the one case unpinned. Both verdicts are checked, because they are rendered
+// by separate branches and only the failure path had any coverage at all.
+func TestValidateThreshold_StdinIsNamedRatherThanDashed(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+	passing := writeResultsAt(t, dir, "passing.yaml", "failed:\n  total:\n    max: 99\n")
+
+	_, stderr, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "threshold", "-", "-T", failing)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "✗ <stdin>", "a failure from stdin must name <stdin>")
+	assert.NotContains(t, stderr, "✗ -", "and must not render the source as a bare dash")
+
+	stdout, _, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "threshold", "-", "-T", passing)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "✓ <stdin>", "a pass from stdin must name it too")
+	assert.NotContains(t, stdout, "✓ -", "and must not render the source as a bare dash")
+}
+
 // An empty spec passes every document. Among several it would ride along on its
 // neighbours' bounds, so it must fail the run and say which one it was.
 func TestValidateThreshold_EmptySpecAmongSeveralIsNamed(t *testing.T) {
