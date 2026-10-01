@@ -1137,7 +1137,10 @@ func TestValidateThreshold_PassOutputNamesEverySpec(t *testing.T) {
 
 	stdout, _, err := executeCommand("validate", "threshold", results, "-T", first, "-T", second)
 	require.NoError(t, err)
-	assert.Contains(t, stdout, "✓", "the pass verdict carries the same mark as hdf validate")
+	// The document, not just the mark: a bare "✓" survives the name being dropped
+	// entirely, and the two spec assertions below name the SPECS rather than the
+	// document that was gated, so neither could detect losing its attribution.
+	assert.Contains(t, stdout, "✓ "+results, "the pass verdict names the document, as hdf validate does")
 	assert.Contains(t, stdout, "passed all 2 thresholds")
 	assert.Contains(t, stdout, first)
 	assert.Contains(t, stdout, second)
