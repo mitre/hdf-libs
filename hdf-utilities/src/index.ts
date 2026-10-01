@@ -28,7 +28,11 @@ export {
   parseXmlWithArrays,
   extractTextFromXml,
   findXmlValues,
+  containsXmlDoctype,
+  containsXmlEntityDeclarations,
+  inspectXmlPrologue,
 } from './xml/index.js';
+export type { XmlPrologueDeclarations } from './xml/index.js';
 
 // CSV utilities
 export {

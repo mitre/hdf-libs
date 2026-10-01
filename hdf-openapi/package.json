@@ -1,0 +1,56 @@
+{
+  "name": "@mitre/hdf-openapi",
+  "version": "3.7.1",
+  "description": "OpenAPI 3.1 components for HDF, generated from the HDF JSON Schema 2020-12 bundles",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./hdf-components.oas.json": "./dist/hdf-components.oas.json",
+    "./hdf-components.oas.yaml": "./dist/hdf-components.oas.yaml"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:components && tsdown",
+    "build:components": "node --import tsx src/generate-components.ts",
+    "clean": "rimraf dist",
+    "lint": "eslint src test",
+    "test": "pnpm run test:ts",
+    "test:ts": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mitre/hdf-libs.git",
+    "directory": "hdf-openapi"
+  },
+  "author": "MITRE Corporation",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "yaml": "^2.8.1"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "hdf",
+    "heimdall",
+    "openapi",
+    "json-schema",
+    "contract",
+    "security",
+    "compliance"
+  ]
+}
