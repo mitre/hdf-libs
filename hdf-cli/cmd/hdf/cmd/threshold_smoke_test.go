@@ -291,14 +291,54 @@ func TestSmoke_EveryApplicableAmendmentTypeIsCovered(t *testing.T) {
 	// operationalRequirement is deliberately ABSENT and that is not an oversight:
 	// it is valid to author and invalid once merged, because Standalone_Override
 	// forbids it carrying a status while Status_Override requires one. Tracked as
-	// hdf-libs-r42je. riskAdjustment appears only in the expired fixture, since an
-	// in-force one would re-score a finding this corpus wants left alone.
+	// hdf-libs-r42je.
+	//
+	// riskAdjustment is absent from THIS corpus for a different and measured
+	// reason: merge-grype has ten failing requirements, six are amended here, and
+	// the remainder is needed unadjudicated so the composite policy's rule has
+	// something to fire on. Adding a seventh override consumed the last one and
+	// turned TestSmoke_CompositePolicyGridAndRuleTogether red. It is covered
+	// instead by the test below, against its own corpus.
 	for _, kind := range []string{"waiver", "attestation", "falsePositive", "inherited", "poam"} {
 		t.Run(kind, func(t *testing.T) {
 			assert.NotEmpty(t, queryIDs(t, amended, "--disposition", kind),
 				"%s must be reachable as a disposition after apply", kind)
 		})
 	}
+}
+
+// riskAdjustment is the one amendment type that changes a SCORE rather than a
+// status, so it is the only one whose effect the disposition filter alone cannot
+// show. Applied alone, against its own corpus, so the shared one keeps its
+// unadjudicated requirement.
+func TestSmoke_InForceRiskAdjustmentRescoresWithoutSuppressing(t *testing.T) {
+	dir := t.TempDir()
+	doc := smokeDoc(t, dir, "scan.json", fixtures.Results.MergeGrype)
+
+	out := filepath.Join(dir, "adjusted.json")
+	_, _, err := executeCommand("amend", "apply",
+		"--results", doc,
+		"--amendments", filepath.Join("testdata", "threshold-smoke-risk-adjustment.json"),
+		"-o", out)
+	require.NoError(t, err, "an in-force risk adjustment must apply")
+
+	const id = "Grype/CVE-2022-42919"
+	assert.Contains(t, queryIDs(t, out, "--disposition", "riskAdjustment"), id,
+		"riskAdjustment must be reachable as a disposition after apply")
+
+	// The pair is the point: the adjudication moves the EFFECTIVE score and leaves
+	// the requirement's own score alone. Asserting only one of them would pass
+	// against an implementation that overwrote the original.
+	assert.NotEmpty(t, queryIDs(t, out, "--id", id, "--raw-impact", ">=0.7"),
+		"the requirement's own impact must survive the re-score")
+	assert.NotEmpty(t, queryIDs(t, out, "--id", id, "--impact", "<0.4"),
+		"the effective impact must reflect the re-score")
+	assert.Empty(t, queryIDs(t, out, "--id", id, "--impact", ">=0.7"),
+		"and nothing may still report the pre-adjustment effective impact")
+
+	// A risk adjustment re-scores; it does not suppress. The finding still fails.
+	assert.NotEmpty(t, queryIDs(t, out, "--id", id, "--status", "failed"),
+		"a re-scored finding still fails — riskAdjustment is not a waiver")
 }
 
 // An amendment that has already lapsed cannot be applied at all, which is the

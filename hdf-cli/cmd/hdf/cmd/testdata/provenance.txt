@@ -1,11 +1,12 @@
 # Provenance — threshold smoke-test fixtures
 
-SCOPE: this record covers ONLY the two files named below. Other fixtures in this
+SCOPE: this record covers ONLY the three files named below. Other fixtures in this
 directory (agent-overrides/, evidence-verify/) predate it and carry no provenance
 record; that gap is pre-existing and is not claimed to be covered here.
 
 ## threshold-smoke-amendments.json
 ## threshold-smoke-expired-amendment.json
+## threshold-smoke-risk-adjustment.json
 
 AUTHORED test data, schema-confirmed. NOT real tool output, and this record says
 so plainly rather than implying otherwise.
@@ -74,3 +75,19 @@ be read as a risk decision by anyone.
 Dates: every in-force amendment uses the far-future constant 2099-12-31 so the
 wall clock can never turn a passing test red; the expired ones use 2020-01-01 and
 2020-06-30 because they assert expired behaviour.
+
+## threshold-smoke-risk-adjustment.json — why a third file
+
+An in-force riskAdjustment could not join the main corpus. merge-grype has ten
+failing requirements; six are amended there, and the remainder has to stay
+unadjudicated so the composite policy's rule has something to fire on. Adding a
+seventh override consumed the last one and turned
+TestSmoke_CompositePolicyGridAndRuleTogether red — measured, not assumed.
+
+It carries one override against Grype/CVE-2022-42919, the only failing
+requirement the main corpus leaves alone, re-scoring impact 0.7 -> 0.3 with an
+expiry of 2099-12-31. Confirmed with `hdf amend verify`: All amendments are valid.
+
+The requirement id appears twice in merge-grype (one CVE, two packages), so the
+override governs both entries. That is the intended behaviour and the test
+asserts against it rather than around it.
