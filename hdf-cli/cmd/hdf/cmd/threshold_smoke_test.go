@@ -466,24 +466,71 @@ func TestSmoke_PredicateGrammarThroughTheRealCommand(t *testing.T) {
 	dir := t.TempDir()
 	doc := smokeDoc(t, dir, "scan.json", fixtures.Results.MergeGrype)
 
-	t.Run("scalar, list and negation together", func(t *testing.T) {
+	t.Run("scalar and list forms together", func(t *testing.T) {
 		policy := writeResultsAt(t, dir, "mixed.yaml", strings.Join([]string{
 			"rules:",
 			"  - name: mixed forms",
 			"    where:",
-			"      status: failed",               // scalar
-			"      severity: [critical, high]",   // list
-			"      disposition: {not: [waiver]}", // negation
+			"      status: failed",             // scalar
+			"      severity: [critical, high]", // list
 			"    max: 0",
 		}, "\n")+"\n")
 		_, stderr, err := executeCommand("validate", "threshold", doc, "-T", policy)
 		// require, not if: guarding the assertions behind "did it fail" meant the
 		// subtest passed silently the moment the rule stopped matching.
-		require.Error(t, err, "this document has failing criticals and highs")
+		require.Error(t, err, "this document has failing highs")
 		assert.Equal(t,
 			queryIDs(t, doc, "--status", "failed", "--severity", "critical", "--severity", "high"),
 			findingIDs(t, stderr),
-			"a negation over a document with no waivers selects the same set as the positive half")
+			"the rule and the query must select the same set for the same predicate")
+	})
+
+	// Negation gets its own subtest against an AMENDED document, and asserts a set
+	// DIFFERENCE rather than an equality, because neither of those is incidental.
+	//
+	// It cannot be checked the way every other predicate here is checked: `hdf
+	// query` has no flag for negation at all, so there is no "same question asked
+	// of the other surface" to compare against. The effect is pinned instead by
+	// arithmetic over two positive queries, which the CLI can express.
+	//
+	// And it must negate `poam`, not `waiver`. A waiver resolves the requirement to
+	// passed, so `status: failed` with `disposition: waiver` is empty on EVERY
+	// document and negating it excludes nothing — the predicate would be a no-op
+	// and the subtest would pass against a filter that ignored disposition
+	// entirely. A POA&M leaves the status failed, so negating it removes real rows.
+	t.Run("negation excludes exactly the governed rows", func(t *testing.T) {
+		amended := applySmokeAmendments(t, dir, doc)
+
+		allFailing := queryIDs(t, amended, "--status", "failed")
+		governed := queryIDs(t, amended, "--status", "failed", "--disposition", "poam")
+		require.NotEmpty(t, governed,
+			"the corpus must leave some failing requirement under a plan, or this asserts nothing")
+		require.Less(t, len(governed), len(allFailing),
+			"and must leave some failing requirement NOT under a plan, or the rule matches nothing")
+
+		policy := writeResultsAt(t, dir, "negation.yaml", strings.Join([]string{
+			"rules:",
+			"  - name: failing and not under a plan",
+			"    where:",
+			"      status: failed",
+			"      disposition: {not: [poam]}",
+			"    max: 0",
+		}, "\n")+"\n")
+		_, stderr, err := executeCommand("validate", "threshold", amended, "-T", policy)
+		require.Error(t, err)
+
+		governedSet := make(map[string]bool, len(governed))
+		for _, id := range governed {
+			governedSet[id] = true
+		}
+		var expected []string
+		for _, id := range allFailing {
+			if !governedSet[id] {
+				expected = append(expected, id)
+			}
+		}
+		assert.Equal(t, expected, findingIDs(t, stderr),
+			"a negated disposition must select every failing requirement except the governed ones")
 	})
 
 	// The refusal cases that used to sit here were DELETED, not lost: each was a
