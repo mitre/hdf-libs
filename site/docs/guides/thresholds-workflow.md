@@ -17,6 +17,34 @@ Each bound takes a `min`, a `max`, or both. There is also a top-level `complianc
 
 So `failed.critical.max: 0` reads as "no failed critical requirements", and `compliance.min: 80` as "at least 80% compliant". That is the whole model.
 
+Compliance is worth stating exactly, because the denominator surprises people:
+
+```
+compliance = passed / (passed + failed + skipped + error)
+```
+
+`not_applicable` is excluded entirely — a requirement that does not apply to the target is not held against it. **`not_reviewed` is not excluded**; it lands in `skipped` and counts against you. That is the intended reading, since a control nobody evaluated is not a control you satisfied, but it means a compliance floor is partly a measure of scan *coverage*: a suite that quietly stops evaluating controls drives the number down without a single new failure. Pair the floor with a `skipped` ceiling rather than relying on it alone.
+
+It also means **a compliance bound is unreliable on a document built from an InSpec overlay chain**, and this is worth checking before you set a number. A wrapper or overlay layer carries requirement *definitions* and inherits execution, so its requirements are structurally `not_reviewed` — they were never going to run. They still land in `skipped` and still enter the denominator.
+
+A real three-layer RHEL 9 scan shows the size of the effect. The whole document reports 134 passed, 271 failed, 233 not applicable and 965 not reviewed, for **9.78%**. But 913 of those 965 belong to two wrapper layers that execute nothing; the baseline that actually ran holds 133 passed, 258 failed and 21 not reviewed, which is **32.28%**. The first number describes the document's layering, the second describes the host's posture.
+
+`compliance` evaluates over the whole document and cannot be narrowed — unlike a rule, which takes `baseline`. So on a layered document, prefer a rule over the baseline that really ran:
+
+```yaml
+rules:
+  - name: no more than 11 failing highs on the baseline that ran
+    where:
+      baseline: redhat-enterprise-linux-9-stig-baseline
+      status: failed
+      severity: high
+    max: 11
+```
+
+The scoping is doing real work there: this document has 15 failing `high` requirements overall but 11 in that baseline, the other 4 coming from the k8s-node layer.
+
+A rule bounds a count rather than a percentage, so this is not a drop-in replacement for a floor. Until a percentage can be scoped, a compliance bound on a layered document is best set against the number that document actually reports, with a comment saying why it looks low.
+
 ## Start from a real document
 
 You rarely want to write the first one by hand. `hdf generate threshold` reads a document and writes the policy it satisfies right now:
@@ -125,7 +153,51 @@ An inline spec names itself by its own text, because that is what you typed:
       CKV_TF_1  Ensure Terraform module sources use a commit hash  [failed/medium]
 ```
 
-`-F` operates on files, not specs: every spec is always evaluated against a document, so one run shows every policy it broke, and `-F` decides only whether the next document is read.
+## Check several documents in one run
+
+Pass as many documents as you like. Each is checked against every spec and reports its own verdict:
+
+```bash
+hdf validate threshold grype.json prisma.json zap.json -T policy.yaml
+```
+
+```
+grype.json: ok
+Agent-attributed overrides: 0
+✗ prisma.json — 1 threshold violation
+
+  Violations:
+    failed.critical: 32 exceeds maximum 0
+      46-CVE-2016-1583  my-fake-host-1.somewhere.cloud-redhat-RHEL7-image  [failed/critical]
+      46-CVE-2016-1583  my-fake-host-2.somewhere.cloud-redhat-RHEL7-image  [failed/critical]
+      ...
+zap.json: ok
+
+Results: 2/3 passed thresholds, 1 failed
+Error: threshold validation
+```
+
+Exit code is 1 if any document failed, 0 only if all of them passed. A passing document gets one short line; a failing one gets the same verdict a single-file run would print, so the breached bound and the requirements under it are named without re-running anything. That matters in CI, where one pipeline step typically checks one document per tool — a red step that named neither the file nor the reason used to mean opening an artifact to find out which tool broke.
+
+A document that fails *before* a verdict can exist — unreadable, or not valid HDF — says so on its own line and prints the reason at the end:
+
+```
+grype.json: ok
+broken.json: error
+zap.json: ok
+
+Results: 2/3 passed thresholds, 1 failed
+
+broken.json:
+  failed to parse HDF results: schema validation failed: validation error: invalid character 'n' looking for beginning of object key string
+Error: threshold validation
+```
+
+So the two failure modes stay distinguishable: a document that breached a policy, and a document that was never checked at all.
+
+`-F` stops after the first file that fails rather than checking the rest. It operates on files, not specs: every spec is always evaluated against a document, so one run always shows every policy that document broke, and `-F` decides only whether the *next* document is read.
+
+A single-file run keeps its original shape, with no per-file prefix line — so adding a second document changes the output format, which is worth knowing if anything downstream parses it.
 
 ## Rules: selecting by field rather than by id
 
@@ -191,7 +263,51 @@ rules:
 
 `poams: none-valid` deliberately covers "no POA&M", "an empty list" and "only lapsed ones" as one condition, because a plan that has expired is not a plan.
 
+Note that it is intended behavior that a gate built on `disposition` or `poams` will produce a different verdict as of the expiration date of the POA&M, with no announcement. When the governing override or plan lapses, the finding it was covering becomes unadjudicated again, the document is still schema-valid, and no command says a word about why the gate went red. Run such a gate on a schedule as well as on commit, so a lapse surfaces as a newly red pipeline rather than at audit time, and read the dates directly with `hdf list <document> --detail amendments`, which prints an `Expires` column.
+
 A rule bounds a count, not a percentage — `compliance` remains the only percentage bound — and it evaluates over the whole document. To narrow it to one baseline, say so in the predicate with `baseline`.
+
+### Every field a rule can select on
+
+The complete vocabulary. It is identical to `hdf query`'s filter flags — a rule's predicate passes straight through to the same engine filter, so anything you can explore with `hdf query` you can gate on, and the flag's `--help` is the same reference as this table.
+
+The **Form** column says how a field accepts values. *List* fields take the three spellings described above (scalar, list, or `not:`); *comparison* fields take an operator and a number (`">=7"`, `">0.5"`, `"0.5"`); *exact* fields take one string.
+
+| Field | Form | Accepts | Notes |
+|---|---|---|---|
+| `status` | list | `passed`, `failed`, `notApplicable`, `notReviewed`, `error` | The effective status, after any governing override. `not_applicable` and `not_reviewed` also accepted. |
+| `severity` | list | `critical`, `high`, `medium`, `low`, `informational` | A label; bands differ between tools. Prefer `cvss` when the tool reports a score. |
+| `impact` | comparison | `0.0`–`1.0` | Effective impact, after any governing impact override. |
+| `rawImpact` | comparison | `0.0`–`1.0` | The requirement's own impact, ignoring overrides. |
+| `cvss` | comparison | a score | `computedScore` when a consumer recomputed one, else `baseScore`; the highest entry wins. |
+| `epss` | comparison | `0.0`–`1.0` | Exploit probability, **not** the percentile rank. |
+| `kev` | exact | `true`, `false` | CISA Known Exploited Vulnerabilities membership. `false` includes findings with no KEV data. |
+| `cwe` | list | a CWE id | `CWE-79`, `CWE 79` and `cwe79` are one value. Reads `cwe[]` only — see the caveat above. |
+| `cci` | list | a CCI identifier | |
+| `nist` | list | a NIST control | Globs allowed. |
+| `id` | exact | an identifier | Matches requirement ID, STIG ID, GID, or group title. |
+| `tag` | list | `key:value` | The colon is required. |
+| `search` | exact | free text | Substring match over title and description. A short string matches longer ids, so confirm with `hdf query` before relying on it. |
+| `baseline` | exact | a profile name | How a rule narrows to one baseline. |
+| `baselineLabel` | list | `key:value` | The labels of the baseline a requirement sits in. Globs allowed on the value (`environment:prod*`). |
+| `disposition` | list | `waiver`, `attestation`, `poam`, `inherited`, `falsePositive`, `riskAdjustment`, `operationalRequirement` | What governs the requirement: the most recently applied non-expired override **or** POA&M. `false_positive` also accepted. |
+| `poamType` | list | `remediation`, `mitigation`, `riskAcceptance`, `vendorDependency` | Which *kind* of POA&M governs. `disposition` reports every governing plan flatly as `poam`; this names the kind. |
+| `poams` | exact | `valid`, `none-valid` | Remediation-plan validity. `none-valid` covers no POA&M, an empty list, and only-lapsed ones. |
+
+Predicates within one rule are **AND**ed — every field listed must hold. Values *within* one field are **OR**ed. So this means "failing, and critical or high, and unadjudicated":
+
+```yaml
+rules:
+  - name: nothing serious left unadjudicated
+    where:
+      status: failed
+      severity: [critical, high]
+      disposition:
+        not: [waiver, poam, riskAdjustment]
+    max: 0
+```
+
+An empty `where` is **not** refused — it matches every requirement in the document, so `where: {}` with `max: 0` fails on any document that contains anything at all. What is refused is a value outside its field's vocabulary, which is the case covered below.
 
 ### Three ways to write a value
 
