@@ -1,0 +1,76 @@
+# Provenance — threshold smoke-test fixtures
+
+SCOPE: this record covers ONLY the two files named below. Other fixtures in this
+directory (agent-overrides/, evidence-verify/) predate it and carry no provenance
+record; that gap is pre-existing and is not claimed to be covered here.
+
+## threshold-smoke-amendments.json
+## threshold-smoke-expired-amendment.json
+
+AUTHORED test data, schema-confirmed. NOT real tool output, and this record says
+so plainly rather than implying otherwise.
+
+What is real and what is not:
+
+  REAL      Every requirementId. Each was derived by running the repo's own
+            command against the real Grype fixture rather than hand-typed:
+              hdf amend draft --from hdf-fixtures/results/merge-grype.json \
+                --type <type> --select <CVE> --expires 2099-12-31
+            so an id that does not exist in that document cannot appear here.
+            Source document: hdf-fixtures/results/merge-grype.json
+            sha256 of that source as used: 3ea27a2d10c6718db07f2819740239d60dc5791e5186f4dd40a1dc15a9253004
+            Captured: 2026-09-30
+
+  AUTHORED  The substantive fields the draft leaves blank for a human —
+            reason, appliedBy, status, impact, and the milestones. These are
+            plausible governance text written for this test. No claim is made
+            that any real assessor wrote them.
+
+  CONFIRMED Both documents validate as hdf-amendments, and the applied set
+            verifies clean and applies through the repo's own commands:
+              hdf amend verify  -> Total 7, Valid 7, Expired 0, Invalid 0
+              hdf amend apply   -> Applied 7 of 7 override(s)
+
+Amendment types covered, and the two that are NOT, with reasons:
+
+  waiver              in force; moves its requirement to passed
+  attestation         in force; manually verified as not reachable
+  falsePositive       in force; resolves to notApplicable
+  inherited           in force; adjudicated by a platform boundary
+  poam                in force, with a pending milestone
+  riskAdjustment      EXPIRED only (in the second file) — an in-force one would
+                      re-score a finding this corpus wants left alone
+
+  operationalRequirement  ABSENT, and not by oversight. It is valid to AUTHOR and
+                      invalid once APPLIED: Standalone_Override forbids it
+                      carrying a status, while Status_Override (the shape inside
+                      a results document) requires status or impact of every
+                      override. 'hdf amend apply' therefore refuses the merged
+                      output. Tracked as hdf-libs-r42je.
+
+  POA&M KIND          (remediation / mitigation / riskAcceptance /
+                      vendorDependency) is NOT covered at this layer, and cannot
+                      be: the kind lives on requirements[].poams[], and nothing
+                      in the toolchain writes that array. Tracked as
+                      hdf-libs-s4rmq.
+
+A CONTESTED requirement is included deliberately: Grype/CVE-2020-13844 carries a
+waiver applied 2024-06-01 and a POA&M applied 2025-01-01, so the newer entry must
+govern its disposition. That is the resolution hdf-libs-wft3f.14 settled, and it
+had no CLI-level coverage before this.
+
+Why two files rather than one: 'hdf amend apply' refuses a document carrying ANY
+expired override, so deliberately-lapsed amendments cannot ride along with the
+ones meant to be applied. threshold-smoke-expired-amendment.json carries two
+kinds (riskAdjustment and waiver) so "lapsed" is not a single-type accident, and
+exists to assert that refusal — the CLI-level half of "a lapsed amendment no
+longer governs". The engine-level half is pinned by hdf-engine/testdata/
+amendment-filter-cases.json and is not duplicated here.
+
+Per hdf-libs policy these are FIXTURES, not amendments adjudicating any real
+finding about this repository, so they carry no maintainer sign-off and must not
+be read as a risk decision by anyone.
+
+Dates: every in-force amendment uses the far-future constant 2099-12-31 so the
+wall clock can never turn a passing test red; the expired ones use 2020-01-01 and
+2020-06-30 because they assert expired behaviour.

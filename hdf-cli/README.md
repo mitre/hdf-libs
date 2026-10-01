@@ -143,12 +143,24 @@ USAGE
   hdf validate threshold <results.json> [flags]
 
 FLAGS
-  -T, --template string   Threshold YAML template file
-  -I, --inline string     Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+  -T, --template stringArray   Threshold YAML template file (repeatable; every spec must pass)
+  -I, --inline stringArray     Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+      --no-findings            Suppress the list of requirements printed under each violation
 
 EXAMPLES
   hdf validate threshold results.json -T threshold.yaml
   hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+
+  # Several specs are a conjunction: every one is evaluated, the run fails if any
+  # fails, and the violation names which. -T and -I may be combined, and one file
+  # may hold several YAML documents (reported as policy.yaml#1, policy.yaml#2).
+  hdf validate threshold results.json -T baseline.yaml -T repo-specific.yaml
+
+  # A rule is a filter predicate plus a bound, for policies the count bounds and
+  # controls lists cannot express — selecting by field rather than by id.
+  # -I accepts anything a file accepts, so this is the same language either way.
+  hdf validate threshold results.json \
+    -I "{rules: [{name: nothing fails without a plan, where: {status: [failed], poams: none-valid}, max: 0}]}"
 ```
 
 ### list
@@ -172,7 +184,10 @@ DETAIL SECTIONS by document type
     g (groups), a (assessments), o (overrides)
 
 FLAGS
-  -s, --status string    Filter requirements by status: passed, failed, error, not_applicable, not_reviewed
+  -s, --status string    Filter requirements by status: passed, failed, notApplicable, notReviewed,
+                         error (not_applicable and not_reviewed also accepted). A value outside the
+                         vocabulary is rejected, not matched against nothing. The listed forms are
+                         rendered from the engine's vocabulary, so help and refusal cannot disagree.
   -a, --all              Show all details (expand every section)
 
 EXAMPLES
@@ -216,20 +231,62 @@ USAGE
   hdf query <file> [flags]
 
 FLAGS
-  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed
+  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, notApplicable,
+                               notReviewed, error (not_applicable and not_reviewed also accepted)
       --severity stringArray   Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
-      --impact string          Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
+      --impact string          Filter by EFFECTIVE impact — the score after any governing impact
+                               override (e.g., ">0.5", ">=0.7", "0.5")
+      --raw-impact string      Filter by the requirement's own impact, ignoring overrides. Same
+                               comparison grammar; the pair expresses policies like "an override
+                               may not move a critical below 0.7"
+      --cvss string            Filter by CVSS score — computedScore where a consumer recomputed
+                               one, else baseScore; a requirement with several CVSS entries
+                               resolves to its highest (e.g., ">=7")
+      --epss string            Filter by EPSS exploit probability — the score, NOT the
+                               percentile rank (e.g., ">=0.5")
+      --kev string             Filter by CISA Known Exploited Vulnerabilities membership:
+                               true or false. false includes findings carrying no KEV data
+      --cwe stringArray        Filter by CWE id (repeatable, OR logic). CWE-79, "CWE 79" and
+                               cwe79 are one value. Reads the first-class cwe[] field only and
+                               never tags.cwe, so a SARIF-derived document matches nothing
+                               until the SARIF converter populates cwe[]
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
       --id string              Filter by requirement ID, STIG ID, GID, or group title
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
+      --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
+                               not_applicable and notApplicable are one value; the pre-3.7 severity
+                               "none" still names informational.
+      --disposition stringArray  Filter by what governs the requirement — the most recently applied
+                               non-expired override or POA&M, where a governing plan reports "poam"
+                               (repeatable, OR logic): waiver, attestation, poam, inherited,
+                               falsePositive, riskAdjustment, operationalRequirement (false_positive
+                               also accepted)
+      --poam-type stringArray  Filter by the KIND of the governing POA&M (repeatable, OR logic):
+                               remediation, mitigation, riskAcceptance, vendorDependency.
+                               disposition reports every governing plan as "poam"; this names
+                               which kind it is, and reads the GOVERNING plan only
+      --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
+                               none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description
   -p, --baseline string        Filter by profile name
+      --baseline-label stringArray  Filter by the BASELINE's labels as key:value (repeatable, OR logic;
+                               glob allowed on the value, e.g. environment:prod*). Labels say which
+                               system, component or environment a baseline covers. A baseline carrying
+                               no labels matches nothing — an absent label is not a wildcard.
   -c, --count                  Show only the count of matching controls
   -l, --limit int              Limit number of results (0 = unlimited)
 
-Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`) OR their own
-values together; different filter types combine with AND.
+Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`,
+`--disposition`) OR their own values together; different filter types combine with AND.
+
+`--status` reports EFFECTIVE status, so a requirement with a governing waiver is
+already off `failed` before the filter sees it. `--disposition` names the type of
+the most recent non-expired override of any kind — which is not always the one
+that set the status, since an override carrying only an impact governs the
+disposition without touching the status — and `--poams` reports whether a
+remediation plan is still in force — `none-valid` deliberately covers "no POA&M", "an empty list" and "only
+lapsed ones" as one condition, because a plan that has expired is not a plan.
 
 EXAMPLES
   hdf query results.json --status failed
@@ -239,6 +296,8 @@ EXAMPLES
   hdf query results.json --id V-230221
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password policy"
+  hdf query results.json --disposition waiver --severity critical
+  hdf query results.json --status failed --poams none-valid
   hdf query results.json --impact ">0.5" --status failed
   hdf query results.json --status failed --count
   hdf query results.json --limit 20 --status failed
@@ -506,7 +565,11 @@ SUBCOMMANDS
   apply    Merge amendments into a results file (sets effectiveStatus); refuses
            a document that does not verify
   create   Create waivers, attestations, and other amendments
-  draft    Scaffold an incomplete amendments draft from a results file
+  draft    Scaffold an incomplete amendments draft from a results file.
+           --status accepts the same vocabulary as `hdf list`/`hdf query`
+           (passed, failed, notApplicable, notReviewed, error; not_applicable
+           and not_reviewed also accepted) and rejects anything outside it
+           before reading the input, rather than writing a draft with no stubs.
   list     List amendments in an amendments file
   verify   Verify amendment structure, expiration, and chain integrity
   set      Set/unset top-level fields

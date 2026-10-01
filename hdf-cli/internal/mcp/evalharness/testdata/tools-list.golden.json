@@ -1176,6 +1176,16 @@
             "description": "baseline name, glob allowed",
             "type": "string"
           },
+          "baselineLabel": {
+            "description": "baseline labels as key:value, glob on value (OR)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
           "cci": {
             "items": {
               "type": "string"
@@ -1184,6 +1194,34 @@
               "null",
               "array"
             ]
+          },
+          "cvss": {
+            "description": "CVSS score, computed else base, highest entry; e.g. \u003e=7",
+            "type": "string"
+          },
+          "cwe": {
+            "description": "CWE ids (OR); reads cwe[] only, not tags",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "disposition": {
+            "description": "governing override or POA\u0026M type, most recent unexpired; a plan reports poam: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "epss": {
+            "description": "EPSS exploit probability (not percentile); e.g. \u003e=0.5",
+            "type": "string"
           },
           "fields": {
             "description": "opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation",
@@ -1200,7 +1238,11 @@
             "type": "string"
           },
           "impact": {
-            "description": "comparison e.g. \u003e0.5, =0",
+            "description": "effective impact (after overrides); e.g. \u003e0.5, =0",
+            "type": "string"
+          },
+          "kev": {
+            "description": "CISA known-exploited: true | false (false includes no KEV data)",
             "type": "string"
           },
           "limit": {
@@ -1220,6 +1262,24 @@
           "page": {
             "description": "0-based page when truncated",
             "type": "integer"
+          },
+          "poamType": {
+            "description": "kind of the governing POA\u0026M: remediation|mitigation|riskAcceptance|vendorDependency (OR); disposition reports every plan as poam",
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "poams": {
+            "description": "valid | none-valid (none, empty, or lapsed)",
+            "type": "string"
+          },
+          "rawImpact": {
+            "description": "impact before overrides; same grammar",
+            "type": "string"
           },
           "search": {
             "description": "text match over id/title/descriptions",

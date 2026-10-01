@@ -60,3 +60,142 @@ func TestRequirementEffectiveStatus_OverrideExpiryAgainstNow(t *testing.T) {
 	}}
 	assert.Equal(t, "failed", RequirementEffectiveStatus(expired))
 }
+
+// The impact twin of the ladder test above. It is the schema-typed wrapper an
+// external consumer reaches for, so it is tested directly rather than only
+// through the engine's own copy of the mapping — and it must never read the
+// stored effectiveImpact field, which every case here leaves absent or wrong on
+// purpose. Parity: requirementEffectiveImpact in shared/typescript/status.ts.
+func TestRequirementEffectiveImpact_Ladder(t *testing.T) {
+	adjust := func(v float64) *hdf.ImpactOverride { return &hdf.ImpactOverride{Value: v} }
+	stale := 0.99
+	cases := []struct {
+		name string
+		req  hdf.EvaluatedRequirement
+		want float64
+	}{
+		{"no overrides falls back to the requirement's own impact",
+			hdf.EvaluatedRequirement{Impact: 0.9}, 0.9},
+		{"a governing adjustment wins",
+			hdf.EvaluatedRequirement{Impact: 0.9, StatusOverrides: []hdf.StatusOverride{
+				{Type: hdf.RiskAdjustment, AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"), Impact: adjust(0.3)},
+			}}, 0.3},
+		{"an expired adjustment does not",
+			hdf.EvaluatedRequirement{Impact: 0.9, StatusOverrides: []hdf.StatusOverride{
+				{Type: hdf.RiskAdjustment, AppliedAt: mustTime(t, "2019-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2020-01-01T00:00:00Z"), Impact: adjust(0.3)},
+			}}, 0.9},
+		{"a newer status-only override does not displace an older re-score",
+			hdf.EvaluatedRequirement{Impact: 0.9, StatusOverrides: []hdf.StatusOverride{
+				{Type: hdf.RiskAdjustment, AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), Impact: adjust(0.3)},
+				{Type: hdf.OverrideTypeWaiver, AppliedAt: mustTime(t, "2025-06-01T00:00:00Z"), Status: statusPtr(hdf.Passed)},
+			}}, 0.3},
+		{"an adjustment to zero is honoured, not read as absent",
+			hdf.EvaluatedRequirement{Impact: 0.9, StatusOverrides: []hdf.StatusOverride{
+				{Type: hdf.RiskAdjustment, AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), Impact: adjust(0)},
+			}}, 0},
+		{"the stored effectiveImpact cache is never read",
+			hdf.EvaluatedRequirement{Impact: 0.9, EffectiveImpact: &stale}, 0.9},
+	}
+	for _, c := range cases {
+		assert.InDelta(t, c.want, RequirementEffectiveImpact(c.req), 1e-9, c.name)
+	}
+}
+
+// Array position is not recency. The schema's description says the most recent
+// override "should be first", but nothing sorts and this repo's own writers
+// append (hdf-diff amend.go, shared enrich_stix.go), so on a document our own
+// tooling amended twice the newest override is LAST. A reader that takes
+// overrides[0] gets the oldest.
+func TestGoverningOverrideIndex_IsByAppliedAtNotPosition(t *testing.T) {
+	older := hdf.StatusOverride{
+		Type: hdf.OverrideTypeWaiver, Status: statusPtr(hdf.Passed),
+		AppliedAt: mustTime(t, "2024-06-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+	}
+	newer := hdf.StatusOverride{
+		Type:      hdf.RiskAdjustment,
+		AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+		Impact: &hdf.ImpactOverride{Value: 0.3},
+	}
+	expired := hdf.StatusOverride{
+		Type:      hdf.RiskAdjustment,
+		AppliedAt: mustTime(t, "2026-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2020-01-01T00:00:00Z"),
+		Impact: &hdf.ImpactOverride{Value: 0.1},
+	}
+	ref := mustTime(t, "2026-06-01T00:00:00Z")
+
+	// The order our own writers produce: append, so newest last.
+	appended := []hdf.StatusOverride{older, newer}
+	assert.Equal(t, 1, GoverningOverrideIndex(appended, ref),
+		"the newest override governs even when it is last, which is where append puts it")
+
+	// The order the schema's description asks for. Same answer either way —
+	// that is the point: resolution must not depend on array order.
+	prepended := []hdf.StatusOverride{newer, older}
+	assert.Equal(t, 0, GoverningOverrideIndex(prepended, ref))
+
+	// Recency never beats expiry: the most recently applied is expired here.
+	assert.Equal(t, 1, GoverningOverrideIndex([]hdf.StatusOverride{older, newer, expired}, ref),
+		"an expired override does not govern however recently it was applied")
+
+	assert.Equal(t, -1, GoverningOverrideIndex(nil, ref), "nothing governs an empty list")
+}
+
+// The disposition twin of RequirementEffectiveStatus / RequirementEffectiveImpact.
+// Exporters read the STORED disposition field, which this project treats as an
+// output cache: it can disagree with the overrides, or be absent entirely on a
+// document whose producer never stamped it.
+func TestRequirementDisposition(t *testing.T) {
+	waiver := hdf.StatusOverride{
+		Type: hdf.OverrideTypeWaiver, Status: statusPtr(hdf.Passed),
+		AppliedAt: mustTime(t, "2024-06-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+	}
+	adjustment := hdf.StatusOverride{
+		Type:      hdf.RiskAdjustment,
+		AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+		Impact: &hdf.ImpactOverride{Value: 0.3},
+	}
+	expiredWaiver := hdf.StatusOverride{
+		Type: hdf.OverrideTypeWaiver, Status: statusPtr(hdf.Passed),
+		AppliedAt: mustTime(t, "2024-06-01T00:00:00Z"), ExpiresAt: mustTime(t, "2020-01-01T00:00:00Z"),
+	}
+	stored := hdf.OverrideTypeWaiver
+
+	cases := []struct {
+		name string
+		req  hdf.EvaluatedRequirement
+		want string
+	}{
+		{"no overrides and no stored field", hdf.EvaluatedRequirement{}, ""},
+		{"the governing override's type",
+			hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{waiver, adjustment}}, "riskAdjustment"},
+		{"array order does not decide it",
+			hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{adjustment, waiver}}, "riskAdjustment"},
+		{"an expired override governs nothing",
+			hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{expiredWaiver}}, ""},
+		{"the stored field is never read when overrides are present",
+			hdf.EvaluatedRequirement{Disposition: &stored, StatusOverrides: []hdf.StatusOverride{adjustment}}, "riskAdjustment"},
+		// The one exception, and it is a tested export contract: with NO overrides
+		// the stored field is the only evidence the document carries, so dropping
+		// it would lose the disposition of every document whose producer recorded
+		// the verdict without the override detail.
+		{"but it is the fallback when the requirement carries no overrides at all",
+			hdf.EvaluatedRequirement{Disposition: &stored}, "waiver"},
+		{"and an EXPIRED override still suppresses that fallback — the document does carry overrides",
+			hdf.EvaluatedRequirement{Disposition: &stored, StatusOverrides: []hdf.StatusOverride{expiredWaiver}}, ""},
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.want, RequirementDisposition(c.req, time.Time{}), c.name)
+	}
+}
+
+// A type-less override is schema-invalid but reaches the exporters, which check
+// their input structurally rather than schema-validating it. Both languages must
+// yield the empty string — TypeScript's String(undefined) would emit the literal
+// "undefined" into an exported document.
+func TestRequirementDisposition_TypelessOverrideYieldsEmpty(t *testing.T) {
+	req := hdf.EvaluatedRequirement{StatusOverrides: []hdf.StatusOverride{{
+		Reason:    "r",
+		AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+	}}}
+	assert.Equal(t, "", RequirementDisposition(req, time.Time{}))
+}

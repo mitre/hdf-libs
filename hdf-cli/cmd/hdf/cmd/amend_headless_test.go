@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -959,4 +960,180 @@ func TestAuthoringRoutesChain(t *testing.T) {
 			assert.Falsef(t, chained, "draft stub %d must not be chained", i)
 		}
 	})
+}
+
+// twoStatusResultsDoc carries one failed and one notApplicable requirement, so a
+// status filter has something to EXCLUDE. A fixture where every requirement
+// shares one status cannot tell a working filter from an absent one.
+func twoStatusResultsDoc() map[string]interface{} {
+	const doc = `{
+  "baselines": [{
+    "name": "b", "checksum": {"algorithm": "sha256", "value": "x"},
+    "depends": [], "groups": [], "inspecVersion": "5", "supports": [],
+    "requirements": [
+      {"id": "AC-1", "impact": 0.7, "tags": {}, "code": "", "refs": [],
+       "descriptions": [{"label": "default", "data": "t"}],
+       "sourceLocation": {"line": 1, "ref": "t.rb"},
+       "statusOverrides": [], "evidence": [], "poams": [],
+       "results": [{"status": "failed", "codeDesc": "x", "startTime": "2026-01-01T00:00:00Z"}]},
+      {"id": "AC-3", "impact": 0.0, "tags": {}, "code": "", "refs": [],
+       "descriptions": [{"label": "default", "data": "t"}],
+       "sourceLocation": {"line": 2, "ref": "t.rb"},
+       "statusOverrides": [], "evidence": [], "poams": [],
+       "results": [{"status": "notApplicable", "codeDesc": "x", "startTime": "2026-01-01T00:00:00Z"}]}
+    ]
+  }],
+  "statistics": {"duration": 0}
+}`
+	var out map[string]interface{}
+	_ = json.Unmarshal([]byte(doc), &out)
+	return out
+}
+
+func draftedIDs(t *testing.T, draft map[string]interface{}) []string {
+	t.Helper()
+	overrides, ok := draft["overrides"].([]map[string]interface{})
+	require.True(t, ok, "draft must carry overrides")
+	ids := make([]string, 0, len(overrides))
+	for _, o := range overrides {
+		id, _ := o["requirementId"].(string)
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// The same defect `hdf list --status` carried, in the opposite direction: this
+// path compares against the SCHEMA status, so the CLI's display spelling
+// selected nothing, and a typo produced a draft with zero stubs and exit 0 — a
+// file that looks like a legitimately empty draft.
+func TestBuildDraftFromResults_StatusFilterAcceptsEveryFormAndRefusesATypo(t *testing.T) {
+	for _, form := range []string{"notApplicable", "not_applicable", "NOTAPPLICABLE"} {
+		t.Run("accepts "+form, func(t *testing.T) {
+			draft, err := buildDraftFromResults(twoStatusResultsDoc(), "waiver", form, "", "", fixedNow())
+			require.NoError(t, err, "%q must be accepted", form)
+			assert.Equal(t, []string{"AC-3"}, draftedIDs(t, draft),
+				"%q must stub the notApplicable requirement and only it", form)
+		})
+	}
+
+	for _, bad := range []string{"bogus_value", "not_aplicable", "faild"} {
+		t.Run("refuses "+bad, func(t *testing.T) {
+			_, err := buildDraftFromResults(twoStatusResultsDoc(), "waiver", bad, "", "", fixedNow())
+			require.Error(t, err, "%q must be refused, not emit an empty draft", bad)
+			assert.Contains(t, err.Error(), "unknown --status value")
+		})
+	}
+}
+
+// The RunE guard is what refuses a typo before the results file is read. Without
+// a command-level test the whole hdf-cli suite stayed green with that block
+// deleted, so buildDraftFromResults' own check was the only thing asserted.
+func TestAmendDraftCmd_RefusesAnUnknownStatusBeforeReadingInput(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "draft.json")
+
+	// A path that does not exist: if the status were validated after the read,
+	// the error would name the missing file instead.
+	_, _, err := executeCommand("amend", "draft",
+		"--from", filepath.Join(dir, "absent.json"), "--type", "waiver",
+		"--status", "bogus_value", "-o", out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown --status value")
+	assert.NotContains(t, err.Error(), "absent.json", "the status must be refused before the input is read")
+
+	_, statErr := os.Stat(out)
+	assert.True(t, os.IsNotExist(statErr), "no draft file may be written when the filter is refused")
+}
+
+// Authoring and filtering ask different questions — which override types may be
+// WRITTEN versus which may be SELECTED — so they keep separate vocabularies
+// rather than one standing in for the other. They happen to coincide, because
+// every Override_Type is both authorable and filterable, and this asserts that:
+// if the two ever genuinely diverge it must be a deliberate edit that fails here
+// first, not a silent drift between two hand-typed lists.
+func TestAuthoringAndFilterOverrideVocabulariesAgree(t *testing.T) {
+	authoring := OverrideTypeValues()
+	assert.ElementsMatch(t, hdfengine.DispositionValues, authoring,
+		"the authorable and filterable override types must not silently diverge")
+
+	// And the authoring gate accepts exactly what it advertises — no more.
+	require.Len(t, validOverrideTypes, len(authoring))
+	for _, typ := range authoring {
+		assert.True(t, validOverrideTypes[typ], "%q must be accepted for authoring", typ)
+	}
+}
+
+// The --type help must name the authoring vocabulary rather than a transcription
+// of it, in both the flag and the create command's Long text: two hand-typed
+// copies of one list is the arrangement that let the filter helps drift.
+func TestOverrideTypeHelpIsDerived(t *testing.T) {
+	var draftUsage string
+	for _, sub := range NewAmendCmd().Commands() {
+		if sub.Name() == "draft" {
+			draftUsage = sub.Flags().Lookup("type").Usage
+		}
+	}
+	require.NotEmpty(t, draftUsage, "amend draft must take --type")
+
+	vocab := OverrideTypeHelpVocabulary()
+	require.NotEmpty(t, vocab)
+	assert.Contains(t, draftUsage, vocab, "--type help must carry the built vocabulary verbatim")
+	var createLong string
+	for _, sub := range NewAmendCmd().Commands() {
+		if sub.Name() == "create" {
+			createLong = sub.Long
+		}
+	}
+	require.NotEmpty(t, createLong)
+	assert.Contains(t, createLong, vocab,
+		"the create command's prose must name the same vocabulary, not a transcription")
+
+	for _, typ := range OverrideTypeValues() {
+		assert.Contains(t, draftUsage, typ, "--type help must name %q", typ)
+	}
+}
+
+// Contains(usage, vocab) cannot tell a built string from a byte-identical literal,
+// so the guard above catches drift but not reversion. This reads the SOURCE and
+// refuses the joined list appearing as a literal anywhere in it — the only way to
+// make typing it back go red rather than merely go stale later.
+func TestNoSourceFileTypesTheOverrideTypeListByHand(t *testing.T) {
+	joined := OverrideTypeHelpVocabulary()
+	require.Contains(t, joined, ", ", "precondition: the vocabulary is a joined list")
+
+	// Walk the package rather than naming files, so a new command cannot
+	// reintroduce the literal somewhere this test does not look.
+	entries, err := os.ReadDir(".")
+	require.NoError(t, err)
+
+	checked := 0
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		body, err := os.ReadFile(name)
+		require.NoError(t, err)
+		checked++
+		assert.NotContains(t, string(body), joined,
+			"%s types the override-type list by hand; call OverrideTypeHelpVocabulary() instead", name)
+	}
+	require.Greater(t, checked, 1, "the sweep must actually have read the package's sources")
+}
+
+// The interactive picker enumerates the override types with prose labels, so it
+// cannot render from a bare value list — but its MEMBERSHIP must still track the
+// vocabulary, or an eighth override type would be missing from the interactive
+// flow with nothing failing. Order is the picker's own and deliberately unpinned.
+func TestInteractivePickerOffersEveryOverrideType(t *testing.T) {
+	offered := map[string]bool{}
+	for _, o := range overrideTypeOptions() {
+		offered[o.Value] = true
+	}
+
+	for _, typ := range OverrideTypeValues() {
+		assert.True(t, offered[typ], "the interactive picker must offer %q", typ)
+	}
+	assert.Len(t, offered, len(OverrideTypeValues()),
+		"the picker must not offer a type the authoring gate would refuse")
 }

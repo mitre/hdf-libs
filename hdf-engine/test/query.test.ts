@@ -12,10 +12,32 @@ import {
   tagContains,
   tagMatchesGlob,
   matchesGlob,
+  validPoamFilter,
+  labelMatchesGlob,
+  validBaselineLabel,
+  validPoamType,
+  POAM_TYPE_VALUES,
+  validTag,
+  validDisposition,
+  DISPOSITION_VALUES,
+  POAM_VALID,
+  POAM_NONE_VALID,
   type FilterOptions,
   type Match,
 } from '../src/query.js';
 import { globToRegex, safeGlobMatch } from '../src/safematch.js';
+import type { PredicateValue } from '../src/values.js';
+import { computeEffectiveStatus } from '@mitre/hdf-utilities';
+import {
+  validStatus,
+  validSeverity,
+  normalizeFilterValue,
+  STATUS_VALUES,
+  SEVERITY_VALUES,
+  filterAliases,
+  advertisedFilterValues,
+  type FilterAlias,
+} from '../src/vocabulary.js';
 
 // Shared cross-language fixture at hdf-engine/testdata (also read by
 // go/filter_test.go), so both filter implementations run the same input.
@@ -51,6 +73,15 @@ describe('hdf-engine filter — cross-language parity with go/filter.go', () => 
   const cases: { name: string; opts: FilterOptions; want: string[] }[] = [
     { name: 'no filters', opts: {}, want: ['SV-100001', 'SV-100002', 'SV-230221', 'SV-230222', 'SV-230223'] },
     { name: 'status single', opts: { status: ['failed'] }, want: ['SV-230221'] },
+    // testStatusOf returns the CLI's display vocabulary (not_applicable), while a
+    // spec names the schema's (notApplicable). Both sides of the comparison
+    // canonicalize, which is what reconciles them; without the actual-side half
+    // this selects nothing.
+    {
+      name: 'status canonical against a display-vocabulary resolver',
+      opts: { status: ['notApplicable'] },
+      want: ['SV-230223'],
+    },
     { name: 'status OR', opts: { status: ['failed', 'passed'] }, want: ['SV-230221', 'SV-230222'] },
     { name: 'severity single', opts: { severity: ['critical'] }, want: ['SV-230221'] },
     { name: 'severity OR', opts: { severity: ['high', 'medium'] }, want: ['SV-230222', 'SV-230223'] },
@@ -107,9 +138,16 @@ describe('hdf-engine filter — cross-language parity with go/filter.go', () => 
     expect(lower).toEqual(camel);
   });
 
-  it('a --tag value without a colon adds no tag filter', () => {
+  // This previously asserted the OPPOSITE — that a colonless value "adds no tag
+  // filter", returning the whole document — which pinned a gate-widening bug as
+  // though it were intended. A predicate that names no key can never match, so
+  // it must select nothing here and be refused at the CLI boundary. BOTH
+  // languages pinned the old behaviour — go/filter_test.go had its own twin with
+  // its own comment calling it intended — which is how it survived.
+  it('a tag value without a colon selects nothing rather than everything', () => {
     const all = ids(filter(results, { statusOf: testStatusOf }));
-    expect(ids(filter(results, { tag: ['nocolonhere'], statusOf: testStatusOf }))).toEqual(all);
+    expect(all.length, 'precondition: the document is non-empty').toBeGreaterThan(0);
+    expect(ids(filter(results, { tag: ['nocolonhere'], statusOf: testStatusOf }))).toEqual([]);
   });
 });
 
@@ -233,5 +271,451 @@ describe('match indices — parity with go/filter_test.go TestFilter_MatchCarrie
     expect(positions.size).toBe(94);
     const repeated = matches.filter((m) => m.baseline === 'Prisma Cloud Scan' && m.id === '60522-redhat-RHEL7-high');
     expect(repeated).toHaveLength(6);
+  });
+});
+
+// The shared cross-language contract for the amendment filters. go/filter_test.go
+// reads the SAME file and runs the SAME cases, so disposition and poams cannot
+// drift between the two implementations. The reference clock lives in the file,
+// which is what keeps "expired" a property of the fixture rather than of the day
+// the suite runs.
+interface AmendmentCases {
+  now: string;
+  dispositionValues: string[];
+  poamTypeValues: string[];
+  fixture: HDFResults;
+  cases: {
+    name: string;
+    // Declared explicitly rather than relying on the spread of an untyped parse:
+    // Go's struct forces an edit when the table gains an option, and without
+    // this the TS side would silently drop it — the exact drift the shared table
+    // exists to prevent. Parity: amendmentCases in go/filter_test.go.
+    options: {
+      status?: string[];
+      disposition?: PredicateValue;
+      poams?: string;
+      poamType?: PredicateValue;
+      id?: string;
+      impact?: string;
+      rawImpact?: string;
+    };
+    effectiveStatus?: boolean;
+    expect: string[];
+  }[];
+}
+
+const amendmentPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'testdata',
+  'amendment-filter-cases.json'
+);
+const amendments = JSON.parse(readFileSync(amendmentPath, 'utf-8')) as AmendmentCases;
+
+// A governing waiver has to move a requirement off 'failed' before a status
+// filter sees it, or a policy keyed on status blames findings somebody already
+// adjudicated. Mirrors effectiveStatusOf in go/compliance_test.go.
+function amendmentEffectiveStatusOf(req: EvaluatedRequirement): string {
+  return computeEffectiveStatus({
+    impact: req.impact,
+    overrides: (req.statusOverrides ?? []).map((o) => ({
+      appliedAt: o.appliedAt,
+      expiresAt: o.expiresAt,
+      status: o.status as string | undefined,
+    })),
+    resultStatuses: (req.results ?? []).map((r) => String(r.status)),
+  });
+}
+
+describe('amendment filters — disposition and poams (parity with go/filter.go)', () => {
+  it('has cases to run', () => {
+    expect(amendments.cases.length).toBeGreaterThan(0);
+  });
+
+  for (const c of amendments.cases) {
+    it(c.name, () => {
+      const got = ids(
+        filter(amendments.fixture, {
+          ...c.options,
+          now: amendments.now,
+          statusOf: c.effectiveStatus ? amendmentEffectiveStatusOf : testStatusOf,
+        })
+      );
+      expect(got.slice().sort()).toEqual(c.expect.slice().sort());
+    });
+  }
+});
+
+// Both closed vocabularies are asserted against the SCHEMA ITSELF, not only
+// against each other. Two languages can agree on a list that has fallen behind
+// the schema, and then a value the schema admits is silently unfilterable on
+// every surface with no test failing. TypeScript is the weaker half — its lists
+// are raw string literals, so even a RENAME would not break the build without
+// this. Parity: TestAmendmentVocabulariesMatchTheSchema in go/filter_test.go.
+describe('amendment vocabularies match the schema', () => {
+  const schemaDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'hdf-schema', 'src', 'schemas', 'primitives');
+  const readEnum = (file: string, path: string[]): string[] => {
+    const doc = JSON.parse(readFileSync(join(schemaDir, file), 'utf-8')) as Record<string, unknown>;
+    let node: unknown = doc;
+    for (const key of path) node = (node as Record<string, unknown>)[key];
+    return node as string[];
+  };
+
+  it('poamType is the schema POA&M type enum', () => {
+    const fromSchema = readEnum('extensions.schema.json', ['$defs', 'POAM', 'properties', 'type', 'enum']);
+    expect(fromSchema.length, 'an empty enum would pass vacuously').toBeGreaterThan(0);
+    expect([...POAM_TYPE_VALUES].sort()).toEqual([...fromSchema].sort());
+  });
+
+  it('disposition is the schema Override_Type enum', () => {
+    const fromSchema = readEnum('amendments.schema.json', ['$defs', 'Override_Type', 'enum']);
+    expect(fromSchema.length).toBeGreaterThan(0);
+    expect([...DISPOSITION_VALUES].sort()).toEqual([...fromSchema].sort());
+  });
+});
+
+describe('amendment vocabularies match the shared table', () => {
+  it('disposition values are the schema enum, in both languages', () => {
+    expect(amendments.dispositionValues.length).toBeGreaterThan(0);
+    expect([...DISPOSITION_VALUES].sort()).toEqual(amendments.dispositionValues.slice().sort());
+    for (const value of amendments.dispositionValues) {
+      expect(validDisposition(value)).toBe(true);
+    }
+  });
+
+  it('poamType values are the schema enum, in both languages', () => {
+    expect(amendments.poamTypeValues.length).toBeGreaterThan(0);
+    expect([...POAM_TYPE_VALUES].sort()).toEqual(amendments.poamTypeValues.slice().sort());
+    for (const value of amendments.poamTypeValues) {
+      expect(validPoamType(value)).toBe(true);
+    }
+  });
+
+  // The two vocabularies must stay DISJOINT. They are separate predicates, and a
+  // value in both would make riskAdjustment (an override) and riskAcceptance (a
+  // plan) neighbours in one namespace — one letter apart mid-word, selecting
+  // entirely different populations.
+  it('the two vocabularies are disjoint', () => {
+    for (const d of DISPOSITION_VALUES) expect(validPoamType(d)).toBe(false);
+    for (const k of POAM_TYPE_VALUES) expect(validDisposition(k)).toBe(false);
+  });
+
+  it('refuses a typo rather than letting it match nothing', () => {
+    for (const bad of ['', 'waver', 'riskadjustmnet', 'suppressed', 'none']) {
+      expect(validDisposition(bad)).toBe(false);
+    }
+  });
+});
+
+describe('validPoamFilter', () => {
+  it('accepts only the two values the filter understands', () => {
+    for (const ok of ['valid', 'none-valid', '  NONE-VALID  ']) {
+      expect(validPoamFilter(ok)).toBe(true);
+    }
+    // 'absent' and 'present' are deliberately absent: collapsing presence and
+    // expiry into one concept is the point, so a presence-only spelling would
+    // exist only to be chosen by mistake.
+    for (const bad of ['', 'absent', 'present', 'expired', 'none']) {
+      expect(validPoamFilter(bad)).toBe(false);
+    }
+  });
+});
+
+// The closed vocabularies and their aliases, read from the same file
+// go/vocabulary_test.go reads, so the two languages cannot disagree about a legal
+// value or about which forms name the same thing.
+interface VocabularyCases {
+  statusValues: string[];
+  severityValues: string[];
+  dispositionValues: string[];
+  poamsValues: string[];
+  aliases: { field: string; form: string; means: string }[];
+  rejected: { field: string; form: string }[];
+  advertised: Record<string, string[]>;
+}
+
+const vocabPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'testdata',
+  'filter-vocabulary-cases.json'
+);
+const vocab = JSON.parse(readFileSync(vocabPath, 'utf-8')) as VocabularyCases;
+
+function validatorFor(field: string): ((s: string) => boolean) | undefined {
+  return { status: validStatus, severity: validSeverity, disposition: validDisposition, poams: validPoamFilter }[
+    field
+  ];
+}
+
+describe('filter vocabularies (parity with go/vocabulary.go)', () => {
+  it('accepts every value the shared table lists', () => {
+    const byField: Record<string, string[]> = {
+      status: vocab.statusValues,
+      severity: vocab.severityValues,
+      disposition: vocab.dispositionValues,
+      poams: vocab.poamsValues,
+    };
+    const declared: Record<string, readonly string[]> = {
+      status: STATUS_VALUES,
+      severity: SEVERITY_VALUES,
+      disposition: DISPOSITION_VALUES,
+      poams: [POAM_VALID, POAM_NONE_VALID],
+    };
+    for (const [field, values] of Object.entries(byField)) {
+      expect(values.length).toBeGreaterThan(0);
+      const valid = validatorFor(field)!;
+      for (const value of values) expect(valid(value), `${field}: ${value}`).toBe(true);
+      // Compared BOTH ways: iterating the table only proves the validator
+      // accepts what is listed, so an extra or renamed member in the language's
+      // own list would be invisible.
+      expect([...declared[field]!].sort(), field).toEqual(values.slice().sort());
+    }
+  });
+
+  it('normalizes every alias onto the value it names', () => {
+    expect(vocab.aliases.length).toBeGreaterThan(0);
+    for (const alias of vocab.aliases) {
+      expect(validatorFor(alias.field)!(alias.form), alias.form).toBe(true);
+      expect(normalizeFilterValue(alias.field, alias.form)).toBe(alias.means);
+    }
+  });
+
+  it('refuses a value outside the vocabulary', () => {
+    for (const bad of vocab.rejected) {
+      expect(validatorFor(bad.field)!(bad.form), bad.form).toBe(false);
+    }
+  });
+
+  // The point is not that a validator accepts an alias but that the FILTER
+  // selects the same requirements for it.
+  it('an alias selects exactly what its canonical form selects', () => {
+    const schemaStatus = (c: EvaluatedRequirement) =>
+      c.results && c.results.length > 0 ? String(c.results[0]!.status) : 'notReviewed';
+    for (const alias of vocab.aliases) {
+      // Disposition needs a document carrying a governing override, which the
+      // query fixture has none of; the amendment fixture exists for that.
+      const subject = alias.field === 'disposition' ? amendments.fixture : results;
+      const aliasIds = ids(
+        filter(subject, { [alias.field]: [alias.form], statusOf: schemaStatus })
+      );
+      const canonIds = ids(filter(subject, { [alias.field]: [alias.means], statusOf: schemaStatus }));
+      expect(canonIds.length, `${alias.means} must select something`).toBeGreaterThan(0);
+      expect(aliasIds, `${alias.form} vs ${alias.means}`).toEqual(canonIds);
+    }
+  });
+});
+
+// The shared vulnerability-field contract, read by go/filter_test.go too so the
+// two implementations cannot drift. The decisions each case pins are recorded in
+// the table's own $comment.
+interface VulnerabilityCases {
+  fixture: HDFResults;
+  cases: {
+    name: string;
+    options: { cvss?: string; epss?: string; kev?: string; cwe?: string[] };
+    expect: string[];
+  }[];
+}
+
+const vulnPath = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'testdata',
+  'vulnerability-filter-cases.json'
+);
+const vulnerabilities = JSON.parse(readFileSync(vulnPath, 'utf-8')) as VulnerabilityCases;
+
+describe('vulnerability filters — cvss, epss, kev, cwe (parity with go/filter.go)', () => {
+  it('has cases to run', () => {
+    expect(vulnerabilities.cases.length).toBeGreaterThan(0);
+  });
+
+  for (const c of vulnerabilities.cases) {
+    it(c.name, () => {
+      const got = ids(filter(vulnerabilities.fixture, { ...c.options, statusOf: testStatusOf }));
+      expect(got.slice().sort()).toEqual(c.expect.slice().sort());
+    });
+  }
+});
+
+// Which forms help text should TEACH is a property of the alias entry, not of
+// whichever string literal a command holds. Parity: Go
+// TestFilterAliasesCarryWhetherToAdvertise / TestAdvertisedFilterValues.
+describe('advertised vs merely accepted filter forms', () => {
+  it('a separator variant is taught; a retired name is accepted and never taught', () => {
+    const byForm = new Map<string, FilterAlias>();
+    for (const field of ['status', 'severity', 'disposition']) {
+      for (const a of filterAliases(field) ?? []) byForm.set(a.form, a);
+    }
+
+    for (const taught of ['not_applicable', 'not_reviewed', 'false_positive']) {
+      expect(byForm.get(taught)?.advertise, taught).toBe(true);
+    }
+    expect(byForm.get('none')?.advertise, 'a retired name must never be advertised').toBe(false);
+    expect(byForm.get('none')?.means).toBe('informational');
+  });
+
+  it('every alias is accepted whether or not it is advertised', () => {
+    const validators: Record<string, (s: string) => boolean> = {
+      status: validStatus,
+      severity: validSeverity,
+      disposition: validDisposition,
+    };
+    for (const [field, valid] of Object.entries(validators)) {
+      for (const a of filterAliases(field) ?? []) {
+        expect(valid(a.form), `${field} alias ${a.form}`).toBe(true);
+        expect(normalizeFilterValue(field, a.form)).toBe(a.means);
+      }
+    }
+  });
+
+  // The shared table is the pinned authority in BOTH directions. Checking only
+  // table -> engine let the ACCEPTED set grow in silence: an alias added with
+  // advertise false appeared in no advertised set, so nothing compared it.
+  // Parity: Go TestEveryEngineAliasIsListedInTheSharedTable.
+  it('every alias the engine accepts is listed in the shared table', () => {
+    const listed = new Map<string, string>();
+    for (const a of vocab.aliases) listed.set(`${a.field}/${a.form}`, a.means);
+
+    for (const field of ['status', 'severity', 'disposition']) {
+      for (const a of filterAliases(field) ?? []) {
+        const key = `${field}/${a.form}`;
+        expect(
+          listed.has(key),
+          `engine accepts ${key} but the shared table does not list it — add it to ` +
+            `testdata/filter-vocabulary-cases.json so both languages record the decision`,
+        ).toBe(true);
+        expect(listed.get(key)).toBe(a.means);
+      }
+    }
+  });
+
+  // Read from the shared table so Go cannot advertise a different set. Parity:
+  // Go TestAdvertisedFilterValues.
+  it('advertisedFilterValues matches the shared table for every field', () => {
+    expect(Object.keys(vocab.advertised).length).toBeGreaterThan(0);
+    for (const [field, want] of Object.entries(vocab.advertised)) {
+      expect(advertisedFilterValues(field), field).toEqual(want);
+    }
+    expect(advertisedFilterValues('severity')).not.toContain('none');
+    expect(validSeverity('none'), 'the retired name must still be accepted').toBe(true);
+    expect(advertisedFilterValues('nist')).toBeUndefined();
+  });
+});
+
+// Parity: go/filter_test.go TestFilterByBaselineLabel and its two siblings. The
+// shared fixture labels its FIRST baseline and deliberately leaves the second
+// unlabelled, which is what makes "an unlabelled baseline matches nothing"
+// assertable rather than assumed.
+interface TagCases {
+  fixtureFile: string;
+  unfilteredCount: number;
+  cases: { name: string; tags: string[]; expect: string[] }[];
+  validity: { value: string; valid: boolean }[];
+}
+
+// The same table go/filter_test.go reads, so a case cannot be added or changed
+// in one language only.
+const tagTable = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'tag-filter-cases.json'),
+    'utf-8'
+  )
+) as TagCases;
+
+// A colonless tag predicate used to be DROPPED rather than applied, so a
+// predicate made only of colonless values matched the whole document — widening
+// what a rule bounded instead of narrowing it.
+describe('filter by tag', () => {
+  const tagResults = JSON.parse(
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', tagTable.fixtureFile),
+      'utf-8'
+    )
+  ) as HDFResults;
+
+  it('the table describes the fixture actually loaded', () => {
+    expect(ids(filter(tagResults, { statusOf: testStatusOf }))).toHaveLength(tagTable.unfilteredCount);
+  });
+
+  for (const c of tagTable.cases) {
+    it(c.name, () => {
+      expect(ids(filter(tagResults, { tag: c.tags, statusOf: testStatusOf }))).toEqual(c.expect);
+    });
+  }
+
+  it.each(tagTable.validity)('validTag($value) is $valid', ({ value, valid }) => {
+    expect(validTag(value)).toBe(valid);
+  });
+});
+
+interface BaselineLabelCases {
+  fixtureFile: string;
+  unfilteredCount: number;
+  unlabelledBaselineIDs: string[];
+  cases: { name: string; labels: string[]; expect: string[] }[];
+  validity: { value: string; valid: boolean }[];
+}
+
+// The same table go/filter_test.go reads, so a case cannot be added or changed
+// in one language only.
+const labelTable = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'baseline-label-filter-cases.json'),
+    'utf-8'
+  )
+) as BaselineLabelCases;
+
+describe('filter by the baseline s labels', () => {
+  // Load through the name the table gives, so the field is followed rather than
+  // documenting a path the test hardcodes separately. Parity: loadResultsFixture
+  // in go/filter_test.go.
+  const labelResults = JSON.parse(
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', labelTable.fixtureFile),
+      'utf-8'
+    )
+  ) as HDFResults;
+
+  for (const c of labelTable.cases) {
+    it(c.name, () => {
+      const got = ids(filter(labelResults, { baselineLabel: c.labels, statusOf: testStatusOf }));
+      expect(got).toEqual(c.expect);
+    });
+  }
+
+  it('the table describes the fixture actually loaded', () => {
+    expect(ids(filter(labelResults, { statusOf: testStatusOf }))).toHaveLength(labelTable.unfilteredCount);
+  });
+
+  // A colonless value names no key, so it can never match any document.
+  // Selecting nothing and being ignored are the same forever-green gate under a
+  // max bound, which is why the CLI refuses one rather than relying on silence.
+  it.each(labelTable.validity)('validBaselineLabel($value) is $valid', ({ value, valid }) => {
+    expect(validBaselineLabel(value)).toBe(valid);
+  });
+
+  it('an unlabelled baseline matches nothing', () => {
+    const unfiltered = ids(filter(labelResults, { statusOf: testStatusOf }));
+    for (const id of labelTable.unlabelledBaselineIDs) {
+      expect(unfiltered, 'precondition: reachable without the predicate').toContain(id);
+    }
+
+    const got = ids(filter(labelResults, { baselineLabel: ['environment:production'], statusOf: testStatusOf }));
+    for (const id of labelTable.unlabelledBaselineIDs) {
+      expect(got, 'an unlabelled baseline must not match').not.toContain(id);
+    }
+    expect(got.length, 'and the labelled one must still match, or this proves nothing').toBeGreaterThan(0);
+  });
+
+  it('labelMatchesGlob: an absent key matches nothing, including against *', () => {
+    const labels = { environment: 'production', team: 'platform-sre' };
+    expect(labelMatchesGlob(labels, 'environment', 'production')).toBe(true);
+    expect(labelMatchesGlob(labels, 'environment', 'prod*')).toBe(true);
+    expect(labelMatchesGlob(labels, 'team', 'platform-*')).toBe(true);
+    expect(labelMatchesGlob(labels, 'environment', 'staging')).toBe(false);
+    expect(labelMatchesGlob(labels, 'region', '*')).toBe(false);
+    expect(labelMatchesGlob(undefined, 'environment', '*')).toBe(false);
   });
 });

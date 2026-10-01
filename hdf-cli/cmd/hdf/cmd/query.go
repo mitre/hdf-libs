@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/spf13/cobra"
@@ -11,34 +12,52 @@ import (
 
 // Global flag variables for query command (used by runQuery).
 var (
-	queryStatus   []string
-	querySeverity []string
-	queryImpact   string
-	queryCCI      []string
-	queryNIST     []string
-	querySTIGID   string
-	queryTag      []string
-	querySearch   string
-	queryProfile  string
-	queryCount    bool
-	queryLimit    int
+	queryStatus        []string
+	querySeverity      []string
+	queryImpact        string
+	queryRawImpact     string
+	queryCvss          string
+	queryEpss          string
+	queryKev           string
+	queryCwe           []string
+	queryCCI           []string
+	queryNIST          []string
+	querySTIGID        string
+	queryTag           []string
+	queryPoamType      []string
+	queryDisposition   []string
+	queryPoams         string
+	querySearch        string
+	queryProfile       string
+	queryBaselineLabel []string
+	queryCount         bool
+	queryLimit         int
 )
 
 // NewQueryCmd creates a new query command with fresh state.
 func NewQueryCmd() *cobra.Command {
 	// Local flag variables for this command instance
 	var (
-		localQueryStatus   []string
-		localQuerySeverity []string
-		localQueryImpact   string
-		localQueryCCI      []string
-		localQueryNIST     []string
-		localQuerySTIGID   string
-		localQueryTag      []string
-		localQuerySearch   string
-		localQueryProfile  string
-		localQueryCount    bool
-		localQueryLimit    int
+		localQueryStatus        []string
+		localQuerySeverity      []string
+		localQueryImpact        string
+		localQueryRawImpact     string
+		localQueryCvss          string
+		localQueryEpss          string
+		localQueryKev           string
+		localQueryCwe           []string
+		localQueryCCI           []string
+		localQueryNIST          []string
+		localQuerySTIGID        string
+		localQueryTag           []string
+		localQueryDisposition   []string
+		localQueryPoams         string
+		localQuerySearch        string
+		localQueryProfile       string
+		localQueryBaselineLabel []string
+		localQueryPoamType      []string
+		localQueryCount         bool
+		localQueryLimit         int
 	)
 
 	cmd := &cobra.Command{
@@ -48,6 +67,13 @@ func NewQueryCmd() *cobra.Command {
 
 Different flags are combined with AND logic. Repeating the same flag
 uses OR logic within that filter.
+
+--status reports EFFECTIVE status, so a requirement with a governing waiver is
+already off "failed" before the filter sees it. --disposition names what governs
+it — the most recently applied non-expired override OR POA&M, whichever it is,
+where a governing plan reports "poam" — and --poams reports whether a plan is still
+in force; "none-valid" covers no POA&M, an empty list, and only-lapsed ones
+alike, because a plan that has expired is not a plan.
 
 Examples:
   hdf query results.json --status failed
@@ -61,6 +87,8 @@ Examples:
   hdf query results.json --search "password"
   hdf query results.json --impact ">0.5" --status failed
   hdf query results.json --baseline "RHEL9-STIG"
+  hdf query results.json --disposition waiver --severity critical
+  hdf query results.json --status failed --poams none-valid
   hdf query results.json --status failed --count`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -68,12 +96,78 @@ Examples:
 			queryStatus = localQueryStatus
 			querySeverity = localQuerySeverity
 			queryImpact = localQueryImpact
+			queryRawImpact = localQueryRawImpact
+			queryCvss = localQueryCvss
+			queryEpss = localQueryEpss
+			queryKev = localQueryKev
+			queryCwe = localQueryCwe
 			queryCCI = localQueryCCI
 			queryNIST = localQueryNIST
 			querySTIGID = localQuerySTIGID
 			queryTag = localQueryTag
+			queryDisposition = localQueryDisposition
+			queryPoams = localQueryPoams
+			// An unrecognized value would match nothing and report a clean run,
+			// which is the false green this vocabulary exists to avoid. Reject it
+			// before any document is read.
+			if queryPoams != "" && !hdfengine.ValidPoamFilter(queryPoams) {
+				return fmt.Errorf("unknown --poams value %q (expected %q or %q)",
+					queryPoams, hdfengine.PoamValid, hdfengine.PoamNoneValid)
+			}
+			for _, status := range queryStatus {
+				if err := ValidateStatusFilter(status); err != nil {
+					return err
+				}
+			}
+			for _, value := range localQueryPoamType {
+				if !hdfengine.ValidPoamType(value) {
+					return fmt.Errorf("unknown --poam-type value %q (expected one of: %s)",
+						value, strings.Join(hdfengine.PoamTypeValues, ", "))
+				}
+			}
+			for _, value := range queryTag {
+				if !hdfengine.ValidTag(value) {
+					return fmt.Errorf("unknown --tag value %q (expected a key:value expression, e.g. nist:AC-2)", value)
+				}
+			}
+			for _, value := range localQueryBaselineLabel {
+				if !hdfengine.ValidBaselineLabel(value) {
+					return fmt.Errorf("unknown --baseline-label value %q (expected a key:value expression, e.g. environment:production)", value)
+				}
+			}
+			for _, severity := range querySeverity {
+				if !hdfengine.ValidSeverity(severity) {
+					return fmt.Errorf("unknown --severity value %q (expected one of: %s)",
+						severity, strings.Join(hdfengine.SeverityValues, ", "))
+				}
+			}
+			for _, disposition := range queryDisposition {
+				if !hdfengine.ValidDisposition(disposition) {
+					return fmt.Errorf("unknown --disposition value %q (expected one of: %s)",
+						disposition, strings.Join(hdfengine.DispositionValues, ", "))
+				}
+			}
+			// Here with its siblings rather than inside runQuery: a malformed
+			// comparison is a property of the command line, so it must be
+			// refused once, before any document is read, not once per file.
+			if queryKev != "" && !hdfengine.ValidKevFilter(queryKev) {
+				return fmt.Errorf("unknown --kev value %q (expected true or false)", queryKev)
+			}
+			for _, c := range []struct{ flag, comparison string }{
+				{"--impact", queryImpact},
+				{"--raw-impact", queryRawImpact},
+				{"--cvss", queryCvss},
+				{"--epss", queryEpss},
+			} {
+				if c.comparison != "" && !hdfengine.ValidImpactFilter(c.comparison) {
+					return fmt.Errorf("invalid %s filter %q: use a comparison like >0.5, >=0.7, <0.5, or =0",
+						c.flag, c.comparison)
+				}
+			}
 			querySearch = localQuerySearch
 			queryProfile = localQueryProfile
+			queryBaselineLabel = localQueryBaselineLabel
+			queryPoamType = localQueryPoamType
 			queryCount = localQueryCount
 			queryLimit = localQueryLimit
 			files, err := expandGlobs(args)
@@ -87,15 +181,31 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil, "Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed")
-	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil, "Filter by severity (repeatable, OR logic): critical, high, medium, low, informational")
-	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by impact (e.g., \">0.5\", \">=0.7\", \"0.5\")")
+	cmd.Flags().StringArrayVarP(&localQueryStatus, "status", "s", nil,
+		"Filter by status (repeatable, OR logic): "+FilterHelpVocabulary("status"))
+	cmd.Flags().StringArrayVar(&localQuerySeverity, "severity", nil,
+		"Filter by severity (repeatable, OR logic): "+FilterHelpVocabulary("severity"))
+	cmd.Flags().StringVar(&localQueryImpact, "impact", "", "Filter by effective impact — after any governing impact override (e.g., \">0.5\", \">=0.7\", \"0.5\")")
+	cmd.Flags().StringVar(&localQueryRawImpact, "raw-impact", "", "Filter by the requirement's own impact, ignoring overrides (same comparison grammar as --impact)")
+	cmd.Flags().StringVar(&localQueryCvss, "cvss", "", "Filter by CVSS score — computedScore when a consumer recomputed one, else baseScore; highest entry wins (e.g. \">=7\")")
+	cmd.Flags().StringVar(&localQueryEpss, "epss", "", "Filter by EPSS exploit probability, NOT the percentile rank (e.g. \">=0.5\")")
+	cmd.Flags().StringVar(&localQueryKev, "kev", "", "Filter by CISA Known Exploited Vulnerabilities membership: true or false (false includes findings with no KEV data)")
+	cmd.Flags().StringArrayVar(&localQueryCwe, "cwe", nil, "Filter by CWE id (repeatable, OR logic; CWE-79, \"CWE 79\" and cwe79 are one value). Reads cwe[] only — SARIF-derived documents record CWEs in tags and will not match")
 	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic; supports globs)")
 	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
 	cmd.Flags().StringArrayVarP(&localQueryTag, "tag", "t", nil, "Filter by tag key:value (repeatable, OR logic)")
+	cmd.Flags().StringArrayVar(&localQueryDisposition, "disposition", nil,
+		"Filter by what governs the requirement — the most recently applied non-expired override or POA&M (repeatable, OR logic): "+FilterHelpVocabulary("disposition"))
+	cmd.Flags().StringVar(&localQueryPoams, "poams", "",
+		"Filter by remediation-plan validity: valid (a POA&M still in force) or none-valid (none, empty, or only lapsed)")
 	cmd.Flags().StringVar(&localQuerySearch, "search", "", "Search in title and description")
 	cmd.Flags().StringVarP(&localQueryProfile, "baseline", "p", "", "Filter by profile name")
+	cmd.Flags().StringArrayVar(&localQueryPoamType, "poam-type", nil,
+		"Filter by the KIND of the governing POA&M (repeatable, OR logic): "+strings.Join(hdfengine.PoamTypeValues, ", ")+
+			". disposition reports every governing plan as \"poam\"; this names which kind it is")
+	cmd.Flags().StringArrayVar(&localQueryBaselineLabel, "baseline-label", nil,
+		"Filter by the baseline's labels as key:value (repeatable, OR logic; glob allowed on the value, e.g. environment:prod*)")
 	cmd.Flags().BoolVarP(&localQueryCount, "count", "c", false, "Show only the count of matching requirements")
 	cmd.Flags().IntVarP(&localQueryLimit, "limit", "l", 0, "Limit number of results (0 = unlimited)")
 
@@ -124,25 +234,30 @@ func runQuery(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse HDF file: %w", err)
 	}
 
-	if queryImpact != "" && !hdfengine.ValidImpactFilter(queryImpact) {
-		return fmt.Errorf("invalid --impact filter %q: use a comparison like >0.5, >=0.7, <0.5, or =0", queryImpact)
-	}
-
 	// Filtering is delegated to the shared hdf-engine library; the CLI supplies
 	// its display-status resolver so the engine stays convention-agnostic.
 	matches := hdfengine.Filter(context.Background(), results, hdfengine.Options{
-		Status:   queryStatus,
-		Severity: normalizeSeverityFilters(querySeverity),
-		Impact:   queryImpact,
-		CCI:      queryCCI,
-		NIST:     queryNIST,
-		ID:       querySTIGID,
-		Tag:      queryTag,
-		Search:   querySearch,
-		Baseline: queryProfile,
-		Limit:    queryLimit,
-		Count:    queryCount,
-		StatusOf: determineControlStatus,
+		Status:        hdfengine.In(queryStatus...),
+		Severity:      hdfengine.In(querySeverity...),
+		Impact:        queryImpact,
+		RawImpact:     queryRawImpact,
+		Cvss:          queryCvss,
+		Epss:          queryEpss,
+		Kev:           queryKev,
+		Cwe:           hdfengine.In(queryCwe...),
+		CCI:           hdfengine.In(queryCCI...),
+		NIST:          hdfengine.In(queryNIST...),
+		ID:            querySTIGID,
+		Tag:           hdfengine.In(queryTag...),
+		Disposition:   hdfengine.In(queryDisposition...),
+		Poams:         queryPoams,
+		PoamType:      hdfengine.In(queryPoamType...),
+		Search:        querySearch,
+		Baseline:      queryProfile,
+		BaselineLabel: hdfengine.In(queryBaselineLabel...),
+		Limit:         queryLimit,
+		Count:         queryCount,
+		StatusOf:      determineControlStatus,
 	})
 
 	return outputQueryResults(matches)
@@ -210,26 +325,10 @@ const (
 	SeverityMedium        = "medium"
 	SeverityLow           = "low"
 	SeverityInformational = "informational"
-	// SeverityNoneLegacy is the pre-3.7 spelling of informational, still
+	// SeverityNoneLegacy is the name informational replaced in 3.7.0, still
 	// accepted as a filter value so an existing command line keeps working.
 	SeverityNoneLegacy = "none"
 )
-
-// normalizeSeverityFilters maps the pre-3.7 "none" spelling onto the schema
-// value it named, so a saved command line keeps selecting the same findings.
-func normalizeSeverityFilters(values []string) []string {
-	if len(values) == 0 {
-		return values
-	}
-	out := make([]string, 0, len(values))
-	for _, v := range values {
-		if v == SeverityNoneLegacy {
-			v = SeverityInformational
-		}
-		out = append(out, v)
-	}
-	return out
-}
 
 func severityToLabel(severity string) string {
 	switch severity {

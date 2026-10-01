@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +68,7 @@ func TestCompliance_CountsAndPercentage(t *testing.T) {
 	assert.Equal(t, 1, counts.Skipped.Total)
 	assert.Equal(t, 1, counts.Skipped.Low)
 	assert.Equal(t, 1, counts.Error.Total)
-	// Was counts.Error.None before the two spellings were unified.
+	// Was counts.Error.None before 3.7.0 renamed the bucket.
 	assert.Equal(t, 1, counts.Error.Informational)
 	assert.Equal(t, 1, counts.NoImpact.Total)
 	assert.Equal(t, 1, counts.NoImpact.Medium)
@@ -261,7 +262,7 @@ func TestAddCount_SeverityOutsideTheEnumCountsAsInformational(t *testing.T) {
 	assert.Equal(t, 1, counts.Failed.Total)
 }
 
-// A spec naming both spellings of one bucket is refused rather than silently
+// A spec naming one bucket under both its names is refused rather than silently
 // resolved, so a bound the author wrote is never dropped.
 func TestValidateThresholds_BothNoneAndInformationalIsRefused(t *testing.T) {
 	two := 2
@@ -270,19 +271,308 @@ func TestValidateThresholds_BothNoneAndInformationalIsRefused(t *testing.T) {
 		None:          &ThresholdBound{Max: &two},
 	}}
 	violations := ValidateThresholds(config, &StatusCounts{}, 100, nil)
-	require.NotEmpty(t, violations)
-	assert.Contains(t, violations[0], "pre-3.7 spelling")
+	require.Len(t, violations, 1)
+	// Pinned exactly, and to the same bytes the TypeScript peer pins, so the two
+	// surfaces cannot drift on wording a user reads.
+	assert.Equal(t, "no_impact: both 'none' and 'informational' are set; 'informational' replaced 'none' in 3.7.0 and both name the same bucket", violations[0])
 }
 
-// The legacy spelling resolves to the same bucket it always meant.
+// The former name resolves to the same bucket it always meant, and the
+// violation names the key the author wrote: a spec that says none must not
+// send its author hunting for an informational key that is not in their file.
 func TestValidateThresholds_LegacyNoneNormalizesToInformational(t *testing.T) {
 	zero := 0
-	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
 	counts := StatusCounts{}
 	counts.NoImpact.Informational = 3
 	counts.NoImpact.Total = 3
 
-	violations := ValidateThresholds(config, &counts, 100, nil)
+	legacy := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
+	violations := ValidateThresholds(legacy, &counts, 100, nil)
 	require.Len(t, violations, 1, "the legacy bound must still be applied")
-	assert.Contains(t, violations[0], "no_impact.informational")
+	assert.Equal(t, "no_impact.none: 3 exceeds maximum 0", violations[0])
+
+	// The current name still reports under itself: only a bound the
+	// author wrote as none is renamed back.
+	canonical := &ThresholdConfig{NoImpact: &ThresholdSeverity{Informational: &ThresholdBound{Max: &zero}}}
+	violations = ValidateThresholds(canonical, &counts, 100, nil)
+	require.Len(t, violations, 1)
+	assert.Equal(t, "no_impact.informational: 3 exceeds maximum 0", violations[0])
+
+	five := 5
+	belowMin := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Min: &five}}}
+	violations = ValidateThresholds(belowMin, &counts, 100, nil)
+	require.Len(t, violations, 1)
+	assert.Equal(t, "no_impact.none: 3 is below minimum 5", violations[0])
+}
+
+// A validate pass must not rewrite the spec it was handed. It folded the legacy
+// key into the canonical one in place, so the SAME config object reported the
+// author's key on the first call and the canonical one on every call after
+// — the exact confusion naming the author's key exists to remove.
+func TestValidateThresholds_LegacyNoneSurvivesConfigReuse(t *testing.T) {
+	zero := 0
+	counts := StatusCounts{}
+	counts.NoImpact.Informational = 3
+	counts.NoImpact.Total = 3
+	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Max: &zero}}}
+
+	first := ValidateThresholds(config, &counts, 100, nil)
+	second := ValidateThresholds(config, &counts, 100, nil)
+	assert.Equal(t, first, second, "a second pass over the same config must report identically")
+	require.Len(t, second, 1)
+	assert.Equal(t, "no_impact.none: 3 exceeds maximum 0", second[0])
+
+	require.NotNil(t, config.NoImpact.None, "the caller's spec must come back as it went in")
+	assert.Nil(t, config.NoImpact.Informational)
+}
+
+// A control listed under a legacy none bound reports its mismatch against the
+// canonical bucket, because informational is where the control was counted. The
+// path names the author's key; the comparison names the bucket.
+func TestValidateThresholds_LegacyNonePathKeepsCanonicalComparison(t *testing.T) {
+	config := &ThresholdConfig{NoImpact: &ThresholdSeverity{None: &ThresholdBound{Controls: []string{"C-1"}}}}
+	controlMap := []ControlIDMapping{{ID: "C-1", Status: ThresholdNoImpact, Severity: "low"}}
+
+	violations := ValidateThresholds(config, &StatusCounts{}, 100, controlMap)
+	require.Len(t, violations, 1)
+	assert.Equal(t,
+		"no_impact.none: control C-1 expected no_impact/informational but found no_impact/low",
+		violations[0])
+}
+
+// A severity outside the schema enum is counted as informational by addCount,
+// but the control mapping recorded the raw string, so a bound listing that
+// control under informational reported a mismatch against a control the counts
+// had already put there. Unreachable from the CLI and the MCP — both
+// schema-validate first — so this is the engine keeping its own two outputs
+// consistent for a direct library caller.
+func TestMapControlIDs_SeverityGoesThroughTheCountingBucket(t *testing.T) {
+	outOfEnum := hdf.Severity("sev-9")
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{
+		Requirements: []hdf.EvaluatedRequirement{{
+			ID:       "C-1",
+			Impact:   0.5,
+			Severity: &outOfEnum,
+			Results:  []hdf.RequirementResult{{Status: hdf.Failed}},
+		}},
+	}}}
+
+	mappings := MapControlIDs(results)
+	require.Len(t, mappings, 1)
+	assert.Equal(t, "informational", mappings[0].Severity,
+		"the listing must name the bucket the counts used, not the raw string")
+
+	counts := CountControlsByStatusSeverity(results)
+	require.Equal(t, 1, counts.Failed.Informational, "precondition: the counts bucket it as informational")
+
+	config := &ThresholdConfig{Failed: &ThresholdSeverity{Informational: &ThresholdBound{Controls: []string{"C-1"}}}}
+	assert.Empty(t, ValidateThresholds(config, counts, 0, mappings),
+		"a control the counts put in informational must not be reported as a mismatch there")
+
+	// The injected-resolver twin buckets identically.
+	byStatus := MapControlIDsByStatus(results, func(hdf.EvaluatedRequirement) string { return string(hdf.Failed) })
+	require.Len(t, byStatus, 1)
+	assert.Equal(t, "informational", byStatus[0].Severity)
+}
+
+// SeverityBucket is the rule both the counts and the control listing use, so a
+// caller building its own mapping can match it. The four named levels pass
+// through; everything else is informational.
+func TestSeverityBucket(t *testing.T) {
+	for _, s := range []string{"critical", "high", "medium", "low"} {
+		assert.Equal(t, s, SeverityBucket(s))
+	}
+	for _, s := range []string{"informational", "none", "sev-9", ""} {
+		assert.Equal(t, "informational", SeverityBucket(s))
+	}
+}
+
+// The override-aware counting path resolved STATUS through an injected resolver
+// while deriving SEVERITY from raw impact, so a risk-adjusted requirement was
+// counted post-adjudication for one and pre-adjudication for the other. A
+// formally re-scored finding belongs in the bucket it was re-scored into.
+//
+// The raw twins (CountControlsByStatusSeverity, MapControlIDs) are documented as
+// having no override awareness and keep deriving from the requirement's own
+// impact — that is their purpose, not an oversight.
+func TestOverrideAwareCountingUsesEffectiveImpactForSeverity(t *testing.T) {
+	value := 0.3
+	results := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{{
+		Name: "adjustments",
+		Requirements: []hdf.EvaluatedRequirement{{
+			// Impact 0.9 derives to critical (the band starts at 0.9); re-scored
+			// to 0.3 it derives to low. No explicit severity, because an
+			// explicit one wins over both and would mask the whole question.
+			ID: "ADJUSTED", Impact: 0.9,
+			Results: []hdf.RequirementResult{{Status: "failed"}},
+			StatusOverrides: []hdf.StatusOverride{{
+				Type: hdf.RiskAdjustment, Reason: "environmental context",
+				AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+				Impact:    &hdf.ImpactOverride{Value: value},
+			}},
+		}},
+	}}}
+	statusOf := func(hdf.EvaluatedRequirement) string { return "failed" }
+
+	counts := CountControlsByStatus(results, statusOf)
+	assert.Equal(t, 1, counts.Failed.Low, "the re-scored requirement counts in the band it was moved to")
+	assert.Equal(t, 0, counts.Failed.Critical, "and not in the one it left")
+
+	mapped := MapControlIDsByStatus(results, statusOf)
+	require.Len(t, mapped, 1)
+	assert.Equal(t, "low", mapped[0].Severity,
+		"the control listing must agree with the counts it is listed alongside")
+
+	// The raw twin is unchanged by design.
+	raw := CountControlsByStatusSeverity(results)
+	assert.Equal(t, 1, raw.Failed.Critical, "the no-override-awareness variant still reads the requirement's own impact")
+}
+
+// loadMultilayeredFixture reads the shared real InSpec multi-overlay run from
+// @mitre/hdf-fixtures (test/compliance.test.ts reads the same document). A
+// requirement id names the requirement, not one finding, so an overlay chain
+// re-reports the same id in every layer it touches — 534 of this run's ids
+// appear more than once, 406 of them with differing statuses.
+func loadMultilayeredFixture(t *testing.T) hdf.HDFResults {
+	t.Helper()
+	res, err := Load(fixtures.Results.InspecMultilayered, 0)
+	require.NoError(t, err)
+	require.True(t, res.Valid, "fixture must be schema-valid: %s", res.ParseError)
+	return *res.Results
+}
+
+// Duplicate ids are counted per entry, as they always were: the numeric bounds
+// count requirements, and this pins that the named-control fix did not move them.
+func TestCountControls_DuplicateIDsCountPerEntry(t *testing.T) {
+	counts := CountControlsByStatusSeverity(loadMultilayeredFixture(t))
+
+	// 1603 requirement entries over 534 distinct ids: every entry is counted.
+	assert.Equal(t, 1196, counts.Skipped.Total)
+	assert.Equal(t, 885, counts.Skipped.Medium)
+	assert.Equal(t, 273, counts.Failed.Total)
+	assert.Equal(t, 246, counts.Failed.Medium)
+	assert.Equal(t, 134, counts.Passed.Total)
+	assert.Equal(t, 1603, counts.Passed.Total+counts.Failed.Total+counts.Skipped.Total+counts.Error.Total+counts.NoImpact.Total)
+}
+
+// A threshold naming a control id must hold for EVERY entry carrying that id.
+// Resolving the id to one arbitrary entry let a gate pass because the last
+// duplicate happened to satisfy it while an earlier one did not.
+// Parity: test/compliance.test.ts 'named-control assertions over duplicate ids'.
+func TestValidateThresholds_NamedControlMustHoldForEveryEntry(t *testing.T) {
+	results := loadMultilayeredFixture(t)
+	counts := CountControlsByStatusSeverity(results)
+	compliance := CalculateCompliance(counts)
+	controlMap := MapControlIDs(results)
+
+	validate := func(cfg *ThresholdConfig) []string {
+		return ValidateThresholds(cfg, counts, compliance, controlMap)
+	}
+	// namedControl builds a spec asserting one control id under one
+	// status/severity bucket — test code, not fixture data.
+	namedControl := func(status, severity, id string) *ThresholdConfig {
+		b := &ThresholdBound{Controls: []string{id}}
+		ts := &ThresholdSeverity{}
+		switch severity {
+		case "critical":
+			ts.Critical = b
+		case "high":
+			ts.High = b
+		case "medium":
+			ts.Medium = b
+		case "informational":
+			ts.Informational = b
+		}
+		cfg := &ThresholdConfig{}
+		switch status {
+		case ThresholdPassed:
+			cfg.Passed = ts
+		case ThresholdFailed:
+			cfg.Failed = ts
+		case ThresholdSkipped:
+			cfg.Skipped = ts
+		}
+		return cfg
+	}
+
+	// V-242399 is notReviewed in the two wrapper layers and passed in the
+	// k8s-node layer, so the last entry alone satisfies passed/medium.
+	t.Run("a passing last entry no longer greens a gate its earlier entries fail", func(t *testing.T) {
+		v := validate(namedControl(ThresholdPassed, "medium", "V-242399"))
+		require.Len(t, v, 2)
+		assert.Equal(t, "passed.medium: control V-242399 expected passed/medium but found skipped/medium (entry 1 of 3)", v[0])
+		assert.Equal(t, "passed.medium: control V-242399 expected passed/medium but found skipped/medium (entry 2 of 3)", v[1])
+	})
+
+	// The mirror: the FIRST entries satisfy skipped/medium and the last does
+	// not. A first-wins resolution would pass this; fail-closed must not.
+	t.Run("a satisfying first entry does not rescue an unsatisfying last", func(t *testing.T) {
+		v := validate(namedControl(ThresholdSkipped, "medium", "V-242399"))
+		require.Len(t, v, 1)
+		assert.Equal(t, "skipped.medium: control V-242399 expected skipped/medium but found passed/medium (entry 3 of 3)", v[0])
+	})
+
+	// V-242387: notReviewed, notReviewed, failed across three baselines.
+	t.Run("a failing last entry no longer greens a failed-control gate", func(t *testing.T) {
+		v := validate(namedControl(ThresholdFailed, "high", "V-242387"))
+		require.Len(t, v, 2)
+		assert.Equal(t, "failed.high: control V-242387 expected failed/high but found skipped/high (entry 1 of 3)", v[0])
+		assert.Equal(t, "failed.high: control V-242387 expected failed/high but found skipped/high (entry 2 of 3)", v[1])
+	})
+
+	// The id's three entries live in three different baselines, so resolution
+	// spans the whole document rather than any one baseline.
+	t.Run("every baseline carrying the id contributes an entry", func(t *testing.T) {
+		n := 0
+		for _, m := range controlMap {
+			if m.ID == "V-242387" {
+				n++
+			}
+		}
+		assert.Equal(t, 3, n)
+		perBaseline := 0
+		for _, b := range results.Baselines {
+			for _, req := range b.Requirements {
+				if req.ID == "V-242387" {
+					perBaseline++
+					break
+				}
+			}
+		}
+		assert.Equal(t, 3, perBaseline, "one entry in each of three baselines")
+	})
+
+	// SV-257777 is reported twice within ONE baseline (and again in two
+	// others): duplication inside a single baseline resolves the same way.
+	t.Run("duplicate entries within one baseline are resolved too", func(t *testing.T) {
+		v := validate(namedControl(ThresholdSkipped, "informational", "SV-257777"))
+		require.Len(t, v, 2)
+		assert.Equal(t, "skipped.informational: control SV-257777 expected skipped/informational but found failed/informational (entry 3 of 5)", v[0])
+		assert.Equal(t, "skipped.informational: control SV-257777 expected skipped/informational but found failed/informational (entry 4 of 5)", v[1])
+	})
+
+	// Severity is checked per entry alongside status: V-242387 is impact 0.7
+	// (high) in every layer, so a critical assertion mismatches all three.
+	t.Run("severity is checked on every entry", func(t *testing.T) {
+		v := validate(namedControl(ThresholdFailed, "critical", "V-242387"))
+		require.Len(t, v, 3)
+		assert.Equal(t, "failed.critical: control V-242387 expected failed/critical but found skipped/high (entry 1 of 3)", v[0])
+		assert.Equal(t, "failed.critical: control V-242387 expected failed/critical but found failed/high (entry 3 of 3)", v[2])
+	})
+
+	// V-242376 is notReviewed at impact 0 in all three layers.
+	t.Run("duplicate entries that all satisfy the assertion pass", func(t *testing.T) {
+		assert.Empty(t, validate(namedControl(ThresholdSkipped, "informational", "V-242376")))
+	})
+
+	t.Run("an id in no entry is still reported missing", func(t *testing.T) {
+		v := validate(namedControl(ThresholdFailed, "high", "V-999999"))
+		require.Len(t, v, 1)
+		assert.Equal(t, "failed.high: expected control V-999999 not found in results", v[0])
+	})
+
+	// The single-entry contract — identical verdict AND identical message text,
+	// with no entry-index suffix — is pinned by TestValidateThresholds above,
+	// whose fixture carries each id exactly once. Every id in this document is
+	// duplicated, so it cannot be asserted here.
 }

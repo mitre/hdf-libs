@@ -36,8 +36,8 @@ stdin). The spec is a lean JSON array of override specs (or an envelope object
 with an overrides[] array). Each spec declares its "type" and that type's
 fields; create fills appliedAt, resolves expiresAt, chains previousChecksum,
 validates against the hdf-amendments schema, and writes a ready-to-apply file.
-Works for all override types (waiver, attestation, poam, inherited,
-falsePositive, riskAdjustment, operationalRequirement).
+Works for all override types:
+  ` + OverrideTypeHelpVocabulary() + `
 
 Interactive mode — with a terminal and no --from, requirements from an optional
 results file are listed for selection (or IDs are entered one at a time in
@@ -303,6 +303,23 @@ func collectPerRequirementDetails(reqIDs []string) ([]amendOverride, error) {
 
 // collectAmendmentDetails prompts for amendment type, reason, expiration, and approver
 // for a single requirement.
+// overrideTypeOptions is the interactive picker's choices. Each carries a prose
+// label, so it cannot render from a bare value list — but its MEMBERSHIP is
+// pinned to OverrideTypeValues by a test, so a new override type cannot be absent
+// from the picker in silence. Presentation order is the picker's own (commonest
+// first), deliberately not the schema's.
+func overrideTypeOptions() []huh.Option[string] {
+	return []huh.Option[string]{
+		huh.NewOption("Waiver — risk accepted by AO", "waiver"),
+		huh.NewOption("Attestation — manually verified by assessor", "attestation"),
+		huh.NewOption("False Positive — scanner incorrectly identified finding", "falsePositive"),
+		huh.NewOption("Risk Adjustment — impact score adjusted (prompts for value)", "riskAdjustment"),
+		huh.NewOption("Operational Requirement — cannot remediate due to mission need", "operationalRequirement"),
+		huh.NewOption("POA&M — remediation planned (no status change)", "poam"),
+		huh.NewOption("Inherited — control provided by another component/system", "inherited"),
+	}
+}
+
 func collectAmendmentDetails(reqID string) (*amendOverride, error) {
 	var (
 		amendType     string
@@ -315,15 +332,7 @@ func collectAmendmentDetails(reqID string) (*amendOverride, error) {
 		huh.NewGroup(
 			huh.NewSelect[string]().
 				Title(fmt.Sprintf("Amendment type for %s", reqID)).
-				Options(
-					huh.NewOption("Waiver — risk accepted by AO", "waiver"),
-					huh.NewOption("Attestation — manually verified by assessor", "attestation"),
-					huh.NewOption("False Positive — scanner incorrectly identified finding", "falsePositive"),
-					huh.NewOption("Risk Adjustment — impact score adjusted (prompts for value)", "riskAdjustment"),
-					huh.NewOption("Operational Requirement — cannot remediate due to mission need", "operationalRequirement"),
-					huh.NewOption("POA&M — remediation planned (no status change)", "poam"),
-					huh.NewOption("Inherited — control provided by another component/system", "inherited"),
-				).
+				Options(overrideTypeOptions()...).
 				Value(&amendType),
 			huh.NewText().
 				Title("Reason").

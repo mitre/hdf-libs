@@ -723,11 +723,15 @@ func oscalStateFromStatus(status hdf.ResultStatus) (state string, reason string)
 // requirement carries no disposition or overrides.
 func overrideRemarks(req *hdf.EvaluatedRequirement) string {
 	var parts []string
-	if req.Disposition != nil {
-		parts = append(parts, "Disposition: "+string(*req.Disposition))
+	// Resolved, not read from the stored disposition field, which is an output
+	// cache that can disagree with the overrides or be absent entirely.
+	if disp := shared.RequirementDisposition(*req, time.Time{}); disp != "" {
+		parts = append(parts, "Disposition: "+disp)
 	}
-	if len(req.StatusOverrides) > 0 {
-		o := &req.StatusOverrides[0] // most-recent first per schema convention
+	// The GOVERNING override, resolved by appliedAt. The schema's description asks
+	// for most-recent-first ordering, but nothing sorts and this repo's writers
+	// append, so array position is the opposite of recency on an amended document.
+	if o := shared.GoverningOverride(req.StatusOverrides, time.Time{}); o != nil {
 		parts = append(parts, "Override: "+string(o.Type))
 		if o.Reason != "" {
 			parts = append(parts, "Reason: "+o.Reason)
@@ -859,16 +863,19 @@ func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
 			Props:       []oscal.Property{oscal.DescriptionLabelProp("fix")},
 		})
 	}
-	if req.Disposition != nil && len(req.StatusOverrides) > 0 {
-		o := &req.StatusOverrides[0]
+	// A governing override IS the disposition, so one condition now covers what
+	// two used to: the stored field being present said nothing about whether an
+	// override actually governed.
+	if o := shared.GoverningOverride(req.StatusOverrides, time.Time{}); o != nil {
+		disp := string(o.Type)
 		desc := o.Reason
 		if desc == "" {
-			desc = "Risk accepted via " + string(*req.Disposition)
+			desc = "Risk accepted via " + disp
 		}
 		rems = append(rems, oscal.Remediation{
 			UUID:        oscal.GenerateUUID(),
 			Lifecycle:   "accepted",
-			Title:       string(*req.Disposition),
+			Title:       disp,
 			Description: desc,
 		})
 	}
@@ -879,10 +886,11 @@ func buildRemediations(req *hdf.EvaluatedRequirement) []oscal.Remediation {
 // risk deadline (the field the OSCAL POA&M importer reads back). Returns "" when
 // no override expiry applies.
 func riskDeadline(req *hdf.EvaluatedRequirement) string {
-	if len(req.StatusOverrides) > 0 {
-		if o := &req.StatusOverrides[0]; !o.ExpiresAt.IsZero() {
-			return o.ExpiresAt.UTC().Format(time.RFC3339)
-		}
+	// The governing override's expiry, not the first array entry's — and a
+	// governing override is by definition not itself expired, so the deadline
+	// this publishes can no longer be a date already past.
+	if o := shared.GoverningOverride(req.StatusOverrides, time.Time{}); o != nil && !o.ExpiresAt.IsZero() {
+		return o.ExpiresAt.UTC().Format(time.RFC3339)
 	}
 	return ""
 }

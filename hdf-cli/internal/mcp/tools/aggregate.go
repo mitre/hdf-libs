@@ -125,7 +125,7 @@ func hdfAggregate(ldr *loader.Loader) sdkmcp.ToolHandlerFor[aggregateInput, aggr
 			resolved := ls.Resolved
 			results := ls.Results
 			matches := hdfengine.Filter(ctx, results, hdfengine.Options{
-				Status: in.Status, Severity: in.Severity, NIST: in.NIST,
+				Status: hdfengine.In(in.Status...), Severity: hdfengine.In(in.Severity...), NIST: hdfengine.In(in.NIST...),
 				Count: true, StatusOf: shared.RequirementEffectiveStatus,
 			})
 			// Filter returns a partial match set on a cancelled ctx; summing it

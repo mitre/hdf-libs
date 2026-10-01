@@ -13,6 +13,7 @@
 import {
   computeEffectiveStatus,
   formatJsonNumber,
+  governingOverrideIndex,
   governingStatusOverride,
   parseTimestamp,
   worstStatus,
@@ -391,4 +392,49 @@ export function epochMillis(s: string): number | undefined {
   const d = parseTimestamp(s);
   if (d === null) return undefined;
   return d.getTime();
+}
+
+/**
+ * The index of the override that governs a requirement — the most recently
+ * applied non-expired one — or -1 when none does. The map-shaped twin of
+ * shared/go/exportmap GoverningOverrideIndex.
+ *
+ * Resolution is by appliedAt, never by array position. The schema's description
+ * says the most recent override "should be first in array", but nothing sorts
+ * and this repo's own writers append, so on a document amended twice the newest
+ * override is LAST and overrides[0] is the oldest.
+ *
+ * An entry that is not an object sorts earliest and never governs, so a
+ * malformed override cannot take a whole document's conversion down.
+ */
+export function governingOverrideIndexOf(overrides: unknown[], now?: string): number {
+  const inputs: StatusOverrideInput[] = overrides.map((raw) => {
+    const m = asMap(raw);
+    if (!m) return {};
+    return {
+      status: getStr(m, 'status') || undefined,
+      appliedAt: getStr(m, 'appliedAt') || undefined,
+      expiresAt: getStr(m, 'expiresAt') || undefined,
+    };
+  });
+  return governingOverrideIndex(inputs, (i) => asMap(overrides[i]) !== undefined, now);
+}
+
+/** The override object that governs a requirement, or undefined when none does. */
+export function governingOverrideOf(overrides: unknown[], now?: string): Obj | undefined {
+  const i = governingOverrideIndexOf(overrides, now);
+  return i >= 0 ? asMap(overrides[i]) : undefined;
+}
+
+/**
+ * The type of the override that governs a requirement, or '' when none does —
+ * the map-shaped twin of requirementDisposition, including its no-overrides
+ * fallback to the stored field.
+ */
+export function disposition(req: Obj, now?: string): string {
+  const overrides = asArr(req.statusOverrides) ?? [];
+  const gov = governingOverrideOf(overrides, now);
+  if (gov) return getStr(gov, 'type');
+  if (overrides.length === 0) return getStr(req, 'disposition');
+  return '';
 }

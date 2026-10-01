@@ -1,5 +1,5 @@
 import { hdfTime, requireHdfResults } from '../converterutil.js';
-import { requirementEffectiveStatus } from '../status.js';
+import { requirementEffectiveStatus, governingImpactOverride, requirementDisposition } from '../status.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -176,7 +176,10 @@ function overrideProvenance(req: EvaluatedRequirement): string {
   if (overrides.length > 0) {
     return overrides.map(formatOverride).join('\n');
   }
-  if (req.disposition) return `Disposition: ${req.disposition}`;
+  // Resolved, not read from the stored disposition field, which is an output
+  // cache that can disagree with the overrides or be stale.
+  const disposition = requirementDisposition(req);
+  if (disposition) return `Disposition: ${disposition}`;
   return '';
 }
 
@@ -193,15 +196,20 @@ function formatOverride(o: StatusOverride): string {
   return s;
 }
 
-// overrideSeverity derives the checklist severity override from the first
-// impact-bearing status override (a risk adjustment).
+// overrideSeverity derives the checklist severity override from the status
+// override that governs the requirement's IMPACT (a risk adjustment): the most
+// recently applied non-expired override CARRYING an impact, the same rule
+// computeEffectiveImpact uses, so the severity a checklist reports and the
+// effective impact every other surface reports come from one override.
+//
+// It selected the first impact-bearing entry instead, which let an expired
+// adjustment drive the severity and let array order decide between several.
+// Eligibility is per field, so a newer waiver — which says nothing about impact —
+// does not displace an older re-score.
 function overrideSeverity(req: EvaluatedRequirement): { severity: string; justification: string } {
-  for (const o of req.statusOverrides ?? []) {
-    if (o.impact) {
-      return { severity: cklSeverityOrFloor(o.impact.value), justification: o.reason ?? '' };
-    }
-  }
-  return { severity: '', justification: '' };
+  const o = governingImpactOverride(req);
+  if (!o) return { severity: '', justification: '' };
+  return { severity: cklSeverityOrFloor(o.impact!.value), justification: o.reason ?? '' };
 }
 
 // Maps an impact score to STIG's qualitative severity bucket via the shared band
@@ -234,6 +242,8 @@ function resolveSeverity(req: EvaluatedRequirement, tags: Record<string, unknown
   const tagSev = strVal(tags, 'severity');
   if (tagSev) return tagSev;
   if (req.severity) return String(req.severity).toLowerCase();
+  // RAW impact by design: CKL models base severity and SEVERITY_OVERRIDE
+  // separately, and this is the base. overrideSeverity supplies the other half.
   return cklSeverityOrFloor(req.impact ?? 0);
 }
 
