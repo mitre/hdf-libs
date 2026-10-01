@@ -2,75 +2,77 @@
   "baselines": [
     {
       "extensions": {
-        "neuvector": {
-          "cmds": [
-            "CMD [\"/usr/local/bin/cmd.sh\"]",
-            "USER 1001",
-            "COPY --chmod=755 cmd.sh /usr/local/bin/ # buildkit",
-            "COPY --chown=1001 /src/dist/ dist/ # buildkit",
-            "COPY --chown=1001 /src/apps/backend/dist apps/backend/dist # buildkit",
-            "COPY --chown=1001 /src/libs/password-complexity/ libs/password-complexity # buildkit",
-            "COPY --chown=1001 /src/apps/backend/seeders apps/backend/seeders # buildkit",
-            "COPY --chown=1001 /src/apps/backend/migrations apps/backend/migrations # buildkit",
-            "COPY --chown=1001 /src/apps/backend/config apps/backend/config # buildkit",
-            "COPY --chown=1001 /src/apps/backend/db apps/backend/db # buildkit",
-            "COPY --chown=1001 /src/apps/backend/.sequelizerc apps/backend/ # buildkit",
-            "COPY --chown=1001 /src/apps/backend/node_modules apps/backend/node_modules # buildkit",
-            "COPY --chown=1001 /src/apps/backend/package.json apps/backend/ # buildkit",
-            "COPY --chown=1001 /src/package.json ./ # buildkit",
-            "RUN curl -sL https://dl.yarnpkg.com/rpm/yarn.repo -o /etc/yum.repos.d/yarn.repo \u0026\u0026 microdnf install -y yarn \u0026\u0026 microdnf clean all \u0026\u0026 rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.* # buildkit",
-            "WORKDIR /app",
-            "USER 0",
-            "ENV NODE_ENV=production",
-            "ARG NODE_ENV=production",
-            "EXPOSE map[3000/tcp:{}]",
-            "USER 1001",
-            "RUN mv -fZ /tmp/ubi.repo /etc/yum.repos.d/ubi.repo || :",
-            "USER root",
-            "USER 1001",
-            "RUN rm -f /tmp/tls-ca-bundle.pem",
-            "RUN rm -f '/etc/yum.repos.d/odcs-3442251-e7456.repo'",
-            "USER root",
-            "LABEL \"release\"=\"128.1725330794\" \"distribution-scope\"=\"public\" \"vendor\"=\"Red Hat, Inc.\" \"build-date\"=\"2024-09-03T02:34:03\" \"architecture\"=\"x86_64\" \"vcs-type\"=\"git\" \"vcs-ref\"=\"ed55a1e31785cb589887885082e15145666bd573\" \"url\"=\"https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/nodejs-18-minimal/images/1-128.1725330794\"",
-            "ADD file:eaeb5130bea91aca8b8f0adb9c562241193d2429da656d379517ea596a339ce9 in /root/buildinfo/Dockerfile-ubi8-nodejs-18-minimal-1-128.1725330794",
-            "ADD file:5da8a8bde7c7afbcec865e4c3047eccc1d38cb8b75042f1b3adb8d6572f1f730 in /root/buildinfo/content_manifests/nodejs-18-minimal-container-1-128.1725330794.json",
-            "ADD file:3009d1d727725ea9fb6e44f08cc76721d4ff04918aa725b34847fcde963b7154 in /help.1",
-            "USER 1001",
-            "WORKDIR \"$HOME\"",
-            "RUN mkdir -p \"$HOME\" \u0026\u0026 chown -R 1001:0 \"$APP_ROOT\" \u0026\u0026 chmod -R ug+rwx \"$APP_ROOT\"",
-            "COPY dir:fe4e9034259501521ced258ae36b98bc6cc475e0e34364c8a17e53447c145be1 in /",
-            "COPY dir:b5a1f1317e0040e7a730c0b1d8cf8a9fa419afa1662d666632dac699455512f1 in /usr/libexec/s2i",
-            "RUN INSTALL_PKGS=\"nodejs nodejs-nodemon nodejs-full-i18n npm findutils tar which\" \u0026\u0026     microdnf -y module disable nodejs \u0026\u0026     microdnf -y module enable nodejs:$NODEJS_VERSION \u0026\u0026     microdnf --nodocs --setopt=install_weak_deps=0 install $INSTALL_PKGS \u0026\u0026     node -v | grep -qe \"^v$NODEJS_VERSION\\.\" \u0026\u0026 echo \"Found VERSION $NODEJS_VERSION\" \u0026\u0026     microdnf clean all \u0026\u0026     rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.*",
-            "LABEL summary=\"$SUMMARY\"       description=\"$DESCRIPTION\"       io.k8s.description=\"$DESCRIPTION\"       io.k8s.display-name=\"Node.js $NODEJS_VERSION Minimal\"       io.openshift.expose-services=\"8080:http\"       io.openshift.tags=\"builder,$NAME,${NAME}${NODEJS_VERSION}\"       io.openshift.s2i.scripts-url=\"image:///usr/libexec/s2i\"       io.s2i.scripts-url=\"image:///usr/libexec/s2i\"       com.redhat.dev-mode=\"DEV_MODE:false\"       com.redhat.deployments-dir=\"${APP_ROOT}/src\"       com.redhat.dev-mode.port=\"DEBUG_PORT:5858\"       com.redhat.component=\"${NAME}-${NODEJS_VERSION}-minimal-container\"       name=\"ubi8/$NAME-$NODEJS_VERSION-minimal\"       version=\"1\"       com.redhat.license_terms=\"https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI\"       maintainer=\"SoftwareCollections.org \u003csclorg@redhat.com\u003e\"       help=\"For more information visit https://github.com/sclorg/s2i-nodejs-container\"",
-            "ENV SUMMARY=\"Minimal image for running Node.js $NODEJS_VERSION applications\"     DESCRIPTION=\"Node.js $NODEJS_VERSION available as container is a base platform for running various Node.js $NODEJS_VERSION applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.\"     NPM_CONFIG_PREFIX=$HOME/.npm-global     PATH=$HOME/node_modules/.bin/:$HOME/.npm-global/bin/:$PATH",
-            "ENV APP_ROOT=/opt/app-root     HOME=/opt/app-root/src     NPM_RUN=start     PLATFORM=\"el8\"     NODEJS_VERSION=18     NPM_RUN=start     NAME=nodejs",
-            "EXPOSE 8080",
-            "ADD file:2660c1111176153e62928ea72cad5f0074133db91f3e296cbaf71f765f1f7bfd in /etc/yum.repos.d/",
-            "ADD file:5b1f650e1376d79fa3a65df4a154ea5166def95154b52c1c1097dfd8fc7d58eb in /tmp/tls-ca-bundle.pem",
-            "RUN mv -f /etc/yum.repos.d/ubi.repo /tmp || :",
-            "RUN mv -fZ /tmp/ubi.repo /etc/yum.repos.d/ubi.repo || :",
-            "RUN rm -f /tmp/tls-ca-bundle.pem",
-            "RUN rm -f '/etc/yum.repos.d/odcs-3398671-876ba.repo' '/etc/yum.repos.d/rhel-8.10-compose-0e878.repo'",
-            "LABEL \"release\"=\"1052.1724178568\" \"distribution-scope\"=\"public\" \"vendor\"=\"Red Hat, Inc.\" \"build-date\"=\"2024-08-20T18:30:35\" \"architecture\"=\"x86_64\" \"vcs-type\"=\"git\" \"vcs-ref\"=\"4f8da2b64a13f2a264bd802d8909bf803211fb20\" \"io.k8s.description\"=\"The Universal Base Image Minimal is a stripped down image that uses microdnf as a package manager. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.\" \"url\"=\"https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8-minimal/images/8.10-1052.1724178568\"",
-            "ADD file:849b71c9f9737769080a3214428c39267a1aa9f20785f4c781f1778b56b956e6 in /root/buildinfo/Dockerfile-ubi8-minimal-8.10-1052.1724178568",
-            "ADD file:c8ca5f484763321cd5e7b342c283d53c3b929c2eacba0494bcd589c978dc2fe1 in /root/buildinfo/content_manifests/ubi8-minimal-container-8.10-1052.1724178568.json",
-            "RUN rm -rf /var/log/*",
-            "CMD [\"/bin/bash\"]",
-            "ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-            "ENV container oci",
-            "LABEL io.openshift.tags=\"minimal rhel8\"",
-            "LABEL io.openshift.expose-services=\"\"",
-            "LABEL io.k8s.display-name=\"Red Hat Universal Base Image 8 Minimal\"",
-            "LABEL description=\"The Universal Base Image Minimal is a stripped down image that uses microdnf as a package manager. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.\"",
-            "LABEL summary=\"Provides the latest release of the minimal Red Hat Universal Base Image 8.\"",
-            "LABEL com.redhat.license_terms=\"https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI\"",
-            "LABEL com.redhat.component=\"ubi8-minimal-container\"       name=\"ubi8-minimal\"       version=\"8.10\"",
-            "LABEL maintainer=\"Red Hat, Inc.\"",
-            "ADD multi:d43053580c8e29293fe7178a18c2e44f1578d681ef94e964f4e0e14ef093ace4 in /etc/yum.repos.d/",
-            "ADD file:5b1f650e1376d79fa3a65df4a154ea5166def95154b52c1c1097dfd8fc7d58eb in /tmp/tls-ca-bundle.pem",
-            "RUN mv -f /etc/yum.repos.d/ubi.repo /tmp || :",
-            "ADD file:0198ad3c1b345f6da74b55236cbce4779329b401acb32e81092e46f6ec5b87d0 in /"
-          ]
+        "passthrough": {
+          "neuvector": {
+            "cmds": [
+              "CMD [\"/usr/local/bin/cmd.sh\"]",
+              "USER 1001",
+              "COPY --chmod=755 cmd.sh /usr/local/bin/ # buildkit",
+              "COPY --chown=1001 /src/dist/ dist/ # buildkit",
+              "COPY --chown=1001 /src/apps/backend/dist apps/backend/dist # buildkit",
+              "COPY --chown=1001 /src/libs/password-complexity/ libs/password-complexity # buildkit",
+              "COPY --chown=1001 /src/apps/backend/seeders apps/backend/seeders # buildkit",
+              "COPY --chown=1001 /src/apps/backend/migrations apps/backend/migrations # buildkit",
+              "COPY --chown=1001 /src/apps/backend/config apps/backend/config # buildkit",
+              "COPY --chown=1001 /src/apps/backend/db apps/backend/db # buildkit",
+              "COPY --chown=1001 /src/apps/backend/.sequelizerc apps/backend/ # buildkit",
+              "COPY --chown=1001 /src/apps/backend/node_modules apps/backend/node_modules # buildkit",
+              "COPY --chown=1001 /src/apps/backend/package.json apps/backend/ # buildkit",
+              "COPY --chown=1001 /src/package.json ./ # buildkit",
+              "RUN curl -sL https://dl.yarnpkg.com/rpm/yarn.repo -o /etc/yum.repos.d/yarn.repo \u0026\u0026 microdnf install -y yarn \u0026\u0026 microdnf clean all \u0026\u0026 rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.* # buildkit",
+              "WORKDIR /app",
+              "USER 0",
+              "ENV NODE_ENV=production",
+              "ARG NODE_ENV=production",
+              "EXPOSE map[3000/tcp:{}]",
+              "USER 1001",
+              "RUN mv -fZ /tmp/ubi.repo /etc/yum.repos.d/ubi.repo || :",
+              "USER root",
+              "USER 1001",
+              "RUN rm -f /tmp/tls-ca-bundle.pem",
+              "RUN rm -f '/etc/yum.repos.d/odcs-3442251-e7456.repo'",
+              "USER root",
+              "LABEL \"release\"=\"128.1725330794\" \"distribution-scope\"=\"public\" \"vendor\"=\"Red Hat, Inc.\" \"build-date\"=\"2024-09-03T02:34:03\" \"architecture\"=\"x86_64\" \"vcs-type\"=\"git\" \"vcs-ref\"=\"ed55a1e31785cb589887885082e15145666bd573\" \"url\"=\"https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/nodejs-18-minimal/images/1-128.1725330794\"",
+              "ADD file:eaeb5130bea91aca8b8f0adb9c562241193d2429da656d379517ea596a339ce9 in /root/buildinfo/Dockerfile-ubi8-nodejs-18-minimal-1-128.1725330794",
+              "ADD file:5da8a8bde7c7afbcec865e4c3047eccc1d38cb8b75042f1b3adb8d6572f1f730 in /root/buildinfo/content_manifests/nodejs-18-minimal-container-1-128.1725330794.json",
+              "ADD file:3009d1d727725ea9fb6e44f08cc76721d4ff04918aa725b34847fcde963b7154 in /help.1",
+              "USER 1001",
+              "WORKDIR \"$HOME\"",
+              "RUN mkdir -p \"$HOME\" \u0026\u0026 chown -R 1001:0 \"$APP_ROOT\" \u0026\u0026 chmod -R ug+rwx \"$APP_ROOT\"",
+              "COPY dir:fe4e9034259501521ced258ae36b98bc6cc475e0e34364c8a17e53447c145be1 in /",
+              "COPY dir:b5a1f1317e0040e7a730c0b1d8cf8a9fa419afa1662d666632dac699455512f1 in /usr/libexec/s2i",
+              "RUN INSTALL_PKGS=\"nodejs nodejs-nodemon nodejs-full-i18n npm findutils tar which\" \u0026\u0026     microdnf -y module disable nodejs \u0026\u0026     microdnf -y module enable nodejs:$NODEJS_VERSION \u0026\u0026     microdnf --nodocs --setopt=install_weak_deps=0 install $INSTALL_PKGS \u0026\u0026     node -v | grep -qe \"^v$NODEJS_VERSION\\.\" \u0026\u0026 echo \"Found VERSION $NODEJS_VERSION\" \u0026\u0026     microdnf clean all \u0026\u0026     rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.*",
+              "LABEL summary=\"$SUMMARY\"       description=\"$DESCRIPTION\"       io.k8s.description=\"$DESCRIPTION\"       io.k8s.display-name=\"Node.js $NODEJS_VERSION Minimal\"       io.openshift.expose-services=\"8080:http\"       io.openshift.tags=\"builder,$NAME,${NAME}${NODEJS_VERSION}\"       io.openshift.s2i.scripts-url=\"image:///usr/libexec/s2i\"       io.s2i.scripts-url=\"image:///usr/libexec/s2i\"       com.redhat.dev-mode=\"DEV_MODE:false\"       com.redhat.deployments-dir=\"${APP_ROOT}/src\"       com.redhat.dev-mode.port=\"DEBUG_PORT:5858\"       com.redhat.component=\"${NAME}-${NODEJS_VERSION}-minimal-container\"       name=\"ubi8/$NAME-$NODEJS_VERSION-minimal\"       version=\"1\"       com.redhat.license_terms=\"https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI\"       maintainer=\"SoftwareCollections.org \u003csclorg@redhat.com\u003e\"       help=\"For more information visit https://github.com/sclorg/s2i-nodejs-container\"",
+              "ENV SUMMARY=\"Minimal image for running Node.js $NODEJS_VERSION applications\"     DESCRIPTION=\"Node.js $NODEJS_VERSION available as container is a base platform for running various Node.js $NODEJS_VERSION applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.\"     NPM_CONFIG_PREFIX=$HOME/.npm-global     PATH=$HOME/node_modules/.bin/:$HOME/.npm-global/bin/:$PATH",
+              "ENV APP_ROOT=/opt/app-root     HOME=/opt/app-root/src     NPM_RUN=start     PLATFORM=\"el8\"     NODEJS_VERSION=18     NPM_RUN=start     NAME=nodejs",
+              "EXPOSE 8080",
+              "ADD file:2660c1111176153e62928ea72cad5f0074133db91f3e296cbaf71f765f1f7bfd in /etc/yum.repos.d/",
+              "ADD file:5b1f650e1376d79fa3a65df4a154ea5166def95154b52c1c1097dfd8fc7d58eb in /tmp/tls-ca-bundle.pem",
+              "RUN mv -f /etc/yum.repos.d/ubi.repo /tmp || :",
+              "RUN mv -fZ /tmp/ubi.repo /etc/yum.repos.d/ubi.repo || :",
+              "RUN rm -f /tmp/tls-ca-bundle.pem",
+              "RUN rm -f '/etc/yum.repos.d/odcs-3398671-876ba.repo' '/etc/yum.repos.d/rhel-8.10-compose-0e878.repo'",
+              "LABEL \"release\"=\"1052.1724178568\" \"distribution-scope\"=\"public\" \"vendor\"=\"Red Hat, Inc.\" \"build-date\"=\"2024-08-20T18:30:35\" \"architecture\"=\"x86_64\" \"vcs-type\"=\"git\" \"vcs-ref\"=\"4f8da2b64a13f2a264bd802d8909bf803211fb20\" \"io.k8s.description\"=\"The Universal Base Image Minimal is a stripped down image that uses microdnf as a package manager. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.\" \"url\"=\"https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8-minimal/images/8.10-1052.1724178568\"",
+              "ADD file:849b71c9f9737769080a3214428c39267a1aa9f20785f4c781f1778b56b956e6 in /root/buildinfo/Dockerfile-ubi8-minimal-8.10-1052.1724178568",
+              "ADD file:c8ca5f484763321cd5e7b342c283d53c3b929c2eacba0494bcd589c978dc2fe1 in /root/buildinfo/content_manifests/ubi8-minimal-container-8.10-1052.1724178568.json",
+              "RUN rm -rf /var/log/*",
+              "CMD [\"/bin/bash\"]",
+              "ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+              "ENV container oci",
+              "LABEL io.openshift.tags=\"minimal rhel8\"",
+              "LABEL io.openshift.expose-services=\"\"",
+              "LABEL io.k8s.display-name=\"Red Hat Universal Base Image 8 Minimal\"",
+              "LABEL description=\"The Universal Base Image Minimal is a stripped down image that uses microdnf as a package manager. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.\"",
+              "LABEL summary=\"Provides the latest release of the minimal Red Hat Universal Base Image 8.\"",
+              "LABEL com.redhat.license_terms=\"https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI\"",
+              "LABEL com.redhat.component=\"ubi8-minimal-container\"       name=\"ubi8-minimal\"       version=\"8.10\"",
+              "LABEL maintainer=\"Red Hat, Inc.\"",
+              "ADD multi:d43053580c8e29293fe7178a18c2e44f1578d681ef94e964f4e0e14ef093ace4 in /etc/yum.repos.d/",
+              "ADD file:5b1f650e1376d79fa3a65df4a154ea5166def95154b52c1c1097dfd8fc7d58eb in /tmp/tls-ca-bundle.pem",
+              "RUN mv -f /etc/yum.repos.d/ubi.repo /tmp || :",
+              "ADD file:0198ad3c1b345f6da74b55236cbce4779329b401acb32e81092e46f6ec5b87d0 in /"
+            ]
+          }
         }
       },
       "requirements": [
@@ -101,7 +103,7 @@
             {
               "codeDesc": "ca-certificates@2023.2.60_v7.0.306-80.0.el8_8 | CVE-2023-37920 | CVSS 9.1 | DOCUMENTATION: A flaw was found in the python-certifi package. This issue occurs when the e-Tugra ro…",
               "message": "Vulnerable package ca-certificates is at version 2023.2.60_v7.0.306-80.0.el8_8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -162,7 +164,7 @@
             {
               "codeDesc": "krb5-libs@1.18.2-29.el8_10 | CVE-2020-17049 | CVSS 7.2 | DOCUMENTATION: It was found that the Kerberos Key Distribution Center (KDC) delegation feature, Serv…",
               "message": "Vulnerable package krb5-libs is at version 1.18.2-29.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -224,7 +226,7 @@
             {
               "codeDesc": "nodejs@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2023:7205 | CVSS 9.8 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.8.1-1.module+el8.9.0+20473+c4e3d824.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -291,7 +293,7 @@
             {
               "codeDesc": "nodejs-full-i18n@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2023:7205 | CVSS 9.8 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.8.1-1.module+el8.9.0+20473+c4e3d824.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -357,7 +359,7 @@
             {
               "codeDesc": "bzip2-libs@1.0.6-26.el8 | CVE-2019-12900 | CVSS 4 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: BZ2_decompress in decompress.c in b…",
               "message": "Vulnerable package bzip2-libs is at version 1.0.6-26.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -418,7 +420,7 @@
             {
               "codeDesc": "libarchive@3.3.3-5.el8 | CVE-2020-21674 | CVSS 7.5 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: Heap-based buffer overflow in archi…",
               "message": "Vulnerable package libarchive is at version 3.3.3-5.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -479,7 +481,7 @@
             {
               "codeDesc": "libgcc@8.5.0-22.el8_10 | CVE-2021-42694 | CVSS 8.5 | DOCUMENTATION: A flaw was found in the way Unicode standards are implemented in the context of devel…",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -540,7 +542,7 @@
             {
               "codeDesc": "libstdc++@8.5.0-22.el8_10 | CVE-2021-42694 | CVSS 8.5 | DOCUMENTATION: A flaw was found in the way Unicode standards are implemented in the context of devel…",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -601,7 +603,7 @@
             {
               "codeDesc": "libtasn1@4.13-4.el8_7 | CVE-2018-1000654 | CVSS 4 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: GNU Libtasn1-4.13 libtasn1-4.13 ver…",
               "message": "Vulnerable package libtasn1 is at version 4.13-4.el8_7. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -662,7 +664,7 @@
             {
               "codeDesc": "libzstd@1.4.4-1.el8 | CVE-2022-4899 | CVSS 7.5 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: A vulnerability was found in zstd v…",
               "message": "Vulnerable package libzstd is at version 1.4.4-1.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -723,7 +725,7 @@
             {
               "codeDesc": "lz4-libs@1.8.3-3.el8_4 | CVE-2019-17543 | CVSS 8.1 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: LZ4 before 1.9.2 has a heap-based b…",
               "message": "Vulnerable package lz4-libs is at version 1.8.3-3.el8_4. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -785,7 +787,7 @@
             {
               "codeDesc": "nodejs@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2024:1687 | CVSS 8.1 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.11.1-1.module+el8.9.0+21380+12032667.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -852,7 +854,7 @@
             {
               "codeDesc": "nodejs@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | CVE-2022-29244 | CVSS 7.5 | DOCUMENTATION: A flaw was found in npm. This security issue occurs because the npm pack ignores root…",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -914,7 +916,7 @@
             {
               "codeDesc": "nodejs@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2024:2778 | CVSS 7.5 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.12.2-2.module+el8.9.0+21743+0b3f1be2.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -980,7 +982,7 @@
             {
               "codeDesc": "nodejs-full-i18n@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2024:2778 | CVSS 7.5 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.12.2-2.module+el8.9.0+21743+0b3f1be2.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1045,7 +1047,7 @@
             {
               "codeDesc": "nodejs-full-i18n@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | CVE-2022-29244 | CVSS 7.5 | DOCUMENTATION: A flaw was found in npm. This security issue occurs because the npm pack ignores root…",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1107,7 +1109,7 @@
             {
               "codeDesc": "nodejs-full-i18n@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2024:1687 | CVSS 8.1 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.11.1-1.module+el8.9.0+21380+12032667.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1174,7 +1176,7 @@
             {
               "codeDesc": "nodejs-nodemon@3.0.1-1.module+el8.10.0+21159+f5a7145d | CVE-2024-4068 | CVSS 7.5 | DOCUMENTATION: A flaw was found in the NPM package `braces.` It fails to limit the number of charact…",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1235,7 +1237,7 @@
             {
               "codeDesc": "nodejs-nodemon@3.0.1-1.module+el8.10.0+21159+f5a7145d | CVE-2022-29244 | CVSS 7.5 | DOCUMENTATION: A flaw was found in npm. This security issue occurs because the npm pack ignores root…",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1296,7 +1298,7 @@
             {
               "codeDesc": "npm@1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead | CVE-2022-29244 | CVSS 7.5 | DOCUMENTATION: A flaw was found in npm. This security issue occurs because the npm pack ignores root…",
               "message": "Vulnerable package npm is at version 1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1357,7 +1359,7 @@
             {
               "codeDesc": "sqlite-libs@3.26.0-19.el8_9 | CVE-2019-19244 | CVSS 7.5 | DOCUMENTATION: A flaw was found in the way SQLite handled certain types of SQL queries using DISTINC…",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1418,7 +1420,7 @@
             {
               "codeDesc": "curl@7.61.1-34.el8_10.2 | CVE-2024-7264 | CVSS 5.3 | DOCUMENTATION: A flaw was found in libcurl, where libcurl's ASN1 parser code has the `GTime2str()` f…",
               "message": "Vulnerable package curl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1479,7 +1481,7 @@
             {
               "codeDesc": "elfutils-libelf@0.190-2.el8 | CVE-2024-25260 | CVSS 4 | DOCUMENTATION: A NULL pointer dereference vulnerability in the elfutils library has been discovered.…",
               "message": "Vulnerable package elfutils-libelf is at version 0.190-2.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1540,7 +1542,7 @@
             {
               "codeDesc": "elfutils-libelf@0.190-2.el8 | CVE-2021-33294 | CVSS 4 | DOCUMENTATION: A flaw was found in the elfutils tools package. An infinite loop is possible in the h…",
               "message": "Vulnerable package elfutils-libelf is at version 0.190-2.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1601,7 +1603,7 @@
             {
               "codeDesc": "file-libs@5.33-26.el8 | CVE-2019-8906 | CVSS 4.4 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2019-89…",
               "message": "Vulnerable package file-libs is at version 5.33-26.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1662,7 +1664,7 @@
             {
               "codeDesc": "file-libs@5.33-26.el8 | CVE-2019-8905 | CVSS 4.4 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: do_core_note in readelf.c in libmag…",
               "message": "Vulnerable package file-libs is at version 5.33-26.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1723,7 +1725,7 @@
             {
               "codeDesc": "gawk@4.2.1-4.el8 | CVE-2023-4156 | CVSS 6.1 | DOCUMENTATION: A heap out-of-bounds read flaw was found in builtin.c in the gawk package. This issue…",
               "message": "Vulnerable package gawk is at version 4.2.1-4.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1784,7 +1786,7 @@
             {
               "codeDesc": "glib2@2.56.4-162.el8 | CVE-2023-32665 | CVSS 6.5 | DOCUMENTATION: A flaw was found in GLib. GVariant deserialization is vulnerable to an exponential bl…",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1845,7 +1847,7 @@
             {
               "codeDesc": "glib2@2.56.4-162.el8 | CVE-2023-32611 | CVSS 6.5 | DOCUMENTATION: A flaw was found in GLib. GVariant deserialization is vulnerable to a slowdown issue …",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1906,7 +1908,7 @@
             {
               "codeDesc": "glib2@2.56.4-162.el8 | CVE-2023-29499 | CVSS 6.2 | DOCUMENTATION: A flaw was found in GLib. GVariant deserialization fails to validate that the input c…",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -1967,7 +1969,7 @@
             {
               "codeDesc": "glib2@2.56.4-162.el8 | CVE-2023-32636 | CVSS 6.2 | DOCUMENTATION: A flaw was found in glib, where the gvariant deserialization code is vulnerable to a …",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2028,7 +2030,7 @@
             {
               "codeDesc": "gnupg2@2.2.20-3.el8_6 | CVE-2022-3219 | CVSS 6.2 | DOCUMENTATION: A vulnerability was found in GnuPG. GnuPG can spin on a relatively small input by cra…",
               "message": "Vulnerable package gnupg2 is at version 2.2.20-3.el8_6. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2089,7 +2091,7 @@
             {
               "codeDesc": "gnutls@3.6.16-8.el8_9.3 | CVE-2021-4209 | CVSS 6.5 | DOCUMENTATION: A NULL pointer dereference flaw was found in GnuTLS. As Nettle's hash update function…",
               "message": "Vulnerable package gnutls is at version 3.6.16-8.el8_9.3. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2150,7 +2152,7 @@
             {
               "codeDesc": "krb5-libs@1.18.2-29.el8_10 | CVE-2023-5455 | CVSS 6.5 | DOCUMENTATION: A Cross-site request forgery vulnerability exists in ipa/session/login_password in al…",
               "message": "Vulnerable package krb5-libs is at version 1.18.2-29.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2211,7 +2213,7 @@
             {
               "codeDesc": "libarchive@3.3.3-5.el8 | CVE-2018-1000880 | CVSS 3.3 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2018-10…",
               "message": "Vulnerable package libarchive is at version 3.3.3-5.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2272,7 +2274,7 @@
             {
               "codeDesc": "libarchive@3.3.3-5.el8 | CVE-2018-1000879 | CVSS 3.3 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2018-10…",
               "message": "Vulnerable package libarchive is at version 3.3.3-5.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2333,7 +2335,7 @@
             {
               "codeDesc": "libcap@2.48-6.el8_9 | CVE-2023-7256 | CVSS 4.4 | DOCUMENTATION: A vulnerability was found in libpcap. During the setup of a remote packet capture, th…",
               "message": "Vulnerable package libcap is at version 2.48-6.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2394,7 +2396,7 @@
             {
               "codeDesc": "libcap@2.48-6.el8_9 | CVE-2024-8006 | CVSS 4.4 | DOCUMENTATION: A flaw was found in the libcap package. Remote packet capture support is disabled by …",
               "message": "Vulnerable package libcap is at version 2.48-6.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2455,7 +2457,7 @@
             {
               "codeDesc": "libcurl@7.61.1-34.el8_10.2 | CVE-2024-7264 | CVSS 5.3 | DOCUMENTATION: A flaw was found in libcurl, where libcurl's ASN1 parser code has the `GTime2str()` f…",
               "message": "Vulnerable package libcurl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2516,7 +2518,7 @@
             {
               "codeDesc": "libgcc@8.5.0-22.el8_10 | CVE-2022-27943 | CVSS 5.5 | DOCUMENTATION: A flaw was found in binutils, where GNU GCC is vulnerable to a denial of service caus…",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2577,7 +2579,7 @@
             {
               "codeDesc": "libgcc@8.5.0-22.el8_10 | CVE-2018-20657 | CVSS 3.3 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: The demangle_template function in c…",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2638,7 +2640,7 @@
             {
               "codeDesc": "libgcc@8.5.0-22.el8_10 | CVE-2019-14250 | CVSS 3.3 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: An issue was discovered in GNU libi…",
               "message": "Vulnerable package libgcc is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2699,7 +2701,7 @@
             {
               "codeDesc": "libgcrypt@1.8.5-7.el8_6 | CVE-2024-2236 | CVSS 5.9 | DOCUMENTATION: A timing-based side-channel flaw was found in libgcrypt's RSA implementation. This is…",
               "message": "Vulnerable package libgcrypt is at version 1.8.5-7.el8_6. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2760,7 +2762,7 @@
             {
               "codeDesc": "libgcrypt@1.8.5-7.el8_6 | CVE-2019-12904 | CVSS 5.9 | DOCUMENTATION: [Disputed] A vulnerability has been identified in Libgcrypt due to a flaw in its C im…",
               "message": "Vulnerable package libgcrypt is at version 1.8.5-7.el8_6. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2821,7 +2823,7 @@
             {
               "codeDesc": "libstdc++@8.5.0-22.el8_10 | CVE-2019-14250 | CVSS 3.3 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: An issue was discovered in GNU libi…",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2882,7 +2884,7 @@
             {
               "codeDesc": "libstdc++@8.5.0-22.el8_10 | CVE-2022-27943 | CVSS 5.5 | DOCUMENTATION: A flaw was found in binutils, where GNU GCC is vulnerable to a denial of service caus…",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -2943,7 +2945,7 @@
             {
               "codeDesc": "libstdc++@8.5.0-22.el8_10 | CVE-2018-20657 | CVSS 3.3 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: The demangle_template function in c…",
               "message": "Vulnerable package libstdc++ is at version 8.5.0-22.el8_10. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3004,7 +3006,7 @@
             {
               "codeDesc": "libxml2@2.9.7-18.el8_10.1 | CVE-2024-34459 | CVSS 5.5 | DOCUMENTATION: A flaw was found in the xmllint program distributed by the libxml2 package. A buffer …",
               "message": "Vulnerable package libxml2 is at version 2.9.7-18.el8_10.1. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3065,7 +3067,7 @@
             {
               "codeDesc": "libxml2@2.9.7-18.el8_10.1 | CVE-2023-45322 | CVSS 5.9 | DOCUMENTATION: A flaw was found in libxml2. In an out-of-memory condition or when limiting the memor…",
               "message": "Vulnerable package libxml2 is at version 2.9.7-18.el8_10.1. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3126,7 +3128,7 @@
             {
               "codeDesc": "libyaml@0.1.7-5.el8 | CVE-2024-35325 | CVSS 6.5 | DOCUMENTATION: A vulnerability was found in libyaml in versions up to 0.2.5. This issue affects the …",
               "message": "Vulnerable package libyaml is at version 0.1.7-5.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3187,7 +3189,7 @@
             {
               "codeDesc": "libzstd@1.4.4-1.el8 | CVE-2021-24032 | CVSS 5.5 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2021-24…",
               "message": "Vulnerable package libzstd is at version 1.4.4-1.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3248,7 +3250,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2020-19186 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3309,7 +3311,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2021-39537 | CVSS 5.5 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2021-39…",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3370,7 +3372,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2020-19187 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3431,7 +3433,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2020-19185 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3492,7 +3494,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2020-19188 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3553,7 +3555,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2020-19189 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3614,7 +3616,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2018-19211 | CVSS 4.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: In ncurses 6.1, there is a NULL poi…",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3675,7 +3677,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2023-50495 | CVSS 6.5 | DOCUMENTATION: A vulnerability was found in the NCurses package, where a segmentation fault may be t…",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3736,7 +3738,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2018-19217 | CVSS 4.7 | In ncurses, possibly a 6.x version, there is a NULL pointer dereference at the function _nc_name_mat…",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3797,7 +3799,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2020-19190 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3858,7 +3860,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2023-50495 | CVSS 6.5 | DOCUMENTATION: A vulnerability was found in the NCurses package, where a segmentation fault may be t…",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3919,7 +3921,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2020-19185 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -3980,7 +3982,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2020-19190 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4041,7 +4043,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2020-19189 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4102,7 +4104,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2020-19187 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4163,7 +4165,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2020-19186 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4224,7 +4226,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2020-19188 | CVSS 6.5 | DOCUMENTATION: A flaw was found in the ncurses library. This issue occurs when processing a crafted …",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4285,7 +4287,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2018-19217 | CVSS 4.7 | In ncurses, possibly a 6.x version, there is a NULL pointer dereference at the function _nc_name_mat…",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4346,7 +4348,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2018-19211 | CVSS 4.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: In ncurses 6.1, there is a NULL poi…",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4407,7 +4409,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2021-39537 | CVSS 5.5 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2021-39…",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4468,7 +4470,7 @@
             {
               "codeDesc": "nodejs@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | CVE-2017-15897 | CVSS 3.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: Node.js had a bug in versions 8.X a…",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4530,7 +4532,7 @@
             {
               "codeDesc": "nodejs@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2024:5814 | CVSS 6.5 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.16.0-1.module+el8.10.0+22203+a88c8310.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4595,7 +4597,7 @@
             {
               "codeDesc": "nodejs-full-i18n@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | RHSA-2024:5814 | CVSS 6.5 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:20.16.0-1.module+el8.10.0+22203+a88c8310.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4659,7 +4661,7 @@
             {
               "codeDesc": "nodejs-full-i18n@1:18.20.4-1.module+el8.10.0+22199+56ea0ead | CVE-2017-15897 | CVSS 3.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: Node.js had a bug in versions 8.X a…",
               "message": "Vulnerable package nodejs-full-i18n is at version 1:18.20.4-1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4720,7 +4722,7 @@
             {
               "codeDesc": "nodejs-nodemon@3.0.1-1.module+el8.10.0+21159+f5a7145d | CVE-2019-20149 | CVSS 5.9 | DOCUMENTATION: A flaw was found in nodejs-kind-of. An external user is allowed input to overwrite ce…",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4781,7 +4783,7 @@
             {
               "codeDesc": "nodejs-nodemon@3.0.1-1.module+el8.10.0+21159+f5a7145d | CVE-2017-15897 | CVSS 3.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: Node.js had a bug in versions 8.X a…",
               "message": "Vulnerable package nodejs-nodemon is at version 3.0.1-1.module+el8.10.0+21159+f5a7145d. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4843,7 +4845,7 @@
             {
               "codeDesc": "npm@1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead | RHSA-2024:5814 | CVSS 6.5 | Node.js is a software development platform for building fast and scalable network applications in th…",
               "message": "Vulnerable package npm is at version 1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead. Update to fixed version 1:10.8.1-1.20.16.0.1.module+el8.10.0+22203+a88c8310.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4907,7 +4909,7 @@
             {
               "codeDesc": "npm@1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead | CVE-2017-15897 | CVSS 3.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: Node.js had a bug in versions 8.X a…",
               "message": "Vulnerable package npm is at version 1:10.7.0-1.18.20.4.1.module+el8.10.0+22199+56ea0ead. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -4968,7 +4970,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2024-0727 | CVSS 5.5 | DOCUMENTATION: A flaw was found in OpenSSL. The optional ContentInfo fields can be set to null, even…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5029,7 +5031,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2023-0464 | CVSS 5.9 | DOCUMENTATION: A security vulnerability has been identified in all supported OpenSSL versions relate…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5090,7 +5092,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2024-4741 | CVSS 5.6 | DOCUMENTATION: A use-after-free vulnerability was found in OpenSSL. Calling the OpenSSL API SSL_free…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5151,7 +5153,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2023-2650 | CVSS 6.5 | DOCUMENTATION: A flaw was found in OpenSSL resulting in a possible denial of service while translati…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5212,7 +5214,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2023-0465 | CVSS 5.3 | DOCUMENTATION: A flaw was found in OpenSSL. Applications that use a non-default option when verifyin…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5273,7 +5275,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2023-0466 | CVSS 5.3 | DOCUMENTATION: A flaw was found in OpenSSL. The X509_VERIFY_PARAM_add0_policy() function is document…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5334,7 +5336,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2024-5535 | CVSS 5.9 | DOCUMENTATION: A flaw was found in OpenSSL. Affected versions of this package are vulnerable to Info…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5395,7 +5397,7 @@
             {
               "codeDesc": "pcre2@10.32-3.el8_6 | CVE-2022-41409 | CVSS 5.3 | DOCUMENTATION: A flaw was found in PCRE2, where it is susceptible to an integer overflow vulnerabili…",
               "message": "Vulnerable package pcre2 is at version 10.32-3.el8_6. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5456,7 +5458,7 @@
             {
               "codeDesc": "sqlite-libs@3.26.0-19.el8_9 | CVE-2019-9937 | CVSS 3.3 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2019-99…",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5517,7 +5519,7 @@
             {
               "codeDesc": "sqlite-libs@3.26.0-19.el8_9 | CVE-2023-36191 | CVSS 5.5 | DOCUMENTATION: A segmentation fault was discovered in SQLite. This issue exists due to a boundary er…",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5578,7 +5580,7 @@
             {
               "codeDesc": "sqlite-libs@3.26.0-19.el8_9 | CVE-2019-9936 | CVSS 3.3 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2019-99…",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5639,7 +5641,7 @@
             {
               "codeDesc": "sqlite-libs@3.26.0-19.el8_9 | CVE-2024-0232 | CVSS 4.7 | DOCUMENTATION: A heap use-after-free issue has been identified in SQLite in the jsonParseAddNodeArra…",
               "message": "Vulnerable package sqlite-libs is at version 3.26.0-19.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5700,7 +5702,7 @@
             {
               "codeDesc": "systemd-libs@239-82.el8_10.1 | CVE-2018-20839 | CVSS 6.4 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: systemd 242 changes the VT1 mode up…",
               "message": "Vulnerable package systemd-libs is at version 239-82.el8_10.1. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5761,7 +5763,7 @@
             {
               "codeDesc": "systemd-libs@239-82.el8_10.1 | CVE-2021-3997 | CVSS 5.5 | DOCUMENTATION: A flaw was found in systemd. An uncontrolled recursion in systemd-tmpfiles may lead t…",
               "message": "Vulnerable package systemd-libs is at version 239-82.el8_10.1. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5822,7 +5824,7 @@
             {
               "codeDesc": "tar@2:1.30-9.el8 | CVE-2019-9923 | CVSS 3.3 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: pax_decode_header in sparse.c in GN…",
               "message": "Vulnerable package tar is at version 2:1.30-9.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5883,7 +5885,7 @@
             {
               "codeDesc": "tar@2:1.30-9.el8 | CVE-2021-20193 | CVSS 3.3 | DOCUMENTATION: A flaw was found in the src/list.c of tar. This flaw allows an attacker who can submi…",
               "message": "Vulnerable package tar is at version 2:1.30-9.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -5944,7 +5946,7 @@
             {
               "codeDesc": "curl@7.61.1-34.el8_10.2 | CVE-2023-27534 | CVSS 3.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: A path traversal vulnerability exis…",
               "message": "Vulnerable package curl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6005,7 +6007,7 @@
             {
               "codeDesc": "glib2@2.56.4-162.el8 | CVE-2024-34397 | CVSS 3.8 | DOCUMENTATION: A flaw was found in GNOME GLib. When a GDBus-based client subscribes to signals from …",
               "message": "Vulnerable package glib2 is at version 2.56.4-162.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6066,7 +6068,7 @@
             {
               "codeDesc": "libcurl@7.61.1-34.el8_10.2 | CVE-2023-27534 | CVSS 3.7 | DOCUMENTATION: The MITRE CVE dictionary describes this issue as: A path traversal vulnerability exis…",
               "message": "Vulnerable package libcurl is at version 7.61.1-34.el8_10.2. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6127,7 +6129,7 @@
             {
               "codeDesc": "ncurses-base@6.1-10.20180224.el8 | CVE-2023-45918 | CVSS 3.3 | DOCUMENTATION: A flaw was found in ncurses. Affected versions of this package contain a NULL pointer…",
               "message": "Vulnerable package ncurses-base is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6188,7 +6190,7 @@
             {
               "codeDesc": "ncurses-libs@6.1-10.20180224.el8 | CVE-2023-45918 | CVSS 3.3 | DOCUMENTATION: A flaw was found in ncurses. Affected versions of this package contain a NULL pointer…",
               "message": "Vulnerable package ncurses-libs is at version 6.1-10.20180224.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6249,7 +6251,7 @@
             {
               "codeDesc": "openssl-libs@1:1.1.1k-12.el8_9 | CVE-2024-2511 | CVSS 3.7 | Red Hat's versions of the associated software have been determined to NOT be affected by CVE-2024-25…",
               "message": "Vulnerable package openssl-libs is at version 1:1.1.1k-12.el8_9. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6310,7 +6312,7 @@
             {
               "codeDesc": "tar@2:1.30-9.el8 | CVE-2023-39804 | CVSS 3.3 | DOCUMENTATION: A flaw was found in tar. This issue occurs when extended attributes are processed in …",
               "message": "Vulnerable package tar is at version 2:1.30-9.el8. No fixed version available.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6372,7 +6374,7 @@
             {
               "codeDesc": "braces@3.0.2 | CVE-2024-4068 | CVSS 7.5 | Uncontrolled resource consumption in braces The NPM package `braces` fails to limit the number of ch…",
               "message": "Vulnerable package braces is at version 3.0.2. Update to fixed version 3.0.3.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6434,7 +6436,7 @@
             {
               "codeDesc": "micromatch@4.0.5 | CVE-2024-4067 | CVSS 5.3 | Regular Expression Denial of Service (ReDoS) in micromatch The NPM package `micromatch` prior to ver…",
               "message": "Vulnerable package micromatch is at version 4.0.5. Update to fixed version 4.0.8.",
-              "startTime": "2026-07-12T22:56:41.074353Z",
+              "startTime": "2026-09-28T19:57:05.932102Z",
               "status": "failed"
             }
           ],
@@ -6503,7 +6505,7 @@
     "name": "neuvector-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T22:56:41.074353Z",
+  "timestamp": "2026-09-28T19:57:05.932102Z",
   "tool": {
     "name": "NeuVector"
   }

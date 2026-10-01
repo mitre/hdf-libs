@@ -2,11 +2,13 @@
   "baselines": [
     {
       "extensions": {
-        "displayName": "Mozilla Firefox",
-        "referenceIdentifier": "5446",
-        "releaseInfo": "Release: 7 Benchmark Date: 05 Jan 2026",
-        "stigid": "MOZ_Firefox_STIG",
-        "uuid": "add7e8af-33db-420d-aeb6-923f648b0698"
+        "passthrough": {
+          "displayName": "Mozilla Firefox",
+          "referenceIdentifier": "5446",
+          "releaseInfo": "Release: 7 Benchmark Date: 05 Jan 2026",
+          "stigid": "MOZ_Firefox_STIG",
+          "uuid": "add7e8af-33db-420d-aeb6-923f648b0698"
+        }
       },
       "requirements": [
         {
@@ -27,7 +29,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000001",
-              "startTime": "2026-07-14T17:50:32.961285Z",
+              "startTime": "2026-09-28T19:56:51.874813Z",
               "status": "passed"
             }
           ],
@@ -73,7 +75,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000002",
-              "startTime": "2026-07-14T17:50:32.961285Z",
+              "startTime": "2026-09-28T19:56:51.874813Z",
               "status": "passed"
             }
           ],
@@ -120,7 +122,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000003",
-              "startTime": "2026-07-14T17:50:32.961285Z",
+              "startTime": "2026-09-28T19:56:51.874813Z",
               "status": "passed"
             }
           ],
@@ -168,7 +170,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000004",
-              "startTime": "2026-07-14T17:50:32.961285Z",
+              "startTime": "2026-09-28T19:56:51.874813Z",
               "status": "passed"
             }
           ],
@@ -216,7 +218,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000015",
-              "startTime": "2026-07-14T17:50:32.961285Z",
+              "startTime": "2026-09-28T19:56:51.874813Z",
               "status": "passed"
             }
           ],
@@ -264,7 +266,7 @@
           "results": [
             {
               "codeDesc": "STIG rule FFOX-00-000021",
-              "startTime": "2026-07-14T17:50:32.961285Z",
+              "startTime": "2026-09-28T19:56:51.874813Z",
               "status": "passed"
             }
           ],
@@ -315,20 +317,22 @@
     }
   ],
   "extensions": {
-    "assetExtras": {
-      "assetType": "Computing",
-      "role": "None"
-    },
-    "checklistFormat": "cklb",
-    "cklbActive": true,
-    "cklbMode": 2,
-    "cklbVersion": "1.0"
+    "passthrough": {
+      "assetExtras": {
+        "assetType": "Computing",
+        "role": "None"
+      },
+      "checklistFormat": "cklb",
+      "cklbActive": true,
+      "cklbMode": 2,
+      "cklbVersion": "1.0"
+    }
   },
   "generator": {
     "name": "cklb-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-14T17:50:32.961285Z",
+  "timestamp": "2026-09-28T19:56:51.874813Z",
   "tool": {
     "format": "CKLB",
     "name": "DISA STIG Viewer"

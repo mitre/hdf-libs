@@ -112,7 +112,7 @@ A Results document is the primary output of HDF converters. It captures what was
 | preAmendmentChecksum | Checksum | no | Hash of this document as it stood immediately before the most recent amendment application, written by `hdf amend apply`. Covers the results file's raw bytes as read, not a canonical form. Records only the most recent step: re-applying replaces it rather than accumulating. Distinct from the override-level `previousChecksum`, which chains amendments to each other over a canonical form *(v3.6.0)* |
 | systemRef | URI-reference | no | Link to System document |
 | planRef | URI-reference | no | Link to Plan document |
-| extensions | object | no | Tool-specific metadata |
+| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` |
 | id | UUID | no | Unique assessment run identifier |
 | remediation | Remediation | no | Reference to automated fix resources |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts (CTI/STIX, BOMs, advisories, runbooks) relevant to the assessment as a whole *(v3.5.0)* |
@@ -146,7 +146,7 @@ An evaluated baseline represents the results of a set of security tests that hav
 | parentBaseline | string | no | Parent baseline name (overlay/wrapper) |
 | labels | {string: string} | no | Key-value grouping metadata |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the baseline definition (CTI/STIX, advisories, source catalogs) *(v3.5.0)* |
-| extensions | object | no | Tool-specific metadata |
+| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` |
 
 ### Evaluated_Requirement
 
@@ -457,7 +457,7 @@ Diff between two or more assessment documents. A comparison captures how complia
 | drift | DriftAnalysis | no | Drift analysis metadata |
 | annotations | Annotation[] | no | Human/tool annotations on diffs |
 | integrity | Integrity | no | Cryptographic integrity metadata |
-| extensions | object | no | Tool-specific metadata |
+| extensions | object | no | Closed carrier: `passthrough` (tool-specific metadata) and `rawSourceArtifacts` |
 | externalReferences | External_Reference[] | no | Inert references to external artifacts relevant to the comparison (CTI/STIX, advisories) *(v3.5.0)* |
 
 ---
@@ -786,7 +786,7 @@ All `*Ref` fields are URI-reference strings (relative path, absolute URI, or fra
 
 ## Schema Compliance
 
-All schemas use JSON Schema draft 2020-12 with `"unevaluatedProperties": false` — documents containing unknown fields are invalid. Tool-specific data should go in the `extensions` field where available.
+All schemas use JSON Schema draft 2020-12 with `"unevaluatedProperties": false` — documents containing unknown fields are invalid. Tool-specific data should go in `extensions.passthrough` where available; `extensions` itself is closed to any key other than `passthrough` and `rawSourceArtifacts`.
 
 Schemas are published at `https://mitre.github.io/hdf-libs/schemas/` and distributed as bundled JSON files in the `hdf-schema` package.
 

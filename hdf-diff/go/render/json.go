@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
 
 // jsonSummary is the shape emitted for DetailSummary.
@@ -41,7 +42,7 @@ type strippedComparison struct {
 	RequirementDiffs []strippedRequirementDiff  `json:"requirementDiffs"`
 	Drift            []diff.RequirementDiff     `json:"drift,omitempty"`
 	Annotations      map[string]diff.Annotation `json:"annotations,omitempty"`
-	Extensions       map[string]any             `json:"extensions,omitempty"`
+	Extensions       *hdf.Extensions            `json:"extensions,omitempty"`
 }
 
 // stripDiff converts a RequirementDiff to a strippedRequirementDiff (no Before/After).

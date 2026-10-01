@@ -781,15 +781,19 @@ func TestDiffCommand_SystemFlag_JSON(t *testing.T) {
 		t.Fatalf("invalid JSON: %v\noutput: %s", err, stdout)
 	}
 
-	// CLI-specific per-component aggregation lives under extensions.componentSummaries
+	// CLI-specific per-component aggregation lives under extensions.passthrough.componentSummaries
 	// per hdf-comparison's unevaluatedProperties:false constraint.
-	ext, ok := output["extensions"].(map[string]interface{})
+	envelope, ok := output["extensions"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("expected 'extensions' object in JSON output, got: %v", output["extensions"])
 	}
+	ext, ok := envelope["passthrough"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected 'extensions.passthrough' object, got: %v", envelope["passthrough"])
+	}
 	cs, ok := ext["componentSummaries"].([]interface{})
 	if !ok {
-		t.Fatalf("expected 'extensions.componentSummaries' array, got: %v", ext["componentSummaries"])
+		t.Fatalf("expected 'extensions.passthrough.componentSummaries' array, got: %v", ext["componentSummaries"])
 	}
 	if len(cs) != 2 {
 		t.Errorf("expected 2 component summaries, got %d", len(cs))
@@ -869,12 +873,14 @@ func TestDiffCommand_SystemFlag_ComplianceValues(t *testing.T) {
 
 	var output struct {
 		Extensions struct {
-			ComponentSummaries []struct {
-				Name            string  `json:"name"`
-				OldCompliance   float64 `json:"oldCompliance"`
-				NewCompliance   float64 `json:"newCompliance"`
-				ComplianceDelta float64 `json:"complianceDelta"`
-			} `json:"componentSummaries"`
+			Passthrough struct {
+				ComponentSummaries []struct {
+					Name            string  `json:"name"`
+					OldCompliance   float64 `json:"oldCompliance"`
+					NewCompliance   float64 `json:"newCompliance"`
+					ComplianceDelta float64 `json:"complianceDelta"`
+				} `json:"componentSummaries"`
+			} `json:"passthrough"`
 		} `json:"extensions"`
 	}
 	if err := json.Unmarshal([]byte(stdout), &output); err != nil {
@@ -882,7 +888,7 @@ func TestDiffCommand_SystemFlag_ComplianceValues(t *testing.T) {
 	}
 
 	// WebTier (RHEL9-STIG): old = 1/2 passed = 50%, new = 2/2 passed = 100%
-	for _, cs := range output.Extensions.ComponentSummaries {
+	for _, cs := range output.Extensions.Passthrough.ComponentSummaries {
 		switch cs.Name {
 		case "WebTier":
 			if cs.OldCompliance != 50 {
@@ -1061,10 +1067,14 @@ func TestDiffCommand_SystemDrift_JSON(t *testing.T) {
 		t.Errorf("expected total=3, got %v", summary["total"])
 	}
 
-	// Check data flow changes in extensions
-	extensions, _ := output["extensions"].(map[string]interface{})
-	if extensions == nil {
+	// Check data flow changes in extensions.passthrough
+	envelope, _ := output["extensions"].(map[string]interface{})
+	if envelope == nil {
 		t.Fatal("expected 'extensions' with data flow changes")
+	}
+	extensions, _ := envelope["passthrough"].(map[string]interface{})
+	if extensions == nil {
+		t.Fatal("expected 'extensions.passthrough' with data flow changes")
 	}
 	dataFlowChanges, _ := extensions["dataFlowChanges"].([]interface{})
 	if len(dataFlowChanges) == 0 {

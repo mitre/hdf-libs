@@ -66,6 +66,10 @@
     "generator": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Generator",
       "description": "Information about the tool that generated this document."
+    },
+    "extensions": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Extensions",
+      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) these amendments were converted from — the VEX family and oscal-poam-to-hdf all emit this document type."
     }
   },
   "examples": [

@@ -115,57 +115,57 @@ func (r *HDFRequirementChangeEvent) Marshal() ([]byte, error) {
 
 // The top level value containing all assessment results.
 type HDFResults struct {
-	// Information on the baselines that were evaluated, including findings.                                           
-	Baselines                                                                                   []EvaluatedBaseline    `json:"baselines"`
-	// The components that were assessed. Each component describes a system element (host,                             
-	// container, cloud resource, application, etc.) with optional identity, SBOM, and external                        
-	// references.                                                                                                     
-	Components                                                                                  []Component            `json:"components,omitempty"`
-	// Present ONLY on reconciled result sets: lineage recording the seed snapshot and event                           
-	// watermark this document was reassembled from (ADR-0005). Documents produced directly by a                       
-	// scan omit this field. When present, generator names the reconciling tool.                                       
-	Derivation                                                                                  *Derivation            `json:"derivation,omitempty"`
-	// Reserved for tool-specific data not defined in the HDF standard. Use this to preserve                           
-	// original tool output, auxiliary data, or custom metadata.                                                       
-	Extensions                                                                                  map[string]interface{} `json:"extensions,omitempty"`
-	// Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any                         
-	// URI-addressable artifact) relevant to this assessment as a whole. Inert context; see                            
-	// External_Reference.                                                                                             
-	ExternalReferences                                                                          []ExternalReference    `json:"externalReferences,omitempty"`
-	// Information about the tool that generated this file.                                                            
-	Generator                                                                                   *Generator             `json:"generator,omitempty"`
-	// Unique identifier for this assessment run.                                                                      
-	ID                                                                                          *string                `json:"id,omitempty"`
-	// Cryptographic integrity information for verifying this file.                                                    
-	Integrity                                                                                   *Integrity             `json:"integrity,omitempty"`
-	// Reference to an hdf-plan document describing the assessment plan that produced these                            
-	// results. May be a relative path, absolute URI, or fragment identifier.                                          
-	PlanRef                                                                                     *string                `json:"planRef,omitempty"`
-	// Hash of this results document as it stood immediately before the most recent amendment                          
-	// application. Written by `hdf amend apply` when it applies at least one override; an apply                       
-	// that matches nothing leaves the document untouched. The hash covers the results file's                          
-	// RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical                          
-	// original — reformatting or re-serializing the source changes the value. Only the most                           
-	// recent pre-application state is recorded: applying amendments to an already-amended                             
-	// document REPLACES this value, so it is a single link back one step, not a growing chain.                        
-	// Distinct from the `previousChecksum` inside an override, which chains amendments to each                        
-	// other and is computed over a canonical JSON form.                                                               
-	PreAmendmentChecksum                                                                        *Checksum              `json:"preAmendmentChecksum,omitempty"`
-	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                             
-	// scripts, etc.) for fixing failing requirements found in this assessment.                                        
-	Remediation                                                                                 *Remediation           `json:"remediation,omitempty"`
-	// Information about the test execution environment where the security tool was run.                               
-	// Distinct from targets (what is being tested).                                                                   
-	Runner                                                                                      *Runner                `json:"runner,omitempty"`
-	// Statistics for the assessment run, including duration and result counts.                                        
-	Statistics                                                                                  *Statistics            `json:"statistics,omitempty"`
-	// Reference to an hdf-system document describing the system under assessment. May be a                            
-	// relative path, absolute URI, or fragment identifier.                                                            
-	SystemRef                                                                                   *string                `json:"systemRef,omitempty"`
-	// When this assessment was executed.                                                                              
-	Timestamp                                                                                   *time.Time             `json:"timestamp,omitempty"`
-	// The security tool that produced the assessment data in this file.                                               
-	Tool                                                                                        *Tool                  `json:"tool,omitempty"`
+	// Information on the baselines that were evaluated, including findings.                                        
+	Baselines                                                                                   []EvaluatedBaseline `json:"baselines"`
+	// The components that were assessed. Each component describes a system element (host,                          
+	// container, cloud resource, application, etc.) with optional identity, SBOM, and external                     
+	// references.                                                                                                  
+	Components                                                                                  []Component         `json:"components,omitempty"`
+	// Present ONLY on reconciled result sets: lineage recording the seed snapshot and event                        
+	// watermark this document was reassembled from (ADR-0005). Documents produced directly by a                    
+	// scan omit this field. When present, generator names the reconciling tool.                                    
+	Derivation                                                                                  *Derivation         `json:"derivation,omitempty"`
+	// Producer data outside the HDF model, and the pre-converted source artifact(s) these                          
+	// results were converted from.                                                                                 
+	Extensions                                                                                  *Extensions         `json:"extensions,omitempty"`
+	// Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any                      
+	// URI-addressable artifact) relevant to this assessment as a whole. Inert context; see                         
+	// External_Reference.                                                                                          
+	ExternalReferences                                                                          []ExternalReference `json:"externalReferences,omitempty"`
+	// Information about the tool that generated this file.                                                         
+	Generator                                                                                   *Generator          `json:"generator,omitempty"`
+	// Unique identifier for this assessment run.                                                                   
+	ID                                                                                          *string             `json:"id,omitempty"`
+	// Cryptographic integrity information for verifying this file.                                                 
+	Integrity                                                                                   *Integrity          `json:"integrity,omitempty"`
+	// Reference to an hdf-plan document describing the assessment plan that produced these                         
+	// results. May be a relative path, absolute URI, or fragment identifier.                                       
+	PlanRef                                                                                     *string             `json:"planRef,omitempty"`
+	// Hash of this results document as it stood immediately before the most recent amendment                       
+	// application. Written by `hdf amend apply` when it applies at least one override; an apply                    
+	// that matches nothing leaves the document untouched. The hash covers the results file's                       
+	// RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical                       
+	// original — reformatting or re-serializing the source changes the value. Only the most                        
+	// recent pre-application state is recorded: applying amendments to an already-amended                          
+	// document REPLACES this value, so it is a single link back one step, not a growing chain.                     
+	// Distinct from the `previousChecksum` inside an override, which chains amendments to each                     
+	// other and is computed over a canonical JSON form.                                                            
+	PreAmendmentChecksum                                                                        *Checksum           `json:"preAmendmentChecksum,omitempty"`
+	// Optional reference to automated remediation resources (Ansible playbooks, Terraform                          
+	// scripts, etc.) for fixing failing requirements found in this assessment.                                     
+	Remediation                                                                                 *Remediation        `json:"remediation,omitempty"`
+	// Information about the test execution environment where the security tool was run.                            
+	// Distinct from targets (what is being tested).                                                                
+	Runner                                                                                      *Runner             `json:"runner,omitempty"`
+	// Statistics for the assessment run, including duration and result counts.                                     
+	Statistics                                                                                  *Statistics         `json:"statistics,omitempty"`
+	// Reference to an hdf-system document describing the system under assessment. May be a                         
+	// relative path, absolute URI, or fragment identifier.                                                         
+	SystemRef                                                                                   *string             `json:"systemRef,omitempty"`
+	// When this assessment was executed.                                                                           
+	Timestamp                                                                                   *time.Time          `json:"timestamp,omitempty"`
+	// The security tool that produced the assessment data in this file.                                            
+	Tool                                                                                        *Tool               `json:"tool,omitempty"`
 }
 
 // Information on a baseline that was evaluated, including any findings.
@@ -174,8 +174,9 @@ type EvaluatedBaseline struct {
 	Depends                                                                                    []Dependency           `json:"depends,omitempty"`
 	// The description - should be more detailed than the summary.                                                    
 	Description                                                                                *string                `json:"description,omitempty"`
-	// Reserved for tool-specific baseline metadata not defined in the HDF standard.                                  
-	Extensions                                                                                 map[string]interface{} `json:"extensions,omitempty"`
+	// Producer data outside the HDF model that belongs to this baseline rather than to the                           
+	// document, and the pre-converted source artifact(s) this baseline was built from.                               
+	Extensions                                                                                 *Extensions            `json:"extensions,omitempty"`
 	// A set of descriptions for the requirement groups.                                                              
 	Groups                                                                                     []RequirementGroup     `json:"groups,omitempty"`
 	// Typed inputs used to parameterize this baseline at execution time. See the Input                               
@@ -252,67 +253,134 @@ type Dependency struct {
 	URL                                                           *string `json:"url,omitempty"`
 }
 
+// Carrier for data outside the HDF model: `passthrough` for producer data HDF does not model,
+// `rawSourceArtifacts` for the pre-converted input(s). CLOSED: these two members are the whole of
+// it. A key HDF does not define goes inside `passthrough` — that is what `passthrough` is for — so
+// `extensions` never becomes a second, unnamed schema that consumers must reverse-engineer from the
+// producers that happen to write it. Closed with `additionalProperties` rather than the house
+// `unevaluatedProperties` because this definition composes nothing, and the shipped Go validator is
+// a draft-07 engine that does not implement `unevaluatedProperties` — a closure only one of the two
+// validators enforces is not a closure. Declared on every HDF document type that carries a producer
+// envelope (`generator` / `integrity`), and on `Evaluated_Baseline`, so one rule governs both
+// sites.
+type Extensions struct {
+	// Catch-all for producer data that HDF does not model — the role heimdall2's                                      
+	// `passthrough.auxiliary_data` played: fields a converter deliberately carried but had no                         
+	// home for.                                                                                                       
+	//                                                                                                                 
+	// Deliberately permissive: unenumerated properties are accepted by design, with no shape                          
+	// imposed on them. HDF neither reads nor interprets what is here. It is the ONLY permissive                       
+	// surface in `extensions` — everything HDF does not define belongs here rather than beside                        
+	// it.                                                                                                             
+	//                                                                                                                 
+	// This is NOT where the pre-converted source artifact goes. v2 put it here only because                           
+	// nothing else had room; `rawSourceArtifacts` is its home now, and it gives the bytes a                           
+	// checksum, a media type and a reference contract that an untyped object cannot.                                  
+	//                                                                                                                 
+	// For data that belongs to one requirement rather than to the document, use that object's                         
+	// own fields — a document-level bag cannot say which requirement it describes.                                    
+	Passthrough                                                                                 map[string]interface{} `json:"passthrough,omitempty"`
+	// The input(s) this document was converted from, verbatim.                                                        
+	//                                                                                                                 
+	// An array because a conversion can consume more than one artifact — the OSCAL profile path                       
+	// takes a profile and a catalog. Every other converter takes one input, and an array of one                       
+	// costs nothing.                                                                                                  
+	//                                                                                                                 
+	// Populating this is required of ingest converters by policy, enforced by the converter                           
+	// contract and test harness rather than by a schema `required`: a tool that emits HDF                             
+	// natively has no source artifact, and requiring the field would make valid native HDF                            
+	// invalid.                                                                                                        
+	RawSourceArtifacts                                                                          []ExternalReference    `json:"rawSourceArtifacts,omitempty"`
+}
+
 // A generalized reference to any external artifact by identity and/or location, modeled on the STIX
 // 2.1 `external_references` common property. Purpose-agnostic: cite a CVE, an ATT&CK technique, a
 // STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated
 // HDF reference category. `sourceName` names the system; `externalId` cites by id within that
 // system; `href` locates it. `sourceName` + `externalId` is equivalently a URN
 // (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay
-// interconvertible. A reference is inert context: it overrides nothing, so it carries only
-// lightweight optional `addedBy`/`addedAt` attribution, never override machinery.
+// interconvertible. An entry may also carry the artifact itself rather than point at it: `document`
+// for a JSON object, `content` + `encoding` for anything else. Embedding satisfies the at-least-one
+// rule on its own, so an artifact with no meaningful public location needs no synthetic `href`. A
+// reference is inert context: it overrides nothing, so it carries only lightweight optional
+// `addedBy`/`addedAt` attribution, never override machinery.
 type ExternalReference struct {
-	// When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention).                         
-	AddedAt                                                                                     *time.Time             `json:"addedAt,omitempty"`
-	// Who attached this reference. Lightweight, flat attribution — a reference overrides                              
-	// nothing, so it has no chaining/superseding/disposition.                                                         
-	AddedBy                                                                                     *Identity              `json:"addedBy,omitempty"`
-	// Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX                        
-	// `hashes`). Meaningful only with a retrievable `href`.                                                           
-	Checksum                                                                                    *Checksum              `json:"checksum,omitempty"`
-	// Human-readable description of what is referenced. Satisfies the at-least-one rule on its                        
-	// own when neither id nor href is available.                                                                      
-	Description                                                                                 *string                `json:"description,omitempty"`
-	// Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS                          
-	// record, advisory, or annotation payload — preserved verbatim.                                                   
-	//                                                                                                                 
-	// Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which                           
-	// ties the copy to the source): a single entry can both point and embed.                                          
-	//                                                                                                                 
-	// HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF                        
-	// fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged).                       
-	Document                                                                                    map[string]interface{} `json:"document,omitempty"`
-	// Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve',                        
-	// 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName`                       
-	// this is a URN.                                                                                                  
-	ExternalID                                                                                  *string                `json:"externalId,omitempty"`
-	// Location of the artifact. `uri-reference` (not `uri`) so a bare internal                                        
-	// `#fragment`/`#uuid` reference is expressible alongside absolute URLs.                                           
-	// `checksum`/`mediaType` apply only to a retrievable `href`.                                                      
-	Href                                                                                        *string                `json:"href,omitempty"`
-	// Open token classifying the referenced/embedded payload, turning a bare reference into an                        
-	// enrichment envelope.                                                                                            
-	//                                                                                                                 
-	// Deliberately open (like `sourceName`/`rel`), not a closed enum.                                                 
-	//                                                                                                                 
-	// Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human                            
-	// triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory'                                   
-	// (vendor/security advisory).                                                                                     
-	//                                                                                                                 
-	// Use the `x-` prefix for custom kinds.                                                                           
-	Kind                                                                                        *string                `json:"kind,omitempty"`
-	// IANA media type of the referenced artifact when retrievable (RFC 6838), e.g.,                                   
-	// 'application/json'. Meaningful only with `href`.                                                                
-	MediaType                                                                                   *string                `json:"mediaType,omitempty"`
-	// Open relationship token describing how this reference relates to the referencing object.                        
-	// Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented                       
-	// starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence'                       
-	// (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the                            
-	// authoritative source).                                                                                          
-	Rel                                                                                         *string                `json:"rel,omitempty"`
-	// Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix',                       
-	// 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix                             
-	// convention for custom/experimental sources, mirroring `bomType`.                                                
-	SourceName                                                                                  string                 `json:"sourceName"`
+	// When this reference was attached (RFC 3339 / trimmed-UTC per HDF timestamp convention).                             
+	AddedAt                                                                                     *time.Time                 `json:"addedAt,omitempty"`
+	// Who attached this reference. Lightweight, flat attribution — a reference overrides                                  
+	// nothing, so it has no chaining/superseding/disposition.                                                             
+	AddedBy                                                                                     *Identity                  `json:"addedBy,omitempty"`
+	// Integrity hash of the artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`).                            
+	// Applies both to an artifact retrievable at `href` and to one embedded here in `content`                             
+	// or `document` — beside embedded bytes it is what makes the copy verifiable rather than                              
+	// merely present.                                                                                                     
+	Checksum                                                                                    *Checksum                  `json:"checksum,omitempty"`
+	// Optional lossless embedded copy of the artifact's bytes as a string, for artifacts                                  
+	// `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not                           
+	// valid UTF-8 text at all.                                                                                            
+	//                                                                                                                     
+	// `encoding` states how to read it back and is required alongside it. Set `mediaType` so a                            
+	// consumer knows what the bytes are, and `checksum` so the copy can be verified against the                           
+	// source.                                                                                                             
+	//                                                                                                                     
+	// Carried verbatim — never reformatted, re-indented, or re-serialized.                                                
+	Content                                                                                     *string                    `json:"content,omitempty"`
+	// Human-readable description of what is referenced. Satisfies the at-least-one rule on its                            
+	// own when neither id nor href is available.                                                                          
+	Description                                                                                 *string                    `json:"description,omitempty"`
+	// Optional lossless embedded copy of the referenced artifact as a JSON object — the raw                               
+	// STIX object, EPSS record, advisory, or annotation payload — preserved verbatim.                                     
+	//                                                                                                                     
+	// JSON objects only. An artifact that is not a JSON object (XML, CSV, NDJSON, plain text, a                           
+	// JSON array, or bytes that are not text at all) embeds through `content` + `encoding`                                
+	// instead.                                                                                                            
+	//                                                                                                                     
+	// Composes with `href`/`externalId` (which point at the artifact) and `checksum` (which                               
+	// ties the copy to the source): a single entry can both point and embed.                                              
+	//                                                                                                                     
+	// HDF stays payload-agnostic — the content is carried untouched, never normalized into HDF                            
+	// fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged).                           
+	Document                                                                                    map[string]interface{}     `json:"document,omitempty"`
+	// How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON,                           
+	// plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8                                 
+	// text.                                                                                                               
+	//                                                                                                                     
+	// Required whenever `content` is present, and meaningless without it — an embedded copy                               
+	// whose encoding a consumer has to guess is not lossless.                                                             
+	Encoding                                                                                    *ExternalReferenceEncoding `json:"encoding,omitempty"`
+	// Identifier of the artifact within `sourceName` (e.g., 'CVE-2021-44228' for source 'cve',                            
+	// 'T1059' for 'mitre-att&ck'). Cite by id without needing a URL. Together with `sourceName`                           
+	// this is a URN.                                                                                                      
+	ExternalID                                                                                  *string                    `json:"externalId,omitempty"`
+	// Location of the artifact. `uri-reference` (not `uri`) so a bare internal                                            
+	// `#fragment`/`#uuid` reference is expressible alongside absolute URLs. Set it only when                              
+	// the location is meaningful to a reader — never a producer's local filesystem path.                                  
+	Href                                                                                        *string                    `json:"href,omitempty"`
+	// Open token classifying the referenced/embedded payload, turning a bare reference into an                            
+	// enrichment envelope.                                                                                                
+	//                                                                                                                     
+	// Deliberately open (like `sourceName`/`rel`), not a closed enum.                                                     
+	//                                                                                                                     
+	// Documented starter vocabulary: 'threat-intel' (STIX/CTI object), 'annotation' (human                                
+	// triage note), 'exploitation' (EPSS/KEV signal carried as context), 'advisory'                                       
+	// (vendor/security advisory).                                                                                         
+	//                                                                                                                     
+	// Use the `x-` prefix for custom kinds.                                                                               
+	Kind                                                                                        *string                    `json:"kind,omitempty"`
+	// IANA media type of the artifact (RFC 6838), e.g., 'application/json', 'application/xml',                            
+	// 'text/csv'. Applies both to an artifact retrievable at `href` and to one embedded here in                           
+	// `content` or `document`.                                                                                            
+	MediaType                                                                                   *string                    `json:"mediaType,omitempty"`
+	// Open relationship token describing how this reference relates to the referencing object.                            
+	// Deliberately open (cf. OSCAL `rel` allow-other, RFC 8288 extension relations). Documented                           
+	// starter vocabulary: 'reference' (generic), 'definition' (defines the concept), 'evidence'                           
+	// (supporting evidence), 'investigate' (a live pivot to investigate), 'canonical' (the                                
+	// authoritative source).                                                                                              
+	Rel                                                                                         *string                    `json:"rel,omitempty"`
+	// Name of the external system/source being referenced (e.g., 'cve', 'mitre-att&ck', 'stix',                           
+	// 'taxii', or any vendor label). Open string — not a closed enum. Use the `x-` prefix                                 
+	// convention for custom/experimental sources, mirroring `bomType`.                                                    
+	SourceName                                                                                  string                     `json:"sourceName"`
 }
 
 // Represents an identity that performed an action, such as capturing evidence or applying an
@@ -798,26 +866,65 @@ type Reference struct {
 
 // A test within a requirement and its results and findings such as how long it took to run.
 type RequirementResult struct {
-	// The stacktrace/backtrace of the exception if one occurred.                                        
-	Backtrace                                                                               []string     `json:"backtrace,omitempty"`
-	// A description of this test. Example: 'limits.conf * is expected to include ["hard",               
-	// "maxlogins", "10"]'.                                                                              
-	CodeDesc                                                                                string       `json:"codeDesc"`
-	// The type of exception if an exception was thrown.                                                 
-	Exception                                                                               *string      `json:"exception,omitempty"`
-	// An explanation of the test result. Typically provided for failed tests, errors, or to             
-	// explain why a test was not applicable or not reviewed.                                            
-	Message                                                                                 *string      `json:"message,omitempty"`
-	// The resource used in the test. Example: 'file', 'command', 'service'.                             
-	Resource                                                                                *string      `json:"resource,omitempty"`
-	// The unique identifier of the resource. Example: '/etc/passwd'.                                    
-	ResourceID                                                                              *string      `json:"resourceId,omitempty"`
-	// The execution time in seconds for the test.                                                       
-	RunTime                                                                                 *float64     `json:"runTime,omitempty"`
-	// The time at which the test started.                                                               
-	StartTime                                                                               time.Time    `json:"startTime"`
-	// The status of this test within the requirement. Example: 'failed'.                                
-	Status                                                                                  ResultStatus `json:"status"`
+	// The stacktrace/backtrace of the exception if one occurred.                                            
+	Backtrace                                                                               []string         `json:"backtrace,omitempty"`
+	// A description of this test. Example: 'limits.conf * is expected to include ["hard",                   
+	// "maxlogins", "10"]'.                                                                                  
+	CodeDesc                                                                                string           `json:"codeDesc"`
+	// The type of exception if an exception was thrown.                                                     
+	Exception                                                                               *string          `json:"exception,omitempty"`
+	// An explanation of the test result. Typically provided for failed tests, errors, or to                 
+	// explain why a test was not applicable or not reviewed.                                                
+	Message                                                                                 *string          `json:"message,omitempty"`
+	// The source tool's own record for this result, verbatim.                                               
+	RawSourceRecord                                                                         *RawSourceRecord `json:"rawSourceRecord,omitempty"`
+	// The resource used in the test. Example: 'file', 'command', 'service'.                                 
+	Resource                                                                                *string          `json:"resource,omitempty"`
+	// The unique identifier of the resource. Example: '/etc/passwd'.                                        
+	ResourceID                                                                              *string          `json:"resourceId,omitempty"`
+	// The execution time in seconds for the test.                                                           
+	RunTime                                                                                 *float64         `json:"runTime,omitempty"`
+	// The time at which the test started.                                                                   
+	StartTime                                                                               time.Time        `json:"startTime"`
+	// The status of this test within the requirement. Example: 'failed'.                                    
+	Status                                                                                  ResultStatus     `json:"status"`
+}
+
+// The source tool's own record for this result, verbatim — the one entry in the converter's input
+// that produced it. SCOPED TO THE RESULT DELIBERATELY. For a vulnerability scanner the native
+// record is one (vulnerability, package) pair, which is exactly one result: a CVE reported against
+// two packages yields two entries whose records differ only in the package they matched. Held on
+// the requirement instead, those two records would collide, and merging entries that share an id
+// would have to discard one — so the result is not merely an available home but the correct one.
+// Distinct from `extensions.rawSourceArtifacts[]`, which carries whole input artifacts: this
+// carries the one record inside one of them, and `pointer` ties the two together. A consumer that
+// wants the whole input reads the artifact; one that wants provenance for a single finding reads
+// this. Distinct from `code`, which means the code that ran to evaluate the requirement — an InSpec
+// control's source, or a check reference. A serialized finding is not code, and putting one there
+// overloaded a field whose meaning came from InSpec. CLOSED, and deliberately not a passthrough
+// bag: three required members and an optional pointer are the whole of it. Producer data that HDF
+// does not model belongs in `extensions.passthrough`, which is document-scoped and permissive by
+// design; this field is neither. Closed with `additionalProperties` rather than the house
+// `unevaluatedProperties` because this definition composes nothing, and the shipped Go validator is
+// a draft-07 engine that does not implement `unevaluatedProperties` — a closure only one of the two
+// validators enforces is not a closure.
+type RawSourceRecord struct {
+	// The record's bytes, exactly as the source tool wrote them.                                                          
+	Content                                                                                      string                    `json:"content"`
+	// How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text.                          
+	Encoding                                                                                     ExternalReferenceEncoding `json:"encoding"`
+	// The record's IANA media type — the type of this record, which for a fragment of a larger                            
+	// artifact may be narrower than the artifact's own. Example: 'application/json' for one                               
+	// match object out of a JSON report.                                                                                  
+	MediaType                                                                                    string                    `json:"mediaType"`
+	// Where this record sits inside the artifact it came from, as a JSON Pointer (RFC 6901) for                           
+	// JSON sources or an XPath for XML ones. Example: '/matches/3'.                                                       
+	//                                                                                                                     
+	// Optional, and the link that makes carriage verifiable rather than merely present: with it                           
+	// a consumer can confirm the record really is the subtree of                                                          
+	// `extensions.rawSourceArtifacts[]` it claims to be. Omit it when the source's shape gives                            
+	// a record no addressable location.                                                                                   
+	Pointer                                                                                      *string                   `json:"pointer,omitempty"`
 }
 
 // The explicit location of a requirement within source code.
@@ -1377,6 +1484,9 @@ type Tool struct {
 type HDFBaseline struct {
 	// The set of dependencies this baseline depends on.                                                             
 	Depends                                                                                    []Dependency          `json:"depends,omitempty"`
+	// Producer data outside the HDF model, and the pre-converted source artifact(s) this                            
+	// baseline was converted from.                                                                                  
+	Extensions                                                                                 *Extensions           `json:"extensions,omitempty"`
 	// The tool that generated this file.                                                                            
 	Generator                                                                                  *Generator            `json:"generator,omitempty"`
 	// A set of descriptions for the requirement groups.                                                             
@@ -1490,47 +1600,48 @@ type BaselineRequirement struct {
 // Structured comparison between two or more HDF security assessment documents. Supports temporal,
 // baseline, fleet, and multi-source comparison modes.
 type HDFComparison struct {
-	// Map of annotation IDs to annotation objects, providing context or action items for                              
-	// requirement diffs.                                                                                              
-	Annotations                                                                                 map[string]Annotation  `json:"annotations,omitempty"`
-	// Comparison of baselines between sources.                                                                        
-	BaselineDiffs                                                                               []BaselineDiff         `json:"baselineDiffs,omitempty"`
-	// The mode of comparison being performed.                                                                         
-	ComparisonMode                                                                              ComparisonMode         `json:"comparisonMode"`
-	// Comparison of components between two system documents. Used in systemDrift mode. A                              
-	// component's BOM changes surface as a field change on its boms[] here.                                           
-	ComponentDiffs                                                                              []ComponentDiff        `json:"componentDiffs,omitempty"`
-	// External/metadata changes separate from status changes (Terraform pattern).                                     
-	Drift                                                                                       []RequirementDiff      `json:"drift,omitempty"`
-	// Reserved for tool-specific data not defined in the HDF standard.                                                
-	Extensions                                                                                  map[string]interface{} `json:"extensions,omitempty"`
-	// Optional references to external artifacts relevant to this comparison (CTI/STIX,                                
-	// advisories, or any URI-addressable artifact). Inert context; see External_Reference.                            
-	ExternalReferences                                                                          []ExternalReference    `json:"externalReferences,omitempty"`
-	// Schema version for this comparison format.                                                                      
-	FormatVersion                                                                               FormatVersion          `json:"formatVersion"`
-	// Information about the tool that generated this comparison.                                                      
-	Generator                                                                                   *Generator             `json:"generator,omitempty"`
-	// Cryptographic integrity information for verifying this comparison document.                                     
-	Integrity                                                                                   *Integrity             `json:"integrity,omitempty"`
-	// Configuration for how requirements were matched across sources.                                                 
-	Matching                                                                                    *MatchingConfig        `json:"matching,omitempty"`
-	// RESERVED — not emitted by the current systemDrift comparison. systemDrift now reports a                         
-	// component's BOM changes as a field change on its boms[] (see componentDiffs), and                               
-	// standalone SBOM package diffing is a separate `hdf diff <sbom> <sbom>` output shape. This                       
-	// field is retained for a future normalized package-level diff; consumers must not expect                         
-	// it from today's systemDrift output.                                                                             
-	PackageDiffs                                                                                []PackageDiff          `json:"packageDiffs,omitempty"`
-	// Detailed comparison of individual requirements between sources.                                                 
-	RequirementDiffs                                                                            []RequirementDiff      `json:"requirementDiffs"`
-	// The source documents being compared. At least two sources are required.                                         
-	Sources                                                                                     []Source               `json:"sources"`
-	// Summary statistics for the overall comparison.                                                                  
-	Summary                                                                                     ComparisonSummary      `json:"summary"`
-	// URI identifying the system being compared in systemDrift mode.                                                  
-	SystemRef                                                                                   *string                `json:"systemRef,omitempty"`
-	// When this comparison was performed.                                                                             
-	Timestamp                                                                                   *time.Time             `json:"timestamp,omitempty"`
+	// Map of annotation IDs to annotation objects, providing context or action items for                             
+	// requirement diffs.                                                                                             
+	Annotations                                                                                 map[string]Annotation `json:"annotations,omitempty"`
+	// Comparison of baselines between sources.                                                                       
+	BaselineDiffs                                                                               []BaselineDiff        `json:"baselineDiffs,omitempty"`
+	// The mode of comparison being performed.                                                                        
+	ComparisonMode                                                                              ComparisonMode        `json:"comparisonMode"`
+	// Comparison of components between two system documents. Used in systemDrift mode. A                             
+	// component's BOM changes surface as a field change on its boms[] here.                                          
+	ComponentDiffs                                                                              []ComponentDiff       `json:"componentDiffs,omitempty"`
+	// External/metadata changes separate from status changes (Terraform pattern).                                    
+	Drift                                                                                       []RequirementDiff     `json:"drift,omitempty"`
+	// Producer data outside the HDF model, and the pre-converted source artifact(s) this                             
+	// comparison was derived from.                                                                                   
+	Extensions                                                                                  *Extensions           `json:"extensions,omitempty"`
+	// Optional references to external artifacts relevant to this comparison (CTI/STIX,                               
+	// advisories, or any URI-addressable artifact). Inert context; see External_Reference.                           
+	ExternalReferences                                                                          []ExternalReference   `json:"externalReferences,omitempty"`
+	// Schema version for this comparison format.                                                                     
+	FormatVersion                                                                               FormatVersion         `json:"formatVersion"`
+	// Information about the tool that generated this comparison.                                                     
+	Generator                                                                                   *Generator            `json:"generator,omitempty"`
+	// Cryptographic integrity information for verifying this comparison document.                                    
+	Integrity                                                                                   *Integrity            `json:"integrity,omitempty"`
+	// Configuration for how requirements were matched across sources.                                                
+	Matching                                                                                    *MatchingConfig       `json:"matching,omitempty"`
+	// RESERVED — not emitted by the current systemDrift comparison. systemDrift now reports a                        
+	// component's BOM changes as a field change on its boms[] (see componentDiffs), and                              
+	// standalone SBOM package diffing is a separate `hdf diff <sbom> <sbom>` output shape. This                      
+	// field is retained for a future normalized package-level diff; consumers must not expect                        
+	// it from today's systemDrift output.                                                                            
+	PackageDiffs                                                                                []PackageDiff         `json:"packageDiffs,omitempty"`
+	// Detailed comparison of individual requirements between sources.                                                
+	RequirementDiffs                                                                            []RequirementDiff     `json:"requirementDiffs"`
+	// The source documents being compared. At least two sources are required.                                        
+	Sources                                                                                     []Source              `json:"sources"`
+	// Summary statistics for the overall comparison.                                                                 
+	Summary                                                                                     ComparisonSummary     `json:"summary"`
+	// URI identifying the system being compared in systemDrift mode.                                                 
+	SystemRef                                                                                   *string               `json:"systemRef,omitempty"`
+	// When this comparison was performed.                                                                            
+	Timestamp                                                                                   *time.Time            `json:"timestamp,omitempty"`
 }
 
 // An annotation attached to a comparison, providing context or action items.
@@ -1842,6 +1953,9 @@ type HDFSystem struct {
 	DataFlows                                                                                   []DataFlow           `json:"dataFlows,omitempty"`
 	// Description of the system's purpose and mission.                                                              
 	Description                                                                                 *string              `json:"description,omitempty"`
+	// Producer data outside the HDF model, and the pre-converted source artifact(s) this system                     
+	// document was converted from.                                                                                  
+	Extensions                                                                                  *Extensions          `json:"extensions,omitempty"`
 	// Optional references to external artifacts describing this system's threat environment or                      
 	// context (CTI/STIX, BOMs, advisories, or any URI-addressable artifact). Inert context; see                     
 	// External_Reference.                                                                                           
@@ -1930,6 +2044,9 @@ type HDFPlan struct {
 	Assessments                                                                                 []Assessment        `json:"assessments"`
 	// Description of the plan's purpose and scope.                                                                 
 	Description                                                                                 *string             `json:"description,omitempty"`
+	// Producer data outside the HDF model, and the pre-converted source artifact(s) this plan                      
+	// was converted from.                                                                                          
+	Extensions                                                                                  *Extensions         `json:"extensions,omitempty"`
 	// Optional references to external artifacts relevant to this assessment plan (CTI/STIX,                        
 	// advisories, methodology docs, or any URI-addressable artifact). Inert context; see                           
 	// External_Reference.                                                                                          
@@ -2014,6 +2131,10 @@ type HDFAmendments struct {
 	ApprovedBy                                                                                *Identity            `json:"approvedBy,omitempty"`
 	// Description of the amendments' purpose and scope.                                                           
 	Description                                                                               *string              `json:"description,omitempty"`
+	// Producer data outside the HDF model, and the pre-converted source artifact(s) these                         
+	// amendments were converted from — the VEX family and oscal-poam-to-hdf all emit this                         
+	// document type.                                                                                              
+	Extensions                                                                                *Extensions          `json:"extensions,omitempty"`
 	// Information about the tool that generated this document.                                                    
 	Generator                                                                                 *Generator           `json:"generator,omitempty"`
 	// Cryptographic integrity information for verifying this amendments document has not been                     
@@ -2125,6 +2246,9 @@ type HDFEvidencePackage struct {
 	Contents                                                                                    []ContentReference          `json:"contents"`
 	// Description of the evidence package's purpose and scope.                                                             
 	Description                                                                                 *string                     `json:"description,omitempty"`
+	// Producer data outside the HDF model, and the pre-converted source artifact(s) this                                   
+	// package was assembled from.                                                                                          
+	Extensions                                                                                  *Extensions                 `json:"extensions,omitempty"`
 	// References to external native-format evidence (log/telemetry corpora and other artifacts)                            
 	// carried by URI + integrity hash + format discriminator, without recreating the data                                  
 	// inside HDF. Logs in ECS/OCSF/etc. are legitimate accreditation evidence; HDF indexes them                            
@@ -2342,6 +2466,21 @@ const (
 	Sha256 HashAlgorithm = "sha256"
 	Sha384 HashAlgorithm = "sha384"
 	Sha512 HashAlgorithm = "sha512"
+)
+
+// How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON,
+// plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8
+// text.
+//
+// Required whenever `content` is present, and meaningless without it — an embedded copy
+// whose encoding a consumer has to guess is not lossless.
+//
+// How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text.
+type ExternalReferenceEncoding string
+
+const (
+	Base64 ExternalReferenceEncoding = "base64"
+	UTF8   ExternalReferenceEncoding = "utf-8"
 )
 
 // Comparison operator for evaluating the input value against observed values. Numeric:

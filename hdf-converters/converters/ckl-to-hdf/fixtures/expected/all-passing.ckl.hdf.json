@@ -2,10 +2,12 @@
   "baselines": [
     {
       "extensions": {
-        "classification": "UNCLASSIFIED",
-        "releaseInfo": "Release: 7 Benchmark Date: 05 Jan 2026",
-        "stigid": "MOZ_Firefox_STIG",
-        "uuid": "add7e8af-33db-420d-aeb6-923f648b0698"
+        "passthrough": {
+          "classification": "UNCLASSIFIED",
+          "releaseInfo": "Release: 7 Benchmark Date: 05 Jan 2026",
+          "stigid": "MOZ_Firefox_STIG",
+          "uuid": "add7e8af-33db-420d-aeb6-923f648b0698"
+        }
       },
       "requirements": [
         {
@@ -27,7 +29,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000001",
               "message": "Installed Firefox version is current and supported.",
-              "startTime": "2026-07-14T17:48:54.404924Z",
+              "startTime": "2026-09-28T19:56:51.336845Z",
               "status": "passed"
             }
           ],
@@ -73,7 +75,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000002",
               "message": "SSLVersionMin is locked to tls1.2.",
-              "startTime": "2026-07-14T17:48:54.404924Z",
+              "startTime": "2026-09-28T19:56:51.336845Z",
               "status": "passed"
             }
           ],
@@ -119,7 +121,7 @@
             {
               "codeDesc": "STIG rule FFOX-00-000003",
               "message": "Preferences policy locks security.default_personal_cert correctly.",
-              "startTime": "2026-07-14T17:48:54.404924Z",
+              "startTime": "2026-09-28T19:56:51.336845Z",
               "status": "passed"
             }
           ],
@@ -168,17 +170,19 @@
     }
   ],
   "extensions": {
-    "assetExtras": {
-      "assetType": "Computing",
-      "role": "None"
-    },
-    "checklistFormat": "ckl"
+    "passthrough": {
+      "assetExtras": {
+        "assetType": "Computing",
+        "role": "None"
+      },
+      "checklistFormat": "ckl"
+    }
   },
   "generator": {
     "name": "ckl-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-14T17:48:54.404924Z",
+  "timestamp": "2026-09-28T19:56:51.336845Z",
   "tool": {
     "format": "CKL",
     "name": "DISA STIG Viewer"

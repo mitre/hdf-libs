@@ -69,6 +69,10 @@
     "generator": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Generator",
       "description": "Information about the tool that generated this plan."
+    },
+    "extensions": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Extensions",
+      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this plan was converted from."
     }
   },
   "examples": [
