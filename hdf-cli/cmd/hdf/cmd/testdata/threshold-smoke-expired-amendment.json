@@ -1,0 +1,32 @@
+{
+  "name": "threshold-smoke-expired-amendment",
+  "overrides": [
+    {
+      "appliedAt": "2026-09-30T15:34:30Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2020-01-01T00:00:00Z",
+      "impact": {
+        "value": 0.3,
+        "justification": "Mitigated during migration"
+      },
+      "reason": "Temporary re-score during migration; deliberately lapsed.",
+      "requirementId": "Grype/CVE-2020-13844",
+      "type": "riskAdjustment"
+    },
+    {
+      "appliedAt": "2026-09-30T15:34:30Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2020-06-30T00:00:00Z",
+      "reason": "Waiver from a previous authorisation period; deliberately lapsed.",
+      "requirementId": "Grype/CVE-2019-1010204",
+      "status": "passed",
+      "type": "waiver"
+    }
+  ]
+}
