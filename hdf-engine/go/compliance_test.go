@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/stretchr/testify/assert"
@@ -425,4 +426,153 @@ func TestOverrideAwareCountingUsesEffectiveImpactForSeverity(t *testing.T) {
 	// The raw twin is unchanged by design.
 	raw := CountControlsByStatusSeverity(results)
 	assert.Equal(t, 1, raw.Failed.Critical, "the no-override-awareness variant still reads the requirement's own impact")
+}
+
+// loadMultilayeredFixture reads the shared real InSpec multi-overlay run from
+// @mitre/hdf-fixtures (test/compliance.test.ts reads the same document). A
+// requirement id names the requirement, not one finding, so an overlay chain
+// re-reports the same id in every layer it touches — 534 of this run's ids
+// appear more than once, 406 of them with differing statuses.
+func loadMultilayeredFixture(t *testing.T) hdf.HDFResults {
+	t.Helper()
+	res, err := Load(fixtures.Results.InspecMultilayered, 0)
+	require.NoError(t, err)
+	require.True(t, res.Valid, "fixture must be schema-valid: %s", res.ParseError)
+	return *res.Results
+}
+
+// Duplicate ids are counted per entry, as they always were: the numeric bounds
+// count requirements, and this pins that the named-control fix did not move them.
+func TestCountControls_DuplicateIDsCountPerEntry(t *testing.T) {
+	counts := CountControlsByStatusSeverity(loadMultilayeredFixture(t))
+
+	// 1603 requirement entries over 534 distinct ids: every entry is counted.
+	assert.Equal(t, 1196, counts.Skipped.Total)
+	assert.Equal(t, 885, counts.Skipped.Medium)
+	assert.Equal(t, 273, counts.Failed.Total)
+	assert.Equal(t, 246, counts.Failed.Medium)
+	assert.Equal(t, 134, counts.Passed.Total)
+	assert.Equal(t, 1603, counts.Passed.Total+counts.Failed.Total+counts.Skipped.Total+counts.Error.Total+counts.NoImpact.Total)
+}
+
+// A threshold naming a control id must hold for EVERY entry carrying that id.
+// Resolving the id to one arbitrary entry let a gate pass because the last
+// duplicate happened to satisfy it while an earlier one did not.
+// Parity: test/compliance.test.ts 'named-control assertions over duplicate ids'.
+func TestValidateThresholds_NamedControlMustHoldForEveryEntry(t *testing.T) {
+	results := loadMultilayeredFixture(t)
+	counts := CountControlsByStatusSeverity(results)
+	compliance := CalculateCompliance(counts)
+	controlMap := MapControlIDs(results)
+
+	validate := func(cfg *ThresholdConfig) []string {
+		return ValidateThresholds(cfg, counts, compliance, controlMap)
+	}
+	// namedControl builds a spec asserting one control id under one
+	// status/severity bucket — test code, not fixture data.
+	namedControl := func(status, severity, id string) *ThresholdConfig {
+		b := &ThresholdBound{Controls: []string{id}}
+		ts := &ThresholdSeverity{}
+		switch severity {
+		case "critical":
+			ts.Critical = b
+		case "high":
+			ts.High = b
+		case "medium":
+			ts.Medium = b
+		case "informational":
+			ts.Informational = b
+		}
+		cfg := &ThresholdConfig{}
+		switch status {
+		case ThresholdPassed:
+			cfg.Passed = ts
+		case ThresholdFailed:
+			cfg.Failed = ts
+		case ThresholdSkipped:
+			cfg.Skipped = ts
+		}
+		return cfg
+	}
+
+	// V-242399 is notReviewed in the two wrapper layers and passed in the
+	// k8s-node layer, so the last entry alone satisfies passed/medium.
+	t.Run("a passing last entry no longer greens a gate its earlier entries fail", func(t *testing.T) {
+		v := validate(namedControl(ThresholdPassed, "medium", "V-242399"))
+		require.Len(t, v, 2)
+		assert.Equal(t, "passed.medium: control V-242399 expected passed/medium but found skipped/medium (entry 1 of 3)", v[0])
+		assert.Equal(t, "passed.medium: control V-242399 expected passed/medium but found skipped/medium (entry 2 of 3)", v[1])
+	})
+
+	// The mirror: the FIRST entries satisfy skipped/medium and the last does
+	// not. A first-wins resolution would pass this; fail-closed must not.
+	t.Run("a satisfying first entry does not rescue an unsatisfying last", func(t *testing.T) {
+		v := validate(namedControl(ThresholdSkipped, "medium", "V-242399"))
+		require.Len(t, v, 1)
+		assert.Equal(t, "skipped.medium: control V-242399 expected skipped/medium but found passed/medium (entry 3 of 3)", v[0])
+	})
+
+	// V-242387: notReviewed, notReviewed, failed across three baselines.
+	t.Run("a failing last entry no longer greens a failed-control gate", func(t *testing.T) {
+		v := validate(namedControl(ThresholdFailed, "high", "V-242387"))
+		require.Len(t, v, 2)
+		assert.Equal(t, "failed.high: control V-242387 expected failed/high but found skipped/high (entry 1 of 3)", v[0])
+		assert.Equal(t, "failed.high: control V-242387 expected failed/high but found skipped/high (entry 2 of 3)", v[1])
+	})
+
+	// The id's three entries live in three different baselines, so resolution
+	// spans the whole document rather than any one baseline.
+	t.Run("every baseline carrying the id contributes an entry", func(t *testing.T) {
+		n := 0
+		for _, m := range controlMap {
+			if m.ID == "V-242387" {
+				n++
+			}
+		}
+		assert.Equal(t, 3, n)
+		perBaseline := 0
+		for _, b := range results.Baselines {
+			for _, req := range b.Requirements {
+				if req.ID == "V-242387" {
+					perBaseline++
+					break
+				}
+			}
+		}
+		assert.Equal(t, 3, perBaseline, "one entry in each of three baselines")
+	})
+
+	// SV-257777 is reported twice within ONE baseline (and again in two
+	// others): duplication inside a single baseline resolves the same way.
+	t.Run("duplicate entries within one baseline are resolved too", func(t *testing.T) {
+		v := validate(namedControl(ThresholdSkipped, "informational", "SV-257777"))
+		require.Len(t, v, 2)
+		assert.Equal(t, "skipped.informational: control SV-257777 expected skipped/informational but found failed/informational (entry 3 of 5)", v[0])
+		assert.Equal(t, "skipped.informational: control SV-257777 expected skipped/informational but found failed/informational (entry 4 of 5)", v[1])
+	})
+
+	// Severity is checked per entry alongside status: V-242387 is impact 0.7
+	// (high) in every layer, so a critical assertion mismatches all three.
+	t.Run("severity is checked on every entry", func(t *testing.T) {
+		v := validate(namedControl(ThresholdFailed, "critical", "V-242387"))
+		require.Len(t, v, 3)
+		assert.Equal(t, "failed.critical: control V-242387 expected failed/critical but found skipped/high (entry 1 of 3)", v[0])
+		assert.Equal(t, "failed.critical: control V-242387 expected failed/critical but found failed/high (entry 3 of 3)", v[2])
+	})
+
+	// V-242376 is notReviewed at impact 0 in all three layers.
+	t.Run("duplicate entries that all satisfy the assertion pass", func(t *testing.T) {
+		assert.Empty(t, validate(namedControl(ThresholdSkipped, "informational", "V-242376")))
+	})
+
+	t.Run("an id in no entry is still reported missing", func(t *testing.T) {
+		v := validate(namedControl(ThresholdFailed, "high", "V-999999"))
+		require.Len(t, v, 1)
+		assert.Equal(t, "failed.high: expected control V-999999 not found in results", v[0])
+	})
+
+	// The single-entry contract — identical verdict AND identical message text,
+	// with no entry-index suffix — is pinned by TestValidateThresholds above,
+	// whose fixture carries each id exactly once. Every id in this document is
+	// duplicated, so it cannot be asserted here.
 }

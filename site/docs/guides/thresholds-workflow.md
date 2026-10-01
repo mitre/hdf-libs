@@ -530,6 +530,10 @@ failed:
 
 Now the gate fails if `CKV_TF_1` starts passing, or if a different control fails in its place. That is stricter than a count and suits a baseline you expect to be stable; it is noisy for a scan whose findings move around.
 
+A requirement id names the requirement, not one finding, so the same id legitimately appears more than once — one CVE reported against several packages emits one requirement per package, in one baseline or across several. A named control is checked against **every** entry carrying that id: the assertion holds only if all of them have the expected status and severity, and each entry that does not is reported with its position (`entry 2 of 3`). Counting bounds are unchanged — they count requirement entries, duplicates included.
+
+This matters most on an overlay chain, where a layer restates the requirements it inherits. In the three-layer scan above, 534 ids appear more than once and 406 of those carry differing statuses between layers, so resolving an id to a single arbitrary entry would let one passing layer green a gate its siblings fail.
+
 ## A failure names what caused it
 
 A breached bound lists the requirements underneath it, so a red check answers "which finding broke the build" without downloading an artifact:
