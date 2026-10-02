@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -297,21 +297,19 @@ func TestConvertToHTML_DirectoryInput(t *testing.T) {
 		assert.Contains(t, string(data), `<h2 id="sources-heading">Sources (2)</h2>`)
 	})
 
-	t.Run("an unreadable file under the directory is reported and passed over", func(t *testing.T) {
-		if runtime.GOOS == "windows" || os.Geteuid() == 0 {
-			t.Skip("a file mode cannot make a file unreadable on Windows or to root")
-		}
+	// A file over --max-size is the read failure every platform can produce; a
+	// file mode cannot make a file unreadable on Windows or to root.
+	t.Run("a file under the directory that cannot be read is reported and passed over", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "ok.json"), fixtures.Results.Minimal, 0o600))
-		locked := filepath.Join(dir, "locked.json")
-		require.NoError(t, os.WriteFile(locked, fixtures.Results.Minimal, 0o000))
-		t.Cleanup(func() { _ = os.Chmod(locked, 0o600) })
+		oversized := append(bytes.Repeat([]byte(" "), 2<<20), fixtures.Results.Minimal...)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "too-big.json"), oversized, 0o600))
 
 		out := filepath.Join(t.TempDir(), "report.html")
-		_, stderr, err := executeCommand("convert", dir, "--to", "html", "-o", out)
+		_, stderr, err := executeCommand("convert", dir, "--to", "html", "-o", out, "--max-size", "1")
 		require.NoError(t, err)
 		assert.Contains(t, stderr, "Warning: skipped")
-		assert.Contains(t, stderr, "locked.json")
+		assert.Contains(t, stderr, "too-big.json")
 		assert.Contains(t, stderr, "Combined 1 documents into")
 	})
 
