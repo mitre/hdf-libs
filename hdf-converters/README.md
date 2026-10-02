@@ -63,7 +63,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Trivy | `convertTrivyToHdf` | JSON (native; SARIF/CycloneDX/ASFF/GitLab auto-routed) |
 | TruffleHog | `convertTrufflehogToHdf` | JSON |
 | Twistlock | `convertTwistlockToHdf` | JSON |
-| Veracode | `convertVeracodeToHdf` | JSON |
+| Veracode | `convertVeracodeToHdf` | XML |
 | XCCDF Results | `convertXccdfResultsToHdf` | XML |
 
 ### HDF to Other Formats

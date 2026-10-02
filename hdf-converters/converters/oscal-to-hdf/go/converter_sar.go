@@ -122,7 +122,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 			log.Printf("WARNING: Skipping assessment result \"%s\": no finding has a target-id", title)
 			continue
 		}
-		baseline := resultToEvaluatedBaseline(r, order, groups, sar, rawInput, scanTime)
+		baseline := resultToEvaluatedBaseline(r, order, groups, rawInput, scanTime)
 		baselines = append(baselines, baseline)
 	}
 
@@ -146,6 +146,7 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 		ToolName:         "OSCAL Assessment Results",
 		ToolFormat:       "OSCAL",
 		Baselines:        baselines,
+		Components:       sarComponents(sar),
 		Timestamp:        timestamp,
 	})
 
@@ -154,10 +155,79 @@ func sarToHDFResults(sar *AssessmentResults, rawInput []byte, converterVersion s
 	return result, nil
 }
 
+// hdfComponentTypes is the set of OSCAL subject types that are HDF component
+// types. A foreign SAR's subject types (component, inventory-item, party, …) are
+// not among them, so those subjects do not reconstitute as HDF components.
+var hdfComponentTypes = map[string]bool{
+	string(hdf.Host): true, string(hdf.ContainerImage): true, string(hdf.ContainerInstance): true,
+	string(hdf.ContainerPlatform): true, string(hdf.CloudAccount): true, string(hdf.CloudResource): true,
+	string(hdf.Repository): true, string(hdf.Application): true, string(hdf.Artifact): true,
+	string(hdf.Network): true, string(hdf.Database): true, string(hdf.AIModel): true, string(hdf.Dataset): true,
+}
+
+// sarComponents reconstitutes the top-level HDF components from a SAR. The
+// authoritative home is each result's local-definitions.components (ADR-0014
+// §4.5), which survives even when no requirement produced an observation; the
+// per-observation subjects are read too for documents exported before the
+// result-level home existed. Components are deduplicated by uuid in first-seen
+// document order — a component appears identically at the result level and on
+// every observation — and one whose type is not an HDF component type is left
+// alone so foreign SARs gain no invalid components.
+func sarComponents(sar *AssessmentResults) []hdf.Component {
+	var components []hdf.Component
+	seen := make(map[string]bool)
+	add := func(subj *SubjectRef) {
+		if subj.SubjectUUID == "" || seen[subj.SubjectUUID] || !hdfComponentTypes[subj.Type] {
+			return
+		}
+		seen[subj.SubjectUUID] = true
+		components = append(components, subjectToComponent(subj))
+	}
+	for i := range sar.Results {
+		if ld := sar.Results[i].LocalDefinitions; ld != nil {
+			for j := range ld.Components {
+				sc := &ld.Components[j]
+				add(&SubjectRef{SubjectUUID: sc.UUID, Type: sc.Type, Title: sc.Title, Props: sc.Props})
+			}
+		}
+		for j := range sar.Results[i].Observations {
+			subjects := sar.Results[i].Observations[j].Subjects
+			for k := range subjects {
+				add(&subjects[k])
+			}
+		}
+	}
+	return components
+}
+
+// subjectToComponent rebuilds one HDF component from an assessment subject: the
+// subject uuid is the componentId (ADR-0014 §4.5 SSP analog), and every
+// type-specific identity field comes from the HDF-namespaced props the exporter
+// stamped on the subject. The subject title is the name a foreign subject carries
+// no component-name prop for (§4.3, §4.5).
+func subjectToComponent(subj *SubjectRef) hdf.Component {
+	uuid := subj.SubjectUUID
+	c := hdf.Component{
+		Type:        hdf.TargetType(subj.Type),
+		Name:        subj.Title,
+		ComponentID: &uuid,
+	}
+	ReadComponentSubjectProps(&c, subj.Props)
+	return c
+}
+
+// strOrEmpty dereferences an optional string, treating absence as empty.
+func strOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 // resultToEvaluatedBaseline converts a single OSCAL Result to an HDF
 // EvaluatedBaseline from its findings grouped by requirement id, so that
 // multiple findings for the same requirement produce multiple results on it.
-func resultToEvaluatedBaseline(result *Result, order []string, groups map[string][]*Finding, sar *AssessmentResults, rawInput []byte, scanTime time.Time) hdf.EvaluatedBaseline {
+func resultToEvaluatedBaseline(result *Result, order []string, groups map[string][]*Finding, rawInput []byte, scanTime time.Time) hdf.EvaluatedBaseline {
 	checksum := shared.InputChecksum(rawInput)
 	integrity := shared.InputIntegrity(rawInput)
 
@@ -172,12 +242,12 @@ func resultToEvaluatedBaseline(result *Result, order []string, groups map[string
 	}
 
 	// Derive baseline name
-	name := sarBaselineName(result, sar)
+	name := sarBaselineName(result)
 
 	status := "loaded"
 	baseline := hdf.EvaluatedBaseline{
 		Name:            name,
-		Title:           hdfutil.Ptr(result.Title),
+		Title:           hdfutil.Ptr(sarBaselineTitle(result)),
 		Status:          &status,
 		Integrity:       integrity,
 		ResultsChecksum: checksum,
@@ -203,7 +273,7 @@ func findingsToEvaluatedRequirement(
 ) hdf.EvaluatedRequirement {
 	// Use the first finding for title/description
 	firstFinding := findings[0]
-	title := firstFinding.Title
+	title := sarRequirementTitle(firstFinding)
 	if title == "" {
 		title = id
 	}
@@ -229,6 +299,13 @@ func findingsToEvaluatedRequirement(
 	// map to none), matching how sibling converters emit both.
 	nistTags := sarConfirmedNistTags(findings)
 	tags := shared.BuildNISTCCITags(nistTags, cci.NISTToCCI(nistTags))
+
+	// Foreign and otherwise-unconsumed props on this requirement's finding(s),
+	// observations and risks ride through HDF in the reserved oscal-props tag
+	// (ADR-0014 §3) so re-export can reproduce them.
+	if carried := sarCarriedProps(findings, obsMap, riskMap); len(carried) > 0 {
+		tags[OscalPropsTag] = carried
+	}
 
 	return hdf.EvaluatedRequirement{
 		ID:           id,
@@ -294,6 +371,42 @@ func sarConfirmedNistTags(findings []*Finding) []string {
 		}
 	}
 	return ControlIDsToNistTags(controlIDs)
+}
+
+// sarCarriedProps collects the carriage entries for a requirement (ADR-0014
+// §3.1): every unconsumed prop on its finding(s), then on their related
+// observations, then on their related risks. Observations and risks are read
+// once each (deduplicated by UUID) even when several findings reference them.
+func sarCarriedProps(findings []*Finding, obsMap map[string]*Observation, riskMap map[string]*Risk) []CarriedProp {
+	var entries []CarriedProp
+	for _, f := range findings {
+		entries = CarryForeignProps(entries, "finding", f.Props)
+	}
+	seenObs := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedObservations {
+			if seenObs[ref.ObservationUUID] {
+				continue
+			}
+			seenObs[ref.ObservationUUID] = true
+			if obs, ok := obsMap[ref.ObservationUUID]; ok {
+				entries = CarryForeignProps(entries, "observation", obs.Props)
+			}
+		}
+	}
+	seenRisk := make(map[string]bool)
+	for _, f := range findings {
+		for _, ref := range f.RelatedRisks {
+			if seenRisk[ref.RiskUUID] {
+				continue
+			}
+			seenRisk[ref.RiskUUID] = true
+			if risk, ok := riskMap[ref.RiskUUID]; ok {
+				entries = CarryForeignProps(entries, "risk", risk.Props)
+			}
+		}
+	}
+	return entries
 }
 
 // mapFindingStatus maps a finding's target status to an HDF ResultStatus.
@@ -693,11 +806,38 @@ func parseResultStartTime(result *Result) time.Time {
 	return time.Time{}
 }
 
-// sarBaselineName derives a baseline name from the result title or SAR metadata.
-func sarBaselineName(result *Result, sar *AssessmentResults) string {
-	title := result.Title
-	if title == "" {
-		title = sar.Metadata.Title
+// sarBaselineName recovers the HDF baseline name. An HDF-produced result carries
+// it exactly in the namespaced baseline-name prop (§4.3). A foreign result has
+// none, so the name is <kebab-title>--<result-uuid> — the bare uuid when the
+// kebab-cased title is empty — which keeps same-title results distinct because
+// OSCAL guarantees uniqueness only for uuid (§4.5).
+func sarBaselineName(result *Result) string {
+	if m, ok := FindVocabularyProp(result.Props, "baseline-name"); ok {
+		return m.Value
 	}
-	return ToKebabCase(title, "oscal-assessment-results")
+	kebab := hdfutil.ToKebabCase(result.Title)
+	if kebab == "" {
+		return result.UUID
+	}
+	return kebab + "--" + result.UUID
+}
+
+// sarBaselineTitle recovers the exact HDF baseline title: the namespaced
+// baseline-title prop for an HDF-produced result (§4.3), else the result title
+// for a foreign result. Distinct from the baseline name (baseline-name prop).
+func sarBaselineTitle(result *Result) string {
+	if m, ok := FindVocabularyProp(result.Props, "baseline-title"); ok {
+		return m.Value
+	}
+	return result.Title
+}
+
+// sarRequirementTitle recovers the exact HDF requirement title: the namespaced
+// requirement-title prop for an HDF-produced finding (§4.3, prose home for the
+// §2 Requirement_Core.title), else the finding title for a foreign finding.
+func sarRequirementTitle(f *Finding) string {
+	if m, ok := FindVocabularyProp(f.Props, "requirement-title"); ok {
+		return m.Value
+	}
+	return f.Title
 }

@@ -992,3 +992,59 @@ describe('Nessus to HDF Converter', async () => {
     });
   });
 });
+
+// Twin of the Go converter's Unmapped*DefaultsToRemediationControls tests.
+describe('Nessus unmapped NIST fallback', () => {
+  it('defaults an unmapped plugin family to the remediation controls rather than an empty tag', async () => {
+    const input = readFileSync(join(FIXTURES_DIR, 'input', 'sample.nessus'), 'utf-8');
+    const result = await convertNessusToHdf(input);
+
+    const byId = new Map<string, string[]>();
+    for (const baseline of result.baselines) {
+      for (const req of baseline.requirements) {
+        const nist = req.tags.nist as string[] | undefined;
+        expect(nist, `requirement ${req.id} carries no nist tag`).toBeDefined();
+        expect(nist!.length, `requirement ${req.id} has an empty nist tag`).toBeGreaterThan(0);
+        byId.set(req.id, nist!);
+      }
+    }
+
+    // Plugins the table does not cover. Asserted by id rather than by counting
+    // the fallback value, because 66334 (Patch Report) maps to the same pair on
+    // its own and would make a count-based check pass for the wrong reason.
+    for (const id of ['156000', '156888', '154345', '42255', '104410', '33850', '153953', '10663']) {
+      expect(byId.get(id), `plugin ${id} is unmapped, so it takes the fallback`).toEqual(['SI-2', 'RA-5']);
+    }
+    // A plugin the table does cover keeps its own mapping.
+    expect(byId.get('45590'), 'a mapped plugin is untouched by the fallback').toEqual(['CM-8']);
+  });
+
+  it('defaults an unmapped CCI to the remediation controls, so the compliance path falls back too', async () => {
+    const input = `<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Policy><policyName>Audit</policyName></Policy>
+  <Report name="Audit">
+    <ReportHost name="host.example.com">
+      <HostProperties><tag name="host-ip">10.0.0.1</tag></HostProperties>
+      <ReportItem port="0" svc_name="general" protocol="tcp" severity="2" pluginID="33814" pluginName="DISA STIG Compliance" pluginFamily="Policy Compliance">
+        <cm:compliance-reference xmlns:cm="http://www.nessus.org/cm">CCI|CCI-999999,STIG-ID|XX-00-000000</cm:compliance-reference>
+        <cm:compliance-check-name xmlns:cm="http://www.nessus.org/cm">A check with no mapped CCI</cm:compliance-check-name>
+        <cm:compliance-result xmlns:cm="http://www.nessus.org/cm">FAILED</cm:compliance-result>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>`;
+    const result = await convertNessusToHdf(input);
+    const req = result.baselines[0].requirements[0];
+    expect(req.tags.cci).toEqual(['CCI-999999']);
+    expect(req.tags.nist).toEqual(['SI-2', 'RA-5']);
+  });
+
+  it('leaves the no-findings placeholder untagged, since it is not an unmapped finding', async () => {
+    const input = readFileSync(join(FIXTURES_DIR, 'input', 'empty-host.nessus'), 'utf-8');
+    const result = await convertNessusToHdf(input);
+    const req = result.baselines[0].requirements[0];
+    expect(req.id).toBe('nessus-no-findings');
+    expect(req.tags.nist).toBeUndefined();
+  });
+});

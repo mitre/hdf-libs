@@ -704,3 +704,79 @@ func TestConvertHDFToOSCALSAR_OmitsSubjectsKeyWhenAllComponentsTypeless(t *testi
 	require.NoError(t, v.Validate(out))
 	assert.NotContains(t, string(out), `"subjects": []`, "an empty subjects array is not valid OSCAL")
 }
+
+// TestConvertHDFToOSCALSAR_ToolPartyNameNormalized pins the ADR-0014 §1.7.1
+// normalization of the assessment-tool party name, a non-prop StringDatatype sink
+// (^\S(.*\S)?$) the exporter fills from the HDF tool/generator identity. HDF puts
+// no single-line constraint on tool.name, so a line terminator or edge whitespace
+// there produced a document both vendored schemas reject. The party name is
+// display text only; nothing round-trips through it.
+func TestConvertHDFToOSCALSAR_ToolPartyNameNormalized(t *testing.T) {
+	for _, tc := range []struct{ name, toolName, want string }{
+		{"interior line feed", "In\nSpec", "In Spec"},
+		{"carriage return", "In\rSpec", "In Spec"},
+		{"line separator U+2028", "In\u2028Spec", "In Spec"},
+		{"paragraph separator U+2029", "In\u2029Spec", "In Spec"},
+		{"leading and trailing whitespace", "  InSpec  ", "InSpec"},
+		{"already valid unchanged", "InSpec 5.22.65", "InSpec 5.22.65"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			toolName, err := json.Marshal(tc.toolName)
+			require.NoError(t, err)
+			input := []byte(`{"tool":{"name":` + string(toolName) + `,"format":"exec-json"},` +
+				`"baselines":[{"name":"b1","requirements":[{"id":"AC-3","impact":0.5,` +
+				`"tags":{"nist":["AC-3"]},"results":[{"status":"failed","codeDesc":"c",` +
+				`"startTime":"2026-06-01T00:00:00Z"}]}]}]}`)
+
+			for _, file := range arSchemaFiles {
+				requireValidAR(t, arSchemaFor(t, file), file, input)
+			}
+			out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+			require.NoError(t, err)
+			var doc struct {
+				AR oscal.AssessmentResults `json:"assessment-results"`
+			}
+			require.NoError(t, json.Unmarshal(out, &doc))
+			require.Len(t, doc.AR.Metadata.Parties, 1)
+			assert.Equal(t, tc.want, doc.AR.Metadata.Parties[0].Name, "tool party name is normalized display text")
+		})
+	}
+}
+
+// TestConvertHDFToOSCALSAR_ConstructedTitlesNormalized pins the ADR-0014 §1.7.1
+// normalization of the two constructed MarkupLineDatatype titles the exporter
+// embeds a requirement id into — the check-source back-matter resource and the
+// impact risk. A requirement id with a line terminator reaches both. The
+// requirement carries a single-line title so finding.title (an identity round-trip
+// home that carries a requirement's own title verbatim, out of scope here) stays
+// valid, isolating the display sinks under test.
+func TestConvertHDFToOSCALSAR_ConstructedTitlesNormalized(t *testing.T) {
+	input := []byte(`{"baselines":[{"name":"b1","requirements":[{"id":"AC-4\ntrailing",` +
+		`"title":"Access control","impact":0.5,"code":"describe x","tags":{"nist":["AC-4"]},` +
+		`"results":[{"status":"failed","codeDesc":"c","startTime":"2026-06-01T00:00:00Z"}]}]}]}`)
+
+	for _, file := range arSchemaFiles {
+		requireValidAR(t, arSchemaFor(t, file), file, input)
+	}
+	out, err := ConvertHDFToOSCALSAR(input, "1.0.0")
+	require.NoError(t, err)
+
+	var doc struct {
+		AR oscal.AssessmentResults `json:"assessment-results"`
+	}
+	require.NoError(t, json.Unmarshal(out, &doc))
+	require.NotEmpty(t, doc.AR.Results)
+	res := doc.AR.Results[0]
+	require.NotEmpty(t, res.Risks, "an impact>0 requirement produces a risk")
+	assert.NotContains(t, res.Risks[0].Title, "\n", "the risk title carries no line feed")
+	assert.Equal(t, "Risk for AC-4 trailing", res.Risks[0].Title)
+
+	var codeTitle string
+	for _, r := range doc.AR.BackMatter.Resources {
+		if strings.HasPrefix(r.Title, "Check source code") {
+			codeTitle = r.Title
+		}
+	}
+	require.NotEmpty(t, codeTitle, "the check-source resource is present")
+	assert.Equal(t, "Check source code for AC-4 trailing", codeTitle)
+}

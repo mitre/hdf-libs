@@ -5,14 +5,14 @@ on:
     # Scoped to main so a branch with an open PR doesn't run CI twice per
     # update (once for the branch push, once for the PR synchronize).
     branches: [main]
+    # '**.md' is deliberately NOT ignored: only this workflow reports the checks
+    # the ruleset requires, so a Markdown-only PR would stay BLOCKED forever.
     paths-ignore:
-      - '**.md'
       - 'docs/**'
       - '.beads/**'
       - 'LICENSE*'
   pull_request:
     paths-ignore:
-      - '**.md'
       - 'docs/**'
       - '.beads/**'
       - 'LICENSE*'
@@ -50,8 +50,8 @@ env:
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
   # The released hdf CLI the gates run. Bumped post-publish by the release
   # skill (Phase 9) from the linux_amd64 line of that release's checksums.txt.
-  HDF_CLI_VERSION: '3.7.0'
-  HDF_CLI_SHA256: '315fcbf7b8322697aec513f3a101dc0b0a61902255c43d6fd8d002490e318613'
+  HDF_CLI_VERSION: '3.7.1'
+  HDF_CLI_SHA256: '6d4fe47c3d58fea788e27432bdd0b8e04d3ab90106e09b0f9025d69addd1e83a'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
@@ -339,6 +339,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Build TypeScript (required for cross-package type resolution)
         run: pnpm build:ts
+      # A publishable package importing a module it does not declare only
+      # breaks for consumers, so scan every built dist before anything ships.
+      - name: Published packages declare every runtime import
+        run: pnpm run lint:published-deps
       # One eslint.config.mjs at the root governs every package, so one
       # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.
@@ -817,7 +821,7 @@ jobs:
         id: sonar
         if: env.SONAR_TOKEN != ''
         continue-on-error: true
-        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        uses: SonarSource/sonarqube-scan-action@ba9859eae8dd6bd29e412f25ddbbef3d032000f4 # v8.2.2
       # Advisory must not mean invisible.
       - name: Report Sonar scan outcome
         if: always() && steps.sonar.outcome != 'success'

@@ -3,20 +3,20 @@ module github.com/mitre/hdf-libs/hdf-cli/v3
 go 1.26.6
 
 require (
-	github.com/aws/aws-sdk-go-v2/service/securityhub v1.81.0
+	github.com/aws/aws-sdk-go-v2/service/securityhub v1.82.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v1.0.0
 	github.com/google/uuid v1.6.0
-	github.com/mitre/hdf-libs/hdf-converters/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.0
-	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.0
+	github.com/mitre/hdf-libs/hdf-converters/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-diff/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-generators/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-schema/dist/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.1
+	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.1
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
@@ -28,8 +28,8 @@ require (
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.47.0 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.33.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/configservice v1.73.0 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.33.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.0 // indirect
 	github.com/carabiner-dev/spdx3 v0.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
@@ -50,17 +50,17 @@ require (
 	github.com/CycloneDX/cyclonedx-go v0.12.0 // indirect
 	github.com/anchore/go-struct-converter v0.1.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.3 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.19.2 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.5 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.9.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.37.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.42.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.49.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.10.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.38.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect

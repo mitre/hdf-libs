@@ -622,3 +622,176 @@ func TestConvertHDFToOSCALPOAM_PaddedIdentifierDedupes(t *testing.T) {
 	}
 	assert.Equal(t, []string{"analyst", "  analyst  "}, identifiers)
 }
+
+// adversarialLineValues are strings that are valid HDF (no single-line
+// constraint) but not valid as an OSCAL single-line field: a line terminator
+// OSCAL 1.2.3 forbids in a title (MarkupLineDatatype ^[^\n]+$), or a line
+// terminator or edge whitespace StringDatatype (^\S(.*\S)?$) forbids. Each row's
+// normalized form is what ADR-0014 §1.7.1 renders: each run of CR/LF/U+2028/U+2029
+// becomes one space and ECMAScript whitespace is trimmed from both edges.
+var adversarialLineValues = []struct{ name, raw, normalized string }{
+	{"trailing line feed", "SV-001\n", "SV-001"},
+	{"interior line feed", "first\nsecond", "first second"},
+	{"lone carriage return", "first\rsecond", "first second"},
+	{"CRLF is one run", "first\r\nsecond", "first second"},
+	{"line separator U+2028", "a\u2028b", "a b"},
+	{"paragraph separator U+2029", "a\u2029b", "a b"},
+	{"leading and trailing whitespace", "  SV-001  ", "SV-001"},
+}
+
+// poamWithSinks builds a valid HDF amendments document with the given values
+// placed in the four non-prop single-line sinks this card sweeps.
+func poamWithSinks(t *testing.T, name, requirementID, sourceName, identifier string) []byte {
+	t.Helper()
+	q := func(s string) string {
+		b, err := json.Marshal(s)
+		require.NoError(t, err)
+		return string(b)
+	}
+	return []byte(`{"name":` + q(name) + `,"overrides":[{"requirementId":` + q(requirementID) +
+		`,"type":"waiver","status":"notApplicable","reason":"r",` +
+		`"appliedAt":"2020-01-01T00:00:00Z","expiresAt":"2099-12-31T00:00:00Z",` +
+		`"appliedBy":{"identifier":` + q(identifier) + `,"type":"username"},` +
+		`"externalReferences":[{"sourceName":` + q(sourceName) + `,"href":"https://example.com/a"}]}]}`)
+}
+
+// poamDoc is the subset of an OSCAL POA&M this card asserts on.
+type poamDoc struct {
+	POAM struct {
+		Metadata struct {
+			Title   string           `json:"title"`
+			Props   []oscal.Property `json:"props"`
+			Parties []struct {
+				Name  string           `json:"name"`
+				Props []oscal.Property `json:"props"`
+			} `json:"parties"`
+		} `json:"metadata"`
+		Risks []struct {
+			Title string           `json:"title"`
+			Props []oscal.Property `json:"props"`
+		} `json:"risks"`
+		Items []struct {
+			Title string `json:"title"`
+		} `json:"poam-items"`
+		BackMatter struct {
+			Resources []struct {
+				Title string           `json:"title"`
+				Props []oscal.Property `json:"props"`
+			} `json:"resources"`
+		} `json:"back-matter"`
+	} `json:"plan-of-action-and-milestones"`
+}
+
+func parsePOAM(t *testing.T, out []byte) poamDoc {
+	t.Helper()
+	var doc poamDoc
+	require.NoError(t, json.Unmarshal(out, &doc))
+	return doc
+}
+
+// TestConvertHDFToOSCALPOAM_SingleLineSinks_1_2_3 is this card's core test. OSCAL
+// 1.2.3 rejects a title with a line feed (MarkupLineDatatype) and a party name or
+// resource title with any line terminator or edge whitespace (StringDatatype),
+// while 1.1.2 does not — so a schema-valid HDF value with a newline produced a
+// POA&M valid on the declared 1.1.2 and rejected by 1.2.3. Every non-prop
+// single-line sink now normalizes through the ADR-0014 §1.7.1 helper, and the
+// exact value rides in that sink's §4.6 prop home.
+func TestConvertHDFToOSCALPOAM_SingleLineSinks_1_2_3(t *testing.T) {
+	hdfV := amendmentsValidator(t)
+	schemas := poamSchemas(t)
+
+	// The card's first-failing subtest: requirementId "SV-001\n" reaches both
+	// risk.title and poam-items[].title and fails 1.2.3 on both today.
+	for _, tc := range adversarialLineValues {
+		t.Run("requirementId/"+tc.name, func(t *testing.T) {
+			input := poamWithSinks(t, "doc", tc.raw, "cve", "analyst")
+			require.NoError(t, hdfV.Validate(input), "the test input is not valid HDF")
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+			for _, s := range schemas {
+				s.v.RequireValid(t, s.file, out)
+			}
+			doc := parsePOAM(t, out)
+			require.Len(t, doc.POAM.Risks, 1)
+			require.Len(t, doc.POAM.Items, 1)
+			assert.Equal(t, tc.normalized, doc.POAM.Risks[0].Title, "risk title is normalized display text")
+			assert.Equal(t, tc.normalized, doc.POAM.Items[0].Title, "poam-item title is normalized display text")
+			m, ok := oscal.FindVocabularyProp(doc.POAM.Risks[0].Props, "hdf-requirement-id")
+			require.True(t, ok)
+			assert.Equal(t, tc.raw, m.Value, "the exact requirementId rides in its §4.6 prop home")
+		})
+
+		t.Run("name/"+tc.name, func(t *testing.T) {
+			input := poamWithSinks(t, tc.raw, "AC-1", "cve", "analyst")
+			require.NoError(t, hdfV.Validate(input), "the test input is not valid HDF")
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+			for _, s := range schemas {
+				s.v.RequireValid(t, s.file, out)
+			}
+			doc := parsePOAM(t, out)
+			assert.Equal(t, tc.normalized, doc.POAM.Metadata.Title, "metadata title is normalized display text")
+			m, ok := oscal.FindVocabularyProp(doc.POAM.Metadata.Props, "amendments-name")
+			require.True(t, ok)
+			assert.Equal(t, tc.raw, m.Value, "the exact name rides in its §4.6 prop home")
+		})
+
+		t.Run("sourceName/"+tc.name, func(t *testing.T) {
+			input := poamWithSinks(t, "doc", "AC-1", tc.raw, "analyst")
+			require.NoError(t, hdfV.Validate(input), "the test input is not valid HDF")
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+			for _, s := range schemas {
+				s.v.RequireValid(t, s.file, out)
+			}
+			doc := parsePOAM(t, out)
+			require.Len(t, doc.POAM.BackMatter.Resources, 1)
+			assert.Equal(t, tc.normalized, doc.POAM.BackMatter.Resources[0].Title, "resource title is normalized display text")
+			m, ok := oscal.FindVocabularyProp(doc.POAM.BackMatter.Resources[0].Props, "source-name")
+			require.True(t, ok)
+			assert.Equal(t, tc.raw, m.Value, "the exact sourceName rides in its §4.6 prop home")
+		})
+
+		t.Run("identifier/"+tc.name, func(t *testing.T) {
+			input := poamWithSinks(t, "doc", "AC-1", "cve", tc.raw)
+			require.NoError(t, hdfV.Validate(input), "the test input is not valid HDF")
+			out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+			require.NoError(t, err)
+			for _, s := range schemas {
+				s.v.RequireValid(t, s.file, out)
+			}
+			doc := parsePOAM(t, out)
+			require.Len(t, doc.POAM.Metadata.Parties, 1)
+			assert.Equal(t, tc.normalized, doc.POAM.Metadata.Parties[0].Name, "party name is normalized display text")
+			m, ok := oscal.FindVocabularyProp(doc.POAM.Metadata.Parties[0].Props, "identity-identifier")
+			require.True(t, ok)
+			assert.Equal(t, tc.raw, m.Value, "the exact identifier rides in its §4.6 prop home")
+		})
+	}
+}
+
+// TestConvertHDFToOSCALPOAM_AlreadyValidSingleLineUnchanged pins that a value that
+// is already a valid single line is emitted byte-for-byte, so normalization
+// causes no golden churn for the overwhelming common case.
+func TestConvertHDFToOSCALPOAM_AlreadyValidSingleLineUnchanged(t *testing.T) {
+	const v = "SV-230221r858734_rule"
+	input := poamWithSinks(t, v, v, v, v)
+	require.NoError(t, amendmentsValidator(t).Validate(input), "the test input is not valid HDF")
+	out, err := ConvertHDFToOSCALPOAM(input, "1.0.0")
+	require.NoError(t, err)
+
+	doc := parsePOAM(t, out)
+	require.Len(t, doc.POAM.Risks, 1)
+	assert.Equal(t, v, doc.POAM.Risks[0].Title)
+	assert.Equal(t, v, doc.POAM.Items[0].Title)
+	assert.Equal(t, v, doc.POAM.Metadata.Title)
+	require.Len(t, doc.POAM.Metadata.Parties, 1)
+	assert.Equal(t, v, doc.POAM.Metadata.Parties[0].Name)
+	require.Len(t, doc.POAM.BackMatter.Resources, 1)
+	assert.Equal(t, v, doc.POAM.BackMatter.Resources[0].Title)
+
+	// An unchanged value carries no remarks: the prop value already equals the source.
+	m, ok := oscal.FindVocabularyProp(doc.POAM.Risks[0].Props, "hdf-requirement-id")
+	require.True(t, ok)
+	assert.Equal(t, v, m.Value)
+}
