@@ -36,6 +36,11 @@ func NewConvertCmd() *cobra.Command {
 		Long:  buildConvertLong(),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if componentID, _ := cmd.Flags().GetString("component-id"); componentID != "" {
+				if err := hdfdoc.ValidateComponentID(componentID); err != nil {
+					return fmt.Errorf("invalid --component-id: %w", err)
+				}
+			}
 			files, err := expandGlobs(args)
 			if err != nil {
 				return err
@@ -56,7 +61,7 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
 	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets (key=value pairs, e.g., --labels system=Portal,environment=production)")
-	cmd.Flags().String("component-id", "", "Set componentId on all components in the output")
+	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components in the output")
 	cmd.Flags().Int("nist-rev", 0, "NIST 800-53 revision for emitted control tags (4 or 5; default 5)")
 	cmd.Flags().Bool("nist-strict", false, "Fail if input references rules mapped only at a different NIST revision")
 	addNoValidateFlag(cmd)

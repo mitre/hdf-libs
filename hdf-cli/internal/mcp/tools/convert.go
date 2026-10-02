@@ -138,6 +138,11 @@ func RegisterConvert(s *sdkmcp.Server, ldr *loader.Loader) {
 
 func hdfConvert(ldr *loader.Loader) sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
+		if in.ComponentID != "" {
+			if err := hdfdoc.ValidateComponentID(in.ComponentID); err != nil {
+				return argError(err.Error(), "pass componentId as an RFC 4122 UUID, or omit it"), convertOutput{}, nil
+			}
+		}
 		if len(in.Sources) > 0 || in.Directory != "" {
 			return hdfConvertBatch(ctx, ldr, in)
 		}

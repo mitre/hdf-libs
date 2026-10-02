@@ -2,6 +2,7 @@ package hdfdoc
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -107,14 +108,41 @@ func TestApplyLabels(t *testing.T) {
 	})
 }
 
+const testComponentID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+
 func TestApplyComponentID_Fixed(t *testing.T) {
-	out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"},{"name":"h2"}]}`), "fixed-123", false)
+	out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"},{"name":"h2"}]}`), testComponentID, false)
 	require.NoError(t, err)
 	var doc map[string]any
 	require.NoError(t, json.Unmarshal(out, &doc))
 	for _, c := range doc["components"].([]any) {
-		assert.Equal(t, "fixed-123", c.(map[string]any)["componentId"])
+		assert.Equal(t, testComponentID, c.(map[string]any)["componentId"])
 	}
+}
+
+func TestApplyComponentID_RejectsNonUUID(t *testing.T) {
+	for _, id := range []string{"CI0012345", "fixed-123", " " + testComponentID, "aaaaaaaabbbb4ccc8dddeeeeeeeeeeee"} {
+		t.Run(id, func(t *testing.T) {
+			out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"}]}`), id, false)
+			require.Error(t, err)
+			assert.Nil(t, out, "a rejected id must hand back no document")
+			assert.Contains(t, err.Error(), fmt.Sprintf("%q", id), "the error names the offending value")
+			assert.Contains(t, err.Error(), "UUID")
+		})
+	}
+}
+
+// A bad id is a bad argument whether or not the document has anything to stamp.
+func TestApplyComponentID_RejectsNonUUIDWithoutComponents(t *testing.T) {
+	_, err := ApplyComponentID([]byte(`{"baselines":[]}`), "CI0012345", false)
+	require.Error(t, err)
+}
+
+func TestValidateComponentID(t *testing.T) {
+	require.NoError(t, ValidateComponentID(testComponentID))
+	require.NoError(t, ValidateComponentID("3F2504E0-4F89-11D3-9A0C-0305E82C3301"), "RFC 4122 input is case-insensitive")
+	require.Error(t, ValidateComponentID("CI0012345"))
+	require.Error(t, ValidateComponentID(""))
 }
 
 func TestApplyComponentID_Generate(t *testing.T) {
@@ -125,20 +153,26 @@ func TestApplyComponentID_Generate(t *testing.T) {
 	comps := doc["components"].([]any)
 	id0 := comps[0].(map[string]any)["componentId"].(string)
 	id1 := comps[1].(map[string]any)["componentId"].(string)
-	assert.NotEmpty(t, id0)
+	require.NoError(t, ValidateComponentID(id0))
 	assert.NotEqual(t, id0, id1, "generate must mint a distinct UUID per component")
 }
 
 func TestApplyComponentID_NoComponents(t *testing.T) {
 	in := []byte(`{"baselines":[]}`)
-	out, err := ApplyComponentID(in, "x", false)
+	out, err := ApplyComponentID(in, testComponentID, false)
 	require.NoError(t, err)
 	assert.Equal(t, in, out)
 }
 
+func TestApplyComponentID_NothingRequested(t *testing.T) {
+	out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"}]}`), "", false)
+	require.NoError(t, err)
+	assert.NotContains(t, string(out), "componentId")
+}
+
 func TestApplyComponentID_Errors(t *testing.T) {
-	_, err := ApplyComponentID([]byte("not json"), "x", false)
+	_, err := ApplyComponentID([]byte("not json"), testComponentID, false)
 	assert.Error(t, err)
-	_, err = ApplyComponentID([]byte(`{"components":"nope"}`), "x", false)
+	_, err = ApplyComponentID([]byte(`{"components":"nope"}`), testComponentID, false)
 	assert.Error(t, err)
 }

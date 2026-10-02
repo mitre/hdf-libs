@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **`--component-id` rejects a value that is not a UUID instead of writing a document that fails validation.** `hdf label set --component-id CI0012345` exited 0, printed `Labels written`, and left `componentId` set to a string the schema's `format: uuid` rejects — in place, that replaced a valid document with an invalid one, and the failure surfaced only at the next `hdf validate`. The value is now checked before anything is read or written, in `hdf label set`, `hdf convert` (single and bulk) and the MCP `hdf_convert` tool, against the same pattern the schema validator applies (exported as `IsUUID` from `hdf-validators/go`, so the two cannot drift). The CLI exits non-zero naming the flag and the value; `hdf_convert` returns an argument error for the whole call rather than a per-file `SCHEMA_INVALID`. For an identifier that is not a UUID, see `components[].externalIds`. (#415)
+
 ## [3.7.1] - 2026-09-30
 
 Patch release. No schema changed, so every schema `$id` stays at v3.7.0 and a v3.7.0 document validates unchanged. The headline fix is packaging: `@mitre/hdf-converters@3.7.0` shipped a `dist/index.js` importing `ajv` and `ajv-formats` without declaring them, which broke any install where npm did not happen to hoist them (global installs in particular). The rest is the OSCAL conversion-fidelity epic (ADR-0014) — foreign-prop carriage, full `components[]` round-trip, exact baseline and requirement identity, OSCAL 1.2.3 single-line conformance — plus a nessus mapping default and a set of CI and release-pipeline fixes. **Several items below change converter output for the same input** and are marked BEHAVIOR CHANGE; read those before upgrading a pipeline that diffs or joins on converter output.
