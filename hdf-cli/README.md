@@ -369,11 +369,14 @@ USAGE
   hdf convert --from <source> --to <dest> <file> -o <output>  # Explicit both
   hdf convert <file>                                     # Auto-detect, stdout
   hdf convert <file> [file...] -o <output-dir>/          # Bulk convert to a directory
+  hdf convert <file|dir> [...] --to html -o <file>       # Several HDF results in one combined HTML report
   hdf convert --from <source>@<version> <file>           # Select a schema version
   cat scan.json | hdf convert -                          # stdin
 
 INPUT/OUTPUT
   <file>      File path or "-" for stdin
+  <dir>       With --to html: every HDF results document under the directory, searched
+              recursively; other files there are passed over and counted on stderr
   -o <output> Output file path; defaults to stdout if omitted
 
 FLAGS
@@ -383,6 +386,7 @@ FLAGS
       --component-id string   Set componentId (a UUID) on all components in the output
       --labels strings        Labels applied to all targets (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
+      --report-type string    Detail level for --to html: executive, manager or administrator (default administrator)
       --nist-strict           Fail if input references rules mapped only at a different NIST revision
       --no-validate           Skip schema validation of converter output before writing
   -f, --force                 Allow overwriting the input file with output
@@ -403,6 +407,10 @@ EXAMPLES
   hdf convert --from legacyhdf old-scan.json -o new-scan.json
   hdf convert --from hdf --to csv results.json -o controls.csv
   hdf convert --from hdf --to xml results.json -o controls.xml
+  hdf convert results.json --to html -o report.html
+  hdf convert results.json --to html --report-type manager -o report.html
+  hdf convert scan1.json scan2.json --to html -o report.html     # one combined report
+  hdf convert scans/ --to html -o report.html                    # every results document under scans/
   cat scan.json | hdf convert --from sarif - -o output.json
 ```
 
@@ -1087,6 +1095,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | Source | Destination | Description |
 |--------|-------------|-------------|
 | `hdf` | `csv` | Export requirements to CSV spreadsheet |
+| `hdf` | `html` | Render a self-contained HTML report (`--report-type executive`, `manager` or `administrator`); several inputs or a directory with `-o <file>` make one combined report |
 | `hdf` | `ecs` | Export findings as Elastic Common Schema (ECS 9.4.0) NDJSON events |
 | `hdf` | `splunk` | Export findings as Splunk HEC (CIM Vulnerabilities) NDJSON events |
 | `hdf` | `ocsf` | Export findings as OCSF v1.8.0 Finding NDJSON (Compliance / Vulnerability Finding) |

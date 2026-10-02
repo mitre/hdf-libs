@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-qSWp8qyciIXtWkgoJwmOHQStFaBr4NYbGB5EAv9iNPg='" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HDF Assessment Report</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3f5f8; --surface: #ffffff; --surface-2: #eef3f8; --ink: #16212d; --muted: #4a5968; --line: #d0d7de; --control-line: #66747f;
+  --brand-1: #003a61; --brand-2: #005288; --on-brand: #ffffff; --accent: #005288; --on-accent: #ffffff; --focus: #0066a8; --track: #dbe4ec;
+  --code-bg: #0f1b28; --code-ink: #e6edf3; --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.07);
+  --s-passed: #2e7d32; --s-passed-on: #ffffff; --t-passed: #e8f5e9; --t-passed-on: #1b5e20;
+  --s-failed: #c62828; --s-failed-on: #ffffff; --t-failed: #ffebee; --t-failed-on: #8e1616;
+  --s-not-applicable: #0277bd; --s-not-applicable-on: #ffffff; --t-not-applicable: #e1f5fe; --t-not-applicable-on: #01497c;
+  --s-not-reviewed: #b45300; --s-not-reviewed-on: #ffffff; --t-not-reviewed: #fff3e0; --t-not-reviewed-on: #7a3600;
+  --s-error: #3f51b5; --s-error-on: #ffffff; --t-error: #e8eaf6; --t-error-on: #1a237e;
+  --s-unknown: #5c6670; --s-unknown-on: #ffffff; --t-unknown: #e9edf1; --t-unknown-on: #16212d;
+  --s-critical: #c62828; --s-critical-on: #ffffff; --t-critical: #ffebee; --t-critical-on: #8e1616;
+  --s-high: #bf360c; --s-high-on: #ffffff; --t-high: #fbe9e7; --t-high-on: #8a2607;
+  --s-medium: #b45300; --s-medium-on: #ffffff; --t-medium: #fff3e0; --t-medium-on: #7a3600;
+  --s-low: #806600; --s-low-on: #ffffff; --t-low: #fffde7; --t-low-on: #5c4a00;
+  --s-none: #0277bd; --s-none-on: #ffffff; --t-none: #e1f5fe; --t-none-on: #01497c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a131d; --surface: #111e2b; --surface-2: #1a2b3d; --ink: #e8edf2; --muted: #b9c5d1; --line: #2c4056; --control-line: #8fa3b7;
+    --brand-1: #00263f; --brand-2: #005288; --on-brand: #ffffff; --accent: #70c7f4; --on-accent: #06202f; --focus: #70c7f4; --track: #2c4056;
+    --code-bg: #060d15; --code-ink: #e6edf3; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+    --s-passed: #4cb04f; --s-passed-on: #06200a; --t-passed: #12301a; --t-passed-on: #b9e4bb;
+    --s-failed: #ef7a70; --s-failed-on: #2b0603; --t-failed: #3d1614; --t-failed-on: #ffc9c4;
+    --s-not-applicable: #03a9f4; --s-not-applicable-on: #02202e; --t-not-applicable: #0c3048; --t-not-applicable-on: #b3e5fc;
+    --s-not-reviewed: #fe9900; --s-not-reviewed-on: #2e1b00; --t-not-reviewed: #3d2a0a; --t-not-reviewed-on: #ffe0b2;
+    --s-error: #9fa8da; --s-error-on: #10153d; --t-error: #262c58; --t-error-on: #dfe2f5;
+    --s-unknown: #aab6c2; --s-unknown-on: #101820; --t-unknown: #26374a; --t-unknown-on: #e8edf2;
+    --s-critical: #ef7a70; --s-critical-on: #2b0603; --t-critical: #3d1614; --t-critical-on: #ffc9c4;
+    --s-high: #ff8a65; --s-high-on: #2e0d02; --t-high: #3f1d12; --t-high-on: #ffccbc;
+    --s-medium: #ff9800; --s-medium-on: #2e1b00; --t-medium: #3d2a0a; --t-medium-on: #ffe0b2;
+    --s-low: #ffeb3b; --s-low-on: #2b2600; --t-low: #3a3508; --t-low-on: #fff59d;
+    --s-none: #03a9f4; --s-none-on: #02202e; --t-none: #0c3048; --t-none-on: #b3e5fc;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a131d; --surface: #111e2b; --surface-2: #1a2b3d; --ink: #e8edf2; --muted: #b9c5d1; --line: #2c4056; --control-line: #8fa3b7;
+  --brand-1: #00263f; --brand-2: #005288; --on-brand: #ffffff; --accent: #70c7f4; --on-accent: #06202f; --focus: #70c7f4; --track: #2c4056;
+  --code-bg: #060d15; --code-ink: #e6edf3; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --s-passed: #4cb04f; --s-passed-on: #06200a; --t-passed: #12301a; --t-passed-on: #b9e4bb;
+  --s-failed: #ef7a70; --s-failed-on: #2b0603; --t-failed: #3d1614; --t-failed-on: #ffc9c4;
+  --s-not-applicable: #03a9f4; --s-not-applicable-on: #02202e; --t-not-applicable: #0c3048; --t-not-applicable-on: #b3e5fc;
+  --s-not-reviewed: #fe9900; --s-not-reviewed-on: #2e1b00; --t-not-reviewed: #3d2a0a; --t-not-reviewed-on: #ffe0b2;
+  --s-error: #9fa8da; --s-error-on: #10153d; --t-error: #262c58; --t-error-on: #dfe2f5;
+  --s-unknown: #aab6c2; --s-unknown-on: #101820; --t-unknown: #26374a; --t-unknown-on: #e8edf2;
+  --s-critical: #ef7a70; --s-critical-on: #2b0603; --t-critical: #3d1614; --t-critical-on: #ffc9c4;
+  --s-high: #ff8a65; --s-high-on: #2e0d02; --t-high: #3f1d12; --t-high-on: #ffccbc;
+  --s-medium: #ff9800; --s-medium-on: #2e1b00; --t-medium: #3d2a0a; --t-medium-on: #ffe0b2;
+  --s-low: #ffeb3b; --s-low-on: #2b2600; --t-low: #3a3508; --t-low-on: #fff59d;
+  --s-none: #03a9f4; --s-none-on: #02202e; --t-none: #0c3048; --t-none-on: #b3e5fc;
+}
+.c-passed { --c: var(--s-passed); --c-on: var(--s-passed-on); --t: var(--t-passed); --t-on: var(--t-passed-on); }
+.c-failed { --c: var(--s-failed); --c-on: var(--s-failed-on); --t: var(--t-failed); --t-on: var(--t-failed-on); }
+.c-not-applicable { --c: var(--s-not-applicable); --c-on: var(--s-not-applicable-on); --t: var(--t-not-applicable); --t-on: var(--t-not-applicable-on); }
+.c-not-reviewed { --c: var(--s-not-reviewed); --c-on: var(--s-not-reviewed-on); --t: var(--t-not-reviewed); --t-on: var(--t-not-reviewed-on); }
+.c-error { --c: var(--s-error); --c-on: var(--s-error-on); --t: var(--t-error); --t-on: var(--t-error-on); }
+.c-unknown { --c: var(--s-unknown); --c-on: var(--s-unknown-on); --t: var(--t-unknown); --t-on: var(--t-unknown-on); }
+.c-critical { --c: var(--s-critical); --c-on: var(--s-critical-on); --t: var(--t-critical); --t-on: var(--t-critical-on); }
+.c-high { --c: var(--s-high); --c-on: var(--s-high-on); --t: var(--t-high); --t-on: var(--t-high-on); }
+.c-medium { --c: var(--s-medium); --c-on: var(--s-medium-on); --t: var(--t-medium); --t-on: var(--t-medium-on); }
+.c-low { --c: var(--s-low); --c-on: var(--s-low-on); --t: var(--t-low); --t-on: var(--t-low-on); }
+.c-none { --c: var(--s-none); --c-on: var(--s-none-on); --t: var(--t-none); --t-on: var(--t-none-on); }
+* { box-sizing: border-box; }
+html { scroll-padding-top: 5rem; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 1rem; line-height: 1.5; color: var(--ink); background: var(--bg); margin: 0; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip { position: absolute; left: 0.75rem; top: -4rem; z-index: 20; background: var(--surface); color: var(--ink); padding: 0.5rem 0.9rem; border-radius: 8px; border: 2px solid var(--focus); font-weight: 600; }
+.skip:focus { top: 0.6rem; }
+.topbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.25rem; background: linear-gradient(100deg, var(--brand-1), var(--brand-2)); color: var(--on-brand); padding: 0.85rem 1.75rem; box-shadow: 0 4px 18px rgba(15, 23, 42, 0.28); }
+.topbar .brand { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+.topbar .report-type { font-size: 0.8rem; font-weight: 600; border: 1px solid var(--on-brand); border-radius: 999px; padding: 0.1rem 0.7rem; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-left: auto; }
+.topbar a { color: var(--on-brand); text-decoration: none; font-size: 0.9rem; font-weight: 600; padding: 0.3rem 0.75rem; border-radius: 999px; }
+.topbar a:hover { text-decoration: underline; }
+.topbar a:focus-visible, .topbar button:focus-visible { outline-color: var(--on-brand); }
+.theme-toggle { display: none; font: inherit; font-size: 0.85rem; font-weight: 600; min-height: 2rem; padding: 0.2rem 0.85rem; border: 1px solid var(--on-brand); border-radius: 999px; background: transparent; color: var(--on-brand); cursor: pointer; }
+.js .theme-toggle { display: inline-flex; align-items: center; }
+.theme-toggle:hover { background: rgba(0, 0, 0, 0.3); }
+main { max-width: 84rem; margin: 0 auto; padding: 1.5rem 1.75rem 3.5rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1.35rem 1.5rem 1.5rem; margin: 0 0 1.5rem; box-shadow: var(--shadow); }
+h2 { font-size: 1.3rem; letter-spacing: -0.01em; margin: 0 0 0.85rem; }
+h3 { font-size: 1.02rem; margin: 0 0 0.7rem; }
+h4, h5 { font-size: 0.78rem; margin: 1.2rem 0 0.45rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+a { color: var(--accent); }
+p { margin: 0.4rem 0; }
+.as-of, .empty, .formula { color: var(--muted); font-size: 0.88rem; }
+details.fold { margin: 0.6rem 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+details.fold > summary { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; padding: 0.55rem 0.9rem 0.55rem 2.1rem; position: relative; list-style: none; border-radius: 12px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: ""; position: absolute; left: 0.9rem; top: 50%; width: 0.5rem; height: 0.5rem; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-60%) rotate(-45deg); }
+details.fold[open] > summary::before { transform: translateY(-70%) rotate(45deg); }
+details.fold > summary:hover { background: var(--surface-2); }
+details.fold[open] > summary { border-bottom: 1px solid var(--line); border-radius: 12px 12px 0 0; background: var(--surface-2); }
+details.fold > summary > h3, details.fold > summary > h4, details.fold > summary > h5 { display: inline; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+details.fold > summary > .count { flex: none; }
+details.fold > summary > h4, details.fold > summary > h5 { color: var(--ink); }
+.fold-body { padding: 0.75rem 0.9rem 0.9rem; }
+.fold-body > :first-child { margin-top: 0; }
+.count { display: inline-block; min-width: 1.6rem; text-align: center; font-size: 0.75rem; font-weight: 700; border-radius: 999px; padding: 0.05rem 0.5rem; background: var(--t-unknown); color: var(--t-unknown-on); }
+.to-top { margin: 0.9rem 0 0; font-size: 0.85rem; text-align: right; }
+.to-top a, .page-top { font-weight: 600; }
+.page-top { position: fixed; right: 1rem; bottom: 1rem; z-index: 9; padding: 0.4rem 0.9rem; border-radius: 999px; background: var(--accent); color: var(--on-accent); text-decoration: none; box-shadow: var(--shadow); }
+.page-top:hover { text-decoration: underline; }
+.dashboard { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.25fr) minmax(0, 1fr); gap: 1rem; margin: 1rem 0 1.25rem; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 0.75rem; align-items: start; }
+.facts > details.fold, .components > details.fold { margin: 0; background: var(--surface-2); }
+.panel { border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem 1.15rem; background: var(--surface-2); display: flex; flex-direction: column; }
+.stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.6rem; }
+.stat { display: flex; flex-direction: column; gap: 0.1rem; border-radius: 12px; padding: 0.65rem 0.8rem 0.7rem; background: var(--t); color: var(--t-on); border-left: 6px solid var(--c); }
+.stat .num { font-size: 1.9rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .lbl { font-weight: 700; font-size: 0.92rem; }
+.stat .sub { font-size: 0.78rem; }
+.stat-total { background: none; color: var(--ink); border: 1px dashed var(--control-line); border-left: 6px solid var(--s-unknown); }
+.bar { display: flex; gap: 2px; height: 0.8rem; border-radius: 999px; overflow: hidden; background: var(--track); margin-top: auto; }
+.stats + .bar { margin-top: 1rem; }
+.seg { flex: var(--n) 0 0; background: var(--c); }
+.compliance { text-align: center; align-items: center; }
+.compliance h3 { align-self: flex-start; }
+.gauge { --ring: var(--s-failed); width: 10.5rem; height: 10.5rem; margin: 0.25rem auto 0.7rem; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--ring) calc(var(--pct) * 1%), var(--track) 0); }
+.gauge .pct { width: 8.1rem; height: 8.1rem; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: 1.75rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.compliance-high .gauge { --ring: var(--s-passed); }
+.compliance-medium .gauge { --ring: var(--s-not-reviewed); }
+.level { font-weight: 700; display: inline-block; border-radius: 999px; padding: 0.1rem 0.85rem; background: var(--t-failed); color: var(--t-failed-on); }
+.compliance-high .level { background: var(--t-passed); color: var(--t-passed-on); }
+.compliance-medium .level { background: var(--t-not-reviewed); color: var(--t-not-reviewed-on); }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1.25rem; margin: 0.5rem 0; }
+dt { font-weight: 600; color: var(--muted); }
+dd { margin: 0; overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; margin: 0.5rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+caption { text-align: left; font-weight: 700; padding: 0.6rem 0.8rem; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+th, td { border-bottom: 1px solid var(--line); padding: 0.5rem 0.8rem; text-align: left; vertical-align: top; }
+tbody tr:last-child > *, tfoot tr:last-child > * { border-bottom: 0; }
+thead th { background: var(--surface-2); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+tfoot th, tfoot td { font-weight: 700; background: var(--surface-2); border-top: 2px solid var(--line); }
+td.text { white-space: pre-wrap; overflow-wrap: anywhere; }
+table.summary td, table.summary thead th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+table.details th { width: 11.5rem; background: var(--surface-2); color: var(--muted); font-weight: 600; }
+.components { display: grid; grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr)); gap: 0.75rem; align-items: start; }
+.component .type { font-weight: 600; font-size: 0.75rem; border-radius: 999px; padding: 0.05rem 0.6rem; background: var(--accent); color: var(--on-accent); }
+.chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.25rem 0 0; padding: 0; }
+.chips li { display: inline-flex; border: 1px solid var(--control-line); border-radius: 8px; overflow: hidden; font-size: 0.82rem; background: var(--surface); }
+.chips .k { background: var(--t-unknown); color: var(--t-unknown-on); padding: 0.15rem 0.5rem; font-weight: 700; }
+.chips .v { padding: 0.15rem 0.55rem; overflow-wrap: anywhere; }
+.toolbar { display: none; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.75rem; margin: 0 0 1.1rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.js .toolbar { display: flex; }
+.toolbar input { flex: 1 1 16rem; font: inherit; color: var(--ink); background: var(--surface); padding: 0.45rem 0.75rem; border: 1px solid var(--control-line); border-radius: 8px; min-height: 2.25rem; }
+.toolbar input::placeholder { color: var(--muted); opacity: 1; }
+.toolbar button { font: inherit; font-size: 0.86rem; font-weight: 600; min-height: 2.25rem; padding: 0.3rem 0.85rem; border: 1px solid var(--control-line); border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.toolbar button:hover { background: var(--t-unknown); }
+.toolbar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.filters { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.shown { color: var(--muted); font-size: 0.86rem; margin-left: auto; }
+details.fold.source { border-left: 5px solid var(--accent); }
+details.fold.source > summary > h3, details.fold.baseline > summary > h3, details.fold.baseline > summary > h4 { font-size: 1.02rem; text-transform: none; letter-spacing: 0; color: var(--ink); }
+details.requirement[open] > summary { position: sticky; top: 3.4rem; z-index: 5; }
+.req-head, details.requirement > summary { display: grid; grid-template-columns: 9rem minmax(6rem, 11rem) 6.5rem minmax(10rem, 2fr) minmax(8rem, 1.4fr); gap: 0.85rem; align-items: center; }
+.req-head { padding: 0.4rem 2.6rem 0.4rem 1.1rem; font-size: 0.74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+details.requirement { border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: 12px; margin: 0.5rem 0; background: var(--surface); }
+details.requirement > summary { cursor: pointer; padding: 0.7rem 2.6rem 0.7rem 0.95rem; list-style: none; position: relative; border-radius: 0 11px 11px 0; }
+details.requirement > summary::-webkit-details-marker { display: none; }
+details.requirement > summary::after { content: ""; position: absolute; right: 1.1rem; top: 50%; width: 0.55rem; height: 0.55rem; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(45deg); }
+details.requirement[open] > summary::after { transform: translateY(-30%) rotate(225deg); }
+details.requirement > summary:hover { background: var(--surface-2); }
+details.requirement > summary:focus-visible { outline-offset: -3px; }
+details.requirement[open] > summary { border-bottom: 1px solid var(--line); background: var(--surface-2); border-radius: 0 11px 0 0; }
+.req-body { padding: 0.9rem 1.1rem 1.1rem; }
+.location { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0 0 0.6rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--surface-2); }
+.location .k, .sub .k { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88rem; overflow-wrap: anywhere; }
+.sub { display: block; margin-top: 0.35rem; font-size: 0.85rem; }
+.baseline > dl { margin-bottom: 0.75rem; }
+.tag.enriched { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+details.doc { margin-top: 0.5rem; }
+details.doc > summary { cursor: pointer; font-weight: 600; font-size: 0.85rem; width: fit-content; }
+details.doc > pre { white-space: pre-wrap; }
+section.card > h3 { margin-top: 1.25rem; }
+.req-id { font-weight: 700; overflow-wrap: anywhere; }
+.req-title { overflow-wrap: anywhere; }
+.tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.tag { font-size: 0.75rem; font-weight: 600; border: 1px solid var(--control-line); border-radius: 999px; padding: 0.05rem 0.55rem; background: var(--surface); white-space: nowrap; }
+.status, .sev { display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 999px; padding: 0.15rem 0.7rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap; width: fit-content; }
+.status { color: var(--c-on); background: var(--c); }
+.sev { background: var(--t); color: var(--t-on); }
+.sev::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--c); }
+pre { margin: 0.25rem 0 0.5rem; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.85rem; }
+pre.prose { font-family: inherit; font-size: 0.92rem; margin: 0; }
+.req-body > pre.prose { margin-bottom: 0.25rem; }
+pre.code { background: var(--code-bg); color: var(--code-ink); border-radius: 12px; padding: 0.85rem 1rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media (forced-colors: active) { .status, .sev, .tag, .stat, .seg, .gauge, .level, .component .type { border: 1px solid; forced-color-adjust: auto; } }
+@media (max-width: 68rem) { .dashboard { grid-template-columns: 1fr 1fr; } .dashboard .panel:first-child { grid-column: 1 / -1; } }
+@media (max-width: 60rem) { .topbar { position: static; } details.requirement[open] > summary { top: 0; } .req-head { display: none; } details.requirement > summary { grid-template-columns: 1fr 1fr; } .req-title, .tags { grid-column: 1 / -1; } }
+@media (max-width: 40rem) { .dashboard { grid-template-columns: 1fr; } main { padding: 1rem 0.85rem 2.5rem; } .card { padding: 1rem; border-radius: 12px; } .topbar { padding: 0.75rem 1rem; } dl { grid-template-columns: 1fr; gap: 0 0; } dd { margin-bottom: 0.4rem; } }
+@media print { .topbar { position: static; box-shadow: none; } .skip, .toolbar, .theme-toggle, .page-top, .to-top { display: none !important; } body { background: #ffffff; } main { max-width: none; padding: 0; } .card { box-shadow: none; } details.requirement { break-inside: avoid; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar" id="top">
+<h1 class="brand">HDF Assessment Report</h1>
+<span class="report-type">Report type: Manager</span>
+<nav aria-label="Sections">
+<a href="#status">Status</a>
+<a href="#assessment">Assessment</a>
+<a href="#components">Components</a>
+<a href="#results">Results</a>
+</nav>
+<button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">Dark mode</button>
+</header>
+<main id="main">
+<section id="status" class="card" aria-labelledby="status-heading">
+<h2 id="status-heading">Status</h2>
+<p class="as-of">Effective status evaluated as of 2018-12-06T10:53:11Z, the time of the assessment. Overrides that had expired by then are not applied.</p>
+<div class="dashboard">
+<div class="panel">
+<h3>Requirements</h3>
+<ul class="stats">
+<li class="stat c-passed"><span class="num">1</span><span class="lbl">Passed</span><span class="sub">0 individual checks passed</span></li>
+<li class="stat c-failed"><span class="num">3</span><span class="lbl">Failed</span><span class="sub">0 individual checks passed, 23 failed out of 43 total checks</span></li>
+<li class="stat c-not-applicable"><span class="num">0</span><span class="lbl">Not Applicable</span></li>
+<li class="stat c-not-reviewed"><span class="num">0</span><span class="lbl">Not Reviewed</span></li>
+<li class="stat c-error"><span class="num">0</span><span class="lbl">Error</span></li>
+<li class="stat stat-total"><span class="num">4</span><span class="lbl">Total</span></li>
+</ul>
+<div class="bar" role="img" aria-label="Requirements by status: 1 passed, 3 failed, 0 not applicable, 0 not reviewed, 0 error"><span class="seg c-passed" style="--n:1"></span><span class="seg c-failed" style="--n:3"></span></div>
+</div>
+<div class="panel">
+<h3>Severity</h3>
+<ul class="stats">
+<li class="stat c-critical"><span class="num">0</span><span class="lbl">Critical</span></li>
+<li class="stat c-high"><span class="num">1</span><span class="lbl">High</span></li>
+<li class="stat c-medium"><span class="num">1</span><span class="lbl">Medium</span></li>
+<li class="stat c-low"><span class="num">2</span><span class="lbl">Low</span></li>
+<li class="stat c-none"><span class="num">0</span><span class="lbl">None</span></li>
+</ul>
+<div class="bar" role="img" aria-label="Requirements by severity: 0 critical, 1 high, 1 medium, 2 low, 0 none"><span class="seg c-high" style="--n:1"></span><span class="seg c-medium" style="--n:1"></span><span class="seg c-low" style="--n:2"></span></div>
+</div>
+<div class="panel compliance compliance-low">
+<h3>Compliance</h3>
+<div class="gauge" style="--pct:25.00"><span class="pct">25.00%</span></div>
+<p class="level">Low compliance</p>
+<p class="formula">Passed / (Passed + Failed + Not Reviewed + Error) × 100</p>
+</div>
+</div>
+<details class="fold" id="block-1" open="open">
+<summary><h3>Status by baseline</h3><span class="count">2</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table class="summary" aria-label="Status by baseline">
+<thead><tr><th scope="col">Baseline</th><th scope="col">Passed</th><th scope="col">Failed</th><th scope="col">Not Reviewed</th><th scope="col">Not Applicable</th><th scope="col">Error</th><th scope="col">Total</th><th scope="col">Compliance</th></tr></thead>
+<tbody>
+<tr><th scope="row">OWASP ZAP Scan: code.jquery.com</th><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0.00%</td></tr>
+<tr><th scope="row">OWASP ZAP Scan: mymac.com</th><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>3</td><td>33.33%</td></tr>
+</tbody>
+<tfoot>
+<tr><th scope="row">All baselines</th><td>1</td><td>3</td><td>0</td><td>0</td><td>0</td><td>4</td><td>25.00%</td></tr>
+</tfoot>
+</table>
+</div>
+</div>
+</details>
+</section>
+<section id="assessment" class="card" aria-labelledby="assessment-heading">
+<h2 id="assessment-heading">Assessment</h2>
+<div class="facts">
+<details class="fold" id="block-2">
+<summary><h3>Document</h3><span class="count">4</span></summary>
+<div class="fold-body">
+<dl>
+<dt>Tool</dt><dd>OWASP ZAP 2.7.0</dd>
+<dt>Generator</dt><dd>zap-to-hdf 1.0.0</dd>
+<dt>Assessed</dt><dd>2018-12-06T10:53:11Z</dd>
+<dt>System reference</dt><dd>systems/portal.hdf-system.json</dd>
+</dl>
+<p class="to-top"><a href="#block-2">Back to the top of the document facts</a></p>
+</div>
+</details>
+<details class="fold" id="block-3">
+<summary><h3>Runner</h3><span class="count">4</span></summary>
+<div class="fold-body">
+<dl>
+<dt>Name</dt><dd>zap-runner</dd>
+<dt>Hostname</dt><dd>scanner01</dd>
+<dt>Architecture</dt><dd>x86_64</dd>
+<dt>Release</dt><dd>22.04</dd>
+</dl>
+<p class="to-top"><a href="#block-3">Back to the top of the runner facts</a></p>
+</div>
+</details>
+</div>
+</section>
+<section id="components" class="card" aria-labelledby="components-heading">
+<h2 id="components-heading">Components (2)</h2>
+<div class="components">
+<details class="fold component" id="block-4">
+<summary><h3>code.jquery.com <span class="type">application</span></h3><span class="count">5</span></summary>
+<div class="fold-body">
+<dl>
+<dt>Component ID</dt><dd>a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d</dd>
+<dt>URL</dt><dd>http://code.jquery.com</dd>
+</dl>
+<h4>Labels</h4>
+<ul class="chips">
+<li><span class="k">environment</span><span class="v">production</span></li>
+<li><span class="k">system</span><span class="v">Portal</span></li>
+</ul>
+<h4>External IDs</h4>
+<ul class="chips">
+<li><span class="k">cmdb</span><span class="v">CI0067890</span></li>
+</ul>
+<p class="to-top"><a href="#block-4">Back to the top of code.jquery.com</a></p>
+</div>
+</details>
+<details class="fold component" id="block-5">
+<summary><h3>mymac.com <span class="type">application</span></h3><span class="count">6</span></summary>
+<div class="fold-body">
+<dl>
+<dt>Component ID</dt><dd>b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f</dd>
+<dt>URL</dt><dd>http://mymac.com:8191</dd>
+</dl>
+<h4>Labels</h4>
+<ul class="chips">
+<li><span class="k">environment</span><span class="v">production</span></li>
+<li><span class="k">system</span><span class="v">Portal</span></li>
+</ul>
+<h4>External IDs</h4>
+<ul class="chips">
+<li><span class="k">cmdb</span><span class="v">CI0012345</span></li>
+<li><span class="k">emass</span><span class="v">1234</span></li>
+</ul>
+<p class="to-top"><a href="#block-5">Back to the top of mymac.com</a></p>
+</div>
+</details>
+</div>
+</section>
+<section id="results" class="card" aria-labelledby="results-heading">
+<h2 id="results-heading">Results</h2>
+<div class="toolbar">
+<input type="search" id="filter-text" placeholder="Filter by ID, title or control" aria-label="Filter requirements by ID, title or control" />
+<div class="filters" role="group" aria-label="Filter by status">
+<button type="button" class="filter" data-status="all" aria-pressed="true">All</button>
+<button type="button" class="filter" data-status="passed" aria-pressed="false">Passed</button>
+<button type="button" class="filter" data-status="failed" aria-pressed="false">Failed</button>
+<button type="button" class="filter" data-status="not-applicable" aria-pressed="false">Not Applicable</button>
+<button type="button" class="filter" data-status="not-reviewed" aria-pressed="false">Not Reviewed</button>
+<button type="button" class="filter" data-status="error" aria-pressed="false">Error</button>
+</div>
+<button type="button" id="expand-all">Expand all</button>
+<button type="button" id="collapse-all">Collapse all</button>
+<span id="filter-count" class="shown" aria-live="polite"></span>
+</div>
+<details class="fold group baseline" id="block-6" open="open">
+<summary><h3>OWASP ZAP Scan: code.jquery.com</h3><span class="count">1</span></summary>
+<div class="fold-body">
+<details class="fold" id="block-7" open="open">
+<summary><h4>Baseline details</h4><span class="count">2</span></summary>
+<div class="fold-body">
+<dl>
+<dt>Title</dt><dd>OWASP ZAP Scan of http://code.jquery.com</dd>
+<dt>Summary</dt><dd>ZAP Version 2.7.0</dd>
+</dl>
+</div>
+</details>
+<div class="req-head" aria-hidden="true"><span>Status</span><span>ID</span><span>Severity</span><span>Title</span><span>800-53 Controls &amp; CCIs</span></div>
+<details class="requirement c-failed" data-status="failed" id="req-1">
+<summary><span class="status c-failed">Failed</span><span class="req-id">10021</span><span class="sev c-low"><span class="vh">Severity: </span>Low</span><span class="req-title">X-Content-Type-Options Header Missing</span><span class="tags"><span class="vh">Controls: </span><span class="tag">SA-11</span><span class="tag">RA-5</span><span class="tag">CCI-001643</span><span class="tag">CCI-003173</span></span></summary>
+<div class="req-body">
+<p class="location"><span class="k">Location</span><code>http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css</code></p>
+<details class="fold" id="block-8" open="open">
+<summary><h4>Description</h4><span class="count">1</span></summary>
+<div class="fold-body">
+<pre class="prose">
+The Anti-MIME-Sniffing header X-Content-Type-Options was not set to &#39;nosniff&#39;. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.</pre>
+</div>
+</details>
+<details class="fold" id="block-9" open="open">
+<summary><h4>Test Results</h4><span class="count">1</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table aria-label="Test results">
+<thead><tr><th scope="col">Status</th><th scope="col">Test</th><th scope="col">Result</th><th scope="col">Started</th></tr></thead>
+<tbody>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css | Method: GET | Param: X-Content-Type-Options</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</details>
+<details class="fold" id="block-10">
+<summary><h4>Result Details</h4><span class="count">14</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table class="details" aria-label="Result details">
+<tbody>
+<tr><th scope="row">Effective status</th><td><span class="status c-failed">Failed</span></td></tr>
+<tr><th scope="row">Assessed status</th><td><span class="status c-failed">Failed</span></td></tr>
+<tr><th scope="row">Control</th><td>10021</td></tr>
+<tr><th scope="row">Title</th><td>X-Content-Type-Options Header Missing</td></tr>
+<tr><th scope="row">Severity</th><td>low</td></tr>
+<tr><th scope="row">Impact</th><td>0.30</td></tr>
+<tr><th scope="row">Verification method</th><td>automated</td></tr>
+<tr><th scope="row">Source location</th><td>http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css</td></tr>
+<tr><th scope="row">NIST Controls</th><td>SA-11, RA-5</td></tr>
+<tr><th scope="row">CCI Controls</th><td>CCI-001643, CCI-003173</td></tr>
+<tr><th scope="row">CWE</th><td>CWE-16</td></tr>
+<tr><th scope="row">References</th><td><pre class="prose">
+http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx
+https://www.owasp.org/index.php/List_of_useful_HTTP_headers</pre></td></tr>
+<tr><th scope="row">solution</th><td><pre class="prose">
+Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to &#39;nosniff&#39; for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.</pre></td></tr>
+<tr><th scope="row">Check Text</th><td><pre class="prose">
+This issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At &quot;High&quot; threshold this scanner will not alert on client or server error responses.</pre></td></tr>
+</tbody>
+</table>
+</div>
+<p class="to-top"><a href="#block-10">Back to the top of the result details</a></p>
+</div>
+</details>
+<details class="fold" id="block-11">
+<summary><h4>Tags</h4><span class="count">4</span></summary>
+<div class="fold-body">
+<ul class="chips">
+<li><span class="k">confidence</span><span class="v">2</span></li>
+<li><span class="k">riskdesc</span><span class="v">Low (Medium)</span></li>
+<li><span class="k">sourceid</span><span class="v">3</span></li>
+<li><span class="k">wascid</span><span class="v">15</span></li>
+</ul>
+<p class="to-top"><a href="#block-11">Back to the top of the tags</a></p>
+</div>
+</details>
+<p class="to-top"><a href="#req-1">Back to the top of this requirement</a></p>
+</div>
+</details>
+</div>
+</details>
+<details class="fold group baseline" id="block-12">
+<summary><h3>OWASP ZAP Scan: mymac.com</h3><span class="count">3</span></summary>
+<div class="fold-body">
+<details class="fold" id="block-13" open="open">
+<summary><h4>Baseline details</h4><span class="count">2</span></summary>
+<div class="fold-body">
+<dl>
+<dt>Title</dt><dd>OWASP ZAP Scan of http://mymac.com:8191</dd>
+<dt>Summary</dt><dd>ZAP Version 2.7.0</dd>
+</dl>
+</div>
+</details>
+<div class="req-head" aria-hidden="true"><span>Status</span><span>ID</span><span>Severity</span><span>Title</span><span>800-53 Controls &amp; CCIs</span></div>
+<details class="requirement c-passed" data-status="passed" id="req-2">
+<summary><span class="status c-passed">Passed</span><span class="req-id">90028</span><span class="sev c-low"><span class="vh">Severity: </span>Low</span><span class="req-title">Insecure HTTP Method - MKCOL</span><span class="tags"><span class="vh">Controls: </span><span class="tag">SC-8</span><span class="tag">CCI-002418</span></span></summary>
+<div class="req-body">
+<p class="location"><span class="k">Location</span><code>http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id</code></p>
+<pre class="prose">
+This HTTP method is a WEBDAV method: MKCOL. If this server is not offering any WEBDAV services, these methods should not be available.</pre>
+<details class="fold" id="block-14">
+<summary><h4>Test Results</h4><span class="count">20</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table aria-label="Test results">
+<thead><tr><th scope="col">Status</th><th scope="col">Test</th><th scope="col">Result</th><th scope="col">Started</th></tr></thead>
+<tbody>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/service/hint.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/lesson_js | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/challenge/8/votes | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/service/labels.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD</td><td class="text"></td><td>2018-12-06T10:53:11Z</td></tr>
+</tbody>
+</table>
+</div>
+<p class="to-top"><a href="#block-14">Back to the top of the test results</a></p>
+</div>
+</details>
+<details class="fold" id="block-15">
+<summary><h4>Result Details</h4><span class="count">14</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table class="details" aria-label="Result details">
+<tbody>
+<tr><th scope="row">Effective status</th><td><span class="status c-passed">Passed</span></td></tr>
+<tr><th scope="row">Assessed status</th><td><span class="status c-failed">Failed</span></td></tr>
+<tr><th scope="row">Control</th><td>90028</td></tr>
+<tr><th scope="row">Title</th><td>Insecure HTTP Method - MKCOL</td></tr>
+<tr><th scope="row">Severity</th><td>low</td></tr>
+<tr><th scope="row">Impact</th><td>0.30</td></tr>
+<tr><th scope="row">Control type</th><td>technical</td></tr>
+<tr><th scope="row">Verification method</th><td>automated</td></tr>
+<tr><th scope="row">Source location</th><td>http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id</td></tr>
+<tr><th scope="row">NIST Controls</th><td>SC-8</td></tr>
+<tr><th scope="row">CCI Controls</th><td>CCI-002418</td></tr>
+<tr><th scope="row">CWE</th><td>CWE-200</td></tr>
+<tr><th scope="row">References</th><td><pre class="prose">
+http://projects.webappsec.org/Fingerprinting</pre></td></tr>
+<tr><th scope="row">Check Text</th><td><pre class="prose">
+See the discussion on stackexchange: https://security.stackexchange.com/questions/21413/how-to-exploit-http-methods</pre></td></tr>
+</tbody>
+</table>
+</div>
+<p class="to-top"><a href="#block-15">Back to the top of the result details</a></p>
+</div>
+</details>
+<details class="fold" id="block-16">
+<summary><h4>Tags</h4><span class="count">4</span></summary>
+<div class="fold-body">
+<ul class="chips">
+<li><span class="k">confidence</span><span class="v">2</span></li>
+<li><span class="k">riskdesc</span><span class="v">Informational (Medium)</span></li>
+<li><span class="k">sourceid</span><span class="v">1</span></li>
+<li><span class="k">wascid</span><span class="v">45</span></li>
+</ul>
+<p class="to-top"><a href="#block-16">Back to the top of the tags</a></p>
+</div>
+</details>
+<details class="fold" id="block-17" open="open">
+<summary><h4>Overrides</h4><span class="count">1</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table aria-label="Overrides">
+<thead><tr><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Reason</th><th scope="col">Applied by</th><th scope="col">Applied at</th><th scope="col">Expires at</th><th scope="col">State</th></tr></thead>
+<tbody>
+<tr><td>waiver</td><td><span class="status c-passed">Passed</span></td><td class="text">Accepted for the internal test host; compensating network control in place.
+Review at next authorization.</td><td>issm@example.gov</td><td>2018-12-07T09:00:00Z</td><td>2099-12-31T00:00:00Z</td><td>governing</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</details>
+<p class="to-top"><a href="#req-2">Back to the top of this requirement</a></p>
+</div>
+</details>
+<details class="requirement c-failed" data-status="failed" id="req-3">
+<summary><span class="status c-failed">Failed</span><span class="req-id">10095</span><span class="sev c-medium"><span class="vh">Severity: </span>Medium</span><span class="req-title">Backup File Disclosure</span><span class="tags"><span class="vh">Controls: </span><span class="tag">SA-11</span><span class="tag">RA-5</span><span class="tag">CCI-001643</span><span class="tag">CCI-003173</span></span></summary>
+<div class="req-body">
+<p class="location"><span class="k">Location</span><code>http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old.baseUrl%&gt;</code></p>
+<pre class="prose">
+A backup of the file was disclosed by the web server</pre>
+<details class="fold" id="block-18">
+<summary><h4>Test Results</h4><span class="count">20</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table aria-label="Test results">
+<thead><tr><th scope="col">Status</th><th scope="col">Test</th><th scope="col">Result</th><th scope="col">Started</th></tr></thead>
+<tbody>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old.baseUrl%&gt; | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old.baseUrl%&gt;]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old.baseUrl%&gt;</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.2 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.2]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.2</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.backup | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.backup]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.backup</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bz2.baseUrl%&gt; | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bz2.baseUrl%&gt;]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bz2.baseUrl%&gt;</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.gz | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.gz]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.gz</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.~bk | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.~bk]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.~bk</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.0 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.0]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.0</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;~ | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;~]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;~</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bac | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bac]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bac</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.gz | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.gz]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.gz</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bak.baseUrl%&gt; | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bak.baseUrl%&gt;]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.bak.baseUrl%&gt;</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.bac | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.bac]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.bac</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.orig.baseUrl%&gt; | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.orig.baseUrl%&gt;]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.orig.baseUrl%&gt;</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.backup.baseUrl%&gt; | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.backup.baseUrl%&gt;]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.backup.baseUrl%&gt;</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.exe | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.exe]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.exe</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.1 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.1]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.1</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.zip | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.zip]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.zip</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.swp | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.swp]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;.swp</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.1 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.1]</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.1</td><td>2018-12-06T10:53:11Z</td></tr>
+</tbody>
+</table>
+</div>
+<p class="to-top"><a href="#block-18">Back to the top of the test results</a></p>
+</div>
+</details>
+<details class="fold" id="block-19">
+<summary><h4>Result Details</h4><span class="count">14</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table class="details" aria-label="Result details">
+<tbody>
+<tr><th scope="row">Effective status</th><td><span class="status c-failed">Failed</span></td></tr>
+<tr><th scope="row">Assessed status</th><td><span class="status c-failed">Failed</span></td></tr>
+<tr><th scope="row">Control</th><td>10095</td></tr>
+<tr><th scope="row">Title</th><td>Backup File Disclosure</td></tr>
+<tr><th scope="row">Severity</th><td>medium</td></tr>
+<tr><th scope="row">Impact</th><td>0.50</td></tr>
+<tr><th scope="row">Verification method</th><td>automated</td></tr>
+<tr><th scope="row">Source location</th><td>http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.old.baseUrl%&gt;</td></tr>
+<tr><th scope="row">NIST Controls</th><td>SA-11, RA-5</td></tr>
+<tr><th scope="row">CCI Controls</th><td>CCI-001643, CCI-003173</td></tr>
+<tr><th scope="row">CWE</th><td>CWE-425</td></tr>
+<tr><th scope="row">References</th><td><pre class="prose">
+http://projects.webappsec.org/Predictable-Resource-Location
+http://cwe.mitre.org/data/definitions/425.html</pre></td></tr>
+<tr><th scope="row">solution</th><td><pre class="prose">
+Do not edit files in-situ on the web server, and ensure that un-necessary files (including hidden files) are removed from the web server.</pre></td></tr>
+<tr><th scope="row">Check Text</th><td><pre class="prose">
+http://mymac.com:8191/WebGoat/js/goatApp/templates/</pre></td></tr>
+</tbody>
+</table>
+</div>
+<p class="to-top"><a href="#block-19">Back to the top of the result details</a></p>
+</div>
+</details>
+<details class="fold" id="block-20">
+<summary><h4>Tags</h4><span class="count">4</span></summary>
+<div class="fold-body">
+<ul class="chips">
+<li><span class="k">confidence</span><span class="v">2</span></li>
+<li><span class="k">riskdesc</span><span class="v">Medium (Medium)</span></li>
+<li><span class="k">sourceid</span><span class="v">1</span></li>
+<li><span class="k">wascid</span><span class="v">34</span></li>
+</ul>
+<p class="to-top"><a href="#block-20">Back to the top of the tags</a></p>
+</div>
+</details>
+<p class="to-top"><a href="#req-3">Back to the top of this requirement</a></p>
+</div>
+</details>
+<details class="requirement c-failed" data-status="failed" id="req-4">
+<summary><span class="status c-failed">Failed</span><span class="req-id">42</span><span class="sev c-high"><span class="vh">Severity: </span>High</span><span class="req-title">Source Code Disclosure - SVN</span><span class="tags"><span class="vh">Controls: </span><span class="tag">SA-11</span><span class="tag">RA-5</span><span class="tag">CCI-001643</span><span class="tag">CCI-003173</span></span></summary>
+<div class="req-body">
+<p class="location"><span class="k">Location</span><code>http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;/&lt;%=index%&gt;</code></p>
+<pre class="prose">
+The source code for the current page was disclosed by the web server</pre>
+<details class="fold" id="block-21" open="open">
+<summary><h4>Test Results</h4><span class="count">2</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table aria-label="Test results">
+<thead><tr><th scope="col">Status</th><th scope="col">Test</th><th scope="col">Result</th><th scope="col">Started</th></tr></thead>
+<tbody>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;/&lt;%=index%&gt; | Method: GET</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;/.svn/text-base/&lt;%=index%&gt;.svn-base</td><td>2018-12-06T10:53:11Z</td></tr>
+<tr><td><span class="status c-failed">Failed</span></td><td class="text">URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt; | Method: GET</td><td class="text">http://mymac.com:8191/WebGoat/js/goatApp/templates/.svn/text-base/&lt;%=overview.baseUrl%&gt;.svn-base</td><td>2018-12-06T10:53:11Z</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</details>
+<details class="fold" id="block-22">
+<summary><h4>Result Details</h4><span class="count">14</span></summary>
+<div class="fold-body">
+<div class="table-wrap">
+<table class="details" aria-label="Result details">
+<tbody>
+<tr><th scope="row">Effective status</th><td><span class="status c-failed">Failed</span></td></tr>
+<tr><th scope="row">Assessed status</th><td><span class="status c-failed">Failed</span></td></tr>
+<tr><th scope="row">Control</th><td>42</td></tr>
+<tr><th scope="row">Title</th><td>Source Code Disclosure - SVN</td></tr>
+<tr><th scope="row">Severity</th><td>high</td></tr>
+<tr><th scope="row">Impact</th><td>0.70</td></tr>
+<tr><th scope="row">Verification method</th><td>automated</td></tr>
+<tr><th scope="row">Source location</th><td>http://mymac.com:8191/WebGoat/js/goatApp/templates/&lt;%=overview.baseUrl%&gt;/&lt;%=index%&gt;</td></tr>
+<tr><th scope="row">NIST Controls</th><td>SA-11, RA-5</td></tr>
+<tr><th scope="row">CCI Controls</th><td>CCI-001643, CCI-003173</td></tr>
+<tr><th scope="row">CWE</th><td>CWE-541</td></tr>
+<tr><th scope="row">References</th><td><pre class="prose">
+http://projects.webappsec.org/Predictable-Resource-Location
+http://cwe.mitre.org/data/definitions/425.html</pre></td></tr>
+<tr><th scope="row">solution</th><td><pre class="prose">
+Ensure that SVN metadata files are not deployed to the web server or application server</pre></td></tr>
+<tr><th scope="row">Check Text</th><td><pre class="prose">
+The source code for [ ] was found at [http://mymac.com:8191/WebGoat/js/goatApp/templates/ /.svn/text-base/ .svn-base]</pre></td></tr>
+</tbody>
+</table>
+</div>
+<p class="to-top"><a href="#block-22">Back to the top of the result details</a></p>
+</div>
+</details>
+<details class="fold" id="block-23">
+<summary><h4>Tags</h4><span class="count">4</span></summary>
+<div class="fold-body">
+<ul class="chips">
+<li><span class="k">confidence</span><span class="v">1</span></li>
+<li><span class="k">riskdesc</span><span class="v">High (Low)</span></li>
+<li><span class="k">sourceid</span><span class="v">1</span></li>
+<li><span class="k">wascid</span><span class="v">34</span></li>
+</ul>
+<p class="to-top"><a href="#block-23">Back to the top of the tags</a></p>
+</div>
+</details>
+<p class="to-top"><a href="#req-4">Back to the top of this requirement</a></p>
+</div>
+</details>
+<p class="to-top"><a href="#block-12">Back to the top of OWASP ZAP Scan: mymac.com</a></p>
+</div>
+</details>
+</section>
+</main>
+<a class="page-top" href="#top">Top</a>
+<script>
+(function () {
+  'use strict';
+  var slice = Array.prototype.slice;
+  var root = document.documentElement;
+  var themeKey = 'hdf-report-theme';
+
+  function all(selector) {
+    return slice.call(document.querySelectorAll(selector));
+  }
+
+  // Theme: the reader's choice wins over the system setting and is remembered.
+  var toggle = document.getElementById('theme-toggle');
+
+  function systemDark() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function currentTheme() {
+    var chosen = root.getAttribute('data-theme');
+    if (chosen === 'dark' || chosen === 'light') {
+      return chosen;
+    }
+    return systemDark() ? 'dark' : 'light';
+  }
+
+  function showTheme() {
+    var dark = currentTheme() === 'dark';
+    toggle.textContent = dark ? 'Light mode' : 'Dark mode';
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+
+  function remember(theme) {
+    try {
+      window.localStorage.setItem(themeKey, theme);
+    } catch (ignore) {
+      return;
+    }
+  }
+
+  function recall() {
+    try {
+      return window.localStorage.getItem(themeKey);
+    } catch (ignore) {
+      return null;
+    }
+  }
+
+  var saved = recall();
+  if (saved === 'dark' || saved === 'light') {
+    root.setAttribute('data-theme', saved);
+  }
+  toggle.addEventListener('click', function () {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    remember(next);
+    showTheme();
+  });
+  showTheme();
+
+  // Print the whole report, in the light palette, whatever is open on screen.
+  var beforePrint = null;
+  window.addEventListener('beforeprint', function () {
+    beforePrint = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', 'light');
+    all('details').forEach(function (d) {
+      d.open = true;
+    });
+  });
+  window.addEventListener('afterprint', function () {
+    if (beforePrint === null) {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', beforePrint);
+    }
+  });
+
+  root.classList.add('js');
+
+  // Results filter: only the reports that list requirements carry it.
+  var box = document.getElementById('filter-text');
+  if (box === null) {
+    return;
+  }
+  var reqs = all('details.requirement');
+  var groups = all('#results details.group');
+  var shown = document.getElementById('filter-count');
+  var buttons = all('button.filter');
+  var status = 'all';
+
+  function matches(d, query) {
+    if (status !== 'all') {
+      if (d.getAttribute('data-status') !== status) {
+        return false;
+      }
+    }
+    if (query === '') {
+      return true;
+    }
+    return d.querySelector('summary').textContent.toLowerCase().indexOf(query) !== -1;
+  }
+
+  function apply() {
+    var query = box.value.trim().toLowerCase();
+    var filtering = query !== '' || status !== 'all';
+    var visible = 0;
+    reqs.forEach(function (d) {
+      var ok = matches(d, query);
+      d.hidden = !ok;
+      if (ok) {
+        visible += 1;
+      }
+    });
+    // A filter is no use if its matches sit inside closed groups.
+    groups.forEach(function (g) {
+      var any = g.querySelector('details.requirement:not([hidden])') !== null;
+      g.hidden = filtering ? !any : false;
+      if (filtering) {
+        g.open = any;
+      }
+    });
+    shown.textContent = visible + ' of ' + reqs.length + ' requirements shown';
+  }
+
+  function setOpen(open) {
+    groups.forEach(function (g) {
+      if (!g.hidden) {
+        g.open = open;
+      }
+    });
+    reqs.forEach(function (d) {
+      if (!d.hidden) {
+        d.open = open;
+      }
+    });
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      status = b.getAttribute('data-status');
+      buttons.forEach(function (other) {
+        other.setAttribute('aria-pressed', other === b ? 'true' : 'false');
+      });
+      apply();
+    });
+  });
+  box.addEventListener('input', apply);
+  document.getElementById('expand-all').addEventListener('click', function () {
+    setOpen(true);
+  });
+  document.getElementById('collapse-all').addEventListener('click', function () {
+    setOpen(false);
+  });
+  apply();
+})();
+</script>
+</body>
+</html>
