@@ -880,6 +880,8 @@ Token is resolved from: `GITLAB_TOKEN` env var, `GLAB_TOKEN` env var, or glab CL
 
 With `--group`, every non-archived project in the group (subgroups included by default) is fetched and one file per project is written to `--out-dir`, named after the project path with `/` replaced by `__`. A project that cannot be fetched is reported on stderr and the command exits non-zero after the others are written.
 
+`--check` runs the probe only and downloads no findings. With `--project` it prints that project's diagnosis. With `--group` it probes every project in the group and prints one line each, under a count of how many have a populated report, how many never did, and how many could not be probed; it needs no `--out-dir`.
+
 ```
 USAGE
   hdf fetch gitlab-vulnerabilities [output] [flags]
@@ -896,7 +898,7 @@ FLAGS
       --out-dir string          Output directory with --group; one file per project
       --max-pages int           Maximum pages per project or group listing (default 200)
       --max-response-size int   Max response size in bytes per request (default 25MB, -1 for no limit)
-      --check                   Run the probe only and print the tier and ingestion diagnosis
+      --check                   Run the probe only and print the tier and ingestion diagnosis (every project with --group)
 
 EXAMPLES
   hdf fetch gitlab-vulnerabilities --project my-org/my-project -o output.json
@@ -904,6 +906,7 @@ EXAMPLES
   hdf fetch gitlab-vulnerabilities --project my-org/my-project --state DETECTED,CONFIRMED -o open.json
   hdf fetch gitlab-vulnerabilities --project my-org/my-project --state DISMISSED -o dismissed.json
   hdf fetch gitlab-vulnerabilities --project my-org/my-project --check
+  hdf fetch gitlab-vulnerabilities --url https://gitlab.example.com --group my-org --check
   hdf fetch gitlab-vulnerabilities --project my-org/my-project --format raw | jq '.vulnerabilities | length'
 ```
 

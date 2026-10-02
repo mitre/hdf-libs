@@ -270,7 +270,15 @@ func TestFetchGitlabVulnerabilitiesCmd_CheckGroupNeedsNoOutDir(t *testing.T) {
 
 	out, err := runFetchGV(t, "--url", srv.URL, "--group", "security-demo", "--check")
 	require.NoError(t, err, "--check is a probe; it neither needs nor writes an output directory")
-	assert.Contains(t, out, "security-demo/unscanned-app: Vulnerability Report never populated", "the first listed project is diagnosed")
+	assert.Contains(t, out, "group security-demo: 4 projects, 2 with a populated Vulnerability Report, 2 never populated")
+	for _, line := range []string{
+		"security-demo/unscanned-app: Vulnerability Report never populated",
+		"security-demo/empty-app: Vulnerability Report never populated",
+		"security-demo/web-goat: Vulnerability Report populated (0 open)",
+		"security-demo/juice-shop: Vulnerability Report populated (177 open)",
+	} {
+		assert.Contains(t, out, line, "every project in the group is diagnosed")
+	}
 }
 
 func TestFetchGitlabVulnerabilitiesCmd_Check(t *testing.T) {

@@ -581,7 +581,7 @@ func TestVerify_ProbeOnlyDiagnosis(t *testing.T) {
 	assert.Equal(t, "GitLab 18.9.1-ee (EE) as sec-reviewer\nsecurity-demo/juice-shop: Vulnerability Report populated (177 open); scanners on the latest default-branch pipeline: SAST, DEPENDENCY_SCANNING, SECRET_DETECTION", d.String())
 }
 
-func TestVerify_NeverIngestedProjectAndGroupMode(t *testing.T) {
+func TestVerify_NeverIngestedProjectAndLicense(t *testing.T) {
 	srv := httptest.NewServer(handlerFor(t, projectReplay(t, "empty-app")))
 	defer srv.Close()
 	f := newTestFetcher(t, srv.URL, func(p *GitLabVulnerabilitiesParams) { p.Project = "security-demo/empty-app" })
@@ -589,16 +589,6 @@ func TestVerify_NeverIngestedProjectAndGroupMode(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, d.Project.Ingested)
 	assert.Contains(t, d.String(), "Vulnerability Report never populated")
-
-	// Group mode verifies against the first listed project.
-	group := httptest.NewServer(handlerFor(t, groupReplay(t)))
-	defer group.Close()
-	t.Setenv("GITLAB_TOKEN", testToken)
-	g, err := NewGitLabVulnerabilitiesFetcher(GitLabVulnerabilitiesParams{URL: group.URL, Group: "security-demo"}, shared.TLSOptions{})
-	require.NoError(t, err)
-	d, err = g.Verify(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, "security-demo/unscanned-app", d.Project.FullPath, "the recorded listing puts unscanned-app first")
 
 	// A license-readable probe surfaces the plan.
 	licensed := httptest.NewServer(handlerFor(t, map[string]func(map[string]any) []byte{
@@ -613,6 +603,121 @@ func TestVerify_NeverIngestedProjectAndGroupMode(t *testing.T) {
 	assert.Equal(t, "ultimate", d.Plan)
 	assert.True(t, d.Trial)
 	assert.Contains(t, d.String(), "plan ultimate (trial)")
+}
+
+func newGroupFetcher(t *testing.T, url string) *GitLabVulnerabilitiesFetcher {
+	t.Helper()
+	t.Setenv("GITLAB_TOKEN", testToken)
+	g, err := NewGitLabVulnerabilitiesFetcher(GitLabVulnerabilitiesParams{URL: url, Group: "security-demo"}, shared.TLSOptions{})
+	require.NoError(t, err)
+	return g
+}
+
+func TestVerify_GroupDiagnosesEveryProject(t *testing.T) {
+	pages := 0
+	responses := groupReplay(t)
+	responses["VulnerabilityReportPage"] = func(map[string]any) []byte { pages++; return nil }
+	srv := httptest.NewServer(handlerFor(t, responses))
+	defer srv.Close()
+
+	d, err := newGroupFetcher(t, srv.URL).Verify(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 0, pages, "verify never downloads vulnerabilities")
+	assert.Nil(t, d.Project, "Project is the project-mode diagnosis")
+	assert.Equal(t, "security-demo", d.Group)
+	assert.Equal(t, "sec-reviewer", d.Username)
+	assert.Equal(t, "18.9.1-ee", d.Version)
+
+	require.Len(t, d.Projects, 4, "one diagnosis per listed project, in listing order")
+	paths := make([]string, len(d.Projects))
+	for i, p := range d.Projects {
+		paths[i] = p.FullPath
+		assert.NoError(t, p.Err)
+	}
+	assert.Equal(t, []string{
+		"security-demo/unscanned-app", "security-demo/empty-app", "security-demo/web-goat", "security-demo/juice-shop",
+	}, paths)
+	assert.False(t, d.Projects[0].Ingested)
+	assert.False(t, d.Projects[1].Ingested)
+	assert.True(t, d.Projects[2].Ingested)
+	assert.True(t, d.Projects[3].Ingested)
+	assert.Equal(t, 177, d.Projects[3].Total)
+
+	assert.Equal(t, strings.Join([]string{
+		"GitLab 18.9.1-ee (EE) as sec-reviewer",
+		"group security-demo: 4 projects, 2 with a populated Vulnerability Report, 2 never populated",
+		"security-demo/unscanned-app: Vulnerability Report never populated; scanners on the latest default-branch pipeline: SAST",
+		"security-demo/empty-app: Vulnerability Report never populated",
+		"security-demo/web-goat: Vulnerability Report populated (0 open); scanners on the latest default-branch pipeline: SECRET_DETECTION",
+		"security-demo/juice-shop: Vulnerability Report populated (177 open); scanners on the latest default-branch pipeline: SAST, DEPENDENCY_SCANNING, SECRET_DETECTION",
+	}, "\n"), d.String())
+}
+
+func TestVerify_GroupReportsAProjectItCouldNotProbeAndGoesOn(t *testing.T) {
+	responses := groupReplay(t)
+	recorded := responses["VulnerabilityReportProbe"]
+	responses["VulnerabilityReportProbe"] = func(vars map[string]any) []byte {
+		if vars["fullPath"] == "security-demo/unscanned-app" {
+			return []byte(`{"data":{"metadata":{"enterprise":true,"version":"18.9.1-ee"},"currentUser":{"username":"sec-reviewer"},"project":null}}`)
+		}
+		return recorded(vars)
+	}
+	srv := httptest.NewServer(handlerFor(t, responses))
+	defer srv.Close()
+
+	d, err := newGroupFetcher(t, srv.URL).Verify(context.Background())
+	require.NoError(t, err, "one unreadable project does not hide the rest of the group")
+	require.Len(t, d.Projects, 4)
+	assert.ErrorContains(t, d.Projects[0].Err, "not found or not readable")
+	assert.Equal(t, "security-demo/unscanned-app", d.Projects[0].FullPath)
+	assert.Equal(t, "18.9.1-ee", d.Version, "the instance facts come from the first probe that answered")
+	out := d.String()
+	assert.Contains(t, out, "group security-demo: 4 projects, 2 with a populated Vulnerability Report, 1 never populated, 1 could not be probed")
+	assert.Contains(t, out, `security-demo/unscanned-app: could not be probed: `)
+	assert.Contains(t, out, "security-demo/juice-shop: Vulnerability Report populated (177 open)")
+}
+
+func TestVerify_GroupFailsWhenNoProjectCanBeProbed(t *testing.T) {
+	responses := groupReplay(t)
+	responses["VulnerabilityReportProbe"] = func(map[string]any) []byte {
+		return []byte(`{"data":{"metadata":{"enterprise":false,"version":"18.9.1"},"currentUser":{"username":"sec-reviewer"},"project":null}}`)
+	}
+	srv := httptest.NewServer(handlerFor(t, responses))
+	defer srv.Close()
+
+	_, err := newGroupFetcher(t, srv.URL).Verify(context.Background())
+	assert.ErrorContains(t, err, "Community Edition", "with nothing probed there is no diagnosis, only the reason")
+}
+
+func TestVerify_FailsWhenTheProjectOrTheGroupCannotBeRead(t *testing.T) {
+	srv := httptest.NewServer(handlerFor(t, map[string]func(map[string]any) []byte{
+		"VulnerabilityReportProbe": func(map[string]any) []byte {
+			return []byte(`{"data":{"metadata":{"enterprise":true,"version":"18.9.1-ee"},"project":null}}`)
+		},
+		"GroupProjects": func(map[string]any) []byte { return []byte(`{"data":{"group":null}}`) },
+	}))
+	defer srv.Close()
+
+	_, err := newTestFetcher(t, srv.URL, nil).Verify(context.Background())
+	assert.ErrorContains(t, err, `project "security-demo/web-goat" not found or not readable`)
+
+	_, err = newGroupFetcher(t, srv.URL).Verify(context.Background())
+	assert.ErrorContains(t, err, `group "security-demo" not found or not readable`)
+}
+
+func TestVerify_GroupStopsWhenTheContextEnds(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	responses := groupReplay(t)
+	recorded := responses["VulnerabilityReportProbe"]
+	responses["VulnerabilityReportProbe"] = func(vars map[string]any) []byte {
+		cancel()
+		return recorded(vars)
+	}
+	srv := httptest.NewServer(handlerFor(t, responses))
+	defer srv.Close()
+
+	_, err := newGroupFetcher(t, srv.URL).Verify(ctx)
+	assert.ErrorIs(t, err, context.Canceled)
 }
 
 func TestFetch_ClockDefaultsToWallClock(t *testing.T) {

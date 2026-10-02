@@ -74,6 +74,8 @@ others are written.
 
 Use --state and --report-type to filter (comma-separated GitLab enum values).
 Use --check to run the probe only and print the tier/ingestion diagnosis.
+With --group it diagnoses every project in the group, one line each, under a
+count of how many have a populated report.
 Use --format raw to write the fetched envelope without conversion.
 
 Output defaults to stdout when no output path is given.`,
@@ -90,7 +92,10 @@ Output defaults to stdout when no output path is given.`,
   hdf fetch gitlab-vulnerabilities --project my-org/my-project --state DISMISSED out.json
 
   # Self-hosted instance, credentials check only
-  hdf fetch gitlab-vulnerabilities --url https://gitlab.example.com --project my-org/my-project --check`,
+  hdf fetch gitlab-vulnerabilities --url https://gitlab.example.com --project my-org/my-project --check
+
+  # Which projects in a group have a populated report, without fetching any
+  hdf fetch gitlab-vulnerabilities --url https://gitlab.example.com --group my-org --check`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if outputPath == "" && len(args) > 0 {
@@ -175,7 +180,7 @@ Output defaults to stdout when no output path is given.`,
 	cmd.Flags().IntVar(&pageSize, "page-size", 0, "Findings requested per GraphQL page (default: 25, sized to GitLab's query complexity cap)")
 	cmd.Flags().IntVar(&maxPages, "max-pages", 0, "Maximum pages per project, group listing or finding history (default: 500)")
 	cmd.Flags().Int64Var(&maxResponseSize, "max-response-size", 0, "Maximum response size in bytes per request (default: 25MB, -1 for no limit)")
-	cmd.Flags().BoolVar(&check, "check", false, "Run the probe only and print the tier and ingestion diagnosis")
+	cmd.Flags().BoolVar(&check, "check", false, "Run the probe only and print the tier and ingestion diagnosis (every project with --group)")
 	addNoValidateFlag(cmd)
 
 	return cmd

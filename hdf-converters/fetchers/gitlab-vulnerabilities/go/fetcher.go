@@ -686,8 +686,8 @@ func (f *GitLabVulnerabilitiesFetcher) listProjects(ctx context.Context, token s
 
 // --- Verify ---
 
-// Diagnosis is what Verify learned from one probe: enough to tell a user why
-// a fetch would or would not yield a report, without downloading one.
+// Diagnosis is what Verify learned from probing: enough to tell a user why a
+// fetch would or would not yield a report, without downloading one.
 type Diagnosis struct {
 	Username   string
 	Version    string
@@ -697,6 +697,10 @@ type Diagnosis struct {
 	Trial bool
 	// Project is set in project mode.
 	Project *ProjectDiagnosis
+	// Group and Projects are set in group mode: one entry per listed project,
+	// in the order GitLab listed them.
+	Group    string
+	Projects []ProjectDiagnosis
 }
 
 // ProjectDiagnosis summarizes a project's ingestion signals.
@@ -707,10 +711,14 @@ type ProjectDiagnosis struct {
 	Ingested bool
 	Total    int
 	Enabled  []string
+	// Err is set in group mode when this project could not be probed; the
+	// other projects are still diagnosed.
+	Err error
 }
 
 // Verify performs the probe only — no vulnerabilities are downloaded — and
-// reports the tier and ingestion diagnosis. It backs the CLI --check flag.
+// reports the tier and ingestion diagnosis: of the project, or of every
+// project in the group. It backs the CLI --check flag.
 func (f *GitLabVulnerabilitiesFetcher) Verify(ctx context.Context) (*Diagnosis, error) {
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
@@ -721,18 +729,56 @@ func (f *GitLabVulnerabilitiesFetcher) Verify(ctx context.Context) (*Diagnosis, 
 	if err != nil {
 		return nil, err
 	}
-	fullPath := f.params.Project
-	if fullPath == "" {
-		paths, err := f.listProjects(ctx, token)
-		if err != nil {
-			return nil, err
-		}
-		fullPath = paths[0]
+	if f.params.Project == "" {
+		return f.verifyGroup(ctx, token)
 	}
-	p, err := f.probe(ctx, token, fullPath)
+	p, err := f.probe(ctx, token, f.params.Project)
 	if err != nil {
 		return nil, err
 	}
+	d := instanceDiagnosis(p)
+	pd := projectDiagnosis(p)
+	d.Project = &pd
+	return d, nil
+}
+
+// verifyGroup probes every listed project. A project that cannot be probed is
+// recorded and the rest are still diagnosed; when none can, the first failure
+// is the answer, since it is then the instance or the token that is at fault.
+func (f *GitLabVulnerabilitiesFetcher) verifyGroup(ctx context.Context, token string) (*Diagnosis, error) {
+	paths, err := f.listProjects(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+	var d *Diagnosis
+	var firstErr error
+	projects := make([]ProjectDiagnosis, 0, len(paths))
+	for _, fullPath := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		p, err := f.probe(ctx, token, fullPath)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			projects = append(projects, ProjectDiagnosis{FullPath: fullPath, Err: err})
+			continue
+		}
+		if d == nil {
+			d = instanceDiagnosis(p)
+		}
+		projects = append(projects, projectDiagnosis(p))
+	}
+	if d == nil {
+		return nil, firstErr
+	}
+	d.Group = f.params.Group
+	d.Projects = projects
+	return d, nil
+}
+
+func instanceDiagnosis(p *probeData) *Diagnosis {
 	d := &Diagnosis{Version: p.Metadata.Version, Enterprise: p.Metadata.Enterprise}
 	if p.CurrentUser != nil {
 		d.Username = p.CurrentUser.Username
@@ -741,18 +787,22 @@ func (f *GitLabVulnerabilitiesFetcher) Verify(ctx context.Context) (*Diagnosis, 
 		d.Plan = p.CurrentLicense.Plan
 		d.Trial = p.CurrentLicense.Trial
 	}
-	pd := &ProjectDiagnosis{FullPath: p.Project.FullPath, Ingested: p.Project.VulnerabilityStatistic != nil}
+	return d
+}
+
+func projectDiagnosis(p *probeData) ProjectDiagnosis {
+	pd := ProjectDiagnosis{FullPath: p.Project.FullPath, Ingested: p.Project.VulnerabilityStatistic != nil}
 	if p.Project.VulnerabilityStatistic != nil {
 		pd.Total = p.Project.VulnerabilityStatistic.Total
 	}
 	if p.Project.SecurityScanners != nil {
 		pd.Enabled = p.Project.SecurityScanners.Enabled
 	}
-	d.Project = pd
-	return d, nil
+	return pd
 }
 
-// String renders the diagnosis for a terminal.
+// String renders the diagnosis for a terminal: the instance, then one line per
+// project, under a count of the group when there is one.
 func (d *Diagnosis) String() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "GitLab %s (%s) as %s", d.Version, map[bool]string{true: "EE", false: "CE"}[d.Enterprise], d.Username)
@@ -763,17 +813,50 @@ func (d *Diagnosis) String() string {
 		}
 	}
 	if d.Project != nil {
-		fmt.Fprintf(&b, "\n%s: ", d.Project.FullPath)
-		if d.Project.Ingested {
-			fmt.Fprintf(&b, "Vulnerability Report populated (%d open)", d.Project.Total)
-		} else {
-			b.WriteString("Vulnerability Report never populated")
-		}
-		if len(d.Project.Enabled) > 0 {
-			fmt.Fprintf(&b, "; scanners on the latest default-branch pipeline: %s", strings.Join(d.Project.Enabled, ", "))
-		}
+		b.WriteString("\n" + d.Project.String())
+	}
+	if d.Group != "" {
+		b.WriteString("\n" + d.groupSummary())
+	}
+	for i := range d.Projects {
+		b.WriteString("\n" + d.Projects[i].String())
 	}
 	return b.String()
+}
+
+func (d *Diagnosis) groupSummary() string {
+	populated, never, failed := 0, 0, 0
+	for i := range d.Projects {
+		switch {
+		case d.Projects[i].Err != nil:
+			failed++
+		case d.Projects[i].Ingested:
+			populated++
+		default:
+			never++
+		}
+	}
+	summary := fmt.Sprintf("group %s: %d projects, %d with a populated Vulnerability Report, %d never populated",
+		d.Group, len(d.Projects), populated, never)
+	if failed > 0 {
+		summary += fmt.Sprintf(", %d could not be probed", failed)
+	}
+	return summary
+}
+
+// String renders one project's line of the diagnosis.
+func (p *ProjectDiagnosis) String() string {
+	if p.Err != nil {
+		return fmt.Sprintf("%s: could not be probed: %v", p.FullPath, p.Err)
+	}
+	line := p.FullPath + ": Vulnerability Report never populated"
+	if p.Ingested {
+		line = fmt.Sprintf("%s: Vulnerability Report populated (%d open)", p.FullPath, p.Total)
+	}
+	if len(p.Enabled) > 0 {
+		line += "; scanners on the latest default-branch pipeline: " + strings.Join(p.Enabled, ", ")
+	}
+	return line
 }
 
 func (f *GitLabVulnerabilitiesFetcher) token() (string, error) {
