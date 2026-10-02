@@ -62,7 +62,13 @@ type rfc4122Checker struct{}
 
 func (rfc4122Checker) IsFormat(input any) bool {
 	s, ok := input.(string)
-	return ok && rxRFC4122.MatchString(s)
+	return ok && IsUUID(s)
+}
+
+// IsUUID reports whether s satisfies the schemas' `format: uuid`, so a caller can
+// refuse a value before writing it into a document that would then fail validation.
+func IsUUID(s string) bool {
+	return rxRFC4122.MatchString(s)
 }
 
 type rfc3339Checker struct{}
