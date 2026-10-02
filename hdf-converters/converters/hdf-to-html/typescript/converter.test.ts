@@ -99,11 +99,12 @@ function waived(expiresAt: string): Doc {
 
 const ELEMENTS_THAT_LOAD = ['<link', '<img', '<iframe', '<object', '<embed', '<video', '<audio', '<source',
   '<form', '<base', '<svg', '<meta http-equiv="refresh"'];
-const LOADING_ATTRIBUTE = /<[^>]*\s(src|srcset|data|action|formaction|poster|background|on[a-z]+)\s*=/;
-const HREF_ATTRIBUTE = /<[^>]*\shref\s*=\s*"([^"]*)"/g;
-const STYLE_ATTRIBUTE = /<[^>]*\sstyle\s*=\s*"([^"]*)"/g;
+const TAG = /<[^<>]*>/g;
+const LOADING_ATTRIBUTE = /\s(src|srcset|data|action|formaction|poster|background|on[a-z]+)\s*=/;
+const HREF_ATTRIBUTE = /\shref\s*=\s*"([^"]*)"/g;
+const STYLE_ATTRIBUTE = /\sstyle\s*=\s*"([^"]*)"/g;
 // The only inline styles are numbers handed to the stylesheet as custom properties.
-const NUMERIC_STYLE = /^--(n|pct):[0-9]+(\.[0-9]+)?$/;
+const NUMERIC_STYLE = /^--(n|pct):\d+(\.\d+)?$/;
 const SCRIPT_BLOCK = /<script>([\s\S]*?)<\/script>/g;
 
 /**
@@ -115,12 +116,14 @@ function expectSelfContained(out: string, wantScript: boolean): void {
   for (const forbidden of ELEMENTS_THAT_LOAD) {
     expect(lower, `the report must not contain ${forbidden}`).not.toContain(forbidden);
   }
-  expect(lower).not.toMatch(LOADING_ATTRIBUTE);
-  for (const m of out.matchAll(HREF_ATTRIBUTE)) {
-    expect(m[1]!.startsWith('#'), `href ${m[1]} must stay inside the page`).toBe(true);
-  }
-  for (const m of out.matchAll(STYLE_ATTRIBUTE)) {
-    expect(m[1], 'an inline style may only carry a number').toMatch(NUMERIC_STYLE);
+  for (const tag of out.match(TAG) ?? []) {
+    expect(tag.toLowerCase(), 'no tag may load or run anything').not.toMatch(LOADING_ATTRIBUTE);
+    for (const m of tag.matchAll(HREF_ATTRIBUTE)) {
+      expect(m[1]!.startsWith('#'), `href ${m[1]} must stay inside the page`).toBe(true);
+    }
+    for (const m of tag.matchAll(STYLE_ATTRIBUTE)) {
+      expect(m[1], 'an inline style may only carry a number').toMatch(NUMERIC_STYLE);
+    }
   }
   expect(count(lower, '<style>')).toBe(1);
   const css = lower.slice(lower.indexOf('<style>'), lower.indexOf('</style>'));
@@ -153,7 +156,8 @@ function badge(cls: string, label: string): string {
 }
 
 function summaryRow(name: string, ...cells: string[]): string {
-  return `<tr><th scope="row">${name}</th>${cells.map((c) => `<td>${c}</td>`).join('')}</tr>`;
+  const columns = cells.map((c) => '<td>' + c + '</td>').join('');
+  return `<tr><th scope="row">${name}</th>${columns}</tr>`;
 }
 
 describe('hdf-to-html converter', () => {
@@ -645,7 +649,8 @@ describe('hdf-to-html helpers', () => {
 
   it('pins the script by the hash the policy carries', () => {
     // The element's content is the newline after <script> plus the script itself.
-    expect(`sha256-${createHash('sha256').update(`\n${SCRIPT}`, 'utf-8').digest('base64')}`).toBe(SCRIPT_HASH);
+    const digest = createHash('sha256').update('\n' + SCRIPT, 'utf-8').digest('base64');
+    expect(`sha256-${digest}`).toBe(SCRIPT_HASH);
     expect(SCRIPT).not.toMatch(/[<&]/);
     expect(STYLESHEET).not.toMatch(/[<&]/);
   });
@@ -663,6 +668,9 @@ describe('hdf-to-html helpers', () => {
     expect(indentJson('[]')).toBe('[]');
     expect(indentJson('{"a":[1,"x,{}[]:\\"y"],"b":{}}')).toBe('{\n  "a": [\n    1,\n    "x,{}[]:\\"y"\n  ],\n  "b": {}\n}');
     expect(indentJson('"a\\\\"')).toBe('"a\\\\"');
+    // A string that never closes, or ends on an escape, is carried to the end.
+    expect(indentJson('"open')).toBe('"open');
+    expect(indentJson('"open\\')).toBe('"open\\');
   });
 
     it('recognizes text that takes more than two lines', () => {
@@ -694,7 +702,7 @@ describe('hdf-to-html parity with the Go peer', () => {
   const rich = loadFixture('input', 'rich.json');
 
   it('holds rich.json to the HDF schema', () => {
-    expectValidResults(JSON.parse(rich));
+    expect(() => expectValidResults(JSON.parse(rich))).not.toThrow();
   });
 
   it.each(REPORT_TYPES)('emits the Go golden for rich.json as %s', (reportType) => {

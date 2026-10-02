@@ -141,8 +141,13 @@ function formatTime(value: unknown): string {
 const GO_ZERO_TIME = -62135596800000;
 
 function toDate(value: unknown): Date | null {
-  const parsed = value instanceof Date ? value : typeof value === 'string' ? parseTimestamp(value) : null;
+  const parsed = parsedDate(value);
   return parsed && parsed.getTime() !== GO_ZERO_TIME ? parsed : null;
+}
+
+function parsedDate(value: unknown): Date | null {
+  if (value instanceof Date) return value;
+  return typeof value === 'string' ? parseTimestamp(value) : null;
 }
 
 interface AssessmentTime {
@@ -159,22 +164,23 @@ interface AssessmentTime {
  * what keeps the report reproducible.
  */
 function assessmentTime(doc: Json, baselines: Json[]): AssessmentTime {
-  let latest = toDate(doc.timestamp);
-  if (!latest) {
-    for (const baseline of baselines) {
-      for (const req of list(baseline.requirements).map(obj)) {
-        for (const res of list(req.results).map(obj)) {
-          const start = toDate(res.startTime);
-          if (start && (!latest || start > latest)) latest = start;
-        }
-      }
-    }
-  }
+  const latest = toDate(doc.timestamp) ?? latestStart(baselines);
   if (!latest) {
     const epoch = new Date(0);
     return { stamp: formatTimestamp(epoch), date: epoch, known: false };
   }
   return { stamp: formatTimestamp(latest), date: latest, known: true };
+}
+
+/** The latest result start time in the document, if any result carries one. */
+function latestStart(baselines: Json[]): Date | null {
+  let latest: Date | null = null;
+  const results = baselines.flatMap((baseline) => list(baseline.requirements).map(obj)).flatMap((req) => list(req.results).map(obj));
+  for (const res of results) {
+    const start = toDate(res.startTime);
+    if (start && (!latest || start > latest)) latest = start;
+  }
+  return latest;
 }
 
 interface StatusCounts {
@@ -398,7 +404,8 @@ class Renderer {
       id = `block-${this.folds}`;
     }
     const long = count > COLLAPSED_ABOVE;
-    this.line(`<details class="${cls === '' ? 'fold' : `fold ${cls}`}" id="${id}"${long ? '' : ' open="open"'}>`);
+    const classes = cls === '' ? 'fold' : `fold ${cls}`;
+    this.line(`<details class="${classes}" id="${id}"${long ? '' : ' open="open"'}>`);
     this.line(`<summary><${tag}>${title}</${tag}><span class="count">${count}</span></summary>`);
     this.line('<div class="fold-body">');
     return { id, label, long };
@@ -1130,47 +1137,42 @@ function embeddedDocument(value: unknown): string {
 export function indentJson(compact: string): string {
   let out = '';
   let depth = 0;
-  let inString = false;
-  let escaped = false;
-  const newline = (): void => {
-    out += `\n${'  '.repeat(depth)}`;
-  };
-  for (let i = 0; i < compact.length; i++) {
+  const newline = (): string => `\n${'  '.repeat(depth)}`;
+  let i = 0;
+  while (i < compact.length) {
     const c = compact[i]!;
-    if (inString) {
-      out += c;
-      if (escaped) escaped = false;
-      else if (c === '\\') escaped = true;
-      else if (c === '"') inString = false;
-      continue;
-    }
+    const next = compact[i + 1];
+    let end = i + 1;
     if (c === '"') {
-      inString = true;
-      out += c;
+      end = stringEnd(compact, i);
+      out += compact.slice(i, end);
+    } else if ((c === '{' || c === '[') && (next === '}' || next === ']')) {
+      end = i + 2;
+      out += c + next;
     } else if (c === '{' || c === '[') {
-      out += c;
-      const next = compact[i + 1];
-      if (next === '}' || next === ']') {
-        out += next;
-        i++;
-        continue;
-      }
       depth++;
-      newline();
+      out += c + newline();
     } else if (c === '}' || c === ']') {
       depth--;
-      newline();
-      out += c;
+      out += newline() + c;
     } else if (c === ',') {
-      out += c;
-      newline();
-    } else if (c === ':') {
-      out += ': ';
+      out += c + newline();
     } else {
-      out += c;
+      out += c === ':' ? ': ' : c;
     }
+    i = end;
   }
   return out;
+}
+
+/** The index just past the JSON string that opens at `start`; the end of the text when it never closes. */
+function stringEnd(text: string, start: number): number {
+  let i = start + 1;
+  while (i < text.length) {
+    if (text[i] === '"') return i + 1;
+    i += text[i] === '\\' ? 2 : 1;
+  }
+  return text.length;
 }
 
 function strings(value: unknown): string[] {

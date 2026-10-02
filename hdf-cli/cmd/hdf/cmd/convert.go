@@ -36,38 +36,7 @@ func NewConvertCmd() *cobra.Command {
 		Long:  buildConvertLong(),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			componentID, _ := cmd.Flags().GetString("component-id")
-			if err := checkComponentIDFlag(componentID); err != nil {
-				return err
-			}
-			files, err := expandGlobs(args)
-			if err != nil {
-				return err
-			}
-			// A target that can combine documents (the HTML report) turns several
-			// inputs, or a directory of them, into ONE output when -o names a file.
-			// With -o <dir>/ each input still gets its own output, as for any target.
-			if multi, converter, ok := aggregatingConverter(toFormat); ok {
-				expanded, hadDirectory, skipped, expandErr := expandResultDirectories(files)
-				if expandErr != nil {
-					return expandErr
-				}
-				files = expanded
-				if skipped > 0 {
-					fmt.Fprintf(os.Stderr, "Skipped %d file(s) that are not HDF results documents\n", skipped)
-				}
-				if (len(files) > 1 || hadDirectory) && !isDirectoryOutput(outputPath) {
-					return runConvertAggregate(cmd, multi, converter, files, fromFormat, toFormat, outputPath)
-				}
-			}
-			// A gate writes every scan into one directory with a single
-			// command, and whether that matched one file or twelve is an
-			// accident of how many scanners ran — so -o <dir> routes through
-			// the same directory logic at either arity.
-			if len(files) > 1 || isDirectoryOutput(outputPath) {
-				return runConvertBulk(cmd, files, fromFormat, toFormat, outputPath)
-			}
-			return runConvert(cmd, files, fromFormat, toFormat, outputPath)
+			return dispatchConvert(cmd, args, fromFormat, toFormat, outputPath)
 		},
 	}
 
@@ -86,6 +55,39 @@ func NewConvertCmd() *cobra.Command {
 	AddOSCALFlags(cmd)
 
 	return cmd
+}
+
+// dispatchConvert routes the arguments to the single, bulk or combined path.
+func dispatchConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputPath string) error {
+	componentID, _ := cmd.Flags().GetString("component-id")
+	if err := checkComponentIDFlag(componentID); err != nil {
+		return err
+	}
+	files, err := expandGlobs(args)
+	if err != nil {
+		return err
+	}
+	// A target that can combine documents (the HTML report) turns several
+	// inputs, or a directory of them, into ONE output when -o names a file.
+	// With -o <dir>/ each input still gets its own output, as for any target.
+	if multi, converter, ok := aggregatingConverter(toFormat); ok {
+		expanded, hadDirectory, expandErr := expandResultDirectories(files)
+		if expandErr != nil {
+			return expandErr
+		}
+		files = expanded
+		if (len(files) > 1 || hadDirectory) && !isDirectoryOutput(outputPath) {
+			return runConvertAggregate(cmd, multi, converter, files, fromFormat, toFormat, outputPath)
+		}
+	}
+	// A gate writes every scan into one directory with a single
+	// command, and whether that matched one file or twelve is an
+	// accident of how many scanners ran — so -o <dir> routes through
+	// the same directory logic at either arity.
+	if len(files) > 1 || isDirectoryOutput(outputPath) {
+		return runConvertBulk(cmd, files, fromFormat, toFormat, outputPath)
+	}
+	return runConvert(cmd, files, fromFormat, toFormat, outputPath)
 }
 
 // applyReportType hands --report-type to a converter that offers report types.
@@ -195,65 +197,13 @@ func loadConvertInput(cmd *cobra.Command, inputPath, fromFormat, fromVersion, to
 		return nil, "", "", fmt.Errorf("no input provided")
 	}
 
-	// Auto-detect source format if --from not provided
-	if fromFormat == "" {
-		detected, detectedVersion, err := autoDetectFormat(data, inputPath)
-		if err != nil {
-			return nil, "", "", err
-		}
-		fromFormat = detected
-		if fromVersion == "" {
-			fromVersion = detectedVersion
-		}
-
-		// Native HDF input fingerprints as the passthrough id, which matches no
-		// converter (exports are registered under the "hdf" source). When the
-		// user asked for a specific export target, normalize so hdf→<target>
-		// resolves. When they didn't, there is nothing to convert to — guide
-		// them to --to instead of attempting an hdf→hdf no-op or dumping the
-		// converter registry.
-		if fromFormat == hdfpassthrough.FingerprintID {
-			if !cmd.Flags().Changed("to") {
-				return nil, "", "", buildAlreadyHDFError()
-			}
-			fromFormat = "hdf"
-		}
+	fromFormat, fromVersion, err = detectConvertSource(cmd, data, inputPath, fromFormat, fromVersion)
+	if err != nil {
+		return nil, "", "", err
 	}
-
-	// Absorb a legacy SAF-supplement shape (top-level target/passthrough, which SAF
-	// writes onto HDF documents) into v3-native carriers so attribution survives the
-	// convert path — the motivating #234 case — not only the parse path. These keys
-	// ride v2's additionalProperties, so they are present on the raw bytes even
-	// though the legacy struct has no field for them. For legacy (v2) input we
-	// capture them, upgrade to v3 (which would otherwise drop target), re-attach, and
-	// normalize on the v3 doc so the rewrite lands where it survives; the version
-	// transform below then carries the result (including a down-pin to hdf@2).
-	//
-	// This runs BEFORE normalizeLegacyHDFInput: for a non-hdf export target that
-	// helper upgrades legacy→v3 itself, dropping the top-level target before we could
-	// capture it. Doing the capture/upgrade/normalize here (which sets fromFormat=hdf
-	// for legacy input) leaves normalizeLegacyHDFInput a no-op on the now-v3 data.
-	// Gated to HDF/legacy input so a scanner format that happens to carry a top-level
-	// "target" key is untouched.
-	if (strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf")) && hasSAFSupplement(data) {
-		if legacyhdf.IsLegacyHDF(data) {
-			supp := captureSAFSupplement(data)
-			upgraded, _, upErr := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
-			if upErr != nil {
-				return nil, "", "", fmt.Errorf("failed to upgrade legacy HDF (v2) input for SAF-supplement absorption: %w", upErr)
-			}
-			data, err = reattachSAFSupplement(upgraded, supp)
-			if err != nil {
-				return nil, "", "", err
-			}
-			fromFormat = "hdf"
-			fromVersion = ""
-		}
-		var safWarnings []string
-		data, safWarnings = hdfparsers.NormalizeSAFSupplement(data)
-		for _, w := range safWarnings {
-			fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
-		}
+	data, fromFormat, fromVersion, err = absorbSAFSupplement(data, fromFormat, fromVersion)
+	if err != nil {
+		return nil, "", "", err
 	}
 
 	// Legacy HDF v1 (InSpec exec-json shape) carries no `baselines`, which every
@@ -262,6 +212,76 @@ func loadConvertInput(cmd *cobra.Command, inputPath, fromFormat, fromVersion, to
 	// step instead of failing on the missing field. (SAF-supplemented legacy input
 	// was already upgraded above, so this is a no-op for it.)
 	return normalizeLegacyHDFInput(data, fromFormat, fromVersion, toFormat)
+}
+
+// detectConvertSource resolves the source format, auto-detecting it when
+// --from was not given; an explicit --from is returned unchanged.
+func detectConvertSource(cmd *cobra.Command, data []byte, inputPath, fromFormat, fromVersion string) (format, version string, err error) {
+	if fromFormat != "" {
+		return fromFormat, fromVersion, nil
+	}
+	detected, detectedVersion, err := autoDetectFormat(data, inputPath)
+	if err != nil {
+		return "", "", err
+	}
+	if fromVersion == "" {
+		fromVersion = detectedVersion
+	}
+
+	// Native HDF input fingerprints as the passthrough id, which matches no
+	// converter (exports are registered under the "hdf" source). When the
+	// user asked for a specific export target, normalize so hdf→<target>
+	// resolves. When they didn't, there is nothing to convert to — guide
+	// them to --to instead of attempting an hdf→hdf no-op or dumping the
+	// converter registry.
+	if detected == hdfpassthrough.FingerprintID {
+		if !cmd.Flags().Changed("to") {
+			return "", "", buildAlreadyHDFError()
+		}
+		detected = "hdf"
+	}
+	return detected, fromVersion, nil
+}
+
+// absorbSAFSupplement absorbs a legacy SAF-supplement shape (top-level
+// target/passthrough, which SAF writes onto HDF documents) into v3-native
+// carriers so attribution survives the
+// convert path — the motivating #234 case — not only the parse path. These keys
+// ride v2's additionalProperties, so they are present on the raw bytes even
+// though the legacy struct has no field for them. For legacy (v2) input we
+// capture them, upgrade to v3 (which would otherwise drop target), re-attach, and
+// normalize on the v3 doc so the rewrite lands where it survives; the version
+// transform below then carries the result (including a down-pin to hdf@2).
+//
+// This runs BEFORE normalizeLegacyHDFInput: for a non-hdf export target that
+// helper upgrades legacy→v3 itself, dropping the top-level target before we could
+// capture it. Doing the capture/upgrade/normalize here (which sets fromFormat=hdf
+// for legacy input) leaves normalizeLegacyHDFInput a no-op on the now-v3 data.
+// Gated to HDF/legacy input so a scanner format that happens to carry a top-level
+// "target" key is untouched.
+func absorbSAFSupplement(data []byte, fromFormat, fromVersion string) (out []byte, format, version string, err error) {
+	isHDF := strings.EqualFold(fromFormat, "hdf") || strings.EqualFold(fromFormat, "legacyhdf")
+	if !isHDF || !hasSAFSupplement(data) {
+		return data, fromFormat, fromVersion, nil
+	}
+	if legacyhdf.IsLegacyHDF(data) {
+		supp := captureSAFSupplement(data)
+		upgraded, _, upErr := hdfversion.TransformHDF(data, hdfversion.LegacyVersion, hdfversion.ModernVersion)
+		if upErr != nil {
+			return nil, "", "", fmt.Errorf("failed to upgrade legacy HDF (v2) input for SAF-supplement absorption: %w", upErr)
+		}
+		if data, err = reattachSAFSupplement(upgraded, supp); err != nil {
+			return nil, "", "", err
+		}
+		fromFormat = "hdf"
+		fromVersion = ""
+	}
+	var safWarnings []string
+	data, safWarnings = hdfparsers.NormalizeSAFSupplement(data)
+	for _, w := range safWarnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", sanitizeOutput(w))
+	}
+	return data, fromFormat, fromVersion, nil
 }
 
 // runConvert executes the convert command.
@@ -283,18 +303,8 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 	// legacy Heimdall schema). Map hdf@1 → v2 with a warning; hdf@2/@3 pass
 	// through silently. Guarded on the hdf format so a "1" version on another
 	// format (e.g. sarif@1) is left untouched.
-	if strings.EqualFold(fromFormat, "hdf") {
-		var warn string
-		if fromVersion, warn = hdfversion.NormalizeVersion(fromVersion); warn != "" {
-			fmt.Fprintln(os.Stderr, warn)
-		}
-	}
-	if strings.EqualFold(toFormat, "hdf") {
-		var warn string
-		if toVersion, warn = hdfversion.NormalizeVersion(toVersion); warn != "" {
-			fmt.Fprintln(os.Stderr, warn)
-		}
-	}
+	fromVersion = normalizeHDFVersion(fromFormat, fromVersion)
+	toVersion = normalizeHDFVersion(toFormat, toVersion)
 
 	// Select the NIST revision converters emit control tags for, restoring the
 	// defaults afterward so one invocation can't leak into the next.
@@ -304,14 +314,8 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		defer reset()
 	}
 
-	// Check if output would overwrite input
-	if outputPath != "" && outputPath != "-" && inputPath != "-" {
-		force, _ := cmd.Flags().GetBool("force")
-		if !force {
-			if err := checkOutputOverwritesInput(inputPath, outputPath); err != nil {
-				return err
-			}
-		}
+	if err := checkConvertOverwrite(cmd, inputPath, outputPath); err != nil {
+		return err
 	}
 
 	data, fromFormat, fromVersion, err := loadConvertInput(cmd, inputPath, fromFormat, fromVersion, toFormat)
@@ -334,15 +338,8 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return err
 	}
 
-	// Enforce the empty-input policy now that the converter is known: empty input
-	// is only valid for converters that explicitly accept it (EmptyInputAccepting,
-	// e.g. exit-code-first scanners). Everything else keeps the standard error.
-	if len(data) == 0 {
-		e, ok := converter.(EmptyInputAccepting)
-		if !ok || !e.AcceptsEmptyInput() {
-			return fmt.Errorf("no input provided")
-		}
-		printDebug("Empty input accepted by %s converter as zero findings", converter.Name())
+	if err := checkEmptyInput(converter, data); err != nil {
+		return err
 	}
 
 	// Run conversion with version handling
@@ -351,28 +348,9 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return err
 	}
 
-	// Apply labels if --labels flag was provided
-	labelPairs, _ := cmd.Flags().GetStringSlice("labels")
-	if len(labelPairs) > 0 {
-		labels, err := parseLabelsFlag(labelPairs)
-		if err != nil {
-			return fmt.Errorf("invalid --labels flag: %w", err)
-		}
-		output, err = hdfdoc.ApplyLabels(output, labels)
-		if err != nil {
-			return fmt.Errorf("failed to apply labels: %w", err)
-		}
-		printDebug("Applied %d labels to output", len(labels))
-	}
-
-	// Apply --component-id if provided
-	componentID, _ := cmd.Flags().GetString("component-id")
-	if componentID != "" {
-		output, err = hdfdoc.ApplyComponentID(output, componentID, false)
-		if err != nil {
-			return fmt.Errorf("failed to apply component-id: %w", err)
-		}
-		printDebug("Applied componentId %s to output", componentID)
+	output, err = applyConvertFlags(cmd, output)
+	if err != nil {
+		return err
 	}
 
 	// Write output (with schema validation if target is HDF and --no-validate not set)
@@ -387,6 +365,72 @@ func runConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputP
 		return writeValidatedHDFOutput(cmd, output, outputPath)
 	}
 	return writeConvertOutput(output, outputPath)
+}
+
+// normalizeHDFVersion maps an hdf@ version onto the schema that exists for it,
+// warning on stderr when it had to; any other format's version is left alone.
+func normalizeHDFVersion(format, version string) string {
+	if !strings.EqualFold(format, "hdf") {
+		return version
+	}
+	normalized, warn := hdfversion.NormalizeVersion(version)
+	if warn != "" {
+		fmt.Fprintln(os.Stderr, warn)
+	}
+	return normalized
+}
+
+// checkConvertOverwrite refuses an output path that is the input file, unless --force.
+func checkConvertOverwrite(cmd *cobra.Command, inputPath, outputPath string) error {
+	if outputPath == "" || outputPath == "-" || inputPath == "-" {
+		return nil
+	}
+	if force, _ := cmd.Flags().GetBool("force"); force {
+		return nil
+	}
+	return checkOutputOverwritesInput(inputPath, outputPath)
+}
+
+// checkEmptyInput enforces the empty-input policy once the converter is known:
+// empty input is only valid for converters that explicitly accept it
+// (EmptyInputAccepting, e.g. exit-code-first scanners). Everything else keeps
+// the standard error.
+func checkEmptyInput(converter Converter, data []byte) error {
+	if len(data) != 0 {
+		return nil
+	}
+	if e, ok := converter.(EmptyInputAccepting); !ok || !e.AcceptsEmptyInput() {
+		return fmt.Errorf("no input provided")
+	}
+	printDebug("Empty input accepted by %s converter as zero findings", converter.Name())
+	return nil
+}
+
+// applyConvertFlags applies --labels and --component-id to converted output.
+func applyConvertFlags(cmd *cobra.Command, output []byte) ([]byte, error) {
+	labelPairs, _ := cmd.Flags().GetStringSlice("labels")
+	if len(labelPairs) > 0 {
+		labels, err := parseLabelsFlag(labelPairs)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --labels flag: %w", err)
+		}
+		output, err = hdfdoc.ApplyLabels(output, labels)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply labels: %w", err)
+		}
+		printDebug("Applied %d labels to output", len(labels))
+	}
+
+	componentID, _ := cmd.Flags().GetString("component-id")
+	if componentID != "" {
+		var err error
+		output, err = hdfdoc.ApplyComponentID(output, componentID, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply component-id: %w", err)
+		}
+		printDebug("Applied componentId %s to output", componentID)
+	}
+	return output, nil
 }
 
 // outputSizeWarning returns a warning (or "") when converted HDF output is larger

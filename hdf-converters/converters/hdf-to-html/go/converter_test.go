@@ -935,6 +935,8 @@ func TestIndentJSON(t *testing.T) {
 	assert.Equal(t, "[]", indentJSON("[]"))
 	assert.Equal(t, "{\n  \"a\": [\n    1,\n    \"x,{}[]:\\\"y\"\n  ],\n  \"b\": {}\n}", indentJSON(`{"a":[1,"x,{}[]:\"y"],"b":{}}`))
 	assert.Equal(t, "\"a\\\\\"", indentJSON(`"a\\"`), "an escaped backslash does not escape the closing quote")
+	assert.Equal(t, `"open`, indentJSON(`"open`), "a string that never closes is carried to the end")
+	assert.Equal(t, `"open\`, indentJSON(`"open\`), "as is one that ends on an escape")
 }
 
 func TestReferenceCensus(t *testing.T) {

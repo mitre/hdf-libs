@@ -19,6 +19,47 @@ import (
 
 const converterName = "hdf-to-html"
 
+// Status and severity values as HDF spells them. The passed, failed and error
+// statuses and every severity are stylesheet classes under the same spelling.
+const (
+	statusPassed        = "passed"
+	statusFailed        = "failed"
+	statusNotReviewed   = "notReviewed"
+	statusNotApplicable = "notApplicable"
+	statusError         = "error"
+
+	classNotReviewed   = "not-reviewed"
+	classNotApplicable = "not-applicable"
+
+	labelPassed        = "Passed"
+	labelFailed        = "Failed"
+	labelNotReviewed   = "Not Reviewed"
+	labelNotApplicable = "Not Applicable"
+	labelError         = "Error"
+
+	severityCritical = "critical"
+	severityHigh     = "high"
+	severityMedium   = "medium"
+	severityLow      = "low"
+	severityNone     = "none"
+)
+
+// Markup and wording the report repeats.
+const (
+	closeDiv     = "</div>"
+	closeSpan    = "</span>"
+	closeSection = "</section>"
+	closeList    = "</ul>"
+	rowOpen      = "<tr><td>"
+	cell         = "</td><td>"
+	textCell     = `</td><td class="text">`
+	rowClose     = "</td></tr>"
+	separator    = " \u00b7 "
+
+	headingDescription = "Description"
+	headingEnrichment  = "Enrichment and External References"
+)
+
 // ReportType selects how much of the document the report shows. The three
 // levels are the ones `saf convert hdf2html` offers, each a superset of the last.
 type ReportType string
@@ -166,7 +207,7 @@ func (r *renderer) closeFold(f fold) {
 	if f.long {
 		r.line(`<p class="to-top"><a href="#` + f.id + `">Back to the top of ` + escape(f.label) + "</a></p>")
 	}
-	r.line("</div>")
+	r.line(closeDiv)
 	r.line("</details>")
 }
 
@@ -214,6 +255,16 @@ func assessmentTime(doc *hdf.HDFResults) (time.Time, bool) {
 	if doc.Timestamp != nil && !doc.Timestamp.IsZero() {
 		return *doc.Timestamp, true
 	}
+	latest := latestStart(doc)
+	if latest.IsZero() {
+		return time.Unix(0, 0).UTC(), false
+	}
+	return latest, true
+}
+
+// latestStart is the latest result start time in the document; zero when no
+// result carries one.
+func latestStart(doc *hdf.HDFResults) time.Time {
 	var latest time.Time
 	for i := range doc.Baselines {
 		for j := range doc.Baselines[i].Requirements {
@@ -224,10 +275,7 @@ func assessmentTime(doc *hdf.HDFResults) (time.Time, bool) {
 			}
 		}
 	}
-	if latest.IsZero() {
-		return time.Unix(0, 0).UTC(), false
-	}
-	return latest, true
+	return latest
 }
 
 func (r *renderer) line(s string) {
@@ -254,7 +302,7 @@ func (r *renderer) document() {
 	r.line(`<a class="skip" href="#main">Skip to content</a>`)
 	r.line(`<header class="topbar" id="top">`)
 	r.line(`<h1 class="brand">HDF Assessment Report</h1>`)
-	r.line(`<span class="report-type">Report type: ` + reportTypeLabel(r.reportType) + "</span>")
+	r.line(`<span class="report-type">Report type: ` + reportTypeLabel(r.reportType) + closeSpan)
 	r.line(`<nav aria-label="Sections">`)
 	r.line(`<a href="#status">Status</a>`)
 	if r.aggregated {
@@ -384,9 +432,9 @@ func (r *renderer) assessment(doc *hdf.HDFResults) {
 		r.definitionList(facts)
 		r.closeFold(f)
 	}
-	r.line("</div>")
-	r.externalReferences("h3", "Enrichment and External References", doc.ExternalReferences)
-	r.line("</section>")
+	r.line(closeDiv)
+	r.externalReferences("h3", headingEnrichment, doc.ExternalReferences)
+	r.line(closeSection)
 }
 
 // sourceList is the aggregated layout's assessment section: one panel per input
@@ -406,11 +454,11 @@ func (r *renderer) sourceList() {
 			r.line("<h4>Runner</h4>")
 			r.definitionList(runnerFacts(src.doc.Runner))
 		}
-		r.externalReferences("h4", "Enrichment and External References", src.doc.ExternalReferences)
+		r.externalReferences("h4", headingEnrichment, src.doc.ExternalReferences)
 		r.closeFold(f)
 	}
-	r.line("</div>")
-	r.line("</section>")
+	r.line(closeDiv)
+	r.line(closeSection)
 }
 
 func sourceID(i int) string {
@@ -443,13 +491,13 @@ func (r *renderer) components() {
 				r.component(&r.src.doc.Components[j])
 			}
 		}
-		r.line("</div>")
+		r.line(closeDiv)
 	case r.aggregated:
 		r.line(`<p class="empty">The documents name no components.</p>`)
 	default:
 		r.line(`<p class="empty">The document names no components.</p>`)
 	}
-	r.line("</section>")
+	r.line(closeSection)
 }
 
 func (r *renderer) component(c *hdf.Component) {
@@ -468,7 +516,7 @@ func (r *renderer) component(c *hdf.Component) {
 	facts := []pair{
 		{"Source", origin},
 		{"Component ID", deref(c.ComponentID)},
-		{"Description", deref(c.Description)},
+		{headingDescription, deref(c.Description)},
 		{"Hostname", deref(c.Hostname)},
 		{"FQDN", deref(c.FQDN)},
 		{"Domain", deref(c.Domain)},
@@ -508,7 +556,7 @@ func (r *renderer) component(c *hdf.Component) {
 		{"Dataset ID", deref(c.DatasetID)},
 		{"Owner", identity(c.Owner)},
 	}
-	f := r.openFold("component", "", "h3", escape(c.Name)+` <span class="type">`+escape(string(c.Type))+"</span>", c.Name,
+	f := r.openFold("component", "", "h3", escape(c.Name)+` <span class="type">`+escape(string(c.Type))+closeSpan, c.Name,
 		countFacts(facts)+len(c.Labels)+len(c.ExternalIDS))
 	r.definitionList(facts)
 	r.chips("Labels", c.Labels)
@@ -533,7 +581,7 @@ func (r *renderer) chips(heading string, m map[string]string) {
 	for _, k := range keys {
 		r.line(`<li><span class="k">` + escape(k) + `</span><span class="v">` + escape(m[k]) + "</span></li>")
 	}
-	r.line("</ul>")
+	r.line(closeList)
 }
 
 // statusCounts tallies requirements by effective status.
@@ -543,13 +591,13 @@ type statusCounts struct {
 
 func (c *statusCounts) add(status string) {
 	switch status {
-	case "passed":
+	case statusPassed:
 		c.passed++
-	case "failed":
+	case statusFailed:
 		c.failed++
-	case "notApplicable":
+	case statusNotApplicable:
 		c.notApplicable++
-	case "error":
+	case statusError:
 		c.errored++
 	default:
 		// notReviewed, and any status outside the enum: counted, never dropped.
@@ -597,23 +645,23 @@ type severityCounts struct {
 // informational, absent or unrecognized severity is "none".
 func severityClass(severity string) string {
 	switch severity {
-	case "critical", "high", "medium", "low":
+	case severityCritical, severityHigh, severityMedium, severityLow:
 		return severity
 	}
-	return "none"
+	return severityNone
 }
 
 func severityLabel(severity string) string {
 	switch severity {
-	case "critical":
+	case severityCritical:
 		return "Critical"
-	case "high":
+	case severityHigh:
 		return "High"
-	case "medium":
+	case severityMedium:
 		return "Medium"
-	case "low":
+	case severityLow:
 		return "Low"
-	case "", "none", "informational":
+	case "", severityNone, "informational":
 		return "None"
 	}
 	return severity
@@ -621,13 +669,13 @@ func severityLabel(severity string) string {
 
 func (c *severityCounts) add(severity string) {
 	switch severityClass(severity) {
-	case "critical":
+	case severityCritical:
 		c.critical++
-	case "high":
+	case severityHigh:
 		c.high++
-	case "medium":
+	case severityMedium:
 		c.medium++
-	case "low":
+	case severityLow:
 		c.low++
 	default:
 		c.none++
@@ -653,45 +701,79 @@ func (r *renderer) effectiveStatus(req *hdf.EvaluatedRequirement) string {
 	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(*req), r.src.ref)
 }
 
-func (r *renderer) status() {
-	var all statusCounts
-	var severities severityCounts
-	var checks checkCounts
-	perSource := make([]statusCounts, len(r.sources))
-	perBaseline := make([][]statusCounts, len(r.sources))
-	anyRef := false
+// add counts one requirement's checks under its effective status.
+func (c *checkCounts) add(status string, results []hdf.RequirementResult) {
+	c.total += len(results)
+	for _, res := range results {
+		switch {
+		case status == statusPassed && res.Status == hdf.Passed:
+			c.underPassed++
+		case status == statusFailed && res.Status == hdf.Passed:
+			c.passedUnderFailed++
+		case status == statusFailed && res.Status == hdf.Failed:
+			c.failedUnderFailed++
+		}
+	}
+}
+
+// statusTally is every count the status section reports.
+type statusTally struct {
+	all         statusCounts
+	severities  severityCounts
+	checks      checkCounts
+	perSource   []statusCounts
+	perBaseline [][]statusCounts
+	anyRef      bool
+}
+
+func (r *renderer) tally() *statusTally {
+	t := &statusTally{
+		perSource:   make([]statusCounts, len(r.sources)),
+		perBaseline: make([][]statusCounts, len(r.sources)),
+	}
 	for si := range r.sources {
 		r.src = &r.sources[si]
-		anyRef = anyRef || r.src.hasRef
+		t.anyRef = t.anyRef || r.src.hasRef
 		baselines := r.src.doc.Baselines
-		perBaseline[si] = make([]statusCounts, len(baselines))
+		t.perBaseline[si] = make([]statusCounts, len(baselines))
 		for i := range baselines {
-			for j := range baselines[i].Requirements {
-				req := &baselines[i].Requirements[j]
-				status := r.effectiveStatus(req)
-				perBaseline[si][i].add(status)
-				severities.add(requirementSeverity(req))
-				checks.total += len(req.Results)
-				for _, res := range req.Results {
-					switch {
-					case status == "passed" && res.Status == hdf.Passed:
-						checks.underPassed++
-					case status == "failed" && res.Status == hdf.Passed:
-						checks.passedUnderFailed++
-					case status == "failed" && res.Status == hdf.Failed:
-						checks.failedUnderFailed++
-					}
-				}
-			}
-			perSource[si].merge(perBaseline[si][i])
+			t.perBaseline[si][i] = r.tallyBaseline(t, &baselines[i])
+			t.perSource[si].merge(t.perBaseline[si][i])
 		}
-		all.merge(perSource[si])
+		t.all.merge(t.perSource[si])
 	}
+	return t
+}
 
+func (r *renderer) tallyBaseline(t *statusTally, baseline *hdf.EvaluatedBaseline) statusCounts {
+	var counts statusCounts
+	for j := range baseline.Requirements {
+		req := &baseline.Requirements[j]
+		status := r.effectiveStatus(req)
+		counts.add(status)
+		t.severities.add(requirementSeverity(req))
+		t.checks.add(status, req.Results)
+	}
+	return counts
+}
+
+func (r *renderer) status() {
+	t := r.tally()
 	r.line(`<section id="status" class="card" aria-labelledby="status-heading">`)
 	r.line(`<h2 id="status-heading">Status</h2>`)
+	r.asOf(t)
+	r.dashboard(t)
+	if r.aggregated {
+		r.statusBySource(t)
+	}
+	r.statusByBaseline(t)
+	r.line(closeSection)
+}
+
+// asOf states the instant effective status was judged at, when there is one.
+func (r *renderer) asOf(t *statusTally) {
 	switch {
-	case all.total() == 0 || !anyRef:
+	case t.all.total() == 0 || !t.anyRef:
 	case r.aggregated:
 		r.line(`<p class="as-of">Effective status evaluated for each source as of its own assessment time. ` +
 			`Overrides that had expired by then are not applied.</p>`)
@@ -699,102 +781,120 @@ func (r *renderer) status() {
 		r.line(`<p class="as-of">Effective status evaluated as of ` + escape(formatTime(r.sources[0].ref)) +
 			`, the time of the assessment. Overrides that had expired by then are not applied.</p>`)
 	}
+}
 
+func (r *renderer) dashboard(t *statusTally) {
+	all, severities, checks := t.all, t.severities, t.checks
 	r.line(`<div class="dashboard">`)
 
 	r.line(`<div class="panel">`)
 	r.line("<h3>Requirements</h3>")
 	r.line(`<ul class="stats">`)
-	r.line(stat("passed", all.passed, "Passed", plural(checks.underPassed, "individual check")+" passed"))
-	r.line(stat("failed", all.failed, "Failed", plural(checks.passedUnderFailed, "individual check")+" passed, "+
+	r.line(stat(statusPassed, all.passed, labelPassed, plural(checks.underPassed, "individual check")+" passed"))
+	r.line(stat(statusFailed, all.failed, labelFailed, plural(checks.passedUnderFailed, "individual check")+" passed, "+
 		strconv.Itoa(checks.failedUnderFailed)+" failed out of "+plural(checks.total, "total check")))
-	r.line(stat("not-applicable", all.notApplicable, "Not Applicable", ""))
-	r.line(stat("not-reviewed", all.notReviewed, "Not Reviewed", ""))
-	r.line(stat("error", all.errored, "Error", ""))
+	r.line(stat(classNotApplicable, all.notApplicable, labelNotApplicable, ""))
+	r.line(stat(classNotReviewed, all.notReviewed, labelNotReviewed, ""))
+	r.line(stat(statusError, all.errored, labelError, ""))
 	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(all.total()) + `</span><span class="lbl">Total</span></li>`)
-	r.line("</ul>")
+	r.line(closeList)
 	r.line(bar("Requirements by status", []segment{
-		{"passed", "passed", all.passed}, {"failed", "failed", all.failed}, {"not-applicable", "not applicable", all.notApplicable},
-		{"not-reviewed", "not reviewed", all.notReviewed}, {"error", "error", all.errored},
+		{statusPassed, statusPassed, all.passed}, {statusFailed, statusFailed, all.failed},
+		{classNotApplicable, "not applicable", all.notApplicable},
+		{classNotReviewed, "not reviewed", all.notReviewed}, {statusError, statusError, all.errored},
 	}))
-	r.line("</div>")
+	r.line(closeDiv)
 
 	r.line(`<div class="panel">`)
 	r.line("<h3>Severity</h3>")
 	r.line(`<ul class="stats">`)
-	r.line(stat("critical", severities.critical, "Critical", ""))
-	r.line(stat("high", severities.high, "High", ""))
-	r.line(stat("medium", severities.medium, "Medium", ""))
-	r.line(stat("low", severities.low, "Low", ""))
-	r.line(stat("none", severities.none, "None", ""))
-	r.line("</ul>")
+	r.line(stat(severityCritical, severities.critical, "Critical", ""))
+	r.line(stat(severityHigh, severities.high, "High", ""))
+	r.line(stat(severityMedium, severities.medium, "Medium", ""))
+	r.line(stat(severityLow, severities.low, "Low", ""))
+	r.line(stat(severityNone, severities.none, "None", ""))
+	r.line(closeList)
 	r.line(bar("Requirements by severity", []segment{
-		{"critical", "critical", severities.critical}, {"high", "high", severities.high}, {"medium", "medium", severities.medium},
-		{"low", "low", severities.low}, {"none", "none", severities.none},
+		{severityCritical, severityCritical, severities.critical}, {severityHigh, severityHigh, severities.high},
+		{severityMedium, severityMedium, severities.medium},
+		{severityLow, severityLow, severities.low}, {severityNone, severityNone, severities.none},
 	}))
-	r.line("</div>")
+	r.line(closeDiv)
 
 	hundredths := all.complianceHundredths()
-	level, levelLabel := "low", "Low compliance"
-	switch {
-	case hundredths >= 9000:
-		level, levelLabel = "high", "High compliance"
-	case hundredths >= 6000:
-		level, levelLabel = "medium", "Medium compliance"
-	}
+	level, levelLabel := complianceLevel(hundredths)
 	r.line(`<div class="panel compliance compliance-` + level + `">`)
 	r.line("<h3>Compliance</h3>")
 	r.line(`<div class="gauge" style="--pct:` + formatHundredths(hundredths) + `"><span class="pct">` + all.compliance() + "</span></div>")
 	r.line(`<p class="level">` + levelLabel + "</p>")
 	r.line(`<p class="formula">Passed / (Passed + Failed + Not Reviewed + Error) × 100</p>`)
-	r.line("</div>")
+	r.line(closeDiv)
 
-	r.line("</div>")
+	r.line(closeDiv)
+}
 
-	if r.aggregated {
-		f := r.openFold("", "", "h3", "Status by source", "the status by source", len(r.sources))
-		r.line(`<div class="table-wrap">`)
-		r.line(`<table class="summary" aria-label="Status by source">`)
-		r.line(summaryHead("Source"))
-		r.line("<tbody>")
-		for si := range r.sources {
-			r.line(summaryRow(`<a href="#`+sourceID(si)+`">`+escape(r.sources[si].name)+"</a>", perSource[si]))
-		}
-		r.line("</tbody>")
-		r.line("<tfoot>")
-		r.line(summaryRow("All sources", all))
-		r.line("</tfoot>")
-		r.line("</table>")
-		r.line("</div>")
-		r.closeFold(f)
+// complianceLevel bands a compliance percentage, given in hundredths.
+func complianceLevel(hundredths int) (class, label string) {
+	switch {
+	case hundredths >= 9000:
+		return severityHigh, "High compliance"
+	case hundredths >= 6000:
+		return severityMedium, "Medium compliance"
 	}
+	return severityLow, "Low compliance"
+}
 
+func (r *renderer) statusBySource(t *statusTally) {
+	f := r.openFold("", "", "h3", "Status by source", "the status by source", len(r.sources))
+	r.openTable(`class="summary" aria-label="Status by source"`, summaryHead("Source"))
+	for si := range r.sources {
+		r.line(summaryRow(`<a href="#`+sourceID(si)+`">`+escape(r.sources[si].name)+"</a>", t.perSource[si]))
+	}
+	r.closeTable(summaryRow("All sources", t.all))
+	r.closeFold(f)
+}
+
+func (r *renderer) statusByBaseline(t *statusTally) {
 	baselineCount := 0
 	for si := range r.sources {
 		baselineCount += len(r.sources[si].doc.Baselines)
 	}
 	f := r.openFold("", "", "h3", "Status by baseline", "the status by baseline", baselineCount)
-	r.line(`<div class="table-wrap">`)
-	r.line(`<table class="summary" aria-label="Status by baseline">`)
-	r.line(summaryHead("Baseline"))
-	r.line("<tbody>")
+	r.openTable(`class="summary" aria-label="Status by baseline"`, summaryHead("Baseline"))
 	for si := range r.sources {
 		for i := range r.sources[si].doc.Baselines {
 			name := r.sources[si].doc.Baselines[i].Name
 			if r.aggregated {
 				name = r.sources[si].name + " \u203a " + name
 			}
-			r.line(summaryRow(escape(name), perBaseline[si][i]))
+			r.line(summaryRow(escape(name), t.perBaseline[si][i]))
 		}
 	}
-	r.line("</tbody>")
-	r.line("<tfoot>")
-	r.line(summaryRow("All baselines", all))
-	r.line("</tfoot>")
-	r.line("</table>")
-	r.line("</div>")
+	r.closeTable(summaryRow("All baselines", t.all))
 	r.closeFold(f)
-	r.line("</section>")
+}
+
+// openTable starts a scrollable table: attrs are the table's attributes, head
+// its header row, empty for a table without one.
+func (r *renderer) openTable(attrs, head string) {
+	r.line(`<div class="table-wrap">`)
+	r.line("<table " + attrs + ">")
+	if head != "" {
+		r.line(head)
+	}
+	r.line("<tbody>")
+}
+
+// closeTable ends the table, with a footer row when one is given.
+func (r *renderer) closeTable(foot string) {
+	r.line("</tbody>")
+	if foot != "" {
+		r.line("<tfoot>")
+		r.line(foot)
+		r.line("</tfoot>")
+	}
+	r.line("</table>")
+	r.line(closeDiv)
 }
 
 func summaryHead(first string) string {
@@ -811,9 +911,9 @@ func plural(n int, noun string) string {
 }
 
 func stat(class string, n int, label, sub string) string {
-	s := `<li class="stat c-` + class + `"><span class="num">` + strconv.Itoa(n) + `</span><span class="lbl">` + label + "</span>"
+	s := `<li class="stat c-` + class + `"><span class="num">` + strconv.Itoa(n) + `</span><span class="lbl">` + label + closeSpan
 	if sub != "" {
-		s += `<span class="sub">` + sub + "</span>"
+		s += `<span class="sub">` + sub + closeSpan
 	}
 	return s + "</li>"
 }
@@ -845,7 +945,7 @@ func summaryRow(name string, c statusCounts) string {
 	for _, n := range []int{c.passed, c.failed, c.notReviewed, c.notApplicable, c.errored, c.total()} {
 		b.WriteString("<td>" + strconv.Itoa(n) + "</td>")
 	}
-	b.WriteString("<td>" + c.compliance() + "</td></tr>")
+	b.WriteString("<td>" + c.compliance() + rowClose)
 	return b.String()
 }
 
@@ -857,16 +957,16 @@ func (r *renderer) results() {
 	r.line(`<div class="filters" role="group" aria-label="Filter by status">`)
 	r.line(`<button type="button" class="filter" data-status="all" aria-pressed="true">All</button>`)
 	for _, f := range [][2]string{
-		{"passed", "Passed"}, {"failed", "Failed"}, {"not-applicable", "Not Applicable"},
-		{"not-reviewed", "Not Reviewed"}, {"error", "Error"},
+		{statusPassed, labelPassed}, {statusFailed, labelFailed}, {classNotApplicable, labelNotApplicable},
+		{classNotReviewed, labelNotReviewed}, {statusError, labelError},
 	} {
 		r.line(`<button type="button" class="filter" data-status="` + f[0] + `" aria-pressed="false">` + f[1] + "</button>")
 	}
-	r.line("</div>")
+	r.line(closeDiv)
 	r.line(`<button type="button" id="expand-all">Expand all</button>`)
 	r.line(`<button type="button" id="collapse-all">Collapse all</button>`)
 	r.line(`<span id="filter-count" class="shown" aria-live="polite"></span>`)
-	r.line("</div>")
+	r.line(closeDiv)
 
 	for si := range r.sources {
 		r.src = &r.sources[si]
@@ -885,7 +985,7 @@ func (r *renderer) results() {
 			r.closeFold(f)
 		}
 	}
-	r.line("</section>")
+	r.line(closeSection)
 }
 
 func (r *renderer) baseline(baseline *hdf.EvaluatedBaseline) {
@@ -894,7 +994,7 @@ func (r *renderer) baseline(baseline *hdf.EvaluatedBaseline) {
 		{"Title", deref(baseline.Title)},
 		{"Version", deref(baseline.Version)},
 		{"Summary", deref(baseline.Summary)},
-		{"Description", deref(baseline.Description)},
+		{headingDescription, deref(baseline.Description)},
 		{"Maintainer", deref(baseline.Maintainer)},
 		{"License", deref(baseline.License)},
 		{"Copyright", deref(baseline.Copyright)},
@@ -905,7 +1005,7 @@ func (r *renderer) baseline(baseline *hdf.EvaluatedBaseline) {
 		r.definitionList(facts)
 		r.closeFold(details)
 	}
-	r.externalReferences(r.detailHeading(), "Enrichment and External References", baseline.ExternalReferences)
+	r.externalReferences(r.detailHeading(), headingEnrichment, baseline.ExternalReferences)
 	if len(baseline.Requirements) > 0 {
 		r.line(`<div class="req-head" aria-hidden="true"><span>Status</span><span>ID</span><span>Severity</span>` +
 			`<span>Title</span><span>800-53 Controls &amp; CCIs</span></div>`)
@@ -920,7 +1020,7 @@ func (r *renderer) baseline(baseline *hdf.EvaluatedBaseline) {
 func descriptionHeading(label string) string {
 	switch label {
 	case "default":
-		return "Description"
+		return headingDescription
 	case "check":
 		return "Check Text"
 	case "fix":
@@ -935,10 +1035,6 @@ func descriptionHeading(label string) string {
 
 func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	effective := r.effectiveStatus(req)
-	statuses := make([]string, len(req.Results))
-	for i := range req.Results {
-		statuses[i] = string(req.Results[i].Status)
-	}
 	severity := requirementSeverity(req)
 	nist := tagItems(req.Tags, "nist")
 	cci := tagItems(req.Tags, "cci")
@@ -947,49 +1043,93 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	r.requirements++
 	id := "req-" + strconv.Itoa(r.requirements)
 	r.line(`<details class="requirement c-` + class + `" data-status="` + class + `" id="` + id + `">`)
-	var tags strings.Builder
-	for i, t := range append(append([]string{}, nist...), cci...) {
-		if i == 0 {
-			tags.WriteString(`<span class="vh">Controls: </span>`)
-		}
-		tags.WriteString(`<span class="tag">` + escape(t) + "</span>")
-	}
-	if n := len(req.ExternalReferences); n > 0 {
-		tags.WriteString(`<span class="tag enriched">Enriched (` + strconv.Itoa(n) + ")</span>")
-	}
-	r.line("<summary>" + statusBadge(effective) + `<span class="req-id">` + escape(req.ID) + "</span>" +
-		`<span class="sev c-` + severityClass(severity) + `"><span class="vh">Severity: </span>` + escape(severityLabel(severity)) + "</span>" +
-		`<span class="req-title">` + escape(deref(req.Title)) + `</span><span class="tags">` + tags.String() + "</span></summary>")
+	r.line("<summary>" + statusBadge(effective) + `<span class="req-id">` + escape(req.ID) + closeSpan +
+		`<span class="sev c-` + severityClass(severity) + `"><span class="vh">Severity: </span>` + escape(severityLabel(severity)) + closeSpan +
+		`<span class="req-title">` + escape(deref(req.Title)) + `</span><span class="tags">` +
+		controlTags(append(append([]string{}, nist...), cci...), len(req.ExternalReferences)) + "</span></summary>")
 	r.line(`<div class="req-body">`)
 
-	// The first default description leads the body; every other one is a detail row.
-	lead := -1
-	for i, d := range req.Descriptions {
-		if d.Label == "default" {
-			lead = i
-			break
-		}
-	}
+	lead := leadDescription(req.Descriptions)
 	location := sourceLocation(req.SourceLocation)
 	if location != "" {
 		r.line(`<p class="location"><span class="k">Location</span><code>` + escape(location) + "</code></p>")
 	}
-	if lead >= 0 && req.Descriptions[lead].Data != "" {
-		description := req.Descriptions[lead].Data
-		if isLongText(description) {
-			f := r.openFold("", "", r.detailHeading(), "Description", "the description", lineCount(description))
-			r.line(prose(description))
-			r.closeFold(f)
-		} else {
-			r.line(prose(description))
-		}
+	if lead >= 0 {
+		r.description(req.Descriptions[lead].Data)
 	}
 
 	r.resultRows(req.Results)
 
-	disposition := ""
-	if req.Disposition != nil {
-		disposition = string(*req.Disposition)
+	rows := requirementRows(req, effective, severity, location, nist, cci, lead)
+	f := r.openFold("", "", r.detailHeading(), "Result Details", "the result details", len(rows))
+	r.openTable(`class="details" aria-label="Result details"`, "")
+	for _, row := range rows {
+		r.line(row)
+	}
+	r.closeTable("")
+	r.closeFold(f)
+
+	r.tagChips(req.Tags)
+	r.externalReferences(r.detailHeading(), headingEnrichment, req.ExternalReferences)
+	r.overrideRows(req.StatusOverrides)
+	for i := range req.StatusOverrides {
+		r.externalReferences(r.detailHeading(), "References for override "+strconv.Itoa(i+1), req.StatusOverrides[i].ExternalReferences)
+	}
+	r.poamRows(req.Poams)
+	r.code(req.Code)
+
+	r.line(`<p class="to-top"><a href="#` + id + `">Back to the top of this requirement</a></p>`)
+	r.line(closeDiv)
+	r.line("</details>")
+}
+
+// controlTags is the summary line's chips: the controls, then a mark when the
+// requirement carries enrichment.
+func controlTags(controls []string, enrichments int) string {
+	var tags strings.Builder
+	for i, t := range controls {
+		if i == 0 {
+			tags.WriteString(`<span class="vh">Controls: </span>`)
+		}
+		tags.WriteString(`<span class="tag">` + escape(t) + closeSpan)
+	}
+	if enrichments > 0 {
+		tags.WriteString(`<span class="tag enriched">Enriched (` + strconv.Itoa(enrichments) + ")</span>")
+	}
+	return tags.String()
+}
+
+// leadDescription is the index of the first default description, which leads
+// the body; every other one is a detail row. -1 when there is none.
+func leadDescription(descriptions []hdf.Description) int {
+	for i := range descriptions {
+		if descriptions[i].Label == "default" {
+			return i
+		}
+	}
+	return -1
+}
+
+// description writes the lead description, folded when it is long.
+func (r *renderer) description(text string) {
+	if text == "" {
+		return
+	}
+	if !isLongText(text) {
+		r.line(prose(text))
+		return
+	}
+	f := r.openFold("", "", r.detailHeading(), headingDescription, "the description", lineCount(text))
+	r.line(prose(text))
+	r.closeFold(f)
+}
+
+// requirementRows is the detail table: the two statuses, every field that has a
+// value, then the references and the descriptions other than the lead.
+func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, location string, nist, cci []string, lead int) []string {
+	statuses := make([]string, len(req.Results))
+	for i := range req.Results {
+		statuses[i] = string(req.Results[i].Status)
 	}
 	effectiveImpact := ""
 	if req.EffectiveImpact != nil {
@@ -1005,7 +1145,7 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 		{"Severity", severity},
 		{"Impact", hdfutil.FormatFixed(req.Impact, 2)},
 		{"Effective impact", effectiveImpact},
-		{"Disposition", disposition},
+		{"Disposition", derefString(req.Disposition)},
 		{"Control type", derefString(req.ControlType)},
 		{"Verification method", derefString(req.VerificationMethod)},
 		{"Applicability", derefString(req.Applicability)},
@@ -1031,39 +1171,22 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 			rows = append(rows, detailRow(escape(descriptionHeading(d.Label)), prose(d.Data)))
 		}
 	}
-	f := r.openFold("", "", r.detailHeading(), "Result Details", "the result details", len(rows))
-	r.line(`<div class="table-wrap">`)
-	r.line(`<table class="details" aria-label="Result details">`)
-	r.line("<tbody>")
-	for _, row := range rows {
-		r.line(row)
+	return rows
+}
+
+// code shows a requirement's test code, which only the Administrator report carries.
+func (r *renderer) code(code *string) {
+	if r.reportType != Administrator || code == nil || *code == "" {
+		return
 	}
-	r.line("</tbody>")
-	r.line("</table>")
-	r.line("</div>")
+	f := r.openFold("", "", r.detailHeading(), "Code", "the code", lineCount(*code))
+	r.line(`<pre class="code">` + "\n" + escape(*code) + "</pre>")
 	r.closeFold(f)
-
-	r.tagChips(req.Tags)
-	r.externalReferences(r.detailHeading(), "Enrichment and External References", req.ExternalReferences)
-	r.overrideRows(req.StatusOverrides)
-	for i := range req.StatusOverrides {
-		r.externalReferences(r.detailHeading(), "References for override "+strconv.Itoa(i+1), req.StatusOverrides[i].ExternalReferences)
-	}
-	r.poamRows(req.Poams)
-
-	if r.reportType == Administrator && req.Code != nil && *req.Code != "" {
-		f := r.openFold("", "", r.detailHeading(), "Code", "the code", lineCount(*req.Code))
-		r.line(`<pre class="code">` + "\n" + escape(*req.Code) + "</pre>")
-		r.closeFold(f)
-	}
-	r.line(`<p class="to-top"><a href="#` + id + `">Back to the top of this requirement</a></p>`)
-	r.line("</div>")
-	r.line("</details>")
 }
 
 // detailRow takes a heading and a value that are already HTML.
 func detailRow(heading, value string) string {
-	return `<tr><th scope="row">` + heading + "</th><td>" + value + "</td></tr>"
+	return `<tr><th scope="row">` + heading + "</th><td>" + value + rowClose
 }
 
 // prose carries text verbatim. An HTML parser drops one newline directly after
@@ -1077,26 +1200,21 @@ func (r *renderer) resultRows(results []hdf.RequirementResult) {
 		return
 	}
 	f := r.openFold("", "", r.detailHeading(), "Test Results", "the test results", len(results))
-	r.line(`<div class="table-wrap">`)
-	r.line(`<table aria-label="Test results">`)
-	r.line(`<thead><tr><th scope="col">Status</th><th scope="col">Test</th><th scope="col">Result</th>` +
+	r.openTable(`aria-label="Test results"`, `<thead><tr><th scope="col">Status</th><th scope="col">Test</th><th scope="col">Result</th>`+
 		`<th scope="col">Started</th></tr></thead>`)
-	r.line("<tbody>")
 	for i := range results {
 		res := &results[i]
 		runTime := ""
 		if res.RunTime != nil {
 			runTime = hdfutil.FormatFixed(*res.RunTime, 3) + " s"
 		}
-		r.line("<tr><td>" + statusBadge(string(res.Status)) + `</td><td class="text">` + escape(res.CodeDesc) +
-			subLine("Resource", joinNonEmpty(" \u00b7 ", deref(res.Resource), deref(res.ResourceID))) +
-			`</td><td class="text">` + escape(deref(res.Message)) +
+		r.line(rowOpen + statusBadge(string(res.Status)) + textCell + escape(res.CodeDesc) +
+			subLine("Resource", joinNonEmpty(separator, deref(res.Resource), deref(res.ResourceID))) +
+			textCell + escape(deref(res.Message)) +
 			subLine("Exception", deref(res.Exception)) + subLine("Backtrace", strings.Join(res.Backtrace, "\n")) +
-			"</td><td>" + escape(formatTime(res.StartTime)) + subLine("Run time", runTime) + "</td></tr>")
+			cell + escape(formatTime(res.StartTime)) + subLine("Run time", runTime) + rowClose)
 	}
-	r.line("</tbody>")
-	r.line("</table>")
-	r.line("</div>")
+	r.closeTable("")
 	r.closeFold(f)
 }
 
@@ -1107,12 +1225,9 @@ func (r *renderer) overrideRows(overrides []hdf.StatusOverride) {
 	governing := hdfutil.GoverningStatusOverrideIndex(shared.StatusOverrideInputs(overrides), r.src.ref)
 
 	f := r.openFold("", "", r.detailHeading(), "Overrides", "the overrides", len(overrides))
-	r.line(`<div class="table-wrap">`)
-	r.line(`<table aria-label="Overrides">`)
-	r.line(`<thead><tr><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Reason</th>` +
-		`<th scope="col">Applied by</th><th scope="col">Applied at</th><th scope="col">Expires at</th>` +
+	r.openTable(`aria-label="Overrides"`, `<thead><tr><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Reason</th>`+
+		`<th scope="col">Applied by</th><th scope="col">Applied at</th><th scope="col">Expires at</th>`+
 		`<th scope="col">State</th></tr></thead>`)
-	r.line("<tbody>")
 	for i := range overrides {
 		o := &overrides[i]
 		status := ""
@@ -1134,14 +1249,12 @@ func (r *renderer) overrideRows(overrides []hdf.StatusOverride) {
 		if o.Cvss != nil {
 			cvss = cvssText([]hdf.Cvss{*o.Cvss})
 		}
-		r.line("<tr><td>" + escape(string(o.Type)) + "</td><td>" + status + subLine("Impact", impact) + subLine("CVSS", cvss) +
-			`</td><td class="text">` + escape(o.Reason) + subLine("Justification", derefString(o.Justification)) +
-			"</td><td>" + escape(o.AppliedBy.Identifier) + "</td><td>" + escape(formatTime(o.AppliedAt)) +
-			"</td><td>" + escape(formatTime(o.ExpiresAt)) + "</td><td>" + state + "</td></tr>")
+		r.line(rowOpen + escape(string(o.Type)) + cell + status + subLine("Impact", impact) + subLine("CVSS", cvss) +
+			textCell + escape(o.Reason) + subLine("Justification", derefString(o.Justification)) +
+			cell + escape(o.AppliedBy.Identifier) + cell + escape(formatTime(o.AppliedAt)) +
+			cell + escape(formatTime(o.ExpiresAt)) + cell + state + rowClose)
 	}
-	r.line("</tbody>")
-	r.line("</table>")
-	r.line("</div>")
+	r.closeTable("")
 	r.closeFold(f)
 }
 
@@ -1150,26 +1263,21 @@ func (r *renderer) poamRows(poams []hdf.PoamElement) {
 		return
 	}
 	f := r.openFold("", "", r.detailHeading(), "POA&amp;Ms", "the POA&Ms", len(poams))
-	r.line(`<div class="table-wrap">`)
-	r.line(`<table aria-label="Plans of action and milestones">`)
-	r.line(`<thead><tr><th scope="col">Type</th><th scope="col">Explanation</th><th scope="col">Applied by</th>` +
+	r.openTable(`aria-label="Plans of action and milestones"`, `<thead><tr><th scope="col">Type</th><th scope="col">Explanation</th><th scope="col">Applied by</th>`+
 		`<th scope="col">Applied at</th><th scope="col">Expires at</th></tr></thead>`)
-	r.line("<tbody>")
 	for i := range poams {
 		p := &poams[i]
 		var milestones strings.Builder
 		for j := range p.Milestones {
 			m := &p.Milestones[j]
-			milestones.WriteString(subLine("Milestone", joinNonEmpty(" \u00b7 ", string(m.Status), deref(m.Title), m.Description,
+			milestones.WriteString(subLine("Milestone", joinNonEmpty(separator, string(m.Status), deref(m.Title), m.Description,
 				formatTime(m.EstimatedCompletion))))
 		}
-		r.line("<tr><td>" + escape(string(p.Type)) + `</td><td class="text">` + escape(p.Explanation) + milestones.String() +
-			"</td><td>" + escape(p.AppliedBy.Identifier) + "</td><td>" + escape(formatTime(p.AppliedAt)) +
-			"</td><td>" + escape(formatTime(p.ExpiresAt)) + "</td></tr>")
+		r.line(rowOpen + escape(string(p.Type)) + textCell + escape(p.Explanation) + milestones.String() +
+			cell + escape(p.AppliedBy.Identifier) + cell + escape(formatTime(p.AppliedAt)) +
+			cell + escape(formatTime(p.ExpiresAt)) + rowClose)
 	}
-	r.line("</tbody>")
-	r.line("</table>")
-	r.line("</div>")
+	r.closeTable("")
 	r.closeFold(f)
 }
 
@@ -1201,6 +1309,14 @@ func referenceCensus(doc *hdf.HDFResults) string {
 	if total == 0 {
 		return ""
 	}
+	if len(kinds) == 0 {
+		return strconv.Itoa(total)
+	}
+	return strconv.Itoa(total) + " (" + kindBreakdown(kinds) + ")"
+}
+
+// kindBreakdown lists each kind with its count, in kind order.
+func kindBreakdown(kinds map[string]int) string {
 	names := make([]string, 0, len(kinds))
 	for kind := range kinds {
 		names = append(names, kind)
@@ -1210,10 +1326,7 @@ func referenceCensus(doc *hdf.HDFResults) string {
 	for i, kind := range names {
 		parts[i] = kind + " " + strconv.Itoa(kinds[kind])
 	}
-	if len(parts) == 0 {
-		return strconv.Itoa(total)
-	}
-	return strconv.Itoa(total) + " (" + strings.Join(parts, ", ") + ")"
+	return strings.Join(parts, ", ")
 }
 
 // externalReferences lists references to artifacts outside the document: a CVE,
@@ -1225,11 +1338,8 @@ func (r *renderer) externalReferences(headingTag, heading string, refs []hdf.Ext
 		return
 	}
 	f := r.openFold("", "", headingTag, heading, strings.ToLower(heading[:1])+heading[1:], len(refs))
-	r.line(`<div class="table-wrap">`)
-	r.line(`<table aria-label="` + heading + `">`)
-	r.line(`<thead><tr><th scope="col">Source</th><th scope="col">ID</th><th scope="col">Kind</th>` +
+	r.openTable(`aria-label="`+heading+`"`, `<thead><tr><th scope="col">Source</th><th scope="col">ID</th><th scope="col">Kind</th>`+
 		`<th scope="col">Relation</th><th scope="col">Detail</th></tr></thead>`)
-	r.line("<tbody>")
 	for i := range refs {
 		ref := &refs[i]
 		checksum := ""
@@ -1241,16 +1351,14 @@ func (r *renderer) externalReferences(headingTag, heading string, refs []hdf.Ext
 			added = ref.AddedBy.Identifier
 		}
 		if ref.AddedAt != nil {
-			added = joinNonEmpty(" \u00b7 ", added, formatTime(*ref.AddedAt))
+			added = joinNonEmpty(separator, added, formatTime(*ref.AddedAt))
 		}
-		r.line("<tr><td>" + escape(ref.SourceName) + "</td><td>" + escape(deref(ref.ExternalID)) + "</td><td>" +
-			escape(deref(ref.Kind)) + "</td><td>" + escape(deref(ref.Rel)) + `</td><td class="text">` +
+		r.line(rowOpen + escape(ref.SourceName) + cell + escape(deref(ref.ExternalID)) + cell +
+			escape(deref(ref.Kind)) + cell + escape(deref(ref.Rel)) + textCell +
 			escape(deref(ref.Description)) + subLine("Location", deref(ref.Href)) + subLine("Media type", deref(ref.MediaType)) +
-			subLine("Checksum", checksum) + subLine("Added", added) + embeddedDocument(ref.Document) + "</td></tr>")
+			subLine("Checksum", checksum) + subLine("Added", added) + embeddedDocument(ref.Document) + rowClose)
 	}
-	r.line("</tbody>")
-	r.line("</table>")
-	r.line("</div>")
+	r.closeTable("")
 	r.closeFold(f)
 }
 
@@ -1266,7 +1374,7 @@ func embeddedDocument(document map[string]interface{}) string {
 	}
 	objectType, _ := document["type"].(string)
 	name, _ := document["name"].(string)
-	return subLine("Embedded", joinNonEmpty(" \u00b7 ", objectType, name)) +
+	return subLine("Embedded", joinNonEmpty(separator, objectType, name)) +
 		`<details class="doc"><summary>Embedded document</summary><pre class="code">` + "\n" +
 		escape(indentJSON(string(canonical))) + "</pre></details>"
 }
@@ -1276,32 +1384,20 @@ func embeddedDocument(document map[string]interface{}) string {
 func indentJSON(compact string) string {
 	var b strings.Builder
 	depth := 0
-	inString, escaped := false, false
 	newline := func() {
 		b.WriteByte('\n')
 		b.WriteString(strings.Repeat("  ", depth))
 	}
 	for i := 0; i < len(compact); i++ {
 		c := compact[i]
-		if inString {
-			b.WriteByte(c)
-			switch {
-			case escaped:
-				escaped = false
-			case c == '\\':
-				escaped = true
-			case c == '"':
-				inString = false
-			}
-			continue
-		}
 		switch c {
 		case '"':
-			inString = true
-			b.WriteByte(c)
+			end := stringEnd(compact, i)
+			b.WriteString(compact[i:end])
+			i = end - 1
 		case '{', '[':
 			b.WriteByte(c)
-			if i+1 < len(compact) && (compact[i+1] == '}' || compact[i+1] == ']') {
+			if closesAt(compact, i+1) {
 				b.WriteByte(compact[i+1])
 				i++
 				continue
@@ -1322,6 +1418,24 @@ func indentJSON(compact string) string {
 		}
 	}
 	return b.String()
+}
+
+// stringEnd is the index just past the JSON string that opens at start; the end
+// of the text when it never closes.
+func stringEnd(text string, start int) int {
+	for i := start + 1; i < len(text); i++ {
+		switch text[i] {
+		case '\\':
+			i++
+		case '"':
+			return i + 1
+		}
+	}
+	return len(text)
+}
+
+func closesAt(text string, i int) bool {
+	return i < len(text) && (text[i] == '}' || text[i] == ']')
 }
 
 // tagChips shows the tags the detail table does not: every tag but nist and cci
@@ -1351,7 +1465,7 @@ func (r *renderer) tagChips(tags map[string]interface{}) {
 	for _, k := range keys {
 		r.line(`<li><span class="k">` + escape(k) + `</span><span class="v">` + escape(values[k]) + "</span></li>")
 	}
-	r.line("</ul>")
+	r.line(closeList)
 	r.closeFold(f)
 }
 
@@ -1379,7 +1493,7 @@ func subLine(label, value string) string {
 	if value == "" {
 		return ""
 	}
-	return `<span class="sub"><span class="k">` + label + `</span> ` + escape(value) + "</span>"
+	return `<span class="sub"><span class="k">` + label + `</span> ` + escape(value) + closeSpan
 }
 
 // sourceLocation is where the finding sits in the assessed source: file, and
@@ -1495,19 +1609,7 @@ func referenceLines(refs []hdf.Reference) []string {
 	for i := range refs {
 		ref := &refs[i]
 		if ref.Ref != nil {
-			if s := deref(ref.Ref.String); s != "" {
-				lines = append(lines, s)
-			}
-			urls := map[string]bool{}
-			for _, m := range ref.Ref.AnythingMapArray {
-				collectURLs(m, urls)
-			}
-			sorted := make([]string, 0, len(urls))
-			for u := range urls {
-				sorted = append(sorted, u)
-			}
-			sort.Strings(sorted)
-			lines = append(lines, sorted...)
+			lines = append(lines, structuredRefLines(deref(ref.Ref.String), ref.Ref.AnythingMapArray)...)
 		}
 		for _, s := range []string{deref(ref.URL), deref(ref.URI)} {
 			if s != "" {
@@ -1516,6 +1618,24 @@ func referenceLines(refs []hdf.Reference) []string {
 		}
 	}
 	return lines
+}
+
+// structuredRefLines is a ref's own text, then the URLs inside its objects.
+func structuredRefLines(text string, objects []map[string]interface{}) []string {
+	var lines []string
+	if text != "" {
+		lines = append(lines, text)
+	}
+	urls := map[string]bool{}
+	for _, m := range objects {
+		collectURLs(m, urls)
+	}
+	sorted := make([]string, 0, len(urls))
+	for u := range urls {
+		sorted = append(sorted, u)
+	}
+	sort.Strings(sorted)
+	return append(lines, sorted...)
 }
 
 func collectURLs(v interface{}, into map[string]bool) {
@@ -1547,23 +1667,23 @@ func derefString[T ~string](v *T) string {
 // document: a status outside the enum is shown as text under one class.
 func statusPresentation(status string) (class, label string) {
 	switch status {
-	case "passed":
-		return "passed", "Passed"
-	case "failed":
-		return "failed", "Failed"
-	case "notReviewed":
-		return "not-reviewed", "Not Reviewed"
-	case "notApplicable":
-		return "not-applicable", "Not Applicable"
-	case "error":
-		return "error", "Error"
+	case statusPassed:
+		return statusPassed, labelPassed
+	case statusFailed:
+		return statusFailed, labelFailed
+	case statusNotReviewed:
+		return classNotReviewed, labelNotReviewed
+	case statusNotApplicable:
+		return classNotApplicable, labelNotApplicable
+	case statusError:
+		return statusError, labelError
 	}
 	return "unknown", status
 }
 
 func statusBadge(status string) string {
 	class, label := statusPresentation(status)
-	return `<span class="status c-` + class + `">` + escape(label) + "</span>"
+	return `<span class="status c-` + class + `">` + escape(label) + closeSpan
 }
 
 // tagItems returns the string members of an array-valued tag; a bare string tag
