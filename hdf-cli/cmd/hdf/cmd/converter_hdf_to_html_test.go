@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -297,8 +298,8 @@ func TestConvertToHTML_DirectoryInput(t *testing.T) {
 	})
 
 	t.Run("an unreadable file under the directory is reported and passed over", func(t *testing.T) {
-		if os.Geteuid() == 0 {
-			t.Skip("root reads a file whatever its mode")
+		if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+			t.Skip("a file mode cannot make a file unreadable on Windows or to root")
 		}
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "ok.json"), fixtures.Results.Minimal, 0o600))
