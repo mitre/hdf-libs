@@ -159,6 +159,44 @@ Use `hdf label remove` to delete label keys:
 hdf label remove results.json team region
 ```
 
+## External IDs Are Not Labels
+
+An identifier owned by another system — a CMDB asset ID, an eMASS system ID, a cloud resource ID — belongs in `components[].externalIds`, not in `labels`. The two do different jobs:
+
+- A label is grouping and selection metadata. `hdf system create` copies a component's labels into its `targetSelector`, so an asset ID stored as a label becomes part of the selector.
+- Label keys share one namespace with the well-known keys above. `externalIds` is keyed by scheme, so the owner of each identifier is explicit and cannot collide with a grouping key.
+- `componentId` is the document family's own identity and must be an RFC 4122 UUID. Most external identifiers are not, and `--component-id` rejects them.
+
+Write external IDs with `--external-id scheme=value` on `hdf label set`:
+
+```bash
+# One scheme, on every component
+hdf label set results.json --external-id cmdb=CI0012345
+
+# Several schemes in one invocation
+hdf label set results.json --external-id cmdb=CI0012345 --external-id emass=1234
+
+# A multi-component document: one component at a time
+hdf label set results.json --external-id cmdb=CI0012345 --component-name web-server-01
+
+# Remove a scheme
+hdf label remove results.json --external-id cmdb
+```
+
+The flag merges: a scheme named on the command line is overwritten, and schemes not named are left as they are. The value is carried verbatim and may be any non-empty string. Well-known schemes are `aws`, `azure`, `cmdb`, `emass` and `cve`; custom schemes are allowed.
+
+`hdf label set` exits non-zero and writes nothing when a pair has no `=`, the scheme or value is empty, the same scheme is given twice, the document has no components, or `--component-name` matches no component. `--component-name` applies to `--external-id` only; labels and `--component-id` are always written to every component, so the command rejects combining them with it.
+
+`hdf label show` lists external IDs under each component's labels, and `--json` carries an `externalIds` object for every component:
+
+```bash
+hdf label show results.json
+# Component: web-server-01 [host]
+#   environment = production
+#   External IDs:
+#     cmdb = CI0012345
+```
+
 ## Guidelines for Custom Labels
 
 Custom labels beyond the five well-known keys are supported. Follow these conventions:

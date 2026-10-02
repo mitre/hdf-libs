@@ -176,3 +176,54 @@ func TestFormatLabelPairs(t *testing.T) {
 		assert.Equal(t, "a=2, z=1", formatLabelPairs(labels))
 	})
 }
+
+func TestParseExternalIDsFlag(t *testing.T) {
+	t.Run("pairs", func(t *testing.T) {
+		ids, err := parseExternalIDsFlag([]string{"cmdb=CI0012345", "emass=1234"})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"cmdb": "CI0012345", "emass": "1234"}, ids)
+	})
+
+	t.Run("splits on the first equals only and keeps the value verbatim", func(t *testing.T) {
+		ids, err := parseExternalIDsFlag([]string{"azure=/subscriptions/a=b/vm, 01 "})
+		require.NoError(t, err)
+		assert.Equal(t, "/subscriptions/a=b/vm, 01 ", ids["azure"])
+	})
+
+	for name, tc := range map[string]struct {
+		pairs []string
+		want  string
+	}{
+		"no equals":        {[]string{"cmdb"}, "scheme=value"},
+		"empty scheme":     {[]string{"=CI0012345"}, "scheme must not be empty"},
+		"blank scheme":     {[]string{"  =CI0012345"}, "scheme must not be empty"},
+		"empty value":      {[]string{"cmdb="}, "value must not be empty"},
+		"duplicate scheme": {[]string{"cmdb=A", "cmdb=B"}, "more than once"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ids, err := parseExternalIDsFlag(tc.pairs)
+			require.Error(t, err)
+			assert.Nil(t, ids)
+			assert.Contains(t, err.Error(), tc.want)
+			assert.Contains(t, err.Error(), "--external-id")
+		})
+	}
+
+	t.Run("empty input", func(t *testing.T) {
+		ids, err := parseExternalIDsFlag(nil)
+		require.NoError(t, err)
+		assert.Empty(t, ids)
+	})
+}
+
+func TestExtractComponentLabels_ExternalIDs(t *testing.T) {
+	infos, err := extractComponentLabels([]byte(`{"components":[
+  {"name":"web","type":"host","externalIds":{"cmdb":"CI0012345","n":7}},
+  {"name":"db","type":"host"}
+]}`))
+	require.NoError(t, err)
+	require.Len(t, infos, 2)
+	assert.Equal(t, map[string]string{"cmdb": "CI0012345", "n": "7"}, infos[0].ExternalIDs)
+	assert.Empty(t, infos[1].ExternalIDs)
+	assert.NotNil(t, infos[1].ExternalIDs, "the JSON shape carries externalIds for every component")
+}
