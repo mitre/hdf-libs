@@ -176,6 +176,12 @@
     },
     {
       "source": "hdf",
+      "dest": "html",
+      "name": "HDF to HTML",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
       "dest": "ocsf",
       "name": "HDF Results to OCSF Findings",
       "acceptsEmpty": false

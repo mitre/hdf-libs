@@ -66,6 +66,7 @@ import { oscalFingerprints } from '../../converters/oscal-to-hdf/typescript/fing
 
 // Export converters
 import { hdfToCsvFingerprint } from '../../converters/hdf-to-csv/typescript/fingerprint.js';
+import { hdfToHtmlFingerprint } from '../../converters/hdf-to-html/typescript/fingerprint.js';
 import { hdfToXmlFingerprint } from '../../converters/hdf-to-xml/typescript/fingerprint.js';
 import { hdfToOscalSarFingerprint } from '../../converters/hdf-to-oscal-sar/typescript/fingerprint.js';
 import { hdfToOscalPoamFingerprint } from '../../converters/hdf-to-oscal-poam/typescript/fingerprint.js';
@@ -124,6 +125,7 @@ const allFingerprints: ConverterFingerprint[] = [
   ...oscalFingerprints,
   // Export converters
   hdfToCsvFingerprint,
+  hdfToHtmlFingerprint,
   hdfToXmlFingerprint,
   hdfToOscalSarFingerprint,
   hdfToOscalPoamFingerprint,

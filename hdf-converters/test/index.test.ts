@@ -23,6 +23,9 @@ import {
   convertCyclonedxToHdf,
   convertSplunkToHdf,
   convertHdfToCsv,
+  convertHdfToHtml,
+  convertHdfDocumentsToHtml,
+  parseReportType,
   convertHdfToXml,
   convertGitlabToHdf,
   convertTrivyToHdf,
@@ -190,6 +193,12 @@ describe('Main exports', () => {
   it('should export convertSplunkToHdf from main index', () => {
     expect(convertSplunkToHdf).toBeDefined();
     expect(typeof convertSplunkToHdf).toBe('function');
+  });
+
+  it('should export convertHdfToHtml and parseReportType from main index', () => {
+    expect(typeof convertHdfToHtml).toBe('function');
+    expect(typeof convertHdfDocumentsToHtml).toBe('function');
+    expect(typeof parseReportType).toBe('function');
   });
 
   it('should export convertHdfToCsv from main index', () => {

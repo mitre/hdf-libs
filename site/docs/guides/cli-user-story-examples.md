@@ -455,3 +455,48 @@ hdf fetch --help
 ```
 
 **Expected**: Help text shows available API sources. (Actual API calls require credentials/endpoints.)
+
+---
+
+## 14. HTML Reports
+
+**Story**: An assessor hands a reviewer a readable report built from v3 results, without downgrading the document or installing a second tool.
+
+```bash
+# Full report: status dashboard, components, and every requirement with its test code
+hdf convert /tmp/example-hdf-results.json --to html -o /tmp/example-report.html
+
+# Less detail: no test code (manager), or the dashboard and components only (executive)
+hdf convert /tmp/example-hdf-results.json --to html --report-type manager -o /tmp/example-report.html
+hdf convert /tmp/example-hdf-results.json --to html --report-type executive -o /tmp/example-report.html
+```
+
+**Expected**: One self-contained HTML file. It shows every component with its type, `componentId`, labels and external IDs; the `runner` and `systemRef` when the document carries them; requirement counts by status and severity with a compliance level; and, for the manager and administrator types, each requirement with its source location, test results, details and any overrides, the effective status beside the assessed one. Enrichment added by `hdf enrich` (or any other `externalReferences[]`) appears with the document, baseline, requirement or override it is attached to, with an embedded STIX object shown in full.
+
+Things worth knowing:
+
+- The file loads nothing from the network. Its content security policy blocks every external request and admits only the report's own small script, by hash, so it opens in an air-gapped environment and can be archived as evidence beside the JSON it came from.
+- Long content is collapsed. Any block longer than two lines or rows starts closed behind its heading, with a count, and ends with a link back to its own top. The results list can be filtered by text and status and expanded or collapsed in one click; printing opens everything.
+- A button in the header switches between the light and dark palettes. Without a choice the report follows the system setting.
+- The same input always produces the same bytes; there is no render-time timestamp. Override expiry is judged at the document's own assessment time (its `timestamp`, else its latest result start time), not at the time the report is rendered, and the report states that time.
+- Colours meet WCAG 2.2 AA contrast in both the light and the dark palette, status and severity are always stated in text as well as colour, and the page is usable by keyboard and screen reader.
+- `--report-type` is refused for any target other than `html`.
+
+Several documents can go into one report. Name the files, a glob, or a directory, and give `-o` a file:
+
+```bash
+# Named files, in the order given
+hdf convert scan-a.json scan-b.json --to html -o /tmp/example-combined.html
+
+# Every HDF results document under a directory, searched recursively, in path order
+hdf convert /tmp/example-scans/ --to html -o /tmp/example-combined.html
+
+# -o <directory>/ keeps one report per input instead
+hdf convert scan-a.json scan-b.json --to html -o /tmp/example-reports/
+```
+
+**Expected**: One report whose dashboard counts every requirement across the inputs, with a "Status by source" table, a panel per source (tool, assessed time, `systemRef`, runner), every component labelled with the document it came from, and the results grouped by source. Each source's overrides are judged at that document's own assessment time.
+
+- A directory routinely holds other artifacts beside the results (amendments, OSCAL exports, logs). Files under it that are not HDF results documents are passed over and counted on stderr; legacy (v2) results are upgraded and included. A file you name explicitly is never passed over: if it is not a results document, the command fails and writes nothing.
+- A directory that holds both the legacy and the current form of the same scan contributes both. Point at the files you mean, or use a glob such as `scans/*.v3.hdf.json`.
+- Inputs that share a file name are shown by path.
