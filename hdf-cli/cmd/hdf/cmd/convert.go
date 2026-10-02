@@ -36,10 +36,9 @@ func NewConvertCmd() *cobra.Command {
 		Long:  buildConvertLong(),
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if componentID, _ := cmd.Flags().GetString("component-id"); componentID != "" {
-				if err := hdfdoc.ValidateComponentID(componentID); err != nil {
-					return fmt.Errorf("invalid --component-id: %w", err)
-				}
+			componentID, _ := cmd.Flags().GetString("component-id")
+			if err := checkComponentIDFlag(componentID); err != nil {
+				return err
 			}
 			files, err := expandGlobs(args)
 			if err != nil {

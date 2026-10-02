@@ -179,10 +179,8 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 			"  or:  hdf label set <file> --generate-component-id")
 	}
 
-	if componentID != "" {
-		if err := hdfdoc.ValidateComponentID(componentID); err != nil {
-			return fmt.Errorf("invalid --component-id: %w", err)
-		}
+	if err := checkComponentIDFlag(componentID); err != nil {
+		return err
 	}
 
 	data, err := readInputFile(filePath)
@@ -218,6 +216,17 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 
 	outputPath, _ := cmd.Flags().GetString("output")
 	return writeLabelOutput(result, filePath, outputPath)
+}
+
+// checkComponentIDFlag accepts an unset --component-id; a set one must be a UUID.
+func checkComponentIDFlag(componentID string) error {
+	if componentID == "" {
+		return nil
+	}
+	if err := hdfdoc.ValidateComponentID(componentID); err != nil {
+		return fmt.Errorf("invalid --component-id: %w", err)
+	}
+	return nil
 }
 
 func runLabelRemove(cmd *cobra.Command, args []string) error {
