@@ -1,0 +1,65 @@
+{
+  "errors": [
+    {
+      "message": "The resource that you are attempting to access does not exist or you don't have permission to perform this action",
+      "locations": [
+        {
+          "line": 4,
+          "column": 3
+        }
+      ],
+      "path": [
+        "currentLicense"
+      ]
+    }
+  ],
+  "data": {
+    "metadata": {
+      "enterprise": true,
+      "version": "18.9.1-ee"
+    },
+    "currentUser": {
+      "username": "sec-reviewer"
+    },
+    "currentLicense": null,
+    "project": {
+      "id": "gid://gitlab/Project/2",
+      "fullPath": "security-demo/web-goat",
+      "name": "Web Goat",
+      "webUrl": "https://gitlab.example.com/security-demo/web-goat",
+      "archived": false,
+      "repository": {
+        "rootRef": "main"
+      },
+      "securityScanners": {
+        "available": [
+          "SAST",
+          "SAST_ADVANCED",
+          "SAST_IAC",
+          "DAST",
+          "DEPENDENCY_SCANNING",
+          "CONTAINER_SCANNING",
+          "SECRET_DETECTION",
+          "COVERAGE_FUZZING",
+          "API_FUZZING",
+          "CLUSTER_IMAGE_SCANNING"
+        ],
+        "enabled": [
+          "SECRET_DETECTION"
+        ],
+        "pipelineRun": [
+          "SECRET_DETECTION"
+        ]
+      },
+      "vulnerabilityStatistic": {
+        "total": 0,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 0,
+        "unknown": 0
+      }
+    }
+  }
+}
