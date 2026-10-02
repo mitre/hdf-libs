@@ -176,3 +176,136 @@ func TestApplyComponentID_Errors(t *testing.T) {
 	_, err = ApplyComponentID([]byte(`{"components":"nope"}`), testComponentID, false)
 	assert.Error(t, err)
 }
+
+const twoComponentsWithIDs = `{"components":[
+  {"name":"web","type":"host","externalIds":{"cmdb":"OLD","aws":"i-0abc"}},
+  {"name":"db","type":"host"}
+]}`
+
+func externalIDsOf(t *testing.T, out []byte) []map[string]any {
+	t.Helper()
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(out, &doc))
+	comps := doc["components"].([]any)
+	ids := make([]map[string]any, len(comps))
+	for i, c := range comps {
+		ids[i], _ = c.(map[string]any)["externalIds"].(map[string]any)
+	}
+	return ids
+}
+
+func TestApplyExternalIDs_MergesIntoEveryComponent(t *testing.T) {
+	out, err := ApplyExternalIDs([]byte(twoComponentsWithIDs), map[string]string{"cmdb": "CI0012345", "emass": "1234"}, "")
+	require.NoError(t, err)
+
+	ids := externalIDsOf(t, out)
+	assert.Equal(t, map[string]any{"cmdb": "CI0012345", "aws": "i-0abc", "emass": "1234"}, ids[0],
+		"a named scheme is overwritten, an unnamed one kept, a new one added")
+	assert.Equal(t, map[string]any{"cmdb": "CI0012345", "emass": "1234"}, ids[1])
+}
+
+func TestApplyExternalIDs_ComponentName(t *testing.T) {
+	t.Run("only the named component is written", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(twoComponentsWithIDs), map[string]string{"cmdb": "CI-DB"}, "db")
+		require.NoError(t, err)
+		ids := externalIDsOf(t, out)
+		assert.Equal(t, "OLD", ids[0]["cmdb"])
+		assert.Equal(t, map[string]any{"cmdb": "CI-DB"}, ids[1])
+	})
+
+	t.Run("no component by that name is an error", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(twoComponentsWithIDs), map[string]string{"cmdb": "X"}, "cache")
+		require.Error(t, err)
+		assert.Nil(t, out)
+		assert.Contains(t, err.Error(), `"cache"`)
+	})
+}
+
+func TestApplyExternalIDs_NothingToWriteOnIsAnError(t *testing.T) {
+	for name, doc := range map[string]string{
+		"no components field": `{"baselines":[]}`,
+		"empty components":    `{"components":[]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			out, err := ApplyExternalIDs([]byte(doc), map[string]string{"cmdb": "X"}, "")
+			require.Error(t, err)
+			assert.Nil(t, out)
+			assert.Contains(t, err.Error(), "no components")
+		})
+	}
+}
+
+func TestApplyExternalIDs_Errors(t *testing.T) {
+	ids := map[string]string{"cmdb": "X"}
+	_, err := ApplyExternalIDs([]byte("not json"), ids, "")
+	require.Error(t, err)
+	_, err = ApplyExternalIDs([]byte(`{"components":"nope"}`), ids, "")
+	require.Error(t, err)
+	_, err = ApplyExternalIDs([]byte(`{"components":["nope"]}`), ids, "")
+	require.Error(t, err)
+
+	t.Run("no ids is a no-op", func(t *testing.T) {
+		in := []byte(twoComponentsWithIDs)
+		out, err := ApplyExternalIDs(in, nil, "")
+		require.NoError(t, err)
+		assert.Equal(t, in, out)
+	})
+
+	t.Run("a non-object externalIds is replaced", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(`{"components":[{"name":"h","externalIds":null}]}`), ids, "")
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"cmdb": "X"}, externalIDsOf(t, out)[0])
+	})
+}
+
+func TestRemoveExternalIDs(t *testing.T) {
+	t.Run("removes the scheme and keeps the rest", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb"}, "")
+		require.NoError(t, err)
+		ids := externalIDsOf(t, out)
+		assert.Equal(t, map[string]any{"aws": "i-0abc"}, ids[0])
+		assert.Nil(t, ids[1])
+	})
+
+	t.Run("an emptied map is dropped rather than left as {}", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb", "aws"}, "")
+		require.NoError(t, err)
+		assert.NotContains(t, string(out), "externalIds")
+	})
+
+	t.Run("a missing scheme is ignored", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"emass"}, "")
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"cmdb": "OLD", "aws": "i-0abc"}, externalIDsOf(t, out)[0])
+	})
+
+	t.Run("component name limits the removal", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb"}, "db")
+		require.NoError(t, err)
+		assert.Equal(t, "OLD", externalIDsOf(t, out)[0]["cmdb"])
+
+		_, err = RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb"}, "cache")
+		require.Error(t, err)
+	})
+
+	t.Run("no schemes or no components is a no-op", func(t *testing.T) {
+		in := []byte(twoComponentsWithIDs)
+		out, err := RemoveExternalIDs(in, nil, "")
+		require.NoError(t, err)
+		assert.Equal(t, in, out)
+
+		in = []byte(`{"baselines":[]}`)
+		out, err = RemoveExternalIDs(in, []string{"cmdb"}, "")
+		require.NoError(t, err)
+		assert.Equal(t, in, out)
+	})
+
+	t.Run("errors", func(t *testing.T) {
+		_, err := RemoveExternalIDs([]byte("not json"), []string{"cmdb"}, "")
+		require.Error(t, err)
+		_, err = RemoveExternalIDs([]byte(`{"components":"nope"}`), []string{"cmdb"}, "")
+		require.Error(t, err)
+		_, err = RemoveExternalIDs([]byte(`{"components":["nope"]}`), []string{"cmdb"}, "")
+		require.Error(t, err)
+	})
+}
