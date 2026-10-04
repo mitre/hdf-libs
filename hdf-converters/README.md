@@ -27,6 +27,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Dependency-Track | `convertDeptrackToHdf` | JSON |
 | Fortify | `convertFortifyToHdf` | XML |
 | GitLab Security Report | `convertGitlabToHdf` | JSON |
+| GitLab Vulnerability Report (fetcher envelope, triage state preserved) | `convertGitlabVulnerabilitiesToHdf` | JSON |
 | Gosec | `convertGosecToHdf` | JSON |
 | Grype | `convertGrypeToHdf` | JSON |
 | hadolint | `convertHadolintToHdf` | JSON |
@@ -63,7 +64,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Trivy | `convertTrivyToHdf` | JSON (native; SARIF/CycloneDX/ASFF/GitLab auto-routed) |
 | TruffleHog | `convertTrufflehogToHdf` | JSON |
 | Twistlock | `convertTwistlockToHdf` | JSON |
-| Veracode | `convertVeracodeToHdf` | JSON |
+| Veracode | `convertVeracodeToHdf` | XML |
 | XCCDF Results | `convertXccdfResultsToHdf` | XML |
 
 ### HDF to Other Formats

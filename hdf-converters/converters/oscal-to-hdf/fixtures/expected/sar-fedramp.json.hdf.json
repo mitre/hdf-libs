@@ -143,6 +143,32 @@
           "tags": {
             "nist": [
               "CM-2 (1)"
+            ],
+            "oscal-props": [
+              {
+                "on": "risk",
+                "name": "priority",
+                "value": "1",
+                "ns": "https://fedramp.gov/ns/oscal"
+              },
+              {
+                "on": "risk",
+                "name": "operational-requirement",
+                "value": "approved",
+                "ns": "https://fedramp.gov/ns/oscal"
+              },
+              {
+                "on": "risk",
+                "name": "false-positive",
+                "value": "withdrawn",
+                "ns": "https://fedramp.gov/ns/oscal"
+              },
+              {
+                "on": "risk",
+                "name": "risk-adjustment",
+                "value": "approved",
+                "ns": "https://fedramp.gov/ns/oscal"
+              }
             ]
           },
           "controlType": "operational",
@@ -213,6 +239,14 @@
           "tags": {
             "nist": [
               "CA-8 (1)"
+            ],
+            "oscal-props": [
+              {
+                "on": "risk",
+                "name": "priority",
+                "value": "2",
+                "ns": "https://fedramp.gov/ns/oscal"
+              }
             ]
           },
           "controlType": "management",
@@ -223,7 +257,7 @@
         "algorithm": "sha256",
         "value": "dca2fbecb1456365616338e5b78ec2c622f73dc72638bf516f479230f14021f4"
       },
-      "name": "2023-annual-assessment",
+      "name": "2023-annual-assessment--af0c8632-e994-48a7-924e-2354b6abace7",
       "status": "loaded",
       "title": "2023 Annual Assessment"
     }

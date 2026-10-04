@@ -1,0 +1,3868 @@
+{
+  "data": {
+    "project": {
+      "fullPath": "security-demo/juice-shop",
+      "pipelines": {
+        "nodes": [
+          {
+            "iid": "8",
+            "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+            "ref": "master",
+            "status": "SUCCESS",
+            "createdAt": "2026-09-21T02:18:19Z",
+            "securityReportSummary": {
+              "sast": {
+                "scans": {
+                  "nodes": [
+                    {
+                      "name": "semgrep-sast",
+                      "status": "SUCCEEDED",
+                      "errors": [],
+                      "warnings": []
+                    }
+                  ]
+                }
+              },
+              "secretDetection": {
+                "scans": {
+                  "nodes": [
+                    {
+                      "name": "secret_detection",
+                      "status": "SUCCEEDED",
+                      "errors": [],
+                      "warnings": []
+                    }
+                  ]
+                }
+              },
+              "dependencyScanning": {
+                "scans": {
+                  "nodes": [
+                    {
+                      "name": "gemnasium-dependency_scanning",
+                      "status": "SUCCEEDED",
+                      "errors": [],
+                      "warnings": []
+                    }
+                  ]
+                }
+              },
+              "containerScanning": null,
+              "dast": null,
+              "coverageFuzzing": null,
+              "apiFuzzing": null,
+              "clusterImageScanning": null
+            }
+          }
+        ]
+      },
+      "vulnerabilities": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJzZXZlcml0eSI6ImhpZ2giLCJ2dWxuZXJhYmlsaXR5X2lkIjoiMTQ3In0"
+        },
+        "nodes": [
+          {
+            "id": "gid://gitlab/Vulnerability/169",
+            "uuid": "45571828-a123-50d3-a55a-309f5b151bb1",
+            "title": "crypto-js PBKDF2 1,000 times weaker than specified in 1993 and 1.3M times weaker than current standard",
+            "description": "crypto-js is a JavaScript library of crypto standards. Prior to version 4.2.0, crypto-js PBKDF2 is 1,000 times weaker than originally specified in 1993, and at least 1,300,000 times weaker than current industry standard. This is because it both defaults to SHA1, a cryptographic hash algorithm considered insecure since at least 2005, and defaults to one single iteration, a 'strength' or 'difficulty' value specified at 1,000 when specified in 1993. PBKDF2 relies on iteration count as a countermeasure to preimage and collision attacks. If used to protect passwords, the impact is high. If used to generate signatures, the impact is high. Version 4.2.0 contains a patch for this issue. As a workaround, configure crypto-js to use SHA256 with at least 250,000 iterations.",
+            "severity": "CRITICAL",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 4.2.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/169",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/169",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "1e3d279c-f379-42e4-8c1b-e6586af91b95",
+              "name": "Gemnasium-1e3d279c-f379-42e4-8c1b-e6586af91b95",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "327",
+                "name": "CWE-327",
+                "url": "https://cwe.mitre.org/data/definitions/327.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "gemnasium",
+                "externalId": "1e3d279c-f379-42e4-8c1b-e6586af91b95",
+                "name": "Gemnasium-1e3d279c-f379-42e4-8c1b-e6586af91b95",
+                "url": null
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-xwcq-pm8m-c4vf",
+                "name": "GHSA-xwcq-pm8m-c4vf",
+                "url": "https://github.com/advisories/GHSA-xwcq-pm8m-c4vf"
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2023-46233",
+                "name": "CVE-2023-46233",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-46233"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-xwcq-pm8m-c4vf"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/brix/crypto-js/commit/421dd538b2d34e7c24a5b72cc64dc2b9167db40a"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/brix/crypto-js/security/advisories/GHSA-xwcq-pm8m-c4vf"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "GitHub",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+                "version": 3.1,
+                "baseScore": 9.1,
+                "overallScore": 9.1,
+                "severity": "CRITICAL"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "3.3.0",
+                "package": {
+                  "name": "crypto-js"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/134",
+            "uuid": "a01a963e-52d0-538a-8ba1-360ed2d5fb5e",
+            "title": "Use of a Broken or Risky Cryptographic Algorithm",
+            "description": "In jsonwebtoken node module before 4.2.2 it is possible for an attacker to bypass verification when a token digitally signed with an asymmetric key (RS/ES family) of algorithms but instead the attacker send a token digitally signed with a symmetric algorithm (HS* family).",
+            "severity": "CRITICAL",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 4.2.2 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/134",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/134",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "3b9d7d09-acc4-431c-8eeb-51d8175458f0",
+              "name": "Gemnasium-3b9d7d09-acc4-431c-8eeb-51d8175458f0",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "3b9d7d09-acc4-431c-8eeb-51d8175458f0",
+                "name": "Gemnasium-3b9d7d09-acc4-431c-8eeb-51d8175458f0",
+                "url": null
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-c7hr-j4mj-j2w6",
+                "name": "GHSA-c7hr-j4mj-j2w6",
+                "url": "https://github.com/advisories/GHSA-c7hr-j4mj-j2w6"
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2015-9235",
+                "name": "CVE-2015-9235",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-9235"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "327",
+                "name": "CWE-327",
+                "url": "https://cwe.mitre.org/data/definitions/327.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://auth0.com/blog/2015/03/31/critical-vulnerabilities-in-json-web-token-libraries/"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-c7hr-j4mj-j2w6"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jsonwebtoken/commit/1bb584bc382295eeb7ee8c4452a673a77a68b687"
+              },
+              {
+                "name": null,
+                "url": "https://nodesecurity.io/advisories/17"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2015-9235"
+              },
+              {
+                "name": null,
+                "url": "https://www.npmjs.com/advisories/17"
+              },
+              {
+                "name": null,
+                "url": "https://www.timmclean.net/2015/02/25/jwt-alg-none.html"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "GitHub",
+                "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "version": 3.0,
+                "baseScore": 9.8,
+                "overallScore": 9.8,
+                "severity": "CRITICAL"
+              },
+              {
+                "vendor": "GitHub",
+                "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+                "version": 2.0,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "0.1.0",
+                "package": {
+                  "name": "jsonwebtoken"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/129",
+            "uuid": "a45d93c6-caf0-5531-a60e-c0946d66deb0",
+            "title": "Prototype Pollution in lodash",
+            "description": "Versions of `lodash` before 4.17.12 are vulnerable to Prototype Pollution.  The function `defaultsDeep` allows a malicious user to modify the prototype of `Object` via `{constructor: {prototype: {...}}}` causing the addition or modification of an existing property that will exist on all objects.",
+            "severity": "CRITICAL",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 4.17.12 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/129",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/129",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "4774cd67-936f-419e-8533-ae5cfe7db9f9",
+              "name": "Gemnasium-4774cd67-936f-419e-8533-ae5cfe7db9f9",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "4774cd67-936f-419e-8533-ae5cfe7db9f9",
+                "name": "Gemnasium-4774cd67-936f-419e-8533-ae5cfe7db9f9",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2019-10744",
+                "name": "CVE-2019-10744",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-10744"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-jf85-cpcp-j695",
+                "name": "GHSA-jf85-cpcp-j695",
+                "url": "https://github.com/advisories/GHSA-jf85-cpcp-j695"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1321",
+                "name": "CWE-1321",
+                "url": "https://cwe.mitre.org/data/definitions/1321.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "20",
+                "name": "CWE-20",
+                "url": "https://cwe.mitre.org/data/definitions/20.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2019:3024"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-jf85-cpcp-j695"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/lodash/lodash/pull/4336"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/rubysec/ruby-advisory-db/blob/master/gems/lodash-rails/CVE-2019-10744.yml"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-10744"
+              },
+              {
+                "name": null,
+                "url": "https://security.netapp.com/advisory/ntap-20191004-0005"
+              },
+              {
+                "name": null,
+                "url": "https://snyk.io/vuln/SNYK-JS-LODASH-450202"
+              },
+              {
+                "name": null,
+                "url": "https://support.f5.com/csp/article/K47105354?utm_source=f5support&amp%3Butm_medium=RSS"
+              },
+              {
+                "name": null,
+                "url": "https://support.f5.com/csp/article/K47105354?utm_source=f5support&amp;utm_medium=RSS"
+              },
+              {
+                "name": null,
+                "url": "https://www.oracle.com/security-alerts/cpujan2021.html"
+              },
+              {
+                "name": null,
+                "url": "https://www.oracle.com/security-alerts/cpuoct2020.html"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:H",
+                "version": 3.1,
+                "baseScore": 9.1,
+                "overallScore": 9.1,
+                "severity": "CRITICAL"
+              },
+              {
+                "vendor": "NVD",
+                "vector": "AV:N/AC:L/Au:N/C:N/I:P/A:P",
+                "version": 2.0,
+                "baseScore": 6.4,
+                "overallScore": 6.4,
+                "severity": "MEDIUM"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "2.4.2",
+                "package": {
+                  "name": "lodash"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/126",
+            "uuid": "a6f24577-9b7b-5e26-bc54-68a063af77e3",
+            "title": "Improper Authorization",
+            "description": "In express-jwt (NPM package) up and including, the `algorithms` entry to be specified in the configuration is not being enforced. When `algorithms` is not specified in the configuration, with the combination of jwks-rsa, it may lead to authorization bypass.",
+            "severity": "CRITICAL",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 6.0.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/126",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/126",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "b6491a85-b4a2-4553-b7de-a8fe8f21b106",
+              "name": "Gemnasium-b6491a85-b4a2-4553-b7de-a8fe8f21b106",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "b6491a85-b4a2-4553-b7de-a8fe8f21b106",
+                "name": "Gemnasium-b6491a85-b4a2-4553-b7de-a8fe8f21b106",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2020-15084",
+                "name": "CVE-2020-15084",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15084"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-6g6m-m6h5-w9gf",
+                "name": "GHSA-6g6m-m6h5-w9gf",
+                "url": "https://github.com/advisories/GHSA-6g6m-m6h5-w9gf"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "285",
+                "name": "CWE-285",
+                "url": "https://cwe.mitre.org/data/definitions/285.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2020-15084"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+                "version": 3.1,
+                "baseScore": 9.1,
+                "overallScore": 9.1,
+                "severity": "CRITICAL"
+              },
+              {
+                "vendor": "NVD",
+                "vector": "AV:N/AC:M/Au:N/C:N/I:P/A:N",
+                "version": 2.0,
+                "baseScore": 4.3,
+                "overallScore": 4.3,
+                "severity": "MEDIUM"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "0.1.3",
+                "package": {
+                  "name": "express-jwt"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/123",
+            "uuid": "b79d578c-4277-5208-9596-9464d6bbb4ac",
+            "title": "Decompress: Archive extraction can create files and links outside of the target directory",
+            "description": "When extracting an archive to a directory, a crafted archive can read or write files outside that directory. The flaw is in the code that writes the parsed entries, so it affects every format decompress handles: tar, tar.gz, tar.bz2, and zip by default, plus any others added through the plugins option.\n\nA link (hardlink) or symlink entry is created without checking where its target points. A hardlink can be aimed at any file the running process can read; that file then appears inside the output directory and its contents are exposed. A symlink can point outside the output directory and redirect a later write.\n\nThe path containment check used a string prefix comparison (`realPath.indexOf(outputPath) !== 0`). Output `/srv/out` does not contain `/srv/out-old`, but the prefix comparison treats it as inside, so an entry can escape into a sibling directory whose name starts with the output directory name.\n\nFile modes were applied as `mode & ~umask`, which does not remove the setuid, setgid, or sticky bits. A crafted entry can create a setuid or setgid file. This matters when extraction runs as root, for example in CI, containers, or install scripts.\n\nAny code that extracts archives from an untrusted or attacker-influenced source is affected. Archives are commonly downloaded before extraction, so this is reachable over the network in many setups.",
+            "severity": "CRITICAL",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Unfortunately, there is no solution available yet.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/123",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/123",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "7664b07b-053c-45f5-888a-aef42274b483",
+              "name": "Gemnasium-7664b07b-053c-45f5-888a-aef42274b483",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "7664b07b-053c-45f5-888a-aef42274b483",
+                "name": "Gemnasium-7664b07b-053c-45f5-888a-aef42274b483",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-53486",
+                "name": "CVE-2026-53486",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-53486"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-mp2f-45pm-3cg9",
+                "name": "GHSA-mp2f-45pm-3cg9",
+                "url": "https://github.com/advisories/GHSA-mp2f-45pm-3cg9"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "59",
+                "name": "CWE-59",
+                "url": "https://cwe.mitre.org/data/definitions/59.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "732",
+                "name": "CWE-732",
+                "url": "https://cwe.mitre.org/data/definitions/732.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/XhmikosR/decompress/commit/281cefa"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/XhmikosR/decompress/commit/60b5299"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/XhmikosR/decompress/commit/aca5aac"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/XhmikosR/decompress/security/advisories/GHSA-mp2f-45pm-3cg9"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-mp2f-45pm-3cg9"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-53486"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+                "version": 3.1,
+                "baseScore": 9.1,
+                "overallScore": 9.1,
+                "severity": "CRITICAL"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "4.2.1",
+                "package": {
+                  "name": "decompress"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/118",
+            "uuid": "c8c011cf-32c8-56ee-81e0-e3a6847d38dc",
+            "title": "crypto-js: Insufficient Entropy in Cryptographic Secret Generation via Vulnerable CryptoJS Dependency Chain",
+            "description": "`CryptoJS.lib.WordArray.random()` in affected versions is not a cryptographically secure random number generator. Nominal requests for 128 or 256 bits of entropy produce effective search spaces of approximately 2^39 and 2^47 possibilities \u2014 small enough to enumerate on commodity hardware.\n\nCoinspect's [Ill Bloom](https://www.coinspect.com/blog/ill-bloom-investigation/) investigation confirmed that downstream wallet applications used this function as the entropy source for BIP39 recovery phrases.\n\n**An application is affected only if it uses the vulnerable function to generate security-sensitive values.**\n\nMerely depending on `crypto-js < 4.0.0` is not sufficient to be exploitable.",
+            "severity": "CRITICAL",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 4.0.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/118",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/118",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "ff1cbf8e-cccf-4e61-9b00-aad8145ed71c",
+              "name": "Gemnasium-ff1cbf8e-cccf-4e61-9b00-aad8145ed71c",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "cwe",
+                "externalId": "331",
+                "name": "CWE-331",
+                "url": "https://cwe.mitre.org/data/definitions/331.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "334",
+                "name": "CWE-334",
+                "url": "https://cwe.mitre.org/data/definitions/334.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "gemnasium",
+                "externalId": "ff1cbf8e-cccf-4e61-9b00-aad8145ed71c",
+                "name": "Gemnasium-ff1cbf8e-cccf-4e61-9b00-aad8145ed71c",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-71851",
+                "name": "CVE-2026-71851",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-71851"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-rg76-677x-56q9",
+                "name": "GHSA-rg76-677x-56q9",
+                "url": "https://github.com/advisories/GHSA-rg76-677x-56q9"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-rg76-677x-56q9"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/brix/crypto-js/commit/b405ff597fb3ac76a7bdfbc72dca10ba1079b1d5"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/brix/crypto-js/security/advisories/GHSA-rg76-677x-56q9"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-71851"
+              },
+              {
+                "name": null,
+                "url": "https://www.coinspect.com/blog/ill-bloom-investigation"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:H",
+                "version": 3.1,
+                "baseScore": 9.0,
+                "overallScore": 9.1,
+                "severity": "CRITICAL"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "3.3.0",
+                "package": {
+                  "name": "crypto-js"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/105",
+            "uuid": "e9e42ff0-cb4d-5e79-97f4-8d5d4e549db3",
+            "title": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')",
+            "description": "Due to improper type validation in attachment parsing the Socket.io js library, it is possible to overwrite the _placeholder object which allows an attacker to place references to functions at arbitrary places in the resulting query object.",
+            "severity": "CRITICAL",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 4.2.1 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/105",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/105",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "1521d2a1-dec6-4907-bf06-393a3f82f635",
+              "name": "Gemnasium-1521d2a1-dec6-4907-bf06-393a3f82f635",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "gemnasium",
+                "externalId": "1521d2a1-dec6-4907-bf06-393a3f82f635",
+                "name": "Gemnasium-1521d2a1-dec6-4907-bf06-393a3f82f635",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2022-2421",
+                "name": "CVE-2022-2421",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-2421"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://csirt.divd.nl/cases/DIVD-2022-00045"
+              },
+              {
+                "name": null,
+                "url": "https://csirt.divd.nl/cves/CVE-2022-2421"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-2421"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                "version": 3.1,
+                "baseScore": 9.8,
+                "overallScore": 9.8,
+                "severity": "CRITICAL"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "4.0.5",
+                "package": {
+                  "name": "socket.io-parser"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/181",
+            "uuid": "0ecf6422-420f-5a53-8a97-a27310c92139",
+            "title": "Path Traversal: 'dir/../../filename' in moment.locale",
+            "description": "This vulnerability impacts npm (server) users of moment.js, especially if user provided locale string, eg `fr` is directly used to switch moment locale.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.29.2 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/181",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/181",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "d8d3745b-ac49-4331-a071-bc2dd383870f",
+              "name": "Gemnasium-d8d3745b-ac49-4331-a071-bc2dd383870f",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "d8d3745b-ac49-4331-a071-bc2dd383870f",
+                "name": "Gemnasium-d8d3745b-ac49-4331-a071-bc2dd383870f",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2022-24785",
+                "name": "CVE-2022-24785",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-24785"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-8hfj-j24r-96c4",
+                "name": "GHSA-8hfj-j24r-96c4",
+                "url": "https://github.com/advisories/GHSA-8hfj-j24r-96c4"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "27",
+                "name": "CWE-27",
+                "url": "https://cwe.mitre.org/data/definitions/27.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-8hfj-j24r-96c4"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/moment/moment"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/moment/moment/commit/4211bfc8f15746be4019bba557e29a7ba83d54c5"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/moment/moment/security/advisories/GHSA-8hfj-j24r-96c4"
+              },
+              {
+                "name": null,
+                "url": "https://lists.debian.org/debian-lts-announce/2023/01/msg00035.html"
+              },
+              {
+                "name": null,
+                "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6QIO6YNLTK2T7SPKDS4JEL45FANLNC2Q"
+              },
+              {
+                "name": null,
+                "url": "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/ORJX2LF6KMPIHP6B2P6KZIVKMLE3LVJ5"
+              },
+              {
+                "name": null,
+                "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/6QIO6YNLTK2T7SPKDS4JEL45FANLNC2Q"
+              },
+              {
+                "name": null,
+                "url": "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/ORJX2LF6KMPIHP6B2P6KZIVKMLE3LVJ5"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-24785"
+              },
+              {
+                "name": null,
+                "url": "https://security.netapp.com/advisory/ntap-20220513-0006"
+              },
+              {
+                "name": null,
+                "url": "https://security.netapp.com/advisory/ntap-20241108-0002"
+              },
+              {
+                "name": null,
+                "url": "https://www.tenable.com/security/tns-2022-09"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              },
+              {
+                "vendor": "NVD",
+                "vector": "AV:N/AC:L/Au:N/C:N/I:P/A:N",
+                "version": 2.0,
+                "baseScore": 5.0,
+                "overallScore": 5.0,
+                "severity": "MEDIUM"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "2.0.0",
+                "package": {
+                  "name": "moment"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/177",
+            "uuid": "27d81984-910a-54d1-bddf-9944023b4bcf",
+            "title": "Multer vulnerable to Denial of Service via unhandled exception",
+            "description": "A vulnerability in Multer versions >=1.4.4-lts.1, <2.0.1 allows an attacker to trigger a Denial of Service (DoS) by sending an upload file request with an empty string field name. This request causes an unhandled exception, leading to a crash of the process.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.0.1 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/177",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/177",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "2e1bbe66-50e2-46a9-9ba6-d3a19ce24b42",
+              "name": "Gemnasium-2e1bbe66-50e2-46a9-9ba6-d3a19ce24b42",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "2e1bbe66-50e2-46a9-9ba6-d3a19ce24b42",
+                "name": "Gemnasium-2e1bbe66-50e2-46a9-9ba6-d3a19ce24b42",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2025-48997",
+                "name": "CVE-2025-48997",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-48997"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-g5hg-p3ph-g8qg",
+                "name": "GHSA-g5hg-p3ph-g8qg",
+                "url": "https://github.com/advisories/GHSA-g5hg-p3ph-g8qg"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "248",
+                "name": "CWE-248",
+                "url": "https://cwe.mitre.org/data/definitions/248.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-g5hg-p3ph-g8qg"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/commit/35a3272b611945155e046dd5cef11088587635e9"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/issues/1233"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/pull/1256"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/security/advisories/GHSA-g5hg-p3ph-g8qg"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-48997"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.5-lts.2",
+                "package": {
+                  "name": "multer"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/175",
+            "uuid": "2d3e34f5-e831-505d-9efd-37c709268d35",
+            "title": "minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions",
+            "description": "Nested `*()` extglobs produce regexps with nested unbounded quantifiers (e.g. `(?:(?:a|b)*)*`), which exhibit catastrophic backtracking in V8. With a 12-byte pattern `*(*(*(a|b)))` and an 18-byte non-matching input, `minimatch()` stalls for over 7 seconds. Adding a single nesting level or a few input characters pushes this to minutes. This is the most severe finding: it is triggered by the default `minimatch()` API with no special options, and the minimum viable pattern is only 12 bytes. The same issue affects `+()` extglobs equally.\n\n---",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to versions 10.2.3, 3.1.4, 4.2.5, 5.1.8, 6.2.2, 7.4.8, 8.0.6, 9.0.7 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/175",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/175",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "83c93824-8eda-49c7-a92e-6f2578615bfc",
+              "name": "Gemnasium-83c93824-8eda-49c7-a92e-6f2578615bfc",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "83c93824-8eda-49c7-a92e-6f2578615bfc",
+                "name": "Gemnasium-83c93824-8eda-49c7-a92e-6f2578615bfc",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-27904",
+                "name": "CVE-2026-27904",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-27904"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-23c5-xmqv-rm74",
+                "name": "GHSA-23c5-xmqv-rm74",
+                "url": "https://github.com/advisories/GHSA-23c5-xmqv-rm74"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1333",
+                "name": "CWE-1333",
+                "url": "https://cwe.mitre.org/data/definitions/1333.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-23c5-xmqv-rm74"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/isaacs/minimatch"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/isaacs/minimatch/commit/11d0df6165d15a955462316b26d52e5efae06fce"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/isaacs/minimatch/security/advisories/GHSA-23c5-xmqv-rm74"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-27904"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "3.0.5",
+                "package": {
+                  "name": "minimatch"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/173",
+            "uuid": "3b349ff0-4789-51cb-b453-a334b07a67f8",
+            "title": "multer vulnerable to Denial of Service via crafted multipart field names",
+            "description": "A vulnerability in multer allows a remote, unauthenticated attacker to crash the Node.js process with a single `multipart/form-data` request. Two specially crafted text field names cause an uncaught `RangeError: Invalid array length` inside multer's field parsing, which is not routed to the application error handler and terminates the process. All applications using multer to parse multipart requests are affected.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.3.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/173",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/173",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "2611cb9c-4167-41db-b867-e43467f2de1f",
+              "name": "Gemnasium-2611cb9c-4167-41db-b867-e43467f2de1f",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "2611cb9c-4167-41db-b867-e43467f2de1f",
+                "name": "Gemnasium-2611cb9c-4167-41db-b867-e43467f2de1f",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-77078",
+                "name": "CVE-2026-77078",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-77078"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-wc9g-mqfw-jrwm",
+                "name": "GHSA-wc9g-mqfw-jrwm",
+                "url": "https://github.com/advisories/GHSA-wc9g-mqfw-jrwm"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "248",
+                "name": "CWE-248",
+                "url": "https://cwe.mitre.org/data/definitions/248.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://cna.openjsf.org/security-advisories.html"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-wc9g-mqfw-jrwm"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/commit/87a584e8c8d4da873292635fa1d8c4d78d985b76"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/releases/tag/v2.3.0"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/security/advisories/GHSA-wc9g-mqfw-jrwm"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-77078"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.5-lts.2",
+                "package": {
+                  "name": "multer"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/171",
+            "uuid": "3ec5bee5-52ce-5987-ab4c-92e381dd6497",
+            "title": "Multer vulnerable to Denial of Service via incomplete cleanup",
+            "description": "A vulnerability in Multer versions < 2.1.0 allows an attacker to trigger a Denial of Service (DoS) by sending malformed requests, potentially causing resource exhaustion.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.1.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/171",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/171",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "d6566a9a-8052-4ef7-a1f8-460d41d663f0",
+              "name": "Gemnasium-d6566a9a-8052-4ef7-a1f8-460d41d663f0",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "cwe",
+                "externalId": "459",
+                "name": "CWE-459",
+                "url": "https://cwe.mitre.org/data/definitions/459.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "gemnasium",
+                "externalId": "d6566a9a-8052-4ef7-a1f8-460d41d663f0",
+                "name": "Gemnasium-d6566a9a-8052-4ef7-a1f8-460d41d663f0",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-3304",
+                "name": "CVE-2026-3304",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-3304"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-xf7r-hgr6-v32p",
+                "name": "GHSA-xf7r-hgr6-v32p",
+                "url": "https://github.com/advisories/GHSA-xf7r-hgr6-v32p"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://cna.openjsf.org/security-advisories.html"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-xf7r-hgr6-v32p"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/commit/739919097dde3921ec31b930e4b9025036fa74ee"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/security/advisories/GHSA-xf7r-hgr6-v32p"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-3304"
+              },
+              {
+                "name": null,
+                "url": "https://www.cve.org/CVERecord?id=CVE-2026-3304"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.5-lts.2",
+                "package": {
+                  "name": "multer"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/170",
+            "uuid": "43244a11-031f-58fe-91f8-a2ad99896890",
+            "title": "Multer vulnerable to Denial of Service from maliciously crafted requests",
+            "description": "A vulnerability in Multer versions >=1.4.4-lts.1 allows an attacker to trigger a Denial of Service (DoS) by sending a malformed multi-part upload request. This request causes an unhandled exception, leading to a crash of the process.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.0.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/170",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/170",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "96fcb42c-b1ad-4972-ad2e-1ec9b8ae87a6",
+              "name": "Gemnasium-96fcb42c-b1ad-4972-ad2e-1ec9b8ae87a6",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "cwe",
+                "externalId": "248",
+                "name": "CWE-248",
+                "url": "https://cwe.mitre.org/data/definitions/248.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "gemnasium",
+                "externalId": "96fcb42c-b1ad-4972-ad2e-1ec9b8ae87a6",
+                "name": "Gemnasium-96fcb42c-b1ad-4972-ad2e-1ec9b8ae87a6",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2025-47944",
+                "name": "CVE-2025-47944",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-47944"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-4pg4-qvpc-4q3h",
+                "name": "GHSA-4pg4-qvpc-4q3h",
+                "url": "https://github.com/advisories/GHSA-4pg4-qvpc-4q3h"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-4pg4-qvpc-4q3h"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/commit/2c8505f207d923dd8de13a9f93a4563e59933665"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/issues/1176"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/security/advisories/GHSA-4pg4-qvpc-4q3h"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-47944"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.5-lts.2",
+                "package": {
+                  "name": "multer"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/164",
+            "uuid": "54e8f0f0-6396-5197-b161-c59dc2c7ef54",
+            "title": "auth0/node-jws Improperly Verifies HMAC Signature",
+            "description": "### Overview\nAn improper signature verification vulnerability exists when using auth0/node-jws with the HS256 algorithm under specific conditions.\n\n### Am I Affected?\nYou are affected by this vulnerability if you meet all of the following preconditions:\n\n1. Application uses the auth0/node-jws implementation of JSON Web Signatures, versions <=3.2.2 || 4.0.0\n2. Application uses the jws.createVerify() function for HMAC algorithms\n3. Application uses user-provided data from the JSON Web Signature Protected Header or Payload in the HMAC secret lookup routines\n\nYou are NOT affected by this vulnerability if you meet any of the following preconditions:\n1. Application uses the jws.verify() interface (note: `auth0/node-jsonwebtoken` users fall into this category and are therefore NOT affected by this vulnerability)\n2. Application uses only asymmetric algorithms (e.g. RS256)\n3. Application doesn\u2019t use user-provided data from the JSON Web Signature Protected Header or Payload in the HMAC secret lookup routines\n\n### Fix\nUpgrade auth0/node-jws version to version 3.2.3 or 4.0.1\n\n### Acknowledgement\nOkta would like to thank F\u00e9lix Charette for discovering this vulnerability.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to versions 3.2.3, 4.0.1 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/164",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/164",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "6467a90d-0a50-447e-99cc-f5af3fac8783",
+              "name": "Gemnasium-6467a90d-0a50-447e-99cc-f5af3fac8783",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "6467a90d-0a50-447e-99cc-f5af3fac8783",
+                "name": "Gemnasium-6467a90d-0a50-447e-99cc-f5af3fac8783",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2025-65945",
+                "name": "CVE-2025-65945",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-65945"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-869p-cjfg-cm3x",
+                "name": "GHSA-869p-cjfg-cm3x",
+                "url": "https://github.com/advisories/GHSA-869p-cjfg-cm3x"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "347",
+                "name": "CWE-347",
+                "url": "https://cwe.mitre.org/data/definitions/347.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-869p-cjfg-cm3x"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jws"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jws/commit/34c45b2c04434f925b638de6a061de9339c0ea2e"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jws/commit/4f6e73f24df42f07d632dec6431ade8eda8d11a6"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jws/releases/tag/v3.2.3"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jws/releases/tag/v4.0.1"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jws/security/advisories/GHSA-869p-cjfg-cm3x"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-65945"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "0.2.6",
+                "package": {
+                  "name": "jws"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/162",
+            "uuid": "5da3a6b2-c01d-598e-881d-acbc690b84dd",
+            "title": "Use of a Broken or Risky Cryptographic Algorithm",
+            "description": "Versions `<=8.5.1` of `jsonwebtoken` library could be misconfigured so that legacy, insecure key types are used for signature verification. For example, DSA keys could be used with the RS256 algorithm. You are affected if you are using an algorithm and a key type other than a combination listed in the GitHub Security Advisory as unaffected. This issue has been fixed, please update to version 9.0.0. This version validates for asymmetric key type and algorithm combinations. Please refer to the above mentioned algorithm / key type combinations for the valid secure configuration. After updating to version 9.0.0, if you still intend to continue with signing or verifying tokens using invalid key type/algorithm value combinations, you\u2019ll need to set the `allowInvalidAsymmetricKeyTypes` option to `true` in the `sign()` and/or `verify()` functions.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 9.0.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/162",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/162",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "ca4f7d80-4b87-47cc-8389-e60920e08f56",
+              "name": "Gemnasium-ca4f7d80-4b87-47cc-8389-e60920e08f56",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "ca4f7d80-4b87-47cc-8389-e60920e08f56",
+                "name": "Gemnasium-ca4f7d80-4b87-47cc-8389-e60920e08f56",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2022-23539",
+                "name": "CVE-2022-23539",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-23539"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-8cf7-32gw-wr33",
+                "name": "GHSA-8cf7-32gw-wr33",
+                "url": "https://github.com/advisories/GHSA-8cf7-32gw-wr33"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "327",
+                "name": "CWE-327",
+                "url": "https://cwe.mitre.org/data/definitions/327.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-8cf7-32gw-wr33"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jsonwebtoken/commit/e1fa9dcc12054a8681db4e6373da1b30cf7016e3"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/auth0/node-jsonwebtoken/security/advisories/GHSA-8cf7-32gw-wr33"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-23539"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+                "version": 3.1,
+                "baseScore": 8.1,
+                "overallScore": 8.1,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "0.1.0",
+                "package": {
+                  "name": "jsonwebtoken"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/160",
+            "uuid": "62e4033f-03fa-577a-829f-24fb5f65bc41",
+            "title": "@cyclonedx/cyclonedx-npm: Shell Injection via Unsanitized --workspace Argument on Windows",
+            "description": "A **Windows-specific** command injection vulnerability exists in `@cyclonedx/cyclonedx-npm` when the CLI is invoked with the `--workspace <value>` option.\nUser-supplied `--workspace` values can be passed to a shell command without proper neutralization on the Windows fallback execution path, enabling attackers to inject arbitrary OS commands.\n\nThe vulnerability was fixed in version [6.0.0][v6.0.0].",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 6.0.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/160",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/160",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "8d5814e8-7502-4240-87d4-af783a49f81a",
+              "name": "Gemnasium-8d5814e8-7502-4240-87d4-af783a49f81a",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "8d5814e8-7502-4240-87d4-af783a49f81a",
+                "name": "Gemnasium-8d5814e8-7502-4240-87d4-af783a49f81a",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-71538",
+                "name": "CVE-2026-71538",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-71538"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-q69g-4hcv-6jg4",
+                "name": "GHSA-q69g-4hcv-6jg4",
+                "url": "https://github.com/advisories/GHSA-q69g-4hcv-6jg4"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "78",
+                "name": "CWE-78",
+                "url": "https://cwe.mitre.org/data/definitions/78.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/CycloneDX/cyclonedx-node-npm/commit/15d3beb5bcd2b0b6eccfdf31192f5103b3f12c0f"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/CycloneDX/cyclonedx-node-npm/pull/1489"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/CycloneDX/cyclonedx-node-npm/releases/tag/v6.0.0"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/CycloneDX/cyclonedx-node-npm/security/advisories/GHSA-q69g-4hcv-6jg4"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-q69g-4hcv-6jg4"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-71538"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+                "version": 3.1,
+                "baseScore": 7.8,
+                "overallScore": 7.8,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "4.2.1",
+                "package": {
+                  "name": "@cyclonedx/cyclonedx-npm"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/159",
+            "uuid": "662ded44-4176-5a32-9f3d-a59aac9839e4",
+            "title": "Uncontrolled Resource Consumption",
+            "description": "The moment module for `Node.js` is prone to a regular expression denial of service via a crafted date string.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.19.3 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/159",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/159",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "473998fc-fda6-4f3c-a008-2a54f14559d2",
+              "name": "Gemnasium-473998fc-fda6-4f3c-a008-2a54f14559d2",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "473998fc-fda6-4f3c-a008-2a54f14559d2",
+                "name": "Gemnasium-473998fc-fda6-4f3c-a008-2a54f14559d2",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2017-18214",
+                "name": "CVE-2017-18214",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-18214"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "400",
+                "name": "CWE-400",
+                "url": "https://cwe.mitre.org/data/definitions/400.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/moment/moment/issues/4163"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2017-18214"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.0,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              },
+              {
+                "vendor": "NVD",
+                "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P",
+                "version": 2.0,
+                "baseScore": 5.0,
+                "overallScore": 5.0,
+                "severity": "MEDIUM"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "2.0.0",
+                "package": {
+                  "name": "moment"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/157",
+            "uuid": "678d6fa5-d11d-5c00-bded-eeb5ef45417b",
+            "title": "Insufficient Entropy",
+            "description": "An attacker is able to guess generated digits due to insufficient entropy.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:33Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to versions 3.2.1, 4.0.0 or above",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/157",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/157",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "366ce0f4-5978-43e6-ad5f-2213820d2d74",
+              "name": "Gemnasium-366ce0f4-5978-43e6-ad5f-2213820d2d74",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "366ce0f4-5978-43e6-ad5f-2213820d2d74",
+                "name": "Gemnasium-366ce0f4-5978-43e6-ad5f-2213820d2d74",
+                "url": null
+              },
+              {
+                "externalType": "gms",
+                "externalId": "GMS-2020-4",
+                "name": "GMS-2020-4",
+                "url": "https://gitlab.com/gitlab-org/security-products/gemnasium-db/-/blob/master/npm/crypto-js/GMS-2020-4.yml"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "331",
+                "name": "CWE-331",
+                "url": "https://cwe.mitre.org/data/definitions/331.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/brix/crypto-js/issues/256"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "Unknown",
+                "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+                "version": 2.0,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "3.3.0",
+                "package": {
+                  "name": "crypto-js"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/156",
+            "uuid": "70da2a31-6097-5b5f-b8fd-44fddf1af4d9",
+            "title": "Inefficient Regular Expression Complexity",
+            "description": "The package sanitize-html before 2.7.1 is vulnerable to Regular Expression Denial of Service (ReDoS) due to insecure global regular expression replacement logic of HTML comment removal.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.7.1 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/156",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/156",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "8a14274f-d06f-4109-ae71-e949c5547551",
+              "name": "Gemnasium-8a14274f-d06f-4109-ae71-e949c5547551",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "8a14274f-d06f-4109-ae71-e949c5547551",
+                "name": "Gemnasium-8a14274f-d06f-4109-ae71-e949c5547551",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2022-25887",
+                "name": "CVE-2022-25887",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-25887"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1333",
+                "name": "CWE-1333",
+                "url": "https://cwe.mitre.org/data/definitions/1333.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/apostrophecms/sanitize-html/commit/b4682c12fd30e12e82fa2d9b766de91d7d2cd23c"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/apostrophecms/sanitize-html/pull/557"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-25887"
+              },
+              {
+                "name": null,
+                "url": "https://security.snyk.io/vuln/SNYK-JAVA-ORGWEBJARSNPM-3008102"
+              },
+              {
+                "name": null,
+                "url": "https://security.snyk.io/vuln/SNYK-JS-SANITIZEHTML-2957526"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.2",
+                "package": {
+                  "name": "sanitize-html"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/154",
+            "uuid": "73291075-2c95-5386-bfb0-a712724e58ed",
+            "title": "multer vulnerable to Denial of Service via oversized array index in field names",
+            "description": "multer is vulnerable to a Denial of Service (DoS) via a crafted array index in multipart field names. The `append-field` dependency parses bracket notation in field names, and a large numeric index such as `items[4294967294]` forces allocation of a maximum-length sparse array. A following field with a non-numeric key on the same base then converts that array to an object by iterating its full length, which consumes CPU synchronously and leaves the process unable to handle other requests. A single HTTP request with a crafted multipart body is sufficient to exploit this, and it affects multer 1.x and 2.x.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.3.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/154",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/154",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "8b4675ff-99d2-4cc5-8061-be22a7c8342f",
+              "name": "Gemnasium-8b4675ff-99d2-4cc5-8061-be22a7c8342f",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "8b4675ff-99d2-4cc5-8061-be22a7c8342f",
+                "name": "Gemnasium-8b4675ff-99d2-4cc5-8061-be22a7c8342f",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-82333",
+                "name": "CVE-2026-82333",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-82333"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-535w-7cp7-47q4",
+                "name": "GHSA-535w-7cp7-47q4",
+                "url": "https://github.com/advisories/GHSA-535w-7cp7-47q4"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "400",
+                "name": "CWE-400",
+                "url": "https://cwe.mitre.org/data/definitions/400.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://cna.openjsf.org/security-advisories.html"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-535w-7cp7-47q4"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/commit/73c1759fa93b87366bc6dbd7abe1b80ddff7d27c"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/pull/1438"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/releases/tag/v2.3.0"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/security/advisories/GHSA-535w-7cp7-47q4"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-82333"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.5-lts.2",
+                "package": {
+                  "name": "multer"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/153",
+            "uuid": "7396f51b-00eb-51ce-bb82-de979df689f7",
+            "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+            "description": "A high volume of exceptionally small fragments and data chunks can be sent by a peer, with modest network traffic, to force the remote peer into allocating and holding structural wrappers that consume far more memory than the default documented message-size limit, leading to process termination due to OOM.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to versions 5.2.5, 6.2.4, 7.5.11, 8.21.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/153",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/153",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "2316554e-4c53-4765-9ac1-48a4ae9e835f",
+              "name": "Gemnasium-2316554e-4c53-4765-9ac1-48a4ae9e835f",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "2316554e-4c53-4765-9ac1-48a4ae9e835f",
+                "name": "Gemnasium-2316554e-4c53-4765-9ac1-48a4ae9e835f",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-48779",
+                "name": "CVE-2026-48779",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-48779"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-96hv-2xvq-fx4p",
+                "name": "GHSA-96hv-2xvq-fx4p",
+                "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "400",
+                "name": "CWE-400",
+                "url": "https://cwe.mitre.org/data/definitions/400.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "770",
+                "name": "CWE-770",
+                "url": "https://cwe.mitre.org/data/definitions/770.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1050",
+                "name": "CWE-1050",
+                "url": "https://cwe.mitre.org/data/definitions/1050.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:26638"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:27171"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:29197"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:33155"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:33160"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:33163"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:33173"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:33183"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:33574"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:34342"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:36754"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:36820"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/errata/RHSA-2026:37272"
+              },
+              {
+                "name": null,
+                "url": "https://access.redhat.com/security/cve/CVE-2026-48779"
+              },
+              {
+                "name": null,
+                "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2489661"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/websockets/ws/commit/86d3e8a5fb0246ed373860c5fbb0de88824a27f7"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/websockets/ws/commit/b5372ac67bb97a773727b8e9f5035a8123556d53"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/websockets/ws/commit/bca91adf15677e47dbe4f959653452727be28b94"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/websockets/ws/commit/fd36cd864fcdf62a08273a99e19a7d975401fee8"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/websockets/ws/security/advisories/GHSA-96hv-2xvq-fx4p"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-48779"
+              },
+              {
+                "name": null,
+                "url": "https://security.access.redhat.com/data/csaf/v2/vex/2026/cve-2026-48779.json"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "7.4.6",
+                "package": {
+                  "name": "ws"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/152",
+            "uuid": "79bf9a2d-08ba-5345-8a2e-fe37b020fc27",
+            "title": "node-tar: Uncontrolled recursion in mapHas/filesFilter allows uncatchable stack-overflow DoS via crafted long-path tar with member selection",
+            "description": "`node-tar` (npm `tar`) contains an uncontrolled-recursion stack-exhaustion DoS in the internal `mapHas` helper used by `filesFilter`. When a consumer calls `tar.t(...)` or `tar.x(...)` with a non-empty member-selection list, node-tar installs a filter that closes over the recursive `mapHas` (`src/list.ts:33-44`). `mapHas` walks an entry path upward one `path.dirname()` call per recursion **with no segment cap**. A single crafted tar with a GNU-`L` (or PAX-`x`) long-path header can deliver a path of tens of thousands of `/`-separated segments (up to `maxMetaEntrySize` = 1 MiB). The recursion overflows the call stack, throwing an uncatchable `RangeError` that terminates the Node process on async/streaming consumers.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 7.5.21 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/152",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/152",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "024de607-3eda-4d5e-bf7f-fd28bf38a38f",
+              "name": "Gemnasium-024de607-3eda-4d5e-bf7f-fd28bf38a38f",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "024de607-3eda-4d5e-bf7f-fd28bf38a38f",
+                "name": "Gemnasium-024de607-3eda-4d5e-bf7f-fd28bf38a38f",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-73566",
+                "name": "CVE-2026-73566",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-73566"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-r292-9mhp-454m",
+                "name": "GHSA-r292-9mhp-454m",
+                "url": "https://github.com/advisories/GHSA-r292-9mhp-454m"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "400",
+                "name": "CWE-400",
+                "url": "https://cwe.mitre.org/data/definitions/400.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "674",
+                "name": "CWE-674",
+                "url": "https://cwe.mitre.org/data/definitions/674.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-r292-9mhp-454m"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/isaacs/node-tar/commit/631ae59121bf8fc8a22bbae35f074cb9b789cd4a"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/isaacs/node-tar/releases/tag/v7.5.21"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/isaacs/node-tar/security/advisories/GHSA-r292-9mhp-454m"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-73566"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "6.2.1",
+                "package": {
+                  "name": "tar"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/151",
+            "uuid": "7ad97a7d-a803-59fc-bad9-9c526a2032f0",
+            "title": "Multer vulnerable to Denial of Service via deeply nested field names",
+            "description": "Multer is vulnerable to a Denial of Service (DoS) via deeply nested field names in multipart form data. The `append-field` dependency parses bracket notation in field names (e.g., `a[b][c]`) with no limit on nesting depth, allowing an attacker to force allocation of deeply nested object structures that consume CPU and memory. A single HTTP request with a crafted multipart body is sufficient to exploit this.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to versions 2.2.0, 3.0.0-alpha.2 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/151",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/151",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "d78fe1a1-19bb-4034-850b-66bc4b155789",
+              "name": "Gemnasium-d78fe1a1-19bb-4034-850b-66bc4b155789",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "d78fe1a1-19bb-4034-850b-66bc4b155789",
+                "name": "Gemnasium-d78fe1a1-19bb-4034-850b-66bc4b155789",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-5079",
+                "name": "CVE-2026-5079",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-5079"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-72gw-mp4g-v24j",
+                "name": "GHSA-72gw-mp4g-v24j",
+                "url": "https://github.com/advisories/GHSA-72gw-mp4g-v24j"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "400",
+                "name": "CWE-400",
+                "url": "https://cwe.mitre.org/data/definitions/400.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://cna.openjsf.org/security-advisories.html"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-72gw-mp4g-v24j"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/security/advisories/GHSA-72gw-mp4g-v24j"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-5079"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.5-lts.2",
+                "package": {
+                  "name": "multer"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/149",
+            "uuid": "83e3b35a-a2b3-5b12-8026-ce9f825b195b",
+            "title": "Multer vulnerable to Denial of Service via memory leaks from unclosed streams",
+            "description": "Multer <2.0.0 is vulnerable to a resource exhaustion and memory leak issue due to improper stream handling. When the HTTP request stream emits an error, the internal `busboy` stream is not closed, violating Node.js stream safety guidance.\n\nThis leads to unclosed streams accumulating over time, consuming memory and file descriptors. Under sustained or repeated failure conditions, this can result in denial of service, requiring manual server restarts to recover. All users of Multer handling file uploads are potentially impacted.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to version 2.0.0 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/149",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/149",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "6f1611a3-8721-4301-b0c8-884f8238a760",
+              "name": "Gemnasium-6f1611a3-8721-4301-b0c8-884f8238a760",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gemnasium",
+                "externalId": "6f1611a3-8721-4301-b0c8-884f8238a760",
+                "name": "Gemnasium-6f1611a3-8721-4301-b0c8-884f8238a760",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2025-47935",
+                "name": "CVE-2025-47935",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2025-47935"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-44fp-w29j-9vj5",
+                "name": "GHSA-44fp-w29j-9vj5",
+                "url": "https://github.com/advisories/GHSA-44fp-w29j-9vj5"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "401",
+                "name": "CWE-401",
+                "url": "https://cwe.mitre.org/data/definitions/401.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-44fp-w29j-9vj5"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/commit/2c8505f207d923dd8de13a9f93a4563e59933665"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/pull/1120"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/expressjs/multer/security/advisories/GHSA-44fp-w29j-9vj5"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-47935"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "1.4.5-lts.2",
+                "package": {
+                  "name": "multer"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/147",
+            "uuid": "852e9ae3-d0e9-5081-bafa-c7911de6e7fa",
+            "title": "socket.io allows an unbounded number of binary attachments",
+            "description": "A specially crafted Socket.IO packet can make the server wait for a large number of binary attachments and buffer them, which can be exploited to make the server run out of memory.",
+            "severity": "HIGH",
+            "reportType": "DEPENDENCY_SCANNING",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-21T02:08:10Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:34Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": "Upgrade to versions 3.3.5, 3.4.4, 4.2.6 or above.",
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/147",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/147",
+            "scanner": {
+              "name": "GitLab SBoM Vulnerability Scanner",
+              "vendor": "GitLab",
+              "externalId": "gitlab-sbom-vulnerability-scanner",
+              "reportType": "DEPENDENCY_SCANNING"
+            },
+            "primaryIdentifier": {
+              "externalType": "gemnasium",
+              "externalId": "24e4d317-2d46-4ab0-817a-7de101f5d203",
+              "name": "Gemnasium-24e4d317-2d46-4ab0-817a-7de101f5d203",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "cwe",
+                "externalId": "754",
+                "name": "CWE-754",
+                "url": "https://cwe.mitre.org/data/definitions/754.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "937",
+                "name": "CWE-937",
+                "url": "https://cwe.mitre.org/data/definitions/937.html"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "1035",
+                "name": "CWE-1035",
+                "url": "https://cwe.mitre.org/data/definitions/1035.html"
+              },
+              {
+                "externalType": "gemnasium",
+                "externalId": "24e4d317-2d46-4ab0-817a-7de101f5d203",
+                "name": "Gemnasium-24e4d317-2d46-4ab0-817a-7de101f5d203",
+                "url": null
+              },
+              {
+                "externalType": "cve",
+                "externalId": "CVE-2026-33151",
+                "name": "CVE-2026-33151",
+                "url": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2026-33151"
+              },
+              {
+                "externalType": "ghsa",
+                "externalId": "GHSA-677m-j7p3-52f9",
+                "name": "GHSA-677m-j7p3-52f9",
+                "url": "https://github.com/advisories/GHSA-677m-j7p3-52f9"
+              }
+            ],
+            "links": [
+              {
+                "name": null,
+                "url": "https://github.com/advisories/GHSA-677m-j7p3-52f9"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/socketio/socket.io"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/socketio/socket.io/commit/719f9ebab0772ffb882bd614b387e585c1aa75d4"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/socketio/socket.io/commit/9d39f1f080510f036782f2177fac701cc041faaf"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/socketio/socket.io/commit/b25738c416c4e32fbff62ee182afa8f6d0dacf78"
+              },
+              {
+                "name": null,
+                "url": "https://github.com/socketio/socket.io/security/advisories/GHSA-677m-j7p3-52f9"
+              },
+              {
+                "name": null,
+                "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-33151"
+              }
+            ],
+            "cvss": [
+              {
+                "vendor": "NVD",
+                "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                "version": 3.1,
+                "baseScore": 7.5,
+                "overallScore": 7.5,
+                "severity": "HIGH"
+              }
+            ],
+            "location": {
+              "__typename": "VulnerabilityLocationDependencyScanning",
+              "file": "package-lock.json",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/package-lock.json",
+              "dependency": {
+                "version": "4.0.5",
+                "package": {
+                  "name": "socket.io-parser"
+                }
+              }
+            },
+            "initialDetectedPipeline": {
+              "iid": "7",
+              "sha": "08f2b5d0e59eb3aa80819bf6d7fd454e2d9ded14",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:07:06Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          }
+        ]
+      }
+    }
+  },
+  "extensions": {
+    "disabled_filters": []
+  }
+}

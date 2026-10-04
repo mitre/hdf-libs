@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-schema",
-  "version": "3.7.0",
+  "version": "3.7.1",
   "description": "JSON schemas and multi-language type definitions for Heimdall Data Format (HDF)",
   "publishConfig": {
     "access": "public"
@@ -57,10 +57,10 @@
   ],
   "scripts": {
     "build": "pnpm run clean && pnpm run build:schemas && pnpm run build:types && pnpm run build:index",
-    "build:schemas": "node --import tsx src/bundle-schemas.ts && cpy 'dist/schemas/*.schema.json' '../hdf-validators/go/schemas/' --flat",
+    "build:schemas": "node --import tsx src/bundle-schemas.ts && node --import tsx src/sync-validator-schemas.ts",
     "build:types": "node --import tsx src/generate-types.ts",
     "build:index": "node --import tsx src/create-index.ts",
-    "watch:schemas": "nodemon --watch src/schemas --ext json --exec 'tsx src/bundle-schemas.ts'",
+    "watch:schemas": "node --watch-path=src/schemas --import tsx src/bundle-schemas.ts",
     "serve:schemas": "npx http-server dist/schemas -p 8081 --cors",
     "dev:viewer": "pnpm run build:schemas && concurrently \"pnpm run watch:schemas\" \"pnpm run serve:schemas\"",
     "clean": "rimraf dist",
@@ -86,9 +86,7 @@
   "devDependencies": {
     "@hyperjump/json-schema": "^1.17.2",
     "concurrently": "^9.2.1",
-    "cpy-cli": "^7.0.0",
     "http-server": "^14.1.1",
-    "nodemon": "^3.1.11",
     "quicktype-core": "^23.0.0",
     "tsx": "^4.20.6"
   },
