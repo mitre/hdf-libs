@@ -6,3 +6,4 @@ export {
 } from './components.js';
 export type { BuildOptions, ComponentsDocument, JsonSchema } from './components.js';
 export { EMBED_DIR, loadBundles } from './embed.js';
+export { extractStandaloneSchema } from './extract.js';

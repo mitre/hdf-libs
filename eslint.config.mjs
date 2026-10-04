@@ -240,4 +240,12 @@ export default [
     languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: site.browser },
     rules: correctness,
   },
+  {
+    // Per-package Node ESM tooling, linted like site's generators rather than left
+    // ruleless as the ROOT scripts/ are: these are a package's own gates, and the
+    // package lint script passes the directory on the CLI so the glob is reached.
+    files: ['hdf-*/scripts/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: site.node },
+    rules: correctness,
+  },
 ];

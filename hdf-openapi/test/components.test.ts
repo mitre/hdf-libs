@@ -490,6 +490,14 @@ describe('the document is a valid OpenAPI 3.1 shell', () => {
     const version = /\/v(\d+\.\d+\.\d+)$/.exec(results.$id as string)![1];
     expect(doc.info.version).toBe(version);
   });
+
+  // `license` is required by Redocly's lint. `contact` is not enforced by anything now
+  // that Spectral is deferred — it stays because a published contract should say who owns
+  // it, and this assertion is what holds it in place.
+  it('states its licence as an SPDX identifier and names a contact', () => {
+    expect(doc.info.license).toEqual({ name: 'Apache-2.0', identifier: 'Apache-2.0' });
+    expect(doc.info.contact?.url).toBe('https://saf.mitre.org');
+  });
 });
 
 describe('guards fail when violated', () => {

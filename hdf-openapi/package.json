@@ -23,12 +23,15 @@
     "build": "pnpm run clean && pnpm run build:components && tsdown",
     "build:components": "node --import tsx src/generate-components.ts",
     "clean": "rimraf dist",
-    "lint": "eslint src test",
+    "lint": "eslint src test scripts",
     "test": "pnpm run test:ts",
     "test:ts": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-components.oas.json",
+    "matrix": "node scripts/openapi-matrix.mjs",
+    "matrix:update": "node scripts/openapi-matrix.mjs --update"
   },
   "repository": {
     "type": "git",
@@ -38,11 +41,16 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@mitre/hdf-fixtures": "workspace:^",
+    "@redocly/cli": "^2.54.3",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "openapi-typescript": "^7.13.0",
     "tsx": "^4.20.6",
     "yaml": "^2.8.1"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "keywords": [
     "hdf",

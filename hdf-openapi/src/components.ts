@@ -4,7 +4,13 @@ export interface JsonSchema {
 
 export interface ComponentsDocument {
   openapi: string;
-  info: { title: string; version: string; description: string };
+  info: {
+    title: string;
+    version: string;
+    description: string;
+    license: { name: string; identifier: string };
+    contact: { name: string; url: string };
+  };
   jsonSchemaDialect: string;
   components: { schemas: Record<string, JsonSchema> };
 }
@@ -283,6 +289,9 @@ export function buildComponentsDocument(
       description:
         'OpenAPI 3.1 components generated from the HDF JSON Schema 2020-12 bundles. ' +
         'Generated — do not edit by hand.',
+      // `identifier` is the 3.1 SPDX form; it is mutually exclusive with `url`.
+      license: { name: 'Apache-2.0', identifier: 'Apache-2.0' },
+      contact: { name: 'MITRE Security Automation Framework', url: 'https://saf.mitre.org' },
     },
     jsonSchemaDialect: DIALECT,
     components: { schemas },

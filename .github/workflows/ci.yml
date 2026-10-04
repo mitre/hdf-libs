@@ -36,6 +36,11 @@ env:
   GOLANGCI_LINT_VERSION: 'v2.11.3'
   GOVULNCHECK_VERSION: 'v1.1.4'
   GOTESTSUM_VERSION: 'v1.13.0'
+  # oapi-codegen is a MEASUREMENT SUBJECT, not a build tool: hdf-openapi's matrix
+  # records what it does with the generated OpenAPI components, including that it
+  # cannot currently load them. Bumping this is how that record updates, so re-run
+  # `pnpm run matrix:update` in hdf-openapi and review the diff in the same PR.
+  OAPI_CODEGEN_VERSION: 'v2.8.0'
   # NOTE the /v2 path: 'github.com/google/osv-scanner/cmd/...' still resolves
   # to the v1 line (1.9.2) and silently gives you an older scanner.
   OSV_SCANNER_VERSION: 'v2.5.1'
@@ -61,7 +66,8 @@ env:
 #   scan-deps ──────┤
 #   scan-code ──────┼── gate-hdf-scans              (intended required check)
 #   check-ts ───────┤
-#   check-go ───────┘
+#   check-go ───────┤
+#   check-openapi-matrix ┘
 #   build ──┬── test-ts (junit; ubuntu leg = coverage) ─┬─ gate-hdf-tests (+ gate-cli)
 #           ├── test-go (junit; ubuntu leg = coverage) ─┴─ sonar
 #           ├── verify-packages                            (intended required check)
@@ -372,6 +378,35 @@ jobs:
       - name: npm audit (prod moderate+, dev high+)
         run: pnpm run security:ts
 
+  # ── Gate: the OpenAPI tooling matrix ────────────────────────────────────
+  # Separate from check-ts because it needs Go. hdf-openapi's vitest suite already
+  # re-measures the lints and openapi-typescript, so what this adds is the oapi-codegen
+  # half of the baseline — which cannot be a precondition of `pnpm test` without making a
+  # Go toolchain a precondition of every contributor's pre-commit hook.
+  check-openapi-matrix:
+    name: Check OpenAPI tooling matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          go: 'true'
+      # go install, pinned by version and verified through GOSUMDB, for the same reason
+      # the scanners above use it rather than a release binary.
+      - name: Install oapi-codegen
+        run: |
+          go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$OAPI_CODEGEN_VERSION"
+      - name: Generate the components document
+        run: pnpm --filter @mitre/hdf-openapi run build:components
+      # Fails on any drift in what the tooling does: lint findings, waiver absorption,
+      # keyword inventory, and both generators' per-keyword verdicts.
+      - name: Tooling matrix matches the tracked baseline
+        run: pnpm --filter @mitre/hdf-openapi run matrix
+
   # ── Gate: Go checks ─────────────────────────────────────────────────────
   check-go:
     name: Check Go (lint + security)
@@ -494,7 +529,7 @@ jobs:
     name: Gate scans on HDF thresholds
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [gate-cli, scan-workflows, check-ts, check-go, scan-deps, scan-code]
+    needs: [gate-cli, scan-workflows, check-ts, check-go, check-openapi-matrix, scan-deps, scan-code]
     # always(): a job that is skipped because an upstream job failed counts as
     # PASSED by branch protection, so a red scanner would turn into a green
     # required check. Run regardless, and fail explicitly on any upstream that
