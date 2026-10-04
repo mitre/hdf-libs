@@ -175,6 +175,8 @@ func TestApplyComponentID_Errors(t *testing.T) {
 	assert.Error(t, err)
 	_, err = ApplyComponentID([]byte(`{"components":"nope"}`), testComponentID, false)
 	assert.Error(t, err)
+	_, err = ApplyComponentID([]byte(`{"components":["nope"]}`), testComponentID, false)
+	assert.ErrorContains(t, err, "component at index 0 is not an object")
 }
 
 const twoComponentsWithIDs = `{"components":[
@@ -307,5 +309,29 @@ func TestRemoveExternalIDs(t *testing.T) {
 		require.Error(t, err)
 		_, err = RemoveExternalIDs([]byte(`{"components":["nope"]}`), []string{"cmdb"}, "")
 		require.Error(t, err)
+	})
+}
+
+const twoComponentsSameName = `{"components":[
+  {"name":"web","type":"host","externalIds":{"cmdb":"OLD"}},
+  {"name":"web","type":"containerImage"}
+]}`
+
+// A name can repeat — componentId is identity, the name is a label — so a name
+// matching several components selects no single one, and the flag's promise of
+// one component cannot be kept.
+func TestExternalIDs_AmbiguousComponentNameIsAnError(t *testing.T) {
+	t.Run("ApplyExternalIDs", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(twoComponentsSameName), map[string]string{"cmdb": "NEW"}, "web")
+		require.Error(t, err)
+		assert.Nil(t, out, "an ambiguous name must hand back no document")
+		assert.Contains(t, err.Error(), `component name "web" matches 2 components`)
+	})
+
+	t.Run("RemoveExternalIDs", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsSameName), []string{"cmdb"}, "web")
+		require.Error(t, err)
+		assert.Nil(t, out, "an ambiguous name must hand back no document")
+		assert.Contains(t, err.Error(), `component name "web" matches 2 components`)
 	})
 }

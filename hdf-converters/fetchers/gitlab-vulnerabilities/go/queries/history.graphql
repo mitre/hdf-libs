@@ -1,0 +1,13 @@
+query VulnerabilityHistory($id: VulnerabilityID!, $first: Int!, $transitionsAfter: String, $overridesAfter: String, $withTransitions: Boolean!, $withOverrides: Boolean!) {
+  vulnerability(id: $id) {
+    id
+    stateTransitions(first: $first, after: $transitionsAfter) @include(if: $withTransitions) {
+      pageInfo { hasNextPage endCursor }
+      nodes { fromState toState createdAt comment dismissalReason author { username name publicEmail } }
+    }
+    severityOverrides(first: $first, after: $overridesAfter) @include(if: $withOverrides) {
+      pageInfo { hasNextPage endCursor }
+      nodes { originalSeverity newSeverity createdAt author { username name publicEmail } }
+    }
+  }
+}

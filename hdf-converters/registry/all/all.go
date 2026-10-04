@@ -19,6 +19,7 @@ import (
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cyclonedx-vex-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/deptrack-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gitlab-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gitlab-vulnerabilities-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gosec-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/grype-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/jfrog-xray-to-hdf/go"

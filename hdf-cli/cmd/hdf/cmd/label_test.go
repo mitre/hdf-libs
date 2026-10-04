@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -600,4 +601,65 @@ Component: web-server [host]
 		assert.Equal(t, map[string]interface{}{"cmdb": "CI-WEB", "aws": "i-0abc"}, raw[1]["externalIds"])
 		assert.Equal(t, map[string]interface{}{}, raw[1]["labels"], "the existing labels key is unchanged")
 	})
+}
+
+// --component-name promises one component (help text, CHANGELOG, label-keys
+// reference), so a name two components share is rejected rather than written to
+// both.
+func TestLabelExternalID_AmbiguousComponentNameRejectedBeforeWriting(t *testing.T) {
+	duplicateNames := func(t *testing.T) string {
+		t.Helper()
+		path := filepath.Join(t.TempDir(), "dup-names.json")
+		require.NoError(t, os.WriteFile(path, []byte(`{
+  "baselines": [],
+  "statistics": {"duration": 0.1},
+  "components": [
+    {"name": "web", "type": "host", "externalIds": {"cmdb": "CI0012345"}},
+    {"name": "web", "type": "containerImage"}
+  ]
+}`), 0o600))
+		return path
+	}
+
+	cases := []struct {
+		name string
+		args []string
+	}{
+		{"set", []string{"label", "set", "", "--external-id", "cmdb=NEW", "--component-name", "web"}},
+		{"remove", []string{"label", "remove", "", "--external-id", "cmdb", "--component-name", "web"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := duplicateNames(t)
+			before, err := os.ReadFile(path)
+			require.NoError(t, err)
+			require.NoError(t, validateHDFDocument(before), "the fixture must be a valid results document")
+
+			args := append([]string(nil), tc.args...)
+			args[2] = path
+			_, _, err = executeCommand(args...)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), `component name "web" matches 2 components`)
+
+			var ec ExitCoder
+			assert.False(t, errors.As(err, &ec), "a plain error leaves the CLI exiting 1")
+
+			after, readErr := os.ReadFile(path)
+			require.NoError(t, readErr)
+			assert.Equal(t, before, after, "a rejected invocation leaves the file byte-identical")
+		})
+	}
+}
+
+// writeLabelOutput is the label commands' only write path, and every sibling
+// mutator validates its output before the write.
+func TestWriteLabelOutput_RefusesAnInvalidDocument(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "out.json")
+	invalid := []byte(`{"baselines":[{}]}`)
+	require.Error(t, validateHDFDocument(invalid), "the document must be schema-invalid for this test to mean anything")
+
+	err := writeLabelOutput(invalid, target, "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed validation before write")
+	assert.NoFileExists(t, target, "an invalid document must not reach the disk")
 }

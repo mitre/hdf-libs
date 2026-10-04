@@ -1,7 +1,7 @@
 // AWS Security Hub fetcher — auth-agnostic TS API.
 //
-// Per the project rule (see `fetchers/README.md`): this library accepts a
-// caller-supplied `SecurityHubClient`. The client carries AWS credentials
+// Per the project rule (see site/docs/contributing/writing-a-fetcher.md): this
+// library accepts a caller-supplied `SecurityHubClient`. The client carries AWS credentials
 // via the SDK's standard chain (env vars, ~/.aws/credentials, IAM instance
 // role, AssumeRole, etc.). The library never touches credential material.
 

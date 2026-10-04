@@ -194,9 +194,13 @@ export default [
     rules: { 'no-restricted-syntax': ['error', ...DATE_GUARD_RULES] },
   },
   {
-    // These two build the schema bundle and the generated types; they are CLI
-    // scripts and report progress on stdout.
-    files: ['hdf-schema/src/bundle-schemas.ts', 'hdf-schema/src/generate-types.ts'],
+    // These build the schema bundle, sync it into the Go validator embed, and
+    // generate the types; they are CLI scripts and report progress on stdout.
+    files: [
+      'hdf-schema/src/bundle-schemas.ts',
+      'hdf-schema/src/sync-validator-schemas.ts',
+      'hdf-schema/src/generate-types.ts',
+    ],
     rules: { 'no-console': 'off' },
   },
   {

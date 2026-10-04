@@ -185,7 +185,7 @@ hdf label remove results.json --external-id cmdb
 
 The flag merges: a scheme named on the command line is overwritten, and schemes not named are left as they are. The value is carried verbatim and may be any non-empty string. Well-known schemes are `aws`, `azure`, `cmdb`, `emass` and `cve`; custom schemes are allowed.
 
-`hdf label set` exits non-zero and writes nothing when a pair has no `=`, the scheme or value is empty, the same scheme is given twice, the document has no components, or `--component-name` matches no component. `--component-name` applies to `--external-id` only; labels and `--component-id` are always written to every component, so the command rejects combining them with it.
+`hdf label set` exits non-zero and writes nothing when a pair has no `=`, the scheme or value is empty, the same scheme is given twice, the document has no components, or `--component-name` matches no component or more than one (a name is not identity, so a document may repeat it). `--component-name` applies to `--external-id` only; labels and `--component-id` are always written to every component, so the command rejects combining them with it.
 
 `hdf label show` lists external IDs under each component's labels, and `--json` carries an `externalIds` object for every component:
 
