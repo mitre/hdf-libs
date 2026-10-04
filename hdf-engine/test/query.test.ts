@@ -615,6 +615,41 @@ interface TagCases {
   validity: { value: string; valid: boolean }[];
 }
 
+interface IDCases {
+  fixtureFile: string;
+  unfilteredCount: number;
+  cases: { name: string; id: string; expect: string[] }[];
+}
+
+// The same table go/filter_test.go reads. Its fixture is the REAL Grype scan from
+// @mitre/hdf-fixtures rather than ../testdata, because the defect it pins exists
+// only on real converter output.
+const idTable = JSON.parse(
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'id-filter-cases.json'),
+    'utf-8'
+  )
+) as IDCases;
+
+// The negative cases carry the weight. Grype/CVE-2018-20657 cross-references
+// CVE-2018-12698 in its descriptions and code, and CVE-2018-12698 is not a
+// requirement in this document at all — so `search` returns one false positive and
+// zero true positives for it. A glob on id reads only the identifier.
+describe('filter by id', () => {
+  const idResults = JSON.parse(sharedResults.mergeGrype.read()) as HDFResults;
+
+  it('the table names the fixture actually loaded', () => {
+    expect(idTable.fixtureFile).toBe('merge-grype.json');
+    expect(ids(filter(idResults, { statusOf: testStatusOf }))).toHaveLength(idTable.unfilteredCount);
+  });
+
+  for (const c of idTable.cases) {
+    it(c.name, () => {
+      expect(ids(filter(idResults, { id: c.id, statusOf: testStatusOf }))).toEqual(c.expect);
+    });
+  }
+});
+
 // The same table go/filter_test.go reads, so a case cannot be added or changed
 // in one language only.
 const tagTable = JSON.parse(

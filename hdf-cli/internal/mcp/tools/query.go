@@ -40,7 +40,7 @@ type queryInput struct {
 	Cwe       []string        `json:"cwe,omitempty" jsonschema:"CWE ids (OR); reads cwe[] only, not tags"`
 	CCI       []string        `json:"cci,omitempty"`
 	NIST      []string        `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
-	ID        string          `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title"`
+	ID        string          `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title; exact by default, a * or ? wildcard globs"`
 	Tag       []string        `json:"tag,omitempty" jsonschema:"key:value (OR)"`
 	Search    string          `json:"search,omitempty" jsonschema:"text match over id/title/descriptions"`
 	Baseline  string          `json:"baseline,omitempty" jsonschema:"baseline name, glob allowed"`

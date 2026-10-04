@@ -347,12 +347,28 @@ func buildFilters(opts Options) []filterFunc {
 	// ID filter (requirement ID / STIG ID / GID / group title)
 	if opts.ID != "" {
 		id := opts.ID
-		filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
-			return tagContains(c.Tags, "stig_id", id) ||
-				tagContains(c.Tags, "gid", id) ||
-				tagContains(c.Tags, "gtitle", id) ||
-				c.ID == id
-		})
+		// A wildcard opts into glob matching; without one this stays the exact,
+		// case-sensitive lookup it has always been. That matters because the id a
+		// user knows is often not the id the document carries — converters mint
+		// prefixed ids (Grype/CVE-...), so a bare CVE matches nothing — while
+		// `search` reaches title, description and code and therefore also matches a
+		// CVE merely cross-referenced in another finding's prose. A glob reads only
+		// the identifier, so it can be precise about which requirement it names.
+		if strings.ContainsAny(id, "*?") {
+			filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+				return tagMatchesGlob(c.Tags, "stig_id", id) ||
+					tagMatchesGlob(c.Tags, "gid", id) ||
+					tagMatchesGlob(c.Tags, "gtitle", id) ||
+					matchesGlob(c.ID, id)
+			})
+		} else {
+			filters = append(filters, func(c hdf.EvaluatedRequirement, _, _ string) bool {
+				return tagContains(c.Tags, "stig_id", id) ||
+					tagContains(c.Tags, "gid", id) ||
+					tagContains(c.Tags, "gtitle", id) ||
+					c.ID == id
+			})
+		}
 	}
 
 	// Generic tag filter (OR across values)

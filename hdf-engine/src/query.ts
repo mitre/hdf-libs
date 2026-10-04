@@ -310,13 +310,29 @@ function buildFilters(options: NormalizedOptions): FilterFunc[] {
 
   if (options.id) {
     const id = options.id;
-    filters.push(
-      (c) =>
-        tagContains(c.tags, 'stig_id', id) ||
-        tagContains(c.tags, 'gid', id) ||
-        tagContains(c.tags, 'gtitle', id) ||
-        c.id === id,
-    );
+    // A wildcard opts into glob matching; without one this stays the exact,
+    // case-sensitive lookup it has always been. Parity: go/filter.go. The id a user
+    // knows is often not the id the document carries — converters mint prefixed ids
+    // (Grype/CVE-...) — while `search` reaches title, description and code and so
+    // also matches a CVE merely cross-referenced in another finding's prose. A glob
+    // reads only the identifier, so it can be precise about which one it names.
+    if (/[*?]/.test(id)) {
+      filters.push(
+        (c) =>
+          tagMatchesGlob(c.tags, 'stig_id', id) ||
+          tagMatchesGlob(c.tags, 'gid', id) ||
+          tagMatchesGlob(c.tags, 'gtitle', id) ||
+          matchesGlob(c.id, id),
+      );
+    } else {
+      filters.push(
+        (c) =>
+          tagContains(c.tags, 'stig_id', id) ||
+          tagContains(c.tags, 'gid', id) ||
+          tagContains(c.tags, 'gtitle', id) ||
+          c.id === id,
+      );
+    }
   }
 
   if (valuesActive(options.tag)) {

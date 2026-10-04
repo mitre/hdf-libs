@@ -1234,7 +1234,7 @@
             ]
           },
           "id": {
-            "description": "requirement/STIG ID, GID, or group title",
+            "description": "requirement/STIG ID, GID, or group title; exact by default, a * or ? wildcard globs",
             "type": "string"
           },
           "impact": {

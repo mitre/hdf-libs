@@ -845,6 +845,62 @@ func TestFilterByTag(t *testing.T) {
 	}
 }
 
+// idCases is the shared id-filter table. Its fixture is the REAL Grype scan from
+// @mitre/hdf-fixtures rather than ../testdata, because the defect it pins exists
+// only on real converter output: the CVE a user knows is not the id the document
+// carries.
+type idCases struct {
+	FixtureFile     string `json:"fixtureFile"`
+	UnfilteredCount int    `json:"unfilteredCount"`
+	Cases           []struct {
+		Name   string   `json:"name"`
+		ID     string   `json:"id"`
+		Expect []string `json:"expect"`
+	} `json:"cases"`
+}
+
+func loadIDCases(t *testing.T) idCases {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "id-filter-cases.json"))
+	require.NoError(t, err)
+	var table idCases
+	require.NoError(t, json.Unmarshal(data, &table))
+	require.NotEmpty(t, table.Cases, "an empty table would pass vacuously")
+	require.Equal(t, "merge-grype.json", table.FixtureFile,
+		"this loader reads the shared fixture by name; the table must say which one it describes")
+	return table
+}
+
+// Parity: test/query.test.ts reads the same table and runs the same cases.
+//
+// The negative cases carry the weight. Grype/CVE-2018-20657 cross-references
+// CVE-2018-12698 in its descriptions and code, and CVE-2018-12698 is not a
+// requirement in this document at all — so `search` returns one false positive and
+// zero true positives for it, and a gate written that way fires on an unrelated
+// vulnerability. A glob on id reads only the id, so prose cannot reach it.
+func TestFilterByID_SharedCases(t *testing.T) {
+	table := loadIDCases(t)
+	var results hdf.HDFResults
+	require.NoError(t, json.Unmarshal(fixtures.Results.MergeGrype, &results))
+
+	require.Len(t, ids(Filter(context.Background(), results, Options{StatusOf: testStatusOf})),
+		table.UnfilteredCount, "the table describes a different fixture than the one loaded")
+
+	for _, tc := range table.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got := ids(Filter(context.Background(), results, Options{
+				ID:       tc.ID,
+				StatusOf: testStatusOf,
+			}))
+			if len(tc.Expect) == 0 {
+				assert.Empty(t, got)
+				return
+			}
+			assert.Equal(t, tc.Expect, got)
+		})
+	}
+}
+
 func TestValidTag(t *testing.T) {
 	for _, tc := range loadTagCases(t).Validity {
 		t.Run(tc.Value, func(t *testing.T) {

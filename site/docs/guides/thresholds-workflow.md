@@ -285,7 +285,7 @@ The **Form** column says how a field accepts values. *List* fields take the thre
 | `cwe` | list | a CWE id | `CWE-79`, `CWE 79` and `cwe79` are one value. Reads `cwe[]` only — see the caveat above. |
 | `cci` | list | a CCI identifier | |
 | `nist` | list | a NIST control | Globs allowed. |
-| `id` | exact | an identifier | Matches requirement ID, STIG ID, GID, or group title. |
+| `id` | exact or glob | an identifier | Matches requirement ID, STIG ID, GID, or group title. Exact and case-sensitive by default; a `*` or `?` wildcard globs case-insensitively. See below for gating on a CVE. |
 | `tag` | list | `key:value` | The colon is required. |
 | `search` | exact | free text | Substring match over title and description. A short string matches longer ids, so confirm with `hdf query` before relying on it. |
 | `baseline` | exact | a profile name | How a rule narrows to one baseline. |
@@ -308,6 +308,67 @@ rules:
 ```
 
 An empty `where` is **not** refused — it matches every requirement in the document, so `where: {}` with `max: 0` fails on any document that contains anything at all. What is refused is a value outside its field's vocabulary, which is the case covered below.
+
+### Gating on a specific CVE
+
+"Nothing failing for CVE-X" is the most-asked-for vulnerability gate, and the obvious spelling of it is a trap. `search` reads title, description and code, so it matches a CVE that another finding merely *mentions*:
+
+```console
+$ hdf query grype.json --search CVE-2018-12698
+Found 1 matching requirement(s):
+Grype/CVE-2018-20657  not_applicable  INFO  Grype found a vulnerability to CVE-2018-20657 in ten...
+```
+
+That is one false positive and **zero** true positives — `CVE-2018-12698` is not a requirement in this document at all; the string sits in another finding's prose. A gate written that way fires on an unrelated vulnerability.
+
+Use a glob on `id` instead. Converters mint prefixed ids, so the CVE you know is not the id the document carries — a wildcard bridges that without reaching into prose:
+
+```console
+$ hdf query grype.json --id '*CVE-2018-12698'
+No matching requirements found.
+
+$ hdf query grype.json --id '*CVE-2022-27943'
+Found 1 matching requirement(s):
+Grype/CVE-2022-27943  failed  LOW  Grype found a vulnerability to CVE-2022-27943 in ten...
+```
+
+As a policy:
+
+```yaml
+rules:
+  - name: CVE-2022-27943 must not be failing
+    where:
+      status: failed
+      id: '*CVE-2022-27943'
+    max: 0
+```
+
+```console
+✗ grype.json — 1 threshold violation
+
+  Violations:
+    CVE-2022-27943 must not be failing: 1 matched, maximum 0
+```
+
+The glob is anchored, so `*CVE-2018-1269` does not match `CVE-2018-12698` — a trailing fragment is not a prefix match. `search` keeps its substring behaviour, which is the right tool for "mentions this anywhere"; it is just the wrong tool for a gate.
+
+**Check where your converter puts the CVE before trusting the spelling above.** `*CVE-…` is anchored at the end, so it only matches when the CVE *ends* the id. Audited across the committed expected-output fixtures:
+
+| Converter | Id shape | Spelling that works |
+|---|---|---|
+| `asff`, `cyclonedx`, `grype`, `prisma`, `twistlock`, `veracode` | the CVE ends the id (`Grype/CVE-2022-27943`, `46-CVE-2019-19927`) | `*CVE-2022-27943` |
+| `neuvector` | the CVE *starts* the id (`CVE-2021-36159/apk-tools/2.10.5-r1`) | `*CVE-2021-36159*` |
+| `sarif` | **both shapes occur** (`CVE-2026-2297-python-3.12` and plain) | `*CVE-2026-2297*` |
+
+The trap is that the wrong spelling fails *silently*. On neuvector output, `--id '*CVE-2021-36159'` returns nothing at all, so `max: 0` passes and the gate is forever-green — the same false confidence `search` gives, arrived at from the other direction. Always confirm with `hdf query` before committing a policy:
+
+```bash
+hdf query results.json --id '*CVE-2021-36159*'
+```
+
+If you wrap the CVE in wildcards on both sides, write the **complete** CVE id. A trailing wildcard turns a truncated one into a prefix match, so `*CVE-2018-1269*` would match `CVE-2018-12698` — the very over-match the anchored form avoids.
+
+Converters that record a CVE outside the id — in `tags` or `refs` — are not reachable this way at all; `tags.cve` reaches it where a converter populates that tag, and `grype` does not. The audit covers the paths those fixtures exercise, not every code path, so treat it as a floor rather than a closed list.
 
 ### Three ways to write a value
 

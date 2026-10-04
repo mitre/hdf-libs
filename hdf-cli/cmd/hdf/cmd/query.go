@@ -193,7 +193,7 @@ Examples:
 	cmd.Flags().StringArrayVar(&localQueryCwe, "cwe", nil, "Filter by CWE id (repeatable, OR logic; CWE-79, \"CWE 79\" and cwe79 are one value). Reads cwe[] only — SARIF-derived documents record CWEs in tags and will not match")
 	cmd.Flags().StringArrayVar(&localQueryCCI, "cci", nil, "Filter by CCI identifier (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryNIST, "nist", nil, "Filter by NIST control (repeatable, OR logic; supports globs)")
-	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title")
+	cmd.Flags().StringVar(&localQuerySTIGID, "id", "", "Filter by requirement ID, STIG ID, GID, or group title. Exact by default; a * or ? wildcard globs (case-insensitive), which is how a CVE reaches a converter's prefixed id — --id '*CVE-2022-27943'")
 	cmd.Flags().StringArrayVarP(&localQueryTag, "tag", "t", nil, "Filter by tag key:value (repeatable, OR logic)")
 	cmd.Flags().StringArrayVar(&localQueryDisposition, "disposition", nil,
 		"Filter by what governs the requirement — the most recently applied non-expired override or POA&M (repeatable, OR logic): "+FilterHelpVocabulary("disposition"))

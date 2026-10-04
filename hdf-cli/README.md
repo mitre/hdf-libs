@@ -252,7 +252,7 @@ FLAGS
                                until the SARIF converter populates cwe[]
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
-      --id string              Filter by requirement ID, STIG ID, GID, or group title
+      --id string              Filter by requirement ID, STIG ID, GID, or group title (exact; * or ? globs)
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
       --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
                                not_applicable and notApplicable are one value; the pre-3.7 severity
@@ -294,6 +294,7 @@ EXAMPLES
   hdf query results.json --nist "AC-2"
   hdf query results.json --cci CCI-000366
   hdf query results.json --id V-230221
+  hdf query results.json --id '*CVE-2022-27943'   # a glob reaches a converter's prefixed id
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password policy"
   hdf query results.json --disposition waiver --severity critical
