@@ -8,6 +8,10 @@ import { syncValidatorSchemas, DIST_DIR, EMBED_DIR } from '../src/sync-validator
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// A filename the real bundler can never emit, so "did it read the archived dir"
+// has an unambiguous answer rather than depending on file contents.
+const ARCHIVED_ONLY = 'zzz-archived-only.schema.json';
+
 describe('syncValidatorSchemas', () => {
   let root: string;
   let distDir: string;
@@ -86,7 +90,7 @@ describe('syncValidatorSchemas', () => {
   it('ignores HDF_SCHEMA_DIST_DIR even when it is set', async () => {
     const archived = join(root, 'archived-release');
     mkdirSync(archived, { recursive: true });
-    writeFileSync(join(archived, 'hdf-results.schema.json'), '{"$id":"https://archived.test/v1"}');
+    writeFileSync(join(archived, ARCHIVED_ONLY), '{"$id":"https://archived.test/v1"}');
 
     vi.stubEnv('HDF_SCHEMA_DIST_DIR', archived);
     vi.resetModules();
@@ -95,15 +99,23 @@ describe('syncValidatorSchemas', () => {
       expect(fresh.DIST_DIR).toBe(resolve(__dirname, '..', 'dist', 'schemas'));
       expect(fresh.DIST_DIR).not.toBe(archived);
 
-      // And prove it through behaviour, not just the constant: syncing from the
-      // archived dir must copy nothing, because the script never looks there.
+      // And through behaviour, exercising the DEFAULT source path — passing
+      // `archived` explicitly would only prove the function copies from the
+      // directory it was handed, and would still pass an implementation that
+      // read the env var at CALL time rather than at module load. So distDir is
+      // left to its default and only the destination is redirected, so the
+      // tracked embed dir is never written.
       const dest = join(root, 'embed-env');
       mkdirSync(dest, { recursive: true });
-      fresh.syncValidatorSchemas(archived, dest);
-      expect(readdirSync(dest)).toEqual(['hdf-results.schema.json']);
-      expect(readFileSync(join(dest, 'hdf-results.schema.json'), 'utf-8')).toBe(
-        '{"$id":"https://archived.test/v1"}'
-      );
+      try {
+        fresh.syncValidatorSchemas(undefined, dest);
+        expect(readdirSync(dest)).not.toContain(ARCHIVED_ONLY);
+      } catch (err) {
+        // An empty in-tree dist throws, and that is itself proof the archived
+        // dir was not read — that one is deliberately non-empty. The suite can
+        // leave dist partial, so this branch is reachable and must not fail.
+        expect(String(err)).toMatch(/No bundled schemas found/);
+      }
     } finally {
       vi.unstubAllEnvs();
       vi.resetModules();
