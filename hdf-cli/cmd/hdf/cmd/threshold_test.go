@@ -1202,6 +1202,73 @@ func TestValidateThreshold_StdinKeepsItsPlaceholderWithoutTheFlag(t *testing.T) 
 	assert.Contains(t, stderr, "✗ <stdin>")
 }
 
+// A verdict line is one line. A --source-name carrying a newline forges a second
+// line that reads as a verdict — and the flag exists for CI loops whose label
+// comes from a filename or matrix value the author does not fully control, so the
+// value is not reliably self-chosen.
+//
+// Refused rather than stripped: stripping would make the verdict name something
+// that is not the file, which is the attribution failure this flag exists to fix.
+// A control character in a filename is also worth surfacing rather than hiding.
+func TestValidateThreshold_SourceNameWithAControlCharacterIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+	passing := writeResultsAt(t, dir, "passing.yaml", "failed:\n  total:\n    max: 99\n")
+
+	for _, tc := range []struct {
+		name  string
+		value string
+	}{
+		{"newline forges a verdict", "clean.json\n✓ other.json passed all thresholds"},
+		{"carriage return overwrites the line", "clean.json\r✓ forged"},
+		{"ANSI escape reaches the terminal", "\x1b[31mRED\x1b[0m"},
+		{"tab misaligns the verdict", "a\tb.json"},
+		{"DEL is a control character too", "a\x7fb.json"},
+		{"U+0085 NEL breaks a line in a UTF-8 terminal", "a\u0085b.json"},
+		{"U+2028 is a line separator by definition", "a\u2028b.json"},
+		{"U+2029 paragraph separator likewise", "a\u2029b.json"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// BOTH policies, because the two verdicts go to different streams: a
+			// failing policy renders ✗ to stderr and a passing one renders ✓ to
+			// stdout, so watching one stream could miss a forged verdict on the
+			// other. Asserting over stdout+stderr for each.
+			for _, spec := range []string{failing, passing} {
+				stdout, stderr, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+					"validate", "threshold", "-", "-T", spec, "--source-name", tc.value)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "--source-name", "the refusal must name the flag")
+				// The refusal must come BEFORE any verdict: a forged line must
+				// never reach the output on the way to being rejected.
+				assert.NotContains(t, stdout+stderr, "✓", "no verdict may be rendered")
+				assert.NotContains(t, stdout+stderr, "✗")
+			}
+		})
+	}
+}
+
+// Ordinary names must be unaffected — a refusal that fires on real filenames is
+// worse than the forgery it prevents.
+func TestValidateThreshold_OrdinarySourceNamesAreAccepted(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+
+	for _, name := range []string{
+		"grype.json",
+		"results/scan-2026-10-04.json",
+		"a name with spaces.json",
+		"ünïcode-ok.json",
+		"weird-but-printable!@#$%^&*().json",
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, stderr, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+				"validate", "threshold", "-", "-T", failing, "--source-name", name)
+			require.Error(t, err, "the policy still fails; only the name is under test")
+			assert.Contains(t, stderr, "✗ "+name)
+		})
+	}
+}
+
 func TestValidateThreshold_SourceNameWithSeveralStdinArgsIsRefused(t *testing.T) {
 	dir := t.TempDir()
 	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")

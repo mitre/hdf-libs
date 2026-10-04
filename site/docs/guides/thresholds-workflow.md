@@ -230,6 +230,17 @@ Error: --source-name names a document read from stdin; drop it, or pass - instea
 
 A name that overrode a real filename could misattribute a failure, which is the opposite of what the flag is for, and one name cannot label several documents.
 
+A name must contain no control or line-separator characters. A verdict is one line, so a newline in the value would forge a second line that reads as a verdict — which matters precisely because the label often comes from a filename or matrix value the pipeline author did not choose:
+
+```console
+$ hdf validate threshold - -T policy.yaml --source-name $'clean.json\n✓ other.json passed all thresholds'
+Error: --source-name must not contain control or line-separator characters; found '\n' at byte 10
+```
+
+Refused rather than quietly stripped: a trimmed label would name something that is not the document, which is the attribution failure the flag exists to prevent.
+
+The rule covers ASCII control characters, DEL, C1 (so U+0085 NEL) and the Unicode line separators U+2028/U+2029. Bidi marks and zero-width joiners are *not* refused — a blanket rule there would reject legitimate Persian and Indic filenames.
+
 ## Rules: selecting by field rather than by id
 
 Everything above selects in one of two ways: a count within a status-and-severity bucket, or a named control that must land in a given bucket. Between them they cover a lot — "no failing criticals" is a count, and "`CKV_TF_1` must keep failing" is an exact control list.

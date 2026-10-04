@@ -55,6 +55,32 @@ func TestValidate_SourceNameWithAFileIsRefused(t *testing.T) {
 		"and must refuse before validating, not report a verdict for a mislabelled document")
 }
 
+// Both commands share validateSourceName, so both must refuse — the helper
+// existing is not evidence that validate calls it.
+func TestValidate_SourceNameWithAControlCharacterIsRefused(t *testing.T) {
+	for _, tc := range []struct{ name, value string }{
+		{"newline forges a verdict", "clean.json\n✓ other.json is a valid HDF results file"},
+		{"ANSI escape", "\x1b[31mRED\x1b[0m"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stdout, stderr, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+				"validate", "-", "--source-name", tc.value)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "--source-name")
+			assert.NotContains(t, stdout+stderr, "✓", "no verdict may be rendered")
+			assert.NotContains(t, stdout+stderr, "✗")
+		})
+	}
+}
+
+func TestValidate_OrdinarySourceNameIsAccepted(t *testing.T) {
+	stdout, _, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "-", "--source-name", "a name with spaces.json")
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "✓ a name with spaces.json",
+		"anchored to the verdict line, as the sibling is: a bare substring is the shape that let a broken render pass on wft3f.22")
+}
+
 // One name cannot label several documents, and that holds even when every
 // argument is `-`: a bulk run would print the name against the first and the raw
 // dash against the rest.

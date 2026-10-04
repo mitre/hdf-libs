@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"gopkg.in/yaml.v3"
 
@@ -66,6 +67,9 @@ Designed for CI/CD compliance gates.`,
 			// mislabelled name misattribute a real file, which is the opposite of
 			// what the flag exists for; ignoring it would leave half the command
 			// dead with no warning. One name also cannot label several documents.
+			if err := validateSourceName(localSourceName); err != nil {
+				return err
+			}
 			if localSourceName != "" {
 				// One name cannot label several documents, so more than one
 				// argument is refused even when every one of them is `-`: a bulk
@@ -126,7 +130,7 @@ Designed for CI/CD compliance gates.`,
 	// and violations are prefixed with it; --label here would read as naming the
 	// policy, in output that already names policies.
 	cmd.Flags().StringVar(&localSourceName, "source-name", "",
-		"Name to report for a document read from stdin (default \"<stdin>\")")
+		"Name to report for a document read from stdin; one line, no control characters (default \"<stdin>\")")
 
 	return cmd
 }
@@ -389,6 +393,37 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 			}
 		} else {
 			fmt.Printf("✓ %s passed all thresholds\n", displayNameFor(file))
+		}
+	}
+	return nil
+}
+
+// validateSourceName refuses a name that cannot occupy one verdict line.
+//
+// A verdict is a single line, so a newline in this value forges a second line
+// that reads as a verdict — and the flag exists for pipelines whose label comes
+// from a filename or matrix value the author does not fully control, so the value
+// is not reliably self-chosen. ANSI escapes would reach the terminal the same way.
+//
+// Refused rather than stripped. Stripping would make the verdict name something
+// that is not the document, which is the attribution failure the flag exists to
+// fix, and a control character in a filename is worth surfacing rather than
+// quietly removing. This is NOT sanitizeOutput: that one deliberately preserves
+// newline, tab and carriage return because it guards multi-line document prose.
+func validateSourceName(name string) error {
+	for i, r := range name {
+		// unicode.IsControl covers C0, DEL and C1 — so U+0085 NEL, a real break
+		// vector in a UTF-8 terminal, is caught alongside \n. Zl and Zp are
+		// U+2028/U+2029, which ARE line separators by definition: leaving them in
+		// would make the message below a false claim even though they do not split
+		// a line for grep. Format characters (bidi overrides, ZWNJ, soft hyphen)
+		// are deliberately NOT rejected here — U+202E can reverse a displayed
+		// filename, which is name spoofing rather than verdict forgery, and a
+		// blanket Cf rejection would refuse legitimate Persian and Indic filenames
+		// that use ZWNJ. Tracked separately.
+		if unicode.IsControl(r) || unicode.Is(unicode.Zl, r) || unicode.Is(unicode.Zp, r) {
+			return fmt.Errorf("--source-name must not contain control or line-separator "+
+				"characters; found %q at byte %d", r, i)
 		}
 	}
 	return nil
