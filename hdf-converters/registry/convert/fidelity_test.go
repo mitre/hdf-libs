@@ -103,3 +103,113 @@ func TestWithExpectedRequirementCount_TypedRegisterHelpers(t *testing.T) {
 		})
 	}
 }
+
+// --------------------------------------------------------------------------
+// Roll-up opt-in and the result-count declaration (ADR-0017 §6).
+// --------------------------------------------------------------------------
+
+// The opt-in follows WithEmptyInputOK: an optional behaviour declared at
+// registration, reported through an interface every wrapper keeps visible.
+func TestWithRequirementRollUp_DeclaresTheBehavior(t *testing.T) {
+	t.Cleanup(func() {
+		UnregisterConverter("rollup-test-declared", "hdf")
+		UnregisterConverter("rollup-test-plain", "hdf")
+	})
+	registerHDFConverter("rollup-test-declared", "Declared", "declared", noopResults,
+		WithRequirementRollUp(),
+		WithExpectedResultCount(func([]byte) (int, string, error) { return 2, "raw findings", nil }))
+	registerHDFConverter("rollup-test-plain", "Plain", "plain", noopResults)
+
+	declared, err := GetConverter("rollup-test-declared", "hdf")
+	require.NoError(t, err)
+	rolled, ok := declared.(RequirementRollingUp)
+	require.True(t, ok)
+	require.True(t, rolled.RollsUpRequirements())
+
+	plain, err := GetConverter("rollup-test-plain", "hdf")
+	require.NoError(t, err)
+	unrolled, ok := plain.(RequirementRollingUp)
+	require.True(t, ok, "every converter answers the question; only an opted-in one answers yes")
+	require.False(t, unrolled.RollsUpRequirements())
+}
+
+// ADR-0017 §6 makes the result-count anchor mandatory for a rolled-up converter:
+// roll-up moves the raw-finding count from requirements to results, so a
+// converter that opted in without declaring a result count would have no
+// under-extraction guard at all. Registration refuses it rather than shipping
+// the gap, the way registry.go:63 refuses a duplicate fingerprint.
+func TestWithRequirementRollUp_RefusesRegistrationWithoutAResultCount(t *testing.T) {
+	require.PanicsWithValue(t,
+		"convert: WithRequirementRollUp requires WithExpectedResultCount — roll-up moves the raw-finding count from requirements to results, so a rolled-up converter without a result-count declaration has no under-extraction guard (ADR-0017 §6)",
+		func() {
+			registerHDFConverter("rollup-test-unguarded", "Unguarded", "unguarded", noopResults, WithRequirementRollUp())
+		})
+	_, err := GetConverter("rollup-test-unguarded", "hdf")
+	require.ErrorIs(t, err, ErrConverterNotFound, "the refused converter is not registered")
+}
+
+func TestWithExpectedResultCount_DeclaresTheInterface(t *testing.T) {
+	t.Cleanup(func() {
+		UnregisterConverter("result-count-declared", "hdf")
+		UnregisterConverter("result-count-plain", "hdf")
+	})
+	registerHDFConverter("result-count-declared", "Declared", "declared", noopResults,
+		WithExpectedResultCount(func(in []byte) (int, string, error) { return len(in), "bytes", nil }))
+	registerHDFConverter("result-count-plain", "Plain", "plain", noopResults)
+
+	declared, err := GetConverter("result-count-declared", "hdf")
+	require.NoError(t, err)
+	ex, ok := declared.(ResultCountExpecter)
+	require.True(t, ok)
+	n, unit, err := ex.ExpectedResultCount([]byte("abc"))
+	require.NoError(t, err)
+	require.Equal(t, 3, n)
+	require.Equal(t, "bytes", unit)
+
+	plain, err := GetConverter("result-count-plain", "hdf")
+	require.NoError(t, err)
+	_, ok = plain.(ResultCountExpecter)
+	require.False(t, ok, "a converter without a declared result relation must NOT be checked")
+}
+
+// fidelity.go wraps converters, and the wrapping must hide neither declaration:
+// a converter states roll-up, its requirement count and its result count on one
+// init() line, and all three survive.
+func TestWithRequirementRollUp_ComposesWithBothCountDeclarations(t *testing.T) {
+	t.Cleanup(func() { UnregisterConverter("rollup-test-composed", "hdf") })
+	registerHDFConverter("rollup-test-composed", "Composed", "composed", noopResults,
+		WithEmptyInputOK(),
+		WithExpectedRequirementCount(func([]byte) (int, string, error) { return 1, "distinct ids in the source", nil }),
+		WithExpectedResultCount(func([]byte) (int, string, error) { return 3, "raw findings", nil }),
+		WithRequirementRollUp())
+
+	c, err := GetConverter("rollup-test-composed", "hdf")
+	require.NoError(t, err)
+	require.Equal(t, "Composed", c.Name())
+
+	empty, ok := c.(EmptyInputAccepting)
+	require.True(t, ok)
+	require.True(t, empty.AcceptsEmptyInput())
+
+	rolled, ok := c.(RequirementRollingUp)
+	require.True(t, ok)
+	require.True(t, rolled.RollsUpRequirements())
+
+	reqEx, ok := c.(RequirementCountExpecter)
+	require.True(t, ok)
+	n, unit, err := reqEx.ExpectedRequirementCount(nil)
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+	require.Equal(t, "distinct ids in the source", unit)
+
+	resEx, ok := c.(ResultCountExpecter)
+	require.True(t, ok)
+	n, unit, err = resEx.ExpectedResultCount(nil)
+	require.NoError(t, err)
+	require.Equal(t, 3, n)
+	require.Equal(t, "raw findings", unit)
+
+	out, err := c.Convert([]byte("{}"))
+	require.NoError(t, err)
+	require.NotEmpty(t, out, "the wrappers must still convert through the embedded converter")
+}
