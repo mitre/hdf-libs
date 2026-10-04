@@ -174,15 +174,21 @@ The bar is high. Three-line schema additions accumulate; every one is a schema-v
 ### Fixture sources (in priority order)
 
 1. **Real tool output** captured from an actual run or public CI pipeline (e.g., GitHub Actions artifacts, open-source project test resources)
-2. The heimdall2 repo at `~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/`
-3. The SAF CLI repo at `~/repos/saf/test/sample_data/`
+2. The heimdall2 repo at `~/repos/mitre/heimdall2/libs/hdf-converters/test/sample_input_report/`
+3. The SAF CLI repo at `~/repos/mitre/saf/test/sample_data/`
 4. Sanitized/anonymized copies of real customer data
 
 Before writing any fixtures, check both repos:
 ```bash
-ls ~/repos/heimdall2/libs/hdf-converters/test/sample_input_report/
-ls ~/repos/saf/test/sample_data/
+ls ~/repos/mitre/heimdall2/libs/hdf-converters/test/sample_input_report/
+ls ~/repos/mitre/saf/test/sample_data/
 ```
+
+A converter's own sample may live beside its mapper rather than in the shared
+input directory — heimdall2 keeps prisma's under
+`libs/hdf-converters/sample_jsons/prisma_mapper/sample_input_report/`. If the
+clones are absent, query GitHub instead (`gh api search/code`) rather than
+concluding no upstream sample exists.
 
 ### Fixture validation requirement
 
