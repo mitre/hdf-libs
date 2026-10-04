@@ -303,7 +303,7 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
 6. **Never tag a stable release manually.** Stable tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag vNEW` for the stable. The one sanctioned manual tag is the **`vNEW-rc.N` prerelease tag** that triggers Phase 7.5's dry-run — pushing that tag drives the workflow's prerelease path; it is not a manual publish.
-7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` plus a per-major tag (`v3`, …) and rc's under `rc` — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other 8 packages keep the default `latest` behavior — do not "harmonize" them onto `next`.
+7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` only (there is no per-major `v3` tag — the Publish step sets exactly `--tag next` for a stable and `--tag rc` for an rc) — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other packages (10 at the time of writing) keep the default `latest` behavior for a stable and get `next` for an rc — do not "harmonize" them onto `next`.
 
 ### Phase 7.5 — Prerelease (RC) publish dry-run *(only when the publishing pipeline changed)*
 
@@ -319,11 +319,14 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
 
 **Steps (after the release PR is merged to `main`):**
 
-0. **Prepare-release commit — REQUIRED before the tag, and the step this phase most often skips.** Rewrite every intra-repo `go.mod` require to the exact prerelease version, then commit that:
+0. **Prepare-release commit — REQUIRED before the tag, and the step this phase most often skips.** Rewrite every intra-repo `go.mod` require to the exact prerelease version, commit that on a short branch, and land it through a PR — the `main` ruleset blocks direct pushes even for the owner:
 
    ```bash
+   git checkout -b release/vNEW-rc.1-prepare main
    scripts/set-go-module-versions.sh vNEW-rc.1
    git commit -s -am "chore(release): prepare vNEW-rc.1"
+   # push, open the PR, merge; then tag the SQUASH-MERGE COMMIT ON MAIN —
+   # the branch commit has a different SHA and is not what main carries.
    ```
 
    Without it the tag publishes Go modules that resolve for nobody: Go reads each module's `go.mod` from the tagged commit and ignores its `replace` directives, so requires naming the stable `vNEW` point at a version no tag provides. `go get` still succeeds and only `go build` fails, which is why rc.1 through rc.4 of 3.6.0 all shipped broken. This mirrors etcd's `release_mod.sh` and opentelemetry-go's `multimod prerelease`; both commit the rewrite before tagging.
@@ -332,7 +335,7 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
 
    Two modules stay at their zero pseudo-version because no release tags them (`hdf-fixtures`, `hdf-schema/testhdf/go`) — the script names them. Until `hdf-libs-gqw5k` is fixed they keep `go list -m all` and `go mod tidy` broken for consumers, at stable as much as at a prerelease, so do not read a green `go build` as proof the module graph is sound.
 
-   After the prerelease, the stable cut needs the same rewrite at the stable version — Phase 2 covers it, but re-run the script if a prerelease moved the requires in between.
+   After the prerelease, the stable cut needs the same rewrite at the stable version, through the same short-PR flow (`release/vNEW-stable-prepare`) — a prerelease always moves the requires, so this is not optional. The stable tag then lands on its own squash commit, which is what keeps it off the rc's commit (goreleaser prefers an `-rc` tag sharing a commit with the stable; `GORELEASER_CURRENT_TAG` is the proven backstop, the separate commit is the first line).
 
 1. Push the prerelease tag: `git push origin vNEW-rc.1` (the sanctioned manual tag from Phase 7 note 6). This triggers `release.yml` in prerelease mode — it is NOT a manual `npm publish`/`pnpm publish`.
 2. Watch the workflow run to green (`gh run watch`, or the Actions UI). A failed prerelease run is the whole point — diagnose and fix the pipeline, then cut `-rc.2`, etc.
@@ -363,7 +366,7 @@ Once the release PR is merged to `main`, the user runs the release workflow. Con
 - All per-module Git tags appear at the same version
 - Generated `site/` schema reference is at the new version (it's regenerated from the schemas, so it should auto-track) — minor/major only
 - `pkg.go.dev` resolves the new versions for `github.com/mitre/hdf-libs/<module>/v3@vNEW`
-- `npm view @mitre/hdf-converters dist-tags` shows `latest` still on the 2.x line (heimdall2 owns it) and `next` + `v<major>` on vNEW (stable) or `rc` on the rc. If `latest` moved to 3.x, treat it as an incident: the user restores it (`npm dist-tag add @mitre/hdf-converters@<newest 2.x> latest`) and we find what published it.
+- `npm view @mitre/hdf-converters dist-tags` shows `latest` still on the 2.x line (heimdall2 owns it) and `next` on vNEW (stable) or `rc` on the rc; there is no per-major tag. If `latest` moved to 3.x, treat it as an incident: the user restores it (`npm dist-tag add @mitre/hdf-converters@<newest 2.x> latest`) and we find what published it.
 
 If anything lags, surface it; don't paper over.
 
@@ -400,6 +403,6 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] No stable `git tag` run manually (the `vNEW-rc.N` prerelease tag for Phase 7.5 is the one sanctioned manual tag)
 - [ ] *(when cutting any prerelease tag)* Phase 7.5 step 0 prepare-release commit: `scripts/set-go-module-versions.sh vNEW-rc.N` run and committed BEFORE the tag, and a consumer `go build` against the published prerelease passes outside the repo
 - [ ] *(only if `.github/workflows/release.yml` / publishing config changed since BASE)* Phase 7.5 RC dry-run: `vNEW-rc.1` pushed, workflow ran green, dist-tags correct (`rc`; `latest` untouched on 2.x), SBOM/cosign/provenance artifacts present — stable cut only after a clean RC
-- [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next`/`v<major>` (or `rc`) at NEW; no manual publishes or dist-tag moves to `latest`
+- [ ] Phase 8: `@mitre/hdf-converters` dist-tags verified post-publish — `latest` still on 2.x, `next` (or `rc`) at NEW, no per-major tag expected; no manual publishes or dist-tag moves to `latest`
 - [ ] Phase 9: GitHub issue closures prepared for the user (not posted as the user without OK); beads backstop checked for stragglers
 - [ ] Phase 9: CI scan-gate CLI pin bumped post-publish (`HDF_CLI_VERSION`/`HDF_CLI_SHA256` in ci.yml, sha from the release's checksums.txt) as its own commit; parked breaking-change cards waiting on the new CLI unblocked
