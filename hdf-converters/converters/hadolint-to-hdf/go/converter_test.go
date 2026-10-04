@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -212,10 +213,17 @@ func TestConvert_EmptyFindings(t *testing.T) {
 
 func TestConvert_RejectsMalformedInput(t *testing.T) {
 	for name, input := range map[string]string{
-		"empty":      "",
-		"not json":   "not json",
-		"an object":  `{"code":"DL3000"}`,
-		"wrong item": `[{"code":42}]`,
+		"empty":              "",
+		"not json":           "not json",
+		"an object":          `{"code":"DL3000"}`,
+		"wrong item":         `[{"code":42}]`,
+		"json null":          "null",
+		"line is a string":   `[{"code":"DL3002","line":"nope"}]`,
+		"column is a bool":   `[{"code":"DL3002","column":true}]`,
+		"level is a number":  `[{"code":"DL3002","level":3}]`,
+		"message is a list":  `[{"code":"DL3002","message":["a"]}]`,
+		"file is an object":  `[{"code":"DL3002","file":{}}]`,
+		"line is fractional": `[{"code":"DL3002","line":1.5}]`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, err := ConvertHadolintToHDF([]byte(input), testVersion)
@@ -245,4 +253,66 @@ func TestSnapshots(t *testing.T) {
 	shared.RunSnapshotTests(t, "hadolint-to-hdf", func(input []byte) (interface{}, error) {
 		return ConvertHadolintToHDF(input, testVersion)
 	}, "*")
+}
+
+// A findings array that decodes to nil is a malformed document, not a clean
+// scan: encoding/json accepts the literal null for a slice without error, and
+// an absent list cannot be distinguished from a passed no-findings report
+// unless the nil is rejected explicitly. Decoding [] yields a non-nil empty
+// slice, so a genuinely clean report still converts.
+func TestConvert_JSONNullIsNotACleanReport(t *testing.T) {
+	_, err := ConvertHadolintToHDF([]byte("null"), testVersion)
+	require.Error(t, err)
+
+	doc, err := ConvertHadolintToHDF([]byte("[]"), testVersion)
+	require.NoError(t, err)
+	require.Len(t, doc.Baselines[0].Requirements, 1, "an empty array is still a clean report")
+}
+
+func TestExpectedRequirementCount_JSONNullIsRejected(t *testing.T) {
+	_, _, err := ExpectedRequirementCount([]byte("null"))
+	assert.Error(t, err)
+}
+
+// The conversion caps its finding list, so the expected-count relation has to
+// read the same capped list. A distinct rule code appearing only beyond the cap
+// would otherwise be counted as expected and never emitted, and the fidelity
+// check would reject a conversion that truncated exactly as designed.
+func TestCapAppliesToTheExpectedCountAsWell(t *testing.T) {
+	var b strings.Builder
+	b.WriteByte('[')
+	for i := 0; i < hdfutil.DefaultMaxItems; i++ {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(`{"code":"DL3002","line":1}`)
+	}
+	b.WriteString(`,{"code":"DL3003","line":2}]`)
+	input := []byte(b.String())
+
+	want, _, err := ExpectedRequirementCount(input)
+	require.NoError(t, err)
+
+	doc, err := ConvertHadolintToHDF(input, testVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, want, len(doc.Baselines[0].Requirements),
+		"the expected count and the conversion must read the same capped findings")
+	assert.Equal(t, 1, want, "the rule beyond the cap is not converted, so it is not expected")
+}
+
+// A sparse finding and an explicitly null field both decode to zero values
+// rather than erroring, so neither is malformed; the TypeScript guard matches.
+func TestConvert_AcceptsSparseAndNullFields(t *testing.T) {
+	for name, input := range map[string]string{
+		"fields absent": `[{"code":"DL3002"}]`,
+		"fields null":   `[{"code":"DL3002","line":null,"file":null}]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			doc, err := ConvertHadolintToHDF([]byte(input), testVersion)
+			require.NoError(t, err)
+			require.Len(t, doc.Baselines[0].Requirements, 1)
+			assert.Equal(t, "DL3002", doc.Baselines[0].Requirements[0].ID)
+		})
+	}
 }

@@ -1,10 +1,11 @@
 # hadolint-to-hdf fixtures — provenance
 
 Recorded 2026-09-28. hadolint publishes no sample corpus of its own JSON output,
-and no copy was found in ~/repos/saf. The inputs are therefore taken from
-mitre/heimdall2, whose Hadolint converter ships two recorded reports; both were
-read at commit 68b34a03b8746311925766da8bbb7a7490a39cb1 (2026-09-04), the commit
-that added them.
+and none is carried in the SAF CLI sample corpus (mitre/saf, test/sample_data).
+The inputs are therefore taken from mitre/heimdall2, whose Hadolint converter
+ships two recorded reports; both were read at commit
+68b34a03b8746311925766da8bbb7a7490a39cb1 (2026-09-04), the commit that added
+them.
 
 ## `input/`
 

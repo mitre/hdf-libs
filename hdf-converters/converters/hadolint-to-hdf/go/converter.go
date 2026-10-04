@@ -197,7 +197,15 @@ func parseReportOrSarif(input []byte) (findings []Finding, isSarif bool, err err
 	if err := json.Unmarshal(input, &findings); err != nil {
 		return nil, false, fmt.Errorf("%s: input is not a hadolint findings array: %w", converterName, err)
 	}
-	return findings, false, nil
+	// encoding/json accepts the literal null for a slice and leaves it nil,
+	// which would otherwise read as a clean scan; decoding [] yields a non-nil
+	// empty slice, so a genuinely clean report is unaffected.
+	if findings == nil {
+		return nil, false, fmt.Errorf("%s: input is not a hadolint findings array; a null list is a malformed report, not a clean one", converterName)
+	}
+	// Capping here rather than in the conversion keeps the expected-count
+	// relation reading the same findings the conversion emits.
+	return shared.LimitSliceWithWarning(findings, 0, "finding"), false, nil
 }
 
 // parseReport is parseReportOrSarif for callers that have already ruled out
@@ -226,7 +234,6 @@ func ConvertHadolintToHDF(input []byte, converterVersion string) (*hdf.HDFResult
 	}
 
 	resultsChecksum := shared.InputChecksum(input)
-	findings = shared.LimitSliceWithWarning(findings, 0, "finding")
 
 	// hadolint reports no scan time, so the conversion time stands in for both
 	// the document timestamp and every result's start time.

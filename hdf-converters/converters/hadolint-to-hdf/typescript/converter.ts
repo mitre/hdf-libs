@@ -155,14 +155,38 @@ function baselineTitle(components: Component[]): string {
   return `Hadolint Scan of ${components.length} files`;
 }
 
+const STRING_FIELDS = ['code', 'file', 'level', 'message'] as const;
+const INTEGER_FIELDS = ['column', 'line'] as const;
+
+/**
+ * Parses the findings array, rejecting what the Go decoder rejects so both
+ * public implementations accept the same inputs. Go decodes an absent or null
+ * field to its zero value, so those stay valid; it refuses a field present
+ * with the wrong type.
+ */
 function parseInput(input: string): HadolintFinding[] {
   const findings = parseJSON<HadolintFinding[]>(input);
   if (!Array.isArray(findings)) {
     throw new Error(`${CONVERTER_NAME}: input is not a hadolint findings array`);
   }
-  for (const f of findings) {
-    if (typeof f !== 'object' || f === null || (f.code !== undefined && typeof f.code !== 'string')) {
+  for (const finding of findings) {
+    if (typeof finding !== 'object' || finding === null || Array.isArray(finding)) {
       throw new Error(`${CONVERTER_NAME}: input is not a hadolint findings array`);
+    }
+    const fields = finding as Record<string, unknown>;
+    for (const key of STRING_FIELDS) {
+      const value = fields[key];
+      if (value !== undefined && value !== null && typeof value !== 'string') {
+        throw new Error(`${CONVERTER_NAME}: finding field ${key} is not a string`);
+      }
+    }
+    // Go rejects a fractional value for an int field. JSON.parse cannot tell 1
+    // from 1.0, so that single spelling is accepted here and refused there.
+    for (const key of INTEGER_FIELDS) {
+      const value = fields[key];
+      if (value !== undefined && value !== null && !Number.isInteger(value)) {
+        throw new Error(`${CONVERTER_NAME}: finding field ${key} is not an integer`);
+      }
     }
   }
   return findings;

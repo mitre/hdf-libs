@@ -138,10 +138,40 @@ describe('hadolint to HDF converter', () => {
     expect(result.components).toBeUndefined();
   });
 
+  // The same table the Go suite rejects, so neither implementation accepts an
+  // input the other refuses. A null list is malformed rather than clean, and a
+  // field present with the wrong type is rejected by Go's decoder.
   it('rejects malformed input', async () => {
-    for (const input of ['', 'not json', '{"code":"DL3000"}', '[{"code":42}]']) {
+    for (const input of [
+      '',
+      'not json',
+      '{"code":"DL3000"}',
+      '[{"code":42}]',
+      'null',
+      '[{"code":"DL3002","line":"nope"}]',
+      '[{"code":"DL3002","column":true}]',
+      '[{"code":"DL3002","level":3}]',
+      '[{"code":"DL3002","message":["a"]}]',
+      '[{"code":"DL3002","file":{}}]',
+      '[{"code":"DL3002","line":1.5}]'
+    ]) {
       await expect(convertHadolintToHdf(input)).rejects.toThrow();
     }
+  });
+
+  // Go decodes a missing field to its zero value rather than erroring, so a
+  // sparse finding has to stay acceptable here too; rejecting it would only
+  // invert the divergence.
+  it('accepts a finding whose optional fields are absent', async () => {
+    const out = JSON.parse(await convertHadolintToHdf('[{"code":"DL3002"}]'));
+    expect(out.baselines[0].requirements).toHaveLength(1);
+    expect(out.baselines[0].requirements[0].id).toBe('DL3002');
+  });
+
+  // Go decodes an explicit null to the zero value rather than erroring.
+  it('accepts a finding whose fields are explicitly null', async () => {
+    const out = JSON.parse(await convertHadolintToHdf('[{"code":"DL3002","line":null,"file":null}]'));
+    expect(out.baselines[0].requirements).toHaveLength(1);
   });
 
   // hadolint can emit SARIF as well as JSON; a SARIF document routes to the
