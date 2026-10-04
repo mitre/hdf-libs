@@ -23,27 +23,15 @@ func ApplyLabels(data []byte, labels map[string]string) ([]byte, error) {
 		return data, nil
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON for label application: %w", err)
+	doc, components, err := parseComponents(data)
+	if err != nil {
+		return nil, err
 	}
-
-	targetsRaw, ok := doc["components"]
-	if !ok {
+	if components == nil {
 		return data, nil
 	}
 
-	targets, ok := targetsRaw.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("targets field is not an array")
-	}
-
-	for i, tRaw := range targets {
-		target, ok := tRaw.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("target at index %d is not an object", i)
-		}
-
+	for _, target := range components {
 		existing := make(map[string]interface{})
 		if labelsRaw, ok := target["labels"]; ok {
 			if labelsMap, ok := labelsRaw.(map[string]interface{}); ok {
@@ -79,25 +67,15 @@ func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error
 		}
 	}
 
-	var doc map[string]interface{}
-	if err := json.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON: %w", err)
+	doc, components, err := parseComponents(data)
+	if err != nil {
+		return nil, err
 	}
-
-	componentsRaw, ok := doc["components"]
-	if !ok {
+	if components == nil {
 		return data, nil
 	}
-	components, ok := componentsRaw.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("components field is not an array")
-	}
 
-	for _, cRaw := range components {
-		comp, ok := cRaw.(map[string]interface{})
-		if !ok {
-			continue
-		}
+	for _, comp := range components {
 		if generate {
 			comp["componentId"] = uuid.New().String()
 		} else if fixedID != "" {
@@ -109,10 +87,11 @@ func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error
 }
 
 // ApplyExternalIDs merges ids into the "externalIds" map of every component, or of
-// the components named componentName when it is non-empty. Unlike ApplyLabels it
-// fails when there is nothing to write on — a document with no components, or no
-// component by that name — so a caller cannot report an identifier as attached
-// when it was not.
+// the one component named componentName when it is non-empty. Unlike ApplyLabels it
+// fails when there is nothing unambiguous to write on — a document with no
+// components, or a name no component has or several share — so a caller cannot
+// report an identifier as attached when it was not, or attach it more widely than
+// it asked.
 func ApplyExternalIDs(data []byte, ids map[string]string, componentName string) ([]byte, error) {
 	if len(ids) == 0 {
 		return data, nil
@@ -145,8 +124,8 @@ func ApplyExternalIDs(data []byte, ids map[string]string, componentName string) 
 }
 
 // RemoveExternalIDs deletes the given schemes from "externalIds" on every
-// component, or on the components named componentName. A scheme a component does
-// not carry is ignored; a map left empty is dropped.
+// component, or on the one component named componentName. A scheme a component
+// does not carry is ignored; a map left empty is dropped.
 func RemoveExternalIDs(data []byte, schemes []string, componentName string) ([]byte, error) {
 	if len(schemes) == 0 {
 		return data, nil
@@ -207,8 +186,10 @@ func parseComponents(data []byte) (doc map[string]interface{}, components []map[
 	return doc, components, nil
 }
 
-// selectComponents returns every component when name is empty, otherwise the
-// components with that name, and an error when none has it.
+// selectComponents returns every component when name is empty, otherwise the one
+// component with that name. A name no component has, or one several share, is an
+// error: a name is a label and componentId is identity, so a repeated name names
+// no single component and the caller's one-component contract cannot be kept.
 func selectComponents(components []map[string]interface{}, name string) ([]map[string]interface{}, error) {
 	if name == "" {
 		return components, nil
@@ -222,6 +203,9 @@ func selectComponents(components []map[string]interface{}, name string) ([]map[s
 	}
 	if len(selected) == 0 {
 		return nil, fmt.Errorf("no component named %q in the document", name)
+	}
+	if len(selected) > 1 {
+		return nil, fmt.Errorf("component name %q matches %d components; it must match exactly one", name, len(selected))
 	}
 	return selected, nil
 }

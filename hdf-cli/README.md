@@ -647,7 +647,7 @@ system (CMDB asset ID, eMASS system ID, cloud resource ID) and is written to
 named on the command line is overwritten and the others are left alone. The value
 is carried verbatim and may be any non-empty string. `set` exits non-zero and
 writes nothing when the pair is malformed, a scheme is given twice, the document
-has no components, or `--component-name` matches none.
+has no components, or `--component-name` matches none or more than one.
 
 Example output:
 

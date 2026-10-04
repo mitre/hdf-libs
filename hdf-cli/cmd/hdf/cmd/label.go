@@ -67,7 +67,8 @@ Repeat the flag for several schemes. A scheme already present is overwritten;
 other schemes are left as they are. The value is carried verbatim, so it may be
 any non-empty string. By default every target gets the identifier; pass
 --component-name to write it on one target only. The command fails, and writes
-nothing, when the document has no target to carry the identifier.
+nothing, when the document has no target to carry the identifier, or when
+--component-name matches no target or more than one.
 
 Examples:
   hdf label set results.json system=Portal
@@ -84,7 +85,7 @@ Examples:
 	cmd.Flags().StringP("output", "o", "", "Write to a different file instead of modifying in-place")
 	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components")
 	cmd.Flags().Bool("generate-component-id", false, "Generate a unique componentId for each component")
-	cmd.Flags().StringArray("external-id", nil, "Set an external ID as scheme=value (repeatable, e.g. --external-id cmdb=CI0012345)")
+	cmd.Flags().StringArray("external-id", nil, "Set an external ID as scheme=value (repeatable, e.g. --external-id cmdb=CI0012345); surrounding whitespace is trimmed from the scheme, the value is carried verbatim")
 	cmd.Flags().String("component-name", "", "Apply --external-id only to the component with this name")
 
 	return cmd
@@ -101,7 +102,9 @@ Missing keys are silently ignored. The file is modified in-place unless
 
 --external-id scheme removes that scheme from each target's externalIds.
 Repeat the flag for several schemes; pass --component-name to remove it from
-one target only.
+one target only. The name must match exactly one component: a name is not
+identity, so a document may carry two components with the same one, and an
+ambiguous name is rejected before anything is written.
 
 Examples:
   hdf label remove results.json system
@@ -113,7 +116,7 @@ Examples:
 	}
 
 	cmd.Flags().StringP("output", "o", "", "Write to a different file instead of modifying in-place")
-	cmd.Flags().StringArray("external-id", nil, "Remove an external ID scheme (repeatable, e.g. --external-id cmdb)")
+	cmd.Flags().StringArray("external-id", nil, "Remove an external ID scheme (repeatable, e.g. --external-id cmdb); surrounding whitespace is trimmed from the scheme")
 	cmd.Flags().String("component-name", "", "Remove --external-id only from the component with this name")
 
 	return cmd
@@ -355,6 +358,10 @@ func writeLabelOutput(data []byte, originalPath, outputPath string) error {
 	target := originalPath
 	if outputPath != "" {
 		target = outputPath
+	}
+
+	if err := validateHDFDocument(data); err != nil {
+		return fmt.Errorf("document failed validation before write: %w", err)
 	}
 
 	// Ensure trailing newline for well-formed JSON files
