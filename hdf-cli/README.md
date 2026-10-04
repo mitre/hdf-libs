@@ -1050,6 +1050,7 @@ These flags apply to all commands.
 | `gitlab-vulnerabilities` | — | GitLab Vulnerability Report envelope from `hdf fetch gitlab-vulnerabilities` (JSON; triage state preserved) |
 | `gosec` | | gosec Go security checker (JSON or SARIF) |
 | `grype` | | Anchore Grype vulnerability scan (JSON) |
+| `hadolint` | | hadolint Dockerfile linter (JSON or SARIF) |
 | `hipcheck` | | MITRE Hipcheck supply-chain risk report (`hc check --format json`) |
 | `ionchannel` | | Ion Channel supply chain analysis (JSON) |
 | `jfrog-xray` | `xray` | JFrog Xray SCA scan (JSON) |

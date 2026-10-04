@@ -30,6 +30,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | GitLab Vulnerability Report (fetcher envelope, triage state preserved) | `convertGitlabVulnerabilitiesToHdf` | JSON |
 | Gosec | `convertGosecToHdf` | JSON |
 | Grype | `convertGrypeToHdf` | JSON |
+| hadolint | `convertHadolintToHdf` | JSON |
 | Hipcheck | `convertHipcheckToHdf` | JSON |
 | Ion Channel | `convertIonchannelToHdf` | JSON |
 | JFrog Xray | `convertJfrogXrayToHdf` | JSON |
