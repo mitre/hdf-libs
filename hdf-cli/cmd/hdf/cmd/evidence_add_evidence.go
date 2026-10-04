@@ -128,6 +128,14 @@ The same URI twice is refused, not ignored: a repeat add usually means the
 artifact CHANGED, and its differing checksum must be recorded deliberately
 rather than absorbed in silence. Remove the existing entry first.
 
+A --uri naming an artifact INSIDE the package's directory is recorded relative to the
+package, because such an artifact travels in a bundled archive under that relative name
+and a machine-local absolute path would leave the extracted copy unable to resolve it.
+An artifact outside the package, or a remote URL, is recorded exactly as given: it is
+external by design and rewriting it would claim the artifact is somewhere it is not.
+Because the URI is normalized before the duplicate check, two spellings of the same
+artifact are recognized as the same artifact and the second is refused.
+
 If --uri is a local file, its SHA-256 checksum is computed automatically. If --uri
 is a URL (the artifact is referenced, not fetched), pass --checksum to record a
 precomputed hash, or omit it; --checksum names one artifact and is refused with
@@ -274,9 +282,16 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	existing, _ := doc["externalEvidence"].([]interface{})
 	recorded := recordedEvidenceURIs(existing)
 
+	// An in-package artifact IS carried into a bundled archive, under an entry name
+	// relative to the package, so recording a machine-local absolute path leaves the
+	// extracted copy unable to resolve it. Normalized through the same predicate `build`
+	// and `evidence set` use; an artifact outside the package is external by design and
+	// is recorded exactly as given. Done BEFORE the duplicate guard below, so two
+	// spellings of one artifact collide rather than landing as two entries.
+	pkgDir := filepath.Dir(file)
 	added := make([]interface{}, 0, len(opts.uris))
 	for i, uri := range opts.uris {
-		normalized := filepath.ToSlash(uri)
+		normalized := filepath.ToSlash(packageRelativeIfInside(pkgDir, uri))
 		// Refused, not ignored: a second add at the same URI usually means the
 		// artifact CHANGED, and an evidence package must not absorb that silently.
 		if _, dup := recorded[normalized]; dup {

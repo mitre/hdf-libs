@@ -64,3 +64,61 @@ func TestEvidenceSet_NoFlags(t *testing.T) {
 	_, _, err := executeCommand("evidence", "set", path)
 	assert.Error(t, err)
 }
+
+// A reference is data read by whoever opens the package, not a path on the machine that
+// wrote it. `build` already records an in-subtree document as a package-relative ref;
+// `set` stored whatever string it was handed, which is how an absolute path reached a
+// package and then survived into a bundled archive that could not resolve it.
+func TestEvidenceSet_NormalizesAnInSubtreeAbsoluteRef(t *testing.T) {
+	path := writeTestEvidence(t)
+	dir := filepath.Dir(path)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "plan.json"), []byte(`{}`), 0o600))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "docs"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "docs", "system.json"), []byte(`{}`), 0o600))
+
+	_, _, err := executeCommand("evidence", "set", path,
+		"--plan-ref", filepath.Join(dir, "plan.json"),
+		"--system-ref", filepath.Join(dir, "docs", "system.json"))
+	require.NoError(t, err)
+
+	doc := readEvidenceDoc(t, path)
+	assert.Equal(t, "plan.json", doc["planRef"], "a sibling document becomes a bare relative ref")
+	assert.Equal(t, "docs/system.json", doc["systemRef"],
+		"a subdirectory document keeps its subdirectory, with forward slashes")
+}
+
+// Anything bundle would NOT carry must be recorded exactly as given: normalizing it would
+// claim the artifact is somewhere it is not. This is the standing contract — a package may
+// legitimately reference what it does not contain.
+func TestEvidenceSet_LeavesAReferenceItCannotResolveExactlyAsGiven(t *testing.T) {
+	for _, tc := range []struct {
+		name, ref string
+	}{
+		{"absolute outside the package", filepath.Join(string(filepath.Separator), "etc", "hosts")},
+		{"parent traversal", filepath.Join("..", "shared", "plan.json")},
+		{"remote uri", "https://portal.example/plans/q3.json"},
+		{"already package-relative", "scans/plan.json"},
+		// These two pin the IsAbs gate. Cleaning would rewrite both, so without the gate
+		// this card would quietly change how RELATIVE references are recorded — out of
+		// scope, and an unrequested change to what the operator typed.
+		{"relative with a leading dot", "./plan.json"},
+		{"relative through a subdirectory", "docs/../plan.json"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := writeTestEvidence(t)
+			_, _, err := executeCommand("evidence", "set", path, "--plan-ref", tc.ref)
+			require.NoError(t, err)
+			assert.Equal(t, tc.ref, readEvidenceDoc(t, path)["planRef"],
+				"recorded verbatim; rewriting it would misdescribe where the artifact is")
+		})
+	}
+}
+
+func readEvidenceDoc(t *testing.T, path string) map[string]interface{} {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &doc))
+	return doc
+}

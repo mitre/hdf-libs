@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -404,4 +405,66 @@ func TestEvidenceAddEvidence_DistinguishesMissingFileFromMissingDiscriminator(t 
 	require.Error(t, noDiscErr)
 	assert.Contains(t, noDiscErr.Error(), "no format discriminator")
 	assert.NotContains(t, noDiscErr.Error(), "not a local file")
+}
+
+// externalEvidence is carried into the archive when it lives inside the package, so an
+// absolute in-package URI has the same defect planRef had: the artifact travels under a
+// relative entry name while the package names the producing machine's path. Recorded
+// relatively here, for the same reason `build` and `evidence set` do it.
+func TestEvidenceAddEvidence_NormalizesAnInPackageAbsoluteURI(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "logs"), 0o750))
+	artifact := filepath.Join(dir, "logs", "audit.ndjson")
+	require.NoError(t, os.WriteFile(artifact, []byte("{\"message\":\"x\"}\n"), 0o600))
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", artifact, "--format", "ecs")
+	require.NoError(t, err)
+
+	ext := readEvidenceExternal(t, pkg)
+	require.Len(t, ext, 1)
+	entry, _ := ext[0].(map[string]interface{})
+	assert.Equal(t, "logs/audit.ndjson", entry["uri"],
+		"an in-package artifact is recorded relative to the package, subdirectory preserved")
+	// The checksum is over the real file, so normalizing the recorded uri must not disturb it.
+	cs, _ := entry["checksum"].(map[string]interface{})
+	assert.NotEmpty(t, cs["value"], "the artifact's checksum is still computed and recorded")
+}
+
+// An artifact OUTSIDE the package is external by design: it is not carried, and rewriting
+// its URI would claim it is somewhere it is not.
+func TestEvidenceAddEvidence_LeavesAnOutOfPackageURIExactlyAsGiven(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	outside := writeEvidenceArtifact(t, "{\"message\":\"elsewhere\"}\n") // its own TempDir
+	require.False(t, strings.HasPrefix(outside, filepath.Dir(pkg)), "precondition: outside the package")
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", outside, "--format", "ecs")
+	require.NoError(t, err)
+
+	ext := readEvidenceExternal(t, pkg)
+	require.Len(t, ext, 1)
+	entry, _ := ext[0].(map[string]interface{})
+	assert.Equal(t, filepath.ToSlash(outside), entry["uri"], "recorded exactly as given")
+}
+
+// Normalization collapses two spellings of one artifact, which makes the duplicate visible
+// to the existing same-URI guard instead of letting a second entry land for one file.
+func TestEvidenceAddEvidence_NormalizationExposesADuplicateSpelling(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "logs"), 0o750))
+	artifact := filepath.Join(dir, "logs", "audit.ndjson")
+	require.NoError(t, os.WriteFile(artifact, []byte("{\"message\":\"x\"}\n"), 0o600))
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", artifact, "--format", "ecs")
+	require.NoError(t, err)
+
+	// Built by concatenation, NOT filepath.Join: Join cleans its result, which would make
+	// this string identical to the first and the test would pass without the code doing
+	// anything. The point is an UNCLEANED spelling of the same artifact.
+	dotted := dir + "/logs/../logs/audit.ndjson"
+	_, _, err = executeCommand("evidence", "add-evidence", pkg, "--uri", dotted, "--format", "ecs")
+	require.Error(t, err, "the same artifact spelled differently is still the same artifact")
+	assert.Contains(t, err.Error(), "already referenced")
+	assert.Len(t, readEvidenceExternal(t, pkg), 1, "and no second entry lands for one file")
 }

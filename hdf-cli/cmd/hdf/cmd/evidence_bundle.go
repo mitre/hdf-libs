@@ -66,8 +66,13 @@ archive, for handing to a GRC tool or an assessor.
 
 The archive root IS the package's own directory: an entry's path is its reference resolved
 relative to the package, so extracting anywhere reproduces the layout it was built from, and a
-package 'hdf evidence verify' accepts verifies identically on the extracted copy with no path
-rewriting.
+package whose references are recorded relatively verifies identically on the extracted copy with
+no path rewriting. A reference recorded as an ABSOLUTE path inside the package is the exception:
+its document travels under a relative name while the package still names the producing machine's
+path, so the extracted copy cannot resolve it. Every reference that travels is covered, both
+documents and in-tree external evidence. That is reported here and never repaired by rewriting
+the package: 'hdf evidence set' (systemRef, planRef) and 'hdf evidence add-evidence'
+(externalEvidence) record such a reference relatively at authoring time.
 
 Bundle and verify resolve references identically, and neither refuses a package for the shape of
 one: a reference to something the package does not contain — an absolute path elsewhere, a parent
@@ -517,6 +522,26 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 	}
 	for _, u := range unverifiable {
 		fmt.Fprintf(os.Stderr, "  checksum could not be verified for %s\n", sanitizeOutput(u))
+	}
+	// ANY reference that travels — a document, or in-tree external evidence — recorded as
+	// an absolute path inside the package travels as a RELATIVE archive entry, so the
+	// archived package names a path the extracted copy will not have: the bytes travelled
+	// and the reference did not. Reported, never rewritten: the package can carry a
+	// whole-document integrity and signature, and editing its bytes here would invalidate
+	// them. `hdf evidence set` (systemRef, planRef) and `hdf evidence add-evidence`
+	// (externalEvidence) normalize this shape at authoring time; a package already in it,
+	// or one from another producer, is reported.
+	for _, r := range refs {
+		// refContext is excluded because externalReferences[] never travels; everything
+		// that DOES travel — documents and in-tree external evidence — is covered.
+		if r.uri == "" || r.kind == refContext || isRemoteURI(r.uri) || !filepath.IsAbs(r.uri) {
+			continue
+		}
+		if resolved, ok := packageSubtreeRef(pkgDir, r.uri); ok {
+			fmt.Fprintf(os.Stderr,
+				"  %s records %s; it is carried as %s, so the extracted package will not resolve it as recorded\n",
+				r.field, sanitizeOutput(r.uri), resolved)
+		}
 	}
 
 	// The satisfiable half of "report what is NOT in here": bundle cannot know what

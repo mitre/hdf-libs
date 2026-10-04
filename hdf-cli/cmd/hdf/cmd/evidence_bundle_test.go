@@ -655,10 +655,12 @@ func TestEvidenceBundle_VerifiesExternalEvidenceChecksums(t *testing.T) {
 	dir, pkgPath := bundleTree(t)
 	artifact := filepath.Join(dir, "scans", "audit.ndjson")
 	require.NoError(t, os.WriteFile(artifact, []byte(`{"event":"ok"}`+"\n"), 0o600))
-	// The uri is ABSOLUTE because add-evidence resolves it against the process CWD,
-	// not the package directory: a package-relative uri here records no checksum at
-	// all, which made an earlier version of this test vacuous — it "passed" a
-	// tampered artifact because there was nothing to verify.
+	// An ABSOLUTE path is passed so add-evidence finds the artifact and records a real
+	// checksum; a package-relative uri is still resolved against the process CWD rather
+	// than the package directory, which records no checksum and made an earlier version
+	// of this test vacuous — it "passed" a tampered artifact with nothing to verify.
+	// add-evidence now RECORDS that uri relatively, so the absolute form is restored
+	// below; the checksum asserted first is what keeps the vacuity closed.
 	_, _, err := executeCommand("evidence", "add-evidence", pkgPath,
 		"--uri", artifact, "--format", "ecs", "-o", pkgPath)
 	require.NoError(t, err)
@@ -675,6 +677,9 @@ func TestEvidenceBundle_VerifiesExternalEvidenceChecksums(t *testing.T) {
 	require.Len(t, doc.ExternalEvidence, 1)
 	require.NotEmpty(t, doc.ExternalEvidence[0].Checksum.Value,
 		"add-evidence must have recorded a checksum, or this test verifies nothing")
+	// Record the uri absolutely so "what the package records" and "the derived ref" differ
+	// again; the checksum above stays, so nothing about this test goes vacuous.
+	recordAbsoluteExternalURI(t, pkgPath, artifact)
 
 	// Bundles cleanly while the artifact matches what the package recorded.
 	clean := filepath.Join(dir, "clean.zip")
@@ -929,6 +934,8 @@ func TestEvidenceBundle_RefusesToOverwriteExternalEvidence(t *testing.T) {
 			_, _, err := executeCommand("evidence", "add-evidence", pkgPath,
 				"--uri", artifact, "--format", "ecs", "-o", pkgPath)
 			require.NoError(t, err)
+			// As above: keep the recorded uri absolute so the refusal's quoting is pinned.
+			recordAbsoluteExternalURI(t, pkgPath, artifact)
 
 			_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", artifact)
 			require.Error(t, err, "the archive must not be written over recorded evidence")
@@ -1627,4 +1634,174 @@ func TestEvidenceBundle_CarriesADocumentWhoseAlgorithmItCannotVerify(t *testing.
 		"an unconditional guarantee is false while any algorithm cannot be computed")
 	assert.Contains(t, help, "cannot compute",
 		"the help must name the uncomputable-algorithm exception it now carries")
+}
+
+// absolutePlanRefTree builds a package whose planRef is an absolute in-subtree path,
+// written directly because `evidence set` now normalizes exactly this shape. Packages in
+// this state still arrive from hand-editing and from other producers, so bundle must cope.
+func absolutePlanRefTree(t *testing.T) (dir, pkgPath string) {
+	t.Helper()
+	dir, pkgPath = bundleTree(t)
+	doc := readEvidenceDoc(t, pkgPath)
+	doc["planRef"] = filepath.Join(dir, "plan.json")
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+	return dir, pkgPath
+}
+
+// extractZip unpacks an archive into its own directory, which is the only way to observe
+// this defect: the archive LISTING is correct, so asserting on entry names proves nothing.
+func extractZip(t *testing.T, archive, dest string) {
+	t.Helper()
+	r, err := zip.OpenReader(archive)
+	require.NoError(t, err)
+	defer func() { _ = r.Close() }()
+	for _, f := range r.File {
+		require.False(t, filepath.IsAbs(f.Name) || strings.Contains(f.Name, ".."),
+			"archive entry %q must stay inside the extraction directory", f.Name)
+		target := filepath.Join(dest, filepath.FromSlash(f.Name))
+		require.NoError(t, os.MkdirAll(filepath.Dir(target), 0o750))
+		rc, openErr := f.Open()
+		require.NoError(t, openErr)
+		body, readErr := io.ReadAll(rc)
+		_ = rc.Close()
+		require.NoError(t, readErr)
+		require.NoError(t, os.WriteFile(target, body, 0o600))
+	}
+}
+
+// The archive must not be internally inconsistent in silence: the bytes travelled under a
+// relative name while the package still names the producing machine's path.
+func TestEvidenceBundle_ReportsAReferenceTheExtractedPackageCannotResolve(t *testing.T) {
+	dir, pkgPath := absolutePlanRefTree(t)
+	before, err := os.ReadFile(pkgPath)
+	require.NoError(t, err)
+	archive := filepath.Join(dir, "boe.zip")
+
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err, "an absolute in-subtree ref is reported, not refused")
+
+	assert.Contains(t, stderr, "planRef", "the report must name the field that records it")
+	assert.Contains(t, stderr, "will not resolve",
+		"and must say the extracted copy will not resolve it")
+
+	// Rewriting nothing is the point of this card: the archived package is the input.
+	entries := zipEntries(t, archive)
+	assert.Equal(t, before, entries["pkg.json"],
+		"the archived package must be byte-identical to the input package")
+}
+
+// The externalEvidence sibling of ReportsAReferenceTheExtractedPackageCannotResolve. An
+// in-package artifact IS carried, so an absolutely-recorded externalEvidence uri has the
+// same defect a document reference does — and this half of the report went in by widening
+// one condition, which no test covered until this one.
+func TestEvidenceBundle_ReportsExternalEvidenceTheExtractedPackageCannotResolve(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "logs"), 0o750))
+	artifact := filepath.Join(dir, "logs", "audit.ndjson")
+	require.NoError(t, os.WriteFile(artifact, []byte("{\"message\":\"audit\"}\n"), 0o600))
+	_, _, err := executeCommand("evidence", "add-evidence", pkgPath,
+		"--uri", artifact, "--format", "ecs", "-o", pkgPath)
+	require.NoError(t, err)
+	// add-evidence now normalizes, so the bad state is written directly — it still arrives
+	// by hand editing and from other producers.
+	recordAbsoluteExternalURI(t, pkgPath, artifact)
+	before, err := os.ReadFile(pkgPath)
+	require.NoError(t, err)
+
+	archive := filepath.Join(dir, "boe.zip")
+	_, stderr, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err, "an absolute in-package external uri is reported, not refused")
+
+	assert.Contains(t, stderr, "externalEvidence",
+		"the report must name the field that records it")
+	assert.Contains(t, stderr, "will not resolve",
+		"and say the extracted copy will not resolve it")
+	// Anchored on "carried as ", because the RECORDED absolute path printed earlier in the
+	// same line ends with "logs/audit.ndjson" — so the bare substring passes even when the
+	// code prints a wrong entry name. Same trap the checksum-mismatch test anchors against.
+	// Terminated with ", so" as well as prefixed with "carried as ": without the terminator
+	// an appended suffix ("logs/audit.ndjson-BOGUS") still satisfies the assertion, and
+	// without the prefix the recorded absolute path ending in the same substring does.
+	assert.Contains(t, stderr, "carried as logs/audit.ndjson, so",
+		"and name the entry it was actually carried as, exactly")
+
+	entries := zipEntries(t, archive)
+	assert.Contains(t, entries, "logs/audit.ndjson", "the artifact still travels")
+	assert.Equal(t, before, entries["pkg.json"],
+		"and the archived package is byte-identical to the input")
+}
+
+// The card's named test. A relative reference survives extraction into an unrelated
+// directory, and completeness is checked there — which is what the defect silently cost.
+func TestEvidenceBundle_TheExtractedPackageResolvesItsOwnReferences(t *testing.T) {
+	dir, pkgPath := bundleTree(t)
+	require.Equal(t, "plan.json", readEvidenceDoc(t, pkgPath)["planRef"],
+		"precondition: build records a package-relative planRef")
+	// External evidence travels too, so it belongs in the good-path check: added with an
+	// ABSOLUTE in-package path, which add-evidence now records relatively.
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "logs"), 0o750))
+	artifact := filepath.Join(dir, "logs", "audit.ndjson")
+	require.NoError(t, os.WriteFile(artifact, []byte("{\"message\":\"audit\"}\n"), 0o600))
+	_, _, addErr := executeCommand("evidence", "add-evidence", pkgPath,
+		"--uri", artifact, "--format", "ecs", "-o", pkgPath)
+	require.NoError(t, addErr)
+	require.Equal(t, "logs/audit.ndjson",
+		firstExternalURI(t, pkgPath), "precondition: recorded relative to the package")
+	archive := filepath.Join(dir, "boe.zip")
+	_, _, err := executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err)
+
+	dest := t.TempDir() // unrelated to dir
+	extractZip(t, archive, dest)
+
+	extracted := filepath.Join(dest, "pkg.json")
+	assert.Equal(t, "plan.json", readEvidenceDoc(t, extracted)["planRef"],
+		"the extracted package names the carried file, not a path on the producing machine")
+
+	_, stderr, verifyErr := executeCommand("evidence", "verify", extracted)
+	require.NoError(t, verifyErr, "the extracted copy verifies where it was extracted")
+	// Positive and negative: the absence alone cannot tell a check that RAN from a line the
+	// code simply stopped printing.
+	assert.Contains(t, stderr, "Completeness check passed",
+		"completeness must actually run in the extraction directory, not merely not-skip")
+	assert.NotContains(t, stderr, "completeness was not checked",
+		"completeness must be checked in the extraction directory")
+	assert.NotContains(t, stderr, "not reachable here",
+		"and no reference may be unreachable there")
+}
+
+// recordAbsoluteExternalURI rewrites the package's first externalEvidence uri to an
+// absolute path, AFTER add-evidence has computed a real checksum for the artifact.
+// add-evidence now normalizes an in-package absolute uri to a relative one, so a package
+// in this state can no longer be produced by that command — but it still arrives by hand
+// editing and from other producers, and the tests below exist to pin that a message quotes
+// the uri the PACKAGE RECORDS rather than a ref derived from it. That distinction is only
+// observable while the two differ, which is why the state is written here directly.
+func recordAbsoluteExternalURI(t *testing.T, pkgPath, abs string) {
+	t.Helper()
+	doc := readEvidenceDoc(t, pkgPath)
+	ext, ok := doc["externalEvidence"].([]interface{})
+	require.True(t, ok, "precondition: the package records external evidence")
+	require.NotEmpty(t, ext)
+	entry, ok := ext[0].(map[string]interface{})
+	require.True(t, ok)
+	entry["uri"] = filepath.ToSlash(abs)
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+}
+
+// firstExternalURI returns the package's first externalEvidence uri.
+func firstExternalURI(t *testing.T, pkgPath string) string {
+	t.Helper()
+	ext := readEvidenceDoc(t, pkgPath)["externalEvidence"]
+	list, ok := ext.([]interface{})
+	require.True(t, ok)
+	require.NotEmpty(t, list)
+	entry, ok := list[0].(map[string]interface{})
+	require.True(t, ok)
+	uri, _ := entry["uri"].(string)
+	return uri
 }
