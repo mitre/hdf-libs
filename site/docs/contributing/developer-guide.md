@@ -400,7 +400,9 @@ https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.7.0#/$defs/<Type>
 ### Scripts
 
 - Use `rimraf` instead of `rm -rf` in package.json scripts (Windows compatibility)
-- Use `cpy-cli` instead of `cp -r` (Windows compatibility)
+- Use `node:fs` in a small Node script instead of `cp -r` or a shell glob (Windows
+  compatibility) — see `hdf-schema/src/sync-validator-schemas.ts`
+- Use `node --watch-path=<dir>` instead of `nodemon` for file-watching scripts
 - Use `readdirSync` instead of shell globs in Node scripts (`tsc dist/ts/*.ts` fails on Windows PowerShell)
 - Use `working-directory` in GitHub Actions instead of `cd && command`
 
@@ -510,7 +512,7 @@ inventing schema.
 
 The security gate (`pnpm security`) fails on prod advisories at moderate+ and dev
 advisories at high+. Because most advisories are in **transitive** dev
-dependencies we don't control (eslint, vitepress, nodemon, …), we force patched
+dependencies we don't control (eslint, vitepress, …), we force patched
 versions via the `overrides:` block in `pnpm-workspace.yaml` rather than waiting
 for every upstream to re-release.
 

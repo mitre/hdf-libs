@@ -55,8 +55,18 @@ describe('snapshot harness golden coverage', () => {
   it('reports an input whose golden is missing', () => {
     const f = fixtures({ 'a.json': 'input', 'a.json.hdf.json': 'expected', 'b.json': 'input' });
     expect(checkGoldenCoverage(f.input, f.expected, f.manifest)).toEqual([
-      'input b.json has no golden expected/b.json.hdf.json and no entry in no-golden.txt',
+      'input b.json has no golden expected/b.hdf.json and no entry in no-golden.txt',
     ]);
+  });
+
+  it("counts a golden named after the input's stem, which is the current convention", () => {
+    const f = fixtures({ 'a.json': 'input', 'a.hdf.json': 'expected' });
+    expect(checkGoldenCoverage(f.input, f.expected, f.manifest)).toEqual([]);
+  });
+
+  it('still counts the legacy whole-filename golden while the corpus migrates', () => {
+    const f = fixtures({ 'a.json': 'input', 'a.json.hdf.json': 'expected' });
+    expect(checkGoldenCoverage(f.input, f.expected, f.manifest)).toEqual([]);
   });
 
   it('accepts the empty.* convention without a manifest', () => {
@@ -79,7 +89,14 @@ describe('snapshot harness golden coverage', () => {
   it('rejects a manifest entry for an input that has a golden after all', () => {
     const f = fixtures({ 'a.json': 'input', 'a.json.hdf.json': 'expected' }, 'a.json — no golden\n');
     expect(checkGoldenCoverage(f.input, f.expected, f.manifest)).toEqual([
-      'no-golden.txt names a.json, but expected/a.json.hdf.json exists — remove the entry',
+      'no-golden.txt names a.json, but a golden for it exists — remove the entry',
+    ]);
+  });
+
+  it("rejects a manifest entry for an input whose stem-named golden exists", () => {
+    const f = fixtures({ 'a.json': 'input', 'a.hdf.json': 'expected' }, 'a.json — no golden\n');
+    expect(checkGoldenCoverage(f.input, f.expected, f.manifest)).toEqual([
+      'no-golden.txt names a.json, but a golden for it exists — remove the entry',
     ]);
   });
 

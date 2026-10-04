@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,6 +127,35 @@ func TestNewGitLabFetcher_URLValidation(t *testing.T) { //nolint:dupl // URL val
 			require.Error(t, err)
 		})
 	}
+}
+
+// The base URL is reduced to scheme and host by the shared SSRF guard: any
+// userinfo, path or query a caller puts on it never reaches the request, so a
+// crafted base cannot redirect the artifact download or smuggle basic auth.
+func TestGitLabFetcher_BaseURLReducedToSchemeAndHost(t *testing.T) {
+	var gotPath, gotQuery, gotAuth string
+	srv := gitlabServer(t, func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotQuery = r.URL.RawQuery
+		gotAuth = r.Header.Get("Authorization")
+		_, _ = fmt.Fprint(w, minimalGitLabReport)
+	})
+	parsed, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+	crafted := "http://user:secret@" + parsed.Host + "/elsewhere/../admin?x=1#frag"
+
+	f, err := NewGitLabFetcherWithClient(GitLabParams{URL: crafted, ProjectID: "p", JobName: "j"}, &http.Client{})
+	require.NoError(t, err)
+	t.Setenv("GITLAB_TOKEN", "tok")
+	_, err = f.Fetch(context.Background())
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(gotPath, "/api/v4/projects/"), "path must start at the API root, got %q", gotPath)
+	assert.Equal(t, "job=j", gotQuery, "only the fetcher's own query survives; the crafted x=1 and fragment do not")
+	assert.Empty(t, gotAuth, "userinfo on the base URL must not become basic auth")
+
+	_, err = NewGitLabFetcher(GitLabParams{URL: "ftp://gitlab.example.com", ProjectID: "p", JobName: "j"}, shared.TLSOptions{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid GitLab URL scheme "ftp"`, "the shared guard's wording")
 }
 
 // ---- token resolution tests ----
