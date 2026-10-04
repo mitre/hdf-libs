@@ -27,6 +27,12 @@ compliance percentage).
 
 The --results flag is repeatable and supports file globs.
 
+Each document is recorded as a reference relative to the package's own directory, which is
+where -o writes it. Without -o the package goes to stdout, there is no package directory,
+and every reference is a bare filename — so two documents sharing a filename cannot both
+be recorded and are refused rather than collapsed into one reference. Pass -o <file> to
+keep the directories that tell them apart.
+
 Examples:
   hdf evidence build --system portal.json --results scan.json
   hdf evidence build --system portal.json --results rhel9.json --results postgres.json
@@ -188,12 +194,12 @@ func resolvedAbs(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Both inputs exist by the time this runs: a document has just been read, and
-	// the output directory is checked before any reference is computed. So a
-	// resolution failure here is a real one (a permission wall, a symlink loop)
-	// and is surfaced rather than degraded to the lexical form — degrading would
-	// silently reintroduce the /tmp-versus-/private/tmp mismatch this exists to
-	// prevent, with no error to show for it.
+	// A resolution failure here is a real one — a permission wall, a symlink loop, a
+	// dangling link — and is surfaced rather than degraded to the lexical form:
+	// degrading would silently reintroduce the /tmp-versus-/private/tmp mismatch this
+	// exists to prevent, with no error to show for it. Most callers reach this after the
+	// document has been read and the output directory checked, so the inputs exist; the
+	// reference-claim check does not, and relies on exactly this error instead.
 	resolved, err := filepath.EvalSymlinks(abs)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve %s: %w", path, err)
@@ -239,6 +245,51 @@ func documentRef(baseDir, path string) (string, error) {
 		return filepath.Base(path), nil
 	}
 	return packageRelativeRef(baseDir, path)
+}
+
+// refClaims records which source path first claimed each content reference. A reference
+// must name ONE document: two documents recorded under a single reference produce a
+// package carrying both their checksums against it, so verify resolves the reference once
+// and reports at least one mismatch — accusing the operator's own evidence of tampering.
+// Writing to stdout is where this bites, because without a package directory every
+// reference is a bare filename and a daily scan always called audit.json collides with
+// itself across date directories.
+type refClaims map[string]refClaim
+
+// refClaim is the document holding a reference: the path as the operator typed it, for
+// messages, and the resolved path, for deciding whether a later claim is the same document.
+type refClaim struct{ path, resolved string }
+
+// claim records ref for path, or refuses if another document already holds it. Three
+// cases, because conflating them produced false advice: the same path twice is a repeat,
+// one document reached by two spellings is still one document, and two DIFFERENT documents
+// under one reference is unrepresentable in the package.
+func (c refClaims) claim(ref, path string) error {
+	// Compared on the RESOLVED path, because documentRef resolves too. Keying on the string
+	// as typed reported one document reached through a symlink — a `latest ->` beside dated
+	// scan directories — as two different documents, told the operator its package could
+	// not verify when both checksums were identical and it verified, and prescribed -o
+	// where -o was already in effect.
+	resolved, err := resolvedAbs(path)
+	if err != nil {
+		// Returned unwrapped: resolvedAbs already names the path and the cause, and
+		// wrapping it again reads as "failed to resolve X: failed to resolve X: ...".
+		return err
+	}
+	first, taken := c[ref]
+	switch {
+	case taken && first.resolved == resolved && first.path == path:
+		return fmt.Errorf("%s is given twice; it is the same document, so list it once", path)
+	case taken && first.resolved == resolved:
+		return fmt.Errorf("%s and %s are the same document; list it once", first.path, path)
+	case taken:
+		return fmt.Errorf("%s and %s would both be recorded as %q, and a reference must name "+
+			"one document — a package recording two checksums against it cannot verify. "+
+			"Give them distinct filenames, or pass -o <file> so references keep the "+
+			"directories that tell them apart", first.path, path, ref)
+	}
+	c[ref] = refClaim{path: path, resolved: resolved}
+	return nil
 }
 
 // mustRef is documentRef for a path already proven in-tree by addEntry.
@@ -292,7 +343,7 @@ func requireDetectedType(data []byte, path, want, flag string) error {
 // appendTyped fingerprint-checks each path, then lists it under contentType. The
 // file is read ONCE and its bytes reused for both the check and the checksum:
 // reading twice consumed stdin in the guard and left the second read empty.
-func appendTyped(contents []map[string]interface{}, baseDir string, paths []string, schemaType, contentType, flag string) ([]map[string]interface{}, error) {
+func appendTyped(contents []map[string]interface{}, claims refClaims, baseDir string, paths []string, schemaType, contentType, flag string) ([]map[string]interface{}, error) {
 	for _, p := range paths {
 		data, err := readInputFile(p)
 		if err != nil {
@@ -305,6 +356,9 @@ func appendTyped(contents []map[string]interface{}, baseDir string, paths []stri
 		if refErr != nil {
 			return nil, refErr
 		}
+		if err := claims.claim(ref, p); err != nil {
+			return nil, err
+		}
 		contents = append(contents, contentEntryFromBytes(contentType, ref, data))
 	}
 	return contents, nil
@@ -312,6 +366,9 @@ func appendTyped(contents []map[string]interface{}, baseDir string, paths []stri
 
 func runEvidenceBuild(opts evidenceBuildOpts) error {
 	contents := make([]map[string]interface{}, 0, len(opts.resultsPaths)+6)
+	// One claims map for the whole package: a collision between a results document and a
+	// baseline is as unrepresentable as one between two results documents.
+	claims := refClaims{}
 
 	// Every reference is relative to the package's own directory. Writing to
 	// stdout leaves no package location at all, so no relative reference can be
@@ -324,12 +381,16 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 			return fmt.Errorf("output directory %s does not exist; create it before writing the package there", baseDir)
 		}
 	} else {
-		// Said once, and only what is true: there is no package directory, so
-		// every reference is a bare filename whatever the layout.
+		// Said once, and only what is true: there is no package directory, so every
+		// reference is a bare filename whatever the layout — and a bare filename does not
+		// identify a document uniquely, which is the part that costs evidence rather than
+		// just portability.
 		fmt.Fprintf(os.Stderr,
 			"Warning: writing to stdout, so references are recorded as bare filenames — "+
-				"there is no package directory to resolve them against. "+
-				"Use -o <file> for references that resolve.\n")
+				"there is no package directory to resolve them against, and a bare filename "+
+				"does not identify a document uniquely: two documents sharing a filename are "+
+				"refused rather than recorded under one reference. "+
+				"Use -o <file> for references that resolve and keep their directories.\n")
 	}
 
 	// addEntry computes the document's reference from the package's location and
@@ -338,6 +399,9 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 		ref, refErr := documentRef(baseDir, path)
 		if refErr != nil {
 			return refErr
+		}
+		if err := claims.claim(ref, path); err != nil {
+			return err
 		}
 		e, entryErr := buildContentEntry(docType, path, ref)
 		if entryErr != nil {
@@ -368,13 +432,13 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 	}
 	planPaths = append(planPaths, opts.extraPlanPaths...)
 	if len(planPaths) > 0 {
-		if contents, err = appendTyped(contents, baseDir, planPaths, "plan", "hdf-plan", "plan"); err != nil {
+		if contents, err = appendTyped(contents, claims, baseDir, planPaths, "plan", "hdf-plan", "plan"); err != nil {
 			return err
 		}
 	}
 
 	// Optional: baselines
-	if contents, err = appendTyped(contents, baseDir, opts.baselinePaths, "baseline", "hdf-baseline", "baseline"); err != nil {
+	if contents, err = appendTyped(contents, claims, baseDir, opts.baselinePaths, "baseline", "hdf-baseline", "baseline"); err != nil {
 		return err
 	}
 
@@ -392,10 +456,10 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 	// Optional: amendments and comparisons, fingerprint-checked like --plan and
 	// --baseline. verify reads contents[].type to judge completeness, so filing a
 	// document under the wrong type yields a confident wrong verdict, not an error.
-	if contents, err = appendTyped(contents, baseDir, opts.amendmentsPaths, "amendments", "hdf-amendments", "amendments"); err != nil {
+	if contents, err = appendTyped(contents, claims, baseDir, opts.amendmentsPaths, "amendments", "hdf-amendments", "amendments"); err != nil {
 		return err
 	}
-	if contents, err = appendTyped(contents, baseDir, opts.comparisonPaths, "comparison", "hdf-comparison", "comparison"); err != nil {
+	if contents, err = appendTyped(contents, claims, baseDir, opts.comparisonPaths, "comparison", "hdf-comparison", "comparison"); err != nil {
 		return err
 	}
 

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -534,6 +535,11 @@ func TestEvidenceBuild_StdoutWarnsOnceAndOnlyAboutStdout(t *testing.T) {
 	assert.Equal(t, 1, strings.Count(stderr, "Warning:"),
 		"exactly one warning, however many documents are listed")
 	assert.Contains(t, stderr, "bare filenames")
+	// The warning must name the consequence that costs evidence, not only the portability
+	// one: a bare filename does not identify a document uniquely, which is why two
+	// documents sharing a filename are refused rather than recorded under one reference.
+	assert.Contains(t, stderr, "does not identify a document uniquely",
+		"the warning must say references are not unique per document, not merely unresolvable")
 	assert.NotContains(t, stderr, "not beside the package",
 		"the old claim was false for a flat layout")
 }
@@ -667,4 +673,219 @@ func TestEvidenceBuild_AnEmptyPathElementStaysANoOpOnEveryContentFlag(t *testing
 				"the empty element must add nothing, so only system and results are listed")
 		})
 	}
+}
+
+// sameBasenameResults writes the SAME-NAMED results document into n date-style
+// subdirectories with genuinely different bytes, which is the shape that collides: a
+// system scanned daily whose output is always called audit.json.
+func sameBasenameResults(t *testing.T, dir string, days ...string) []string {
+	t.Helper()
+	paths := make([]string, 0, len(days))
+	for i, day := range days {
+		sub := filepath.Join(dir, day)
+		require.NoError(t, os.MkdirAll(sub, 0o750))
+		p := filepath.Join(sub, "audit.json")
+		body := fmt.Sprintf(`{"name": "scan-%d", "baselines": [{"name": "b%d", "requirements": []}]}`, i, i)
+		require.NoError(t, os.WriteFile(p, []byte(body), 0o600))
+		paths = append(paths, p)
+	}
+	return paths
+}
+
+// Two documents recorded under ONE reference make a package that fails its own
+// verification: the single reference carries both checksums, so at least one must be
+// reported as a mismatch and the operator's evidence is accused of tampering.
+func TestEvidenceBuild_RefusesTwoDocumentsThatWouldShareAReference(t *testing.T) {
+	dir := t.TempDir()
+	docs := writeEvidenceInputs(t, dir)
+	scans := sameBasenameResults(t, dir, "2026-09-28", "2026-09-29")
+
+	_, _, err := executeCommand("evidence", "build",
+		"--system", docs["system.json"],
+		"--results", scans[0], "--results", scans[1])
+	require.Error(t, err, "a package whose reference names two documents must not be written")
+	assert.Contains(t, err.Error(), scans[0], "the error must name the first source path")
+	assert.Contains(t, err.Error(), scans[1], "and the second")
+	assert.Contains(t, err.Error(), "audit.json", "and the reference they would share")
+}
+
+// The same document given twice is a different case and gets its own message, rather than
+// one that reads as if two different files collided.
+func TestEvidenceBuild_RefusesTheSameDocumentTwice(t *testing.T) {
+	dir := t.TempDir()
+	docs := writeEvidenceInputs(t, dir)
+
+	_, _, err := executeCommand("evidence", "build",
+		"--system", docs["system.json"],
+		"--results", docs["results.json"], "--results", docs["results.json"])
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "twice", "the message must say the document was given twice")
+	assert.Contains(t, err.Error(), docs["results.json"])
+}
+
+// Guards against over-refusal in three directions: distinct basenames, a single document,
+// and — with -o, where references keep their subdirectories — the very same-basename set
+// that collides on stdout.
+func TestEvidenceBuild_StillBuildsWhenReferencesAreDistinct(t *testing.T) {
+	t.Run("distinct basenames to stdout", func(t *testing.T) {
+		dir := t.TempDir()
+		docs := writeEvidenceInputs(t, dir)
+		second := filepath.Join(dir, "other-results.json")
+		require.NoError(t, os.WriteFile(second, []byte(noTargetsJSON), 0o600))
+		_, _, err := executeCommand("evidence", "build",
+			"--system", docs["system.json"],
+			"--results", docs["results.json"], "--results", second)
+		require.NoError(t, err)
+	})
+
+	t.Run("a single document to stdout", func(t *testing.T) {
+		dir := t.TempDir()
+		docs := writeEvidenceInputs(t, dir)
+		_, _, err := executeCommand("evidence", "build",
+			"--system", docs["system.json"], "--results", docs["results.json"])
+		require.NoError(t, err)
+	})
+
+	t.Run("same basenames in subdirectories, with -o", func(t *testing.T) {
+		dir := t.TempDir()
+		docs := writeEvidenceInputs(t, dir)
+		scans := sameBasenameResults(t, dir, "2026-09-28", "2026-09-29")
+		out := filepath.Join(dir, "pkg.json")
+		_, _, err := executeCommand("evidence", "build",
+			"--system", docs["system.json"],
+			"--results", scans[0], "--results", scans[1], "-o", out)
+		require.NoError(t, err, "-o keeps the subdirectories, so these references are distinct")
+		uris := map[string]bool{}
+		for _, c := range readEvidenceDoc(t, out)["contents"].([]interface{}) {
+			entry, _ := c.(map[string]interface{})
+			uri, _ := entry["uri"].(string)
+			assert.False(t, uris[uri], "no reference may repeat: %s", uri)
+			uris[uri] = true
+		}
+		assert.Contains(t, uris, "2026-09-28/audit.json")
+		assert.Contains(t, uris, "2026-09-29/audit.json")
+	})
+}
+
+// The typed flags (--plan, --baseline, --amendments, --comparison) record references
+// through a different function than --results and --system, so a check on one path leaves
+// the other open. Both are covered here, plus a collision ACROSS the two, which is what
+// the single shared claims map exists for.
+func TestEvidenceBuild_RefusesACollisionOnEveryPathThatRecordsAReference(t *testing.T) {
+	sameNamed := func(t *testing.T, dir, name string, bodies ...string) []string {
+		t.Helper()
+		out := make([]string, 0, len(bodies))
+		for i, body := range bodies {
+			sub := filepath.Join(dir, fmt.Sprintf("dir%d", i))
+			require.NoError(t, os.MkdirAll(sub, 0o750))
+			p := filepath.Join(sub, name)
+			require.NoError(t, os.WriteFile(p, []byte(body), 0o600))
+			out = append(out, p)
+		}
+		return out
+	}
+
+	t.Run("two --baseline documents, the typed-flag path", func(t *testing.T) {
+		dir := t.TempDir()
+		docs := writeEvidenceInputs(t, dir)
+		b := sameNamed(t, dir, "baseline.json",
+			`{"name": "rhel9-stig", "requirements": []}`,
+			`{"name": "pgsql-stig", "requirements": []}`)
+
+		_, _, err := executeCommand("evidence", "build",
+			"--system", docs["system.json"], "--results", docs["results.json"],
+			"--baseline", b[0], "--baseline", b[1])
+		require.Error(t, err, "the typed-flag path must refuse a collision too")
+		assert.Contains(t, err.Error(), b[0])
+		assert.Contains(t, err.Error(), b[1])
+		assert.Contains(t, err.Error(), "baseline.json")
+	})
+
+	t.Run("a --results and a --baseline sharing one reference", func(t *testing.T) {
+		dir := t.TempDir()
+		docs := writeEvidenceInputs(t, dir)
+		// Same basename, different directories, different content types: the collision is
+		// between the two PATHS that record references, not within either one.
+		results := sameNamed(t, dir, "shared.json", noTargetsJSON)[0]
+		baseline := filepath.Join(dir, "dir1", "shared.json")
+		require.NoError(t, os.MkdirAll(filepath.Dir(baseline), 0o750))
+		require.NoError(t, os.WriteFile(baseline,
+			[]byte(`{"name": "rhel9-stig", "requirements": []}`), 0o600))
+
+		_, _, err := executeCommand("evidence", "build",
+			"--system", docs["system.json"], "--results", results, "--baseline", baseline)
+		require.Error(t, err, "a collision across the two recording paths must be refused")
+		assert.Contains(t, err.Error(), "shared.json")
+	})
+}
+
+// One document reached by two spellings is ONE document. Keying the collision on the path
+// as typed reported it as two, with a message that was false four ways: it is not two
+// documents; the package verifies fine because both checksums are identical; it prescribed
+// -o when -o was already passed; and "give them distinct filenames" would have the
+// operator copy one evidence document under two names. Under -o this is the only
+// collision branch reachable at all, since two distinct files always get distinct
+// package-relative references.
+func TestEvidenceBuild_RecognizesOneDocumentReachedByTwoSpellings(t *testing.T) {
+	setup := func(t *testing.T) (dir string, docs map[string]string, aliased, canonical string) {
+		t.Helper()
+		dir = t.TempDir()
+		docs = writeEvidenceInputs(t, dir)
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, "2026-09-30"), 0o750))
+		canonical = filepath.Join(dir, "2026-09-30", "audit.json")
+		require.NoError(t, os.WriteFile(canonical, []byte(noTargetsJSON), 0o600))
+		require.NoError(t, os.Symlink("2026-09-30", filepath.Join(dir, "latest")))
+		aliased = filepath.Join(dir, "latest", "audit.json")
+		return dir, docs, aliased, canonical
+	}
+
+	assertSameDocument := func(t *testing.T, err error) {
+		t.Helper()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "same document",
+			"one document under two spellings must be reported as one document")
+		assert.NotContains(t, err.Error(), "cannot verify",
+			"the package would verify: both checksums are identical")
+		assert.NotContains(t, err.Error(), "distinct filenames",
+			"copying one evidence document under two names is not a remedy")
+		assert.NotContains(t, err.Error(), "-o <file>",
+			"prescribing -o is a dead end when the document is simply listed twice")
+	}
+
+	t.Run("directory symlink, with -o", func(t *testing.T) {
+		dir, docs, aliased, canonical := setup(t)
+		_, _, err := executeCommand("evidence", "build",
+			"--system", docs["system.json"], "--results", aliased, "--results", canonical,
+			"-o", filepath.Join(dir, "pkg.json"))
+		assertSameDocument(t, err)
+	})
+
+	t.Run("uncleaned spelling, to stdout", func(t *testing.T) {
+		_, docs, _, canonical := setup(t)
+		// Built by concatenation: filepath.Join would clean this back to `canonical`.
+		dotted := filepath.Dir(canonical) + "/../2026-09-30/audit.json"
+		_, _, err := executeCommand("evidence", "build",
+			"--system", docs["system.json"], "--results", canonical, "--results", dotted)
+		assertSameDocument(t, err)
+	})
+}
+
+// The resolve step runs before the document is read on the stdout path, so a reference
+// that cannot be resolved is surfaced there rather than degraded to the lexical form —
+// degrading would silently reintroduce the /tmp-versus-/private/tmp mismatch resolvedAbs
+// exists to prevent. Asserted on the MISSING TARGET, not merely on the document name: the
+// read error that a degraded path would produce names the document too, so naming the
+// document alone cannot tell the two apart.
+func TestEvidenceBuild_SurfacesAnUnresolvableReferenceOnTheStdoutPath(t *testing.T) {
+	dir := t.TempDir()
+	docs := writeEvidenceInputs(t, dir)
+	dangling := filepath.Join(dir, "dangling.json")
+	require.NoError(t, os.Symlink(filepath.Join(dir, "no-such-scan.json"), dangling))
+
+	_, _, err := executeCommand("evidence", "build",
+		"--system", docs["system.json"], "--results", dangling)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "dangling.json", "the error must name the document")
+	assert.Contains(t, err.Error(), "no-such-scan.json",
+		"and the target it could not resolve, which a degraded lexical fallback would not")
 }
