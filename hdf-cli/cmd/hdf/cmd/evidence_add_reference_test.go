@@ -447,3 +447,36 @@ func TestEvidenceAddReference_TrimsTheSourceName(t *testing.T) {
 	assert.Equal(t, "stix", entry["sourceName"],
 		"surrounding whitespace is trimmed, as the flag help states")
 }
+
+// Every success-path test in this file passed -o <the input path>, so the branch was
+// exercised but never distinguished from the default, and the two tests using a distinct
+// path both expected no write at all. See the sibling tests in evidence_set_test.go.
+func TestEvidenceAddReference_OutputPathLeavesTheInputUntouched(t *testing.T) {
+	t.Run("-o writes elsewhere and the input is byte-identical", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		before, err := os.ReadFile(pkgPath)
+		require.NoError(t, err)
+		out := filepath.Join(dir, "elsewhere.json")
+
+		_, _, err = executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "cve", "--external-id", "CVE-2021-44228", "-o", out)
+		require.NoError(t, err)
+
+		refs, ok := readPackage(t, out)["externalReferences"].([]any)
+		require.True(t, ok, "the named output carries the array")
+		assert.Len(t, refs, 1, "and the new reference")
+		after, err := os.ReadFile(pkgPath)
+		require.NoError(t, err)
+		assert.Equal(t, before, after, "and the input is untouched")
+	})
+
+	t.Run("without -o the input is replaced in place", func(t *testing.T) {
+		_, pkgPath := referencePackage(t)
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "cve", "--external-id", "CVE-2021-44228")
+		require.NoError(t, err)
+		refs, ok := readPackage(t, pkgPath)["externalReferences"].([]any)
+		require.True(t, ok)
+		assert.Len(t, refs, 1, "the default is to amend in place")
+	})
+}

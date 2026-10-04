@@ -122,3 +122,34 @@ func readEvidenceDoc(t *testing.T, path string) map[string]interface{} {
 	require.NoError(t, json.Unmarshal(data, &doc))
 	return doc
 }
+
+// -o is the difference between amending a package in place and producing a new one, and
+// the branch had no evidence-side coverage at all: neutering it left the whole suite green
+// except one `plan set` test, so an evidence-specific regression here would have silently
+// overwritten an operator's input. Both behaviours are asserted, so neither stands in for
+// the other.
+func TestEvidenceSet_OutputPathLeavesTheInputUntouched(t *testing.T) {
+	t.Run("-o writes elsewhere and the input is byte-identical", func(t *testing.T) {
+		path := writeTestEvidence(t)
+		before, err := os.ReadFile(path)
+		require.NoError(t, err)
+		out := filepath.Join(filepath.Dir(path), "elsewhere.json")
+
+		_, _, err = executeCommand("evidence", "set", path, "--name", "Q3 Evidence", "-o", out)
+		require.NoError(t, err)
+
+		assert.Equal(t, "Q3 Evidence", readEvidenceDoc(t, out)["name"],
+			"the named output carries the change")
+		after, err := os.ReadFile(path)
+		require.NoError(t, err)
+		assert.Equal(t, before, after, "and the input is untouched")
+	})
+
+	t.Run("without -o the input is replaced in place", func(t *testing.T) {
+		path := writeTestEvidence(t)
+		_, _, err := executeCommand("evidence", "set", path, "--name", "Q3 Evidence")
+		require.NoError(t, err)
+		assert.Equal(t, "Q3 Evidence", readEvidenceDoc(t, path)["name"],
+			"the default is to amend in place")
+	})
+}

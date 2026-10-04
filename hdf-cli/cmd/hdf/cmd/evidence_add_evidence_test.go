@@ -468,3 +468,33 @@ func TestEvidenceAddEvidence_NormalizationExposesADuplicateSpelling(t *testing.T
 	assert.Contains(t, err.Error(), "already referenced")
 	assert.Len(t, readEvidenceExternal(t, pkg), 1, "and no second entry lands for one file")
 }
+
+// This file passed -o nowhere, so the branch was wholly untested here. See the sibling
+// tests in evidence_set_test.go.
+func TestEvidenceAddEvidence_OutputPathLeavesTheInputUntouched(t *testing.T) {
+	t.Run("-o writes elsewhere and the input is byte-identical", func(t *testing.T) {
+		pkg := writeTestEvidence(t)
+		before, err := os.ReadFile(pkg)
+		require.NoError(t, err)
+		artifact := writeEvidenceArtifact(t, "{\"message\":\"x\"}\n")
+		out := filepath.Join(filepath.Dir(pkg), "elsewhere.json")
+
+		_, _, err = executeCommand("evidence", "add-evidence", pkg,
+			"--uri", artifact, "--format", "ecs", "-o", out)
+		require.NoError(t, err)
+
+		assert.Len(t, readEvidenceExternal(t, out), 1, "the named output carries the entry")
+		after, err := os.ReadFile(pkg)
+		require.NoError(t, err)
+		assert.Equal(t, before, after, "and the input is untouched")
+	})
+
+	t.Run("without -o the input is replaced in place", func(t *testing.T) {
+		pkg := writeTestEvidence(t)
+		artifact := writeEvidenceArtifact(t, "{\"message\":\"x\"}\n")
+		_, _, err := executeCommand("evidence", "add-evidence", pkg,
+			"--uri", artifact, "--format", "ecs")
+		require.NoError(t, err)
+		assert.Len(t, readEvidenceExternal(t, pkg), 1, "the default is to amend in place")
+	})
+}
