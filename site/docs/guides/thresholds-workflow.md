@@ -199,6 +199,37 @@ So the two failure modes stay distinguishable: a document that breached a policy
 
 A single-file run keeps its original shape, with no per-file prefix line — so adding a second document changes the output format, which is worth knowing if anything downstream parses it.
 
+### Naming a document that arrives on stdin
+
+Passing file paths is what makes a bulk verdict attributable. A pipeline that *streams* documents instead has no filename to report, so every verdict reads the same placeholder:
+
+```console
+$ for tool in grype epss; do cat "$tool.json" | hdf validate threshold - -T policy.yaml; done
+✗ <stdin> — 1 threshold violation
+✗ <stdin> — 1 threshold violation
+```
+
+Two red checks and nothing to tell them apart. `--source-name` supplies the name:
+
+```console
+$ for tool in grype epss; do
+    cat "$tool.json" | hdf validate threshold - -T policy.yaml --source-name "$tool.json"
+  done
+✗ grype.json — 1 threshold violation
+✗ epss.json — 1 threshold violation
+```
+
+It applies to both verdicts, and without it `<stdin>` is unchanged — so nothing shifts for a pipeline already piping. `hdf validate` takes the same flag, since it names documents through the same code.
+
+Passing it alongside a real file argument is **refused** rather than preferred or ignored:
+
+```console
+$ hdf validate threshold grype.json -T policy.yaml --source-name other.json
+Error: --source-name names a document read from stdin; drop it, or pass - instead of grype.json
+```
+
+A name that overrode a real filename could misattribute a failure, which is the opposite of what the flag is for, and one name cannot label several documents.
+
 ## Rules: selecting by field rather than by id
 
 Everything above selects in one of two ways: a count within a status-and-severity bucket, or a named control that must land in a given bucket. Between them they cover a lot — "no failing criticals" is a count, and "`CKV_TF_1` must keep failing" is an exact control list.

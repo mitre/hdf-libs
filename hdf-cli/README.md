@@ -109,6 +109,7 @@ FLAGS
   -t, --type string          Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event
       --schema-ver string    HDF major schema version to validate against: 2 (legacy Heimdall/InSpec exec-json) or 3 (default, latest). Accepts 'hdf@2'/'hdf@3'; majors only.
   -q, --quiet                Suppress output on success (exit code only)
+      --source-name string   Name to report for a document read from stdin (default "<stdin>")
 
 Legacy HDF v2 documents (the InSpec exec-json profiles[]/platform shape SAF converters emit) can be validated directly with `--schema-ver 2`, rather than converting to v3 first.
 
@@ -146,10 +147,12 @@ FLAGS
   -T, --template stringArray   Threshold YAML template file (repeatable; every spec must pass)
   -I, --inline stringArray     Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
       --no-findings            Suppress the list of requirements printed under each violation
+      --source-name string     Name to report for a document read from stdin (default "<stdin>")
 
 EXAMPLES
   hdf validate threshold results.json -T threshold.yaml
   hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+  cat results.json | hdf validate threshold - -T threshold.yaml --source-name grype.json
 
   # Several specs are a conjunction: every one is evaluated, the run fails if any
   # fails, and the violation names which. -T and -I may be combined, and one file

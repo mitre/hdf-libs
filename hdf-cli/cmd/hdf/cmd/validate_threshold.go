@@ -19,11 +19,17 @@ import (
 // a free function, matching how `quiet` is carried on the sibling command.
 var noFindings bool
 
+// sourceName labels a document read from stdin in the verdict line. Package
+// scope mirrors noFindings: the renderer is reached through runBulk, which has
+// no route for per-command options.
+var sourceName string
+
 func newValidateThresholdCmd() *cobra.Command {
 	var (
 		templateFiles   []string
 		templateInlines []string
 		localNoFindings bool
+		localSourceName string
 	)
 
 	cmd := &cobra.Command{
@@ -56,6 +62,27 @@ Designed for CI/CD compliance gates.`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			noFindings = localNoFindings
+			// Refused rather than preferred or ignored. Preferring it would let a
+			// mislabelled name misattribute a real file, which is the opposite of
+			// what the flag exists for; ignoring it would leave half the command
+			// dead with no warning. One name also cannot label several documents.
+			if localSourceName != "" {
+				// One name cannot label several documents, so more than one
+				// argument is refused even when every one of them is `-`: a bulk
+				// run would otherwise print the name against the first document
+				// and the raw `-` against the rest.
+				if len(args) > 1 {
+					return fmt.Errorf("--source-name names a single document read from stdin, "+
+						"but %d arguments were given", len(args))
+				}
+				for _, arg := range args {
+					if arg != "-" {
+						return fmt.Errorf("--source-name names a document read from stdin; "+
+							"drop it, or pass - instead of %s", arg)
+					}
+				}
+			}
+			sourceName = localSourceName
 			// The template is the same for every file, so resolve it once.
 			specs, cfgErr := resolveThresholdSpecs(templateFiles, templateInlines)
 			if cfgErr != nil {
@@ -93,6 +120,13 @@ Designed for CI/CD compliance gates.`,
 	// that author will think to read --help.
 	cmd.Flags().BoolVar(&localNoFindings, "no-findings", false,
 		"Suppress the list of requirements printed under each violation")
+	// A document on stdin has no filename, so every verdict reads <stdin> and a
+	// pipeline streaming several of them cannot tell which one failed. Named
+	// --source-name rather than --label because a spec already carries a Label
+	// and violations are prefixed with it; --label here would read as naming the
+	// policy, in output that already names policies.
+	cmd.Flags().StringVar(&localSourceName, "source-name", "",
+		"Name to report for a document read from stdin (default \"<stdin>\")")
 
 	return cmd
 }
@@ -365,6 +399,9 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 // commands cannot drift apart on how they name the file they are talking about.
 func displayNameFor(file string) string {
 	if file == "" || file == "-" {
+		if sourceName != "" {
+			return sourceName
+		}
 		return "<stdin>"
 	}
 	return file

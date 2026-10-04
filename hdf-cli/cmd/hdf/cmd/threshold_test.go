@@ -1168,6 +1168,90 @@ func TestValidateThreshold_SingleSpecOutputIsUnlabelled(t *testing.T) {
 // label to "-" passed the whole suite, so the one case the helper was written for
 // was the one case unpinned. Both verdicts are checked, because they are rendered
 // by separate branches and only the failure path had any coverage at all.
+// A streaming pipeline loops several documents through stdin, and every verdict
+// then reads `<stdin>` — the same unattributable red check that file arguments
+// used to give, surviving on the one path that has no filename to fall back on.
+func TestValidateThreshold_StdinCanBeNamed(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+	passing := writeResultsAt(t, dir, "passing.yaml", "failed:\n  total:\n    max: 99\n")
+
+	_, stderr, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "threshold", "-", "-T", failing, "--source-name", "grype.json")
+	require.Error(t, err)
+	assert.Contains(t, stderr, "✗ grype.json", "the supplied name must carry the failure verdict")
+	assert.NotContains(t, stderr, "<stdin>", "and must replace the placeholder, not sit beside it")
+
+	// Both verdicts, because they are rendered by separate branches.
+	stdout, _, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "threshold", "-", "-T", passing, "--source-name", "grype.json")
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "✓ grype.json")
+	assert.NotContains(t, stdout, "<stdin>")
+}
+
+// Without the flag nothing changes: <stdin> is still the placeholder, so the flag
+// is additive rather than a behaviour change for anyone already piping.
+func TestValidateThreshold_StdinKeepsItsPlaceholderWithoutTheFlag(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, stderr, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "threshold", "-", "-T", failing)
+	require.Error(t, err)
+	assert.Contains(t, stderr, "✗ <stdin>")
+}
+
+func TestValidateThreshold_SourceNameWithSeveralStdinArgsIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+
+	// Every argument is `-`, so the per-argument check below does not catch it;
+	// without the count check a bulk run labels document 1 with the name and the
+	// rest with a bare dash.
+	_, _, err := executeCommand("validate", "threshold", "-", "-", "-T", failing,
+		"--source-name", "one-name.json")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "single document")
+}
+
+// sourceName is package-level state, so a name set by one invocation must not
+// leak into the next. The pair of tests above would only prove that by file
+// order, which -shuffle breaks; this asserts it within a single test so the
+// guarantee cannot depend on which order Go picks.
+func TestValidateThreshold_SourceNameDoesNotLeakBetweenRuns(t *testing.T) {
+	dir := t.TempDir()
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, named, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "threshold", "-", "-T", failing, "--source-name", "first.json")
+	require.Error(t, err)
+	require.Contains(t, named, "✗ first.json")
+
+	_, unnamed, err := executeCommandWithStdin(t, []byte(testResultsForThreshold),
+		"validate", "threshold", "-", "-T", failing)
+	require.Error(t, err)
+	assert.Contains(t, unnamed, "✗ <stdin>", "the previous run's name must not persist")
+	assert.NotContains(t, unnamed, "first.json")
+}
+
+// Refused rather than silently preferred: an override could misattribute a real
+// file, and ignoring the flag would leave half the command dead with no warning.
+// Attribution is the whole point of the flag, so a wrong one is worse than none.
+func TestValidateThreshold_SourceNameWithAFileIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	results := writeResultsAt(t, dir, "results.json", testResultsForThreshold)
+	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")
+
+	_, _, err := executeCommand("validate", "threshold", results, "-T", failing,
+		"--source-name", "something-else.json")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--source-name",
+		"the refusal must name the flag the caller passed")
+	assert.NotContains(t, err.Error(), "threshold validation",
+		"and must refuse before gating, not report a verdict for a mislabelled document")
+}
+
 func TestValidateThreshold_StdinIsNamedRatherThanDashed(t *testing.T) {
 	dir := t.TempDir()
 	failing := writeResultsAt(t, dir, "failing.yaml", "failed:\n  total:\n    max: 0\n")

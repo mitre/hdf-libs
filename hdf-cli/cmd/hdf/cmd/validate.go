@@ -48,6 +48,7 @@ func NewValidateCmd() *cobra.Command { //nolint:dupl // Cobra command setup; fla
 		localSchemaType string
 		localQuiet      bool
 		localSchemaVer  string
+		localSourceName string
 	)
 
 	cmd := &cobra.Command{
@@ -77,6 +78,25 @@ Examples:
 			validateSchemaVer = ver
 			schemaType = localSchemaType
 			quiet = localQuiet
+			// Same refusal as validate threshold: a name attached to a real file
+			// could misattribute it, and one name cannot label several documents.
+			if localSourceName != "" {
+				// One name cannot label several documents, so more than one
+				// argument is refused even when every one of them is `-`: a bulk
+				// run would otherwise print the name against the first document
+				// and the raw `-` against the rest.
+				if len(args) > 1 {
+					return fmt.Errorf("--source-name names a single document read from stdin, "+
+						"but %d arguments were given", len(args))
+				}
+				for _, arg := range args {
+					if arg != "-" {
+						return fmt.Errorf("--source-name names a document read from stdin; "+
+							"drop it, or pass - instead of %s", arg)
+					}
+				}
+			}
+			sourceName = localSourceName
 
 			files, err := expandGlobs(args)
 			if err != nil {
@@ -91,6 +111,10 @@ Examples:
 
 	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
+	// Shares displayNameFor with `validate threshold`, so it shares the gap too:
+	// a document on stdin has no filename and every verdict reads <stdin>.
+	cmd.Flags().StringVar(&localSourceName, "source-name", "",
+		"Name to report for a document read from stdin (default \"<stdin>\")")
 	cmd.Flags().StringVar(&localSchemaVer, "schema-ver", "", "HDF major schema version to validate against: 2 (legacy Heimdall/InSpec exec-json) or 3 (default, latest). Accepts 'hdf@2'/'hdf@3'; majors only.")
 
 	cmd.AddCommand(newValidateThresholdCmd())
