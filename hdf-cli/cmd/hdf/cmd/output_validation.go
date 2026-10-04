@@ -77,13 +77,9 @@ func validateHDFDocument(data []byte) error {
 	return nil
 }
 
-// writeValidatedHDFOutput validates HDF-shaped output before writing.
-// On validation failure, returns an error and does NOT write — the caller
-// must surface the error to the user. This is the runtime gate that
-// complements the CI-side fixture round-trip gate (see ufz8).
-//
-// If the caller passed --no-validate, validation is skipped and the
-// behaviour matches writeConvertOutput.
+// writeValidatedHDFOutput validates HDF-shaped output before writing, and on
+// failure returns an error without writing, so an invalid document never
+// reaches disk unless --no-validate says to write it anyway.
 func writeValidatedHDFOutput(cmd *cobra.Command, data []byte, path string) error {
 	if !shouldSkipValidation(cmd) {
 		if err := validateHDFDocument(data); err != nil {
