@@ -50,6 +50,7 @@ export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js'
 
 // Grype to HDF converter
 export { convertGrypeToHdf } from '../converters/grype-to-hdf/typescript/index.js';
+export { convertHadolintToHdf } from '../converters/hadolint-to-hdf/typescript/index.js';
 
 // DefectDojo to HDF converter
 export { convertDefectDojoToHdf } from '../converters/defectdojo-to-hdf/typescript/index.js';
@@ -101,6 +102,9 @@ export { convertHdfToXml } from '../converters/hdf-to-xml/typescript/index.js';
 
 // GitLab Security Report to HDF converter
 export { convertGitlabToHdf } from '../converters/gitlab-to-hdf/typescript/index.js';
+
+// GitLab Vulnerability Report (GraphQL envelope) to HDF converter
+export { convertGitlabVulnerabilitiesToHdf } from '../converters/gitlab-vulnerabilities-to-hdf/typescript/index.js';
 
 // Trivy to HDF converter (router: native JSON + delegation)
 export { convertTrivyToHdf } from '../converters/trivy-to-hdf/typescript/index.js';

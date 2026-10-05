@@ -24,14 +24,19 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# NODE_VERSION pinned to the current LTS (22). Matches each published
-# package's `engines.node: ">=22.0.0"`. Node 20 reaches EOL 2026-04-30;
-# we're not advertising support for a runtime that loses security patches
-# during the lifetime of this release.
+# NODE_VERSION tracks the Active LTS and matches every published package's
+# `engines.node`. THE POLICY IS "Active LTS", not a version: at the time of this
+# pin (2026-10) that is 24 (Krypton), with 22 having moved to Maintenance — still
+# patched, but no longer moving forward. Node 24 itself enters Maintenance on
+# 2026-10-20 and 26 becomes Active LTS on 2026-10-28, so expect this to move
+# again; check the schedule rather than trusting this line.
+# ADR-0008 §5 owns the floor (ADR-0011 revision 8 handed it there) and names the
+# tooling that needs it: Redocly and @hey-api/openapi-ts both require a 22.x
+# minor the previous floor did not guarantee.
 # The Go toolchain version comes from go.work (composite setup uses
 # go-version-file) — no separate pin to drift.
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
   GOVULNCHECK_VERSION: 'v1.1.4'
   GOTESTSUM_VERSION: 'v1.13.0'
@@ -886,7 +891,7 @@ jobs:
         #     (see package.json `"type": "module"`).
         #   no-resolution: sub-path exports (./helpers, ./hdf-results)
         #     require the "exports" map, which node10 does not support.
-        #     We target Node 22+ (see engines field in package.json).
+        #     We target Node 24+ (see engines field in package.json).
         #
         # `pnpm exec` (not dlx): attw is a root devDependency so we get
         # the lockfile-pinned version. dlx pulls each transitive dep

@@ -127,6 +127,12 @@
       "acceptsEmpty": false
     },
     {
+      "source": "gitlab-vulnerabilities",
+      "dest": "hdf",
+      "name": "GitLab Vulnerability Report to HDF",
+      "acceptsEmpty": false
+    },
+    {
       "source": "gosec",
       "dest": "hdf",
       "name": "gosec to HDF",
@@ -136,6 +142,12 @@
       "source": "grype",
       "dest": "hdf",
       "name": "Grype to HDF",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hadolint",
+      "dest": "hdf",
+      "name": "hadolint to HDF",
       "acceptsEmpty": false
     },
     {

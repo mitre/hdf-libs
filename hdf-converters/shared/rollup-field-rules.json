@@ -1,0 +1,154 @@
+{
+  "$comment": "ADR-0017 §6's merge table, one entry per property of Evaluated_Requirement, in the ADR's own order. It is the checkable link between the ADR prose and the two roll-up implementations: shared/go/rollup_test.go and shared/typescript/rollup.test.ts both assert that this file's field set is exactly the schema's Evaluated_Requirement property set, so a new schema field cannot land without a recorded merge rule, and both read the same rule names, so the languages cannot drift. adrRule quotes the ADR row (markdown emphasis stripped); a reviewer checks the implementation by reading dev-docs/adr-0017-raw-source-artifact-carriage-and-requirement-rollup.md §6 beside this file.",
+  "adr": "dev-docs/adr-0017-raw-source-artifact-carriage-and-requirement-rollup.md",
+  "section": "6",
+  "rules": {
+    "mergeKey": "The field entries are grouped by. Identical across a group by construction.",
+    "concat": "Concatenate the members' values in source order.",
+    "union": "Union the members' values, de-duplicated on identity, first-seen order preserved.",
+    "tagsPerKey": "Per tag key: a key both members carry as an array unions; every other key first-wins; a key only a later member carries is added. ONE EXCEPTION: the unrated-severity marker (severity_rating: unrated) is derived, not a tag — it survives only if EVERY member carried it, because it asserts the severity was defaulted rather than rated.",
+    "worstWins": "The worst value across the members wins, whatever the member order. Absent loses to present.",
+    "firstWins": "The first member's value wins — present or absent. A later member contributes nothing.",
+    "derived": "Not merged. Recomputed after merging from the merged results and overrides, so the helper drops the pre-merge values rather than carrying the first member's."
+  },
+  "fields": [
+    {
+      "field": "id",
+      "rule": "mergeKey",
+      "adrRule": "the merge key; identical by construction"
+    },
+    {
+      "field": "results",
+      "rule": "concat",
+      "adrRule": "concatenate, in source order — the whole point"
+    },
+    {
+      "field": "affectedPackages",
+      "rule": "union",
+      "identity": "purl where present, else name + version",
+      "adrRule": "union, de-duplicated on purl where present, else name + version; source order preserved. Conflicts in 64 of 68 groups; first-wins would discard real package facts"
+    },
+    {
+      "field": "code",
+      "rule": "firstWins",
+      "adrRule": "first-wins. Conflicts in 66 of 68 groups today only because payloads are misplaced (§5); once they move, a rolled-up requirement's code is genuinely shared or absent"
+    },
+    {
+      "field": "cwe",
+      "rule": "union",
+      "identity": "the string itself",
+      "adrRule": "union, de-duplicated on identity where the member has one"
+    },
+    {
+      "field": "refs",
+      "rule": "union",
+      "identity": "the whole member — Reference declares no identity field",
+      "adrRule": "union, de-duplicated on identity where the member has one"
+    },
+    {
+      "field": "externalReferences",
+      "rule": "union",
+      "identity": "the whole member — External_Reference declares no identity field",
+      "adrRule": "union, de-duplicated on identity where the member has one"
+    },
+    {
+      "field": "evidence",
+      "rule": "union",
+      "identity": "the whole member — Evidence declares no identity field",
+      "adrRule": "union, de-duplicated on identity where the member has one"
+    },
+    {
+      "field": "statusOverrides",
+      "rule": "union",
+      "identity": "the whole member — Status_Override declares no identity field",
+      "adrRule": "union, de-duplicated on identity where the member has one"
+    },
+    {
+      "field": "poams",
+      "rule": "union",
+      "identity": "the whole member — POAM declares no identity field",
+      "adrRule": "union, de-duplicated on identity where the member has one"
+    },
+    {
+      "field": "tags",
+      "rule": "tagsPerKey",
+      "adrRule": "per key: array-valued tags union; scalar-valued tags first-wins",
+      "note": "The marker tag severity_rating=unrated is computed during the merge as an AND across the members, not merged as a scalar key. Merged as a tag it is wrong both ways: added from a later member it labels a rated requirement unrated; kept from the first member it claims no rating beside a genuine worst-wins severity. Unlike the derived fields, the caller cannot recompute it — after merging nothing distinguishes a rated severity from one defaulted to 0.5."
+    },
+    {
+      "field": "impact",
+      "rule": "worstWins",
+      "adrRule": "worst-wins. Exercised by exactly one real group (veracode id 12, impacts 0.5 and 0.3)"
+    },
+    {
+      "field": "severity",
+      "rule": "worstWins",
+      "adrRule": "worst-wins. Exercised by exactly one real group (veracode id 12, impacts 0.5 and 0.3)"
+    },
+    {
+      "field": "effectiveImpact",
+      "rule": "worstWins",
+      "adrRule": "worst-wins. Exercised by exactly one real group (veracode id 12, impacts 0.5 and 0.3)"
+    },
+    {
+      "field": "title",
+      "rule": "firstWins",
+      "adrRule": "first-wins. Zero conflicts in all 68 groups; stated as a rule so the helper has defined behaviour when a future converter conflicts"
+    },
+    {
+      "field": "descriptions",
+      "rule": "firstWins",
+      "adrRule": "first-wins. Zero conflicts in all 68 groups; stated as a rule so the helper has defined behaviour when a future converter conflicts"
+    },
+    {
+      "field": "sourceLocation",
+      "rule": "firstWins",
+      "adrRule": "first-wins, and meaningless on a rolled-up requirement — see Open Questions"
+    },
+    {
+      "field": "controlType",
+      "rule": "firstWins",
+      "adrRule": "first-wins"
+    },
+    {
+      "field": "verificationMethod",
+      "rule": "firstWins",
+      "adrRule": "first-wins"
+    },
+    {
+      "field": "applicability",
+      "rule": "firstWins",
+      "adrRule": "first-wins"
+    },
+    {
+      "field": "cvss",
+      "rule": "firstWins",
+      "adrRule": "first-wins; these describe the vulnerability, not the instance"
+    },
+    {
+      "field": "epss",
+      "rule": "firstWins",
+      "adrRule": "first-wins; these describe the vulnerability, not the instance"
+    },
+    {
+      "field": "kev",
+      "rule": "firstWins",
+      "adrRule": "first-wins; these describe the vulnerability, not the instance"
+    },
+    {
+      "field": "effectiveStatus",
+      "rule": "derived",
+      "adrRule": "not merged — derived after merging, from the merged results and overrides"
+    },
+    {
+      "field": "disposition",
+      "rule": "derived",
+      "adrRule": "not merged — derived after merging, from the merged results and overrides"
+    },
+    {
+      "field": "effectiveChecksum",
+      "rule": "derived",
+      "adrRule": "not merged — derived after merging, from the merged results and overrides"
+    }
+  ]
+}
