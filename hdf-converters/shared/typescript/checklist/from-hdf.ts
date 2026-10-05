@@ -1,5 +1,10 @@
 import { hdfTime, requireHdfResults } from '../converterutil.js';
-import { requirementEffectiveStatus, governingImpactOverride, requirementDisposition } from '../status.js';
+import {
+  requirementEffectiveStatus,
+  governingImpactOverride,
+  requirementDisposition,
+  schemaTimestamp,
+} from '../status.js';
 import type {
   HDFResults,
   EvaluatedBaseline,
@@ -188,9 +193,9 @@ function formatOverride(o: StatusOverride): string {
   if (o.reason) s += `: ${o.reason}`;
   const meta: string[] = [];
   if (o.appliedBy?.identifier) meta.push(`by ${o.appliedBy.identifier}`);
-  const applied = hdfTime(o.appliedAt);
+  const applied = hdfTime(schemaTimestamp(o.appliedAt));
   if (applied) meta.push(`applied ${formatTimestamp(applied)}`);
-  const expires = hdfTime(o.expiresAt);
+  const expires = hdfTime(schemaTimestamp(o.expiresAt));
   if (expires) meta.push(`expires ${formatTimestamp(expires)}`);
   if (meta.length > 0) s += ` (${meta.join(', ')})`;
   return s;

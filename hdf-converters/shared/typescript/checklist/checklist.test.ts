@@ -1,3 +1,7 @@
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
 import { describe, it, expect } from 'vitest';
 import type { HDFResults } from '@mitre/hdf-schema';
 import { CheckStatus, Checklist } from './model.js';
@@ -13,6 +17,8 @@ import { parseCklb, serializeCklb } from './cklb.js';
 import { checklistToHdf } from './to-hdf.js';
 import { hdfToChecklist } from './from-hdf.js';
 import { setDefaultMaxInputSize } from '../converterutil.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const SAMPLE_CKL = `<?xml version="1.0" encoding="UTF-8"?>
 <CHECKLIST>
@@ -771,5 +777,29 @@ describe('checklist SEVERITY_OVERRIDE selection', () => {
     ]);
     expect(got.severity).toBe('low');
     expect(got.justification).toBe('adjustment');
+  });
+});
+
+interface ChecklistOverrideProseCase {
+  name: string;
+  note: string;
+  wantComments: string;
+  requirement: Record<string, unknown>;
+}
+
+const overrideProseCases = (
+  JSON.parse(
+    readFileSync(join(__dirname, '..', '..', 'checklist-override-prose-cases.json'), 'utf-8'),
+  ) as { cases: ChecklistOverrideProseCase[] }
+).cases;
+
+// The shared case table pins the COMMENTS provenance line a .ckl consumer reads.
+// The requirement is fed as raw JSON rather than a typed object so the Go zero
+// time arrives as the string a Go-serialized override actually carries.
+describe('checklist override prose: shared Go/TypeScript case table', () => {
+  it.each(overrideProseCases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    const doc = JSON.stringify({ baselines: [{ name: 'b', requirements: [c.requirement] }] });
+    const vuln = hdfToChecklist(doc).stigs[0]?.vulns[0];
+    expect(vuln?.comments, c.note).toBe(c.wantComments);
   });
 });

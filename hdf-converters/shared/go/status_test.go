@@ -1,10 +1,14 @@
 package shared
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 )
@@ -198,4 +202,35 @@ func TestRequirementDisposition_TypelessOverrideYieldsEmpty(t *testing.T) {
 		AppliedAt: mustTime(t, "2025-01-01T00:00:00Z"), ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
 	}}}
 	assert.Equal(t, "", RequirementDisposition(req, time.Time{}))
+}
+
+type statusExpiryCase struct {
+	Name        string                   `json:"name"`
+	Note        string                   `json:"note"`
+	Want        string                   `json:"want"`
+	Requirement hdf.EvaluatedRequirement `json:"requirement"`
+}
+
+func loadStatusExpiryCases(t *testing.T) []statusExpiryCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "status-expiry-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []statusExpiryCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases)
+	return doc.Cases
+}
+
+// The shared case table pins both bridges to the same expiry verdicts. The Go
+// zero time is the load-bearing case: StatusOverride.ExpiresAt is a non-pointer
+// time.Time, so an absent expiry round-trips as 0001-01-01T00:00:00Z and has to
+// read back as "never expires" rather than as an expiry in year 1.
+func TestRequirementEffectiveStatus_SharedExpiryCaseTable(t *testing.T) {
+	for _, c := range loadStatusExpiryCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			assert.Equal(t, c.Want, RequirementEffectiveStatus(c.Requirement), c.Note)
+		})
+	}
 }

@@ -1,3 +1,7 @@
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
 import { describe, it, expect } from 'vitest';
 import {
   asMap,
@@ -24,6 +28,8 @@ import {
   governingOverrideOf,
   disposition,
 } from './exportmap.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function mkResults(...statuses: string[]): Record<string, unknown> {
   return { results: statuses.map((s) => ({ status: s })) };
@@ -310,5 +316,27 @@ describe('disposition', () => {
   it('yields empty for nothing at all, and for a type-less override', () => {
     expect(disposition({}, NOW)).toBe('');
     expect(disposition({ statusOverrides: [{ reason: 'r' }] }, NOW)).toBe('');
+  });
+});
+
+interface ExportmapStatusCase {
+  name: string;
+  note: string;
+  want: { raw: string; rollup: string; overridden: boolean; suppressed: boolean };
+  requirement: Record<string, unknown>;
+}
+
+const statusCases = (
+  JSON.parse(readFileSync(join(__dirname, '..', 'exportmap-status-cases.json'), 'utf-8')) as {
+    cases: ExportmapStatusCase[];
+  }
+).cases;
+
+// statusOf builds the canonical override input from raw JSON itself rather than
+// through the requirement bridge, so the Go zero time has to be normalized here
+// too or the suppression axis flips between languages on the same document.
+describe('statusOf: shared Go/TypeScript case table', () => {
+  it.each(statusCases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    expect(statusOf(c.requirement), c.note).toEqual(c.want);
   });
 });

@@ -20,6 +20,7 @@ import {
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
 import { requireHdfResults } from './converterutil.js';
+import { absentIfGoZeroTime } from './status.js';
 
 export type Obj = Record<string, unknown>;
 
@@ -95,8 +96,8 @@ export function statusOf(req: Obj): Status {
     return [
       {
         status: getStr(o, 'status') || undefined,
-        appliedAt: getStr(o, 'appliedAt') || undefined,
-        expiresAt: getStr(o, 'expiresAt') || undefined,
+        appliedAt: absentIfGoZeroTime(getStr(o, 'appliedAt') || undefined),
+        expiresAt: absentIfGoZeroTime(getStr(o, 'expiresAt') || undefined),
       },
     ];
   });
