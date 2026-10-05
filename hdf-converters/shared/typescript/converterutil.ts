@@ -135,6 +135,7 @@ export function limitArray<T>(
 // converter imports; hdf-utilities exports stripHtml (lowercase h).
 export { stripHtml as stripHTML } from '@mitre/hdf-utilities';
 export { chainOverrides } from './amendmentchain.js';
+export { rollUpRequirements } from './rollup.js';
 
 /**
  * Emit a non-fatal converter warning as "WARNING: <message>" on stderr, the

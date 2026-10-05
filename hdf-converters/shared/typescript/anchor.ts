@@ -79,6 +79,43 @@ export function assertRequirementCount(result: unknown, want: number, msg: strin
 }
 
 /**
+ * Count the results a converter emitted, across both output shapes, the way
+ * totalRequirements counts requirements: results live under
+ * baselines[].requirements[].results in an HDFResults document and under
+ * requirements[].results at the top level of an HDFBaseline. Roll-up (ADR-0017
+ * §6) moves the raw-finding count off the requirements and onto the results, so
+ * this is the anchor that still fails on a silent under-extraction once a
+ * converter emits one requirement per id. Input may be a JSON string or an
+ * already-parsed document.
+ */
+function totalResults(result: unknown): number {
+  const doc = (typeof result === 'string' ? JSON.parse(result) : result) as {
+    requirements?: Array<{ results?: unknown[] }>;
+    baselines?: Array<{ requirements?: Array<{ results?: unknown[] }> }>;
+  };
+  const count = (reqs: Array<{ results?: unknown[] }> | undefined): number =>
+    (reqs ?? []).reduce((sum, r) => sum + (r.results?.length ?? 0), 0);
+  return (
+    count(doc.requirements) + (doc.baselines ?? []).reduce((sum, b) => sum + count(b.requirements), 0)
+  );
+}
+
+/**
+ * Assert the converter emitted exactly want results — the result-side
+ * ground-truth anchor, and the one ADR-0017 §6 makes mandatory for a rolled-up
+ * converter, whose requirement count no longer tracks its findings. want must
+ * come from a source-derived count (the count* helpers above), never from
+ * converter output. msg states the source-derived relationship.
+ */
+export function assertResultCount(result: unknown, want: number, msg: string): void {
+  expect(
+    want,
+    `anchor proves nothing with want=0 — use a fixture with >=1 source finding: ${msg}`,
+  ).toBeGreaterThan(0);
+  expect(totalResults(result), msg).toBe(want);
+}
+
+/**
  * Count the requirements in a raw HDF Results document — the sum of
  * baselines[].requirements lengths. Export-side ground truth (one output record
  * per baseline requirement); unlike countJsonItemsUnderKey it does NOT

@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,6 +45,48 @@ func TestTotalRequirementsBothShapes(t *testing.T) {
 func TestAssertRequirementCount(t *testing.T) {
 	baseline := map[string]interface{}{"requirements": []interface{}{struct{}{}, struct{}{}}}
 	AssertRequirementCount(t, baseline, 2, "happy path")
+}
+
+func TestTotalResultsBothShapes(t *testing.T) {
+	results := map[string]interface{}{
+		"baselines": []interface{}{
+			map[string]interface{}{"requirements": []interface{}{
+				map[string]interface{}{"results": []interface{}{struct{}{}, struct{}{}}},
+				map[string]interface{}{"results": []interface{}{struct{}{}}},
+			}},
+		},
+	}
+	assert.Equal(t, 3, TotalResults(t, results), "HDFResults: baselines[].requirements[].results")
+
+	baseline := map[string]interface{}{"requirements": []interface{}{
+		map[string]interface{}{"results": []interface{}{struct{}{}}},
+		map[string]interface{}{},
+	}}
+	assert.Equal(t, 1, TotalResults(t, baseline), "top-level requirements[].results; a requirement with none counts zero")
+}
+
+// The result anchor must count from the emitted document generically, never
+// through a converter's typed structs (the independence rule at the head of
+// anchor.go): a raw JSON document it has never seen a type for counts the same.
+func TestTotalResultsCountsRawJSONIndependentOfConverterTypes(t *testing.T) {
+	raw := json.RawMessage(`{
+	  "baselines": [
+	    {"requirements": [
+	      {"id": "Grype/CVE-2022-48174", "results": [{"codeDesc": "busybox"}, {"codeDesc": "ssl_client"}]},
+	      {"id": "Grype/CVE-2022-28391", "results": [{"codeDesc": "busybox"}]}
+	    ]},
+	    {"requirements": [{"id": "Grype/CVE-2022-48174", "results": [{"codeDesc": "other host"}]}]}
+	  ]
+	}`)
+	assert.Equal(t, 4, TotalResults(t, raw), "four findings over three requirements in two baselines")
+	AssertResultCount(t, raw, 4, "raw findings in the source")
+}
+
+func TestAssertResultCount(t *testing.T) {
+	doc := map[string]interface{}{"requirements": []interface{}{
+		map[string]interface{}{"results": []interface{}{struct{}{}, struct{}{}}},
+	}}
+	AssertResultCount(t, doc, 2, "happy path")
 }
 
 func TestAssertOverrideCount(t *testing.T) {
