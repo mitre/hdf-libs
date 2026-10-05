@@ -120,8 +120,12 @@ func AdvertisedFilterValues(field string) []string {
 	if canonical == nil {
 		return nil
 	}
-	out := make([]string, 0, len(canonical)+len(FilterAliases(field)))
-	out = append(out, canonical...)
+	// Copied from nil rather than sized by len(canonical)+len(aliases): the sum
+	// is the shape go/allocation-size-overflow flags, and the capacity was only
+	// an upper bound anyway because the loop below is conditional. Copying also
+	// keeps the result from aliasing FilterValues' own slice, so a caller cannot
+	// write through it into the vocabulary.
+	out := append([]string(nil), canonical...)
 	for _, a := range FilterAliases(field) {
 		if a.Advertise {
 			out = append(out, a.Form)

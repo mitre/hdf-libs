@@ -210,6 +210,28 @@ func TestEveryAliasIsAcceptedRegardlessOfAdvertising(t *testing.T) {
 // AdvertisedFilterValues is what help text names: the canonical vocabulary, then
 // the aliases marked for teaching. Read from the shared table so the TypeScript
 // peer cannot advertise a different set.
+// FilterValues hands back the PACKAGE-LEVEL vocabulary slices, so
+// AdvertisedFilterValues must copy rather than alias one: a caller writing
+// through the result would otherwise corrupt the vocabulary for the whole
+// process, and every filter reads it.
+//
+// "severity" is the case that bites. It has no advertised aliases, so the loop
+// appends nothing and the obvious `out := canonical` would return the global
+// slice itself. Fields WITH aliases hide the bug, because appending to a slice
+// whose cap equals its len copies anyway.
+func TestAdvertisedFilterValuesDoesNotAliasTheVocabulary(t *testing.T) {
+	before := append([]string(nil), SeverityValues...)
+
+	got := AdvertisedFilterValues("severity")
+	require.Len(t, got, len(before), "no advertised aliases, so the sets are the same size")
+	for i := range got {
+		got[i] = "MUTATED"
+	}
+
+	assert.Equal(t, before, SeverityValues,
+		"writing through AdvertisedFilterValues must not reach the package vocabulary")
+}
+
 func TestAdvertisedFilterValues(t *testing.T) {
 	table := loadVocabulary(t)
 	require.NotEmpty(t, table.Advertised, "shared table must carry the advertised sets")
