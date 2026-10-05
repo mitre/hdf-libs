@@ -1,9 +1,12 @@
 package atomicfile
 
 import (
+	"bytes"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +27,9 @@ func dirEntries(t *testing.T, dir string) []string {
 }
 
 func TestWriteFile_CreatesFileWithRequestedMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows reports a synthesized mode (0666, or 0444 when read-only) instead of the requested bits, so there is nothing to assert; the content and no-stray-temp halves are covered by TestWriteFile_EmptyData and TestWriteFile_RemovesTempOnRenameFailure, and the mode is covered on unix")
+	}
 	dir := t.TempDir()
 	target := filepath.Join(dir, "out.json")
 
@@ -53,6 +59,9 @@ func TestWriteFile_EmptyData(t *testing.T) {
 // the user's file: the rename installs a new inode, so the mode is carried over
 // deliberately.
 func TestWriteFile_PreservesExistingMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows has no Unix mode bits for the rename to carry over — os.Chmod only toggles the read-only attribute — so the preservation this asserts is unix-only; the content replacement is covered OS-agnostically by TestWriteFile_OpenReaderSeesOneCompleteVersion")
+	}
 	dir := t.TempDir()
 	target := filepath.Join(dir, "doc.json")
 	require.NoError(t, os.WriteFile(target, []byte("old"), 0o600))
@@ -71,6 +80,12 @@ func TestWriteFile_PreservesExistingMode(t *testing.T) {
 // The destination's bytes are the user's input for the in-place commands, so a
 // write that cannot even begin must leave them exactly as they were.
 func TestWriteFile_LeavesDestinationUntouchedOnFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows ignores the 0o500 dir mode, so the staged file is created and the write is not denied; the same leave-nothing-behind property is covered OS-agnostically by TestWriteFile_RemovesTempOnRenameFailure")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("running as root bypasses directory write permissions")
+	}
 	dir := t.TempDir()
 	target := filepath.Join(dir, "doc.json")
 	require.NoError(t, os.WriteFile(target, []byte("original bytes"), 0o600))
@@ -134,16 +149,57 @@ func TestWriteFile_WritesThroughSymlinkedDestination(t *testing.T) {
 	assert.Equal(t, []string{"real.json"}, dirEntries(t, store), "the temp file belongs beside the resolved file")
 }
 
-// A reader racing the write sees one complete version or the other, never a
-// truncated file — the property truncate-then-write cannot offer.
-func TestWriteFile_ReaderSeesOneCompleteVersion(t *testing.T) {
+// A reader holding the destination open across the write gets one complete
+// version, deterministically — and the two platforms get there differently, so
+// each is asserted for what it actually does rather than for a shared guarantee
+// only one of them offers.
+func TestWriteFile_OpenReaderSeesOneCompleteVersion(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "doc.json")
 	oldContent := []byte("old")
-	newContent := make([]byte, 1<<20)
-	for i := range newContent {
-		newContent[i] = 'n'
+	newContent := bytes.Repeat([]byte("n"), 1<<20)
+	require.NoError(t, os.WriteFile(target, oldContent, 0o600))
+
+	reader, err := os.Open(target) // #nosec G304 -- test-controlled path
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = reader.Close() })
+
+	writeErr := WriteFile(target, newContent, 0o600)
+
+	if runtime.GOOS == "windows" {
+		// os.Rename is MoveFileEx(MOVEFILE_REPLACE_EXISTING), which must delete
+		// the destination, and Go opens files without FILE_SHARE_DELETE — so an
+		// open reader makes the replacement fail instead of tear. The caller
+		// sees the error and the destination keeps its complete old content.
+		require.Error(t, writeErr)
+		onDisk, readErr := os.ReadFile(target) // #nosec G304 -- test-controlled path
+		require.NoError(t, readErr)
+		assert.Equal(t, string(oldContent), string(onDisk), "a refused replacement must leave the old version complete")
+		assert.Equal(t, []string{"doc.json"}, dirEntries(t, dir), "a refused replacement must leave no staged file")
+		return
 	}
+
+	require.NoError(t, writeErr)
+	held, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	assert.Equal(t, string(oldContent), string(held), "the handle opened before the write keeps reading the complete old version")
+	fresh, err := os.ReadFile(target) // #nosec G304 -- test-controlled path
+	require.NoError(t, err)
+	assert.Len(t, fresh, len(newContent), "a handle opened after the write sees the complete new version")
+	assert.Equal(t, []string{"doc.json"}, dirEntries(t, dir))
+}
+
+// A reader repeatedly opening the destination while it is replaced never sees a
+// truncated file — the property truncate-then-write cannot offer, and the one
+// most real consumers exercise (open, read, close in a loop).
+func TestWriteFile_ReaderSeesOneCompleteVersion(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("on Windows the replacement is refused whenever the reader's handle happens to be open (MoveFileEx needs FILE_SHARE_DELETE), so whether this write succeeds is a race rather than a guarantee; the Windows outcome is asserted deterministically by TestWriteFile_OpenReaderSeesOneCompleteVersion")
+	}
+	dir := t.TempDir()
+	target := filepath.Join(dir, "doc.json")
+	oldContent := []byte("old")
+	newContent := bytes.Repeat([]byte("n"), 1<<20)
 	require.NoError(t, os.WriteFile(target, oldContent, 0o600))
 
 	done := make(chan struct{})

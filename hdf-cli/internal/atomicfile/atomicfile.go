@@ -2,6 +2,14 @@
 // renaming it into place, so a crash, a full disk or a kill mid-write leaves the
 // destination either wholly old or wholly new. The CLI's in-place commands write
 // the user's own input file, where a truncate-then-write would destroy it.
+//
+// On Windows a write FAILS while another process holds the destination open:
+// os.Rename is MoveFileEx(MOVEFILE_REPLACE_EXISTING), which must delete the
+// destination, and a handle opened without FILE_SHARE_DELETE (what Go's own
+// os.Open requests, and the common case for other readers) refuses that. The
+// destination keeps its complete previous content and the caller gets the error
+// — where a truncate-in-place would have succeeded. Windows also has no Unix
+// mode bits, so the mode handling below is a no-op there.
 package atomicfile
 
 import (
