@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/handle"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
+	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -287,20 +289,71 @@ func TestHdfConvert_AutoDetect_Undetectable(t *testing.T) {
 	}
 }
 
+// schemaInvalidFake stands in for a defective converter: it emits a document that
+// is not valid hdf-results for one designated input and converts every other
+// input for real, so a batch can hold one of each.
+type schemaInvalidFake struct {
+	inner convreg.Converter
+	bad   []byte
+}
+
+func (f *schemaInvalidFake) Name() string { return "Schema-invalid fake" }
+func (f *schemaInvalidFake) Convert(in []byte) ([]byte, error) {
+	if bytes.Equal(in, f.bad) {
+		return []byte(`{"baselines":"not-an-array"}`), nil
+	}
+	return f.inner.Convert(in)
+}
+
+func registerSchemaInvalidFake(t *testing.T, name string, bad []byte) {
+	t.Helper()
+	inner, err := convreg.GetConverter("gosec", "hdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	convreg.RegisterConverter(name, "hdf", &schemaInvalidFake{inner: inner, bad: bad})
+	t.Cleanup(func() { convreg.UnregisterConverter(name, "hdf") })
+}
+
 func TestHdfConvert_SchemaInvalidEndToEnd(t *testing.T) {
-	// A non-UUID componentId makes the output fail schema validation → refused,
-	// nothing written or handed back.
+	// A converter whose output fails schema validation is refused: nothing is
+	// written or handed back.
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	res, out := callConvert(t, convertInput{
-		Content: string(awsConfigFixture(t)), From: "aws-config", Output: "out.json",
-		ComponentID: "not-a-uuid",
-	})
+	bad := awsConfigFixture(t)
+	registerSchemaInvalidFake(t, "schema-invalid-fake", bad)
+	res, out := callConvert(t, convertInput{Content: string(bad), From: "schema-invalid-fake", Output: "out.json"})
 	if res == nil || !res.IsError || !strings.Contains(payloadText(t, res), "SCHEMA_INVALID") {
 		t.Fatalf("invalid output must be refused with SCHEMA_INVALID: %+v / %s", out, payloadTextOrEmpty(res))
 	}
 	if _, err := os.Stat(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "out.json")); !os.IsNotExist(err) {
 		t.Fatal("refused conversion must not write a file")
+	}
+}
+
+// componentId must be a UUID; anything else is a bad argument, refused before
+// the converter runs rather than discovered when the output fails validation.
+func TestHdfConvert_RejectsNonUUIDComponentID(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	res, _ := callConvert(t, convertInput{
+		Content: string(awsConfigFixture(t)), From: "aws-config", Output: "out.json",
+		ComponentID: "CI0012345",
+	})
+	assertArgError(t, res, "CI0012345")
+	if _, err := os.Stat(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "out.json")); !os.IsNotExist(err) {
+		t.Fatal("a refused componentId must not write a file")
+	}
+}
+
+func TestConvertAndPostProcess_RejectsNonUUIDComponentID(t *testing.T) {
+	conv, err := convreg.GetConverter("aws-config", "hdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, terr := convertAndPostProcess(conv, awsConfigFixture(t), nil, "CI0012345")
+	if terr == nil || out != nil {
+		t.Fatalf("a non-UUID componentId must be refused with no document, got %d bytes / %v", len(out), terr)
 	}
 }
 

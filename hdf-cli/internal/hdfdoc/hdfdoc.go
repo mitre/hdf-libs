@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
 
 // ApplyLabels merges the given labels into the "labels" field of every component
@@ -59,10 +60,25 @@ func ApplyLabels(data []byte, labels map[string]string) ([]byte, error) {
 	return json.MarshalIndent(doc, "", "  ")
 }
 
+// ValidateComponentID rejects an id the schema's `format: uuid` would reject.
+func ValidateComponentID(id string) error {
+	if !validators.IsUUID(id) {
+		return fmt.Errorf("componentId %q is not a valid UUID (RFC 4122, e.g. 3f2504e0-4f89-11d3-9a0c-0305e82c3301)", id)
+	}
+	return nil
+}
+
 // ApplyComponentID sets componentId on every component in the HDF JSON document:
 // a fresh UUID per component when generate is true, otherwise the fixedID (when
-// non-empty). No components array is a no-op.
+// non-empty). A fixedID that is not a UUID is an error; no components array is a
+// no-op.
 func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error) {
+	if !generate && fixedID != "" {
+		if err := ValidateComponentID(fixedID); err != nil {
+			return nil, err
+		}
+	}
+
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)

@@ -69,7 +69,7 @@ Examples:
 	}
 
 	cmd.Flags().StringP("output", "o", "", "Write to a different file instead of modifying in-place")
-	cmd.Flags().String("component-id", "", "Set componentId on all components")
+	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components")
 	cmd.Flags().Bool("generate-component-id", false, "Generate a unique componentId for each component")
 
 	return cmd
@@ -179,6 +179,10 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 			"  or:  hdf label set <file> --generate-component-id")
 	}
 
+	if err := checkComponentIDFlag(componentID); err != nil {
+		return err
+	}
+
 	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
@@ -214,9 +218,16 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 	return writeLabelOutput(result, filePath, outputPath)
 }
 
-// applyComponentIDs stamps componentId on all components in the JSON document.
-// If fixedID is non-empty, all components get that ID. If generate is true,
-// each component gets a unique UUID.
+// checkComponentIDFlag accepts an unset --component-id; a set one must be a UUID.
+func checkComponentIDFlag(componentID string) error {
+	if componentID == "" {
+		return nil
+	}
+	if err := hdfdoc.ValidateComponentID(componentID); err != nil {
+		return fmt.Errorf("invalid --component-id: %w", err)
+	}
+	return nil
+}
 
 func runLabelRemove(cmd *cobra.Command, args []string) error {
 	filePath := args[0]

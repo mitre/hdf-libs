@@ -313,6 +313,40 @@ func TestLabelSet_ComponentId(t *testing.T) {
 		}
 	})
 
+	t.Run("non-UUID is rejected and the file is left untouched", func(t *testing.T) {
+		fixture := createLabelTestFixture(t)
+		before, err := os.ReadFile(fixture)
+		require.NoError(t, err)
+
+		_, _, err = executeCommand("label", "set", fixture, "env=prod", "--component-id", "CI0012345")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "--component-id")
+		assert.Contains(t, err.Error(), `"CI0012345"`)
+
+		after, err := os.ReadFile(fixture)
+		require.NoError(t, err)
+		assert.Equal(t, string(before), string(after), "a rejected id must not write, labels included")
+	})
+
+	t.Run("non-UUID with --output creates no file", func(t *testing.T) {
+		fixture := createLabelTestFixture(t)
+		out := filepath.Join(t.TempDir(), "out.json")
+
+		_, _, err := executeCommand("label", "set", fixture, "--component-id", "CI0012345", "-o", out)
+		require.Error(t, err)
+		assert.NoFileExists(t, out)
+	})
+
+	t.Run("an accepted id leaves a document that still validates", func(t *testing.T) {
+		fixture := createLabelTestFixture(t)
+		_, _, err := executeCommand("label", "set", fixture, "--component-id", "3F2504E0-4F89-11D3-9A0C-0305E82C3301")
+		require.NoError(t, err)
+
+		data, err := os.ReadFile(fixture)
+		require.NoError(t, err)
+		require.NoError(t, validateHDFDocument(data))
+	})
+
 	t.Run("generate-component-id assigns unique UUIDs", func(t *testing.T) {
 		fixture := createLabelTestFixture(t)
 		_, _, err := executeCommand("label", "set", fixture, "--generate-component-id")

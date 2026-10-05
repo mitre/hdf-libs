@@ -381,7 +381,7 @@ FLAGS
       --from string           Source format (auto-detected if omitted)
       --to string             Destination format (default: hdf)
       --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
-      --component-id string   Set componentId on all components in the output
+      --component-id string   Set componentId (a UUID) on all components in the output
       --labels strings        Labels applied to all targets (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
       --nist-strict           Fail if input references rules mapped only at a different NIST revision
