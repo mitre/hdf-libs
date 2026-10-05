@@ -50,4 +50,9 @@ describe('the generated assets module', () => {
     }
     expect(REPORT_CSS).toContain('--pico-font-family-sans-serif: system-ui');
   });
+
+  it('pins the original type density and equal-height dashboard panels', () => {
+    expect(REPORT_CSS).toContain('--pico-font-size: 100%');
+    expect(REPORT_CSS).toMatch(/\.dashboard \{[^}]*align-items: stretch/);
+  });
 });

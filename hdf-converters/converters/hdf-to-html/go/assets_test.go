@@ -94,3 +94,11 @@ func TestAssets_StylesheetFetchesNothing(t *testing.T) {
 		}
 	}
 }
+
+// Pico scales the root type up on wide screens and lets grid rows size each
+// panel to its own content; the report layer pins both back, and the goldens
+// alone would only detect a change, not guard it across a regeneration.
+func TestAssets_ReportLayerPinsDensityAndDashboardLayout(t *testing.T) {
+	assert.Contains(t, reportCSS, "--pico-font-size: 100%", "the report renders at the original 16px base, not Pico's wide-screen scale")
+	assert.Regexp(t, `\.dashboard \{[^}]*align-items: stretch`, reportCSS, "the three dashboard panels must stretch to one height")
+}
