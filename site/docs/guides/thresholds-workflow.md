@@ -561,8 +561,7 @@ A value outside its vocabulary returns nothing for every document, so a rule bui
 
 ```
 $ hdf validate threshold results.json -I '{rules: [{name: r, where: {status: [faild]}, max: 0}]}'
-Error: failed to parse inline threshold: -I: r: status "faild" is not a known value
-(expected one of: passed, failed, notApplicable, notReviewed, error)
+Error: failed to parse inline threshold: -I: r: status "faild" is not a known value (expected one of: passed, failed, notApplicable, notReviewed, error)
 ```
 
 A predicate that merely matches nothing *today* is a healthy gate and is accepted — rejecting it would fail a working policy the day its findings are fixed. The distinction is whether the value names something, not whether anything currently has it.
@@ -690,6 +689,53 @@ Two steps. Convert, then check:
 That is the whole integration. `hdf validate threshold` exits non-zero on a violation, which fails the step, which fails the job — no wrapper script, no output parsing, no `jq`.
 
 Keep the policy file in the repository next to the workflow that applies it. It is reviewed like code, and its history shows when a bound was loosened and by whom — which is usually the question being asked after an incident.
+
+### A policy worth copying
+
+The bound most pipelines start with is "nothing may be failing". It works until the first finding nobody can fix this week, and then it gets loosened — which is the loosening that never gets tightened again.
+
+The alternative is to require a *decision* rather than a clean result. Apply the repository's amendments before judging, then let the policy insist that every remaining failure carries one:
+
+```yaml
+- name: Apply the adjudications
+  run: hdf amend apply --results results.json --amendments .github/amendments.json -o judged.json
+
+- name: Apply the threshold
+  run: hdf validate threshold judged.json -T .github/thresholds/policy.yaml
+```
+
+```yaml
+# policy.yaml
+rules:
+    - name: no requirement errored
+      where:
+          status: error
+      max: 0
+    - name: every failure carries a current plan
+      where:
+          status: failed
+          poams: none-valid
+      max: 0
+```
+
+That rule is the one most teams want: a failure may stay failing as long as a POA&M is filed and in force. A finding nobody has planned for fails the build; a finding with a plan does not, and the plan expires on its own date — so the pressure comes back automatically rather than needing someone to remember.
+
+**Pick one adjudication rule, not both.** The broader form accepts *any* recorded decision rather than a plan specifically:
+
+```yaml
+    - name: nothing failing is unadjudicated
+      where:
+          status: failed
+          disposition:
+              not: [waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement]
+      max: 0
+```
+
+Stacking the two is stricter than either and almost certainly not what you want: a finding waived or risk-adjusted — decided, but not *planned* — satisfies the broad rule and still fails the plan rule, so in practice every finding would need a POA&M. Choose the plan rule if a plan is the bar, the disposition rule if a waiver is enough. This repository's own gates use the second; see `.github/hdf-thresholds/README.md`.
+
+Two things make this hold rather than rot. `expiresAt` is required on every override, so an adjudication cannot be permanent — when it lapses the finding returns to the gate by itself. And the `not` list is the full override vocabulary, so a new override type added to the schema does not silently satisfy the rule.
+
+Worth knowing before you adopt it: the two rules are not interchangeable. `poams` asks whether a requirement *carries* a live plan; `disposition` asks what *governs* it. A requirement with a live plan and a newer risk adjustment satisfies the first and not the second.
 
 ## Running a SAF CLI threshold file
 
