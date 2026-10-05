@@ -962,6 +962,26 @@ describe('an override missing its timestamps', () => {
     expect(overrideInputs(withNull)).toHaveLength(1);
   });
 
+  // A Go-serialized override carries 0001-01-01T00:00:00Z for an unset
+  // expiresAt, and every Go peer reads that as never set. Carried through raw it
+  // reads here as a real year-1 instant, i.e. long expired, so the override
+  // would stop governing in TypeScript while still governing in Go.
+  it('reads the Go zero time as never set, not as long expired', () => {
+    const goSerialized = {
+      id: 'GO-ZERO',
+      impact: 0.5,
+      statusOverrides: [
+        {
+          status: 'falsePositive',
+          appliedAt: '2025-01-01T00:00:00Z',
+          expiresAt: '0001-01-01T00:00:00Z',
+          impact: { value: 0 },
+        },
+      ],
+    } as unknown as EvaluatedRequirement;
+    expect(effectiveImpactOf(goSerialized)).toBe(0);
+  });
+
   // governingPoamType indexes control.poams by (index - statusOverrides.length),
   // so dropping an unusable member instead of keeping its slot would silently
   // name the wrong POA&M.

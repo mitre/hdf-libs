@@ -6,7 +6,7 @@
 // go/filter.go.
 
 import type { EvaluatedRequirement } from '@mitre/hdf-schema';
-import { computeEffectiveImpact, type StatusOverrideInput } from '@mitre/hdf-utilities';
+import { computeEffectiveImpact, parseTimestamp, type StatusOverrideInput } from '@mitre/hdf-utilities';
 
 /**
  * Maps a requirement's schema overrides onto the shared helper's neutral shape,
@@ -26,20 +26,28 @@ export function overrideInputs(control: EvaluatedRequirement): StatusOverrideInp
   }));
 }
 
+const GO_ZERO_TIME_MS = new Date('0001-01-01T00:00:00Z').getTime();
+
 /**
  * The schema types these as Date, but a parsed document carries the RFC3339
  * strings they came from, so both shapes arrive here. A string passes through
- * untouched for the helper's parseTimestamp to read, which is what keeps a
- * zone-less value UTC instead of host-local.
+ * for the helper's parseTimestamp to read, which keeps a zone-less value UTC
+ * instead of host-local.
  *
- * Absent or unparseable yields undefined, matching Go: its typed decode gives
- * the zero instant, and its ladder reads a zero ExpiresAt as never expiring and
- * a zero AppliedAt as applied before any real one.
+ * Absent, unparseable, and Go's zero time all yield undefined, matching Go:
+ * its timestamps are non-pointer time.Time, so an unset one round-trips as
+ * 0001-01-01T00:00:00Z and decodes back to IsZero, and its ladder reads that as
+ * never expiring rather than as a real instant in year 1.
+ *
+ * Same rule as absentIfGoZeroTime in hdf-converters/shared. Duplicated because
+ * that package sits above this one; the shared home would be hdf-utilities.
  */
 function rfc3339(value: Date | string | undefined): string | undefined {
   if (!value) return undefined;
-  if (typeof value === 'string') return value;
-  return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
+  const parsed = typeof value === 'string' ? parseTimestamp(value) : value;
+  if (parsed === null || Number.isNaN(parsed.getTime())) return undefined;
+  if (parsed.getTime() === GO_ZERO_TIME_MS) return undefined;
+  return typeof value === 'string' ? value : parsed.toISOString();
 }
 
 /**

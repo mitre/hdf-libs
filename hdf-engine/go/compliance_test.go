@@ -576,3 +576,20 @@ func TestValidateThresholds_NamedControlMustHoldForEveryEntry(t *testing.T) {
 	// whose fixture carries each id exactly once. Every id in this document is
 	// duplicated, so it cannot be asserted here.
 }
+
+// Characterization, not red-first: Go already reads its own zero time as "never
+// set", because an unset non-pointer time.Time round-trips as
+// 0001-01-01T00:00:00Z and decodes back to IsZero. Pinned because the
+// TypeScript peer read that string as a real year-1 instant — long expired — so
+// the override stopped governing in one language and not the other. Parity:
+// "reads the Go zero time as never set" in test/compliance.test.ts.
+func TestEffectiveImpactReadsTheGoZeroTimeAsNeverSet(t *testing.T) {
+	raw := `{"id":"GO-ZERO","impact":0.5,"statusOverrides":[{"status":"falsePositive",` +
+		`"appliedAt":"2025-01-01T00:00:00Z","expiresAt":"0001-01-01T00:00:00Z","impact":{"value":0}}]}`
+	var req hdf.EvaluatedRequirement
+	require.NoError(t, json.Unmarshal([]byte(raw), &req))
+	require.True(t, req.StatusOverrides[0].ExpiresAt.IsZero(), "the serialized zero time must decode back to IsZero")
+
+	assert.Equal(t, 0.0, EffectiveImpactOf(req, time.Time{}),
+		"an unset expiry must leave the override governing, not read as expired")
+}
