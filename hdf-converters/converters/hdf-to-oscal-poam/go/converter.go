@@ -551,9 +551,10 @@ func evidenceDataIsHref(ev *hdf.Evidence) bool {
 		return true
 	case hdf.Screenshot, hdf.File:
 		return absoluteURIPattern.MatchString(ev.Data)
-	default:
-		return false
+	case hdf.Code, hdf.Log, hdf.EvidenceTypeOther:
 	}
+	// Inline content, and anything unrecognized, goes to a back-matter resource.
+	return false
 }
 
 // evidenceObservation renders a single HDF Evidence item as an OSCAL observation.

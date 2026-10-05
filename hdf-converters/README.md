@@ -30,6 +30,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | GitLab Vulnerability Report (fetcher envelope, triage state preserved) | `convertGitlabVulnerabilitiesToHdf` | JSON |
 | Gosec | `convertGosecToHdf` | JSON |
 | Grype | `convertGrypeToHdf` | JSON |
+| hadolint | `convertHadolintToHdf` | JSON |
 | Hipcheck | `convertHipcheckToHdf` | JSON |
 | Ion Channel | `convertIonchannelToHdf` | JSON |
 | JFrog Xray | `convertJfrogXrayToHdf` | JSON |
@@ -112,7 +113,7 @@ npm install @mitre/hdf-converters@3.5.1  # pin an exact version
 
 This package's npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), which publishes the v2 line and owns the `latest` dist-tag — a plain `npm install @mitre/hdf-converters` installs v2, not this library. Always install the v3 line via `@next` or an exact version (npm does not permit a `v3` dist-tag — tag names may not be valid semver ranges).
 
-Requires Node.js >= 22.
+Requires Node.js >= 24.
 
 ## TypeScript Usage
 

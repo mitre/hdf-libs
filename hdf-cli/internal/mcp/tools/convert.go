@@ -456,9 +456,14 @@ func convertAndPostProcess(conv convreg.Converter, data []byte, labels map[strin
 		return nil, mcperr.New(mcperr.SchemaInvalid, "conversion failed: "+err.Error(), nil).
 			WithNextCall("verify the input is valid output from the source tool")
 	}
-	// Count fidelity: a converter that declares how many requirements its input
-	// must yield is held to it, the same refusal the CLI makes.
+	// Count fidelity: a converter that declares how many requirements — or, when
+	// it rolls its requirements up, how many results — its input must yield is
+	// held to it, the same refusal the CLI makes.
 	if _, err := convreg.CheckRequirementFidelity(conv, data, hdfBytes); err != nil {
+		return nil, mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+			WithNextCall("this indicates a converter defect; do not rely on the output")
+	}
+	if _, err := convreg.CheckResultFidelity(conv, data, hdfBytes); err != nil {
 		return nil, mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
 			WithNextCall("this indicates a converter defect; do not rely on the output")
 	}

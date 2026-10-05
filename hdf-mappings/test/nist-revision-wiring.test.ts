@@ -6,6 +6,7 @@ import {
   translateNistControl,
   getNessusNistControl,
   getHipcheckNistControls,
+  getHadolintNistMapping,
   getCCINistMappings,
   getAllNiktoMappings,
   getAllOwaspMappings,
@@ -57,6 +58,14 @@ describe('revision-aware mapping lookups', () => {
     expect(getHipcheckNistControls('mitre/binary')).toEqual(['SI-7', 'SR-4']);
     setCurrentNistRevision(4);
     expect(getHipcheckNistControls('mitre/binary')).toEqual(['SI-7']);
+  });
+
+  it('hadolint expands SR-3 and drops SR-4 at Rev 4', () => {
+    expect(getHadolintNistMapping('DL3026')?.nist).toEqual(['SR-3']);
+    expect(getHadolintNistMapping('DL3055')?.nist).toEqual(['SR-4']);
+    setCurrentNistRevision(4);
+    expect(getHadolintNistMapping('DL3026')?.nist).toEqual(['SA-12(3)', 'SA-12(15)']);
+    expect(getHadolintNistMapping('DL3055')?.nist).toEqual([]);
   });
 
   it('cci follows Appendix J pointers at Rev 5 and stays raw at Rev 4', () => {

@@ -1,21 +1,17 @@
 name: CI
 
+# NO path filter on either trigger, deliberately. Only this workflow reports the
+# three checks the main ruleset requires, so a PR whose every changed file matched
+# a filter sits BLOCKED on statuses that can never arrive. A same-name stub
+# workflow does not rescue it either: GitHub path filters match "any changed
+# file", not "all", so a mixed doc+code PR fires both and two runs claim one
+# required check name. This repo is public; minutes are free, latency isn't.
 on:
   push:
     # Scoped to main so a branch with an open PR doesn't run CI twice per
     # update (once for the branch push, once for the PR synchronize).
     branches: [main]
-    # '**.md' is deliberately NOT ignored: only this workflow reports the checks
-    # the ruleset requires, so a Markdown-only PR would stay BLOCKED forever.
-    paths-ignore:
-      - 'docs/**'
-      - '.beads/**'
-      - 'LICENSE*'
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '.beads/**'
-      - 'LICENSE*'
 
 permissions:
   contents: read
@@ -24,14 +20,19 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# NODE_VERSION pinned to the current LTS (22). Matches each published
-# package's `engines.node: ">=22.0.0"`. Node 20 reaches EOL 2026-04-30;
-# we're not advertising support for a runtime that loses security patches
-# during the lifetime of this release.
+# NODE_VERSION tracks the Active LTS and matches every published package's
+# `engines.node`. THE POLICY IS "Active LTS", not a version: at the time of this
+# pin (2026-10) that is 24 (Krypton), with 22 having moved to Maintenance — still
+# patched, but no longer moving forward. Node 24 itself enters Maintenance on
+# 2026-10-20 and 26 becomes Active LTS on 2026-10-28, so expect this to move
+# again; check the schedule rather than trusting this line.
+# ADR-0008 §5 owns the floor (ADR-0011 revision 8 handed it there) and names the
+# tooling that needs it: Redocly and @hey-api/openapi-ts both require a 22.x
+# minor the previous floor did not guarantee.
 # The Go toolchain version comes from go.work (composite setup uses
 # go-version-file) — no separate pin to drift.
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   GOLANGCI_LINT_VERSION: 'v2.11.3'
   GOVULNCHECK_VERSION: 'v1.1.4'
   GOTESTSUM_VERSION: 'v1.13.0'
@@ -137,6 +138,10 @@ jobs:
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
           "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ \
             > scan-artifacts/zizmor.sarif
+      # release.yml's version assertion cannot run here (no goreleaser dist),
+      # so its test runs instead — the script needs only bash and jq.
+      - name: The release version assertion still asserts
+        run: bash scripts/check-release-version.test.sh
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-workflows
@@ -886,7 +891,7 @@ jobs:
         #     (see package.json `"type": "module"`).
         #   no-resolution: sub-path exports (./helpers, ./hdf-results)
         #     require the "exports" map, which node10 does not support.
-        #     We target Node 22+ (see engines field in package.json).
+        #     We target Node 24+ (see engines field in package.json).
         #
         # `pnpm exec` (not dlx): attw is a root devDependency so we get
         # the lockfile-pinned version. dlx pulls each transitive dep

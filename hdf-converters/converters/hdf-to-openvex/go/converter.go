@@ -189,6 +189,9 @@ func overrideToStatements(o *hdf.StandaloneOverride, docAuthor string) []Stateme
 		// fold it into action_statement so it's not lost.
 		stmt.ActionStatement = shared.FirstNonEmpty(firstMilestoneAction(o), reason,
 			noRemediationRecorded(o))
+	case vex.StatusUnderInvestigation:
+		// Unreachable: ExportStatusFor never yields it, because an HDF
+		// override records a decision already taken.
 	}
 
 	reasonEmitted := reason != "" &&
