@@ -63,14 +63,21 @@ func expandResultDirectories(args []string) (files []string, hadDirectory bool, 
 	return files, hadDirectory, nil
 }
 
-// resultsUnder walks dir for HDF results documents and counts the .json files
-// it passed over: the ones that are something else, and the ones it could not read.
+// resultsUnder walks dir for HDF results documents and counts every file it
+// passed over: the ones that are not JSON at all, the ones that are JSON but
+// something other than results, and the ones it could not read.
 func resultsUnder(dir string) (files []string, skipped int, err error) {
 	err = filepath.WalkDir(dir, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() || !strings.EqualFold(filepath.Ext(path), ".json") {
+		if entry.IsDir() {
+			return nil
+		}
+		// A results document is JSON, so anything else is passed over without
+		// being read — but it is still a file the caller was told about.
+		if !strings.EqualFold(filepath.Ext(path), ".json") {
+			skipped++
 			return nil
 		}
 		data, readErr := readInputFileAllowEmpty(path)

@@ -44,8 +44,8 @@ func NewConvertCmd() *cobra.Command {
 	cmd.Flags().StringVar(&toFormat, "to", "hdf", "Target format (default: hdf)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
 	cmd.Flags().BoolP("force", "f", false, "Allow overwriting the input file with output")
-	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets (key=value pairs, e.g., --labels system=Portal,environment=production)")
-	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components in the output")
+	cmd.Flags().StringSlice("labels", nil, "Labels to apply to all targets, --to hdf only (key=value pairs, e.g., --labels system=Portal,environment=production)")
+	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components in the output, --to hdf only")
 	cmd.Flags().Int("nist-rev", 0, "NIST 800-53 revision for emitted control tags (4 or 5; default 5)")
 	cmd.Flags().String("report-type", "", "Detail level for --to html: executive, manager or administrator (default administrator)")
 	cmd.Flags().Bool("nist-strict", false, "Fail if input references rules mapped only at a different NIST revision")
@@ -59,6 +59,9 @@ func NewConvertCmd() *cobra.Command {
 
 // dispatchConvert routes the arguments to the single, bulk or combined path.
 func dispatchConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, outputPath string) error {
+	if err := checkHDFOnlyFlags(cmd, toFormat); err != nil {
+		return err
+	}
 	componentID, _ := cmd.Flags().GetString("component-id")
 	if err := checkComponentIDFlag(componentID); err != nil {
 		return err
@@ -88,6 +91,25 @@ func dispatchConvert(cmd *cobra.Command, args []string, fromFormat, toFormat, ou
 		return runConvertBulk(cmd, files, fromFormat, toFormat, outputPath)
 	}
 	return runConvert(cmd, files, fromFormat, toFormat, outputPath)
+}
+
+// checkHDFOnlyFlags refuses the flags that post-process an HDF document when the
+// target is something else. They are applied to the converted bytes, so for a
+// non-HDF target they can only be dropped (the combined path) or fail on bytes
+// that are not JSON (the single path) — a mistake either way, and one the user
+// should hear about before an input is read. Same rule as applyReportType, the
+// other way round.
+func checkHDFOnlyFlags(cmd *cobra.Command, toFormat string) error {
+	format, _ := parseFormatVersion(toFormat)
+	if strings.EqualFold(format, "hdf") {
+		return nil
+	}
+	for _, name := range []string{"labels", "component-id"} {
+		if cmd.Flags().Changed(name) {
+			return fmt.Errorf("--%s applies to --to hdf only, not --to %s", name, format)
+		}
+	}
+	return nil
 }
 
 // applyReportType hands --report-type to a converter that offers report types.
@@ -713,13 +735,104 @@ func runConvertBulk(cmd *cobra.Command, files []string, fromFormat, toFormat, ou
 		return fmt.Errorf("bulk convert requires -o <output-directory> for multiple files")
 	}
 
+	// Name every output before creating the directory, so a set that cannot be
+	// written without losing a report is refused having written nothing.
+	paths, err := bulkOutputPaths(outputDir, files, toFormat)
+	if err != nil {
+		return err
+	}
+	outputs := make(map[string]string, len(files))
+	for i, file := range files {
+		outputs[file] = paths[i]
+	}
+
 	// Ensure output directory exists.
 	if err := os.MkdirAll(outputDir, 0o750); err != nil { // #nosec G301 -- CLI creates user-requested directory
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	return runBulk(files, "conversion", "converted", func(file string) error {
-		outPath := bulkOutputPath(outputDir, file, toFormat)
-		return runConvert(cmd, []string{file}, fromFormat, toFormat, outPath)
+		return runConvert(cmd, []string{file}, fromFormat, toFormat, outputs[file])
 	})
+}
+
+// bulkOutputPaths names an output file for every input. Inputs that share a file
+// name — routine for a directory of per-host scans — would all be named after
+// that one base name, so each of them is named by its path below the directory
+// they share instead, with the separators mapped to a character a file name can
+// hold. Two different inputs that still name one output are refused: one of them
+// silently overwriting the other reports both files converted while keeping only
+// the last. The same input named twice is left alone — an argument list may do
+// that on purpose, and the second conversion writes the same bytes.
+func bulkOutputPaths(outputDir string, files []string, toFormat string) ([]string, error) {
+	grouped := map[string][]int{}
+	for i, file := range files {
+		base := filepath.Base(file)
+		grouped[base] = append(grouped[base], i)
+	}
+
+	paths := make([]string, len(files))
+	for _, group := range grouped {
+		if len(group) == 1 {
+			paths[group[0]] = bulkOutputPath(outputDir, files[group[0]], toFormat)
+			continue
+		}
+		shared := commonParentDir(files, group)
+		for _, i := range group {
+			paths[i] = bulkOutputPath(outputDir, qualifiedInputName(files[i], shared), toFormat)
+		}
+	}
+
+	named := make(map[string]string, len(paths))
+	for i, path := range paths {
+		first, repeat := named[path]
+		switch {
+		case !repeat:
+			named[path] = files[i]
+		case !sameInputFile(first, files[i]):
+			return nil, fmt.Errorf("%s and %s would both be written to %s; convert them separately or to different directories",
+				first, files[i], path)
+		}
+	}
+	return paths, nil
+}
+
+// sameInputFile reports whether two arguments name one file, which an argument
+// list may do on purpose — a literal repeated, or one a glob also matched.
+func sameInputFile(a, b string) bool {
+	absA, errA := filepath.Abs(a)
+	absB, errB := filepath.Abs(b)
+	if errA != nil || errB != nil {
+		return filepath.Clean(a) == filepath.Clean(b)
+	}
+	return absA == absB
+}
+
+// commonParentDir returns the deepest directory every named input lies under, or
+// "" when they share none (a mix of absolute and relative paths, or two volumes).
+func commonParentDir(files []string, group []int) string {
+	parts := strings.Split(filepath.ToSlash(filepath.Dir(files[group[0]])), "/")
+	for _, i := range group[1:] {
+		other := strings.Split(filepath.ToSlash(filepath.Dir(files[i])), "/")
+		shared := 0
+		for shared < len(parts) && shared < len(other) && parts[shared] == other[shared] {
+			shared++
+		}
+		parts = parts[:shared]
+	}
+	return strings.Join(parts, "/")
+}
+
+// qualifiedInputName renders an input path as a single file-name component: its
+// path below root, with the separators (and a Windows volume colon) mapped to
+// characters a file name can carry.
+func qualifiedInputName(file, root string) string {
+	name := filepath.ToSlash(filepath.Clean(file))
+	if root != "" {
+		if rel, err := filepath.Rel(root, file); err == nil {
+			name = filepath.ToSlash(rel)
+		}
+	}
+	name = strings.ReplaceAll(name, ":", "-")
+	return strings.Trim(strings.ReplaceAll(name, "/", "--"), "-")
 }

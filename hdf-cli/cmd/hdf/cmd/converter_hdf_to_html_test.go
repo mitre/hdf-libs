@@ -250,7 +250,7 @@ func TestConvertToHTML_DirectoryInput(t *testing.T) {
 		_, stderr, err := executeCommand("convert", dir, "--to", "html", "-o", out)
 		require.NoError(t, err)
 		assert.Contains(t, stderr, "Combined 3 documents into")
-		assert.Contains(t, stderr, "Skipped 2 file(s) that are not HDF results documents")
+		assert.Contains(t, stderr, "Skipped 3 file(s) that are not HDF results documents")
 
 		data, err := os.ReadFile(out)
 		require.NoError(t, err)
@@ -325,6 +325,65 @@ func TestConvertToHTML_DirectoryInput(t *testing.T) {
 	t.Run("another target does not take a directory", func(t *testing.T) {
 		_, _, err := executeCommand("convert", stageRunDirectory(t), "--to", "csv", "-o", filepath.Join(t.TempDir(), "out.csv"))
 		require.Error(t, err)
+	})
+
+	t.Run("a file that is not results is counted whatever its extension", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "results.json"), fixtures.Results.Minimal, 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "scan.log"), []byte("scanner log\n"), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("hand notes\n"), 0o600))
+
+		out := filepath.Join(t.TempDir(), "report.html")
+		_, stderr, err := executeCommand("convert", dir, "--to", "html", "-o", out)
+		require.NoError(t, err)
+		assert.Contains(t, stderr, "Skipped 2 file(s) that are not HDF results documents")
+		assert.Contains(t, stderr, "Combined 1 documents into")
+	})
+}
+
+func TestConvertToHTML_DirectoryInput_OneReportPerInput(t *testing.T) {
+	t.Run("inputs that share a file name are written to reports of their own", func(t *testing.T) {
+		dir := t.TempDir()
+		rich, err := os.ReadFile(converterFixturePath(t, "hdf-to-html", "input/rich.json"))
+		require.NoError(t, err)
+		for rel, data := range map[string][]byte{
+			"host1/results.json": rich,
+			"host2/results.json": fixtures.Results.Minimal,
+		} {
+			full := filepath.Join(dir, rel)
+			require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o750))
+			require.NoError(t, os.WriteFile(full, data, 0o600))
+		}
+
+		outDir := filepath.Join(t.TempDir(), "reports") + string(filepath.Separator)
+		_, _, err = executeCommand("convert", dir, "--to", "html", "-o", outDir)
+		require.NoError(t, err)
+
+		first, err := os.ReadFile(filepath.Join(outDir, "host1--results.hdf.html"))
+		require.NoError(t, err)
+		second, err := os.ReadFile(filepath.Join(outDir, "host2--results.hdf.html"))
+		require.NoError(t, err)
+		assert.NotEqual(t, string(first), string(second), "each input is reported on its own")
+
+		entries, err := os.ReadDir(outDir)
+		require.NoError(t, err)
+		assert.Len(t, entries, 2, "one report per input, none overwritten")
+	})
+
+	// A qualified name can still meet a file that was already called that.
+	t.Run("two inputs that name one report are refused before anything is written", func(t *testing.T) {
+		dir := t.TempDir()
+		for _, rel := range []string{"host1/results.json", "host2/results.json", "host1--results.json"} {
+			full := filepath.Join(dir, rel)
+			require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o750))
+			require.NoError(t, os.WriteFile(full, fixtures.Results.Minimal, 0o600))
+		}
+
+		outDir := filepath.Join(t.TempDir(), "reports") + string(filepath.Separator)
+		_, _, err := executeCommand("convert", dir, "--to", "html", "-o", outDir)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "host1--results.hdf.html")
+		assert.NoDirExists(t, outDir)
 	})
 }
 

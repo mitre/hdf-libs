@@ -379,13 +379,15 @@ INPUT/OUTPUT
   <dir>       With --to html: every HDF results document under the directory, searched
               recursively; other files there are passed over and counted on stderr
   -o <output> Output file path; defaults to stdout if omitted
+  -o <dir>/   One output per input, named after the input file; inputs that share a file
+              name are named by their path below the directory they share (host1--results)
 
 FLAGS
       --from string           Source format (auto-detected if omitted)
       --to string             Destination format (default: hdf)
       --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
-      --component-id string   Set componentId (a UUID) on all components in the output
-      --labels strings        Labels applied to all targets (key=value, e.g. --labels system=Portal,env=prod)
+      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only)
+      --labels strings        Labels applied to all targets, --to hdf only (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
       --report-type string    Detail level for --to html: executive, manager or administrator (default administrator)
       --nist-strict           Fail if input references rules mapped only at a different NIST revision
