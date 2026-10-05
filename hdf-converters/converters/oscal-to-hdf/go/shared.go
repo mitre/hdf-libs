@@ -351,9 +351,9 @@ func HDFStatusToOSCALRiskStatus(status hdf.ResultStatus) string {
 	switch status {
 	case hdf.Passed, hdf.NotApplicable:
 		return "closed"
-	default:
-		return "open"
+	case hdf.Failed, hdf.Error, hdf.NotReviewed:
 	}
+	return "open"
 }
 
 // OscalVersion is the OSCAL specification version used in reverse converter output documents.
