@@ -605,7 +605,7 @@ func runVersionedConvert(converter Converter, data []byte, fromVersion, toVersio
 	// Count fidelity: a converter that declares how many requirements its input
 	// must yield is held to it on the document it produced, before a version
 	// downgrade or anything else reshapes it.
-	if err := checkRequirementFidelity(converter, data, output, inputPath); err != nil {
+	if err := checkConversionFidelity(converter, data, output, inputPath); err != nil {
 		return nil, err
 	}
 

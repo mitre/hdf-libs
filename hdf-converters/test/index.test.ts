@@ -18,6 +18,7 @@ import {
   convertAwsConfigToHdf,
   convertCheckovToHdf,
   convertGosecToHdf,
+  convertHadolintToHdf,
   convertNiktoToHdf,
   convertZapToHdf,
   convertCyclonedxToHdf,
@@ -138,6 +139,11 @@ describe('Main exports', () => {
   it('should export convertSnykToHdf from main index', () => {
     expect(convertSnykToHdf).toBeDefined();
     expect(typeof convertSnykToHdf).toBe('function');
+  });
+
+  it('should export convertHadolintToHdf from main index', () => {
+    expect(convertHadolintToHdf).toBeDefined();
+    expect(typeof convertHadolintToHdf).toBe('function');
   });
 
   it('should export convertGrypeToHdf from main index', () => {

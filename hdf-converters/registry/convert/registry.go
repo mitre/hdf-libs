@@ -98,10 +98,22 @@ type EmptyInputAccepting interface {
 	AcceptsEmptyInput() bool
 }
 
+// RequirementRollingUp is an optional interface reporting whether a converter
+// rolls its output up to one requirement per id within a baseline (ADR-0017 §6),
+// so the instance that was a second requirement becomes a result. Declared at
+// registration alongside the count declarations, never as a user-facing flag:
+// grouping is the converter's statement about its own emission unit, exactly as
+// the fidelity count is.
+type RequirementRollingUp interface {
+	RollsUpRequirements() bool
+}
+
 // converterOptions collects optional behaviors set at registration time.
 type converterOptions struct {
-	acceptsEmpty bool
-	expect       ExpectedCountFn
+	acceptsEmpty  bool
+	rollsUp       bool
+	expect        ExpectedCountFn
+	expectResults ExpectedCountFn
 }
 
 // ConverterOption customizes a converter registration.
@@ -114,11 +126,26 @@ func WithEmptyInputOK() ConverterOption {
 	return func(o *converterOptions) { o.acceptsEmpty = true }
 }
 
-// applyConverterOptions folds a set of options into a converterOptions value.
+// WithRequirementRollUp marks a converter as emitting one requirement per id
+// within a baseline, with each instance carried as a result (see
+// RequirementRollingUp). It requires WithExpectedResultCount: without it the
+// converter would have no under-extraction guard, because roll-up is exactly
+// what stops the requirement count tracking the findings.
+func WithRequirementRollUp() ConverterOption {
+	return func(o *converterOptions) { o.rollsUp = true }
+}
+
+// applyConverterOptions folds a set of options into a converterOptions value. It
+// refuses a roll-up declaration that is not backed by a result count — the pair
+// cannot be allowed to drift apart, or the guard silently weakens — the same way
+// registry.go refuses a duplicate fingerprint: loudly, at registration.
 func applyConverterOptions(opts []ConverterOption) converterOptions {
 	var o converterOptions
 	for _, opt := range opts {
 		opt(&o)
+	}
+	if o.rollsUp && o.expectResults == nil {
+		panic("convert: WithRequirementRollUp requires WithExpectedResultCount — roll-up moves the raw-finding count from requirements to results, so a rolled-up converter without a result-count declaration has no under-extraction guard (ADR-0017 §6)")
 	}
 	return o
 }
@@ -140,6 +167,16 @@ var converterRegistry = make(map[FormatPair]Converter)
 // RegisterConverter adds a converter to the registry.
 // Format names are normalized (lowercase, trimmed) before registration.
 func RegisterConverter(source, dest string, converter Converter) {
+	// The roll-up/result-count invariant is enforced here as well as in
+	// applyConverterOptions, because this entry point accepts any Converter —
+	// a hand-built or re-wrapped one can declare RollsUpRequirements() without
+	// ever passing through the option helpers, and would otherwise register
+	// with the guard silently absent.
+	if r, rolls := converter.(RequirementRollingUp); rolls && r.RollsUpRequirements() {
+		if _, counts := converter.(ResultCountExpecter); !counts {
+			panic("convert: a converter declaring RollsUpRequirements() must also implement ResultCountExpecter — roll-up moves the raw-finding count from requirements to results, so without a result-count declaration it has no under-extraction guard (ADR-0017 §6)")
+		}
+	}
 	pair := FormatPair{
 		Source: normalizeFormat(source),
 		Dest:   normalizeFormat(dest),
@@ -210,6 +247,7 @@ type typedConverter[T any] struct {
 	errPrefix    string
 	convertFn    func(input []byte, converterVersion string) (*T, error)
 	acceptsEmpty bool
+	rollsUp      bool
 }
 
 func (c *typedConverter[T]) Name() string {
@@ -220,6 +258,12 @@ func (c *typedConverter[T]) Name() string {
 // zero-findings signal. Implements EmptyInputAccepting.
 func (c *typedConverter[T]) AcceptsEmptyInput() bool {
 	return c.acceptsEmpty
+}
+
+// RollsUpRequirements reports whether this converter emits one requirement per id
+// within a baseline. Implements RequirementRollingUp.
+func (c *typedConverter[T]) RollsUpRequirements() bool {
+	return c.rollsUp
 }
 
 func (c *typedConverter[T]) Convert(input []byte) ([]byte, error) {
@@ -243,6 +287,7 @@ func newTypedConverter[T any](displayName, errPrefix string, fn func([]byte, str
 		errPrefix:    errPrefix,
 		convertFn:    fn,
 		acceptsEmpty: o.acceptsEmpty,
+		rollsUp:      o.rollsUp,
 	}
 }
 
@@ -318,6 +363,7 @@ type rawConverter struct {
 	errPrefix    string
 	convertFn    RawConvertFn
 	acceptsEmpty bool
+	rollsUp      bool
 }
 
 func (c *rawConverter) Name() string {
@@ -328,6 +374,12 @@ func (c *rawConverter) Name() string {
 // zero-findings signal. Implements EmptyInputAccepting.
 func (c *rawConverter) AcceptsEmptyInput() bool {
 	return c.acceptsEmpty
+}
+
+// RollsUpRequirements reports whether this converter emits one requirement per id
+// within a baseline. Implements RequirementRollingUp.
+func (c *rawConverter) RollsUpRequirements() bool {
+	return c.rollsUp
 }
 
 func (c *rawConverter) Convert(input []byte) ([]byte, error) {
@@ -347,6 +399,7 @@ func registerRawConverter(source, displayName, errPrefix string, fn RawConvertFn
 		errPrefix:    errPrefix,
 		convertFn:    fn,
 		acceptsEmpty: o.acceptsEmpty,
+		rollsUp:      o.rollsUp,
 	}, o))
 }
 

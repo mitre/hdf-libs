@@ -428,6 +428,8 @@ func reportTypeLabel(t ReportType) string {
 		return "Executive"
 	case Manager:
 		return "Manager"
+	case Administrator:
+		return "Administrator"
 	default:
 		return "Administrator"
 	}

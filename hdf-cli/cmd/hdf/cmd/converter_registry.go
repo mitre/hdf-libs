@@ -25,6 +25,7 @@ type (
 	NamedInput               = convreg.NamedInput
 	EmptyInputAccepting      = convreg.EmptyInputAccepting
 	RequirementCountExpecter = convreg.RequirementCountExpecter
+	ResultCountExpecter      = convreg.ResultCountExpecter
 	FormatPair               = convreg.FormatPair
 	ConverterOption          = convreg.ConverterOption
 )
@@ -40,4 +41,6 @@ var (
 	ListConverters               = convreg.ListConverters
 	WithEmptyInputOK             = convreg.WithEmptyInputOK
 	WithExpectedRequirementCount = convreg.WithExpectedRequirementCount
+	WithExpectedResultCount      = convreg.WithExpectedResultCount
+	WithRequirementRollUp        = convreg.WithRequirementRollUp
 )

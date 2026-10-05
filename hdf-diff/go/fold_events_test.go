@@ -57,6 +57,8 @@ func feBatchDiffs(t *testing.T, seedBytes, nextBytes []byte) map[string]Requirem
 		switch d.State {
 		case StateUnchanged, StateMoved, StateSplit, StateMerged:
 			continue
+		case StateNew, StateAbsent, StateUpdated, StateFixed, StateRegressed:
+			// The event-bearing states — these are what the fold law compares.
 		}
 		out[d.ID] = d
 	}
