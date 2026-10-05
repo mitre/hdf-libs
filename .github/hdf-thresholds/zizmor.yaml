@@ -1,16 +1,10 @@
-# Applies to: zizmor's audit of .github/workflows (one document).
 # zizmor policy: any workflow finding fails CI.
 #
 # The workflows are the pipeline's own attack surface, so this stays at zero
 # rather than carrying the severity tiers a code scanner might want.
-rules:
-    - name: no requirement errored
-      where:
-          status: error
-      max: 0
-    - name: nothing failing is unadjudicated
-      where:
-          status: failed
-          disposition:
-              not: [waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement]
-      max: 0
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0

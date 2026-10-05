@@ -731,7 +731,7 @@ That rule is the one most teams want: a failure may stay failing as long as a PO
       max: 0
 ```
 
-Stacking the two is stricter than either and almost certainly not what you want: a finding waived or risk-adjusted — decided, but not *planned* — satisfies the broad rule and still fails the plan rule, so in practice every finding would need a POA&M. Choose the plan rule if a plan is the bar, the disposition rule if a waiver is enough. This repository's own gates use the second; see `.github/hdf-thresholds/README.md`.
+Stacking the two is stricter than either and almost certainly not what you want: a finding waived or risk-adjusted — decided, but not *planned* — satisfies the broad rule and still fails the plan rule, so in practice every finding would need a POA&M. Choose the plan rule if a plan is the bar, the disposition rule if a waiver is enough.
 
 Two things make this hold rather than rot. `expiresAt` is required on every override, so an adjudication cannot be permanent — when it lapses the finding returns to the gate by itself. And the `not` list is the full override vocabulary, so a new override type added to the schema does not silently satisfy the rule.
 

@@ -1,12 +1,11 @@
-# Applies to: golangci-lint, one document per Go module from go.work — the policy is applied to each.
-rules:
-    - name: no requirement errored
-      where:
-          status: error
-      max: 0
-    - name: nothing failing is unadjudicated
-      where:
-          status: failed
-          disposition:
-              not: [waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement]
-      max: 0
+# golangci-lint policy: any finding fails CI.
+#
+# Same shape as eslint.yaml today, kept separate so the two can diverge
+# without editing a file that governs both — a per-tool policy is the unit a
+# reviewer can reason about.
+failed:
+    total:
+        max: 0
+error:
+    total:
+        max: 0
