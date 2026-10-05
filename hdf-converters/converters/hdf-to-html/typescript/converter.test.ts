@@ -104,7 +104,7 @@ function waived(expiresAt: string): Doc {
 const ELEMENTS_THAT_LOAD = ['<link', '<img', '<iframe', '<object', '<embed', '<video', '<audio', '<source',
   '<form', '<base', '<svg', '<meta http-equiv="refresh"'];
 const TAG = /<[^<>]*>/g;
-const STYLE_BLOCK = /<style>([\s\S]*?)<\/style>/g;
+const STYLE_BLOCK = /<style>([\s\S]*?)<\/style>/gi;
 // CSS reaches the network through url() and nothing else.
 const CSS_URL = /url\(\s*["']?([^"')]*)/g;
 const LOADING_ATTRIBUTE = /\s(src|srcset|data|action|formaction|poster|background|on[a-z]+)\s*=/;
@@ -112,7 +112,7 @@ const HREF_ATTRIBUTE = /\shref\s*=\s*"([^"]*)"/g;
 const STYLE_ATTRIBUTE = /\sstyle\s*=\s*"([^"]*)"/g;
 // The only inline styles are the counts and the percentage the stylesheet draws from.
 const NUMERIC_STYLE = /^--(n|pct):\d+(\.\d+)?$/;
-const SCRIPT_BLOCK = /<script>([\s\S]*?)<\/script>/g;
+const SCRIPT_BLOCK = /<script>([\s\S]*?)<\/script>/gi;
 
 /**
  * The report can neither fetch anything nor run anything but its own static
@@ -138,7 +138,7 @@ function expectSelfContained(out: string, wantScript: boolean): void {
   }
   const styles = [...out.matchAll(STYLE_BLOCK)];
   expect(styles, 'exactly one stylesheet, inline').toHaveLength(1);
-  expect(count(out, '<style'), 'the stylesheet is inline and attribute-free').toBe(1);
+  expect((out.match(/<style/gi) ?? []).length, 'the stylesheet is inline and attribute-free').toBe(1);
   const css = styles[0]![1]!;
   expect(css).not.toContain('@import');
   expect(css).not.toContain('image-set(');
@@ -148,7 +148,7 @@ function expectSelfContained(out: string, wantScript: boolean): void {
 
   let policy = "default-src 'none'; style-src 'unsafe-inline'";
   const scripts = [...out.matchAll(SCRIPT_BLOCK)];
-  expect(scripts.length, 'every script is inline and attribute-free').toBe(count(out, '<script'));
+  expect(scripts.length, 'every script is inline and attribute-free').toBe((out.match(/<script/gi) ?? []).length);
   if (wantScript) {
     expect(scripts).toHaveLength(1);
     policy += `; script-src 'sha256-${createHash('sha256').update(scripts[0]![1]!, 'utf-8').digest('base64')}'`;
@@ -348,7 +348,7 @@ describe('hdf-to-html converter', () => {
 
     const out = render(doc);
     expect(out).not.toContain('<script>alert');
-    expect(count(out, '<script')).toBe(1);
+    expect((out.match(/<script/gi) ?? []).length).toBe(1);
     expect(out).not.toContain('<img');
     expect(out).not.toContain(hostile);
     expectSelfContained(out, true);

@@ -285,8 +285,11 @@ var (
 	styleAttribute   = regexp.MustCompile(`<[^>]*\sstyle\s*=\s*"([^"]*)"`)
 	// The only inline styles are the counts and the percentage the stylesheet draws from.
 	numericStyle = regexp.MustCompile(`^--(n|pct):[0-9]+(\.[0-9]+)?$`)
-	scriptBlock  = regexp.MustCompile(`(?s)<script>(.*?)</script>`)
-	styleBlock   = regexp.MustCompile(`(?s)<style>(.*?)</style>`)
+	scriptBlock  = regexp.MustCompile(`(?is)<script>(.*?)</script>`)
+	styleBlock   = regexp.MustCompile(`(?is)<style>(.*?)</style>`)
+	// Tag counts are case-insensitive so an upper-case tag cannot slip past them.
+	scriptTag = regexp.MustCompile(`(?i)<script`)
+	styleTag  = regexp.MustCompile(`(?i)<style`)
 	// CSS reaches the network through url() and nothing else.
 	cssURL = regexp.MustCompile(`url\(\s*["']?([^"')]*)`)
 )
@@ -319,7 +322,7 @@ func assertSelfContained(t *testing.T, out string, wantScript bool) {
 
 	styles := styleBlock.FindAllStringSubmatch(out, -1)
 	require.Len(t, styles, 1, "exactly one stylesheet, inline")
-	assert.Equal(t, strings.Count(out, "<style"), len(styles), "the stylesheet is inline and attribute-free")
+	assert.Equal(t, len(styleTag.FindAllString(out, -1)), len(styles), "the stylesheet is inline and attribute-free")
 	css := styles[0][1]
 	assert.NotContains(t, css, "@import")
 	assert.NotContains(t, css, "image-set(")
@@ -329,7 +332,7 @@ func assertSelfContained(t *testing.T, out string, wantScript bool) {
 
 	policy := "default-src 'none'; style-src 'unsafe-inline'"
 	scripts := scriptBlock.FindAllStringSubmatch(out, -1)
-	assert.Equal(t, strings.Count(out, "<script"), len(scripts), "every script is inline and attribute-free")
+	assert.Equal(t, len(scriptTag.FindAllString(out, -1)), len(scripts), "every script is inline and attribute-free")
 	if wantScript {
 		require.Len(t, scripts, 1)
 		sum := sha256.Sum256([]byte(scripts[0][1]))
