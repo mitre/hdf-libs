@@ -338,3 +338,106 @@ func TestCheckOutputOverwritesInput(t *testing.T) {
 		assert.Contains(t, err.Error(), "would overwrite input file")
 	})
 }
+
+func TestConvertCommand_HDFOnlyFlagsRejectedForOtherTargets(t *testing.T) {
+	input := converterFixturePath(t, "hdf-to-html", "input/rich.json")
+	second := converterFixturePath(t, "hdf-to-html", "input/finding-detail.json")
+	const componentID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+	flagCases := []struct {
+		flag string
+		args []string
+	}{
+		{"labels", []string{"--labels", "env=prod"}},
+		{"component-id", []string{"--component-id", componentID}},
+	}
+
+	t.Run("single input", func(t *testing.T) {
+		for _, tc := range flagCases {
+			t.Run(tc.flag, func(t *testing.T) {
+				out := filepath.Join(t.TempDir(), "report.html")
+				_, _, err := executeCommand(append([]string{"convert", input, "--to", "html", "-o", out}, tc.args...)...)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "--"+tc.flag+" applies to --to hdf only, not --to html")
+				assert.NoFileExists(t, out)
+			})
+		}
+	})
+
+	t.Run("combined report", func(t *testing.T) {
+		for _, tc := range flagCases {
+			t.Run(tc.flag, func(t *testing.T) {
+				out := filepath.Join(t.TempDir(), "report.html")
+				_, _, err := executeCommand(append([]string{"convert", input, second, "--to", "html", "-o", out}, tc.args...)...)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "--"+tc.flag+" applies to --to hdf only, not --to html")
+				assert.NoFileExists(t, out)
+			})
+		}
+	})
+
+	t.Run("one report per input", func(t *testing.T) {
+		outDir := filepath.Join(t.TempDir(), "reports") + string(filepath.Separator)
+		_, _, err := executeCommand("convert", input, second, "--to", "html", "-o", outDir, "--labels", "env=prod")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "--labels applies to --to hdf only, not --to html")
+		assert.NoDirExists(t, outDir, "the flag is refused before any file is converted")
+	})
+
+	t.Run("an HDF target still takes them", func(t *testing.T) {
+		out := filepath.Join(t.TempDir(), "out.json")
+		_, _, err := executeCommand("convert", input, "--to", "hdf", "-o", out,
+			"--labels", "env=prod", "--component-id", componentID)
+		require.NoError(t, err)
+		data, readErr := os.ReadFile(out)
+		require.NoError(t, readErr)
+		assert.Contains(t, string(data), `"env": "prod"`)
+		assert.Contains(t, string(data), componentID)
+	})
+}
+
+func TestBulkOutputPaths(t *testing.T) {
+	slash := func(paths []string) []string {
+		out := make([]string, len(paths))
+		for i, p := range paths {
+			out[i] = filepath.ToSlash(p)
+		}
+		return out
+	}
+
+	t.Run("file names that differ keep their own name", func(t *testing.T) {
+		paths, err := bulkOutputPaths("/out", []string{"scans/a.json", "scans/b.nessus"}, "hdf")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"/out/a.hdf.json", "/out/b.hdf.json"}, slash(paths))
+	})
+
+	t.Run("colliding names are qualified below the directory they share", func(t *testing.T) {
+		paths, err := bulkOutputPaths("/out", []string{
+			"scans/host1/results.json",
+			"scans/host2/results.json",
+			"scans/other.json",
+		}, "html")
+		require.NoError(t, err)
+		assert.Equal(t, []string{
+			"/out/host1--results.hdf.html",
+			"/out/host2--results.hdf.html",
+			"/out/other.hdf.html",
+		}, slash(paths))
+	})
+
+	t.Run("two inputs that would be written to one path are refused", func(t *testing.T) {
+		_, err := bulkOutputPaths("/out", []string{
+			"scans/host1/results.json",
+			"scans/host2/results.json",
+			"scans/host1--results.json",
+		}, "html")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "host1--results.hdf.html")
+	})
+
+	t.Run("one input named twice keeps its own path", func(t *testing.T) {
+		paths, err := bulkOutputPaths("/out", []string{"scans/results.json", "scans/results.json"}, "html")
+		require.NoError(t, err)
+		assert.Equal(t, []string{"/out/results.hdf.html", "/out/results.hdf.html"}, slash(paths))
+	})
+}

@@ -433,20 +433,26 @@ USAGE
   hdf convert --from <source> --to <dest> <file> -o <output>  # Explicit both
   hdf convert <file>                                     # Auto-detect, stdout
   hdf convert <file> [file...] -o <output-dir>/          # Bulk convert to a directory
+  hdf convert <file|dir> [...] --to html -o <file>       # Several HDF results in one combined HTML report
   hdf convert --from <source>@<version> <file>           # Select a schema version
   cat scan.json | hdf convert -                          # stdin
 
 INPUT/OUTPUT
   <file>      File path or "-" for stdin
+  <dir>       With --to html: every HDF results document under the directory, searched
+              recursively; other files there are passed over and counted on stderr
   -o <output> Output file path; defaults to stdout if omitted
+  -o <dir>/   One output per input, named after the input file; inputs that share a file
+              name are named by their path below the directory they share (host1--results)
 
 FLAGS
       --from string           Source format (auto-detected if omitted)
       --to string             Destination format (default: hdf)
       --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
-      --component-id string   Set componentId on all components in the output
-      --labels strings        Labels applied to all targets (key=value, e.g. --labels system=Portal,env=prod)
+      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only)
+      --labels strings        Labels applied to all targets, --to hdf only (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
+      --report-type string    Detail level for --to html: executive, manager or administrator (default administrator)
       --nist-strict           Fail if input references rules mapped only at a different NIST revision
       --no-validate           Skip schema validation of converter output before writing
   -f, --force                 Allow overwriting the input file with output
@@ -467,6 +473,10 @@ EXAMPLES
   hdf convert --from legacyhdf old-scan.json -o new-scan.json
   hdf convert --from hdf --to csv results.json -o controls.csv
   hdf convert --from hdf --to xml results.json -o controls.xml
+  hdf convert results.json --to html -o report.html
+  hdf convert results.json --to html --report-type manager -o report.html
+  hdf convert scan1.json scan2.json --to html -o report.html     # one combined report
+  hdf convert scans/ --to html -o report.html                    # every results document under scans/
   cat scan.json | hdf convert --from sarif - -o output.json
 ```
 
@@ -677,22 +687,44 @@ Contents (4):
 
 ### label
 
-Add, remove, or show key=value labels on the targets of an HDF document.
+Add, remove, or show key=value labels and external IDs on the targets of an HDF document.
 
 ```
 USAGE
   hdf label <subcommand> <file> [flags]
 
 SUBCOMMANDS
-  show     Display labels on all targets
-  set      Set labels on all targets
-  remove   Remove labels from all targets
+  show     Display labels and external IDs on all targets
+  set      Set labels and external IDs on all targets
+  remove   Remove labels and external IDs from all targets
+
+FLAGS (set)
+      --component-id string     Set componentId (a UUID) on all components
+      --generate-component-id   Generate a unique componentId for each component
+      --external-id stringArray Set an external ID as scheme=value (repeatable)
+      --component-name string   Apply --external-id only to the component with this name
+  -o, --output string           Write to a different file instead of modifying in-place
+
+FLAGS (remove)
+      --external-id stringArray Remove an external ID scheme (repeatable)
+      --component-name string   Remove --external-id only from the component with this name
+  -o, --output string           Write to a different file instead of modifying in-place
 
 EXAMPLES
   hdf label show results.json
   hdf label set results.json system=Portal environment=production -o labeled.json
   hdf label remove results.json system environment -o cleaned.json
+  hdf label set results.json --external-id cmdb=CI0012345 --external-id emass=1234
+  hdf label remove results.json --external-id cmdb
 ```
+
+Labels group and select components; an external ID is a foreign key into another
+system (CMDB asset ID, eMASS system ID, cloud resource ID) and is written to
+`components[].externalIds`, never to `labels`. `--external-id` merges: a scheme
+named on the command line is overwritten and the others are left alone. The value
+is carried verbatim and may be any non-empty string. `set` exits non-zero and
+writes nothing when the pair is malformed, a scheme is given twice, the document
+has no components, or `--component-name` matches none or more than one.
 
 Example output:
 
@@ -704,6 +736,16 @@ $ hdf label show labeled.json
 Component: web01.example.com [host]
   environment = production
   system = Portal
+
+$ hdf label set labeled.json --external-id cmdb=CI0012345
+Labels updated in labeled.json
+
+$ hdf label show labeled.json
+Component: web01.example.com [host]
+  environment = production
+  system = Portal
+  External IDs:
+    cmdb = CI0012345
 ```
 
 ### generate
@@ -1163,6 +1205,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | Source | Destination | Description |
 |--------|-------------|-------------|
 | `hdf` | `csv` | Export requirements to CSV spreadsheet |
+| `hdf` | `html` | Render a self-contained HTML report (`--report-type executive`, `manager` or `administrator`); several inputs or a directory with `-o <file>` make one combined report |
 | `hdf` | `ecs` | Export findings as Elastic Common Schema (ECS 9.4.0) NDJSON events |
 | `hdf` | `splunk` | Export findings as Splunk HEC (CIM Vulnerabilities) NDJSON events |
 | `hdf` | `ocsf` | Export findings as OCSF v1.8.0 Finding NDJSON (Compliance / Vulnerability Finding) |

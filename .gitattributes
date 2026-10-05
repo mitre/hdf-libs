@@ -18,6 +18,12 @@ hdf-converters/**/schemas/** -text
 hdf-converters/**/fixtures/*.xsd -text
 hdf-converters/**/fixtures/*schema*.json -text
 hdf-converters/**/fixtures/*-report-format-*.json -text
+# Embedded report assets are byte-exact artifacts too: Go embeds them into the
+# goldens, the vendored stylesheet's sha256 is recorded in provenance.txt, and
+# the TypeScript module is generated from the same bytes, so a CRLF checkout
+# breaks all three at once.
+hdf-converters/**/go/assets/** -text
+hdf-converters/converters/hdf-to-html/typescript/assets.ts eol=lf
 hdf-cli/cmd/hdf/cmd/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.jsonl eol=lf

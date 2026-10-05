@@ -132,6 +132,13 @@ func concat[T any](a, b []T) []T {
 
 // unionBy appends the members of b whose key is not already present in a,
 // preserving source order. A nil result stays nil so an absent field stays absent.
+//
+// a is returned unfiltered, so de-duplication is deliberately ASYMMETRIC: the
+// merge never adds a duplicate, but a member's own repeated values survive. That
+// is the point — re-writing the field into a set would silently drop a duplicate
+// the converter chose to emit, which is the loss ADR-0017 §6's whole-member
+// identity exists to avoid. Repeated values do occur in committed output
+// (sarif-to-hdf goldens carry requirements with repeated statusOverrides).
 func unionBy[T any](a, b []T, key func(T) string) []T {
 	if len(b) == 0 {
 		return a

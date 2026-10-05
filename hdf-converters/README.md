@@ -72,6 +72,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Target Format | Function |
 |---|---|
 | CSV | `convertHdfToCsv` |
+| HTML report (self-contained; executive, manager or administrator) | `convertHdfToHtml`; `convertHdfDocumentsToHtml` for several documents in one report |
 | ECS (Elastic Common Schema 9.4.0 NDJSON) | `convertHdfToEcs` |
 | Splunk (CIM Vulnerabilities / HEC NDJSON) | `convertHdfToSplunk` |
 | OCSF (v1.8.0 Compliance / Vulnerability Finding NDJSON) | `convertHdfToOcsf` |
@@ -153,6 +154,23 @@ if (isHDFV1(data)) {
 }
 ```
 
+### Render an HTML report
+
+```typescript
+import { convertHdfToHtml, convertHdfDocumentsToHtml } from '@mitre/hdf-converters';
+
+// One results document. reportType is 'executive', 'manager' or 'administrator' (the default).
+const report = convertHdfToHtml(hdfResultsJson, { reportType: 'manager' });
+
+// Several results documents in one report; each is listed under its name, in the order given.
+const combined = convertHdfDocumentsToHtml([
+  { name: 'web.hdf.json', content: webResultsJson },
+  { name: 'db.hdf.json', content: dbResultsJson },
+]);
+```
+
+Both return one self-contained HTML string. The same input always yields the same output, and the Go and TypeScript implementations yield identical bytes.
+
 ## Go Usage
 
 Go converters live under `converters/<name>/go/` and follow the same function signature:
@@ -165,6 +183,19 @@ results, err := grype.ConvertGrypeToHDF(input, converterVersion)
 ```
 
 The first argument is the raw tool output (`[]byte`); the second is the converter version string, not the source filename.
+
+Exporters take an HDF document instead. The HTML report takes one results document, or several for a combined report:
+
+```go
+import hdftohtml "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-html/go"
+
+report, err := hdftohtml.ConvertHDFToHTMLWithOptions(results, hdftohtml.Options{ReportType: hdftohtml.Manager})
+
+combined, err := hdftohtml.ConvertHDFDocumentsToHTML([]hdftohtml.Document{
+	{Name: "web.hdf.json", Data: webResults},
+	{Name: "db.hdf.json", Data: dbResults},
+}, hdftohtml.Options{})
+```
 
 For CLI usage, install the `hdf` binary from [hdf-cli](https://github.com/mitre/hdf-libs/tree/main/hdf-cli):
 
