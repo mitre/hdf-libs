@@ -40,9 +40,12 @@ func (v Values) Active() bool { return len(v.In) > 0 || len(v.Not) > 0 }
 // validate the vocabulary — a value inside not must be refused exactly as one
 // outside it is, or a typo there matches everything instead of nothing.
 func (v Values) All() []string {
-	all := make([]string, 0, len(v.In)+len(v.Not))
-	all = append(all, v.In...)
-	return append(all, v.Not...)
+	// No preallocated capacity: summing two lengths to size an allocation is the
+	// shape go/allocation-size-overflow flags, and growth here is not worth a
+	// bounds guard against a condition that needs 2^63 strings to reach. The
+	// inner append copies rather than aliasing v.In, so neither field's backing
+	// array can be written through the result.
+	return append(append([]string(nil), v.In...), v.Not...)
 }
 
 // Match applies the field's own per-value test. test reports whether the

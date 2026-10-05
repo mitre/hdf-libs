@@ -76,6 +76,23 @@ func TestValuesAllCoversBothModes(t *testing.T) {
 	assert.Empty(t, Values{}.All())
 }
 
+// All() must COPY, not alias. The obvious simplification — append(v.In, v.Not...)
+// — would hand the caller a slice backed by v.In's array when it has spare
+// capacity, so writing through the result would corrupt the predicate it came
+// from. Nothing else in the package would notice.
+func TestValuesAllDoesNotAliasEitherField(t *testing.T) {
+	in := make([]string, 1, 4) // spare capacity: the aliasing bug needs it to bite
+	in[0] = "a"
+	v := Values{In: in, Not: []string{"b"}}
+
+	got := v.All()
+	for i := range got {
+		got[i] = "MUTATED"
+	}
+	assert.Equal(t, []string{"a"}, v.In, "writing through All() must not reach In")
+	assert.Equal(t, []string{"b"}, v.Not, "writing through All() must not reach Not")
+}
+
 func TestValuesMatchCombinesModes(t *testing.T) {
 	is := func(actual string) func(string) bool {
 		return func(want string) bool { return actual == want }
