@@ -348,6 +348,11 @@ jobs:
       # breaks for consumers, so scan every built dist before anything ships.
       - name: Published packages declare every runtime import
         run: pnpm run lint:published-deps
+      # The pre-commit hook runs this too, but --no-verify and a clone without
+      # husky both skip it, and a stale pin fails the audit on whatever
+      # unrelated PR runs next — so the gate has to live here as well.
+      - name: Dependency overrides are range-targeted and documented
+        run: pnpm run lint:overrides
       # One eslint.config.mjs at the root governs every package, so one
       # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.
