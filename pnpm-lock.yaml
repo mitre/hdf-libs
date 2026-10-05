@@ -89,6 +89,9 @@ importers:
 
   hdf-converters:
     dependencies:
+      '@mitre/hdf-engine':
+        specifier: workspace:^
+        version: link:../hdf-engine
       '@mitre/hdf-mappings':
         specifier: workspace:^
         version: link:../hdf-mappings

@@ -82,6 +82,18 @@ export { convertCyclonedxToHdf } from '../converters/cyclonedx-to-hdf/typescript
 // HDF to CSV converter
 export { convertHdfToCsv } from '../converters/hdf-to-csv/typescript/index.js';
 
+// HDF to HTML report converter
+export {
+  convertHdfToHtml,
+  convertHdfDocumentsToHtml,
+  parseReportType,
+} from '../converters/hdf-to-html/typescript/index.js';
+export type {
+  HtmlReportType,
+  HtmlReportOptions,
+  HtmlReportDocument,
+} from '../converters/hdf-to-html/typescript/index.js';
+
 // HDF to ECS converter
 export { convertHdfToEcs } from '../converters/hdf-to-ecs/typescript/index.js';
 
