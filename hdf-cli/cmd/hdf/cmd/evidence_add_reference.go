@@ -226,8 +226,10 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 	if opts.href != "" {
 		ref["href"] = filepath.ToSlash(opts.href)
 		// Reuses add-evidence's resolver so a local file is hashed and a URL is left
-		// unhashed by exactly the same rule, rather than a second implementation of it.
-		checksum, csErr := resolveEvidenceChecksum(opts.href, opts.checksum)
+		// unhashed by exactly the same rule, rather than a second implementation of it —
+		// which means it also shares the package-relative resolution: an href is read from
+		// beside the PACKAGE, not from the process CWD.
+		checksum, csErr := resolveEvidenceChecksum(filepath.Dir(file), opts.href, opts.checksum)
 		if csErr != nil {
 			return csErr
 		}

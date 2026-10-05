@@ -498,3 +498,256 @@ func TestEvidenceAddEvidence_OutputPathLeavesTheInputUntouched(t *testing.T) {
 		assert.Len(t, readEvidenceExternal(t, pkg), 1, "the default is to amend in place")
 	})
 }
+
+// A reference is relative to the PACKAGE's directory — the contract bundle and verify both
+// obey — but the checksum was computed by reading --uri against the process CWD. The test
+// process's CWD is this Go package, never the temp directory holding the package under
+// test, so these cases are the real pipeline shape: the package and its artifacts sit in an
+// artifacts directory while the job's CWD is the repo root.
+func TestEvidenceAddEvidence_ChecksumsAPackageRelativeURIFromAnotherDirectory(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	dir := filepath.Dir(pkg)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "scans"), 0o750))
+	artifact := filepath.Join(dir, "scans", "audit.ndjson")
+	body := []byte("{\"message\":\"beside the package\"}\n")
+	require.NoError(t, os.WriteFile(artifact, body, 0o600))
+	sum := sha256.Sum256(body)
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "scans/audit.ndjson", "--format", "ecs")
+	require.NoError(t, err)
+
+	ext := readEvidenceExternal(t, pkg)
+	require.Len(t, ext, 1)
+	entry, _ := ext[0].(map[string]interface{})
+	assert.Equal(t, "scans/audit.ndjson", entry["uri"],
+		"the uri is recorded exactly as typed; only resolution for hashing changes")
+	cs, _ := entry["checksum"].(map[string]interface{})
+	require.NotNil(t, cs, "a package-relative artifact beside the package must be hashed")
+	assert.Equal(t, hex.EncodeToString(sum[:]), cs["value"],
+		"and the recorded digest must be of THAT file, not one found via the CWD")
+}
+
+// The half that makes the bug dangerous rather than merely unhelpful: when a file exists
+// at the same relative spelling under the CWD, the package recorded a checksum for a file
+// the reference does not name, and `bundle` then refused it as a mismatch — accusing the
+// operator's evidence of tampering.
+//
+// A DECOY is what makes this test able to fail. Without one the assertion cannot
+// distinguish "hashed the file the reference names" from "hashed the only file there was",
+// and the test is a duplicate of its sibling under a different name. t.Chdir puts the
+// process in the decoy's directory, which is the pipeline shape: CWD is the repo root,
+// the package lives in an artifacts directory.
+func TestEvidenceAddEvidence_NeverHashesAFileTheReferenceDoesNotName(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(filepath.Join(pkgDir, "scans"), 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+
+	beside := []byte("{\"message\":\"beside the package\"}\n")
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "scans", "audit.ndjson"), beside, 0o600))
+	besideSum := sha256.Sum256(beside)
+
+	// The decoy: same relative spelling, different bytes, reachable from the CWD.
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "scans"), 0o750))
+	decoy := []byte("{\"message\":\"DECOY under the CWD\"}\n")
+	require.NoError(t, os.WriteFile(filepath.Join(root, "scans", "audit.ndjson"), decoy, 0o600))
+	require.NotEqual(t, beside, decoy, "precondition: the two files must differ")
+	t.Chdir(root)
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "scans/audit.ndjson", "--format", "ecs")
+	require.NoError(t, err)
+
+	entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+	cs, _ := entry["checksum"].(map[string]interface{})
+	require.NotNil(t, cs)
+	assert.Equal(t, hex.EncodeToString(besideSum[:]), cs["value"],
+		"the digest must be of the file the reference names, not the decoy under the CWD")
+	decoySum := sha256.Sum256(decoy)
+	assert.NotEqual(t, hex.EncodeToString(decoySum[:]), cs["value"],
+		"and emphatically not the decoy's")
+}
+
+// A genuinely absent artifact stays a notice, not a failure — and the notice names the path
+// actually tried, so an operator can see where it looked.
+func TestEvidenceAddEvidence_AbsentArtifactNamesThePathItTried(t *testing.T) {
+	pkg := writeTestEvidence(t)
+
+	_, stderr, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "scans/missing.ndjson", "--format", "ecs")
+	require.NoError(t, err, "an absent artifact is a notice, not a hard failure")
+
+	entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+	assert.Nil(t, entry["checksum"], "no checksum is recorded for an artifact that is not there")
+	assert.Contains(t, stderr, "no local file to hash", "the existing notice still prints")
+	assert.Contains(t, stderr, filepath.Join(filepath.Dir(pkg), "scans", "missing.ndjson"),
+		"and it names the path actually tried, not just the uri as typed")
+}
+
+// An absolute --uri is taken as given, exactly as before: the package may legitimately
+// reference an artifact it does not contain, and resolving one against the package would
+// claim it is somewhere it is not.
+func TestEvidenceAddEvidence_AbsoluteURIIsHashedAsGiven(t *testing.T) {
+	pkg := writeTestEvidence(t)
+	body := "{\"message\":\"elsewhere\"}\n"
+	outside := writeEvidenceArtifact(t, body) // its own TempDir, outside the package
+	sum := sha256.Sum256([]byte(body))
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", outside, "--format", "ecs")
+	require.NoError(t, err)
+
+	entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+	cs, _ := entry["checksum"].(map[string]interface{})
+	require.NotNil(t, cs, "an absolute path is still hashed")
+	assert.Equal(t, hex.EncodeToString(sum[:]), cs["value"])
+}
+
+// Resolution is confined to the package: a traversal and a symlink leading out are both
+// refused rather than followed, so no digest is ever recorded for bytes outside it.
+func TestEvidenceAddEvidence_ResolutionDoesNotLeaveThePackage(t *testing.T) {
+	t.Run("parent traversal is not followed", func(t *testing.T) {
+		pkg := writeTestEvidence(t)
+		dir := filepath.Dir(pkg)
+		// A real file one level up, which a naive join would reach and hash.
+		up := filepath.Join(filepath.Dir(dir), "outside.ndjson")
+		require.NoError(t, os.WriteFile(up, []byte("{\"message\":\"outside\"}\n"), 0o600))
+		// WITHOUT this the subtest passes for the wrong reason: the test process's CWD is
+		// the Go source directory, where ../outside.ndjson does not exist, so nothing is
+		// hashed whether or not resolution is confined. Standing in the package directory
+		// makes the file reachable BOTH ways, so only real confinement keeps it unhashed.
+		t.Chdir(dir)
+
+		_, _, err := executeCommand("evidence", "add-evidence", pkg,
+			"--uri", "../outside.ndjson", "--format", "ecs")
+		require.NoError(t, err, "a reference the package does not contain is recorded, not refused")
+
+		entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+		assert.Equal(t, "../outside.ndjson", entry["uri"], "recorded exactly as typed")
+		assert.Nil(t, entry["checksum"],
+			"and NOT hashed: resolution may not leave the package to find it")
+	})
+
+	t.Run("a symlink out of the package is not followed", func(t *testing.T) {
+		pkg := writeTestEvidence(t)
+		dir := filepath.Dir(pkg)
+		outsideDir := t.TempDir()
+		target := filepath.Join(outsideDir, "secret.ndjson")
+		require.NoError(t, os.WriteFile(target, []byte("{\"message\":\"outside\"}\n"), 0o600))
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, "scans"), 0o750))
+		require.NoError(t, os.Symlink(target, filepath.Join(dir, "scans", "link.ndjson")))
+
+		t.Chdir(dir) // as above: make the target reachable from the CWD too
+
+		_, _, err := executeCommand("evidence", "add-evidence", pkg,
+			"--uri", "scans/link.ndjson", "--format", "ecs")
+		require.NoError(t, err)
+
+		entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+		assert.Nil(t, entry["checksum"],
+			"a symlink leaving the package is not followed, so nothing outside is hashed")
+	})
+}
+
+// The severe mode again, through the route that survived the first attempt at this card:
+// with the PACKAGE PATH typed relatively, the resolution base was relative too, so
+// SafePath related a relative base to an absolute symlink target, filepath.Rel errored,
+// the boundary failed closed, and the old raw-uri fallback then hashed whatever the CWD
+// offered. Correctness must not depend on how the operator spelled the package path.
+func TestEvidenceAddEvidence_ARelativePackagePathResolvesTheSameWay(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(filepath.Join(pkgDir, "scans"), 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+
+	// The real artifact, reached through an in-package symlink with an ABSOLUTE target.
+	target := filepath.Join(pkgDir, "scans", "real.ndjson")
+	body := []byte("{\"message\":\"the real in-package artifact\"}\n")
+	require.NoError(t, os.WriteFile(target, body, 0o600))
+	require.NoError(t, os.Symlink(target, filepath.Join(pkgDir, "scans", "audit.ndjson")))
+	wantSum := sha256.Sum256(body)
+
+	// A decoy at the same relative spelling, reachable from the CWD.
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "scans"), 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "scans", "audit.ndjson"),
+		[]byte("{\"message\":\"DECOY\"}\n"), 0o600))
+	t.Chdir(root)
+
+	// The package path is RELATIVE here — that is the point of the test.
+	_, _, err := executeCommand("evidence", "add-evidence", filepath.Join("artifacts", "evidence.json"),
+		"--uri", "scans/audit.ndjson", "--format", "ecs")
+	require.NoError(t, err)
+
+	entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+	cs, _ := entry["checksum"].(map[string]interface{})
+	require.NotNil(t, cs, "an in-package symlink is a legitimate artifact and must be hashed")
+	assert.Equal(t, hex.EncodeToString(wantSum[:]), cs["value"],
+		"and hashed through the symlink to the in-package file, not the CWD decoy")
+}
+
+// --infer reads the artifact's own content to name its format, so it must resolve exactly
+// as hashing does. Reading from the CWD reported a package-relative artifact sitting
+// beside the package as "not a local file" and refused the command outright.
+func TestEvidenceAddEvidence_InferResolvesAgainstThePackageDirectory(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "sbom.cdx.json"),
+		[]byte(`{"bomFormat":"CycloneDX","specVersion":"1.5","version":1}`), 0o600))
+	t.Chdir(root) // CWD is not the package directory
+
+	_, _, err := executeCommand("evidence", "add-evidence", pkg,
+		"--uri", "sbom.cdx.json", "--infer")
+	require.NoError(t, err, "--infer must find an artifact beside the package")
+
+	entry, _ := readEvidenceExternal(t, pkg)[0].(map[string]interface{})
+	assert.Equal(t, "cyclonedx", entry["format"],
+		"and read the format from that artifact's own content discriminator")
+}
+
+// --infer's failure messages must be true about the operator's filesystem. The stat that
+// chooses between them has to use the same resolution the content read uses: statting the
+// raw uri against the CWD called an artifact sitting beside the package "not a local
+// file", and the accurate message was reachable only when the operator happened to be
+// standing in the package directory.
+func TestEvidenceAddEvidence_InferFailureMessagesAreTrueFromAnyDirectory(t *testing.T) {
+	root := t.TempDir()
+	pkgDir := filepath.Join(root, "artifacts")
+	require.NoError(t, os.MkdirAll(pkgDir, 0o750))
+	pkg := filepath.Join(pkgDir, "evidence.json")
+	require.NoError(t, os.WriteFile(pkg, []byte(testEvidencePackage), 0o600))
+	// Beside the package, readable, but carrying no format discriminator.
+	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "plain.json"),
+		[]byte(`{"hello":"no discriminator"}`), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "up.json"),
+		[]byte(`{"hello":"outside"}`), 0o600))
+	t.Chdir(root) // deliberately NOT the package directory
+
+	t.Run("a readable artifact beside the package is not called non-local", func(t *testing.T) {
+		_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", "plain.json", "--infer")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "carries no format discriminator",
+			"it was read and had nothing to find")
+		assert.NotContains(t, err.Error(), "not a local file",
+			"it IS a local file — it sits beside the package")
+	})
+
+	t.Run("a reference outside the package says so", func(t *testing.T) {
+		_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", "../up.json", "--infer")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "does not resolve inside the package's directory",
+			"the boundary refused it; that is a different fix from a missing discriminator")
+		assert.NotContains(t, err.Error(), "not a local file")
+	})
+
+	t.Run("a genuinely absent artifact is still called non-local", func(t *testing.T) {
+		_, _, err := executeCommand("evidence", "add-evidence", pkg, "--uri", "nope.json", "--infer")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "not a local file", "nothing was there to read")
+	})
+}

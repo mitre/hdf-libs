@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -478,5 +479,78 @@ func TestEvidenceAddReference_OutputPathLeavesTheInputUntouched(t *testing.T) {
 		refs, ok := readPackage(t, pkgPath)["externalReferences"].([]any)
 		require.True(t, ok)
 		assert.Len(t, refs, 1, "the default is to amend in place")
+	})
+}
+
+// add-reference shares add-evidence's checksum resolver deliberately, so it shares this
+// fix: a local --href is read from beside the PACKAGE, not from the process CWD. Without
+// it, the documented invocation from a pipeline's repo root recorded no checksum, or worse
+// recorded one for a same-named file that happened to sit under the CWD.
+func TestEvidenceAddReference_HashesAPackageRelativeHref(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "cti"), 0o750))
+	body := []byte("{\"objects\":[]}\n")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "cti", "bundle.json"), body, 0o600))
+	sum := sha256.Sum256(body)
+
+	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "stix", "--kind", "threat-intel", "--href", "cti/bundle.json")
+	require.NoError(t, err)
+
+	refs, ok := readPackage(t, pkgPath)["externalReferences"].([]any)
+	require.True(t, ok)
+	require.Len(t, refs, 1)
+	entry, _ := refs[0].(map[string]any)
+	assert.Equal(t, "cti/bundle.json", entry["href"], "the href is recorded as typed")
+	cs, _ := entry["checksum"].(map[string]any)
+	require.NotNil(t, cs, "a local href beside the package must be hashed")
+	assert.Equal(t, hex.EncodeToString(sum[:]), cs["value"])
+}
+
+// add-reference shares the resolver, so it shares the confinement — and needs its own
+// coverage, because the shared function's second call site was otherwise untested against
+// the traversal and decoy cases.
+func TestEvidenceAddReference_HrefResolutionIsConfinedAndPrefersThePackage(t *testing.T) {
+	t.Run("a decoy under the CWD is not hashed", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		require.NoError(t, os.MkdirAll(filepath.Join(dir, "cti"), 0o750))
+		body := []byte("{\"objects\":[\"beside the package\"]}\n")
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "cti", "bundle.json"), body, 0o600))
+		wantSum := sha256.Sum256(body)
+
+		decoyRoot := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(decoyRoot, "cti"), 0o750))
+		require.NoError(t, os.WriteFile(filepath.Join(decoyRoot, "cti", "bundle.json"),
+			[]byte("{\"objects\":[\"DECOY\"]}\n"), 0o600))
+		t.Chdir(decoyRoot)
+
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "stix", "--href", "cti/bundle.json")
+		require.NoError(t, err)
+
+		refs, _ := readPackage(t, pkgPath)["externalReferences"].([]any)
+		require.Len(t, refs, 1)
+		entry, _ := refs[0].(map[string]any)
+		cs, _ := entry["checksum"].(map[string]any)
+		require.NotNil(t, cs, "a local href beside the package is hashed")
+		assert.Equal(t, hex.EncodeToString(wantSum[:]), cs["value"],
+			"from the file beside the package, not the decoy under the CWD")
+	})
+
+	t.Run("a traversal out of the package is not hashed", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		up := filepath.Join(filepath.Dir(dir), "outside.json")
+		require.NoError(t, os.WriteFile(up, []byte("{\"objects\":[]}\n"), 0o600))
+		t.Chdir(dir) // reachable from the CWD too, so only confinement keeps it unhashed
+
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "stix", "--href", "../outside.json")
+		require.NoError(t, err, "a reference outside the package is recorded, not refused")
+
+		refs, _ := readPackage(t, pkgPath)["externalReferences"].([]any)
+		require.Len(t, refs, 1)
+		entry, _ := refs[0].(map[string]any)
+		assert.Equal(t, "../outside.json", entry["href"], "recorded exactly as typed")
+		assert.Nil(t, entry["checksum"], "and not hashed: resolution may not leave the package")
 	})
 }

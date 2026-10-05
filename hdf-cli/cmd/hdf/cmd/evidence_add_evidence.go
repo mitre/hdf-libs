@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -178,7 +179,7 @@ Examples:
 // and refused rather than guessed. An absent format is inferred from the
 // artifact's own content — but only with --infer, because a wrongly-labelled
 // artifact is worse than an unlabelled one: a consumer trusts the discriminator.
-func resolveEvidenceFormats(opts addEvidenceOpts) ([]string, error) {
+func resolveEvidenceFormats(pkgDir string, opts addEvidenceOpts) ([]string, error) {
 	switch {
 	case len(opts.formats) == len(opts.uris):
 		// pairwise
@@ -193,11 +194,19 @@ func resolveEvidenceFormats(opts addEvidenceOpts) ([]string, error) {
 		inferred := make([]string, len(opts.uris))
 		var receipts []string
 		for i, uri := range opts.uris {
-			guess := inferEvidenceFormat(uri)
+			guess := inferEvidenceFormat(pkgDir, uri)
 			if guess == "" {
-				// Say which it was: "I read it and found nothing" and "there was
-				// nothing to read" call for different fixes.
-				if _, statErr := os.Stat(uri); statErr != nil {
+				// Say which it was: these call for different fixes, and the stat has to
+				// use the SAME resolution the content read used. Statting the raw uri
+				// against the process CWD reported an artifact sitting beside the package
+				// as "not a local file", so the accurate message was reachable only when
+				// the operator happened to be standing in the package directory.
+				path, readable := localArtifactPath(pkgDir, uri)
+				switch {
+				case !readable:
+					return nil, fmt.Errorf("--format is required for %s; it does not resolve inside the "+
+						"package's directory, so its format cannot be read from its content", uri)
+				case !isLocalFile(path):
 					return nil, fmt.Errorf("--format is required for %s; it is not a local file, so its "+
 						"format cannot be read from its content", uri)
 				}
@@ -229,14 +238,31 @@ func resolveEvidenceFormats(opts addEvidenceOpts) ([]string, error) {
 	return opts.formats, nil
 }
 
+// isLocalFile reports whether path names an existing path that is not a directory. It
+// deliberately claims no more than that: the stat establishes neither readability nor
+// regularity, so a mode-000 file and a fifo both pass. Shared so the format message and
+// the inference itself cannot disagree about what is there — they were two separate stats
+// on different paths, which is how they came to disagree.
+func isLocalFile(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && !fi.IsDir()
+}
+
 // inferEvidenceFormat reads an artifact's own discriminator — never its filename,
 // which lies (a *.cdx.json holding SPDX is SPDX). Returns "" when nothing
 // recognizable is found, so the caller can refuse rather than invent.
-func inferEvidenceFormat(uri string) string {
-	if fi, err := os.Stat(uri); err != nil || fi.IsDir() {
+func inferEvidenceFormat(pkgDir, uri string) string {
+	// Resolved exactly as hashing resolves it: --infer reads the artifact's own content,
+	// so reading it from the CWD would both miss a package-relative artifact sitting
+	// beside the package and, worse, infer a format from a different file.
+	path, readable := localArtifactPath(pkgDir, uri)
+	if !readable {
+		return ""
+	}
+	if !isLocalFile(path) {
 		return "" // a URL or a directory has no content to read here
 	}
-	data, err := readInputFile(uri)
+	data, err := readInputFile(path)
 	if err != nil {
 		return ""
 	}
@@ -265,7 +291,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 		return fmt.Errorf("--checksum names a single artifact's digest and cannot apply to %d --uri "+
 			"values; add those artifacts in separate invocations", len(opts.uris))
 	}
-	formats, err := resolveEvidenceFormats(opts)
+	formats, err := resolveEvidenceFormats(filepath.Dir(file), opts)
 	if err != nil {
 		return err
 	}
@@ -304,7 +330,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 			"uri":    normalized,
 			"format": formats[i],
 		}
-		checksum, csErr := resolveEvidenceChecksum(uri, opts.checksum)
+		checksum, csErr := resolveEvidenceChecksum(pkgDir, uri, opts.checksum)
 		if csErr != nil {
 			return csErr
 		}
@@ -365,22 +391,72 @@ func recordedEvidenceURIs(existing []interface{}) map[string]struct{} {
 
 // resolveEvidenceChecksum returns the sha256 hex for the reference: a supplied
 // value wins; otherwise a local-file URI is hashed; a URL is left unhashed.
-func resolveEvidenceChecksum(uri, supplied string) (string, error) {
+func resolveEvidenceChecksum(pkgDir, uri, supplied string) (string, error) {
 	if supplied != "" {
 		return normalizeSHA256Hex(supplied)
+	}
+	// Resolved against the PACKAGE's directory, which is what the reference means:
+	// bundle and verify both read it that way. Reading it against the process CWD
+	// instead did more than miss the file — where one happened to exist at the same
+	// relative spelling under the CWD, it recorded that file's digest against a
+	// reference naming a different file, and `bundle` then reported a mismatch and
+	// refused the package. The uri itself is still recorded exactly as typed.
+	path, readable := localArtifactPath(pkgDir, uri)
+	if !readable {
+		// Said distinctly from "not present": the artifact may well exist, but reading it
+		// would leave the package, and a digest of bytes the reference does not name is
+		// worse than no digest at all.
+		fmt.Fprintf(os.Stderr, "Note: %q does not resolve inside the package's directory, "+
+			"so it was not hashed; checksum omitted (pass --checksum to record one).\n", uri)
+		return "", nil
 	}
 	// A local-path URI is hashed only when the file is actually present at attach
 	// time; a URL, a directory, or a path with no local copy is left unhashed
 	// (a reference-only entry, not an error).
-	if fi, err := os.Stat(uri); err == nil && !fi.IsDir() {
-		sum, err := fileChecksumHex(uri)
+	if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+		sum, err := fileChecksumHex(path)
 		if err != nil {
-			return "", fmt.Errorf("failed to read local artifact %q to checksum it: %w", uri, err)
+			return "", fmt.Errorf("failed to read local artifact %q to checksum it: %w", path, err)
 		}
 		return sum, nil
 	}
-	fmt.Fprintf(os.Stderr, "Note: no local file to hash at %q; checksum omitted (pass --checksum to record one).\n", uri)
+	// The path actually tried, not the uri as typed, so an operator can see where it looked.
+	fmt.Fprintf(os.Stderr, "Note: no local file to hash at %q; checksum omitted (pass --checksum to record one).\n", path)
 	return "", nil
+}
+
+// localArtifactPath is where a --uri is read from to hash it, and ("", false) when it
+// must not be read at all. A remote uri and an absolute path are taken as given; a
+// relative one is resolved inside the package through hdfutil.SafePath, the same boundary
+// the read side uses.
+//
+// The base is made absolute FIRST. SafePath resolves symlinks on both sides and then
+// relates them, so a relative base against an absolute symlink target makes filepath.Rel
+// fail and SafePath refuse — which meant correctness depended on whether the operator
+// typed the package path relatively or absolutely, and left legitimate in-package
+// symlinks unhashed in the relative case.
+//
+// A uri SafePath refuses yields false, NOT the raw uri. Returning the raw uri handed it
+// back to CWD resolution for exactly the inputs the boundary had just rejected, so
+// `--uri ../outside.ndjson` hashed a file outside the package and recorded its digest
+// against a reference naming something else. Refusing to read is the whole point of the
+// boundary; there is no safe fallback.
+func localArtifactPath(pkgDir, uri string) (string, bool) {
+	if uri == "" {
+		return uri, false
+	}
+	if isRemoteURI(uri) || filepath.IsAbs(uri) {
+		return uri, true
+	}
+	base, err := filepath.Abs(pkgDir)
+	if err != nil {
+		return "", false
+	}
+	resolved, err := hdfutil.SafePath(base, uri)
+	if err != nil {
+		return "", false
+	}
+	return resolved, true
 }
 
 // normalizeSHA256Hex validates that a user-supplied checksum is a 32-byte
