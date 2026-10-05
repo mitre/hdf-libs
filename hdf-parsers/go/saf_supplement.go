@@ -63,8 +63,9 @@ func NormalizeSAFSupplement(input []byte) ([]byte, []string) {
 	}
 
 	if hasPassthrough {
-		rewritePassthrough(doc)
+		relocations := rewritePassthrough(doc)
 		warnings = append(warnings, safProvenanceDeprecation)
+		warnings = append(warnings, relocations...)
 	}
 
 	out, err := json.Marshal(doc)
@@ -138,9 +139,10 @@ func applyBoundaryLabel(c map[string]any, boundary string) {
 }
 
 // rewritePassthrough moves the legacy top-level `passthrough` under
-// extensions.passthrough, merging into any existing extensions without
-// clobbering other keys.
-func rewritePassthrough(doc map[string]any) {
+// extensions.passthrough, then relocates any other key the producer left beside
+// it into passthrough as well: `extensions` is a closed object, so a sibling it
+// does not define makes the document invalid.
+func rewritePassthrough(doc map[string]any) []string {
 	ext, ok := doc["extensions"].(map[string]any)
 	if !ok {
 		ext = map[string]any{}
@@ -150,4 +152,54 @@ func rewritePassthrough(doc map[string]any) {
 	}
 	doc["extensions"] = ext
 	delete(doc, "passthrough")
+	return relocateExtensionSiblings(ext)
+}
+
+// extensionsDefinedMembers are the only keys `extensions` admits. Anything else
+// a producer wrote beside them is exactly what `passthrough` is for.
+var extensionsDefinedMembers = map[string]bool{
+	"passthrough":        true,
+	"rawSourceArtifacts": true,
+}
+
+// relocateExtensionSiblings moves undefined `extensions` keys into
+// extensions.passthrough, returning a warning per key it could not move.
+// Without this, a legacy document carrying something like extensions.audit
+// normalizes into a document the closed `extensions` rejects.
+func relocateExtensionSiblings(ext map[string]any) []string {
+	var warnings []string
+	pt, isObject := ext["passthrough"].(map[string]any)
+	if _, present := ext["passthrough"]; present && !isObject {
+		// passthrough is present but not an object, so nothing can be merged
+		// into it. Leave the document alone and let the schema reject it rather
+		// than reshape data we cannot place.
+		for k := range ext {
+			if !extensionsDefinedMembers[k] {
+				warnings = append(warnings, fmt.Sprintf(
+					"extensions.%s could not be relocated because extensions.passthrough is not an object; `extensions` is closed, so this document will not validate", k))
+			}
+		}
+		return warnings
+	}
+	for k, v := range ext {
+		if extensionsDefinedMembers[k] {
+			continue
+		}
+		if pt == nil {
+			pt = map[string]any{}
+		}
+		if _, clash := pt[k]; clash {
+			warnings = append(warnings, fmt.Sprintf(
+				"extensions.%s was dropped: `extensions` is closed and extensions.passthrough.%s already holds a value", k, k))
+		} else {
+			pt[k] = v
+			warnings = append(warnings, fmt.Sprintf(
+				"extensions.%s was moved into extensions.passthrough.%s; `extensions` accepts only its defined members", k, k))
+		}
+		delete(ext, k)
+	}
+	if pt != nil {
+		ext["passthrough"] = pt
+	}
+	return warnings
 }
