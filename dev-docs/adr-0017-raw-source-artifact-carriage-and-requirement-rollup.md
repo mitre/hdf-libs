@@ -75,6 +75,10 @@ Two of these migrations are mechanically correct but worth revisiting on their m
 
 An array of `External_Reference` entries, each one artifact exactly as the converter received it. The name is deliberate: **raw** (unprocessed, borrowing v2's own word), **source** (what is raw), **artifact** (the thing itself, not a description of it).
 
+**Bytes, and the schema enforces it.** `document` is refused on a raw-source entry by a `not` clause, not merely discouraged in prose. A parsed JSON object cannot hold the original whitespace, key order, duplicate keys or trailing bytes, which makes the artifact unreconstructable and the checksum unverifiable against what is stored — so a JSON input carries as a `content` string like every other input.
+
+This is **deliberately stricter than v2**, and the v2 evidence is why. heimdall2's `passthrough.raw` holds a *parsed* structure in every mapper but one: `gosec-mapper.ts` does `super(JSON.parse(gosecJson))`, `nessus-mapper.ts` stores `parseXml(nessusXml, …)`, `cyclonedx-sbom-mapper.ts` writes `raw: JSON.parse(sbomJson)`. Only `veracode-mapper.ts` keeps the original string, and incidentally rather than by design. For XML inputs v2's "raw" is not even a different serialization of the same data but a reshaping — attributes grouped under `@_`, text nodes renamed — whose key collisions that mapper's own comments describe. So "preserve the original data, as v2 does" is a request v2 did not actually satisfy; this section satisfies it.
+
 An array because conversion can consume more than one artifact — the OSCAL profile path takes a profile *and* a catalog (`oscal-to-hdf/go/converter_profile.go:28`, CLI `--catalog`). Every other converter takes one input; an array of one costs nothing and avoids a second mechanism later.
 
 Each entry carries:
@@ -82,13 +86,13 @@ Each entry carries:
 | Member | Value |
 |---|---|
 | `sourceName` | the producing tool (required by the primitive) |
-| `content` + `encoding` | the artifact's bytes — see §3 |
+| `content` + `encoding` | the artifact's bytes — see §3. **The only carriage mode**: `document` is forbidden here |
 | `mediaType` | the artifact's IANA media type, **required** on an entry that embeds |
-| `checksum` | SHA-256 of the exact bytes the converter read — the value `inputChecksum` / `shared.InputChecksum` already computes |
+| `checksum` | of the exact bytes carried. `algorithm` is required by the `Checksum` primitive, so any consumer can verify whichever algorithm a producer used; the enum is deliberately left open (sha384 and sha512 are stronger, and blake3 covers container-image digests). Our converters emit `sha256`, because that is what `inputChecksum` / `shared.InputChecksum` compute |
 | `rel` | `"raw-source"` |
 | `href` | only when the caller supplies a meaningful location; never a local filesystem path |
 
-### 3. `External_Reference` gains `content` and `encoding`; `document` keeps its meaning
+### 3. `External_Reference` gains `content` and `encoding`; `document` keeps its meaning elsewhere
 
 `document` stays JSON-only and object-shaped. Non-JSON artifacts embed through a new sibling pair:
 
@@ -105,7 +109,9 @@ Chosen over widening `document` to accept a string. Widening would have crushed 
 
 ### 4. Carriage is required of converters by policy, not by schema
 
-Every ingest converter populates `rawSourceArtifacts` with its input, verbatim. This is enforced by the converter contract, the shared builders and the converter test harness — **not** by a schema `required`, because a tool that emits HDF natively has no source artifact, and a schema-level requirement would make valid native HDF invalid.
+Every ingest converter is **to** populate `rawSourceArtifacts` with its input, verbatim. The obligation is on the converter contract, the shared builders and the converter test harness — **not** on a schema `required`, because a tool that emits HDF natively has no source artifact, and a schema-level requirement would make valid native HDF invalid.
+
+**None of that enforcement exists yet, and this section is a migration target rather than a description of today.** As of this ADR landing: neither shared builder accepts or writes a raw artifact, no ingest converter populates the field, and the schema deliberately does not require it — so a converter can satisfy validation while ignoring this section entirely. The field ships as scaffolding with no producers. `hdf-libs-vdc3v` owns closing that gap: builder support, the media-type derivation of §8, reuse of the existing input checksum, and the harness assertion that makes the policy checkable. Until it lands, treat a document without `rawSourceArtifacts` as expected, not as a converter defect.
 
 The policy belongs in the converter documentation and in the `build-converter` skill, so a new converter carries it from the first commit rather than acquiring it in review.
 
@@ -157,7 +163,7 @@ The instance that was a second requirement becomes a result, identified by `resu
 | `results` | concatenate, in source order — the whole point |
 | `affectedPackages` | **union**, de-duplicated on `purl` where present, else name + version; source order preserved. Conflicts in 64 of 68 groups; first-wins would discard real package facts |
 | `code` | first-wins. Conflicts in 66 of 68 groups today **only because payloads are misplaced** (§5); once they move, a rolled-up requirement's `code` is genuinely shared or absent |
-| `cwe`, `refs`, `externalReferences`, `evidence`, `statusOverrides`, `poams` | **union**, de-duplicated on identity where the member has one. `cwe` is a string, so it is its own identity. The other five declare no identity field, and **where a member declares none, the whole member is its identity** (canonical JSON, with map keys sorted so both languages agree). It is the only key that cannot discard a distinct member; its failure mode is a visible duplicate rather than silent loss. Per-type identities — `Status_Override` by `(type, appliedAt, appliedBy)`, `Evidence` by checksum — were considered and deferred, being strictly easier to add once duplicates are an observed nuisance |
+| `cwe`, `refs`, `externalReferences`, `evidence`, `statusOverrides`, `poams` | **union**, de-duplicated on identity where the member has one. **De-duplication is about what the merge adds**: a later member's value already present is not appended, while a member's *own* repeated values are left exactly as the converter emitted them — the field is never re-written into a set, because silently dropping a duplicate a converter chose to emit is the loss this rule's identity choice exists to avoid. De-duplication is therefore asymmetric by design; repeated values do occur in committed output (`sarif-to-hdf`'s goldens carry requirements with repeated `statusOverrides`). `cwe` is a string, so it is its own identity. The other five declare no identity field, and **where a member declares none, the whole member is its identity** (canonical JSON, with map keys sorted so both languages agree). It is the only key that cannot discard a distinct member; its failure mode is a visible duplicate rather than silent loss. Per-type identities — `Status_Override` by `(type, appliedAt, appliedBy)`, `Evidence` by checksum — were considered and deferred, being strictly easier to add once duplicates are an observed nuisance |
 | `tags` | per key, **three behaviours**: a key both members carry as an array **unions**; every other key **first-wins**; a key only a later member carries is **added**. The third is not inconsistent with `title`, where first-member absence beats a later value: `title` is one scalar describing the requirement, so first-wins means "the survivor's title" and a union would be incoherent, whereas `tags` is a bag of source taxonomy where dropping a key a member genuinely carried is pure loss. **One exception — the unrated-severity marker**, below |
 | `impact`, `severity`, `effectiveImpact` | worst-wins, over the **schema enum's own order** (`informational < low < medium < high < critical`). **Absent loses to present**, and two absent stay absent — otherwise one member missing a severity would erase a present one, the opposite of worst-wins. A value outside the enum **is not a rating at all** rather than the lowest rating (`hdf-utilities`' `IsUnratedSeverity` is explicit that an unrecognised token asserts nothing), so it loses to every rated value and two of them fall back to first-wins; it is reachable only from input that bypassed validation. Exercised by exactly one real group (veracode id `12`, impacts 0.5 and 0.3 — a CWE *category* id spanning two severities, which the converter-id policy may dissolve at source) |
 | `title`, `descriptions` | first-wins. Zero conflicts in all 68 groups; stated as a rule so the helper has defined behaviour when a future converter conflicts |
