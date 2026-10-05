@@ -27,6 +27,7 @@ import {
 } from '../src/compliance.js';
 import { evaluateRules, evaluate, PREDICATE_FIELDS, type ThresholdRule } from '../src/rules.js';
 import { VALUE_FIELDS } from '../src/query.js';
+import { effectiveImpactOf, overrideInputs } from '../src/effective.js';
 import { filter, type Match } from '../src/query.js';
 import { ruleRefusal } from '../src/compliance.js';
 import type { Severity } from '@mitre/hdf-schema';
@@ -923,4 +924,59 @@ describe('named-control assertions over duplicate ids — parity with go/complia
   // with no entry-index suffix — is pinned by the 'threshold verdict' suite
   // above, whose fixture carries each id exactly once. Every id in this
   // document is duplicated, so it cannot be asserted here.
+});
+
+// Go's typed decode yields the zero instant for an absent appliedAt/expiresAt
+// and its ladder reads zero as "never expires", so an unvalidated document with
+// an override missing either one counts in Go. TypeScript must count it too
+// rather than throwing, or the two languages disagree about the same bytes.
+describe('an override missing its timestamps', () => {
+  const requirement = (): EvaluatedRequirement =>
+    ({
+      id: 'NO-DATES',
+      impact: 0.5,
+      results: [{ status: 'failed' } as RequirementResult],
+      statusOverrides: [{ status: 'falsePositive', impact: { value: 0 } }],
+    }) as unknown as EvaluatedRequirement;
+
+  const document = (): HDFResults =>
+    ({ baselines: [{ requirements: [requirement()] }] }) as unknown as HDFResults;
+
+  it('resolves effective impact instead of throwing', () => {
+    expect(effectiveImpactOf(requirement())).toBe(0);
+  });
+
+  // Asserts the BUCKET, not merely that no throw happened: the document has to
+  // reach the loop for this to mean anything, and an impact re-scored to 0 is
+  // informational, not the medium its raw 0.5 would be.
+  // A null member is what an unvalidated document yields where Go's typed decode
+  // produced a zero struct, so it must not throw either.
+  it('tolerates a null override member', () => {
+    const withNull = {
+      id: 'NULL-MEMBER',
+      impact: 0.5,
+      results: [{ status: 'failed' } as RequirementResult],
+      statusOverrides: [null],
+    } as unknown as EvaluatedRequirement;
+    expect(effectiveImpactOf(withNull)).toBe(0.5);
+    expect(overrideInputs(withNull)).toHaveLength(1);
+  });
+
+  // governingPoamType indexes control.poams by (index - statusOverrides.length),
+  // so dropping an unusable member instead of keeping its slot would silently
+  // name the wrong POA&M.
+  it('keeps one entry per override so the poam index stays aligned', () => {
+    const control = {
+      id: 'ALIGN',
+      impact: 0.5,
+      statusOverrides: [null, { status: 'waiver', appliedAt: '2020-01-01T00:00:00Z' }],
+    } as unknown as EvaluatedRequirement;
+    expect(overrideInputs(control)).toHaveLength(2);
+  });
+
+  it('counts the re-scored requirement as informational, the path hdf-to-html takes', () => {
+    const counts = countControlsByStatus(document(), () => 'failed');
+    expect(counts.failed.informational).toBe(1);
+    expect(counts.failed.medium).toBe(0);
+  });
 });

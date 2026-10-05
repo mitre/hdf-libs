@@ -9,19 +9,37 @@ import type { EvaluatedRequirement } from '@mitre/hdf-schema';
 import { computeEffectiveImpact, type StatusOverrideInput } from '@mitre/hdf-utilities';
 
 /**
- * Maps a requirement's schema overrides onto the shared helper's neutral shape.
- * The schema types render timestamps as Date; the helper takes the RFC3339
- * strings they came from, so convert rather than widening it.
+ * Maps a requirement's schema overrides onto the shared helper's neutral shape,
+ * whose timestamps are the RFC3339 strings the schema's Date fields came from.
  */
 export function overrideInputs(control: EvaluatedRequirement): StatusOverrideInput[] {
+  // One entry per override, slot preserved even for a member that carries
+  // nothing: governingPoamType reads the index past this array's length as a
+  // poam index, so dropping a slot would name the wrong poam.
   return (control.statusOverrides ?? []).map((o) => ({
-    status: o.status as string | undefined,
-    appliedAt: new Date(o.appliedAt).toISOString(),
-    expiresAt: new Date(o.expiresAt).toISOString(),
+    status: o?.status as string | undefined,
+    appliedAt: rfc3339(o?.appliedAt),
+    expiresAt: rfc3339(o?.expiresAt),
     // Carried so effective IMPACT resolves from the same overrides; eligibility
     // is per-field, so one override may govern one and not the other.
-    impact: o.impact?.value,
+    impact: o?.impact?.value,
   }));
+}
+
+/**
+ * The schema types these as Date, but a parsed document carries the RFC3339
+ * strings they came from, so both shapes arrive here. A string passes through
+ * untouched for the helper's parseTimestamp to read, which is what keeps a
+ * zone-less value UTC instead of host-local.
+ *
+ * Absent or unparseable yields undefined, matching Go: its typed decode gives
+ * the zero instant, and its ladder reads a zero ExpiresAt as never expiring and
+ * a zero AppliedAt as applied before any real one.
+ */
+function rfc3339(value: Date | string | undefined): string | undefined {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value;
+  return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
 }
 
 /**
