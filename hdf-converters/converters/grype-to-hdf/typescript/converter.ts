@@ -253,6 +253,19 @@ function getReferences(vuln: GrypeVulnerability, relatedVulns?: GrypeRelatedVuln
   return Array.from(refs);
 }
 
+/**
+ * The per-result instance identity for a grype match: the matched package's
+ * purl, which is what distinguishes two entries reporting the same CVE. Falls
+ * back to name@version when a source omits purl (optional in grype's schema,
+ * though every committed fixture carries it) — the same identity twistlock
+ * uses, whose source has no purl at all. Returns '' when the artifact names
+ * nothing at all, so the caller leaves both fields unset.
+ */
+function packageInstanceId(a: GrypeArtifact): string {
+  if (a.purl) return a.purl;
+  return a.version ? `${a.name}@${a.version}` : a.name;
+}
+
 function buildCodeDesc(match: GrypeMatch): string {
   const parts: string[] = [];
 
@@ -418,6 +431,14 @@ function convertMatchToRequirement(match: GrypeMatch, isIgnored: boolean, target
     message,
     startTime,
   };
+
+  // Both fields or neither: an artifact that names nothing gets no identity
+  // rather than an empty-string resourceId, matching every other converter.
+  const instanceId = packageInstanceId(match.artifact);
+  if (instanceId) {
+    result.resource = 'package';
+    result.resourceId = instanceId;
+  }
 
   // Get CCI mappings for NIST controls using curated mapping table
   const cciTags = nistToCci(DEFAULT_STATIC_ANALYSIS_NIST_TAGS);
