@@ -1,0 +1,36 @@
+SAF CLI threshold files — real, unmodified, the complete upstream set
+
+Source:    https://github.com/mitre/saf, test/sample_data/thresholds/
+Pinned:    mitre/saf main @ 705d3f26ffe1e5feaddba6253bd4183c9bd0894d (2026-09-26)
+           These files last changed upstream in 713c21d3cb722b8d038087bc7eea8d0c343c4e9c (2025-10-08)
+Retrieved: 2026-09-27, via raw.githubusercontent.com
+Trimming:  none. Byte-for-byte as retrieved; no field edited, added, or removed.
+
+All SEVEN files upstream publishes are vendored, not a selection. An earlier
+revision of this record took four of them and described that as the whole set;
+it was not, and a partial corpus described as complete is worse than a partial
+one described honestly.
+
+sha256 as retrieved:
+  29c219b54f9bf81f877ef7a35a4c9f344f7f5234b6f637778553cf21fa2f554c  red_hat_good.counts.good.yml
+  29b7dcbc678c94d0fc4add119a27f2d4e432590dc9b10d4f05ae9e8807f6c348  rhel-8_hardened.counts.bad.noimpactHigh.yml
+  4fb06d4e3ca5a26d11f876baa2ddbf41ae882c7ef136b2063c11bce23d9fc7df  rhel-8_hardened.counts.good.exact.yml
+  9dcb01167e100001e3b6c17731d72ee13f9195f4eeaabf193043d0afd9600be4  triple_overlay_profile_example.json.counts.bad.compliance.yml
+  a003be26489a99a7f3b77f3dd0536d7bf385ade3ff17873a1b767b7a8c80be42  triple_overlay_profile_example.json.counts.bad.total.yml
+  7f00f516a276e60bf51bf5f40d8a13ef2970168e7d886f5a3bd19a76c701be8a  triple_overlay_profile_example.json.counts.good.yml
+  6f0795140c2a0aa3bba9cf11380f1e4b0d18a77eddfe29c3046f4f5201ceb395  triple_overlay_profile_example.json.counts.totalMinMax.yml
+
+FOUR of the seven carry SAF's scalar count bound (`total: 19`), the shape this
+tool rejected until hdf-libs-az40y: the four triple_overlay_* files. The
+`.bad.*` names describe the verdict SAF expects against ITS source document,
+not a malformed spec — all seven are well-formed SAF thresholds.
+
+These are threshold SPECS, not HDF documents, so no HDF schema applies and none
+was validated against. What vouches for them is that they are SAF's own test
+inputs at a pinned commit: `saf validate threshold` runs against these exact
+bytes upstream. CLAUDE.md's schema-confirmed fallback does not apply because SAF
+publishes no schema for this format; the real-source case is satisfied outright.
+
+Consumers: hdf-engine/go/threshold_saf_test.go and hdf-engine/test/threshold-saf.test.ts.
+Kept here rather than in hdf-fixtures because that corpus is HDF documents and
+these are not.

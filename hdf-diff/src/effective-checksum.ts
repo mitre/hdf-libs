@@ -66,14 +66,22 @@ export function computeDisposition(
   requirement: Record<string, unknown>,
   referenceTimestamp?: string,
 ): string | null {
-  const overrides = requirement['statusOverrides'] as OverrideLike[] | undefined;
+  // Overrides and POA&Ms are ONE ordered set compared on appliedAt, not two
+  // tiers — the schema defines disposition as 'the most recent non-expired
+  // override or POAM governing this requirement', and both carry the same two
+  // timestamp fields. Only the override half was ever implemented.
+  // Parity: ComputeDisposition in hdf-diff/go/effective_checksum.go.
+  const overrides = (requirement['statusOverrides'] as OverrideLike[] | undefined) ?? [];
+  const poams = (requirement['poams'] as OverrideLike[] | undefined) ?? [];
 
-  if (overrides && overrides.length > 0) {
-    const i = governingOverrideIndex(overrideWindows(overrides), () => true, referenceTimestamp);
-    if (i >= 0) {
-      return overrides[i]?.type ?? null;
-    }
-    return null;
+  if (overrides.length > 0 || poams.length > 0) {
+    const windows = [...overrideWindows(overrides), ...overrideWindows(poams)];
+    const i = governingOverrideIndex(windows, () => true, referenceTimestamp);
+    if (i < 0) return null;
+    if (i < overrides.length) return overrides[i]?.type ?? null;
+    // A POA&M's own kind is not a member of Override_Type, which disposition is
+    // typed as, so every governing POA&M reports the flat 'poam'.
+    return 'poam';
   }
 
   const disposition = requirement['disposition'] as string | undefined;

@@ -24,6 +24,7 @@ package hdftoocsf
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -194,15 +195,20 @@ func overrideStatusID(st exportmap.Status) int {
 // (Status_Override.justification is an optional structured controlled-vocabulary
 // object, not the human rationale — reason is the field to surface.)
 func overrideComment(req map[string]interface{}) string {
-	disposition := exportmap.GetStr(req, "disposition")
+	// Resolved, not read from the stored disposition field, which is an output
+	// cache that can disagree with the overrides or be absent entirely.
+	disposition := exportmap.Disposition(req, time.Time{})
 	overrides, _ := exportmap.AsSlice(req["statusOverrides"])
 	if disposition == "" && len(overrides) == 0 {
 		return ""
 	}
+	// The GOVERNING override's reason — most recently applied and non-expired,
+	// resolved by appliedAt rather than by array position, because this repo's
+	// writers append and so put the newest override last.
 	reason := ""
 	if len(overrides) > 0 {
-		if first, ok := exportmap.AsMap(overrides[0]); ok {
-			reason = exportmap.GetStr(first, "reason")
+		if gov, ok := exportmap.GoverningOverride(overrides, time.Time{}); ok {
+			reason = exportmap.GetStr(gov, "reason")
 		}
 	}
 	switch {
