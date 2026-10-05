@@ -23,6 +23,8 @@
           "results": [
             {
               "codeDesc": "URI: https://example.com/login | Method: GET | Param: X-Content-Type-Options",
+              "resource": "url",
+              "resourceId": "https://example.com/login",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -69,12 +71,16 @@
           "results": [
             {
               "codeDesc": "URI: https://example.com/api/submit | Method: POST | Evidence: HTTP/1.1 500 Internal Server Error",
+              "resource": "url",
+              "resourceId": "https://example.com/api/submit",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: https://example.com/api/login | Method: POST | Param: username | Evidence: HTTP/1.1 500 Internal Server Error",
               "message": "' OR 1=1 --",
+              "resource": "url",
+              "resourceId": "https://example.com/api/login",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
