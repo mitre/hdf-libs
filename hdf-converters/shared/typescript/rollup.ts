@@ -135,6 +135,13 @@ function mergeRequirement(
 /**
  * Append the members of b whose key is not already present in a, preserving
  * source order. An absent field stays absent.
+ *
+ * `a` is returned unfiltered, so de-duplication is deliberately ASYMMETRIC: the
+ * merge never adds a duplicate, but a member's own repeated values survive. That
+ * is the point — re-writing the field into a set would silently drop a duplicate
+ * the converter chose to emit, which is the loss ADR-0017 §6's whole-member
+ * identity exists to avoid. Repeated values do occur in committed output
+ * (sarif-to-hdf goldens carry requirements with repeated statusOverrides).
  */
 function unionBy<T>(
   a: T[] | undefined,
