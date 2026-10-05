@@ -2,6 +2,8 @@ package exportmap
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -315,4 +317,44 @@ func TestBuildHDFBlock(t *testing.T) {
 	assert.NotContains(t, minimal, "tool")
 	assert.NotContains(t, minimal, "control_id")
 	assert.NotContains(t, minimal, "nist")
+}
+
+type exportmapStatusCase struct {
+	Name string `json:"name"`
+	Note string `json:"note"`
+	Want struct {
+		Raw        string `json:"raw"`
+		Rollup     string `json:"rollup"`
+		Overridden bool   `json:"overridden"`
+		Suppressed bool   `json:"suppressed"`
+	} `json:"want"`
+	Requirement map[string]interface{} `json:"requirement"`
+}
+
+func loadExportmapStatusCases(t *testing.T) []exportmapStatusCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "exportmap-status-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []exportmapStatusCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases)
+	return doc.Cases
+}
+
+// The shared case table pins both resolvers to the same verdicts. StatusOf
+// builds the canonical override input from raw JSON itself rather than through
+// the requirement bridge, so the Go zero time has to be normalized here too or
+// the suppression axis flips between languages on the same document.
+func TestStatusOf_SharedCaseTable(t *testing.T) {
+	for _, c := range loadExportmapStatusCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			got := StatusOf(c.Requirement)
+			assert.Equal(t, c.Want.Raw, got.Raw, c.Note)
+			assert.Equal(t, c.Want.Rollup, got.Rollup, c.Note)
+			assert.Equal(t, c.Want.Overridden, got.Overridden, c.Note)
+			assert.Equal(t, c.Want.Suppressed, got.Suppressed, c.Note)
+		})
+	}
 }

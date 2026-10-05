@@ -549,7 +549,7 @@ merging them, as does the `hdf_apply_amendment` MCP tool.
 
 ### enrich
 
-Overlay an **enrichment source** onto an HDF results document, attaching inert `externalReferences[]` to findings (matched by CVE) or to the results root. Enrichment is informational — it adds context and never changes a finding's status or impact. Positional parity with `convert`: `<results> <source>`, with `--from` as the optional format assertion.
+Overlay an **enrichment source** onto an HDF results document, attaching inert `externalReferences[]` to findings (matched by CVE) or to the document root. Enrichment is informational — it adds context and never changes a finding's status or impact. Positional parity with `convert`: `<results> <source>`, with `--from` as the optional format assertion.
 
 ```
 USAGE
@@ -567,7 +567,7 @@ EXAMPLES
   hdf enrich results.json bundle.json                                   # write to stdout
 ```
 
-Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the results root. Each reference carries the raw STIX object losslessly in `document`.
+Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the document root. Each reference carries the raw STIX object losslessly in `document`.
 
 With **`--recompute-cvss`**, when a matched STIX object shows active exploitation (a sighting, a `targets`/`exploits` relationship, or an indicator/report reference) and the finding carries a CVSS **3.1** base vector, an inline `riskAdjustment` is authored: Exploit Maturity `E:H` is applied and the Threat score recomputed via the CVSS engine, with `impact.value = computedScore/10` and an `externalReferences[]` back to the STIX source. Findings with no base vector, or a CVSS **4.0** base vector, are left unchanged (no fabrication). Enrichment without `--recompute-cvss` never changes status or impact.
 
