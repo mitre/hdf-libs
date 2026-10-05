@@ -125,10 +125,9 @@ func JustificationForCycloneDX(j hdf.Justification) (string, bool) {
 	case hdf.RequiresConfiguration, hdf.RequiresDependency, hdf.RequiresEnvironment,
 		hdf.ProtectedByCompiler, hdf.ProtectedAtRuntime, hdf.ProtectedAtPerimeter:
 		return string(j), true
+	case hdf.VulnerableCodeNotPresent, hdf.VulnerableCodeCannotBeControlledByAdversary:
+		// No CycloneDX 1.4 equivalent; the caller omits the field.
 	}
-	// vulnerable_code_not_present and
-	// vulnerable_code_cannot_be_controlled_by_adversary have no CycloneDX
-	// equivalent; caller should omit the field.
 	return "", false
 }
 

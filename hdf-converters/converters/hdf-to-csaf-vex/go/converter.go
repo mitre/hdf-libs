@@ -612,6 +612,9 @@ func buildVulnerability(group cveGroup) (Vulnerability, bool) {
 				}
 			}
 			emittedAny = true
+		case vex.StatusUnderInvestigation:
+			// Unreachable: ExportStatusFor never yields it, because an HDF
+			// override records a decision already taken.
 		}
 
 		for _, e := range o.Evidence {

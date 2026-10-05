@@ -472,6 +472,8 @@ func buildResult(f asffFinding) hdf.RequirementResult {
 		if m := trivyMessage(f); m != "" {
 			message = m
 		}
+	case productDefault, productSecurityHub:
+		// No field overrides: the generic ASFF mapping above is already right.
 	}
 	// A finding may carry structured vulnerability data (Inspector and other
 	// scanners). Fold a summary into the message so CVE/CVSS/fix data survives —
@@ -691,6 +693,8 @@ func baselineName(f asffFinding) string {
 		}
 	case productTrivy:
 		return "Aqua Security - Trivy"
+	case productDefault:
+		// Unrecognized producer: the ARN-derived fallback below names it.
 	}
 	company, prod := productArnParts(f.ProductArn)
 	if company == "" && prod == "" {
@@ -719,6 +723,7 @@ func controlID(f asffFinding) string {
 			return f.GeneratorID + "/" + cve
 		}
 		return f.GeneratorID + "/" + f.ID
+	case productDefault:
 	}
 	// Unrecognized producer. A compliance/control finding aggregates per-resource
 	// under one requirement, so group it by its generator-derived control ref.
