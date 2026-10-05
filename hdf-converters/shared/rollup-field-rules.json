@@ -5,7 +5,7 @@
   "rules": {
     "mergeKey": "The field entries are grouped by. Identical across a group by construction.",
     "concat": "Concatenate the members' values in source order.",
-    "union": "Union the members' values, de-duplicated on identity, first-seen order preserved.",
+    "union": "Union the members' values, first-seen order preserved. De-duplication is about what the MERGE adds: a later member's value already present is not appended. A member's own repeated values are left exactly as the converter emitted them — the output is not re-written into a set, because silently dropping a duplicate the converter chose to emit is the data loss this rule's whole-member identity was picked to avoid. The consequence is that de-duplication is asymmetric by design, not by oversight.",
     "tagsPerKey": "Per tag key: a key both members carry as an array unions; every other key first-wins; a key only a later member carries is added. ONE EXCEPTION: the unrated-severity marker (severity_rating: unrated) is derived, not a tag — it survives only if EVERY member carried it, because it asserts the severity was defaulted rather than rated.",
     "worstWins": "The worst value across the members wins, whatever the member order. Absent loses to present.",
     "firstWins": "The first member's value wins — present or absent. A later member contributes nothing.",
