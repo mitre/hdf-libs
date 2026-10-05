@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -43,15 +44,18 @@ func executeCommand(args ...string) (stdout, stderr string, err error) {
 	os.Stdout = wOut
 	os.Stderr = wErr
 
-	// Drain pipes concurrently to avoid deadlock when command output
-	// exceeds the OS pipe buffer (4KB on Windows).
+	// One goroutine PER PIPE. Draining them in sequence deadlocks: ReadFrom(rOut)
+	// blocks until wOut closes, which happens only after cmd.Execute() returns,
+	// so a command that fills the stderr buffer first can never finish writing
+	// and the read never returns. Linux's 64KB buffer hides it; Windows' 4KB does
+	// not, and a verdict listing ~90 findings is enough to cross it.
 	var bufOut, bufErr bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); _, _ = bufOut.ReadFrom(rOut) }()
+	go func() { defer wg.Done(); _, _ = bufErr.ReadFrom(rErr) }()
 	done := make(chan struct{})
-	go func() {
-		_, _ = bufOut.ReadFrom(rOut)
-		_, _ = bufErr.ReadFrom(rErr)
-		close(done)
-	}()
+	go func() { wg.Wait(); close(done) }()
 
 	// Set args and execute
 	cmd.SetArgs(args)
