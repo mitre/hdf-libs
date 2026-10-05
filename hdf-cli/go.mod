@@ -102,7 +102,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.39.0 // indirect
+	golang.org/x/text v0.39.0
 	google.golang.org/protobuf v1.36.12 // indirect
 	sigs.k8s.io/release-utils v0.12.4 // indirect
 )

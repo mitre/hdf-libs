@@ -13,6 +13,7 @@ import (
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/unicode/norm"
 )
 
 type evidenceUpdateOpts struct {
@@ -135,6 +136,11 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	sourceOf := map[string]string{}
 	seen := map[string]struct{}{}
 	var replaced, added []string
+	// Pairs of (stored spelling, the spelling given on the command line) that are one name
+	// written differently — case, Unicode normalization, or both — and name one file here.
+	var spelledDifferently [][2]string
+	// Pairs of (count, reference) where more than one recorded entry named one file.
+	var multiRef [][2]string
 	for _, path := range resultsPaths {
 		ref, refErr := packageRelativeRef(pkgDir, path)
 		if refErr != nil {
@@ -144,7 +150,19 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		// second pass would otherwise find the first pass's own append and call it
 		// "refreshed in place", which is false — the ref was not in the package when the
 		// command started.
-		if _, dup := seen[ref]; dup {
+		//
+		// Keyed on the file, not on the reference string: two spellings of one name evaded
+		// a string key, so the same entry was reported twice and an entry THIS run appended
+		// was reported as refreshed in place — exactly the falsehood described above.
+		dupKey := ref
+		for prior := range seen {
+			if sameNameDifferentSpelling(normalizedRef(prior), normalizedRef(ref)) &&
+				samePath(refPath(pkgDir, prior), refPath(pkgDir, ref)) {
+				dupKey = prior
+				break
+			}
+		}
+		if _, dup := seen[dupKey]; dup {
 			fmt.Fprintf(os.Stderr, "  %s named more than once; recorded once\n", ref)
 			continue
 		}
@@ -163,19 +181,35 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 		}
 
 		sourceOf[ref] = path
-		i, conflictType := indexOfResultsRef(contents, ref)
+		matched, conflictType, conflictRef, storedSpellings := indexesOfResultsRef(pkgDir, contents, ref)
 		if conflictType != "" {
+			// Names the STORED spelling, which is the entry the operator has to find and
+			// remove. Naming the incoming spelling told them to remove a reference that does
+			// not appear in their package, because a conflict can be reached by a spelling
+			// that merely names the same file.
 			return fmt.Errorf("%s is already recorded in this package with type %s; "+
 				"update replaces a results entry in place and will not retype an existing one — "+
-				"remove that entry first if it really is results now", ref, conflictType)
+				"remove that entry first if it really is results now", conflictRef, conflictType)
 		}
-		entry := contentEntryFromBytes("hdf-results", ref, data)
-		if i >= 0 {
-			contents[i] = entry
-			replaced = append(replaced, ref)
+		for _, stored := range storedSpellings {
+			spelledDifferently = append(spelledDifferently, [2]string{stored, ref})
+		}
+		if len(matched) > 0 {
+			// Each matched entry keeps ITS OWN recorded spelling and gains the fresh
+			// checksum: a recorded reference is part of an attestation and is not rewritten
+			// silently, so the stored form survives and the difference is reported instead.
+			for _, i := range matched {
+				existing, _ := contents[i].(map[string]interface{})
+				uri, _ := existing["uri"].(string)
+				contents[i] = contentEntryFromBytes("hdf-results", uri, data)
+				replaced = append(replaced, uri)
+			}
+			if len(matched) > 1 {
+				multiRef = append(multiRef, [2]string{fmt.Sprint(len(matched)), ref})
+			}
 			continue
 		}
-		contents = append(contents, entry)
+		contents = append(contents, contentEntryFromBytes("hdf-results", ref, data))
 		added = append(added, ref)
 		// Recorded as we go, so a second same-baseline scan added in the SAME invocation is
 		// reported too. A snapshot taken before the loop said nothing about them, which is
@@ -215,7 +249,7 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	doc["completenessCheck"] = completeness
 	doc["preparedAt"] = time.Now().UTC().Format(time.RFC3339)
 
-	reportUpdate(replaced, added, coveredBefore, sourceOf)
+	reportUpdate(replaced, added, spelledDifferently, multiRef, coveredBefore, sourceOf)
 
 	output, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
@@ -250,32 +284,80 @@ func normalizedRef(uri string) string {
 	return filepath.ToSlash(filepath.Clean(uri))
 }
 
-// indexOfResultsRef finds the hdf-results entry at a reference, or -1. It additionally
-// reports the type of an entry holding that reference under ANOTHER type, so the caller
-// can refuse rather than overwrite it: matching on uri alone let --results on a system
-// document destroy the package's only hdf-system entry and re-type it, which schema
-// validation accepts in silence.
+// indexesOfResultsRef finds EVERY hdf-results entry naming a reference's file. It additionally
+// reports the type, and the stored spelling, of an entry holding that reference under ANOTHER
+// type, so the caller can refuse rather than overwrite it: matching on uri alone let --results
+// on a system document destroy the package's only hdf-system entry and re-type it, which
+// schema validation accepts in silence.
 //
 // The reference is the only replacement key. Keying on baseline name would delete one
 // component's evidence when another component assessed against the same baseline is
 // recorded.
-func indexOfResultsRef(contents []interface{}, ref string) (int, string) {
+func indexesOfResultsRef(pkgDir string, contents []interface{}, ref string) ([]int, string, string, []string) {
+	wantNorm := normalizedRef(ref)
+	wantPath := refPath(pkgDir, ref)
+	var matched []int
+	var storedSpellings []string
 	for i, e := range contents {
 		entry, ok := e.(map[string]interface{})
 		if !ok {
 			continue
 		}
 		uri, _ := entry["uri"].(string)
-		if normalizedRef(uri) != normalizedRef(ref) {
+		norm := normalizedRef(uri)
+		exact := norm == wantNorm
+		// Narrowed to ONE NAME SPELLED DIFFERENTLY — a case difference, a Unicode
+		// normalization difference, or both. samePath compares inodes, so on its own it also
+		// matches a hardlink and an absolute-versus-relative spelling of one file; those are
+		// two NAMES for one file and merging them is a separate decision, deliberately not
+		// taken here. samePath is still what decides, so on a case-sensitive filesystem the
+		// two spellings are different files and nothing matches.
+		sameName := !exact && sameNameDifferentSpelling(norm, wantNorm) &&
+			samePath(wantPath, refPath(pkgDir, uri))
+		if !exact && !sameName {
 			continue
 		}
-		docType, _ := entry["type"].(string)
-		if docType == "hdf-results" {
-			return i, ""
+		if docType, _ := entry["type"].(string); docType != "hdf-results" {
+			return nil, docType, uri, nil
 		}
-		return -1, docType
+		// EVERY entry naming the file, not just the first: a package the previous release
+		// wrote can hold two, and refreshing one left the other with a stale checksum, so
+		// update exited 0 reporting "refreshed in place" while verify exited 1.
+		matched = append(matched, i)
+		if sameName {
+			storedSpellings = append(storedSpellings, uri)
+		}
 	}
-	return -1, ""
+	return matched, "", "", storedSpellings
+}
+
+// sameNameDifferentSpelling reports whether two references are the SAME NAME written
+// differently — a case difference, a Unicode normalization difference, or both.
+//
+// Normalization is folded as well as case because NFC and NFD are one name in two
+// encodings, and on macOS that split is routine: readdir and extracted archives yield NFD
+// while shell completion yields NFC, and `build` records whichever it was handed. A
+// case-fold alone left those unmatched — strings.EqualFold("café" NFC, "café" NFD) is
+// false — which appended a duplicate and so reopened the stale-checksum failure this card
+// exists to close, for a filesystem that os.SameFile says holds one file.
+//
+// Deliberately NOT a general identity test: a hardlink and an absolute-versus-relative
+// spelling are two NAMES for one file, and merging those is a separate decision. samePath
+// still decides, so on a case-sensitive filesystem two spellings are different files and
+// nothing matches.
+func sameNameDifferentSpelling(a, b string) bool {
+	return strings.EqualFold(norm.NFC.String(a), norm.NFC.String(b))
+}
+
+// refPath is where a recorded reference points, for IDENTITY COMPARISON ONLY — never for
+// reading, which goes through the confined resolution in add-evidence. A relative
+// reference is package-relative, matching what bundle and verify resolve; anything else
+// stands as recorded so samePath's lexical fallback can still compare it.
+func refPath(pkgDir, uri string) string {
+	if uri == "" || isRemoteURI(uri) || filepath.IsAbs(uri) {
+		return uri
+	}
+	return filepath.Join(pkgDir, filepath.FromSlash(uri))
 }
 
 // baselinesByRef maps each results reference to the baselines it covers, for reporting
@@ -400,7 +482,22 @@ func systemDocForPackage(pkgDir string, doc map[string]interface{}) (map[string]
 // package already covered, what distinguishes the two. A results document's timestamp
 // and components are both OPTIONAL in HDF, so their absence is stated rather than
 // papered over — two indistinguishable scans are still both retained.
-func reportUpdate(replaced, added []string, coveredBefore map[string][]string, sourceOf map[string]string) {
+func reportUpdate(replaced, added []string, spelledDifferently, multiRef [][2]string, coveredBefore map[string][]string, sourceOf map[string]string) {
+	// Reported BEFORE the per-reference lines, so the explanation precedes the line it
+	// explains: the entry was refreshed under the spelling the package already records.
+	// Which of the two spellings names the file on a filesystem that distinguishes them is
+	// not known here, so neither is described as the one on disk — the operator may have
+	// mistyped the command line, in which case the recorded reference is the correct one.
+	for _, pair := range spelledDifferently {
+		fmt.Fprintf(os.Stderr, "  note: the recorded spelling %s and the spelling you gave %s are "+
+			"one name written differently (case or Unicode normalization); they name one file on "+
+			"this filesystem, so the entry was refreshed in place and the reference was left as "+
+			"recorded\n", sanitizeOutput(pair[0]), sanitizeOutput(pair[1]))
+	}
+	for _, pair := range multiRef {
+		fmt.Fprintf(os.Stderr, "  note: %s recorded references name one file (%s); all were refreshed\n",
+			pair[0], sanitizeOutput(pair[1]))
+	}
 	for _, ref := range replaced {
 		fmt.Fprintf(os.Stderr, "  replaced %s (same reference, refreshed in place)\n", ref)
 	}

@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -925,4 +927,378 @@ func TestEvidenceUpdate_DoesNotResolveSystemRefOntoADifferentDocument(t *testing
 					"by a same-basename document that happens to be there")
 		})
 	}
+}
+
+// caseInsensitiveFS reports whether this filesystem folds case, by PROBING rather than
+// assuming — the platform is not a reliable predictor and an unguarded assumption makes a
+// test that silently proves nothing on the other kind.
+func caseInsensitiveFS(t *testing.T, dir string) bool {
+	t.Helper()
+	probe := filepath.Join(dir, "CaseProbe")
+	require.NoError(t, os.WriteFile(probe, []byte("x"), 0o600))
+	defer func() { _ = os.Remove(probe) }()
+	_, err := os.Stat(filepath.Join(dir, "caseprobe"))
+	return err == nil
+}
+
+// A stored reference differing from the file only in case names ONE file on a
+// case-insensitive filesystem, so a refresh must refresh that entry rather than adding a
+// second one. Two entries for one file is not merely untidy: the next update refreshes
+// only the spelling it matched, the other keeps a stale checksum, and the package then
+// fails its own `evidence verify` — which is verbatim the failure hdf-libs-52n0c.5's AC
+// was written to eliminate.
+//
+// Matching is by filesystem identity (os.SameFile via samePath), which is correct on BOTH
+// filesystem kinds: on a case-sensitive one the two spellings are different files and
+// correctly do not match. The stored spelling is kept, never rewritten — it is a recorded
+// reference in an attestation — and the difference is reported instead.
+func TestEvidenceUpdate_MatchesAReferenceDifferingOnlyInCase(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if !caseInsensitiveFS(t, dir) {
+		t.Skip("filesystem is case-sensitive; these two spellings are different files here")
+	}
+
+	// Re-record the stored reference under a different case. `build` CAN produce this: it
+	// derives the reference from the path as typed (filepath.Abs + EvalSymlinks, neither of
+	// which canonicalizes case), so one mistyped case on the command line is enough.
+	stored := rewriteStoredRef(t, pkgPath, "rhel9.json", "RHEL9.json")
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath,
+		"--results", filepath.Join(dir, "scans", "rhel9.json"), "-o", out)
+	require.NoError(t, err)
+
+	uris := contentURIs(t, updatedPackage(t, out))
+	assert.Contains(t, uris, stored, "the stored spelling survives; an attestation is not rewritten")
+	assert.NotContains(t, uris, "scans/rhel9.json",
+		"and no second entry is added for the same file")
+	assert.Len(t, uris, len(contentURIs(t, updatedPackage(t, pkgPath))),
+		"the entry count is unchanged — refreshed in place, not appended")
+	assert.Contains(t, stderr, "written differently",
+		"the difference is reported rather than silently kept")
+}
+
+// The complement of the test above, and the half this platform cannot run. On a
+// case-sensitive filesystem two case-differing references name DIFFERENT files, so they
+// must NOT be matched — the incoming document is a new entry, not a refresh. Skipped here
+// and executed by CI's Linux leg, which is case-sensitive; without it the identity match
+// would be unverified on exactly the filesystem where getting it wrong would silently
+// merge two distinct scans into one.
+func TestEvidenceUpdate_ACaseDifferingReferenceIsADifferentFileWhenTheFSSaysSo(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if caseInsensitiveFS(t, dir) {
+		t.Skip("filesystem folds case; these two spellings are one file here")
+	}
+
+	// Both spellings exist as genuinely different files.
+	src, err := os.ReadFile(filepath.Join(dir, "scans", "rhel9.json"))
+	require.NoError(t, err)
+	other := filepath.Join(dir, "scans", "RHEL9.json")
+	require.NoError(t, os.WriteFile(other, src, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", other, "-o", out)
+	require.NoError(t, err)
+
+	uris := contentURIs(t, updatedPackage(t, out))
+	assert.Contains(t, uris, "scans/rhel9.json", "the original entry is untouched")
+	assert.Contains(t, uris, "scans/RHEL9.json", "and the different file is a NEW entry")
+	assert.NotContains(t, stderr, "written differently",
+		"nothing differs in case here: they are two files, correctly treated as two")
+}
+
+// The assertion the first version of this test was missing, and the one the card is
+// actually about: the matched entry's CHECKSUM must be refreshed. Asserting the spelling,
+// the entry count and the note left a mutant that matches, reports "refreshed in place"
+// and never refreshes passing the whole suite — while producing a package that fails its
+// own verify in a single update.
+func TestEvidenceUpdate_RefreshesTheChecksumOfACaseDifferingMatch(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if !caseInsensitiveFS(t, dir) {
+		t.Skip("filesystem is case-sensitive; these two spellings are different files here")
+	}
+	stored := rewriteStoredRef(t, pkgPath, "rhel9.json", "RHEL9.json")
+	before := checksumOf(t, updatedPackage(t, pkgPath), stored)
+	require.NotEmpty(t, before)
+
+	// The scan is re-run, so the bytes change. Without this the two checksums are equal
+	// and the test cannot tell refreshed from untouched.
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	body, err := os.ReadFile(scan)
+	require.NoError(t, err)
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(body, &doc))
+	doc["__rescanned"] = true
+	rewritten, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(scan, rewritten, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, _, err = executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	after := checksumOf(t, updatedPackage(t, out), stored)
+	require.NotEmpty(t, after, "the entry survives under its stored spelling")
+	assert.NotEqual(t, before, after, "and its checksum is REFRESHED, not left stale")
+	sum := sha256.Sum256(rewritten)
+	assert.Equal(t, hex.EncodeToString(sum[:]), after, "to the digest of the new bytes")
+}
+
+// A package the PREVIOUS release wrote can hold two entries whose uris differ only in case
+// but name one file. Refreshing only the first left the other stale, so update exited 0
+// saying "refreshed in place" while verify exited 1 — the AC's own definition of the
+// defect, on the migration case this card exists to clean up.
+func TestEvidenceUpdate_RefreshesEveryEntryNamingTheSameFile(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if !caseInsensitiveFS(t, dir) {
+		t.Skip("filesystem is case-sensitive; these two spellings are different files here")
+	}
+
+	// Hand-build the duplicate the old code produced: two entries, one file.
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	var dup map[string]any
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if uri, _ := entry["uri"].(string); uri == "scans/rhel9.json" {
+			dup = map[string]any{}
+			for k, v := range entry {
+				dup[k] = v
+			}
+			dup["uri"] = "scans/RHEL9.json"
+		}
+	}
+	require.NotNil(t, dup, "precondition: the package records scans/rhel9.json")
+	doc["contents"] = append(contents, dup)
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+
+	// Captured BEFORE the update: the duplicate was built by copying, so the two recorded
+	// digests start EQUAL and asserting only Equal(lower, upper) is true in the broken
+	// world as well as the fixed one — it passes when NEITHER entry is refreshed.
+	stale := checksumOf(t, updatedPackage(t, pkgPath), "scans/RHEL9.json")
+	require.NotEmpty(t, stale)
+
+	scan := filepath.Join(dir, "scans", "rhel9.json")
+	body := []byte(`{"baselines":[],"__rescanned":true}`)
+	require.NoError(t, os.WriteFile(scan, body, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	updated := updatedPackage(t, out)
+	lower := checksumOf(t, updated, "scans/rhel9.json")
+	upper := checksumOf(t, updated, "scans/RHEL9.json")
+	require.NotEmpty(t, lower)
+	require.NotEmpty(t, upper)
+	sum := sha256.Sum256(body)
+	want := hex.EncodeToString(sum[:])
+	assert.Equal(t, want, lower, "the matched entry carries the new digest")
+	assert.Equal(t, want, upper, "and so does the OTHER entry naming the same file")
+	assert.NotEqual(t, stale, upper, "which means it was refreshed, not merely left equal")
+	assert.Contains(t, stderr, "name one file", "and the report says more than one reference was refreshed")
+}
+
+// rewriteStoredRef replaces a stored contents[] uri with another spelling of it — a
+// different case, a different Unicode normalization, or an absolute path — and returns the
+// spelling it wrote.
+func rewriteStoredRef(t *testing.T, pkgPath, from, to string) string {
+	t.Helper()
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	var stored string
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if uri, _ := entry["uri"].(string); strings.HasSuffix(uri, from) {
+			stored = strings.Replace(uri, from, to, 1)
+			entry["uri"] = stored
+		}
+	}
+	require.NotEmpty(t, stored, "precondition: the package records a uri ending %s", from)
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+	return stored
+}
+
+// checksumOf returns the recorded checksum value for a contents[] uri, or "".
+func checksumOf(t *testing.T, doc map[string]any, uri string) string {
+	t.Helper()
+	contents, _ := doc["contents"].([]any)
+	for _, e := range contents {
+		entry, _ := e.(map[string]any)
+		if got, _ := entry["uri"].(string); got != uri {
+			continue
+		}
+		cs, _ := entry["checksum"].(map[string]any)
+		if cs == nil {
+			return ""
+		}
+		v, _ := cs["value"].(string)
+		return v
+	}
+	return ""
+}
+
+// NFC and NFD are one NAME in two encodings, not two names — os.SameFile says one file on
+// APFS — so they must match. A case-fold alone does not see it (EqualFold(NFC, NFD) is
+// false), which reopened this card's P1 for an input class that is ordinary on macOS:
+// readdir and extracted archives yield NFD, shell completion yields NFC, and `build`
+// records whichever it was handed.
+func TestEvidenceUpdate_MatchesAReferenceDifferingOnlyInUnicodeNormalization(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	const nfc = "café.json"  // é as one rune
+	const nfd = "café.json" // e + combining acute
+	scan := filepath.Join(dir, "scans", nfc)
+	src, err := os.ReadFile(filepath.Join(dir, "scans", "rhel9.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(scan, src, 0o600))
+	if _, statErr := os.Stat(filepath.Join(dir, "scans", nfd)); statErr != nil {
+		t.Skip("filesystem does not fold Unicode normalization; these are two files here")
+	}
+
+	// Record the NFD spelling, then refresh using the NFC one.
+	doc := updatedPackage(t, pkgPath)
+	contents, _ := doc["contents"].([]any)
+	entry, _ := contents[len(contents)-1].(map[string]any)
+	stored := "scans/" + nfd
+	entry["uri"] = stored
+	entry["checksum"] = map[string]any{"algorithm": "sha256", "value": strings.Repeat("0", 64)}
+	patched, err := json.Marshal(doc)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(pkgPath, patched, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, _, err = executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+	require.NoError(t, err)
+
+	updated := updatedPackage(t, out)
+	uris := contentURIs(t, updated)
+	assert.Contains(t, uris, stored, "the stored NFD spelling survives")
+	assert.NotContains(t, uris, "scans/"+nfc, "and no second entry is appended for one file")
+	sum := sha256.Sum256(src)
+	assert.Equal(t, hex.EncodeToString(sum[:]), checksumOf(t, updated, stored),
+		"and its checksum is refreshed, so the package does not fail its own verify")
+}
+
+// One file named twice in ONE invocation under two spellings must be recorded once. The
+// duplicate guard was keyed on the reference STRING, so two case spellings evaded it: the
+// same entry was reported twice, and — worse — pass 2 matched pass 1's own append and
+// called it "refreshed in place", which is verbatim the falsehood that guard's comment
+// says it exists to prevent.
+func TestEvidenceUpdate_OneFileNamedTwiceInOneInvocationIsRecordedOnce(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if !caseInsensitiveFS(t, dir) {
+		t.Skip("filesystem is case-sensitive; these two spellings are different files here")
+	}
+	// A file the package does NOT yet record, so pass 1 appends and pass 2 must not then
+	// claim to have refreshed it.
+	src, err := os.ReadFile(filepath.Join(dir, "scans", "rhel9.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "scans", "new.json"), src, 0o600))
+
+	out := filepath.Join(dir, "updated.json")
+	_, stderr, err := executeCommand("evidence", "update", pkgPath,
+		"--results", filepath.Join(dir, "scans", "new.json"),
+		"--results", filepath.Join(dir, "scans", "NEW.json"), "-o", out)
+	require.NoError(t, err)
+
+	uris := contentURIs(t, updatedPackage(t, out))
+	var named int
+	for _, u := range uris {
+		if strings.EqualFold(u, "scans/new.json") {
+			named++
+		}
+	}
+	assert.Equal(t, 1, named, "one file, one entry")
+	assert.NotContains(t, stderr, "refreshed in place",
+		"an entry this invocation APPENDED was never refreshed in place")
+	assert.Equal(t, 1, strings.Count(stderr, "added "), "and it is reported once, as added")
+}
+
+// The maintainer decided twice that a hardlink and an absolute-versus-relative spelling
+// stay SEPARATE references: they are two names for one file, not one name written two
+// ways, and merging them silently would discard a reference the operator recorded. Nothing
+// guarded that decision — reverting the spelling predicate to a bare samePath identity
+// test passed the whole suite while merging a hardlink into the recorded entry and
+// announcing it as one name written differently.
+func TestEvidenceUpdate_TwoNamesForOneFileStaySeparateReferences(t *testing.T) {
+	t.Run("a hardlink is a second name, not a second spelling", func(t *testing.T) {
+		dir, pkgPath := updatablePackage(t)
+		scan := filepath.Join(dir, "scans", "rhel9.json")
+		link := filepath.Join(dir, "scans", "hard.json")
+		if err := os.Link(scan, link); err != nil {
+			t.Skipf("filesystem does not support hardlinks here: %v", err)
+		}
+		require.True(t, sameFileOnDisk(t, scan, link), "precondition: one file, two names")
+
+		out := filepath.Join(dir, "updated.json")
+		_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", link, "-o", out)
+		require.NoError(t, err)
+
+		uris := contentURIs(t, updatedPackage(t, out))
+		assert.Contains(t, uris, "scans/rhel9.json", "the recorded reference is untouched")
+		assert.Contains(t, uris, "scans/hard.json", "and the other name is its own reference")
+		assert.NotContains(t, stderr, "written differently",
+			"nothing is written differently here: these are two names")
+	})
+
+	t.Run("an absolute stored reference is a second name, not a second spelling", func(t *testing.T) {
+		dir, pkgPath := updatablePackage(t)
+		scan := filepath.Join(dir, "scans", "rhel9.json")
+		// The shared helper, not a second copy of it: rewriteStoredRef already replaces a
+		// stored uri with any other spelling, and an absolute path is just another spelling.
+		rewriteStoredRef(t, pkgPath, "scans/rhel9.json", scan)
+
+		out := filepath.Join(dir, "updated.json")
+		_, stderr, err := executeCommand("evidence", "update", pkgPath, "--results", scan, "-o", out)
+		require.NoError(t, err)
+
+		uris := contentURIs(t, updatedPackage(t, out))
+		assert.Contains(t, uris, scan, "the absolute reference is untouched")
+		assert.Contains(t, uris, "scans/rhel9.json", "and the relative one is its own reference")
+		assert.NotContains(t, stderr, "written differently",
+			"an absolute and a relative reference are two names for one file")
+	})
+}
+
+// sameFileOnDisk reports whether two paths are one file, so a precondition can be asserted
+// rather than assumed.
+func sameFileOnDisk(t *testing.T, a, b string) bool {
+	t.Helper()
+	ia, err := os.Stat(a)
+	require.NoError(t, err)
+	ib, err := os.Stat(b)
+	require.NoError(t, err)
+	return os.SameFile(ia, ib)
+}
+
+// The refusal has to name the entry the operator must go and remove, which is the spelling
+// the PACKAGE records. A conflict is reachable by a spelling that merely names the same
+// file, and naming the incoming one told them to remove a reference not in their package.
+func TestEvidenceUpdate_RetypeRefusalNamesTheStoredSpelling(t *testing.T) {
+	dir, pkgPath := updatablePackage(t)
+	if !caseInsensitiveFS(t, dir) {
+		t.Skip("needs a case-insensitive filesystem for the two spellings to name one file")
+	}
+
+	// The hdf-system entry is recorded under a different case than the file on disk.
+	stored := rewriteStoredRef(t, pkgPath, "system.json", "System.json")
+	require.Equal(t, "System.json", stored)
+
+	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "postgres-results.json"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "system.json"), src, 0o600))
+
+	out := filepath.Join(dir, "out.json")
+	// Absolute, as the sibling test does: a bare relative name resolves against the working
+	// directory, not the package. It normalizes to the package-relative "system.json",
+	// which is a different spelling from the stored "System.json".
+	_, _, err = executeCommand("evidence", "update", pkgPath, "--results", filepath.Join(dir, "system.json"), "-o", out)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "System.json is already recorded",
+		"the refusal names the stored spelling, which is the entry to remove")
+	assert.NoFileExists(t, out)
 }
