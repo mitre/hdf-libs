@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
@@ -375,8 +376,8 @@ func (r *renderer) definitionList(pairs []pair) bool {
 func documentFacts(doc *hdf.HDFResults) []pair {
 	var tool, toolFormat, generator, assessed, duration string
 	if doc.Tool != nil {
-		tool = joinNonEmpty(" ", deref(doc.Tool.Name), deref(doc.Tool.Version))
-		toolFormat = deref(doc.Tool.Format)
+		tool = joinNonEmpty(" ", hdfutil.Deref(doc.Tool.Name), hdfutil.Deref(doc.Tool.Version))
+		toolFormat = hdfutil.Deref(doc.Tool.Format)
 	}
 	if doc.Generator != nil {
 		generator = joinNonEmpty(" ", doc.Generator.Name, doc.Generator.Version)
@@ -393,9 +394,9 @@ func documentFacts(doc *hdf.HDFResults) []pair {
 		{"Generator", generator},
 		{"Assessed", assessed},
 		{"Duration", duration},
-		{"System reference", deref(doc.SystemRef)},
-		{"Plan reference", deref(doc.PlanRef)},
-		{"Document ID", deref(doc.ID)},
+		{"System reference", hdfutil.Deref(doc.SystemRef)},
+		{"Plan reference", hdfutil.Deref(doc.PlanRef)},
+		{"Document ID", hdfutil.Deref(doc.ID)},
 		{"External references", referenceCensus(doc)},
 	}
 }
@@ -403,13 +404,13 @@ func documentFacts(doc *hdf.HDFResults) []pair {
 func runnerFacts(runner *hdf.Runner) []pair {
 	return []pair{
 		{"Name", runner.Name},
-		{"Hostname", deref(runner.Hostname)},
-		{"FQDN", deref(runner.FQDN)},
-		{"Domain", deref(runner.Domain)},
-		{"Architecture", deref(runner.Architecture)},
-		{"Release", deref(runner.Release)},
-		{"Container image", deref(runner.ContainerImage)},
-		{"Container ID", deref(runner.ContainerID)},
+		{"Hostname", hdfutil.Deref(runner.Hostname)},
+		{"FQDN", hdfutil.Deref(runner.FQDN)},
+		{"Domain", hdfutil.Deref(runner.Domain)},
+		{"Architecture", hdfutil.Deref(runner.Architecture)},
+		{"Release", hdfutil.Deref(runner.Release)},
+		{"Container image", hdfutil.Deref(runner.ContainerImage)},
+		{"Container ID", hdfutil.Deref(runner.ContainerID)},
 		{"Operator", identity(runner.Operator)},
 	}
 }
@@ -515,45 +516,45 @@ func (r *renderer) component(c *hdf.Component) {
 	}
 	facts := []pair{
 		{"Source", origin},
-		{"Component ID", deref(c.ComponentID)},
-		{headingDescription, deref(c.Description)},
-		{"Hostname", deref(c.Hostname)},
-		{"FQDN", deref(c.FQDN)},
-		{"Domain", deref(c.Domain)},
-		{"IP address", deref(c.IPAddress)},
-		{"MAC address", deref(c.MACAddress)},
-		{"OS name", deref(c.OSName)},
-		{"OS version", deref(c.OSVersion)},
-		{"Image ID", deref(c.ImageID)},
-		{"Registry", deref(c.Registry)},
-		{"Repository", deref(c.Repository)},
-		{"Tag", deref(c.Tag)},
-		{"Container ID", deref(c.ContainerID)},
-		{"Image", deref(c.Image)},
-		{"Runtime", deref(c.Runtime)},
-		{"Cluster name", deref(c.ClusterName)},
-		{"Namespace", deref(c.Namespace)},
-		{"Platform type", deref(c.PlatformType)},
-		{"Version", deref(c.Version)},
-		{"Account ID", deref(c.AccountID)},
+		{"Component ID", hdfutil.Deref(c.ComponentID)},
+		{headingDescription, hdfutil.Deref(c.Description)},
+		{"Hostname", hdfutil.Deref(c.Hostname)},
+		{"FQDN", hdfutil.Deref(c.FQDN)},
+		{"Domain", hdfutil.Deref(c.Domain)},
+		{"IP address", hdfutil.Deref(c.IPAddress)},
+		{"MAC address", hdfutil.Deref(c.MACAddress)},
+		{"OS name", hdfutil.Deref(c.OSName)},
+		{"OS version", hdfutil.Deref(c.OSVersion)},
+		{"Image ID", hdfutil.Deref(c.ImageID)},
+		{"Registry", hdfutil.Deref(c.Registry)},
+		{"Repository", hdfutil.Deref(c.Repository)},
+		{"Tag", hdfutil.Deref(c.Tag)},
+		{"Container ID", hdfutil.Deref(c.ContainerID)},
+		{"Image", hdfutil.Deref(c.Image)},
+		{"Runtime", hdfutil.Deref(c.Runtime)},
+		{"Cluster name", hdfutil.Deref(c.ClusterName)},
+		{"Namespace", hdfutil.Deref(c.Namespace)},
+		{"Platform type", hdfutil.Deref(c.PlatformType)},
+		{"Version", hdfutil.Deref(c.Version)},
+		{"Account ID", hdfutil.Deref(c.AccountID)},
 		{"Provider", provider},
-		{"Region", deref(c.Region)},
-		{"ARN", deref(c.Arn)},
-		{"Resource ID", deref(c.ResourceID)},
-		{"Resource type", deref(c.ResourceType)},
-		{"Branch", deref(c.Branch)},
-		{"Commit", deref(c.Commit)},
-		{"URL", deref(c.URL)},
-		{"Environment", deref(c.Environment)},
-		{"Package manager", deref(c.PackageManager)},
-		{"Package name", deref(c.PackageName)},
-		{"CIDR", deref(c.CIDR)},
-		{"Gateway", deref(c.Gateway)},
-		{"Engine", deref(c.Engine)},
-		{"Host", deref(c.Host)},
+		{"Region", hdfutil.Deref(c.Region)},
+		{"ARN", hdfutil.Deref(c.Arn)},
+		{"Resource ID", hdfutil.Deref(c.ResourceID)},
+		{"Resource type", hdfutil.Deref(c.ResourceType)},
+		{"Branch", hdfutil.Deref(c.Branch)},
+		{"Commit", hdfutil.Deref(c.Commit)},
+		{"URL", hdfutil.Deref(c.URL)},
+		{"Environment", hdfutil.Deref(c.Environment)},
+		{"Package manager", hdfutil.Deref(c.PackageManager)},
+		{"Package name", hdfutil.Deref(c.PackageName)},
+		{"CIDR", hdfutil.Deref(c.CIDR)},
+		{"Gateway", hdfutil.Deref(c.Gateway)},
+		{"Engine", hdfutil.Deref(c.Engine)},
+		{"Host", hdfutil.Deref(c.Host)},
 		{"Port", port},
-		{"Model ID", deref(c.ModelID)},
-		{"Dataset ID", deref(c.DatasetID)},
+		{"Model ID", hdfutil.Deref(c.ModelID)},
+		{"Dataset ID", hdfutil.Deref(c.DatasetID)},
 		{"Owner", identity(c.Owner)},
 	}
 	f := r.openFold("component", "", "h3", escape(c.Name)+` <span class="type">`+escape(string(c.Type))+closeSpan, c.Name,
@@ -584,61 +585,58 @@ func (r *renderer) chips(heading string, m map[string]string) {
 	r.line(closeList)
 }
 
-// statusCounts tallies requirements by effective status.
-type statusCounts struct {
-	passed, failed, notReviewed, notApplicable, errored int
+// statusBuckets lists a count set's five status buckets in the order the
+// report's columns and stat lists use them.
+func statusBuckets(c *hdfengine.StatusCounts) [5]*hdfengine.SeverityCounts {
+	return [5]*hdfengine.SeverityCounts{&c.Passed, &c.Failed, &c.Skipped, &c.NoImpact, &c.Error}
 }
 
-func (c *statusCounts) add(status string) {
-	switch status {
-	case statusPassed:
-		c.passed++
-	case statusFailed:
-		c.failed++
-	case statusNotApplicable:
-		c.notApplicable++
-	case statusError:
-		c.errored++
-	default:
-		// notReviewed, and any status outside the enum: counted, never dropped.
-		c.notReviewed++
+func addSeverities(dst, src *hdfengine.SeverityCounts) {
+	dst.Critical += src.Critical
+	dst.High += src.High
+	dst.Medium += src.Medium
+	dst.Low += src.Low
+	dst.Informational += src.Informational
+	dst.Total += src.Total
+}
+
+// addCounts rolls src into dst: the engine counts one document at a time, and
+// the report rolls baselines up into sources and sources into a whole.
+func addCounts(dst, src *hdfengine.StatusCounts) {
+	d, s := statusBuckets(dst), statusBuckets(src)
+	for i := range d {
+		addSeverities(d[i], s[i])
 	}
 }
 
-func (c *statusCounts) merge(other statusCounts) {
-	c.passed += other.passed
-	c.failed += other.failed
-	c.notReviewed += other.notReviewed
-	c.notApplicable += other.notApplicable
-	c.errored += other.errored
-}
-
-func (c statusCounts) total() int {
-	return c.passed + c.failed + c.notReviewed + c.notApplicable + c.errored
-}
-
-// compliance is passed / (passed + failed + notReviewed + error) as a percentage
-// to two places; notApplicable is excluded. Integer arithmetic, rounding half
-// up, so both languages print the same digits.
-func (c statusCounts) compliance() string {
-	return formatHundredths(c.complianceHundredths()) + "%"
-}
-
-func (c statusCounts) complianceHundredths() int {
-	relevant := c.passed + c.failed + c.notReviewed + c.errored
-	if relevant == 0 {
-		return 0
+func countTotal(c *hdfengine.StatusCounts) int {
+	total := 0
+	for _, bucket := range statusBuckets(c) {
+		total += bucket.Total
 	}
-	return (c.passed*20000 + relevant) / (2 * relevant)
+	return total
 }
 
-func formatHundredths(hundredths int) string {
-	return fmt.Sprintf("%d.%02d", hundredths/100, hundredths%100)
+// severityTotals sums each severity across the statuses: the severity panel
+// counts every requirement, whatever its status.
+func severityTotals(c *hdfengine.StatusCounts) hdfengine.SeverityCounts {
+	var out hdfengine.SeverityCounts
+	for _, bucket := range statusBuckets(c) {
+		addSeverities(&out, bucket)
+	}
+	return out
 }
 
-// severityCounts tallies requirements by severity.
-type severityCounts struct {
-	critical, high, medium, low, none int
+// compliancePercent is the compliance percentage hdf-engine computes, to two
+// places, so the report never disagrees with `hdf validate threshold` in the
+// last digit. FormatFixed is toFixed's rounding, which is what the TypeScript
+// peer uses on the same number.
+func compliancePercent(c *hdfengine.StatusCounts) string {
+	return hdfutil.FormatFixed(hdfengine.CalculateCompliance(c), 2)
+}
+
+func complianceText(c *hdfengine.StatusCounts) string {
+	return compliancePercent(c) + "%"
 }
 
 // severityClass maps a severity onto the fixed set the stylesheet knows; an
@@ -667,28 +665,6 @@ func severityLabel(severity string) string {
 	return severity
 }
 
-func (c *severityCounts) add(severity string) {
-	switch severityClass(severity) {
-	case severityCritical:
-		c.critical++
-	case severityHigh:
-		c.high++
-	case severityMedium:
-		c.medium++
-	case severityLow:
-		c.low++
-	default:
-		c.none++
-	}
-}
-
-func requirementSeverity(req *hdf.EvaluatedRequirement) string {
-	if req.Severity != nil {
-		return string(*req.Severity)
-	}
-	return hdfutil.ImpactToSeverity(req.Impact)
-}
-
 // checkCounts tallies individual results the way the Heimdall report words
 // them: passed checks under passed requirements, and passed and failed checks
 // under failed requirements, out of every check in the document. A requirement
@@ -697,8 +673,8 @@ type checkCounts struct {
 	underPassed, passedUnderFailed, failedUnderFailed, total int
 }
 
-func (r *renderer) effectiveStatus(req *hdf.EvaluatedRequirement) string {
-	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(*req), r.src.ref)
+func (r *renderer) effectiveStatus(req hdf.EvaluatedRequirement) string {
+	return hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(req), r.src.ref)
 }
 
 // add counts one requirement's checks under its effective status.
@@ -718,43 +694,45 @@ func (c *checkCounts) add(status string, results []hdf.RequirementResult) {
 
 // statusTally is every count the status section reports.
 type statusTally struct {
-	all         statusCounts
-	severities  severityCounts
+	all         *hdfengine.StatusCounts
 	checks      checkCounts
-	perSource   []statusCounts
-	perBaseline [][]statusCounts
+	perSource   []*hdfengine.StatusCounts
+	perBaseline [][]*hdfengine.StatusCounts
 	anyRef      bool
 }
 
 func (r *renderer) tally() *statusTally {
 	t := &statusTally{
-		perSource:   make([]statusCounts, len(r.sources)),
-		perBaseline: make([][]statusCounts, len(r.sources)),
+		all:         &hdfengine.StatusCounts{},
+		perSource:   make([]*hdfengine.StatusCounts, len(r.sources)),
+		perBaseline: make([][]*hdfengine.StatusCounts, len(r.sources)),
 	}
 	for si := range r.sources {
 		r.src = &r.sources[si]
 		t.anyRef = t.anyRef || r.src.hasRef
 		baselines := r.src.doc.Baselines
-		t.perBaseline[si] = make([]statusCounts, len(baselines))
+		t.perSource[si] = &hdfengine.StatusCounts{}
+		t.perBaseline[si] = make([]*hdfengine.StatusCounts, len(baselines))
 		for i := range baselines {
-			t.perBaseline[si][i] = r.tallyBaseline(t, &baselines[i])
-			t.perSource[si].merge(t.perBaseline[si][i])
+			t.perBaseline[si][i] = r.tallyBaseline(t, baselines[i])
+			addCounts(t.perSource[si], t.perBaseline[si][i])
 		}
-		t.all.merge(t.perSource[si])
+		addCounts(t.all, t.perSource[si])
 	}
 	return t
 }
 
-func (r *renderer) tallyBaseline(t *statusTally, baseline *hdf.EvaluatedBaseline) statusCounts {
-	var counts statusCounts
+// tallyBaseline hands the status and severity tally to hdf-engine, so the
+// report's numbers are the ones the threshold gate and the MCP tools report.
+// The per-check counts the dashboard words beside them have no engine peer and
+// are taken here.
+func (r *renderer) tallyBaseline(t *statusTally, baseline hdf.EvaluatedBaseline) *hdfengine.StatusCounts {
 	for j := range baseline.Requirements {
 		req := &baseline.Requirements[j]
-		status := r.effectiveStatus(req)
-		counts.add(status)
-		t.severities.add(requirementSeverity(req))
-		t.checks.add(status, req.Results)
+		t.checks.add(r.effectiveStatus(*req), req.Results)
 	}
-	return counts
+	one := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{baseline}}
+	return hdfengine.CountControlsByStatus(one, r.effectiveStatus)
 }
 
 func (r *renderer) status() {
@@ -773,7 +751,7 @@ func (r *renderer) status() {
 // asOf states the instant effective status was judged at, when there is one.
 func (r *renderer) asOf(t *statusTally) {
 	switch {
-	case t.all.total() == 0 || !t.anyRef:
+	case countTotal(t.all) == 0 || !t.anyRef:
 	case r.aggregated:
 		r.line(`<p class="as-of">Effective status evaluated for each source as of its own assessment time. ` +
 			`Overrides that had expired by then are not applied.</p>`)
@@ -784,48 +762,49 @@ func (r *renderer) asOf(t *statusTally) {
 }
 
 func (r *renderer) dashboard(t *statusTally) {
-	all, severities, checks := t.all, t.severities, t.checks
+	all, severities, checks := t.all, severityTotals(t.all), t.checks
 	r.line(`<div class="dashboard">`)
 
 	r.line(`<div class="panel">`)
 	r.line("<h3>Requirements</h3>")
 	r.line(`<ul class="stats">`)
-	r.line(stat(statusPassed, all.passed, labelPassed, plural(checks.underPassed, "individual check")+" passed"))
-	r.line(stat(statusFailed, all.failed, labelFailed, plural(checks.passedUnderFailed, "individual check")+" passed, "+
+	r.line(stat(statusPassed, all.Passed.Total, labelPassed, plural(checks.underPassed, "individual check")+" passed"))
+	r.line(stat(statusFailed, all.Failed.Total, labelFailed, plural(checks.passedUnderFailed, "individual check")+" passed, "+
 		strconv.Itoa(checks.failedUnderFailed)+" failed out of "+plural(checks.total, "total check")))
-	r.line(stat(classNotApplicable, all.notApplicable, labelNotApplicable, ""))
-	r.line(stat(classNotReviewed, all.notReviewed, labelNotReviewed, ""))
-	r.line(stat(statusError, all.errored, labelError, ""))
-	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(all.total()) + `</span><span class="lbl">Total</span></li>`)
+	r.line(stat(classNotApplicable, all.NoImpact.Total, labelNotApplicable, ""))
+	r.line(stat(classNotReviewed, all.Skipped.Total, labelNotReviewed, ""))
+	r.line(stat(statusError, all.Error.Total, labelError, ""))
+	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(countTotal(all)) + `</span><span class="lbl">Total</span></li>`)
 	r.line(closeList)
 	r.line(bar("Requirements by status", []segment{
-		{statusPassed, statusPassed, all.passed}, {statusFailed, statusFailed, all.failed},
-		{classNotApplicable, "not applicable", all.notApplicable},
-		{classNotReviewed, "not reviewed", all.notReviewed}, {statusError, statusError, all.errored},
+		{statusPassed, statusPassed, all.Passed.Total}, {statusFailed, statusFailed, all.Failed.Total},
+		{classNotApplicable, "not applicable", all.NoImpact.Total},
+		{classNotReviewed, "not reviewed", all.Skipped.Total}, {statusError, statusError, all.Error.Total},
 	}))
 	r.line(closeDiv)
 
 	r.line(`<div class="panel">`)
 	r.line("<h3>Severity</h3>")
 	r.line(`<ul class="stats">`)
-	r.line(stat(severityCritical, severities.critical, "Critical", ""))
-	r.line(stat(severityHigh, severities.high, "High", ""))
-	r.line(stat(severityMedium, severities.medium, "Medium", ""))
-	r.line(stat(severityLow, severities.low, "Low", ""))
-	r.line(stat(severityNone, severities.none, "None", ""))
+	r.line(stat(severityCritical, severities.Critical, "Critical", ""))
+	r.line(stat(severityHigh, severities.High, "High", ""))
+	r.line(stat(severityMedium, severities.Medium, "Medium", ""))
+	r.line(stat(severityLow, severities.Low, "Low", ""))
+	// The engine's informational bucket is this report's "none": every severity
+	// outside critical/high/medium/low lands there under both namings.
+	r.line(stat(severityNone, severities.Informational, "None", ""))
 	r.line(closeList)
 	r.line(bar("Requirements by severity", []segment{
-		{severityCritical, severityCritical, severities.critical}, {severityHigh, severityHigh, severities.high},
-		{severityMedium, severityMedium, severities.medium},
-		{severityLow, severityLow, severities.low}, {severityNone, severityNone, severities.none},
+		{severityCritical, severityCritical, severities.Critical}, {severityHigh, severityHigh, severities.High},
+		{severityMedium, severityMedium, severities.Medium},
+		{severityLow, severityLow, severities.Low}, {severityNone, severityNone, severities.Informational},
 	}))
 	r.line(closeDiv)
 
-	hundredths := all.complianceHundredths()
-	level, levelLabel := complianceLevel(hundredths)
+	level, levelLabel := complianceLevel(hdfengine.CalculateCompliance(all))
 	r.line(`<div class="panel compliance compliance-` + level + `">`)
 	r.line("<h3>Compliance</h3>")
-	r.line(`<div class="gauge" style="--pct:` + formatHundredths(hundredths) + `"><span class="pct">` + all.compliance() + "</span></div>")
+	r.line(`<div class="gauge" style="--pct:` + compliancePercent(all) + `"><span class="pct">` + complianceText(all) + "</span></div>")
 	r.line(`<p class="level">` + levelLabel + "</p>")
 	r.line(`<p class="formula">Passed / (Passed + Failed + Not Reviewed + Error) × 100</p>`)
 	r.line(closeDiv)
@@ -833,12 +812,12 @@ func (r *renderer) dashboard(t *statusTally) {
 	r.line(closeDiv)
 }
 
-// complianceLevel bands a compliance percentage, given in hundredths.
-func complianceLevel(hundredths int) (class, label string) {
+// complianceLevel bands the engine's compliance percentage at 90 and 60.
+func complianceLevel(pct float64) (class, label string) {
 	switch {
-	case hundredths >= 9000:
+	case pct >= 90:
 		return severityHigh, "High compliance"
-	case hundredths >= 6000:
+	case pct >= 60:
 		return severityMedium, "Medium compliance"
 	}
 	return severityLow, "Low compliance"
@@ -939,13 +918,13 @@ func bar(label string, segments []segment) string {
 }
 
 // summaryRow takes a name that is already HTML.
-func summaryRow(name string, c statusCounts) string {
+func summaryRow(name string, c *hdfengine.StatusCounts) string {
 	var b strings.Builder
 	b.WriteString(`<tr><th scope="row">` + name + "</th>")
-	for _, n := range []int{c.passed, c.failed, c.notReviewed, c.notApplicable, c.errored, c.total()} {
+	for _, n := range []int{c.Passed.Total, c.Failed.Total, c.Skipped.Total, c.NoImpact.Total, c.Error.Total, countTotal(c)} {
 		b.WriteString("<td>" + strconv.Itoa(n) + "</td>")
 	}
-	b.WriteString("<td>" + c.compliance() + rowClose)
+	b.WriteString("<td>" + complianceText(c) + rowClose)
 	return b.String()
 }
 
@@ -991,14 +970,14 @@ func (r *renderer) results() {
 func (r *renderer) baseline(baseline *hdf.EvaluatedBaseline) {
 	f := r.openFold("group baseline", "", r.baselineHeading(), escape(baseline.Name), baseline.Name, len(baseline.Requirements))
 	facts := []pair{
-		{"Title", deref(baseline.Title)},
-		{"Version", deref(baseline.Version)},
-		{"Summary", deref(baseline.Summary)},
-		{headingDescription, deref(baseline.Description)},
-		{"Maintainer", deref(baseline.Maintainer)},
-		{"License", deref(baseline.License)},
-		{"Copyright", deref(baseline.Copyright)},
-		{"Status message", deref(baseline.StatusMessage)},
+		{"Title", hdfutil.Deref(baseline.Title)},
+		{"Version", hdfutil.Deref(baseline.Version)},
+		{"Summary", hdfutil.Deref(baseline.Summary)},
+		{headingDescription, hdfutil.Deref(baseline.Description)},
+		{"Maintainer", hdfutil.Deref(baseline.Maintainer)},
+		{"License", hdfutil.Deref(baseline.License)},
+		{"Copyright", hdfutil.Deref(baseline.Copyright)},
+		{"Status message", hdfutil.Deref(baseline.StatusMessage)},
 	}
 	if n := countFacts(facts); n > 0 {
 		details := r.openFold("", "", r.detailHeading(), "Baseline details", "the baseline details", n)
@@ -1034,10 +1013,10 @@ func descriptionHeading(label string) string {
 }
 
 func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
-	effective := r.effectiveStatus(req)
-	severity := requirementSeverity(req)
-	nist := tagItems(req.Tags, "nist")
-	cci := tagItems(req.Tags, "cci")
+	effective := r.effectiveStatus(*req)
+	severity := hdfengine.DeriveSeverity(req.Impact, req.Severity)
+	nist := hdfutil.TagStrings(req.Tags, "nist")
+	cci := hdfutil.TagStrings(req.Tags, "cci")
 
 	class, _ := statusPresentation(effective)
 	r.requirements++
@@ -1045,7 +1024,7 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	r.line(`<details class="requirement c-` + class + `" data-status="` + class + `" id="` + id + `">`)
 	r.line("<summary>" + statusBadge(effective) + `<span class="req-id">` + escape(req.ID) + closeSpan +
 		`<span class="sev c-` + severityClass(severity) + `"><span class="vh">Severity: </span>` + escape(severityLabel(severity)) + closeSpan +
-		`<span class="req-title">` + escape(deref(req.Title)) + `</span><span class="tags">` +
+		`<span class="req-title">` + escape(hdfutil.Deref(req.Title)) + `</span><span class="tags">` +
 		controlTags(append(append([]string{}, nist...), cci...), len(req.ExternalReferences)) + "</span></summary>")
 	r.line(`<div class="req-body">`)
 
@@ -1141,14 +1120,14 @@ func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, locatio
 	}
 	for _, p := range []pair{
 		{"Control", req.ID},
-		{"Title", deref(req.Title)},
+		{"Title", hdfutil.Deref(req.Title)},
 		{"Severity", severity},
 		{"Impact", hdfutil.FormatFixed(req.Impact, 2)},
 		{"Effective impact", effectiveImpact},
-		{"Disposition", derefString(req.Disposition)},
-		{"Control type", derefString(req.ControlType)},
-		{"Verification method", derefString(req.VerificationMethod)},
-		{"Applicability", derefString(req.Applicability)},
+		{"Disposition", string(hdfutil.Deref(req.Disposition))},
+		{"Control type", string(hdfutil.Deref(req.ControlType))},
+		{"Verification method", string(hdfutil.Deref(req.VerificationMethod))},
+		{"Applicability", string(hdfutil.Deref(req.Applicability))},
 		{"Source location", location},
 		{"NIST Controls", strings.Join(nist, ", ")},
 		{"CCI Controls", strings.Join(cci, ", ")},
@@ -1209,9 +1188,9 @@ func (r *renderer) resultRows(results []hdf.RequirementResult) {
 			runTime = hdfutil.FormatFixed(*res.RunTime, 3) + " s"
 		}
 		r.line(rowOpen + statusBadge(string(res.Status)) + textCell + escape(res.CodeDesc) +
-			subLine("Resource", joinNonEmpty(separator, deref(res.Resource), deref(res.ResourceID))) +
-			textCell + escape(deref(res.Message)) +
-			subLine("Exception", deref(res.Exception)) + subLine("Backtrace", strings.Join(res.Backtrace, "\n")) +
+			subLine("Resource", joinNonEmpty(separator, hdfutil.Deref(res.Resource), hdfutil.Deref(res.ResourceID))) +
+			textCell + escape(hdfutil.Deref(res.Message)) +
+			subLine("Exception", hdfutil.Deref(res.Exception)) + subLine("Backtrace", strings.Join(res.Backtrace, "\n")) +
 			cell + escape(formatTime(res.StartTime)) + subLine("Run time", runTime) + rowClose)
 	}
 	r.closeTable("")
@@ -1250,7 +1229,7 @@ func (r *renderer) overrideRows(overrides []hdf.StatusOverride) {
 			cvss = cvssText([]hdf.Cvss{*o.Cvss})
 		}
 		r.line(rowOpen + escape(string(o.Type)) + cell + status + subLine("Impact", impact) + subLine("CVSS", cvss) +
-			textCell + escape(o.Reason) + subLine("Justification", derefString(o.Justification)) +
+			textCell + escape(o.Reason) + subLine("Justification", string(hdfutil.Deref(o.Justification))) +
 			cell + escape(o.AppliedBy.Identifier) + cell + escape(formatTime(o.AppliedAt)) +
 			cell + escape(formatTime(o.ExpiresAt)) + cell + state + rowClose)
 	}
@@ -1270,7 +1249,7 @@ func (r *renderer) poamRows(poams []hdf.PoamElement) {
 		var milestones strings.Builder
 		for j := range p.Milestones {
 			m := &p.Milestones[j]
-			milestones.WriteString(subLine("Milestone", joinNonEmpty(separator, string(m.Status), deref(m.Title), m.Description,
+			milestones.WriteString(subLine("Milestone", joinNonEmpty(separator, string(m.Status), hdfutil.Deref(m.Title), m.Description,
 				formatTime(m.EstimatedCompletion))))
 		}
 		r.line(rowOpen + escape(string(p.Type)) + textCell + escape(p.Explanation) + milestones.String() +
@@ -1290,7 +1269,7 @@ func referenceCensus(doc *hdf.HDFResults) string {
 	count := func(refs []hdf.ExternalReference) {
 		total += len(refs)
 		for i := range refs {
-			if kind := deref(refs[i].Kind); kind != "" {
+			if kind := hdfutil.Deref(refs[i].Kind); kind != "" {
 				kinds[kind]++
 			}
 		}
@@ -1353,9 +1332,9 @@ func (r *renderer) externalReferences(headingTag, heading string, refs []hdf.Ext
 		if ref.AddedAt != nil {
 			added = joinNonEmpty(separator, added, formatTime(*ref.AddedAt))
 		}
-		r.line(rowOpen + escape(ref.SourceName) + cell + escape(deref(ref.ExternalID)) + cell +
-			escape(deref(ref.Kind)) + cell + escape(deref(ref.Rel)) + textCell +
-			escape(deref(ref.Description)) + subLine("Location", deref(ref.Href)) + subLine("Media type", deref(ref.MediaType)) +
+		r.line(rowOpen + escape(ref.SourceName) + cell + escape(hdfutil.Deref(ref.ExternalID)) + cell +
+			escape(hdfutil.Deref(ref.Kind)) + cell + escape(hdfutil.Deref(ref.Rel)) + textCell +
+			escape(hdfutil.Deref(ref.Description)) + subLine("Location", hdfutil.Deref(ref.Href)) + subLine("Media type", hdfutil.Deref(ref.MediaType)) +
 			subLine("Checksum", checksum) + subLine("Added", added) + embeddedDocument(ref.Document) + rowClose)
 	}
 	r.closeTable("")
@@ -1476,12 +1455,7 @@ func tagText(v interface{}) (string, bool) {
 	case bool:
 		return strconv.FormatBool(t), true
 	case []interface{}:
-		items := make([]string, 0, len(t))
-		for _, item := range t {
-			if s, ok := item.(string); ok {
-				items = append(items, s)
-			}
-		}
+		items := hdfutil.SafeStringSlice(t)
 		return strings.Join(items, ", "), len(items) > 0
 	}
 	return "", false
@@ -1502,7 +1476,7 @@ func sourceLocation(loc *hdf.SourceLocation) string {
 	if loc == nil {
 		return ""
 	}
-	ref := deref(loc.Ref)
+	ref := hdfutil.Deref(loc.Ref)
 	if loc.Line == nil {
 		return ref
 	}
@@ -1532,11 +1506,11 @@ func cvssText(entries []hdf.Cvss) string {
 		if version != "" {
 			version = "v" + version
 		}
-		source := deref(c.Source)
+		source := hdfutil.Deref(c.Source)
 		if source != "" {
 			source = "(" + source + ")"
 		}
-		if part := joinNonEmpty(" ", version, scoreText, derefString(severity), deref(c.BaseVector), source); part != "" {
+		if part := joinNonEmpty(" ", version, scoreText, string(hdfutil.Deref(severity)), hdfutil.Deref(c.BaseVector), source); part != "" {
 			parts = append(parts, part)
 		}
 	}
@@ -1562,13 +1536,13 @@ func kevText(k *hdf.Kev) string {
 	if k.InKev {
 		text = "Listed"
 	}
-	if added := deref(k.DateAdded); added != "" {
+	if added := hdfutil.Deref(k.DateAdded); added != "" {
 		text += ", added " + added
 	}
-	if due := deref(k.DueDate); due != "" {
+	if due := hdfutil.Deref(k.DueDate); due != "" {
 		text += ", due " + due
 	}
-	if notes := deref(k.Notes); notes != "" {
+	if notes := hdfutil.Deref(k.Notes); notes != "" {
 		text += ", " + notes
 	}
 	return text
@@ -1578,11 +1552,11 @@ func packagesText(packages []hdf.AffectedPackage) string {
 	parts := make([]string, 0, len(packages))
 	for i := range packages {
 		p := &packages[i]
-		part := joinNonEmpty(" ", deref(p.Name), deref(p.Version))
+		part := joinNonEmpty(" ", hdfutil.Deref(p.Name), hdfutil.Deref(p.Version))
 		if part == "" {
-			part = joinNonEmpty(" ", deref(p.Purl), deref(p.Cpe))
+			part = joinNonEmpty(" ", hdfutil.Deref(p.Purl), hdfutil.Deref(p.Cpe))
 		}
-		if fixed := deref(p.FixedInVersion); fixed != "" {
+		if fixed := hdfutil.Deref(p.FixedInVersion); fixed != "" {
 			part = joinNonEmpty(" ", part, "(fixed in "+fixed+")")
 		}
 		if part != "" {
@@ -1595,7 +1569,7 @@ func packagesText(packages []hdf.AffectedPackage) string {
 func evidenceText(evidence []hdf.Evidence) string {
 	parts := make([]string, 0, len(evidence))
 	for i := range evidence {
-		if part := joinNonEmpty(": ", string(evidence[i].Type), deref(evidence[i].Description)); part != "" {
+		if part := joinNonEmpty(": ", string(evidence[i].Type), hdfutil.Deref(evidence[i].Description)); part != "" {
 			parts = append(parts, part)
 		}
 	}
@@ -1609,9 +1583,9 @@ func referenceLines(refs []hdf.Reference) []string {
 	for i := range refs {
 		ref := &refs[i]
 		if ref.Ref != nil {
-			lines = append(lines, structuredRefLines(deref(ref.Ref.String), ref.Ref.AnythingMapArray)...)
+			lines = append(lines, structuredRefLines(hdfutil.Deref(ref.Ref.String), ref.Ref.AnythingMapArray)...)
 		}
-		for _, s := range []string{deref(ref.URL), deref(ref.URI)} {
+		for _, s := range []string{hdfutil.Deref(ref.URL), hdfutil.Deref(ref.URI)} {
 			if s != "" {
 				lines = append(lines, s)
 			}
@@ -1655,14 +1629,6 @@ func collectURLs(v interface{}, into map[string]bool) {
 	}
 }
 
-// derefString reads an optional string-typed enum; nil is empty.
-func derefString[T ~string](v *T) string {
-	if v == nil {
-		return ""
-	}
-	return string(*v)
-}
-
 // statusPresentation gives a status a class from a fixed set, never from the
 // document: a status outside the enum is shown as text under one class.
 func statusPresentation(status string) (class, label string) {
@@ -1684,31 +1650,6 @@ func statusPresentation(status string) (class, label string) {
 func statusBadge(status string) string {
 	class, label := statusPresentation(status)
 	return `<span class="status c-` + class + `">` + escape(label) + closeSpan
-}
-
-// tagItems returns the string members of an array-valued tag; a bare string tag
-// is a one-member list.
-func tagItems(tags map[string]interface{}, key string) []string {
-	switch v := tags[key].(type) {
-	case string:
-		return []string{v}
-	case []interface{}:
-		items := make([]string, 0, len(v))
-		for _, item := range v {
-			if s, ok := item.(string); ok {
-				items = append(items, s)
-			}
-		}
-		return items
-	}
-	return nil
-}
-
-func deref(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 func joinNonEmpty(sep string, parts ...string) string {

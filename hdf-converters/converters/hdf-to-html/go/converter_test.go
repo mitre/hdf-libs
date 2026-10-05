@@ -18,6 +18,7 @@ import (
 	"time"
 
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -27,6 +28,10 @@ import (
 )
 
 const farFuture = "2099-12-31T00:00:00Z"
+
+// goZeroTime is the value a Go marshal writes for an unset time, which the
+// legacy converters leave in expiresAt to mean "no expiry".
+const goZeroTime = "0001-01-01T00:00:00Z"
 
 func mustTime(t *testing.T, s string) time.Time {
 	t.Helper()
@@ -220,6 +225,19 @@ func TestConvertHDFToHTML_OverrideExpiryIsJudgedAtAssessmentTime(t *testing.T) {
 	// Expired by the wall clock, still in force when the assessment ran.
 	inForceThen := renderDoc(t, waived(t, "2020-06-01T00:00:00Z"), Manager)
 	assert.Contains(t, inForceThen, detail("Effective status", badge("passed", "Passed")))
+}
+
+// Go's zero time is what a typed marshal writes for an override carrying no
+// expiry, so an expiresAt of 0001-01-01T00:00:00Z means absent, not an expiry
+// in the year 1. The TypeScript peer reads the same document the same way.
+func TestConvertHDFToHTML_ZeroTimeExpiryIsAbsent(t *testing.T) {
+	out := renderDoc(t, waived(t, goZeroTime), Manager)
+
+	assert.Contains(t, out, detail("Effective status", badge("passed", "Passed")))
+	assert.Contains(t, out, badge("passed", "Passed")+`<span class="req-id">V-1</span>`)
+	assert.Contains(t, out, "<td>governing</td>")
+	assert.NotContains(t, out, "<td>expired</td>")
+	assert.Contains(t, out, "100.00%", "the waived requirement counts as passed")
 }
 
 func TestConvertHDFToHTML_AssessmentTimeFallsBackToLatestResult(t *testing.T) {
@@ -427,21 +445,77 @@ func wantSummaryRow(name string, cells ...string) string {
 	return b.String()
 }
 
-func TestCompliance(t *testing.T) {
+// The report prints the compliance hdf-engine computes, so a report and
+// `hdf validate threshold` never disagree in the last digit. 23 passed out of
+// 160 relevant requirements is 14.37% to the engine; the half-up integer
+// formula the report once carried printed 14.38%.
+func TestConvertHDFToHTML_ComplianceComesFromTheEngine(t *testing.T) {
+	baseline := func(name string, passed, failed int) hdf.EvaluatedBaseline {
+		reqs := make([]hdf.EvaluatedRequirement, 0, passed+failed)
+		for i := range passed + failed {
+			status := hdf.Failed
+			if i < passed {
+				status = hdf.Passed
+			}
+			reqs = append(reqs, testhdf.Req(fmt.Sprintf("%s-%d", name, i), testhdf.Impact(0.5), testhdf.Status(status)))
+		}
+		return testhdf.Baseline(name, reqs...)
+	}
+
+	out := renderDoc(t, testhdf.Doc(baseline("divergent", 23, 137), baseline("clean", 1, 1)), Executive)
+	assert.Contains(t, out, wantSummaryRow("divergent", "23", "137", "0", "0", "0", "160", "14.37%"))
+	assert.Contains(t, out, wantSummaryRow("clean", "1", "1", "0", "0", "0", "2", "50.00%"))
+	assert.Contains(t, out, wantSummaryRow("All baselines", "24", "138", "0", "0", "0", "162", "14.81%"))
+	assert.NotContains(t, out, "14.38", "the half-up integer formula printed 14.38 where the engine prints 14.37")
+
+	gauge := renderDoc(t, testhdf.Doc(baseline("divergent", 23, 137)), Executive)
+	assert.Contains(t, gauge, `<div class="gauge" style="--pct:14.37"><span class="pct">14.37%</span></div>`)
+	assert.Contains(t, gauge, `<div class="panel compliance compliance-low">`)
+}
+
+// counts builds the engine's count set from the per-status totals the report
+// columns show; the severity split inside each bucket does not reach compliance.
+func counts(passed, failed, notReviewed, errored, notApplicable int) *hdfengine.StatusCounts {
+	return &hdfengine.StatusCounts{
+		Passed:   hdfengine.SeverityCounts{Total: passed},
+		Failed:   hdfengine.SeverityCounts{Total: failed},
+		Skipped:  hdfengine.SeverityCounts{Total: notReviewed},
+		Error:    hdfengine.SeverityCounts{Total: errored},
+		NoImpact: hdfengine.SeverityCounts{Total: notApplicable},
+	}
+}
+
+func TestComplianceText(t *testing.T) {
 	for _, tc := range []struct {
-		counts statusCounts
+		counts *hdfengine.StatusCounts
 		want   string
 	}{
-		{statusCounts{}, "0.00%"},
-		{statusCounts{notApplicable: 4}, "0.00%"},
-		{statusCounts{passed: 1}, "100.00%"},
-		{statusCounts{passed: 1, failed: 2}, "33.33%"},
-		{statusCounts{passed: 2, failed: 1}, "66.67%"},
-		{statusCounts{passed: 1, failed: 7}, "12.50%"},
-		{statusCounts{passed: 1, notReviewed: 1, errored: 1, notApplicable: 9}, "33.33%"},
+		{counts(0, 0, 0, 0, 0), "0.00%"},
+		{counts(0, 0, 0, 0, 4), "0.00%"},
+		{counts(1, 0, 0, 0, 0), "100.00%"},
+		{counts(1, 2, 0, 0, 0), "33.33%"},
+		{counts(2, 1, 0, 0, 0), "66.67%"},
+		{counts(1, 7, 0, 0, 0), "12.50%"},
+		{counts(1, 0, 1, 1, 9), "33.33%"},
+		// The pair the integer half-up formula rounded the other way.
+		{counts(23, 137, 0, 0, 0), "14.37%"},
 	} {
-		assert.Equal(t, tc.want, tc.counts.compliance(), fmt.Sprintf("%+v", tc.counts))
+		assert.Equal(t, tc.want, complianceText(tc.counts), fmt.Sprintf("%+v", tc.counts))
 	}
+}
+
+func TestCountTotalAndSeverityTotals(t *testing.T) {
+	c := counts(1, 2, 3, 4, 5)
+	c.Failed.Critical = 2
+	c.Skipped.Low = 3
+	c.NoImpact.Informational = 4
+	assert.Equal(t, 15, countTotal(c))
+
+	severities := severityTotals(c)
+	assert.Equal(t, 2, severities.Critical)
+	assert.Equal(t, 3, severities.Low)
+	assert.Equal(t, 4, severities.Informational)
+	assert.Equal(t, 15, severities.Total)
 }
 
 func TestConvertHDFToHTML_RejectsWhatIsNotResults(t *testing.T) {
@@ -562,11 +636,19 @@ func TestStatusBadge(t *testing.T) {
 	}
 }
 
-func TestTagItems(t *testing.T) {
-	assert.Empty(t, tagItems(nil, "nist"))
-	assert.Empty(t, tagItems(map[string]interface{}{"nist": 7}, "nist"))
-	assert.Equal(t, []string{"AC-1"}, tagItems(map[string]interface{}{"nist": "AC-1"}, "nist"))
-	assert.Equal(t, []string{"AC-1", "AC-2"}, tagItems(map[string]interface{}{"nist": []interface{}{"AC-1", nil, "AC-2"}}, "nist"))
+// A nist or cci tag is a list in a current document and a bare string in older
+// ones; both shapes reach the requirement's control chips.
+func TestConvertHDFToHTML_ShowsNISTAndCCITagsInEitherShape(t *testing.T) {
+	out := renderDoc(t, testhdf.Results(
+		testhdf.Req("A", testhdf.Impact(0.5), testhdf.Status(hdf.Passed),
+			testhdf.Tag("nist", "AC-1"), testhdf.Tag("cci", "CCI-000366")),
+		testhdf.Req("B", testhdf.Impact(0.5), testhdf.Status(hdf.Passed),
+			testhdf.Tag("nist", []string{"CM-6", "SI-2"}), testhdf.Tag("cci", 7)),
+	), Manager)
+
+	assert.Contains(t, out, `<span class="tag">AC-1</span><span class="tag">CCI-000366</span>`)
+	assert.Contains(t, out, `<span class="tag">CM-6</span><span class="tag">SI-2</span>`)
+	assert.NotContains(t, out, `<span class="tag">7</span>`, "a tag that is not text is left out")
 }
 
 func TestSeverityPresentation(t *testing.T) {

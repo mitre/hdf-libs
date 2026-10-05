@@ -10,14 +10,20 @@ import {
   computeEffectiveStatus,
   formatTimestamp,
   governingStatusOverrideIndex,
-  impactToSeverity,
   parseTimestamp,
   worstStatus,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
-import type { EvaluatedRequirement } from '@mitre/hdf-schema';
+import {
+  calculateCompliance,
+  countControlsByStatus,
+  deriveSeverity,
+  type SeverityCounts,
+  type StatusCounts,
+} from '@mitre/hdf-engine';
+import type { EvaluatedBaseline, HDFResults, Severity } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
-import { requirementStatusInput } from '../../../shared/typescript/status.js';
+import { byCodePoint } from '../../../shared/typescript/exportmap.js';
 import { SCRIPT, SCRIPT_HASH, STYLESHEET } from './assets.js';
 
 const CONVERTER_NAME = 'hdf-to-html';
@@ -183,59 +189,81 @@ function latestStart(baselines: Json[]): Date | null {
   return latest;
 }
 
-interface StatusCounts {
-  passed: number;
-  failed: number;
-  notReviewed: number;
-  notApplicable: number;
-  errored: number;
-}
-
 function emptyCounts(): StatusCounts {
-  return { passed: 0, failed: 0, notReviewed: 0, notApplicable: 0, errored: 0 };
+  const bucket = (): SeverityCounts => ({ critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 });
+  return { passed: bucket(), failed: bucket(), skipped: bucket(), error: bucket(), noImpact: bucket() };
 }
 
-function addStatus(counts: StatusCounts, status: string): void {
-  switch (status) {
-    case 'passed':
-      counts.passed++;
-      break;
-    case 'failed':
-      counts.failed++;
-      break;
-    case 'notApplicable':
-      counts.notApplicable++;
-      break;
-    case 'error':
-      counts.errored++;
-      break;
-    default:
-      // notReviewed, and any status outside the enum: counted, never dropped.
-      counts.notReviewed++;
-  }
+/** A count set's five status buckets in the order the report's columns and stat lists use them. */
+function statusBuckets(c: StatusCounts): SeverityCounts[] {
+  return [c.passed, c.failed, c.skipped, c.noImpact, c.error];
 }
 
-function total(c: StatusCounts): number {
-  return c.passed + c.failed + c.notReviewed + c.notApplicable + c.errored;
+function addSeverities(dst: SeverityCounts, src: SeverityCounts): void {
+  dst.critical += src.critical;
+  dst.high += src.high;
+  dst.medium += src.medium;
+  dst.low += src.low;
+  dst.informational += src.informational;
+  dst.total += src.total;
+}
+
+/** Rolls `src` into `dst`: the engine counts one document at a time, and the report rolls baselines up into sources and sources into a whole. */
+function addCounts(dst: StatusCounts, src: StatusCounts): void {
+  const to = statusBuckets(dst);
+  statusBuckets(src).forEach((bucket, i) => addSeverities(to[i]!, bucket));
+}
+
+function countTotal(c: StatusCounts): number {
+  return statusBuckets(c).reduce((n, bucket) => n + bucket.total, 0);
+}
+
+/** Sums each severity across the statuses: the severity panel counts every requirement, whatever its status. */
+function severityTotals(c: StatusCounts): SeverityCounts {
+  const out: SeverityCounts = { critical: 0, high: 0, medium: 0, low: 0, informational: 0, total: 0 };
+  for (const bucket of statusBuckets(c)) addSeverities(out, bucket);
+  return out;
 }
 
 /**
- * passed / (passed + failed + notReviewed + error) as a percentage to two
- * places; notApplicable is excluded. Integer arithmetic, rounding half up, so
- * both languages print the same digits.
+ * The compliance percentage hdf-engine computes, to two places, so the report
+ * never disagrees with `hdf validate threshold` in the last digit. The Go peer
+ * formats the same number with FormatFixed, which is toFixed's rounding.
  */
+export function compliancePercent(c: StatusCounts): string {
+  return calculateCompliance(c).toFixed(2);
+}
+
 export function compliance(c: StatusCounts): string {
-  return `${formatHundredths(complianceHundredths(c))}%`;
+  return `${compliancePercent(c)}%`;
 }
 
-function complianceHundredths(c: StatusCounts): number {
-  const relevant = c.passed + c.failed + c.notReviewed + c.errored;
-  if (relevant === 0) return 0;
-  return Math.floor((c.passed * 20000 + relevant) / (2 * relevant));
+/** The requirement's severity through the engine, exactly as its tally derives it. */
+function requirementSeverity(req: Json): string {
+  return deriveSeverity(numeric(req.impact), (req.severity ?? null) as Severity | null);
 }
 
-function formatHundredths(hundredths: number): string {
-  return `${Math.floor(hundredths / 100)}.${String(hundredths % 100).padStart(2, '0')}`;
+/**
+ * Maps overrides onto the canonical effective-status input shape. formatTime
+ * drops Go's zero time, which the legacy converters leave in `expiresAt` to
+ * mean "no expiry": handing the raw value to the status ladder would read it as
+ * an expiry in the year 1 and disagree with both the overrides table and Go,
+ * whose zero time.Time already means absent. Effective status and the table's
+ * governing/expired column read the same normalized overrides.
+ */
+function overrideInputs(overrides: Json[]): StatusOverrideInput[] {
+  return overrides.map((o) => ({
+    status: text(o.status) === '' ? undefined : text(o.status),
+    appliedAt: formatTime(o.appliedAt) || undefined,
+    expiresAt: formatTime(o.expiresAt) || undefined,
+  }));
+}
+
+/** Bands the engine's compliance percentage at 90 and 60. */
+function complianceLevel(pct: number): readonly [cls: string, label: string] {
+  if (pct >= 90) return ['high', 'High compliance'];
+  if (pct >= 60) return ['medium', 'Medium compliance'];
+  return ['low', 'Low compliance'];
 }
 
 /** Maps a severity onto the fixed set the stylesheet knows; an informational, absent or unrecognized one is 'none'. */
@@ -260,10 +288,6 @@ export function severityLabel(severity: string): string {
     default:
       return severity;
   }
-}
-
-function requirementSeverity(req: Json): string {
-  return typeof req.severity === 'string' ? req.severity : impactToSeverity(numeric(req.impact));
 }
 
 /** Names a description the way the Heimdall report does. */
@@ -569,7 +593,7 @@ class Renderer {
   /** A map as key/value chips in key order. An empty value is kept: the key itself is the information. */
   private chips(heading: string, value: unknown): void {
     const m = obj(value);
-    const keys = Object.keys(m).sort(compareCodePoints);
+    const keys = Object.keys(m).sort(byCodePoint);
     if (keys.length === 0) return;
 
     this.line(`<h4>${heading}</h4>`);
@@ -581,12 +605,21 @@ class Renderer {
   }
 
   private effectiveStatus(req: Json): string {
-    return computeEffectiveStatus(requirementStatusInput(req as unknown as EvaluatedRequirement), this.src.ref.stamp);
+    return computeEffectiveStatus(
+      {
+        // Go's typed decode gives an absent impact the zero value, so the ladder
+        // there reads it as notApplicable; the same defaulting keeps the two
+        // languages agreeing on a document that omits impact.
+        impact: numeric(req.impact),
+        resultStatuses: list(req.results).map(obj).map((res) => text(res.status)),
+        overrides: overrideInputs(list(req.statusOverrides).map(obj)),
+      },
+      this.src.ref.stamp,
+    );
   }
 
   private status(): void {
     const all = emptyCounts();
-    const severities = { critical: 0, high: 0, medium: 0, low: 0, none: 0 };
     // Individual results, worded as the Heimdall report words them. A requirement
     // passed by an override keeps its failed checks out of the passed tally.
     const checks = { underPassed: 0, passedUnderFailed: 0, failedUnderFailed: 0, total: 0 };
@@ -596,13 +629,9 @@ class Renderer {
       const sourceCounts = emptyCounts();
       perSource.push(sourceCounts);
       return src.baselines.map((baseline) => {
-        const counts = emptyCounts();
-        for (const req of list(baseline.requirements).map(obj)) {
+        const requirements = list(baseline.requirements).map(obj);
+        for (const req of requirements) {
           const status = this.effectiveStatus(req);
-          addStatus(counts, status);
-          addStatus(sourceCounts, status);
-          addStatus(all, status);
-          severities[severityClass(requirementSeverity(req)) as keyof typeof severities]++;
           for (const res of list(req.results).map(obj)) {
             checks.total++;
             const resultStatus = text(res.status);
@@ -611,14 +640,25 @@ class Renderer {
             else if (status === 'failed' && resultStatus === 'failed') checks.failedUnderFailed++;
           }
         }
+        // The engine owns the status and severity tally, so the report's numbers
+        // are the ones the threshold gate and the MCP tools report. It is handed
+        // the normalized requirements because a null array member reaches it
+        // otherwise, where Go's typed decode had already made one a zero struct.
+        const counts = countControlsByStatus(
+          { baselines: [{ requirements } as unknown as EvaluatedBaseline] } as HDFResults,
+          (req) => this.effectiveStatus(req as unknown as Json),
+        );
+        addCounts(sourceCounts, counts);
+        addCounts(all, counts);
         return counts;
       });
     });
+    const severities = severityTotals(all);
     const anyRef = this.sources.some((src) => src.ref.known);
 
     this.line('<section id="status" class="card" aria-labelledby="status-heading">');
     this.line('<h2 id="status-heading">Status</h2>');
-    if (total(all) > 0 && anyRef) {
+    if (countTotal(all) > 0 && anyRef) {
       if (this.aggregated) {
         this.line(
           '<p class="as-of">Effective status evaluated for each source as of its own assessment time. ' +
@@ -637,28 +677,28 @@ class Renderer {
     this.line('<div class="panel">');
     this.line('<h3>Requirements</h3>');
     this.line('<ul class="stats">');
-    this.line(stat('passed', all.passed, 'Passed', `${plural(checks.underPassed, 'individual check')} passed`));
+    this.line(stat('passed', all.passed.total, 'Passed', `${plural(checks.underPassed, 'individual check')} passed`));
     this.line(
       stat(
         'failed',
-        all.failed,
+        all.failed.total,
         'Failed',
         `${plural(checks.passedUnderFailed, 'individual check')} passed, ` +
           `${checks.failedUnderFailed} failed out of ${plural(checks.total, 'total check')}`,
       ),
     );
-    this.line(stat('not-applicable', all.notApplicable, 'Not Applicable', ''));
-    this.line(stat('not-reviewed', all.notReviewed, 'Not Reviewed', ''));
-    this.line(stat('error', all.errored, 'Error', ''));
-    this.line(`<li class="stat stat-total"><span class="num">${total(all)}</span><span class="lbl">Total</span></li>`);
+    this.line(stat('not-applicable', all.noImpact.total, 'Not Applicable', ''));
+    this.line(stat('not-reviewed', all.skipped.total, 'Not Reviewed', ''));
+    this.line(stat('error', all.error.total, 'Error', ''));
+    this.line(`<li class="stat stat-total"><span class="num">${countTotal(all)}</span><span class="lbl">Total</span></li>`);
     this.line('</ul>');
     this.line(
       bar('Requirements by status', [
-        ['passed', 'passed', all.passed],
-        ['failed', 'failed', all.failed],
-        ['not-applicable', 'not applicable', all.notApplicable],
-        ['not-reviewed', 'not reviewed', all.notReviewed],
-        ['error', 'error', all.errored],
+        ['passed', 'passed', all.passed.total],
+        ['failed', 'failed', all.failed.total],
+        ['not-applicable', 'not applicable', all.noImpact.total],
+        ['not-reviewed', 'not reviewed', all.skipped.total],
+        ['error', 'error', all.error.total],
       ]),
     );
     this.line('</div>');
@@ -670,7 +710,9 @@ class Renderer {
     this.line(stat('high', severities.high, 'High', ''));
     this.line(stat('medium', severities.medium, 'Medium', ''));
     this.line(stat('low', severities.low, 'Low', ''));
-    this.line(stat('none', severities.none, 'None', ''));
+    // The engine's informational bucket is this report's "none": every severity
+    // outside critical/high/medium/low lands there under both namings.
+    this.line(stat('none', severities.informational, 'None', ''));
     this.line('</ul>');
     this.line(
       bar('Requirements by severity', [
@@ -678,25 +720,16 @@ class Renderer {
         ['high', 'high', severities.high],
         ['medium', 'medium', severities.medium],
         ['low', 'low', severities.low],
-        ['none', 'none', severities.none],
+        ['none', 'none', severities.informational],
       ]),
     );
     this.line('</div>');
 
-    const hundredths = complianceHundredths(all);
-    let level = 'low';
-    let levelLabel = 'Low compliance';
-    if (hundredths >= 9000) {
-      level = 'high';
-      levelLabel = 'High compliance';
-    } else if (hundredths >= 6000) {
-      level = 'medium';
-      levelLabel = 'Medium compliance';
-    }
+    const [level, levelLabel] = complianceLevel(calculateCompliance(all));
     this.line(`<div class="panel compliance compliance-${level}">`);
     this.line('<h3>Compliance</h3>');
     this.line(
-      `<div class="gauge" style="--pct:${formatHundredths(hundredths)}"><span class="pct">${compliance(all)}</span></div>`,
+      `<div class="gauge" style="--pct:${compliancePercent(all)}"><span class="pct">${compliance(all)}</span></div>`,
     );
     this.line(`<p class="level">${levelLabel}</p>`);
     this.line('<p class="formula">Passed / (Passed + Failed + Not Reviewed + Error) \u00d7 100</p>');
@@ -948,14 +981,7 @@ class Renderer {
 
   private overrideRows(overrides: Json[]): void {
     if (overrides.length === 0) return;
-    const inputs = overrides.map(
-      (o): StatusOverrideInput => ({
-        status: text(o.status) === '' ? undefined : text(o.status),
-        appliedAt: formatTime(o.appliedAt) || undefined,
-        expiresAt: formatTime(o.expiresAt) || undefined,
-      }),
-    );
-    const governing = governingStatusOverrideIndex(inputs, this.src.ref.stamp);
+    const governing = governingStatusOverrideIndex(overrideInputs(overrides), this.src.ref.stamp);
 
     const f = this.openFold('', '', this.detailHeading, 'Overrides', 'the overrides', overrides.length);
     this.line('<div class="table-wrap">');
@@ -1071,7 +1097,7 @@ class Renderer {
    */
   private tagChips(tags: Json): void {
     const entries: Array<readonly [string, string]> = [];
-    for (const key of Object.keys(tags).sort(compareCodePoints)) {
+    for (const key of Object.keys(tags).sort(byCodePoint)) {
       if (key === 'nist' || key === 'cci') continue;
       const value = tagText(tags[key]);
       if (value !== null) entries.push([key, value]);
@@ -1112,7 +1138,7 @@ function referenceCensus(doc: Json): string {
     }
   }
   if (total === 0) return '';
-  const parts = [...kinds.keys()].sort(compareCodePoints).map((kind) => `${kind} ${kinds.get(kind)}`);
+  const parts = [...kinds.keys()].sort(byCodePoint).map((kind) => `${kind} ${kinds.get(kind)}`);
   return parts.length === 0 ? String(total) : `${total} (${parts.join(', ')})`;
 }
 
@@ -1275,7 +1301,7 @@ function referenceLines(refs: Json[]): string[] {
     } else if (Array.isArray(ref.ref)) {
       const urls = new Set<string>();
       collectUrls(ref.ref, urls);
-      lines.push(...[...urls].sort(compareCodePoints));
+      lines.push(...[...urls].sort(byCodePoint));
     }
     for (const s of [text(ref.url), text(ref.uri)]) {
       if (s !== '') lines.push(s);
@@ -1349,7 +1375,7 @@ function identity(value: unknown): string {
 
 /** A summary table row; `name` is already HTML. */
 function summaryRow(name: string, c: StatusCounts): string {
-  const cells = [c.passed, c.failed, c.notReviewed, c.notApplicable, c.errored, total(c)]
+  const cells = [c.passed.total, c.failed.total, c.skipped.total, c.noImpact.total, c.error.total, countTotal(c)]
     .map((n) => `<td>${n}</td>`)
     .join('');
   return `<tr><th scope="row">${name}</th>${cells}<td>${compliance(c)}</td></tr>`;
@@ -1434,18 +1460,6 @@ export function tagItems(tags: Json, key: string): string[] {
 
 function joinNonEmpty(sep: string, ...parts: string[]): string {
   return parts.filter((p) => p !== '').join(sep);
-}
-
-/** Orders strings by code point, which is what Go's byte-wise sort of UTF-8 gives; the default sort orders by UTF-16 unit. */
-export function compareCodePoints(a: string, b: string): number {
-  const x = Array.from(a);
-  const y = Array.from(b);
-  const n = Math.min(x.length, y.length);
-  for (let i = 0; i < n; i++) {
-    const d = x[i]!.codePointAt(0)! - y[i]!.codePointAt(0)!;
-    if (d !== 0) return d;
-  }
-  return x.length - y.length;
 }
 
 /**

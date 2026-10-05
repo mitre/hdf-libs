@@ -8,8 +8,9 @@ import * as testhdf from '@mitre/hdf-schema/testhdf';
 import { results as sharedResults } from '@mitre/hdf-fixtures';
 import { resultsCorpus } from '../../../shared/typescript/schema-corpus.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
+import type { SeverityCounts } from '@mitre/hdf-engine';
+import { byCodePoint } from '../../../shared/typescript/exportmap.js';
 import {
-  compareCodePoints,
   compliance,
   convertHdfDocumentsToHtml,
   convertHdfToHtml,
@@ -28,6 +29,8 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturesDir = join(__dirname, '..', 'fixtures');
 const FAR_FUTURE = '2099-12-31T00:00:00Z';
+/** The value a Go marshal writes for an unset time, which the legacy converters leave in expiresAt to mean "no expiry". */
+const GO_ZERO_TIME = '0001-01-01T00:00:00Z';
 const REPORT_TYPES = ['executive', 'manager', 'administrator'] as const;
 
 function loadFixture(type: 'input' | 'expected', filename: string): string {
@@ -357,6 +360,45 @@ describe('hdf-to-html converter', () => {
     expect(out).toContain(summaryRow('All baselines', '2', '1', '1', '1', '1', '6', '40.00%'));
   });
 
+  // The report prints the compliance hdf-engine computes, so a report and
+  // `hdf validate threshold` never disagree in the last digit. 23 passed out of
+  // 160 relevant requirements is 14.37% to the engine; the half-up integer
+  // formula the report once carried printed 14.38%.
+  it('takes compliance from the engine', () => {
+    const baseline = (name: string, passed: number, failed: number) =>
+      testhdf.baseline(
+        name,
+        ...Array.from({ length: passed + failed }, (_, i) =>
+          testhdf.req(`${name}-${i}`, { impact: 0.5, status: i < passed ? 'passed' : 'failed' }),
+        ),
+      );
+
+    const out = render(testhdf.doc(baseline('divergent', 23, 137), baseline('clean', 1, 1)), 'executive');
+    expect(out).toContain(summaryRow('divergent', '23', '137', '0', '0', '0', '160', '14.37%'));
+    expect(out).toContain(summaryRow('clean', '1', '1', '0', '0', '0', '2', '50.00%'));
+    expect(out).toContain(summaryRow('All baselines', '24', '138', '0', '0', '0', '162', '14.81%'));
+    expect(out).not.toContain('14.38');
+
+    const gauge = render(testhdf.doc(baseline('divergent', 23, 137)), 'executive');
+    expect(gauge).toContain('<div class="gauge" style="--pct:14.37"><span class="pct">14.37%</span></div>');
+    expect(gauge).toContain('<div class="panel compliance compliance-low">');
+  });
+
+  // Go's zero time is what a typed marshal writes for an override carrying no
+  // expiry, so an expiresAt of 0001-01-01T00:00:00Z means absent, not an expiry
+  // in the year 1. The Go peer reads the same document the same way.
+  it('reads the Go zero time as no expiry', () => {
+    const doc = waived(GO_ZERO_TIME);
+    expectValidResults(doc as never);
+    const out = render(doc, 'manager');
+
+    expect(out).toContain(detail('Effective status', badge('passed', 'Passed')));
+    expect(out).toContain(`${badge('passed', 'Passed')}<span class="req-id">V-1</span>`);
+    expect(out).toContain('<td>governing</td>');
+    expect(out).not.toContain('<td>expired</td>');
+    expect(out).toContain('100.00%');
+  });
+
   it('shows the status dashboard', () => {
     const failing = testhdf.req('F', { impact: 0.9, status: 'failed' }) as unknown as Doc;
     (failing.results as Doc[]).push(
@@ -598,9 +640,16 @@ describe('hdf-to-html aggregated report', () => {
 });
 
 describe('hdf-to-html helpers', () => {
-  it('computes compliance with integer rounding', () => {
+  it('takes compliance from the engine', () => {
+    const bucket = (total: number): SeverityCounts => ({ critical: 0, high: 0, medium: 0, low: 0, informational: total, total });
     const c = (passed: number, failed = 0, notReviewed = 0, errored = 0, notApplicable = 0) =>
-      compliance({ passed, failed, notReviewed, notApplicable, errored });
+      compliance({
+        passed: bucket(passed),
+        failed: bucket(failed),
+        skipped: bucket(notReviewed),
+        error: bucket(errored),
+        noImpact: bucket(notApplicable),
+      });
     expect(c(0)).toBe('0.00%');
     expect(c(0, 0, 0, 0, 4)).toBe('0.00%');
     expect(c(1)).toBe('100.00%');
@@ -608,6 +657,8 @@ describe('hdf-to-html helpers', () => {
     expect(c(2, 1)).toBe('66.67%');
     expect(c(1, 7)).toBe('12.50%');
     expect(c(1, 0, 1, 1, 9)).toBe('33.33%');
+    // The pair the integer half-up formula rounded the other way.
+    expect(c(23, 137)).toBe('14.37%');
   });
 
   it('renders a status with a class from a fixed set', () => {
@@ -690,8 +741,8 @@ describe('hdf-to-html helpers', () => {
 
   it('orders strings by code point, as Go does', () => {
     // U+FF5E sorts before U+1F600 by code point but after it by UTF-16 unit.
-    expect(['\u{1F600}', '～', 'b', 'a', 'ab'].sort(compareCodePoints)).toEqual(['a', 'ab', 'b', '～', '\u{1F600}']);
-    expect(compareCodePoints('a', 'a')).toBe(0);
+    expect(['\u{1F600}', '～', 'b', 'a', 'ab'].sort(byCodePoint)).toEqual(['a', 'ab', 'b', '～', '\u{1F600}']);
+    expect(byCodePoint('a', 'a')).toBe(0);
   });
 });
 

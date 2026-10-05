@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.33.5
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.0
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.82.0
+	github.com/mitre/hdf-libs/hdf-engine/go/v3 v3.7.1
 	github.com/mitre/hdf-libs/hdf-fixtures/v3 v3.7.1
 	github.com/mitre/hdf-libs/hdf-mappings/go/v3 v3.7.1
 	github.com/mitre/hdf-libs/hdf-parsers/go/v3 v3.7.1
@@ -35,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.0 // indirect
 	github.com/aws/smithy-go v1.28.1 // indirect
+	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
@@ -55,3 +57,5 @@ replace github.com/mitre/hdf-libs/hdf-validators/go/v3 => ../hdf-validators/go
 replace github.com/mitre/hdf-libs/hdf-parsers/go/v3 => ../hdf-parsers/go
 
 replace github.com/mitre/hdf-libs/hdf-fixtures/v3 => ../hdf-fixtures
+
+replace github.com/mitre/hdf-libs/hdf-engine/go/v3 => ../hdf-engine/go

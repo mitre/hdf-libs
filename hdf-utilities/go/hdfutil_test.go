@@ -297,6 +297,31 @@ func TestPtr(t *testing.T) {
 	})
 }
 
+func TestDeref(t *testing.T) {
+	t.Run("reads the pointed-to value", func(t *testing.T) {
+		assert.Equal(t, "hello", Deref(Ptr("hello")))
+		assert.InEpsilon(t, 3.14, Deref(Ptr(3.14)), 1e-9)
+		assert.True(t, Deref(Ptr(true)))
+	})
+
+	t.Run("nil reads as the zero value", func(t *testing.T) {
+		assert.Empty(t, Deref[string](nil))
+		assert.Zero(t, Deref[int](nil))
+		assert.False(t, Deref[bool](nil))
+		assert.Equal(t, time.Time{}, Deref[time.Time](nil))
+	})
+
+	t.Run("a named string type keeps its type", func(t *testing.T) {
+		type severity string
+		assert.Equal(t, severity("high"), Deref(Ptr(severity("high"))))
+		assert.Equal(t, "", string(Deref[severity](nil)))
+	})
+
+	t.Run("round-trips with Ptr", func(t *testing.T) {
+		assert.Equal(t, 42, Deref(Ptr(42)))
+	})
+}
+
 func TestLimitSlice(t *testing.T) {
 	t.Run("returns full slice when under limit", func(t *testing.T) {
 		items := []string{"a", "b", "c"}
