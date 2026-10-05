@@ -145,14 +145,32 @@
               ]
             }
           ],
-          "dependentRequired": {
-            "content": [
-              "encoding"
-            ],
-            "encoding": [
-              "content"
-            ]
-          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "content"
+                ]
+              },
+              "then": {
+                "required": [
+                  "encoding"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "encoding"
+                ]
+              },
+              "then": {
+                "required": [
+                  "content"
+                ]
+              }
+            }
+          ],
           "properties": {
             "sourceName": {
               "type": "string",
@@ -2118,6 +2136,13 @@
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/External_Reference"
             },
             {
+              "not": {
+                "required": [
+                  "document"
+                ]
+              }
+            },
+            {
               "if": {
                 "required": [
                   "content"
@@ -2129,22 +2154,10 @@
                   "mediaType"
                 ]
               }
-            },
-            {
-              "if": {
-                "required": [
-                  "document"
-                ]
-              },
-              "then": {
-                "required": [
-                  "mediaType"
-                ]
-              }
             }
           ],
-          "description": "One artifact exactly as a converter received it, before conversion.\n\nAn External_Reference used for a single purpose, so the same primitive both points and embeds: `sourceName` names the producing tool; `content` + `encoding` or `document` carry the bytes; `checksum` is the SHA-256 of the exact bytes the converter read; `rel` is 'raw-source'; `href` appears only when the caller supplied a location that means something to a reader, never a producer's local filesystem path.\n\n`mediaType` is REQUIRED on an entry that embeds — bytes whose type a consumer has to infer are not carriage. It is derived from the converter's declared input family (json → application/json, xml → application/xml, text → text/plain) and overridden by converters that know their bytes more precisely (CSV, NDJSON, JavaScript-wrapped JSON).\n\nAn entry that only points at a location may omit `mediaType`.",
-          "$comment": "Examples, in order: 1) JSON input embedded as an object in `document`, the common case for the JSON-family converters; 2) XML input embedded as utf-8 `content`, which `document` cannot hold; 3) CSV input, where `mediaType` overrides the 'text' input family's derived text/plain; 4) non-text input (a Fortify FPR zip) embedded as base64; 5) by-reference only: a scan retrievable at a meaningful URL, with no embedded copy and therefore no required mediaType.",
+          "description": "One artifact exactly as a converter received it, before conversion.\n\nAn External_Reference used for a single purpose, so the same primitive both points and embeds: `sourceName` names the producing tool; `content` + `encoding` carry the bytes; `checksum` is of the exact bytes the converter read; `rel` is 'raw-source'; `href` appears only when the caller supplied a location that means something to a reader, never a producer's local filesystem path.\n\nBYTES, NOT A PARSED COPY. `document` is forbidden here, enforced by the schema rather than described: it holds a parsed JSON object, so embedding through it discards the original whitespace, key order, duplicate keys and trailing bytes — which makes the artifact unreconstructable and the checksum unverifiable against what is stored. A JSON input carries as a `content` string like every other input. This is deliberately stricter than HDF v2, whose `passthrough.raw` held a parsed structure in every converter but one, and which for XML inputs stored a reshaped object whose keys could collide.\n\n`mediaType` is REQUIRED on an entry that embeds — bytes whose type a consumer has to infer are not carriage. It is derived from the converter's declared input family (json → application/json, xml → application/xml, text → text/plain) and overridden by converters that know their bytes more precisely (CSV, NDJSON, JavaScript-wrapped JSON).\n\nAn entry that only points at a location may omit `mediaType`, `content` and `encoding`.",
+          "$comment": "Examples, in order: 1) JSON input embedded as a utf-8 `content` string — the common case, and note it is NOT a parsed object; 2) XML input, which `document` never could have held; 3) CSV input, where `mediaType` overrides the 'text' input family's derived text/plain; 4) non-text input (a Fortify FPR zip) embedded as base64; 5) by-reference only: a scan retrievable at a meaningful URL, with no embedded copy and therefore no required mediaType, encoding or content.",
           "examples": [
             {
               "sourceName": "grype",
@@ -2680,14 +2693,6 @@
         "Integrity": {
           "type": "object",
           "unevaluatedProperties": false,
-          "dependentRequired": {
-            "algorithm": [
-              "checksum"
-            ],
-            "checksum": [
-              "algorithm"
-            ]
-          },
           "properties": {
             "algorithm": {
               "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Hash_Algorithm",
@@ -2719,7 +2724,33 @@
             }
           ],
           "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with. If algorithm is provided, checksum must also be provided, and vice versa.",
-          "title": "Integrity"
+          "title": "Integrity",
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "algorithm"
+                ]
+              },
+              "then": {
+                "required": [
+                  "checksum"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "checksum"
+                ]
+              },
+              "then": {
+                "required": [
+                  "algorithm"
+                ]
+              }
+            }
+          ]
         }
       }
     }

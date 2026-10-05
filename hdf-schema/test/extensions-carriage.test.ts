@@ -102,7 +102,7 @@ describe('extensions carriage — schema structure', () => {
   // false`: Extensions composes nothing, and the Go validator (gojsonschema, a
   // draft-07 engine) does not implement `unevaluatedProperties`, so only
   // `additionalProperties` makes the closure real in both languages.
-  it('extensions is closed — an undeclared key is passthrough s job, not its own', () => {
+  it("extensions is closed — an undeclared key is passthrough's job, not its own", () => {
     const ext = extensionsDef();
     expect(ext.additionalProperties).toBe(false);
   });
@@ -168,6 +168,47 @@ describe('extensions carriage — schema structure', () => {
       ...ALL_DOCUMENTS.map((d) => `${d}.schema.json`),
       'primitives/common.schema.json',
       'primitives/extensions.schema.json',
+    ]) {
+      walk(loadSchema(name), '', name);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  // The companion trap to the one above, and the one that actually bit: a
+  // keyword introduced in 2019-09 or later is not "enforced in TypeScript and
+  // skipped in Go" — it is skipped by BOTH shipped validators, because
+  // hdf-validators' Go side is gojsonschema (draft-07) and its TypeScript side
+  // constructs a default `Ajv` (also draft-07). Only hdf-schema's own test
+  // harness builds Ajv2020. So such a keyword states a rule that `hdf validate`
+  // never applies. `dependentRequired` was added to External_Reference and sat
+  // unenforced until a reviewer noticed; it is now an if/then pair instead.
+  //
+  // `unevaluatedProperties` is the one accepted exception: it is house style on
+  // every composing definition, its skip in draft-07 is understood, and where a
+  // closure has to be real in both languages `additionalProperties` is used.
+  it('no source schema relies on a 2019-09+ keyword the shipped validators ignore', () => {
+    const POST_DRAFT_07 = new Set([
+      'dependentRequired', 'dependentSchemas', 'prefixItems', 'unevaluatedItems',
+      'minContains', 'maxContains', 'contentSchema',
+      '$recursiveRef', '$recursiveAnchor', '$dynamicRef', '$dynamicAnchor',
+    ]);
+    const offenders: string[] = [];
+    const walk = (node: unknown, path: string, file: string): void => {
+      if (Array.isArray(node)) {
+        node.forEach((v, i) => walk(v, `${path}[${i}]`, file));
+        return;
+      }
+      if (!node || typeof node !== 'object') return;
+      for (const [key, value] of Object.entries(node as Node)) {
+        if (POST_DRAFT_07.has(key)) offenders.push(`${file}${path}: ${key}`);
+        if (key !== 'examples') walk(value, `${path}/${key}`, file);
+      }
+    };
+    for (const name of [
+      ...ALL_DOCUMENTS.map((d) => `${d}.schema.json`),
+      'primitives/common.schema.json',
+      'primitives/extensions.schema.json',
+      'primitives/result.schema.json',
     ]) {
       walk(loadSchema(name), '', name);
     }
@@ -255,16 +296,26 @@ const minimalAmendmentsDoc = (extensions: unknown): Node => ({
   extensions,
 });
 
-// Artifact shapes the ADR names: a JSON input embedded as an object, an XML
-// input embedded as UTF-8 text, and bytes that are not valid UTF-8 text.
+// Artifact shapes the ADR names. All three embed BYTES: ADR-0017 §2 forbids
+// `document` here, because a parsed object cannot hold the bytes the checksum
+// describes.
 const jsonArtifact = {
   sourceName: 'grype',
   rel: 'raw-source',
   mediaType: 'application/json',
+  encoding: 'utf-8',
+  content: '{"matches":[{"vulnerability":{"id":"CVE-2021-36159","severity":"Critical"}}]}',
   checksum: {
     algorithm: 'sha256',
     value: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
   },
+};
+
+/** The shape (A) rules out: a JSON input embedded as a parsed object. */
+const documentArtifact = {
+  sourceName: 'grype',
+  rel: 'raw-source',
+  mediaType: 'application/json',
   document: {
     matches: [{ vulnerability: { id: 'CVE-2021-36159', severity: 'Critical' } }],
   },
@@ -400,8 +451,18 @@ describe('extensions carriage — document validation', () => {
   });
 
   describe('rawSourceArtifacts', () => {
-    it('accepts a JSON artifact embedded in document', () => {
+    it('accepts a JSON artifact embedded as utf-8 content', () => {
       expectValid(validateResults, minimalResultsDoc({ rawSourceArtifacts: [jsonArtifact] }));
+    });
+
+    // ADR-0017 §2: byte carriage only. `document` holds a parsed object, so the
+    // original whitespace, key order and duplicate keys are gone and the
+    // checksum cannot be verified against what is stored. Enforced, not merely
+    // described — and deliberately stricter than v2's passthrough.raw.
+    it('rejects a JSON artifact embedded as a parsed document', () => {
+      expect(validateResults(minimalResultsDoc({ rawSourceArtifacts: [documentArtifact] }))).toBe(
+        false,
+      );
     });
 
     it('accepts an XML artifact embedded as utf-8 content', () => {
@@ -440,9 +501,14 @@ describe('extensions carriage — document validation', () => {
       expect(validateResults(minimalResultsDoc({ rawSourceArtifacts: [entry] }))).toBe(false);
     });
 
-    it('rejects a document-embedding entry with no mediaType', () => {
-      const entry = without(jsonArtifact, 'mediaType');
-      expect(validateResults(minimalResultsDoc({ rawSourceArtifacts: [entry] }))).toBe(false);
+    it('rejects a document-embedding entry even when it is otherwise complete', () => {
+      expect(
+        validateResults(
+          minimalResultsDoc({
+            rawSourceArtifacts: [{ ...documentArtifact, checksum: jsonArtifact.checksum }],
+          }),
+        ),
+      ).toBe(false);
     });
 
     it('rejects content without an encoding to read it by', () => {

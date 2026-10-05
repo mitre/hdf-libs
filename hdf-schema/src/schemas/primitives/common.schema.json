@@ -38,14 +38,32 @@
           ]
         }
       ],
-      "dependentRequired": {
-        "content": [
-          "encoding"
-        ],
-        "encoding": [
-          "content"
-        ]
-      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "content"
+            ]
+          },
+          "then": {
+            "required": [
+              "encoding"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "encoding"
+            ]
+          },
+          "then": {
+            "required": [
+              "content"
+            ]
+          }
+        }
+      ],
       "properties": {
         "sourceName": {
           "type": "string",
