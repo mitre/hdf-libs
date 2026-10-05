@@ -458,6 +458,9 @@ class Renderer {
     this.line('<meta charset="utf-8" />');
     this.line(`<meta http-equiv="Content-Security-Policy" content="${policy}" />`);
     this.line('<meta name="viewport" content="width=device-width, initial-scale=1" />');
+    // Declared in the head so the browser's own controls and scrollbars follow
+    // the reader's scheme before the stylesheet is parsed.
+    this.line('<meta name="color-scheme" content="light dark" />');
     this.line('<title>HDF Assessment Report</title>');
     this.line('<style>');
     this.lines.push(STYLESHEET);
@@ -469,14 +472,16 @@ class Renderer {
     this.line('<h1 class="brand">HDF Assessment Report</h1>');
     this.line(`<span class="report-type">Report type: ${REPORT_TYPE_LABEL[this.reportType]}</span>`);
     this.line('<nav aria-label="Sections">');
-    this.line('<a href="#status">Status</a>');
-    this.line(this.aggregated ? '<a href="#sources">Sources</a>' : '<a href="#assessment">Assessment</a>');
-    this.line('<a href="#components">Components</a>');
-    if (detailed) this.line('<a href="#results">Results</a>');
+    this.line('<ul>');
+    this.line('<li><a href="#status">Status</a></li>');
+    this.line(this.aggregated ? '<li><a href="#sources">Sources</a></li>' : '<li><a href="#assessment">Assessment</a></li>');
+    this.line('<li><a href="#components">Components</a></li>');
+    if (detailed) this.line('<li><a href="#results">Results</a></li>');
+    this.line('</ul>');
     this.line('</nav>');
     this.line('<button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">Dark mode</button>');
     this.line('</header>');
-    this.line('<main id="main">');
+    this.line('<main id="main" class="container">');
 
     this.status();
     if (this.aggregated) this.sourceList();
@@ -727,9 +732,14 @@ class Renderer {
 
     const [level, levelLabel] = complianceLevel(calculateCompliance(all));
     this.line(`<div class="panel compliance compliance-${level}">`);
-    this.line('<h3>Compliance</h3>');
+    this.line('<h3 id="compliance-heading">Compliance</h3>');
+    // A measurement on a fixed scale, not work in progress, so the ring is a
+    // meter to assistive technology. The percentage is printed inside it because
+    // the sweep and its band colour say nothing on their own.
     this.line(
-      `<div class="gauge" style="--pct:${compliancePercent(all)}"><span class="pct">${compliance(all)}</span></div>`,
+      `<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${compliancePercent(all)}"` +
+        ` aria-labelledby="compliance-heading" style="--pct:${compliancePercent(all)}">` +
+        `<span class="pct">${compliance(all)}</span></div>`,
     );
     this.line(`<p class="level">${levelLabel}</p>`);
     this.line('<p class="formula">Passed / (Passed + Failed + Not Reviewed + Error) \u00d7 100</p>');
@@ -856,7 +866,10 @@ class Renderer {
     const [cls] = statusPresentation(effective);
     this.requirements++;
     const id = `req-${this.requirements}`;
-    this.line(`<details class="requirement c-${cls}" data-status="${cls}" id="${id}">`);
+    // Each requirement is independently meaningful, so it is an article holding
+    // one disclosure rather than a bare disclosure.
+    this.line(`<article class="requirement c-${cls}" data-status="${cls}" id="${id}">`);
+    this.line('<details>');
     const referenceCount = list(req.externalReferences).length;
     const tagHtml =
       [...nist, ...cci]
@@ -950,6 +963,7 @@ class Renderer {
     this.line(`<p class="to-top"><a href="#${id}">Back to the top of this requirement</a></p>`);
     this.line('</div>');
     this.line('</details>');
+    this.line('</article>');
   }
 
   private resultRows(results: Json[]): void {
@@ -1445,9 +1459,26 @@ function statusPresentation(status: string): readonly [cls: string, label: strin
     : ['unknown', status];
 }
 
+/**
+ * The mark beside the status word. Colour is the least reliable of the three
+ * channels — it is lost to colour-vision deficiency and to a greyscale printer —
+ * so every status carries a shape and a word as well.
+ */
+const STATUS_ICON: Record<string, string> = {
+  passed: '✓',
+  failed: '✗',
+  'not-applicable': '–',
+  'not-reviewed': '?',
+  error: '!',
+};
+
+export function statusIcon(cls: string): string {
+  return Object.prototype.hasOwnProperty.call(STATUS_ICON, cls) ? STATUS_ICON[cls]! : '·';
+}
+
 export function statusBadge(status: string): string {
   const [cls, label] = statusPresentation(status);
-  return `<span class="status c-${cls}">${escapeHtml(label)}</span>`;
+  return `<span class="status c-${cls}"><span class="ico" aria-hidden="true">${statusIcon(cls)}</span>${escapeHtml(label)}</span>`;
 }
 
 /** The string members of an array-valued tag; a bare string tag is a one-member list. */

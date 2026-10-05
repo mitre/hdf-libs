@@ -112,7 +112,19 @@ func detail(heading, value string) string {
 }
 
 func badge(class, label string) string {
-	return `<span class="status c-` + class + `">` + label + "</span>"
+	return `<span class="status c-` + class + `"><span class="ico" aria-hidden="true">` + statusIcon(class) +
+		"</span>" + label + "</span>"
+}
+
+// The mark is what keeps a status readable in greyscale and to a reader who
+// cannot tell the colours apart, so each one is pinned here rather than taken
+// from the code the badge helper above shares with the report.
+func TestStatusIcon(t *testing.T) {
+	for class, want := range map[string]string{
+		"passed": "✓", "failed": "✗", "not-applicable": "–", "not-reviewed": "?", "error": "!", "unknown": "·",
+	} {
+		assert.Equal(t, want, statusIcon(class), class)
+	}
 }
 
 func TestConvertHDFToHTML_ShowsDocumentContext(t *testing.T) {
@@ -270,37 +282,53 @@ var (
 	loadingAttribute = regexp.MustCompile(`<[^>]*\s(src|srcset|data|action|formaction|poster|background|on[a-z]+)\s*=`)
 	hrefAttribute    = regexp.MustCompile(`<[^>]*\shref\s*=\s*"([^"]*)"`)
 	styleAttribute   = regexp.MustCompile(`<[^>]*\sstyle\s*=\s*"([^"]*)"`)
-	// The only inline styles are numbers handed to the stylesheet as custom properties.
+	// The only inline styles are the counts and the percentage the stylesheet draws from.
 	numericStyle = regexp.MustCompile(`^--(n|pct):[0-9]+(\.[0-9]+)?$`)
 	scriptBlock  = regexp.MustCompile(`(?s)<script>(.*?)</script>`)
+	styleBlock   = regexp.MustCompile(`(?s)<style>(.*?)</style>`)
+	// CSS reaches the network through url() and nothing else.
+	cssURL = regexp.MustCompile(`url\(\s*["']?([^"')]*)`)
 )
+
+// markupOnly empties the <style> and <script> elements. Both hold raw text
+// rather than markup — the vendored stylesheet carries a "<" in a media query —
+// so the markup checks and the well-formedness parse run on what is left.
+func markupOnly(out string) string {
+	out = styleBlock.ReplaceAllString(out, "<style></style>")
+	return scriptBlock.ReplaceAllString(out, "<script></script>")
+}
 
 // assertSelfContained checks the report can neither fetch anything nor run
 // anything but its own static script, which the content security policy pins by
 // hash.
 func assertSelfContained(t *testing.T, out string, wantScript bool) {
 	t.Helper()
-	lower := strings.ToLower(out)
+	markup := markupOnly(out)
+	lower := strings.ToLower(markup)
 	for _, forbidden := range elementsThatLoad {
 		assert.NotContains(t, lower, forbidden, "the report must not contain %q", forbidden)
 	}
 	assert.NotRegexp(t, loadingAttribute, lower)
-	for _, m := range hrefAttribute.FindAllStringSubmatch(out, -1) {
+	for _, m := range hrefAttribute.FindAllStringSubmatch(markup, -1) {
 		assert.True(t, strings.HasPrefix(m[1], "#"), "href %q must stay inside the page", m[1])
 	}
-	for _, m := range styleAttribute.FindAllStringSubmatch(out, -1) {
+	for _, m := range styleAttribute.FindAllStringSubmatch(markup, -1) {
 		assert.Regexp(t, numericStyle, m[1], "an inline style may only carry a number")
 	}
 
-	require.Equal(t, 1, strings.Count(lower, "<style>"), "exactly one stylesheet, inline")
-	css := lower[strings.Index(lower, "<style>"):strings.Index(lower, "</style>")]
-	assert.NotContains(t, css, "url(")
+	styles := styleBlock.FindAllStringSubmatch(out, -1)
+	require.Len(t, styles, 1, "exactly one stylesheet, inline")
+	assert.Equal(t, strings.Count(out, "<style"), len(styles), "the stylesheet is inline and attribute-free")
+	css := styles[0][1]
 	assert.NotContains(t, css, "@import")
-	assert.NotContains(t, css, "http")
+	assert.NotContains(t, css, "image-set(")
+	for _, m := range cssURL.FindAllStringSubmatch(css, -1) {
+		assert.True(t, strings.HasPrefix(m[1], "data:"), "url(%s) must carry its own payload", m[1])
+	}
 
 	policy := "default-src 'none'; style-src 'unsafe-inline'"
 	scripts := scriptBlock.FindAllStringSubmatch(out, -1)
-	assert.Equal(t, strings.Count(lower, "<script"), len(scripts), "every script is inline and attribute-free")
+	assert.Equal(t, strings.Count(out, "<script"), len(scripts), "every script is inline and attribute-free")
 	if wantScript {
 		require.Len(t, scripts, 1)
 		sum := sha256.Sum256([]byte(scripts[0][1]))
@@ -319,7 +347,15 @@ func TestAssertSelfContained_PatternsCanMatch(t *testing.T) {
 	assert.NotRegexp(t, loadingAttribute, `<button type="button" data-status="all">`)
 	assert.Equal(t, "https://x", hrefAttribute.FindStringSubmatch(`<a href="https://x">`)[1])
 	assert.NotRegexp(t, numericStyle, "--n:1;background:red")
+	assert.Regexp(t, numericStyle, "--n:33")
 	assert.Regexp(t, numericStyle, "--pct:33.33")
+
+	// The markup checks must not read the stylesheet, and must still see what is
+	// around it.
+	assert.Equal(t, `<p>a</p><style></style><script></script><img src="x">`,
+		markupOnly(`<p>a</p><style>@media (width < 9px){a{background:url(data:,)}}</style><script>var a=1;</script><img src="x">`))
+	assert.Equal(t, "data:,", cssURL.FindStringSubmatch(`a{background:url("data:,")}`)[1])
+	assert.Equal(t, "https://x/y.svg", cssURL.FindStringSubmatch(`a{background:url(https://x/y.svg)}`)[1])
 }
 
 func TestScriptHashMatchesScript(t *testing.T) {
@@ -469,7 +505,7 @@ func TestConvertHDFToHTML_ComplianceComesFromTheEngine(t *testing.T) {
 	assert.NotContains(t, out, "14.38", "the half-up integer formula printed 14.38 where the engine prints 14.37")
 
 	gauge := renderDoc(t, testhdf.Doc(baseline("divergent", 23, 137)), Executive)
-	assert.Contains(t, gauge, `<div class="gauge" style="--pct:14.37"><span class="pct">14.37%</span></div>`)
+	assert.Contains(t, gauge, `<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="14.37" aria-labelledby="compliance-heading" style="--pct:14.37"><span class="pct">14.37%</span></div>`)
 	assert.Contains(t, gauge, `<div class="panel compliance compliance-low">`)
 }
 
@@ -543,15 +579,19 @@ func TestConvertHDFToHTML_ZeroBaselinesStillReports(t *testing.T) {
 }
 
 // htmlStructureValidator checks the report the only way a document with no
-// schema can be checked: every tag opened is closed, in order. The report is
-// written as XML-well-formed HTML so a strict XML parse is that check.
+// schema can be checked: every tag opened is closed, in order. The markup is
+// written as XML-well-formed HTML so a strict XML parse is that check. The
+// <style> and <script> elements hold raw text rather than markup, and the
+// vendored stylesheet does carry a "<" in a media query, so their content is
+// emptied first; nothing in the document can close them early, because every
+// document string reaches the report with its "<" escaped.
 type htmlStructureValidator struct{}
 
 func (htmlStructureValidator) Validate(doc []byte) error {
 	if !strings.HasPrefix(string(doc), "<!DOCTYPE html>\n<html lang=\"en\">") {
 		return errors.New("output does not start with the HTML doctype and root element")
 	}
-	d := xml.NewDecoder(strings.NewReader(string(doc)))
+	d := xml.NewDecoder(strings.NewReader(markupOnly(string(doc))))
 	d.Strict = true
 	for {
 		_, err := d.Token()
@@ -569,6 +609,9 @@ func TestHTMLStructureValidator_CanFail(t *testing.T) {
 	require.Error(t, v.Validate([]byte("<p>no doctype</p>")))
 	require.Error(t, v.Validate([]byte("<!DOCTYPE html>\n<html lang=\"en\"><body><p>unclosed</body></html>")))
 	require.NoError(t, v.Validate([]byte("<!DOCTYPE html>\n<html lang=\"en\"><body><p>ok</p></body></html>")))
+	// The stylesheet is raw text; the markup around it is still checked.
+	require.NoError(t, v.Validate([]byte("<!DOCTYPE html>\n<html lang=\"en\"><style>@media (width < 9px){a{b:c}}</style><body></body></html>")))
+	require.Error(t, v.Validate([]byte("<!DOCTYPE html>\n<html lang=\"en\"><style>a{b:c}</style><body><p>unclosed</body></html>")))
 }
 
 func TestConvertHDFToHTML_AdversarialCorpus(t *testing.T) {
@@ -698,7 +741,7 @@ func TestConvertHDFToHTML_Dashboard(t *testing.T) {
 			`<span class="seg c-passed" style="--n:2"></span><span class="seg c-failed" style="--n:1"></span><span class="seg c-not-applicable" style="--n:1"></span></div>`,
 		`aria-label="Requirements by severity: 1 critical, 1 high, 1 medium, 0 low, 1 none"`,
 		`<div class="panel compliance compliance-medium">`,
-		`<div class="gauge" style="--pct:66.67"><span class="pct">66.67%</span></div>`,
+		`<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="66.67" aria-labelledby="compliance-heading" style="--pct:66.67"><span class="pct">66.67%</span></div>`,
 		`<p class="level">Medium compliance</p>`,
 	} {
 		assert.Contains(t, out, want)
@@ -744,7 +787,7 @@ func TestConvertHDFToHTML_AccessibleStructure(t *testing.T) {
 		`<html lang="en">`,
 		`<a class="skip" href="#main">Skip to content</a>`,
 		`<nav aria-label="Sections">`,
-		`<main id="main">`,
+		`<main id="main" class="container">`,
 		`<section id="status" class="card" aria-labelledby="status-heading">`, `<h2 id="status-heading">Status</h2>`,
 		`<section id="results" class="card" aria-labelledby="results-heading">`,
 		`<table class="summary" aria-label="Status by baseline">`,
@@ -767,57 +810,210 @@ func TestConvertHDFToHTML_AccessibleStructure(t *testing.T) {
 	assert.Contains(t, out, `<div class="req-head" aria-hidden="true">`)
 }
 
-// colourTokens reads the `--name: #rrggbb` declarations of one palette block.
-func colourTokens(t *testing.T, css string) map[string]string {
-	t.Helper()
-	tokens := map[string]string{}
-	for _, m := range regexp.MustCompile(`--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})`).FindAllStringSubmatch(css, -1) {
-		tokens[m[1]] = m[2]
+// The report is built on semantic elements: landmarks a screen reader can list,
+// one disclosure per requirement inside the article that names it, a measurement
+// element for compliance, and a scheme declared before the stylesheet is read.
+func TestConvertHDFToHTML_SemanticMarkup(t *testing.T) {
+	out := renderDoc(t, richDoc(t), Administrator)
+	for _, want := range []string{
+		`<meta name="color-scheme" content="light dark" />`,
+		"<nav aria-label=\"Sections\">\n<ul>\n<li><a href=\"#status\">Status</a></li>",
+		`<main id="main" class="container">`,
+		`<h3 id="compliance-heading">Compliance</h3>`,
+		`<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50.00" aria-labelledby="compliance-heading" style="--pct:50.00"><span class="pct">50.00%</span></div>`,
+		"<article class=\"requirement c-failed\" data-status=\"failed\" id=\"req-1\">\n<details>\n<summary>",
+	} {
+		assert.Contains(t, out, want)
 	}
-	require.NotEmpty(t, tokens)
-	return tokens
+	assert.Equal(t, 2, strings.Count(out, `<article class="requirement `), "one article per requirement")
+	assert.Equal(t, 1, strings.Count(out, `role="meter"`), "one compliance measurement")
+	assert.NotContains(t, out, "<progress", "compliance is a measurement on a scale, not work in progress")
+	assert.NotContains(t, out, "<meter", "the ring is the measurement; no element duplicates it")
+
+	// Neither status nor severity may be read by colour alone: each carries a
+	// mark or a shape and the word beside it.
+	assert.Contains(t, out, badge("failed", "Failed"))
+	assert.Contains(t, out, `<span class="ico" aria-hidden="true">✗</span>Failed`)
+	assert.Contains(t, out, `<span class="sev c-high"><span class="vh">Severity: </span>High</span>`)
+	assert.Contains(t, reportCSS, ".sev::before { content: \"\";", "the severity shape is drawn, not coloured in")
+
+	// The typography is the platform's: no face is named that has to be fetched.
+	assert.Contains(t, reportCSS, "--pico-font-family-sans-serif: system-ui")
+	assert.NotContains(t, reportCSS, "@font-face")
+	assert.NotContains(t, bladesCSS, "@font-face")
+}
+
+// Pico redefines --pico-color on the elements it themes — a link to its primary,
+// a button to its inverse — so a report rule that reads that property back on one
+// of them gets the component's colour, not the page's, and can land white on
+// white. Those elements must be given a colour, never asked for one.
+func TestReportCSS_DoesNotReadPicoColourBackOnAThemedElement(t *testing.T) {
+	trap := regexp.MustCompile(`(?s)[^{}]*\b(a|button|input|select|textarea)\b[^{}]*\{[^{}]*[^-]color:\s*var\(--pico-color\)`)
+	assert.NotRegexp(t, trap, reportCSS)
+
+	// The pattern finds the mistake when it is there.
+	assert.Regexp(t, trap, ".topbar a { color: var(--pico-color); }")
+	assert.Regexp(t, trap, `.toolbar button[aria-pressed="false"] { background: #fff; color: var(--pico-color); }`)
+	assert.NotRegexp(t, trap, ".stat-total { color: var(--pico-color); }")
+	assert.NotRegexp(t, trap, `.toolbar button[aria-pressed="false"] { --pico-color: var(--pico-contrast); }`)
+}
+
+// A restyle's quiet failure is markup carrying a class nothing matches any more,
+// which no golden can catch because the golden changed with it. Every class the
+// report emits must be one a stylesheet styles or the script selects.
+func TestReport_EveryClassIsKnownToAStylesheetOrTheScript(t *testing.T) {
+	known := map[string]bool{}
+	for _, source := range []string{bladesCSS, reportCSS, script} {
+		for _, m := range regexp.MustCompile(`\.([a-zA-Z][\w-]*)`).FindAllStringSubmatch(source, -1) {
+			known[m[1]] = true
+		}
+	}
+	require.NotEmpty(t, known)
+
+	// A status outside the enum is the only way the unknown presentation reaches
+	// the markup, so that document is handed straight to the converter rather
+	// than held to the schema that forbids it.
+	offEnum, err := ConvertHDFToHTML([]byte(`{"baselines":[{"name":"b","requirements":[{"id":"V-1","impact":0.5,"tags":{},` +
+		`"descriptions":[],"results":[{"status":"sideways","codeDesc":"c","startTime":"2020-01-01T00:00:00Z"}]}]}]}`))
+	require.NoError(t, err)
+
+	reports := []string{
+		renderDoc(t, richDoc(t), Administrator),
+		renderDoc(t, richDoc(t), Executive),
+		string(offEnum),
+	}
+	seen := 0
+	for _, report := range reports {
+		for _, m := range regexp.MustCompile(`class="([^"]*)"`).FindAllStringSubmatch(markupOnly(report), -1) {
+			for _, class := range strings.Fields(m[1]) {
+				seen++
+				assert.True(t, known[class], "class %q is in the markup but in neither stylesheet nor the script", class)
+			}
+		}
+	}
+	assert.Greater(t, seen, 100, "the reports must exercise the report's own vocabulary")
+}
+
+// cssBlock is the declarations of the one rule whose selector list ends with
+// selector. The palette blocks hold declarations only, so the first closing brace
+// ends them.
+func cssBlock(t *testing.T, css, selector string) string {
+	t.Helper()
+	i := strings.Index(css, selector)
+	require.GreaterOrEqual(t, i, 0, "no rule %s", selector)
+	i += len(selector)
+	j := strings.Index(css[i:], "}")
+	require.GreaterOrEqual(t, j, 0, "unterminated rule %s", selector)
+	return css[i : i+j]
+}
+
+var (
+	declaration = regexp.MustCompile(`--([a-z0-9-]+):\s*([^;}]+)`)
+	hex6        = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+	hex3        = regexp.MustCompile(`^#[0-9a-fA-F]{3}$`)
+	rgbFunc     = regexp.MustCompile(`^rgba?\(([^)]*)\)$`)
+	varRef      = regexp.MustCompile(`^var\(--([a-z0-9-]+)\)$`)
+)
+
+// colourTokens reads the custom-property declarations of one or more palette
+// blocks. The vendored stylesheet writes colours three ways and aliases some
+// tokens to others, so all of those are resolved to sRGB here; a declaration
+// that is not a colour is skipped.
+func colourTokens(t *testing.T, blocks ...string) map[string]string {
+	t.Helper()
+	raw := map[string]string{}
+	for _, block := range blocks {
+		for _, m := range declaration.FindAllStringSubmatch(block, -1) {
+			raw[m[1]] = strings.TrimSpace(m[2])
+		}
+	}
+	require.NotEmpty(t, raw)
+	return raw
+}
+
+// rgb resolves a token to its three sRGB channels, following one alias chain.
+func rgb(t *testing.T, tokens map[string]string, name string) ([3]float64, bool) {
+	t.Helper()
+	value, ok := tokens[name]
+	for depth := 0; ok && depth < 5; depth++ {
+		m := varRef.FindStringSubmatch(value)
+		if m == nil {
+			break
+		}
+		value, ok = tokens[m[1]]
+	}
+	switch {
+	case !ok:
+		return [3]float64{}, false
+	case hex6.MatchString(value):
+		return [3]float64{channel(t, value[1:3]), channel(t, value[3:5]), channel(t, value[5:7])}, true
+	case hex3.MatchString(value):
+		return [3]float64{channel(t, value[1:2]+value[1:2]), channel(t, value[2:3]+value[2:3]),
+			channel(t, value[3:4]+value[3:4])}, true
+	}
+	m := rgbFunc.FindStringSubmatch(value)
+	if m == nil {
+		return [3]float64{}, false
+	}
+	parts := strings.Split(m[1], ",")
+	if len(parts) < 3 {
+		return [3]float64{}, false
+	}
+	var out [3]float64
+	for i := range out {
+		v, err := strconv.ParseFloat(strings.TrimSpace(parts[i]), 64)
+		require.NoError(t, err, "channel %q of --%s", parts[i], name)
+		out[i] = v
+	}
+	return out, true
+}
+
+func channel(t *testing.T, pair string) float64 {
+	t.Helper()
+	v, err := strconv.ParseUint(pair, 16, 8)
+	require.NoError(t, err)
+	return float64(v)
 }
 
 // relativeLuminance and contrast follow WCAG 2.x, "contrast ratio".
-func relativeLuminance(t *testing.T, hex string) float64 {
-	t.Helper()
-	channel := func(s string) float64 {
-		v, err := strconv.ParseUint(s, 16, 8)
-		require.NoError(t, err)
-		c := float64(v) / 255
-		if c <= 0.03928 {
-			return c / 12.92
+func relativeLuminance(c [3]float64) float64 {
+	linear := func(v float64) float64 {
+		v /= 255
+		if v <= 0.03928 {
+			return v / 12.92
 		}
-		return math.Pow((c+0.055)/1.055, 2.4)
+		return math.Pow((v+0.055)/1.055, 2.4)
 	}
-	return 0.2126*channel(hex[1:3]) + 0.7152*channel(hex[3:5]) + 0.0722*channel(hex[5:7])
+	return 0.2126*linear(c[0]) + 0.7152*linear(c[1]) + 0.0722*linear(c[2])
 }
 
-func contrast(t *testing.T, a, b string) float64 {
-	t.Helper()
-	la, lb := relativeLuminance(t, a), relativeLuminance(t, b)
+func contrast(a, b [3]float64) float64 {
+	la, lb := relativeLuminance(a), relativeLuminance(b)
 	if la < lb {
 		la, lb = lb, la
 	}
 	return (la + 0.05) / (lb + 0.05)
 }
 
-// Every colour the report uses is a named token, in a light and a dark palette.
-// Text pairs must meet WCAG 2.2 AA (1.4.3, 4.5:1) and the graphics and control
-// boundaries that carry meaning must meet 1.4.11 (3:1), in both.
+// The selectors the two stylesheets declare their palettes under. The report
+// layer uses the same three scopes as the vendored file, so a forced light or
+// dark theme reaches both palettes together.
+const (
+	bladesLight = `,:scope:not([data-theme=dark]),[data-theme=light]{`
+	bladesDark  = `prefers-color-scheme:dark){:host(:not([data-theme])),:scope:not([data-theme]){`
+	reportLight = ":root:not([data-theme=\"dark\"]), [data-theme=\"light\"] {"
+	reportDark  = "\n[data-theme=\"dark\"] {"
+	reportAuto  = "  :root:not([data-theme]) {"
+)
+
+// Every colour the report draws is a token, in a light and a dark palette: the
+// vendored stylesheet's for the page itself, the report layer's for status and
+// severity. Text pairs must meet WCAG 2.2 AA (1.4.3, 4.5:1) and the graphics and
+// control boundaries that carry meaning must meet 1.4.11 (3:1), in both.
 func TestStylesheet_PalettesMeetWCAGContrast(t *testing.T) {
-	// Light is the default. Dark is declared twice: for a reader whose system
-	// asks for it and who has not chosen light, and for one who chose dark.
-	const systemDark = `:root:not([data-theme="light"]) {`
-	const chosenDark = `:root[data-theme="dark"] {`
-	mediaStart := strings.Index(stylesheet, "@media (prefers-color-scheme: dark)")
-	darkStart := strings.Index(stylesheet, chosenDark)
-	classesStart := strings.Index(stylesheet, ".c-passed {")
-	require.Positive(t, mediaStart)
-	require.Greater(t, darkStart, mediaStart)
-	require.Greater(t, classesStart, darkStart)
-	require.Contains(t, stylesheet[mediaStart:darkStart], systemDark)
-	assert.Equal(t, colourTokens(t, stylesheet[mediaStart:darkStart]), colourTokens(t, stylesheet[darkStart:classesStart]),
+	// Dark is declared twice: for a reader whose system asks for it and who has
+	// chosen nothing, and for one who chose dark. They must be one palette.
+	assert.Equal(t, colourTokens(t, cssBlock(t, reportCSS, reportAuto)), colourTokens(t, cssBlock(t, reportCSS, reportDark)),
 		"the system-dark and chosen-dark palettes must be the same palette")
 
 	type pair struct {
@@ -825,49 +1021,69 @@ func TestStylesheet_PalettesMeetWCAGContrast(t *testing.T) {
 		min    float64
 	}
 	pairs := []pair{
-		{"ink", "bg", 4.5}, {"ink", "surface", 4.5}, {"ink", "surface-2", 4.5},
-		{"muted", "bg", 4.5}, {"muted", "surface", 4.5}, {"muted", "surface-2", 4.5},
-		{"on-brand", "brand-1", 4.5}, {"on-brand", "brand-2", 4.5}, {"on-accent", "accent", 4.5},
-		{"code-ink", "code-bg", 4.5},
-		{"focus", "surface", 3}, {"focus", "bg", 3},
-		{"control-line", "surface", 3}, {"control-line", "surface-2", 3},
-		{"accent", "surface", 4.5}, {"accent", "surface-2", 4.5}, // link text, and the accent edges
+		{"pico-color", "pico-background-color", 4.5}, {"pico-color", "pico-card-background-color", 4.5},
+		{"pico-muted-color", "pico-card-background-color", 4.5},
+		{"pico-muted-color", "pico-card-sectioning-background-color", 4.5},
+		{"pico-color", "pico-card-sectioning-background-color", 4.5}, // the ring's percentage, panel text
+		{"pico-primary-inverse", "pico-primary-background", 4.5},     // the header bar, the back-to-top link, the enriched tag
+		{"pico-code-color", "pico-code-background-color", 4.5},
+		{"pico-primary", "pico-card-background-color", 4.5}, // link text, and the accent edges
+		{"pico-primary", "pico-card-sectioning-background-color", 4.5},
+		{"pico-form-element-border-color", "pico-card-background-color", 3}, // control boundaries
+		{"pico-form-element-border-color", "pico-card-sectioning-background-color", 3},
 	}
 	for _, name := range []string{"passed", "failed", "not-applicable", "not-reviewed", "error", "unknown",
 		"critical", "high", "medium", "low", "none"} {
 		pairs = append(pairs,
-			pair{"s-" + name + "-on", "s-" + name, 4.5}, // pill text
-			pair{"t-" + name + "-on", "t-" + name, 4.5}, // tile text
-			pair{"s-" + name, "surface", 3},             // requirement edge, severity dot
-			pair{"s-" + name, "surface-2", 3},           // bar segment and gauge ring on a panel
-			pair{"s-" + name, "t-" + name, 3},           // tile edge, severity dot on its tint
+			pair{"pico-s-" + name + "-inverse", "pico-s-" + name, 4.5},         // pill text
+			pair{"pico-t-" + name + "-inverse", "pico-t-" + name, 4.5},         // tile text
+			pair{"pico-s-" + name, "pico-background-color", 3},                 // requirement edge, severity dot
+			pair{"pico-s-" + name, "pico-card-sectioning-background-color", 3}, // bar segment and ring sweep on a panel
+			pair{"pico-s-" + name, "pico-progress-background-color", 3},        // the ring's sweep against its track
+			pair{"pico-s-" + name, "pico-t-" + name, 3},                        // tile edge, severity dot on its tint
 		)
 	}
 
-	for label, css := range map[string]string{
-		"light": stylesheet[:mediaStart],
-		"dark":  stylesheet[darkStart:classesStart],
+	for label, blocks := range map[string][2]string{
+		"light": {cssBlock(t, bladesCSS, bladesLight), cssBlock(t, reportCSS, reportLight)},
+		"dark":  {cssBlock(t, bladesCSS, bladesDark), cssBlock(t, reportCSS, reportDark)},
 	} {
-		tokens := colourTokens(t, css)
+		tokens := colourTokens(t, blocks[0], blocks[1])
 		for _, p := range pairs {
-			fg, okFg := tokens[p.fg]
-			bg, okBg := tokens[p.bg]
+			fg, okFg := rgb(t, tokens, p.fg)
+			bg, okBg := rgb(t, tokens, p.bg)
 			require.True(t, okFg && okBg, "%s palette must define --%s and --%s", label, p.fg, p.bg)
-			assert.GreaterOrEqual(t, contrast(t, fg, bg), p.min, "%s: --%s on --%s", label, p.fg, p.bg)
+			assert.GreaterOrEqual(t, contrast(fg, bg), p.min, "%s: --%s on --%s", label, p.fg, p.bg)
 		}
 	}
 
-	// A colour written outside the two palettes would escape the check above.
-	rest := stylesheet[classesStart:]
-	for _, m := range regexp.MustCompile(`#[0-9a-fA-F]{3,8}\b`).FindAllString(rest, -1) {
-		assert.Equal(t, "#ffffff", m, "rules must use palette tokens; only the print background is literal")
+	// A colour written into the report layer's rules would escape the check above.
+	palettesEnd := strings.Index(reportCSS, ".c-passed {")
+	require.Positive(t, palettesEnd, "the palettes come before the rules that use them")
+	rules := reportCSS[palettesEnd:]
+	for _, m := range regexp.MustCompile(`#[0-9a-fA-F]{3,8}\b`).FindAllString(rules, -1) {
+		assert.Contains(t, []string{"#ffffff", "#000000"}, m,
+			"rules must use palette tokens; only the print ink and paper are literal")
 	}
 }
 
 func TestContrast_KnownValues(t *testing.T) {
-	assert.InDelta(t, 21.0, contrast(t, "#000000", "#ffffff"), 0.01)
-	assert.InDelta(t, 1.0, contrast(t, "#777777", "#777777"), 0.001)
-	assert.Less(t, contrast(t, "#999999", "#ffffff"), 4.5)
+	black, white := [3]float64{0, 0, 0}, [3]float64{255, 255, 255}
+	assert.InDelta(t, 21.0, contrast(black, white), 0.01)
+	assert.InDelta(t, 1.0, contrast([3]float64{119, 119, 119}, [3]float64{119, 119, 119}), 0.001)
+	assert.Less(t, contrast([3]float64{153, 153, 153}, white), 4.5)
+
+	// The three colour spellings the vendored stylesheet uses, and one alias.
+	tokens := map[string]string{"a": "#ffffff", "b": "#fff", "c": "rgb(255, 255, 255)", "d": "var(--a)", "e": "inherit"}
+	for _, name := range []string{"a", "b", "c", "d"} {
+		got, ok := rgb(t, tokens, name)
+		require.True(t, ok, name)
+		assert.Equal(t, white, got, name)
+	}
+	_, ok := rgb(t, tokens, "e")
+	assert.False(t, ok, "a declaration that is not a colour is not one")
+	_, ok = rgb(t, tokens, "missing")
+	assert.False(t, ok)
 }
 
 // findingDetail reads the fixture that carries every requirement, result,
@@ -1106,6 +1322,11 @@ func TestConvertHDFToHTML_ThemeSwitchInEveryReportType(t *testing.T) {
 	for _, want := range []string{"theme-toggle", "data-theme", "localStorage", "prefers-color-scheme", "beforeprint"} {
 		assert.Contains(t, script, want)
 	}
-	assert.Contains(t, stylesheet, `:root[data-theme="dark"] {`)
-	assert.Contains(t, stylesheet, `:root:not([data-theme="light"]) {`)
+	// The report layer declares its palette under the same three scopes the
+	// vendored stylesheet does, so one chosen theme moves both together.
+	assert.Contains(t, reportCSS, reportLight)
+	assert.Contains(t, reportCSS, reportAuto)
+	assert.Contains(t, reportCSS, reportDark)
+	assert.Contains(t, bladesCSS, bladesLight)
+	assert.Contains(t, bladesCSS, bladesDark)
 }

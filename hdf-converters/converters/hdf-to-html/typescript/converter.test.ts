@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createHash } from 'node:crypto';
-import { SCRIPT, SCRIPT_HASH, STYLESHEET } from './assets.js';
+import { REPORT_CSS, SCRIPT, SCRIPT_HASH, STYLESHEET } from './assets.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -23,6 +23,7 @@ import {
   severityLabel,
   sourceLocation,
   statusBadge,
+  statusIcon,
   tagItems,
 } from './converter.js';
 
@@ -103,10 +104,13 @@ function waived(expiresAt: string): Doc {
 const ELEMENTS_THAT_LOAD = ['<link', '<img', '<iframe', '<object', '<embed', '<video', '<audio', '<source',
   '<form', '<base', '<svg', '<meta http-equiv="refresh"'];
 const TAG = /<[^<>]*>/g;
+const STYLE_BLOCK = /<style>([\s\S]*?)<\/style>/g;
+// CSS reaches the network through url() and nothing else.
+const CSS_URL = /url\(\s*["']?([^"')]*)/g;
 const LOADING_ATTRIBUTE = /\s(src|srcset|data|action|formaction|poster|background|on[a-z]+)\s*=/;
 const HREF_ATTRIBUTE = /\shref\s*=\s*"([^"]*)"/g;
 const STYLE_ATTRIBUTE = /\sstyle\s*=\s*"([^"]*)"/g;
-// The only inline styles are numbers handed to the stylesheet as custom properties.
+// The only inline styles are the counts and the percentage the stylesheet draws from.
 const NUMERIC_STYLE = /^--(n|pct):\d+(\.\d+)?$/;
 const SCRIPT_BLOCK = /<script>([\s\S]*?)<\/script>/g;
 
@@ -115,11 +119,15 @@ const SCRIPT_BLOCK = /<script>([\s\S]*?)<\/script>/g;
  * script, which the content security policy pins by hash.
  */
 function expectSelfContained(out: string, wantScript: boolean): void {
-  const lower = out.toLowerCase();
+  // <style> and <script> hold raw text rather than markup — the vendored
+  // stylesheet carries a "<" in a media query — so the markup checks run on the
+  // document with their content removed, and the CSS is checked as CSS.
+  const markup = out.replace(STYLE_BLOCK, '<style></style>').replace(SCRIPT_BLOCK, '<script></script>');
+  const lower = markup.toLowerCase();
   for (const forbidden of ELEMENTS_THAT_LOAD) {
     expect(lower, `the report must not contain ${forbidden}`).not.toContain(forbidden);
   }
-  for (const tag of out.match(TAG) ?? []) {
+  for (const tag of markup.match(TAG) ?? []) {
     expect(tag.toLowerCase(), 'no tag may load or run anything').not.toMatch(LOADING_ATTRIBUTE);
     for (const m of tag.matchAll(HREF_ATTRIBUTE)) {
       expect(m[1]!.startsWith('#'), `href ${m[1]} must stay inside the page`).toBe(true);
@@ -128,15 +136,19 @@ function expectSelfContained(out: string, wantScript: boolean): void {
       expect(m[1], 'an inline style may only carry a number').toMatch(NUMERIC_STYLE);
     }
   }
-  expect(count(lower, '<style>')).toBe(1);
-  const css = lower.slice(lower.indexOf('<style>'), lower.indexOf('</style>'));
-  expect(css).not.toContain('url(');
+  const styles = [...out.matchAll(STYLE_BLOCK)];
+  expect(styles, 'exactly one stylesheet, inline').toHaveLength(1);
+  expect(count(out, '<style'), 'the stylesheet is inline and attribute-free').toBe(1);
+  const css = styles[0]![1]!;
   expect(css).not.toContain('@import');
-  expect(css).not.toContain('http');
+  expect(css).not.toContain('image-set(');
+  for (const m of css.matchAll(CSS_URL)) {
+    expect(m[1]!.startsWith('data:'), `url(${m[1]}) must carry its own payload`).toBe(true);
+  }
 
   let policy = "default-src 'none'; style-src 'unsafe-inline'";
   const scripts = [...out.matchAll(SCRIPT_BLOCK)];
-  expect(scripts.length, 'every script is inline and attribute-free').toBe(count(lower, '<script'));
+  expect(scripts.length, 'every script is inline and attribute-free').toBe(count(out, '<script'));
   if (wantScript) {
     expect(scripts).toHaveLength(1);
     policy += `; script-src 'sha256-${createHash('sha256').update(scripts[0]![1]!, 'utf-8').digest('base64')}'`;
@@ -155,7 +167,7 @@ function detail(heading: string, value: string): string {
 }
 
 function badge(cls: string, label: string): string {
-  return `<span class="status c-${cls}">${label}</span>`;
+  return `<span class="status c-${cls}"><span class="ico" aria-hidden="true">${statusIcon(cls)}</span>${label}</span>`;
 }
 
 function summaryRow(name: string, ...cells: string[]): string {
@@ -380,7 +392,7 @@ describe('hdf-to-html converter', () => {
     expect(out).not.toContain('14.38');
 
     const gauge = render(testhdf.doc(baseline('divergent', 23, 137)), 'executive');
-    expect(gauge).toContain('<div class="gauge" style="--pct:14.37"><span class="pct">14.37%</span></div>');
+    expect(gauge).toContain('<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="14.37" aria-labelledby="compliance-heading" style="--pct:14.37"><span class="pct">14.37%</span></div>');
     expect(gauge).toContain('<div class="panel compliance compliance-low">');
   });
 
@@ -424,7 +436,7 @@ describe('hdf-to-html converter', () => {
       'aria-label="Requirements by status: 2 passed, 1 failed, 1 not applicable, 0 not reviewed, 0 error"',
       'aria-label="Requirements by severity: 1 critical, 1 high, 1 medium, 0 low, 1 none"',
       '<div class="panel compliance compliance-medium">',
-      '<div class="gauge" style="--pct:66.67"><span class="pct">66.67%</span></div>',
+      '<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="66.67" aria-labelledby="compliance-heading" style="--pct:66.67"><span class="pct">66.67%</span></div>',
       '<p class="level">Medium compliance</p>',
     ]) {
       expect(out).toContain(want);
@@ -447,7 +459,7 @@ describe('hdf-to-html converter', () => {
   it('is structured for keyboard and screen-reader use', () => {
     const out = render(richDoc());
     for (const want of [
-      '<html lang="en">', '<a class="skip" href="#main">Skip to content</a>', '<nav aria-label="Sections">', '<main id="main">',
+      '<html lang="en">', '<a class="skip" href="#main">Skip to content</a>', '<nav aria-label="Sections">', '<main id="main" class="container">',
       '<section id="status" class="card" aria-labelledby="status-heading">',
       '<table class="summary" aria-label="Status by baseline">',
       '<table aria-label="Test results">', 'aria-label="Filter requirements by ID, title or control"',
@@ -459,6 +471,41 @@ describe('hdf-to-html converter', () => {
     }
     expect(count(out, '<h1')).toBe(1);
     for (const th of out.match(/<th[ >][^>]*>/g) ?? []) expect(th).toContain('scope=');
+  });
+
+  // The report is built on semantic elements: landmarks a screen reader can
+  // list, one disclosure per requirement inside the article that names it, a
+  // measurement element for compliance, and a scheme declared before the
+  // stylesheet is read.
+  it('is built on semantic elements', () => {
+    const out = render(richDoc());
+    for (const want of [
+      '<meta name="color-scheme" content="light dark" />',
+      '<nav aria-label="Sections">\n<ul>\n<li><a href="#status">Status</a></li>',
+      '<main id="main" class="container">',
+      '<h3 id="compliance-heading">Compliance</h3>',
+      '<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50.00" aria-labelledby="compliance-heading" style="--pct:50.00"><span class="pct">50.00%</span></div>',
+      '<article class="requirement c-failed" data-status="failed" id="req-1">\n<details>\n<summary>',
+    ]) {
+      expect(out).toContain(want);
+    }
+    expect(count(out, '<article class="requirement '), 'one article per requirement').toBe(2);
+    expect(count(out, 'role="meter"'), 'one compliance measurement').toBe(1);
+    expect(out).not.toContain('<progress');
+    expect(out, 'the ring is the measurement; no element duplicates it').not.toContain('<meter');
+
+    // Neither status nor severity may be read by colour alone: each carries a
+    // mark or a shape and the word beside it.
+    expect(out).toContain(badge('failed', 'Failed'));
+    expect(out).toContain('<span class="ico" aria-hidden="true">\u2717</span>Failed');
+    expect(out).toContain('<span class="sev c-high"><span class="vh">Severity: </span>High</span>');
+    expect(REPORT_CSS).toContain('.sev::before { content: "";');
+
+    for (const [cls, icon] of Object.entries({
+      passed: '\u2713', failed: '\u2717', 'not-applicable': '\u2013', 'not-reviewed': '?', error: '!', unknown: '\u00b7',
+    })) {
+      expect(statusIcon(cls), cls).toBe(icon);
+    }
   });
 
   // Anything longer than two lines or rows sits behind its heading, with a
@@ -501,8 +548,9 @@ describe('hdf-to-html converter', () => {
       expect(count(out, '<script>')).toBe(1);
       expect(out).toContain('<html lang="en">\n');
     }
-    expect(STYLESHEET).toContain(':root[data-theme="dark"] {');
-    expect(STYLESHEET).toContain(':root:not([data-theme="light"]) {');
+    expect(REPORT_CSS).toContain('[data-theme="dark"] {');
+    expect(REPORT_CSS).toContain(':root:not([data-theme="dark"]), [data-theme="light"] {');
+    expect(REPORT_CSS).toContain(':root:not([data-theme]) {');
   });
 
     it('renders the optional detail fields', () => {
@@ -594,7 +642,7 @@ describe('hdf-to-html converter', () => {
         components: [null, { name: 'c', type: 'host' }],
       }),
     );
-    expect(count(out, '<details class="requirement ')).toBe(2);
+    expect(count(out, '<article class="requirement ')).toBe(2);
     expect(count(out, '<details class="fold component"')).toBe(2);
     expect(out).not.toContain('undefined');
     expect(out).not.toContain('[object');
@@ -703,7 +751,9 @@ describe('hdf-to-html helpers', () => {
     const digest = createHash('sha256').update('\n' + SCRIPT, 'utf-8').digest('base64');
     expect(`sha256-${digest}`).toBe(SCRIPT_HASH);
     expect(SCRIPT).not.toMatch(/[<&]/);
-    expect(STYLESHEET).not.toMatch(/[<&]/);
+    // A raw-text element ends only at its own closing tag, so the stylesheet's
+    // "<" is safe; what would break out of it is not.
+    expect(STYLESHEET.toLowerCase()).not.toContain('</style');
   });
 
   it('describes a source location', () => {
@@ -807,7 +857,7 @@ describe('hdf-to-html parity with the Go peer', () => {
       expect(out).toContain(want);
     }
     expect(out).not.toContain('id="assessment"');
-    expect(count(out, '<details class="requirement ')).toBe(5);
+    expect(count(out, '<article class="requirement ')).toBe(5);
   });
 
     const corpusGolden = JSON.parse(loadFixture('expected', 'corpus-outputs.json')) as Record<string, string>;

@@ -74,7 +74,7 @@ func TestConvertToHTML_CLI(t *testing.T) {
 		executive, err := run(t, "--report-type", "executive")
 		require.NoError(t, err)
 		assert.Contains(t, executive, "Report type: Executive")
-		assert.NotContains(t, executive, `<details class="requirement`)
+		assert.NotContains(t, executive, `<article class="requirement`)
 
 		manager, err := run(t, "--report-type", "Manager")
 		require.NoError(t, err)
@@ -152,7 +152,7 @@ func TestConvertToHTML_CombinesSeveralInputs(t *testing.T) {
 		assert.Contains(t, html, `<h2 id="sources-heading">Sources (2)</h2>`)
 		assert.Contains(t, html, `<a href="#source-1">rich.json</a>`)
 		assert.Contains(t, html, `<a href="#source-2">finding-detail.json</a>`)
-		assert.Equal(t, 5, strings.Count(html, `<details class="requirement `))
+		assert.Equal(t, 5, strings.Count(html, `<article class="requirement `))
 	})
 
 	t.Run("a glob behaves as the files it matches", func(t *testing.T) {

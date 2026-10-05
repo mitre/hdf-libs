@@ -20,6 +20,8 @@ class El {
   open = false;
   /** Requirements inside a group. */
   members: El[] = [];
+  /** The one disclosure inside a requirement's article. */
+  panel: El | null = null;
   summary: { textContent: string } | null = null;
 
   classList = { add: (name: string) => void this.classes.add(name) };
@@ -41,7 +43,8 @@ class El {
   }
   querySelector(selector: string): unknown {
     if (selector === 'summary') return this.summary;
-    if (selector === 'details.requirement:not([hidden])') return this.members.find((m) => !m.hidden) ?? null;
+    if (selector === 'details') return this.panel;
+    if (selector === 'article.requirement:not([hidden])') return this.members.find((m) => !m.hidden) ?? null;
     throw new Error(`unexpected selector ${selector}`);
   }
 }
@@ -60,11 +63,18 @@ interface World {
   storage: Map<string, string>;
 }
 
+// A requirement is an article carrying the status and holding one disclosure.
 function requirement(status: string, summary: string): El {
   const el = new El();
   el.setAttribute('data-status', status);
   el.summary = { textContent: summary };
+  el.panel = new El();
   return el;
+}
+
+/** The disclosure inside a requirement, which is what opens and closes. */
+function panelOf(req: El): El {
+  return req.panel!;
 }
 
 function run(options: { systemDark?: boolean; stored?: string; storageFails?: boolean; executive?: boolean } = {}): World {
@@ -103,10 +113,10 @@ function run(options: { systemDark?: boolean; stored?: string; storageFails?: bo
     documentElement: root,
     getElementById: (id: string) => ids[id] ?? null,
     querySelectorAll: (selector: string) => {
-      if (selector === 'details.requirement') return reqs;
+      if (selector === 'article.requirement') return reqs;
       if (selector === '#results details.group') return groups;
       if (selector === 'button.filter') return buttons;
-      if (selector === 'details') return [...groups, ...reqs];
+      if (selector === 'details') return [...groups, ...reqs.map(panelOf)];
       throw new Error(`unexpected selector ${selector}`);
     },
   };
@@ -176,7 +186,7 @@ describe('report script: theme', () => {
     const chosen = run({ stored: 'dark' });
     chosen.win.fire('beforeprint');
     expect(chosen.root.getAttribute('data-theme')).toBe('light');
-    expect([...chosen.groups, ...chosen.reqs].every((d) => d.open)).toBe(true);
+    expect([...chosen.groups, ...chosen.reqs.map(panelOf)].every((d) => d.open)).toBe(true);
     chosen.win.fire('afterprint');
     expect(chosen.root.getAttribute('data-theme')).toBe('dark');
 
@@ -225,11 +235,11 @@ describe('report script: results filter', () => {
     const w = run();
     w.buttons[1]!.fire('click');
     w.expand.fire('click');
-    expect(w.reqs.map((r) => r.open)).toEqual([true, false, false]);
+    expect(w.reqs.map((r) => panelOf(r).open)).toEqual([true, false, false]);
     expect(w.groups[0]!.open).toBe(true);
 
     w.collapse.fire('click');
-    expect(w.reqs.every((r) => !r.open)).toBe(true);
+    expect(w.reqs.every((r) => !panelOf(r).open)).toBe(true);
     expect(w.groups[0]!.open).toBe(false);
   });
 });

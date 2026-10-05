@@ -1,6 +1,8 @@
 package hdftohtml
 
 import (
+	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -106,6 +108,33 @@ func TestConvertHDFToHTML_RichReportShowsWhatTheLegacyRouteDrops(t *testing.T) {
 	assert.Equal(t, 2, strings.Count(html, `<details class="fold component"`))
 }
 
+// Every report carries the whole stylesheet and script, so every one pays the
+// same fixed cost whatever the document holds. The bound keeps a change in that
+// cost deliberate rather than incidental.
+func TestReport_FixedOverhead(t *testing.T) {
+	report, err := os.ReadFile(fixturePath("expected", "rich.administrator.html"))
+	require.NoError(t, err)
+	fixed := len(stylesheet) + len(script)
+	require.Less(t, fixed, len(report))
+
+	t.Logf("rich.administrator.html: %d bytes, %d gzip; fixed overhead %d bytes (%d stylesheet, %d script), %d gzip; body %d bytes",
+		len(report), gzipped(t, report), fixed, len(stylesheet), len(script), gzipped(t, []byte(stylesheet+script)),
+		len(report)-fixed)
+
+	assert.Less(t, fixed, 125*1024, "the stylesheet and script every report carries")
+}
+
+func gzipped(t *testing.T, data []byte) int {
+	t.Helper()
+	var out bytes.Buffer
+	w, err := gzip.NewWriterLevel(&out, gzip.BestCompression)
+	require.NoError(t, err)
+	_, err = w.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, w.Close())
+	return out.Len()
+}
+
 // corpusRejected marks a corpus case the converter refuses; the two languages
 // phrase the error differently, so only the fact of refusing is compared.
 const corpusRejected = "REJECTED"
@@ -198,13 +227,13 @@ func TestConvertHDFToHTML_OutputCountAnchor(t *testing.T) {
 	require.NoError(t, err)
 	html := string(out)
 	assert.Equal(t, len(doc.Components), strings.Count(html, `<details class="fold component"`))
-	assert.Equal(t, requirements, strings.Count(html, `<details class="requirement `))
+	assert.Equal(t, requirements, strings.Count(html, `<article class="requirement `))
 	assert.Equal(t, len(doc.Baselines), strings.Count(html, `class="fold group baseline"`))
 
 	executive, err := ConvertHDFToHTMLWithOptions(fixtures.Results.MergeZap, Options{ReportType: Executive})
 	require.NoError(t, err)
 	assert.Equal(t, len(doc.Components), strings.Count(string(executive), `<details class="fold component"`))
-	assert.Zero(t, strings.Count(string(executive), `<details class="requirement `))
+	assert.Zero(t, strings.Count(string(executive), `<article class="requirement `))
 }
 
 // aggregateInputs are two fixtures reported together, named as the CLI names them.
@@ -260,7 +289,7 @@ func TestConvertHDFDocumentsToHTML_AggregatesAcrossSources(t *testing.T) {
 		assert.Contains(t, html, want)
 	}
 	assert.NotContains(t, html, `id="assessment"`, "the aggregated layout lists sources instead")
-	assert.Equal(t, 5, strings.Count(html, `<details class="requirement `))
+	assert.Equal(t, 5, strings.Count(html, `<article class="requirement `))
 	assert.Equal(t, 1, strings.Count(html, "<h1"))
 }
 

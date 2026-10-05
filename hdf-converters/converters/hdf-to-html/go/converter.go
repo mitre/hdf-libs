@@ -294,6 +294,9 @@ func (r *renderer) document() {
 	r.line(`<meta charset="utf-8" />`)
 	r.line(`<meta http-equiv="Content-Security-Policy" content="` + policy + `" />`)
 	r.line(`<meta name="viewport" content="width=device-width, initial-scale=1" />`)
+	// Declared in the head so the browser's own controls and scrollbars follow the
+	// reader's scheme before the stylesheet is parsed.
+	r.line(`<meta name="color-scheme" content="light dark" />`)
 	r.line("<title>HDF Assessment Report</title>")
 	r.line("<style>")
 	r.b.WriteString(stylesheet)
@@ -305,20 +308,22 @@ func (r *renderer) document() {
 	r.line(`<h1 class="brand">HDF Assessment Report</h1>`)
 	r.line(`<span class="report-type">Report type: ` + reportTypeLabel(r.reportType) + closeSpan)
 	r.line(`<nav aria-label="Sections">`)
-	r.line(`<a href="#status">Status</a>`)
+	r.line("<ul>")
+	r.line(`<li><a href="#status">Status</a></li>`)
 	if r.aggregated {
-		r.line(`<a href="#sources">Sources</a>`)
+		r.line(`<li><a href="#sources">Sources</a></li>`)
 	} else {
-		r.line(`<a href="#assessment">Assessment</a>`)
+		r.line(`<li><a href="#assessment">Assessment</a></li>`)
 	}
-	r.line(`<a href="#components">Components</a>`)
+	r.line(`<li><a href="#components">Components</a></li>`)
 	if detailed {
-		r.line(`<a href="#results">Results</a>`)
+		r.line(`<li><a href="#results">Results</a></li>`)
 	}
+	r.line(closeList)
 	r.line("</nav>")
 	r.line(`<button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode">Dark mode</button>`)
 	r.line("</header>")
-	r.line(`<main id="main">`)
+	r.line(`<main id="main" class="container">`)
 
 	r.status()
 	if r.aggregated {
@@ -803,8 +808,13 @@ func (r *renderer) dashboard(t *statusTally) {
 
 	level, levelLabel := complianceLevel(hdfengine.CalculateCompliance(all))
 	r.line(`<div class="panel compliance compliance-` + level + `">`)
-	r.line("<h3>Compliance</h3>")
-	r.line(`<div class="gauge" style="--pct:` + compliancePercent(all) + `"><span class="pct">` + complianceText(all) + "</span></div>")
+	r.line(`<h3 id="compliance-heading">Compliance</h3>`)
+	// A measurement on a fixed scale, not work in progress, so the ring is a meter
+	// to assistive technology. The percentage is printed inside it because the
+	// sweep and its band colour say nothing on their own.
+	r.line(`<div class="gauge" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="` + compliancePercent(all) +
+		`" aria-labelledby="compliance-heading" style="--pct:` + compliancePercent(all) + `"><span class="pct">` +
+		complianceText(all) + "</span>" + closeDiv)
 	r.line(`<p class="level">` + levelLabel + "</p>")
 	r.line(`<p class="formula">Passed / (Passed + Failed + Not Reviewed + Error) × 100</p>`)
 	r.line(closeDiv)
@@ -1021,7 +1031,10 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	class, _ := statusPresentation(effective)
 	r.requirements++
 	id := "req-" + strconv.Itoa(r.requirements)
-	r.line(`<details class="requirement c-` + class + `" data-status="` + class + `" id="` + id + `">`)
+	// Each requirement is independently meaningful, so it is an article holding
+	// one disclosure rather than a bare disclosure.
+	r.line(`<article class="requirement c-` + class + `" data-status="` + class + `" id="` + id + `">`)
+	r.line("<details>")
 	r.line("<summary>" + statusBadge(effective) + `<span class="req-id">` + escape(req.ID) + closeSpan +
 		`<span class="sev c-` + severityClass(severity) + `"><span class="vh">Severity: </span>` + escape(severityLabel(severity)) + closeSpan +
 		`<span class="req-title">` + escape(hdfutil.Deref(req.Title)) + `</span><span class="tags">` +
@@ -1060,6 +1073,7 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	r.line(`<p class="to-top"><a href="#` + id + `">Back to the top of this requirement</a></p>`)
 	r.line(closeDiv)
 	r.line("</details>")
+	r.line("</article>")
 }
 
 // controlTags is the summary line's chips: the controls, then a mark when the
@@ -1647,9 +1661,29 @@ func statusPresentation(status string) (class, label string) {
 	return "unknown", status
 }
 
+// statusIcon is the mark beside the status word. Colour is the least reliable of
+// the three channels — it is lost to colour-vision deficiency and to a greyscale
+// printer — so every status carries a shape and a word as well.
+func statusIcon(class string) string {
+	switch class {
+	case statusPassed:
+		return "✓"
+	case statusFailed:
+		return "✗"
+	case classNotApplicable:
+		return "–"
+	case classNotReviewed:
+		return "?"
+	case statusError:
+		return "!"
+	}
+	return "·"
+}
+
 func statusBadge(status string) string {
 	class, label := statusPresentation(status)
-	return `<span class="status c-` + class + `">` + escape(label) + closeSpan
+	return `<span class="status c-` + class + `"><span class="ico" aria-hidden="true">` + statusIcon(class) + closeSpan +
+		escape(label) + closeSpan
 }
 
 func joinNonEmpty(sep string, parts ...string) string {

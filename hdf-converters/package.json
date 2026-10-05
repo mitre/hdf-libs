@@ -28,7 +28,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "pnpm run generate && tsdown",
+    "generate": "node scripts/generate-html-assets.mjs",
     "clean": "rimraf dist",
     "test": "pnpm run test:ts && pnpm run test:go",
     "test:ts": "vitest run",
