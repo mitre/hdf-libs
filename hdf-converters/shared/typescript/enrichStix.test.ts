@@ -536,12 +536,12 @@ function enrichWarnings(doc: string, bundleJson: string): string[] {
   }
 }
 
-// The truncation warning reaches stderr on a real `hdf enrich` run, which accepts
-// results, system, plan and comparison documents — so it must name the document
-// root rather than any one document type. The expected strings come from the
-// shared table shared/enrich-stix-warning-cases.json, which the Go twin asserts
-// against too, so the two languages cannot drift into two plausible labels for
-// the same condition.
+// enrichStix is document-type agnostic — it attaches unmatched objects to
+// whatever root it is handed — so these cases drive it directly with a document
+// that has no results root, and the label must name the document root. (`hdf
+// enrich` itself admits results documents only today.) The expected strings come
+// from shared/enrich-stix-warning-cases.json, which the Go twin reads too, so
+// the two languages cannot drift into two plausible labels.
 describe('enrichStix — truncation warning names the document root', () => {
   const { originalReferences: n, forbiddenPhrase } = warningExpectations;
 

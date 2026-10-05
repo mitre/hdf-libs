@@ -1,5 +1,5 @@
 {
-  "$comment": "Shared Go/TypeScript expectation for the enrich-stix fan-out truncation warning. Both shared/go/enrich_stix_test.go and shared/typescript/enrichStix.test.ts assert against these exact strings, so the two languages cannot emit two independently-plausible labels for the same condition. `hdf enrich` accepts results, system, plan and comparison documents, so the container the unmatched objects attach to is named the document root rather than any one document type.",
+  "$comment": "Shared Go/TypeScript expectation for the enrich-stix fan-out truncation warning. Both shared/go/enrich_stix_test.go and shared/typescript/enrichStix.test.ts assert against these exact strings, so the two languages cannot emit two independently-plausible labels for the same condition. The enrich pass is document-type agnostic — it attaches unmatched objects to whatever root it is handed — so the container is named the document root rather than any one document type. The `hdf enrich` CLI admits results documents only today.",
   "maxStixRefsPerContainer": 50,
   "originalReferences": 70,
   "documentRootWarning": "WARNING: Input truncated at 50 enrich-stix document root references items (original: 70)",

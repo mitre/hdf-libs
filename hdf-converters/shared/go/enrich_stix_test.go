@@ -128,8 +128,7 @@ func resultsWithFindingIDs(t *testing.T, req map[string]interface{}) []byte {
 }
 
 // systemDocument is an hdf-system document (name + components, no baselines), so
-// every bundle object attaches at the document root — the case that exposes a
-// warning label naming a document type that is not the one being enriched.
+// every bundle object attaches at the document root.
 func systemDocument(t *testing.T) []byte {
 	t.Helper()
 	return mustJSONBytes(t, map[string]interface{}{
@@ -173,12 +172,12 @@ func enrichWarnings(t *testing.T, doc, bundle []byte) string {
 	return buf.String()
 }
 
-// The truncation warning reaches stderr on a real `hdf enrich` run, which accepts
-// results, system, plan and comparison documents — so it must name the document
-// root rather than any one document type. The expected strings come from the
-// shared table shared/enrich-stix-warning-cases.json, which the TypeScript twin
-// asserts against too, so the two languages cannot drift into two plausible
-// labels for the same condition.
+// EnrichStix is document-type agnostic — it attaches unmatched objects to
+// whatever root it is handed — so these cases drive it directly with a document
+// that has no results root, and the label must name the document root. (`hdf
+// enrich` itself admits results documents only today.) The expected strings come
+// from shared/enrich-stix-warning-cases.json, which the TypeScript twin reads
+// too, so the two languages cannot drift into two plausible labels.
 func TestEnrichStix_TruncationWarningNamesTheDocumentRoot(t *testing.T) {
 	want := loadEnrichWarningExpectations(t)
 	require.Equal(t, maxStixRefsPerContainer, want.MaxRefs,
