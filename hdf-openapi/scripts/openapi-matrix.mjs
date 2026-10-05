@@ -257,7 +257,7 @@ function stableError(text) {
     .slice(0, 400);
 }
 
-function documentSupport(scratch, generators) {
+export function documentSupport(scratch, generators) {
   const support = {};
   for (const [name, generate] of generators) {
     const result = generate(DOC, scratch, `doc-${name}`);
@@ -338,7 +338,7 @@ function withoutKeyword(document, keyword) {
   };
 }
 
-function keywordSupport(scratch, generators) {
+export function keywordSupport(scratch, generators) {
   const base = probeDocument();
   const basePath = join(scratch, 'probe-base.json');
   writeFileSync(basePath, JSON.stringify(base, null, 2));

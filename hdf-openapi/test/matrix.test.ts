@@ -14,12 +14,14 @@ import {
   BASELINE,
   NPM_GENERATORS,
   compareToBaseline,
-  countKeywords,
   composeMeasurement,
-  measureCodegen,
-  measureLint,
+  countKeywords,
+  documentSupport,
+  keywordSupport,
   lintGate,
   measure,
+  measureCodegen,
+  measureLint,
   readBaseline,
   runCli,
   serialise,
@@ -503,5 +505,93 @@ describe('the tallies are defensive about shapes they did not expect', () => {
       },
     });
     expect(failures).toEqual([]);
+  });
+});
+
+describe('the verdict logic, pinned without a Go toolchain', () => {
+  // These branches are MY decision logic, not oapi-codegen's behaviour, and they were
+  // previously covered only incidentally — by whether the machine happened to have a Go
+  // toolchain so the `runIf` above would run. That made the coverage number depend on the
+  // environment, which is how CI's test job (no Go) dropped below the branch threshold
+  // while this suite passed locally. Stub generators pin them deterministically instead.
+  const scratchDir = () => mkdtempSync(join(tmpdir(), 'matrix-verdicts-'));
+
+  /** A generator that always succeeds, returning `output` regardless of the input. */
+  const constantGen = (output: string) => () => ({ ok: true, output });
+  /** A generator that always refuses to load. */
+  const failingGen = (detail: string) => () => ({ ok: false, detail });
+
+  it('records a generator that consumes the document, and one that refuses', () => {
+    const scratch = scratchDir();
+    try {
+      const support = documentSupport(scratch, [
+        ['good', constantGen('types')],
+        ['bad', failingGen('cannot unmarshal bool into field Schema.properties')],
+      ]) as Record<string, { consumes: boolean; error?: string }>;
+      expect(support.good).toEqual({ consumes: true });
+      expect(support.bad.consumes).toBe(false);
+      // The refusal's cause must be recorded, and recorded through the redaction.
+      expect(support.bad.error).toContain('cannot unmarshal bool');
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('reads identical output as ignored and differing output as honored', () => {
+    const scratch = scratchDir();
+    try {
+      // Identical bytes whatever the schema says -> the generator discarded every keyword.
+      const ignored = keywordSupport(scratch, [['stub', constantGen('same')]]) as Record<
+        string,
+        Record<string, string>
+      >;
+      expect(new Set(Object.values(ignored).map((v) => v.stub))).toEqual(new Set(['ignored']));
+
+      // Output that changes with the input -> every keyword reached the artifact.
+      let call = 0;
+      const varying = () => ({ ok: true, output: `out-${(call += 1)}` });
+      const honored = keywordSupport(scratch, [['stub', varying]]) as Record<
+        string,
+        Record<string, string>
+      >;
+      expect(new Set(Object.values(honored).map((v) => v.stub))).toEqual(new Set(['honored']));
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('records load-error for a keyword whose variant will not load', () => {
+    const scratch = scratchDir();
+    try {
+      // Succeeds for the reference, then refuses every variant.
+      let first = true;
+      const refusesVariants = () => {
+        if (first) {
+          first = false;
+          return { ok: true, output: 'reference' };
+        }
+        return { ok: false, detail: 'variant rejected' };
+      };
+      const support = keywordSupport(scratch, [['stub', refusesVariants]]) as Record<
+        string,
+        Record<string, string>
+      >;
+      expect(new Set(Object.values(support).map((v) => v.stub))).toEqual(new Set(['load-error']));
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to measure any keyword when the reference itself will not generate', () => {
+    const scratch = scratchDir();
+    try {
+      // Without this guard every keyword would read `load-error` and look like a finding
+      // about the schema rather than a broken probe.
+      expect(() => keywordSupport(scratch, [['stub', failingGen('probe is broken')]])).toThrow(
+        /could not generate from the keyword probe/,
+      );
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
   });
 });
