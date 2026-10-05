@@ -175,6 +175,8 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 		case hdfengine.ChecksumError:
 			out.Valid = false
 			out.Errors = append(out.Errors, validateError{Path: r.URI, Message: "cannot verify checksum: " + r.Error})
+		case hdfengine.ChecksumMatch, hdfengine.ChecksumSkipped:
+			// A match needs no error, and a skipped entry declared no checksum to verify.
 		}
 	}
 	out.AgentOverrideCount = hdfengine.AgentOverridesInPackage(contents, fetch)

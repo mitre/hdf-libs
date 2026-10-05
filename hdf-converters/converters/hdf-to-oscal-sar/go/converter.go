@@ -713,9 +713,11 @@ func oscalStateFromStatus(status hdf.ResultStatus) (state string, reason string)
 		return "not-satisfied", "not-applicable"
 	case hdf.NotReviewed:
 		return "not-satisfied", "other"
-	default:
-		return "not-satisfied", ""
+	case hdf.Failed, hdf.Error:
 	}
+	// A failure, a tooling error, or an unrecognized status is not-satisfied
+	// with no OSCAL reason to qualify it.
+	return "not-satisfied", ""
 }
 
 // overrideRemarks renders the governing disposition and the most-recent status
