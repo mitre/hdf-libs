@@ -197,19 +197,14 @@ func TestSmoke_EpssGateOnRealScores(t *testing.T) {
 	assert.Less(t, len(hits), len(all), "a real EPSS bound must narrow, or it proves nothing")
 }
 
-// The policy this vocabulary exists for: a failure is tolerable only if somebody
-// has a current plan for it. Run against a document amended through the real
-// command with real POA&M, waiver and risk-acceptance overrides.
-//
-// This test CHARACTERISES A KNOWN GAP rather than asserting the workflow works,
-// because it does not: `hdf amend apply` writes a poam-TYPED entry into
-// statusOverrides[] and sets disposition, while the `poams` predicate reads
-// requirements[].poams[] — and nothing in the toolchain writes that array. So an
-// operator who files a POA&M and applies it still fails an unplanned-failure
-// gate. Tracked as hdf-libs-s4rmq. The assertions below pin today's behaviour so
-// that fixing it turns this test red and forces it to be rewritten, rather than
-// leaving the gap to be rediscovered.
-func TestSmoke_PoamGateAndAppliedPoamsDoNotMeet(t *testing.T) {
+// Filing a POA&M satisfies a POA&M gate. This test previously pinned the opposite
+// as a KNOWN GAP (hdf-libs-s4rmq): the poams predicate read requirements[].poams[]
+// while `hdf amend apply` writes statusOverrides[], and nothing in the toolchain
+// writes poams[] at all — so "every failure has a current plan" could never pass
+// however many POA&Ms were filed. The predicate now reads both. The inverted
+// assertions below are deliberate: this file is where that behaviour is pinned, so
+// a regression shows up here rather than in a user's pipeline.
+func TestSmoke_PoamGateIsSatisfiedByAnAppliedPoam(t *testing.T) {
 	dir := t.TempDir()
 	doc := smokeDoc(t, dir, "scan.json", fixtures.Results.MergeGrype)
 	amended := applySmokeAmendments(t, dir, doc)
@@ -222,37 +217,50 @@ func TestSmoke_PoamGateAndAppliedPoamsDoNotMeet(t *testing.T) {
 	require.NotEmpty(t, beforeIDs)
 
 	_, after, err := executeCommand("validate", "threshold", amended, "-I", unplanned)
-	require.Error(t, err, "KNOWN GAP (hdf-libs-s4rmq): applying POA&Ms does not satisfy this gate")
+	// Still an error, because the corpus deliberately leaves one failure
+	// unadjudicated — that is what keeps this assertion from being vacuous.
+	require.Error(t, err, "one failure in the corpus has no plan at all")
 	afterIDs := findingIDs(t, after)
+	assert.Less(t, len(afterIDs), len(beforeIDs))
 
-	// Status-changing amendments DO take effect — they move their requirements off
-	// "failed", so the status half of the predicate sees them.
-	assert.Less(t, len(afterIDs), len(beforeIDs),
-		"amendments that change status remove their requirements from a failed-status gate")
-
-	// THE GAP, stated as an invariant rather than a delta so it survives changes
-	// to the fixture corpus: a requirement GOVERNED BY A POA&M is still counted as
-	// having no current plan. When hdf-libs-s4rmq lands these drop out and this
-	// assertion goes red, which is the point of pinning it.
+	// The invariant, stated so it survives fixture churn: a requirement GOVERNED BY
+	// A POA&M must NOT be counted as unplanned. Reverting the fix turns this red.
 	planned := queryIDs(t, amended, "--status", "failed", "--disposition", "poam")
 	require.NotEmpty(t, planned, "the corpus must contain a failing requirement governed by a POA&M")
 	for _, id := range planned {
-		assert.Contains(t, afterIDs, id,
-			"%s is governed by a POA&M yet still counts as unplanned — hdf-libs-s4rmq", id)
+		assert.NotContains(t, afterIDs, id,
+			"%s is governed by a POA&M and must not count as unplanned", id)
 	}
 
-	// The two halves disagree about the same requirements, which is the defect
-	// stated as directly as it can be.
-	assert.NotEmpty(t, queryIDs(t, amended, "--disposition", "poam"),
-		"the applied POA&Ms are visible as a disposition")
-	assert.Empty(t, queryIDs(t, amended, "--poams", "valid"),
-		"but invisible to the poams predicate — hdf-libs-s4rmq")
+	// The two predicates answer DIFFERENT questions and set equality is NOT an
+	// invariant the engine holds — asserting it would be a false red waiting for
+	// whoever adds a realistic row. `poams` asks whether the requirement CARRIES a
+	// live plan; `disposition poam` asks whether a plan is what GOVERNS it. They
+	// diverge whenever a newer override outranks the plan: append an
+	// enrich-authored riskAdjustment (no status, so the finding stays failed) to a
+	// poam-governed requirement and disposition names riskAdjustment while the plan
+	// is still filed and still in force. That predates this change and is pinned
+	// for the poams[] path too — WAIVER-NEWER-THAN-POAM sits in the shared table's
+	// `poams valid` case and NOT in its `disposition poam` case.
+	//
+	// So the assertion is one-directional, which is the part that matters here:
+	// every requirement the governing-plan view finds must also be found by the
+	// carries-a-plan view. The reverse may legitimately be larger.
+	governed := queryIDs(t, amended, "--status", "failed", "--disposition", "poam")
+	carries := queryIDs(t, amended, "--status", "failed", "--poams", "valid")
+	require.NotEmpty(t, governed, "the corpus must contain a failing requirement governed by a plan")
+	for _, id := range governed {
+		assert.Contains(t, carries, id,
+			"%s is GOVERNED by a plan, so it must also COUNT as carrying one", id)
+	}
 
-	// What DOES work today, and is the usable gate until that card lands: a rule
-	// keyed on disposition rather than on poams.
-	_, _, err = executeCommand("validate", "threshold", amended,
-		"-I", `{rules: [{name: no failure lacking adjudication, where: {status: failed, disposition: {not: [poam, waiver, riskAdjustment]}}, max: 99}]}`)
-	require.NoError(t, err, "a disposition-keyed rule reaches the applied amendments")
+	// An unadjudicated requirement carries no plan. This is the ABSENT case, not
+	// the lapsed one: every override in the smoke corpus expires 2099-12-31, and
+	// CVE-2022-42919 carries no override at all. Lapsed expiry is pinned where a
+	// lapsed row exists — hdf-engine/testdata/amendment-filter-cases.json, whose
+	// POAM-OVERRIDE-LAPSED row sits in the none-valid cases.
+	assert.Empty(t, queryIDs(t, amended, "--poams", "valid", "--id", "*CVE-2022-42919*"),
+		"a requirement with no override carries no plan")
 }
 
 // A requirement where TWO amendments compete. The card singles this out as the

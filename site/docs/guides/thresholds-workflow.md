@@ -305,6 +305,12 @@ rules:
 
 `poams: none-valid` deliberately covers "no POA&M", "an empty list" and "only lapsed ones" as one condition, because a plan that has expired is not a plan.
 
+**What counts as a plan.** The predicate reads a live `poam`-typed entry in **either** of the two places a plan can sit: a `poam` override in `statusOverrides[]`, which is what `hdf amend apply` writes and therefore what you will actually have, or an entry in the requirement's `poams[]` array, which only an external producer can supply — nothing in this toolchain writes it. So filing a POA&M through the amendment workflow satisfies `poams: valid`, which is the whole point of the predicate.
+
+**`poams` and `disposition: poam` answer different questions, and may disagree.** `poams` asks whether the requirement *carries* a live plan. `disposition: poam` asks whether a plan is what *governs* it — the most recently applied non-expired adjudication. A newer override outranks an older plan without cancelling it, so a requirement can carry a live plan while being governed by something else. The common way to reach that: `hdf enrich --recompute-cvss` appends a `riskAdjustment`, which carries no status, so the finding stays `failed` while its disposition becomes `riskAdjustment` and its plan remains filed and in force.
+
+Which one you want depends on the policy. "Every failure has a current plan" is `poams` — a re-scored finding still has its plan. "Every failure is governed by a plan rather than waived away" is `disposition`.
+
 Note that it is intended behavior that a gate built on `disposition` or `poams` will produce a different verdict as of the expiration date of the POA&M, with no announcement. When the governing override or plan lapses, the finding it was covering becomes unadjudicated again, the document is still schema-valid, and no command says a word about why the gate went red. Run such a gate on a schedule as well as on commit, so a lapse surfaces as a newly red pipeline rather than at audit time, and read the dates directly with `hdf list <document> --detail amendments`, which prints an `Expires` column.
 
 A rule bounds a count, not a percentage — `compliance` remains the only percentage bound — and it evaluates over the whole document. To narrow it to one baseline, say so in the predicate with `baseline`.
@@ -334,7 +340,7 @@ The **Form** column says how a field accepts values. *List* fields take the thre
 | `baselineLabel` | list | `key:value` | The labels of the baseline a requirement sits in. Globs allowed on the value (`environment:prod*`). |
 | `disposition` | list | `waiver`, `attestation`, `poam`, `inherited`, `falsePositive`, `riskAdjustment`, `operationalRequirement` | What governs the requirement: the most recently applied non-expired override **or** POA&M. `false_positive` also accepted. |
 | `poamType` | list | `remediation`, `mitigation`, `riskAcceptance`, `vendorDependency` | Which *kind* of POA&M governs. `disposition` reports every governing plan flatly as `poam`; this names the kind. |
-| `poams` | exact | `valid`, `none-valid` | Remediation-plan validity. `none-valid` covers no POA&M, an empty list, and only-lapsed ones. |
+| `poams` | exact | `valid`, `none-valid` | Whether the requirement *carries* a live remediation plan — a `poam` override in `statusOverrides[]` (what `hdf amend apply` writes) or an entry in `poams[]`. `none-valid` covers no plan, an empty list, and only-lapsed ones. Distinct from `disposition: poam`, which asks whether a plan *governs* it; see above. |
 
 Predicates within one rule are **AND**ed — every field listed must hold. Values *within* one field are **OR**ed. So this means "failing, and critical or high, and unadjudicated":
 

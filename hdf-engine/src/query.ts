@@ -677,7 +677,19 @@ function hasValidPoam(control: EvaluatedRequirement, now?: string): boolean {
   // is treated as no reference and the caller's own validation catches it.
   const parsed = now ? parseTimestamp(now) : null;
   const ref = parsed ? parsed.getTime() : Date.now();
-  return (control.poams ?? []).some((poam) => new Date(poam.expiresAt).getTime() > ref);
+  // A poam-typed statusOverride IS a filed plan, and it is the only form the
+  // toolchain actually produces: `hdf amend apply` writes statusOverrides[], no
+  // importer emits poams[], and no committed fixture carries one. Reading only
+  // poams[] made this predicate dead — "every failure has a current plan" could
+  // never pass however many POA&Ms were filed.
+  //
+  // "Carries" is not the question disposition answers: disposition names the
+  // GOVERNING adjudication, so a newer override outranks an older plan without
+  // cancelling it and the two can disagree. Parity: go/filter.go hasValidPoam.
+  const overridePlan = (control.statusOverrides ?? []).some(
+    (o) => o.type === 'poam' && new Date(o.expiresAt).getTime() > ref
+  );
+  return overridePlan || (control.poams ?? []).some((poam) => new Date(poam.expiresAt).getTime() > ref);
 }
 
 /**

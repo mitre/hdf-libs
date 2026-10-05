@@ -697,13 +697,38 @@ func poamInputs(poams []hdf.PoamElement) []hdfutil.StatusOverrideInput {
 	return inputs
 }
 
-// hasValidPoam reports whether the requirement carries a POA&M that is still in
-// force. expiresAt is required by the schema, so a POA&M always has a deadline
-// to judge; one exactly at the reference instant has passed, matching how an
-// override's expiry is judged.
+// hasValidPoam reports whether the requirement CARRIES a POA&M that is still in
+// force, in either of the two places one can sit: a poam-typed entry in
+// statusOverrides[] or an entry in poams[]. "Carries" is deliberate and is not
+// the same question disposition answers — disposition names the GOVERNING
+// adjudication, so a newer override outranks an older plan without cancelling
+// it, and the two can disagree. That predates the override arm added here:
+// WAIVER-NEWER-THAN-POAM sits in the shared table's `poams valid` case and not
+// in its `disposition poam` case.
+//
+// expiresAt is required by the schema, so a plan always has a deadline to judge;
+// one exactly at the reference instant has passed, matching how an override's
+// expiry is judged. Both arms use the same strict comparison.
+//
+// This is a read-only predicate and writes no poams[], so no effective checksum
+// moves: ComputeEffectiveChecksum hashes {status, impact, disposition} and plan
+// validity is not an input. Verified by comparing all 26 checksums of an amended
+// real document built before and after this change.
 func hasValidPoam(control hdf.EvaluatedRequirement, ref time.Time) bool {
 	if ref.IsZero() {
 		ref = time.Now()
+	}
+	// A poam-typed statusOverride IS a filed plan, and it is the only form the
+	// toolchain actually produces: `hdf amend apply` writes statusOverrides[],
+	// no importer emits poams[], and no committed fixture carries one. Reading
+	// only poams[] made this predicate dead — "every failure has a current plan"
+	// could never pass however many POA&Ms were filed. Both are honoured here
+	// until poams[] is retired, so a document from either shape answers the same.
+	for i := range control.StatusOverrides {
+		if control.StatusOverrides[i].Type == hdf.Poam &&
+			control.StatusOverrides[i].ExpiresAt.After(ref) {
+			return true
+		}
 	}
 	for _, poam := range control.Poams {
 		if poam.ExpiresAt.After(ref) {

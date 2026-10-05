@@ -1,5 +1,5 @@
 {
-  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass — both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver. poamType: disposition collapses every governing plan to the flat 'poam' because the field is typed Override_Type, whose members do not include a plan's own kind. poamType recovers it as a SEPARATE predicate rather than a dotted or colon-joined value inside disposition — a label is a key=value pair and a plan's type is a typed enum, so borrowing the label separator would signal the wrong shape, and mixing two separators in one policy file invites typos that are hard to diagnose. It reads the GOVERNING plan only: a requirement that CARRIES a remediation but is governed by a newer mitigation matches mitigation and not remediation, which is what stops a lapsed plan answering for a live one.",
+  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass \u2014 both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver. poamType: disposition collapses every governing plan to the flat 'poam' because the field is typed Override_Type, whose members do not include a plan's own kind. poamType recovers it as a SEPARATE predicate rather than a dotted or colon-joined value inside disposition \u2014 a label is a key=value pair and a plan's type is a typed enum, so borrowing the label separator would signal the wrong shape, and mixing two separators in one policy file invites typos that are hard to diagnose. It reads the GOVERNING plan only: a requirement that CARRIES a remediation but is governed by a newer mitigation matches mitigation and not remediation, which is what stops a lapsed plan answering for a live one.",
   "now": "2026-01-01T00:00:00Z",
   "fixture": {
     "baselines": [
@@ -612,6 +612,70 @@
               }
             ],
             "tags": {}
+          },
+          {
+            "id": "POAM-OVERRIDE-LIVE",
+            "title": "Failing, plan filed as an override \u2014 the shape amend apply produces",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {},
+            "statusOverrides": [
+              {
+                "type": "poam",
+                "status": "failed",
+                "reason": "remediation planned",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "POAM-OVERRIDE-LAPSED",
+            "title": "Failing, plan filed as an override that has lapsed",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {},
+            "statusOverrides": [
+              {
+                "type": "poam",
+                "status": "failed",
+                "reason": "remediation planned",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-01-01T00:00:00Z",
+                "expiresAt": "2024-06-30T00:00:00Z"
+              }
+            ]
           }
         ],
         "supports": [],
@@ -666,7 +730,7 @@
       ]
     },
     {
-      "name": "disposition names the governing override even when it carries only an impact — a riskAdjustment typically does, so requiring a status made this filter unable to match its own canonical shape",
+      "name": "disposition names the governing override even when it carries only an impact \u2014 a riskAdjustment typically does, so requiring a status made this filter unable to match its own canonical shape",
       "options": {
         "disposition": [
           "riskAdjustment"
@@ -700,7 +764,8 @@
         "POAM-MITIGATION",
         "POAM-RISK-ACCEPTED",
         "POAM-VENDOR",
-        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+        "POAM-OVERRIDE-LIVE"
       ]
     },
     {
@@ -717,7 +782,8 @@
         "POAM-EMPTY",
         "ADJUSTED-DOWN",
         "ADJUSTMENT-LAPSED",
-        "WAIVED-THEN-ADJUSTED"
+        "WAIVED-THEN-ADJUSTED",
+        "POAM-OVERRIDE-LAPSED"
       ]
     },
     {
@@ -728,7 +794,7 @@
       "expect": []
     },
     {
-      "name": "the motivating policy: still failing after amendments, with no current plan. WAIVED-THEN-ADJUSTED is absent because its effective STATUS still comes from the older waiver even though its disposition names the newer riskAdjustment — the two may name different overrides, which is what per-field eligibility means",
+      "name": "the motivating policy: still failing after amendments, with no current plan. WAIVED-THEN-ADJUSTED is absent because its effective STATUS still comes from the older waiver even though its disposition names the newer riskAdjustment \u2014 the two may name different overrides, which is what per-field eligibility means",
       "options": {
         "status": [
           "failed"
@@ -742,7 +808,8 @@
         "POAM-LAPSED",
         "POAM-EMPTY",
         "ADJUSTED-DOWN",
-        "ADJUSTMENT-LAPSED"
+        "ADJUSTMENT-LAPSED",
+        "POAM-OVERRIDE-LAPSED"
       ]
     },
     {
@@ -787,7 +854,7 @@
       ]
     },
     {
-      "name": "disposition poam — a governing POA&M names itself, which the schema has always said and nothing implemented",
+      "name": "disposition poam \u2014 a governing POA&M names itself, which the schema has always said and nothing implemented",
       "options": {
         "disposition": [
           "poam"
@@ -801,7 +868,8 @@
         "POAM-MITIGATION",
         "POAM-RISK-ACCEPTED",
         "POAM-VENDOR",
-        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+        "POAM-OVERRIDE-LIVE"
       ]
     },
     {
@@ -822,11 +890,12 @@
         "POAM-MITIGATION",
         "POAM-RISK-ACCEPTED",
         "POAM-VENDOR",
-        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+        "POAM-OVERRIDE-LIVE"
       ]
     },
     {
-      "name": "expiry outranks recency across kinds — POAM-OVER-LAPSED-WAIVER's waiver is newer by appliedAt but lapsed, so the older live plan governs",
+      "name": "expiry outranks recency across kinds \u2014 POAM-OVER-LAPSED-WAIVER's waiver is newer by appliedAt but lapsed, so the older live plan governs",
       "options": {
         "disposition": [
           "poam"
@@ -873,7 +942,7 @@
       ]
     },
     {
-      "name": "a kind nothing is governed by selects nothing — POAM-LAPSED-REMEDIATION-LIVE-MITIGATION CARRIES a remediation but is not GOVERNED by it",
+      "name": "a kind nothing is governed by selects nothing \u2014 POAM-LAPSED-REMEDIATION-LIVE-MITIGATION CARRIES a remediation but is not GOVERNED by it",
       "options": {
         "poamType": [
           "remediation"
@@ -931,11 +1000,13 @@
         "WAIVED",
         "WAIVED-THEN-ADJUSTED",
         "WAIVER-LAPSED",
-        "WAIVER-NEWER-THAN-POAM"
+        "WAIVER-NEWER-THAN-POAM",
+        "POAM-OVERRIDE-LIVE",
+        "POAM-OVERRIDE-LAPSED"
       ]
     },
     {
-      "name": "not on disposition and not on poamType compose — a governing plan that is not a mitigation",
+      "name": "not on disposition and not on poamType compose \u2014 a governing plan that is not a mitigation",
       "options": {
         "disposition": [
           "poam"
@@ -952,7 +1023,8 @@
         "POAM-NEWER-THAN-WAIVER",
         "POAM-OVER-LAPSED-WAIVER",
         "POAM-RISK-ACCEPTED",
-        "POAM-VENDOR"
+        "POAM-VENDOR",
+        "POAM-OVERRIDE-LIVE"
       ]
     }
   ],
