@@ -27,8 +27,8 @@ const diffNarrowParam = "verbosity=concise or page=N"
 type diffInput struct {
 	From      handle.Source `json:"from" jsonschema:"the 'before' document as {path} or {handle}"`
 	To        handle.Source `json:"to" jsonschema:"the 'after' document as {path} or {handle}"`
-	Mode      string        `json:"mode,omitempty" jsonschema:"temporal (results across time, default) or system-drift (system docs)"`
-	Verbosity string        `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
+	Mode      string        `json:"mode,omitempty" jsonschema:"which document pair to compare"`
+	Verbosity string        `json:"verbosity,omitempty" jsonschema:"how much detail each change carries"`
 	Page      int           `json:"page,omitempty" jsonschema:"0-based page when the change list is truncated"`
 	Output    string        `json:"output,omitempty" jsonschema:"path under HDF_MCP_ROOT to write the hdf-comparison document"`
 	DryRun    bool          `json:"dryRun,omitempty" jsonschema:"with output set, preview the write (return the summary + sha256, write no file)"`
@@ -73,6 +73,10 @@ func RegisterDiff(s *sdkmcp.Server, ldr *loader.Loader) {
 			"documents). Returns a summary and a bounded change list; with output set, writes an " +
 			"hdf-comparison document.",
 		Annotations: appmcp.ReadOnly(),
+		InputSchema: mustEnumSchema[diffInput](map[string]closedVocabulary{
+			"mode":      {values: vocabValues(diffModeVocabulary), defaultValue: string(DiffModeTemporal)},
+			"verbosity": verbosityVocab(),
+		}),
 	}, hdfDiff(ldr))
 }
 
@@ -80,10 +84,13 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in diffInput) (*sdkmcp.CallToolResult, diffOutput, error) {
 		mode := in.Mode
 		if mode == "" {
-			mode = "temporal"
+			// Belt and braces: the advertised schema carries this as its `default`, so the
+			// SDK applies it before the handler sees the arguments.
+			mode = string(DiffModeTemporal)
 		}
-		if mode != "temporal" && mode != "system-drift" {
-			return argError(fmt.Sprintf("unknown mode %q", mode), "use mode = temporal or system-drift"), errorDiffOutput(), nil
+		if !isMember(diffModeVocabulary, mode) {
+			return argError(fmt.Sprintf("unknown mode %q", mode),
+				"use mode = "+vocabList(diffModeVocabulary)), errorDiffOutput(), nil
 		}
 
 		from, terr := resolveSource(in.From, ldr, "from")
@@ -147,7 +154,7 @@ func hdfDiff(ldr *loader.Loader) sdkmcp.ToolHandlerFor[diffInput, diffOutput] {
 // the mode returns WRONG_DOC_TYPE; a schema-invalid one returns SCHEMA_INVALID.
 func computeComparison(ctx context.Context, mode string, from, to *Resolved) (diff.HdfComparison, *mcperr.Error) {
 	switch mode {
-	case "temporal":
+	case string(DiffModeTemporal):
 		if terr := requireDocType(from, "results", mode); terr != nil {
 			return diff.HdfComparison{}, terr
 		}
@@ -191,9 +198,9 @@ func requireDocType(r *Resolved, want, mode string) *mcperr.Error {
 			map[string]any{"docType": r.Load.DocType})
 	}
 	if r.Load.DocType != want {
-		other := "system-drift"
-		if mode == "system-drift" {
-			other = "temporal"
+		other := string(DiffModeSystemDrift)
+		if mode == string(DiffModeSystemDrift) {
+			other = string(DiffModeTemporal)
 		}
 		return mcperr.New(mcperr.WrongDocType,
 			fmt.Sprintf("%s mode compares %s documents; got %s", mode, want, r.Load.DocType),
@@ -278,9 +285,9 @@ type componentFull struct {
 // structs) so the derived output schema is a concrete object rather than a bare
 // boolean under items, which MCP clients reject.
 func projectChanges(comp diff.HdfComparison, mode, verbosity string) []map[string]any {
-	full := verbosity == "full"
+	full := IsFull(verbosity)
 	var rows []map[string]any
-	if mode == "temporal" {
+	if mode == string(DiffModeTemporal) {
 		for i := range comp.RequirementDiffs {
 			rd := comp.RequirementDiffs[i]
 			if rd.State == diff.StateUnchanged {
@@ -324,7 +331,7 @@ func projectChanges(comp diff.HdfComparison, mode, verbosity string) []map[strin
 func buildDiffResponse(out *diffOutput, rows []map[string]any, verbosity string, page int) {
 	out.Total = len(rows)
 	budget := respond.ConciseTokenBudget
-	if verbosity == "full" {
+	if IsFull(verbosity) {
 		budget = respond.FullTokenBudget
 	}
 	// Measure the real envelope (the summary sibling + handle overhead counts),

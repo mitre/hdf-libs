@@ -344,6 +344,21 @@ func buildEnumIndex() (map[string]enumEntry, error) {
 	return out, nil
 }
 
+// SchemaEnumValues returns the values of one schema-derived enum, by its `$defs` name
+// (for example Result_Status or Severity).
+//
+// Exported so a tool's input schema can advertise the same vocabulary this package serves
+// at hdf://enum/{name}, from this one index. A tool that parsed the schemas itself, or
+// listed the values inline, would be a second contract that drifts the first time a schema
+// enum gains a member.
+func SchemaEnumValues(name string) ([]string, bool, error) {
+	e, ok, err := serveEnum(name)
+	if err != nil || !ok {
+		return nil, ok, err
+	}
+	return append([]string(nil), e.Values...), true, nil
+}
+
 // serveEnum returns a single enum by name.
 func serveEnum(name string) (enumEntry, bool, error) {
 	idx, err := collectEnums()

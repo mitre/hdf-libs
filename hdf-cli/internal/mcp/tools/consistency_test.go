@@ -116,8 +116,18 @@ func TestAllToolsAgreeOnStatusDistribution(t *testing.T) {
 
 			// hdf_open — summary.statusBreakdown (status only).
 			_, o := callOpen(t, openInput{Source: src})
-			if sb, ok := o.Summary["statusBreakdown"].(map[string]int); !ok || !mapsEqual(sb, gtStatus) {
-				t.Errorf("hdf_open statusBreakdown = %v, ground truth %v", o.Summary["statusBreakdown"], gtStatus)
+			var sum resultsOpenSummary
+			if err := remarshalInto(o.Summary, &sum); err != nil {
+				t.Fatalf("hdf_open must return a results summary: %v", err)
+			}
+			sb := map[string]int{
+				"passed": sum.StatusBreakdown.Passed, "failed": sum.StatusBreakdown.Failed,
+				"notApplicable": sum.StatusBreakdown.NotApplicable,
+				"notReviewed":   sum.StatusBreakdown.NotReviewed,
+				"error":         sum.StatusBreakdown.Error,
+			}
+			if !mapsEqual(sb, gtStatus) {
+				t.Errorf("hdf_open statusBreakdown = %v, ground truth %v", sb, gtStatus)
 			}
 
 			// hdf_inspect — sum of per-baseline statusBreakdown (status only).

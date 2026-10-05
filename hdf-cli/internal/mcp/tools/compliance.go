@@ -29,7 +29,7 @@ type complianceInput struct {
 	// passes exactly one of source / sources, which the handler enforces.
 	Source    handle.Source   `json:"source,omitempty" jsonschema:"document as {path} or {handle}"`
 	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
-	GroupBy   string          `json:"groupBy,omitempty" jsonschema:"baseline | severity | nistFamily | tool | cwe"`
+	GroupBy   string          `json:"groupBy,omitempty" jsonschema:"bucketing dimension for the breakdown"`
 	Threshold *thresholdInput `json:"threshold,omitempty" jsonschema:"threshold spec: {path} to a YAML/JSON file, or {inline} object"`
 }
 
@@ -97,6 +97,9 @@ func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 			"no_impact = notApplicable. The agentOverrides block is the detective surface: agent-attributed " +
 			"override count and the compliance delta they account for.",
 		Annotations: appmcp.ReadOnly(),
+		InputSchema: mustEnumSchema[complianceInput](map[string]closedVocabulary{
+			"groupBy": {values: vocabValues(complianceGroupByVocabulary)},
+		}),
 	}, hdfCompliance(ldr))
 }
 
@@ -282,16 +285,12 @@ func indexOrZero(i *int) int {
 	return *i
 }
 
-// partitionResults splits a result set into sub-result-sets by group mode. Each
-// partition is a full HDFResults so the shared engine scores it unchanged.
-// Baseline mode yields one partition PER BASELINE, by position — baseline names
-// are not unique in shipped converter output, and a name-keyed map silently
-// collapsed same-named baselines into whichever came last. Tool mode groups by
-// the per-baseline tool label; cwe mode by each requirement's CWE numbers
-// (multi-membership, like nistFamily).
-func partitionResults(results hdf.HDFResults, mode string) ([]partition, *mcperr.Error) {
-	switch mode {
-	case "baseline":
+// groupPartitioners is the single source for what hdf_compliance groups by: the advertised
+// enum, the argument check and the dispatch all read it. A dimension declared in the
+// vocabulary with no partitioner here fails TestEveryAdvertisedMemberIsAccepted rather than
+// being advertised and then refused by the handler.
+var groupPartitioners = map[ComplianceGroupBy]func(hdf.HDFResults) []partition{
+	GroupByBaseline: func(results hdf.HDFResults) []partition {
 		out := make([]partition, 0, len(results.Baselines))
 		for i := range results.Baselines {
 			idx := i
@@ -302,21 +301,38 @@ func partitionResults(results hdf.HDFResults, mode string) ([]partition, *mcperr
 				Results:       hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{b}},
 			})
 		}
-		return out, nil
-	case "severity":
+		return out
+	},
+	GroupBySeverity: func(results hdf.HDFResults) []partition {
 		return partitionBy(results, func(req hdf.EvaluatedRequirement) []string {
 			return []string{groupSeverity(req)}
-		}), nil
-	case "nistFamily":
-		return partitionBy(results, nistFamilies), nil
-	case "tool":
-		return partitionByBaselineLabel(results, hdfengine.LabelTool, "unlabeled"), nil
-	case "cwe":
-		return partitionBy(results, cweGroups), nil
-	default:
+		})
+	},
+	GroupByNistFamily: func(results hdf.HDFResults) []partition {
+		return partitionBy(results, nistFamilies)
+	},
+	GroupByTool: func(results hdf.HDFResults) []partition {
+		return partitionByBaselineLabel(results, hdfengine.LabelTool, "unlabeled")
+	},
+	GroupByCwe: func(results hdf.HDFResults) []partition {
+		return partitionBy(results, cweGroups)
+	},
+}
+
+// partitionResults splits a result set into sub-result-sets by group mode. Each
+// partition is a full HDFResults so the shared engine scores it unchanged.
+// Baseline mode yields one partition PER BASELINE, by position — baseline names
+// are not unique in shipped converter output, and a name-keyed map silently
+// collapsed same-named baselines into whichever came last. Tool mode groups by
+// the per-baseline tool label; cwe mode by each requirement's CWE numbers
+// (multi-membership, like nistFamily).
+func partitionResults(results hdf.HDFResults, mode string) ([]partition, *mcperr.Error) {
+	partitioner, known := groupPartitioners[ComplianceGroupBy(mode)]
+	if !known {
 		return nil, mcperr.Arg(fmt.Sprintf("unknown groupBy %q", mode),
-			"use groupBy = baseline, severity, nistFamily, tool, or cwe (or omit it)")
+			"use groupBy = "+vocabList(complianceGroupByVocabulary)+" (or omit it)")
 	}
+	return partitioner(results), nil
 }
 
 // partitionByBaselineLabel buckets requirements by the value of one baseline

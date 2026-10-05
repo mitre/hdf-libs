@@ -33,7 +33,7 @@ import (
 // (source = a VEX document — the server derives overrides deterministically,
 // stamping appliedBy.type=system and the top-level expiresAt on each).
 type authorInput struct {
-	DocType   string           `json:"docType" jsonschema:"document to author: system, plan, evidence, or amendments"`
+	DocType   string           `json:"docType" jsonschema:"which document to author"`
 	Name      string           `json:"name" jsonschema:"the document name"`
 	Content   []map[string]any `json:"content,omitempty" jsonschema:"content array: components/assessments/contents, or overrides (amendments judgment path). Per-item shape: the hdf://schema/{docType}/{def} slice (e.g. hdf://schema/hdf-amendments/Standalone_Override), not the whole schema. The server validates and refuses invalid content."`
 	Source    *handle.Source   `json:"source,omitempty" jsonschema:"amendments from_vex only: a VEX document as {path}; overrides are derived and stamped appliedBy.type=system"`
@@ -64,15 +64,17 @@ func RegisterAuthor(s *sdkmcp.Server, ldr *loader.Loader) {
 		Name:        "hdf_author",
 		Description: "Author an HDF document from model-supplied structured content and return a summary plus a reusable handle — never the document body. docType is system (components), plan (assessments), evidence (contents), or amendments (overrides). For amendments the server holds field authority: the judgment path (content[] of overrides) stamps appliedBy.type=agent + appliedAt and requires expiresAt on each; the from_vex path (source = a VEX document + expiresAt) derives overrides and stamps appliedBy.type=system. Per-item shapes: the compact hdf://schema/{docType}/{def} slices, not the whole schema. Output that does not validate is refused. Writes under the shared write model (dry_run previews; a writes-disabled deployment returns a preview).",
 		Annotations: appmcp.Writing(false, true),
+		InputSchema: mustEnumSchema[authorInput](map[string]closedVocabulary{
+			"docType": {values: authorableDocTypes()},
+		}),
 	}, hdfAuthor(ldr))
 }
 
 func hdfAuthor(ldr *loader.Loader) sdkmcp.ToolHandlerFor[authorInput, authorOutput] {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in authorInput) (*sdkmcp.CallToolResult, authorOutput, error) {
-		switch in.DocType {
-		case "system", "plan", "evidence", "amendments":
-		default:
-			return argError(fmt.Sprintf("unknown docType %q", in.DocType), "use docType system, plan, evidence, or amendments"), authorOutput{}, nil
+		if _, ok := builderFor(in.DocType); !ok {
+			return argError(fmt.Sprintf("unknown docType %q", in.DocType),
+				"use docType "+vocabList(authorableDocTypes())), authorOutput{}, nil
 		}
 
 		gen := &hdf.Generator{Name: "hdf-mcp", Version: hdfengine.Version()}
@@ -119,6 +121,47 @@ func hdfAuthor(ldr *loader.Loader) sdkmcp.ToolHandlerFor[authorInput, authorOutp
 	}
 }
 
+// authorBuilder assembles one authorable document type.
+type authorBuilder struct {
+	docType    string
+	schemaType validators.SchemaType
+	build      func(name string, content []map[string]any, gen *hdf.Generator) ([]byte, error)
+}
+
+// authorBuilders is the single source for what hdf_author accepts: the advertised enum,
+// the argument check and the dispatch all read it. The four entries are exactly the
+// builders hdfdoc exposes — there is deliberately no results, baseline, comparison or
+// requirement-change-event builder, because those are derived from evidence rather than
+// authored, and composing one from model-supplied content would be fabricating an
+// assessment. Adding a builder here extends the enum with it.
+var authorBuilders = []authorBuilder{
+	{"system", validators.TypeSystem, hdfdoc.BuildSystem},
+	{"plan", validators.TypePlan, hdfdoc.BuildPlan},
+	{"evidence", validators.TypeEvidencePackage, hdfdoc.BuildEvidencePackage},
+	// amendments routes through assembleAmendments for its two authoring paths, but it
+	// belongs in the vocabulary and carries the same builder underneath.
+	{"amendments", validators.TypeAmendments, hdfdoc.BuildAmendments},
+}
+
+// authorableDocTypes renders the vocabulary in declaration order.
+func authorableDocTypes() []string {
+	out := make([]string, 0, len(authorBuilders))
+	for _, b := range authorBuilders {
+		out = append(out, b.docType)
+	}
+	return out
+}
+
+// builderFor returns the builder for a docType.
+func builderFor(docType string) (authorBuilder, bool) {
+	for _, b := range authorBuilders {
+		if b.docType == docType {
+			return b, true
+		}
+	}
+	return authorBuilder{}, false
+}
+
 // assembleDoc dispatches on docType, returning the assembled bytes, the schema
 // type, the authored-item count, an optional request-shape error result (caller
 // mistake), and an optional taxonomy error. system/plan/evidence copy content
@@ -135,22 +178,13 @@ func assembleDoc(in authorInput, gen *hdf.Generator) ([]byte, validators.SchemaT
 // assembleAuthored builds the document losslessly via the shared builders (the
 // content is copied verbatim, no field re-typed or dropped).
 func assembleAuthored(docType, name string, content []map[string]any, gen *hdf.Generator) ([]byte, validators.SchemaType, *mcperr.Error) {
-	var (
-		b   []byte
-		err error
-		st  validators.SchemaType
-	)
-	switch docType {
-	case "system":
-		b, err = hdfdoc.BuildSystem(name, content, gen)
-		st = validators.TypeSystem
-	case "plan":
-		b, err = hdfdoc.BuildPlan(name, content, gen)
-		st = validators.TypePlan
-	default: // evidence (docType already validated by the caller)
-		b, err = hdfdoc.BuildEvidencePackage(name, content, gen)
-		st = validators.TypeEvidencePackage
+	// docType was already checked against authorBuilders by the caller.
+	builder, ok := builderFor(docType)
+	if !ok {
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, "no builder for docType "+docType, nil)
 	}
+	b, err := builder.build(name, content, gen)
+	st := builder.schemaType
 	if err != nil {
 		return nil, "", mcperr.New(mcperr.SchemaInvalid, "could not assemble the document: "+err.Error(), nil)
 	}
