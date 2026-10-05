@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
@@ -244,7 +245,7 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 		if len(merged) > 0 && merged[len(merged)-1] != '\n' {
 			merged = append(merged, '\n')
 		}
-		if writeErr := os.WriteFile(outputPath, merged, 0o600); writeErr != nil { // #nosec G306 G703 -- CLI intentionally writes to user-provided path
+		if writeErr := atomicfile.WriteFile(outputPath, merged, 0o600); writeErr != nil {
 			return fmt.Errorf("failed to write output file: %w", writeErr)
 		}
 		fmt.Fprintf(os.Stderr, "Merged output written to %s\n", outputPath)

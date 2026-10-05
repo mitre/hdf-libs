@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/spf13/cobra"
 )
 
@@ -207,7 +208,7 @@ func runSystemSet(inputPath, outputPath, owner, description, name, systemID stri
 		target = outputPath
 	}
 
-	if err := os.WriteFile(target, output, 0o600); err != nil { // #nosec G306 -- intentional 0600
+	if err := atomicfile.WriteFile(target, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write system document: %w", err)
 	}
 

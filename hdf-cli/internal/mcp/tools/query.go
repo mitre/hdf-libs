@@ -204,6 +204,10 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 			return argError(fmt.Sprintf("unknown correlation field %q", f),
 				fmt.Sprintf("fields accepts only: %s", strings.Join(correlationFieldNames, ", "))), errorQueryOutput(), nil
 		}
+		status, severity, refusal := canonicalFilters(in.Status, in.Severity)
+		if refusal != nil {
+			return refusal, errorQueryOutput(), nil
+		}
 		view, terr, err := resolveView(in.Source, in.Sources, ldr, singleSourceErrors{
 			WrongDocType: wrongDocTypeForQuery,
 			SchemaInvalid: func(docType string) *mcperr.Error {
@@ -221,7 +225,7 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 
 		results := view.Results
 		matches := hdfengine.Filter(ctx, results, hdfengine.Options{
-			Status: in.Status, Severity: in.Severity, Impact: in.Impact,
+			Status: status, Severity: severity, Impact: in.Impact,
 			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
 			Search: in.Search, Baseline: in.Baseline,
 			Count:    true, // return every match; the tool applies limit + token paging

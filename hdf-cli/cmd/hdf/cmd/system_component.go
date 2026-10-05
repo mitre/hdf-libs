@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/spf13/cobra"
@@ -575,7 +576,7 @@ func writeSystemJSON(sysDoc map[string]interface{}, outputPath, message string) 
 		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(outputPath, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write system document: %w", err)
 	}
 	fmt.Fprintln(os.Stderr, message)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -676,7 +677,7 @@ func writeAmendmentsOutput(amendments map[string]interface{}, outputPath string,
 		return nil
 	}
 
-	if err := os.WriteFile(outputPath, output, 0o600); err != nil { // #nosec G703 -- CLI writes user path
+	if err := atomicfile.WriteFile(outputPath, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write amendments: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Created %s with %d amendments (%s)\n", outputPath, count, amendType)

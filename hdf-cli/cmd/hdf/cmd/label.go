@@ -9,6 +9,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/spf13/cobra"
 )
 
@@ -253,7 +254,7 @@ func writeLabelOutput(data []byte, originalPath, outputPath string) error {
 		data = append(data, '\n')
 	}
 
-	if err := os.WriteFile(target, data, 0o600); err != nil { // #nosec G703 -- output path from user CLI arg
+	if err := atomicfile.WriteFile(target, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 

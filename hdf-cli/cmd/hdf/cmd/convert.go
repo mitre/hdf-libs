@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/outnames"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
@@ -596,7 +598,7 @@ func writeConvertOutput(data []byte, path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0o600)
+	return atomicfile.WriteFile(path, data, 0o600)
 }
 
 // runConvertBulk converts multiple files, writing output to a directory.
@@ -607,13 +609,50 @@ func runConvertBulk(cmd *cobra.Command, files []string, fromFormat, toFormat, ou
 		return fmt.Errorf("bulk convert requires -o <output-directory> for multiple files")
 	}
 
+	// Name every output before anything is created, so a name that collides is
+	// numbered rather than one conversion silently overwriting another partway
+	// through.
+	slashed := make([]string, len(files))
+	for i, f := range files {
+		slashed[i] = filepath.ToSlash(f)
+	}
+	names, err := outnames.Names(slashed, toFormat)
+	if err != nil {
+		return fmt.Errorf("cannot name the bulk outputs: %w", err)
+	}
+	outPath := make(map[string]string, len(files))
+	for i, f := range files {
+		outPath[f] = filepath.Join(outputDir, names[i])
+	}
+	reportNumberedOutputs(files, slashed, names, toFormat)
+
 	// Ensure output directory exists.
 	if err := os.MkdirAll(outputDir, 0o750); err != nil { // #nosec G301 -- CLI creates user-requested directory
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	return runBulk(files, "conversion", "converted", func(file string) error {
-		outPath := bulkOutputPath(outputDir, file, toFormat)
-		return runConvert(cmd, []string{file}, fromFormat, toFormat, outPath)
+		return runConvert(cmd, []string{file}, fromFormat, toFormat, outPath[file])
 	})
+}
+
+// reportNumberedOutputs prints the input→output mapping for the outputs that
+// had to be numbered. A number is positional, so without this a caller cannot
+// tell which of two same-named scans produced which file; the per-input result
+// line names only the input. Printed before the first conversion so the mapping
+// survives a later failure, and to stderr so --json output stays parseable.
+func reportNumberedOutputs(files, slashed, names []string, toFormat string) {
+	var numbered []int
+	for i, name := range names {
+		if name != outnames.Plain(slashed[i], toFormat) {
+			numbered = append(numbered, i)
+		}
+	}
+	if len(numbered) == 0 {
+		return
+	}
+	fmt.Fprintln(os.Stderr, "Inputs share an output name; numbering them in argument order:")
+	for _, i := range numbered {
+		fmt.Fprintf(os.Stderr, "  %s -> %s\n", sanitizeOutput(files[i]), names[i])
+	}
 }
