@@ -24,7 +24,7 @@ func NewEnrichCmd() *cobra.Command {
 		Use:   "enrich <results> <source> [flags]",
 		Short: "Enrich HDF results with external context (e.g. a STIX bundle)",
 		Long: `Overlay an enrichment source onto an HDF results document, attaching inert
-externalReferences[] to findings (matched by CVE) or to the results root.
+externalReferences[] to findings (matched by CVE) or to the document root.
 
 Enrichment is INFORMATIONAL by default: it adds context and never changes a
 finding's status or impact. --recompute-cvss additionally authors an auditable

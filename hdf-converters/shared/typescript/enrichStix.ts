@@ -35,7 +35,7 @@ function toRfc3339(d: Date): string {
  * each STIX object as an inert externalReferences[] entry: a CVE-bearing object
  * attaches to the finding whose requirementId is that CVE (fanning out to every
  * match), and everything else — non-CVE objects and CVEs with no matching
- * finding — attaches to the results root. Each entry carries the raw STIX object
+ * finding — attaches to the document root. Each entry carries the raw STIX object
  * losslessly in `document`.
  *
  * Informational only: authors no overrides and fabricates no status/impact (the
@@ -85,7 +85,7 @@ export function enrichStix(resultsInput: string, bundleInput: string, opts?: Enr
   for (const reqs of reqById.values()) {
     for (const req of reqs) capStixExternalRefs(req, 'finding');
   }
-  capStixExternalRefs(doc, 'results root');
+  capStixExternalRefs(doc, 'document root');
 
   if (opts?.recomputeCvss) recomputeExploitation(bundle, reqById, opts);
 
@@ -252,7 +252,7 @@ function appendExternalReference(container: Doc, ref: Doc): void {
 }
 
 // Bounds how many STIX externalReferences[] the enrich pass may attach to a
-// single container (a finding or the results root). Caps the quadratic fan-out
+// single container (a finding or the document root). Caps the quadratic fan-out
 // from an untrusted bundle without dropping pre-existing (non-STIX) references.
 const MAX_STIX_REFS_PER_CONTAINER = 50;
 

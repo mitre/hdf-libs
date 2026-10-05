@@ -96,7 +96,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 
 ### Enrichment
 
-Enrichment overlays external context onto an existing HDF results document as inert `externalReferences[]` (matched to findings by CVE, else the results root). It is informational — it never changes a finding's status or impact — and is distinct from a converter (it takes a results doc *plus* a source, and returns the enriched results doc).
+Enrichment overlays external context onto an existing HDF results document as inert `externalReferences[]` (matched to findings by CVE, else the document root). It is informational — it never changes a finding's status or impact — and is distinct from a converter (it takes a results doc *plus* a source, and returns the enriched results doc).
 
 | Source | Function | Format |
 |---|---|---|

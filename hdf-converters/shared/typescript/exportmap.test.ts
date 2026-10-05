@@ -1,3 +1,7 @@
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
 import { describe, it, expect } from 'vitest';
 import {
   asMap,
@@ -21,6 +25,8 @@ import {
   epochMillis,
   floatNumber,
 } from './exportmap.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function mkResults(...statuses: string[]): Record<string, unknown> {
   return { results: statuses.map((s) => ({ status: s })) };
@@ -230,5 +236,27 @@ describe('exportmap RawNumber float tokens (OCSF float_t)', () => {
     expect(stringifyLine(canonicalize({ base_score: floatNumber(8) }))).toBe('{"base_score":8.0}');
     // a normal string containing digits is untouched (marker cannot collide)
     expect(stringifyLine({ desc: 'score 10 ok' })).toBe('{"desc":"score 10 ok"}');
+  });
+});
+
+interface ExportmapStatusCase {
+  name: string;
+  note: string;
+  want: { raw: string; rollup: string; overridden: boolean; suppressed: boolean };
+  requirement: Record<string, unknown>;
+}
+
+const statusCases = (
+  JSON.parse(readFileSync(join(__dirname, '..', 'exportmap-status-cases.json'), 'utf-8')) as {
+    cases: ExportmapStatusCase[];
+  }
+).cases;
+
+// statusOf builds the canonical override input from raw JSON itself rather than
+// through the requirement bridge, so the Go zero time has to be normalized here
+// too or the suppression axis flips between languages on the same document.
+describe('statusOf: shared Go/TypeScript case table', () => {
+  it.each(statusCases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    expect(statusOf(c.requirement), c.note).toEqual(c.want);
   });
 });

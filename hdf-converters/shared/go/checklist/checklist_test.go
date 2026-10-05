@@ -2,6 +2,8 @@ package checklist
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -690,4 +692,39 @@ func TestHDFToChecklistRunsInputGuard(t *testing.T) {
 	_, err = HDFToChecklist(over)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+}
+
+type checklistOverrideProseCase struct {
+	Name         string          `json:"name"`
+	Note         string          `json:"note"`
+	WantComments string          `json:"wantComments"`
+	Requirement  json.RawMessage `json:"requirement"`
+}
+
+func loadChecklistOverrideProseCases(t *testing.T) []checklistOverrideProseCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "checklist-override-prose-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []checklistOverrideProseCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases)
+	return doc.Cases
+}
+
+// The shared case table pins the COMMENTS provenance line a .ckl consumer reads.
+// The requirement is fed as raw JSON rather than a typed struct so the Go zero
+// time arrives as the string a Go-serialized override actually carries.
+func TestExportOverrideProse_SharedCaseTable(t *testing.T) {
+	for _, c := range loadChecklistOverrideProseCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			doc := []byte(`{"baselines":[{"name":"b","requirements":[` + string(c.Requirement) + `]}]}`)
+			cl, err := HDFToChecklist(doc)
+			require.NoError(t, err)
+			require.Len(t, cl.Stigs, 1)
+			require.Len(t, cl.Stigs[0].Vulns, 1)
+			assert.Equal(t, c.WantComments, cl.Stigs[0].Vulns[0].Comments, c.Note)
+		})
+	}
 }

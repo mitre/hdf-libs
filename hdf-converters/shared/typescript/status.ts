@@ -8,15 +8,35 @@
 
 import {
   computeEffectiveStatus,
+  parseTimestamp,
   type EffectiveStatusInput,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
 import type { EvaluatedRequirement } from '@mitre/hdf-schema';
 
-/** RFC3339 string from a schema timestamp (quicktype Date or raw string). */
-function stamp(v: unknown): string | undefined {
-  if (v instanceof Date) return v.toISOString();
-  if (typeof v === 'string' && v !== '') return v;
+const GO_ZERO_TIME_MS = new Date('0001-01-01T00:00:00Z').getTime();
+
+/**
+ * Normalizes Go's zero time to absent — the single rule every consumer of a
+ * schema timestamp in this package shares. StatusOverride's timestamps are
+ * non-pointer time.Time in Go, so an unset one round-trips as
+ * 0001-01-01T00:00:00Z and decodes back to IsZero — "never set", which is what
+ * the Go peers report. Carried through raw it would instead read here as a real
+ * instant in year 1, before every reference time.
+ */
+export function absentIfGoZeroTime(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  const parsed = parseTimestamp(value);
+  return parsed !== null && parsed.getTime() === GO_ZERO_TIME_MS ? undefined : value;
+}
+
+/**
+ * RFC3339 string from a schema timestamp (quicktype Date or raw string), with
+ * Go's zero time read as absent.
+ */
+export function schemaTimestamp(v: unknown): string | undefined {
+  if (v instanceof Date) return absentIfGoZeroTime(v.toISOString());
+  if (typeof v === 'string' && v !== '') return absentIfGoZeroTime(v);
   return undefined;
 }
 
@@ -34,8 +54,8 @@ export function requirementStatusInput(req: EvaluatedRequirement): EffectiveStat
     overrides: (req.statusOverrides ?? []).filter((o) => o != null).map(
       (o): StatusOverrideInput => ({
         status: o.status ? String(o.status) : undefined,
-        appliedAt: stamp(o.appliedAt),
-        expiresAt: stamp(o.expiresAt),
+        appliedAt: schemaTimestamp(o.appliedAt),
+        expiresAt: schemaTimestamp(o.expiresAt),
       })
     ),
   };

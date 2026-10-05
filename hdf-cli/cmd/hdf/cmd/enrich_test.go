@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -163,4 +164,24 @@ func TestEnrichCmd_Recompute(t *testing.T) {
 	require.NotNil(t, authored.Impact, "riskAdjustment carries an impact value")
 	assert.InDelta(t, 0.98, authored.Impact.Value, 1e-9, "E:H recompute of the 9.8 base vector → impact 0.98")
 	assert.True(t, authored.ExpiresAt.After(time.Now()), "review horizon is in the future")
+}
+
+// `hdf enrich --help` must name the same container the enrich pass names in its
+// truncation warning: the label is derived from the shared table both languages
+// assert against, so the help cannot drift from observable behaviour again.
+func TestEnrichCmd_HelpNamesTheSameRootAsTheWarning(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "hdf-converters", "shared", "enrich-stix-warning-cases.json"))
+	require.NoError(t, err)
+	var want struct {
+		DocumentRootWarning string `json:"documentRootWarning"`
+		ForbiddenPhrase     string `json:"forbiddenPhrase"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &want))
+
+	label := regexp.MustCompile(`enrich-stix (.+) references`).FindStringSubmatch(want.DocumentRootWarning)
+	require.Len(t, label, 2, "the shared warning carries the container label")
+
+	long := NewEnrichCmd().Long
+	assert.Contains(t, long, label[1], "help names the container the truncation warning names")
+	assert.NotContains(t, long, want.ForbiddenPhrase, "help must not name a container the pass never reports")
 }

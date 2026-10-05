@@ -65,7 +65,7 @@ purpose-agnostic reference primitive — appended to the document:
   every matching finding, with `rel: "investigate"` (a live pivot).
 - **Everything else** — non-CVE objects (`threat-actor`, `campaign`, plain
   `identity`/`location`) and CVEs with no matching finding — attaches to the
-  **results root** with `rel: "reference"`.
+  **document root** with `rel: "reference"`.
 
 Each reference is an **enrichment envelope**: it both cites the source and
 carries the raw STIX object losslessly.
