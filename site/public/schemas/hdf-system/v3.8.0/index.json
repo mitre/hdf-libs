@@ -1,10 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-results/v3.8.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.8.0",
+  "title": "HDF System",
+  "description": "Describes a system's authorization boundary, components, and interconnections. Maps to OSCAL SSP system-characteristics and FedRAMP system inventory.",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
-    "baselines"
+    "name",
+    "components"
   ],
   "properties": {
     "externalReferences": {
@@ -12,643 +15,153 @@
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference"
       },
-      "description": "Optional references to external artifacts (CTI/STIX, BOMs, advisories, runbooks, or any URI-addressable artifact) relevant to this assessment as a whole. Inert context; see External_Reference."
+      "description": "Optional references to external artifacts describing this system's threat environment or context (CTI/STIX, BOMs, advisories, or any URI-addressable artifact). Inert context; see External_Reference."
     },
-    "id": {
+    "systemId": {
       "type": "string",
       "format": "uuid",
-      "description": "Unique identifier for this assessment run."
+      "description": "Stable UUID (RFC 4122) for this system. Enables cross-document correlation independent of file location. Optional in casual use, expected in production documents."
     },
-    "timestamp": {
+    "owner": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
+      "description": "Team or individual responsible for this system's authorization and compliance. Maps to OSCAL responsible-party with role 'system-owner'."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable system name. Example: 'Enterprise Portal Production'."
+    },
+    "identifier": {
+      "type": "string",
+      "description": "System identifier from an authoritative source. Example: eMASS system ID, FedRAMP package ID."
+    },
+    "identifierScheme": {
+      "type": "string",
+      "format": "uri-reference",
+      "description": "URI identifying the scheme of the system identifier. Example: 'https://emass.mil', 'https://fedramp.gov'."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the system's purpose and mission."
+    },
+    "authorizationStatus": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Authorization_Status",
+      "description": "Current Authorization to Operate (ATO) status."
+    },
+    "authorizationDate": {
       "type": "string",
       "format": "date-time",
-      "description": "When this assessment was executed."
+      "description": "Date the current authorization status was granted. ISO 8601 format."
+    },
+    "categorizationLevel": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Categorization_Level",
+      "description": "FIPS 199 security categorization (impact level)."
+    },
+    "boundaryDescription": {
+      "type": "string",
+      "description": "Description of the system's authorization boundary. Example: network CIDR blocks, cloud VPC IDs, physical locations."
     },
     "components": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.8.0#/$defs/Component"
       },
-      "description": "The components that were assessed. Each component describes a system element (host, container, cloud resource, application, etc.) with optional identity, SBOM, and external references."
+      "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and generalized BOM attachment (boms[])."
     },
-    "baselines": {
+    "controlDesignations": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/Evaluated_Baseline"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Control_Designation"
       },
-      "description": "Information on the baselines that were evaluated, including findings."
+      "description": "Declares which controls are common, hybrid, or system-specific, and which component provides them. Maps to NIST SP 800-53 control designations and OSCAL leveraged-authorizations."
     },
-    "statistics": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.8.0#/$defs/Statistics",
-      "description": "Statistics for the assessment run, including duration and result counts."
+    "dataFlows": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.8.0#/$defs/Data_Flow"
+      },
+      "description": "Inter-component data flows describing how components communicate. Supports local, cross-system, and external flows. Replaces the interconnections[] field."
     },
-    "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Generator",
-      "description": "Information about the tool that generated this file."
+    "boms": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.8.0#/$defs/Bom"
+      },
+      "description": "System-scoped Bills of Materials whose subject is the authorization boundary rather than a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM). Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See primitives/bom.schema.json."
     },
-    "tool": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Tool",
-      "description": "The security tool that produced the assessment data in this file."
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Optional key-value labels for grouping and querying systems."
     },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",
-      "description": "Cryptographic integrity information for verifying this file."
+      "description": "Cryptographic integrity information for verifying this system document has not been tampered with."
     },
-    "preAmendmentChecksum": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
-      "description": "Hash of this results document as it stood immediately before the most recent amendment application. Written by `hdf amend apply` when it applies at least one override; an apply that matches nothing leaves the document untouched. The hash covers the results file's RAW BYTES as read, not a canonical form, so reproducing it requires the byte-identical original — reformatting or re-serializing the source changes the value. Only the most recent pre-application state is recorded: applying amendments to an already-amended document REPLACES this value, so it is a single link back one step, not a growing chain. Distinct from the `previousChecksum` inside an override, which chains amendments to each other and is computed over a canonical JSON form.",
-      "$comment": "Example 1: the real SHA-256 of hdf-converters/converters/nessus-to-hdf/fixtures/expected/sample.nessus.hdf.json, reproducible with `shasum -a 256` on that file — chosen over a synthetic digest so a reader can verify the hash basis is the raw file bytes.",
-      "examples": [
-        {
-          "algorithm": "sha256",
-          "value": "9599ce7889e99b70ef5d0f3efa4215e35059c10a7e89b9314cbf4ded8fdbad38"
-        }
-      ]
-    },
-    "runner": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.8.0#/$defs/Runner",
-      "description": "Information about the test execution environment where the security tool was run. Distinct from targets (what is being tested)."
-    },
-    "remediation": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Remediation",
-      "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for fixing failing requirements found in this assessment."
-    },
-    "systemRef": {
+    "version": {
       "type": "string",
-      "format": "uri-reference",
-      "description": "Reference to an hdf-system document describing the system under assessment. May be a relative path, absolute URI, or fragment identifier."
+      "description": "Version of this system document."
     },
-    "planRef": {
-      "type": "string",
-      "format": "uri-reference",
-      "description": "Reference to an hdf-plan document describing the assessment plan that produced these results. May be a relative path, absolute URI, or fragment identifier."
-    },
-    "derivation": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.8.0#/$defs/Derivation",
-      "description": "Present ONLY on reconciled result sets: lineage recording the seed snapshot and event watermark this document was reassembled from (ADR-0005). Documents produced directly by a scan omit this field. When present, generator names the reconciling tool."
+    "generator": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Generator",
+      "description": "Information about the tool that generated this system document."
     },
     "extensions": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Extensions",
-      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) these results were converted from."
+      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this system document was converted from."
     }
   },
   "examples": [
     {
-      "baselines": [
+      "name": "Enterprise Portal Production",
+      "identifier": "SYS-2024-00142",
+      "identifierScheme": "https://emass.mil",
+      "authorizationStatus": "authorized",
+      "authorizationDate": "2025-06-15T00:00:00Z",
+      "categorizationLevel": "moderate",
+      "boundaryDescription": "All resources in prod VPC (10.0.0.0/16)",
+      "components": [
         {
-          "name": "web-server-hardening",
-          "title": "Web Server Security Baseline",
-          "version": "1.0.0",
-          "summary": "Security hardening checks for Apache HTTP Server",
-          "requirements": [
+          "name": "WebTier",
+          "type": "application",
+          "componentId": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "description": "RHEL 9 web servers running the portal",
+          "baselineRefs": [
+            "RHEL9-STIG",
+            "DISA-Container-STIG"
+          ],
+          "boms": [
             {
-              "id": "SV-100001",
-              "title": "Web server must use TLS 1.2 or higher",
-              "impact": 0.7,
-              "tags": {
-                "nist": [
-                  "SC-8",
-                  "SC-23"
-                ]
-              },
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "The web server must be configured to use TLS 1.2 or higher for all encrypted connections."
-                }
-              ],
-              "results": [
-                {
-                  "status": "passed",
-                  "codeDesc": "SSL configuration is expected to include TLSv1.2",
-                  "startTime": "2025-06-15T14:30:00Z",
-                  "runTime": 0.042
-                }
-              ]
-            },
-            {
-              "id": "SV-100002",
-              "title": "Web server must have X-Frame-Options header set",
-              "impact": 0.5,
-              "tags": {
-                "nist": [
-                  "SA-11",
-                  "RA-5"
-                ]
-              },
-              "descriptions": [
-                {
-                  "label": "default",
-                  "data": "The anti-clickjacking X-Frame-Options header must be present on all responses."
-                }
-              ],
-              "results": [
-                {
-                  "status": "failed",
-                  "codeDesc": "HTTP response headers are expected to include X-Frame-Options",
-                  "startTime": "2025-06-15T14:30:01Z",
-                  "message": "X-Frame-Options header not found in response"
-                }
-              ]
+              "bomType": "sbom",
+              "format": "cyclonedx",
+              "ref": "https://artifacts.agency.gov/sbom/webtier-2026-03.cdx.json"
             }
+          ]
+        },
+        {
+          "name": "DatabaseTier",
+          "type": "database",
+          "componentId": "11111111-2222-3333-4444-555555555555",
+          "baselineRefs": [
+            "PostgreSQL-15-STIG"
           ]
         }
       ],
-      "components": [
+      "dataFlows": [
         {
-          "type": "application",
-          "name": "Apache HTTP Server 2.4"
+          "from": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          "to": "11111111-2222-3333-4444-555555555555",
+          "protocol": "jdbc",
+          "port": 5432,
+          "direction": "unidirectional",
+          "description": "Web tier connects to database"
         }
-      ],
-      "generator": {
-        "name": "nikto-to-hdf",
-        "version": "1.0.0"
-      },
-      "tool": {
-        "name": "Nikto"
-      }
+      ]
     }
   ],
-  "description": "The top level value containing all assessment results.",
-  "title": "HDF Results",
   "$defs": {
-    "Evaluated_Baseline": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "name",
-        "requirements"
-      ],
-      "allOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Baseline_Metadata"
-        }
-      ],
-      "properties": {
-        "depends": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Dependency"
-          },
-          "description": "The set of dependencies this baseline depends on."
-        },
-        "parentBaseline": {
-          "type": "string",
-          "description": "The name of the parent baseline if this is a dependency of another."
-        },
-        "description": {
-          "type": "string",
-          "description": "The description - should be more detailed than the summary."
-        },
-        "integrity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",
-          "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
-        },
-        "originalChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
-          "description": "SHA-256 checksum of the original baseline definition file (before execution). This is an immutable reference to the baseline as defined, used to detect tampering with baseline requirements or metadata."
-        },
-        "resultsChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
-          "description": "SHA-256 checksum of the raw results before any amendments (statusOverrides or POAMs). Used to detect tampering with test results. Compare with currentChecksum to verify amendment integrity."
-        },
-        "statusMessage": {
-          "type": "string",
-          "description": "An explanation of the baseline status. Example: why it was skipped, failed to load, or any other status details."
-        },
-        "requirements": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Evaluated_Requirement"
-          },
-          "minItems": 1,
-          "description": "The set of requirements including any findings. A baseline must have at least one requirement."
-        },
-        "groups": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Requirement_Group"
-          },
-          "description": "A set of descriptions for the requirement groups."
-        },
-        "inputs": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.8.0#/$defs/Input"
-          },
-          "description": "Typed inputs used to parameterize this baseline at execution time. See the Input primitive for the full schema."
-        },
-        "extensions": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Extensions",
-          "description": "Producer data outside the HDF model that belongs to this baseline rather than to the document, and the pre-converted source artifact(s) this baseline was built from."
-        }
-      },
-      "description": "Information on a baseline that was evaluated, including any findings.",
-      "title": "Evaluated Baseline"
-    },
-    "Evaluated_Requirement": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "required": [
-        "id",
-        "impact",
-        "tags",
-        "results",
-        "descriptions"
-      ],
-      "allOf": [
-        {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Requirement_Core"
-        }
-      ],
-      "properties": {
-        "descriptions": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Requirement_Description"
-          },
-          "contains": {
-            "type": "object",
-            "required": [
-              "label"
-            ],
-            "properties": {
-              "label": {
-                "const": "default"
-              }
-            }
-          },
-          "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
-        },
-        "severity": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Severity",
-          "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
-        },
-        "sourceLocation": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Source_Location",
-          "description": "The explicit location of the requirement within the source code."
-        },
-        "results": {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Requirement_Result"
-          },
-          "description": "The set of all tests within the requirement and their results."
-        },
-        "statusOverrides": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Status_Override"
-          },
-          "description": "Chronological history of all overrides applied to this requirement. Overrides are intentional changes to the compliance status and/or impact score (waivers, attestations, false positives, risk adjustments). Most recent override should be first in array. Preserves full audit trail."
-        },
-        "poams": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/POAM"
-          },
-          "description": "Plan of Action and Milestones for tracking remediation, mitigation, or risk acceptance. POAMs do NOT change effectiveStatus - they track the work being done to address a failure. Separate from statusOverrides which DO change status."
-        },
-        "effectiveStatus": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Result_Status",
-          "description": "The current effective compliance status of this requirement after applying the most recent non-expired override with a status field, or computed from results (worst-wins) if no status-bearing overrides exist."
-        },
-        "effectiveImpact": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1,
-          "description": "The current effective impact score (0.0–1.0) after applying the most recent non-expired override with an impact field. Absent when no impact overrides apply; consumers should use the requirement's impact field in that case."
-        },
-        "disposition": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0#/$defs/Override_Type",
-          "description": "The type of the most recent non-expired override or POAM governing this requirement. Indicates why the requirement is in its current state (e.g., waiver, falsePositive, riskAdjustment) or what remediation is being tracked (poam). Absent when no overrides or POAMs apply."
-        },
-        "effectiveChecksum": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
-          "description": "Checksum of this requirement's resolved effective posture, for per-control change detection in continuous monitoring.\n\nsha256 over the canonical JSON object with keys status, impact, disposition (in that order), holding the resolved effective status, resolved effective impact, and governing override type (null when nothing governs), with override expiry anchored to the document timestamp.\n\nFlips exactly when the operative status, impact, or disposition changes; stable under all other churn (result details, timestamps, tags).\n\nOptional; stamped by tooling (hdf convert, hdf amend apply)."
-        },
-        "evidence": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Evidence"
-          },
-          "description": "Supporting evidence for this requirement's findings, such as screenshots, code samples, or log excerpts."
-        },
-        "cvss": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.8.0#/$defs/Cvss"
-          },
-          "description": "Structured CVSS scoring data for vulnerability findings. One entry per CVE — a finding may match multiple CVEs (common in vulnerability scanners). Captures vendor-supplied Base metrics plus optional consumer-owned Threat / Environmental / Supplemental groups for risk adjustment. See cvss.schema.json."
-        },
-        "epss": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.8.0#/$defs/Epss",
-          "description": "FIRST.org EPSS (Exploit Prediction Scoring System) score for this CVE finding. Used alongside CVSS for prioritization — captures the probability the vulnerability will be exploited."
-        },
-        "kev": {
-          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.8.0#/$defs/Kev",
-          "description": "CISA Known Exploited Vulnerabilities (KEV) catalog status. When inKev=true, dateAdded and dueDate carry the federal patching deadline."
-        },
-        "cwe": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^CWE-[1-9]\\d*$"
-          },
-          "description": "Common Weakness Enumeration IDs associated with this finding. Use CWE-N format with no leading zeros (matches the MITRE catalog convention). For NIST control mappings derived from CWE, see tags.nist."
-        },
-        "affectedPackages": {
-          "type": "array",
-          "items": {
-            "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.8.0#/$defs/Affected_Package"
-          },
-          "description": "Packages affected by this vulnerability finding. Vulnerability-finding-scoped — see components[] on hdf-system for component-level package inventories. One entry per matched package signature (scanners often report multiple CPE variations per CVE)."
-        }
-      },
-      "$comment": "Examples, in order: 1) Passing requirement — no overrides, no disposition; 2) Waiver — AO accepted risk, status overridden to passed; 3) False positive (compliance scan) — STIG check was wrong, requirement actually passes; 4) False positive (CVE scan) — vulnerability does not apply to this build; 5) Risk adjustment — impact lowered, pass/fail unchanged; 6) Operational requirement — cannot remediate, remains open risk; 7) POAM — remediation tracked, status unchanged.",
-      "examples": [
-        {
-          "id": "SV-230222",
-          "title": "RHEL 9 must use SSH protocol version 2",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "SC-8"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "SSH must use protocol version 2."
-            }
-          ],
-          "results": [
-            {
-              "status": "passed",
-              "codeDesc": "sshd_config Protocol is expected to eq 2",
-              "startTime": "2026-01-15T10:00:00Z"
-            }
-          ],
-          "effectiveStatus": "passed"
-        },
-        {
-          "id": "SV-230300",
-          "title": "RHEL 9 must enforce password complexity",
-          "impact": 0.5,
-          "tags": {
-            "nist": [
-              "IA-5 (1)"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Passwords must meet complexity requirements."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "pwquality.conf minlen is expected to be >= 15",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "expected 8 to be >= 15"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "waiver",
-              "status": "passed",
-              "reason": "Compensating control: PIV/CAC smart card authentication enforced for all users, password login disabled",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "ao@agency.gov"
-              },
-              "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2099-12-31T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "passed",
-          "disposition": "waiver",
-          "effectiveChecksum": {
-            "algorithm": "sha256",
-            "value": "d11c074ab9131807816013a71d986f1ceb2e5871a8a01dee4043391b7a6bf37b"
-          }
-        },
-        {
-          "id": "SV-230410",
-          "title": "RHEL 9 must have sshd PermitRootLogin disabled",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "AC-6"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Direct root login via SSH must be disabled."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "sshd_config PermitRootLogin is expected to eq 'no'",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "expected 'prohibit-password' to eq 'no'"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "falsePositive",
-              "status": "passed",
-              "reason": "Scanner requires literal 'no' but 'prohibit-password' is equally restrictive (disables password-based root login). Manual review confirms root cannot authenticate via SSH.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "assessor@agency.gov"
-              },
-              "appliedAt": "2026-01-16T14:00:00Z",
-              "expiresAt": "2026-07-16T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "passed",
-          "disposition": "falsePositive"
-        },
-        {
-          "id": "CVE-2026-12345",
-          "title": "libxml2 buffer overflow in xmlParseEntityDecl",
-          "impact": 0.9,
-          "tags": {
-            "nist": [
-              "SI-2",
-              "RA-5"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Buffer overflow in libxml2 entity parsing allows remote code execution."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "libxml2 >= 2.9.0 is expected to be patched for CVE-2026-12345",
-              "startTime": "2026-01-15T10:00:00Z"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "falsePositive",
-              "status": "notApplicable",
-              "reason": "CVE scanner matched libxml2 version signature, but the vulnerable entity parsing module is compiled out of our build (--without-legacy flag). The affected code path does not exist in the binary.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "dev@org.gov"
-              },
-              "appliedAt": "2026-01-16T09:00:00Z",
-              "expiresAt": "2026-07-16T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "notApplicable",
-          "disposition": "falsePositive"
-        },
-        {
-          "id": "CVE-2026-67890",
-          "title": "OpenSSL timing side-channel in RSA decryption",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "SI-2",
-              "RA-5"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Timing side-channel may allow RSA private key recovery."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "openssl >= 3.1.0 is expected to be patched for CVE-2026-67890",
-              "startTime": "2026-01-15T10:00:00Z"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "riskAdjustment",
-              "impact": {
-                "value": 0.3
-              },
-              "reason": "The RSA key exchange path is unreachable in our deployment — all TLS connections use ECDHE. Attack requires local network access to the TLS terminator, which is in an isolated VLAN.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "security-architect@org.gov"
-              },
-              "appliedAt": "2026-01-17T10:00:00Z",
-              "expiresAt": "2026-07-17T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "failed",
-          "effectiveImpact": 0.3,
-          "disposition": "riskAdjustment"
-        },
-        {
-          "id": "SV-230500",
-          "title": "RHEL 9 must disable USB mass storage",
-          "impact": 0.5,
-          "tags": {
-            "nist": [
-              "MP-7"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "USB mass storage kernel module must be disabled."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "Kernel module 'usb-storage' is expected to be disabled",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "usb-storage module is loaded"
-            }
-          ],
-          "statusOverrides": [
-            {
-              "type": "operationalRequirement",
-              "status": "failed",
-              "reason": "Air-gapped system requires USB transfer for classified data ingestion per operational procedure OP-2026-003. Compensating controls: USB ports are physically secured, all transfers are logged and require two-person integrity.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "system-owner@agency.gov"
-              },
-              "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2026-07-20T00:00:00Z"
-            }
-          ],
-          "effectiveStatus": "failed",
-          "disposition": "operationalRequirement"
-        },
-        {
-          "id": "SV-230350",
-          "title": "RHEL 9 must be patched within 30 days of release",
-          "impact": 0.7,
-          "tags": {
-            "nist": [
-              "SI-2"
-            ]
-          },
-          "descriptions": [
-            {
-              "label": "default",
-              "data": "Security patches must be applied within 30 days."
-            }
-          ],
-          "results": [
-            {
-              "status": "failed",
-              "codeDesc": "Package updates are expected to be current within 30 days",
-              "startTime": "2026-01-15T10:00:00Z",
-              "message": "15 packages have patches older than 30 days"
-            }
-          ],
-          "poams": [
-            {
-              "type": "remediation",
-              "explanation": "Patch deployment blocked by vendor compatibility testing. Vendor confirmed fix for Q2 2026.",
-              "appliedBy": {
-                "type": "email",
-                "identifier": "ops@agency.gov"
-              },
-              "appliedAt": "2026-01-20T10:00:00Z",
-              "expiresAt": "2099-12-31T00:00:00Z",
-              "milestones": [
-                {
-                  "description": "Vendor releases compatible patch",
-                  "estimatedCompletion": "2026-04-01T00:00:00Z",
-                  "status": "pending"
-                },
-                {
-                  "description": "Deploy to production",
-                  "estimatedCompletion": "2026-04-15T00:00:00Z",
-                  "status": "pending"
-                }
-              ]
-            }
-          ],
-          "effectiveStatus": "failed",
-          "disposition": "poam"
-        }
-      ],
-      "description": "A requirement that has been evaluated, including any findings.",
-      "title": "Evaluated Requirement"
-    },
     "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0",
@@ -1828,6 +1341,141 @@
           ],
           "description": "Cloud service provider identifier.",
           "title": "Cloud Provider"
+        }
+      }
+    },
+    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0",
+      "title": "HDF System Primitives",
+      "description": "Types for describing system architecture, authorization boundaries, and components.",
+      "$defs": {
+        "Authorization_Status": {
+          "type": "string",
+          "enum": [
+            "authorized",
+            "denied",
+            "pendingAuthorization",
+            "conditionallyAuthorized",
+            "notYetRequested",
+            "revoked"
+          ],
+          "description": "Authorization to Operate (ATO) status for the system.",
+          "title": "Authorization Status"
+        },
+        "Categorization_Level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "description": "FIPS 199 security categorization level (impact level).",
+          "title": "Categorization Level"
+        },
+        "Input_Override": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "inputName",
+            "value"
+          ],
+          "properties": {
+            "baselineRef": {
+              "type": "string",
+              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
+            },
+            "inputName": {
+              "type": "string",
+              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+            },
+            "value": {
+              "description": "The overridden value. Should match the type of the original input."
+            },
+            "justification": {
+              "type": "string",
+              "description": "Rationale for why this override is needed."
+            },
+            "approvedBy": {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
+              "description": "Identity of the person or system that approved this override."
+            }
+          },
+          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
+          "title": "Input Override"
+        },
+        "Target_Selector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
+          "title": "Target Selector"
+        },
+        "Control_Designation": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "controlId",
+            "designation",
+            "description"
+          ],
+          "properties": {
+            "controlId": {
+              "type": "string",
+              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
+            },
+            "designation": {
+              "type": "string",
+              "title": "Designation",
+              "enum": [
+                "common",
+                "system-specific",
+                "hybrid"
+              ],
+              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
+            },
+            "providedBy": {
+              "type": "string",
+              "format": "uuid",
+              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
+            },
+            "systemRef": {
+              "type": "string",
+              "format": "uri-reference",
+              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+            },
+            "inheritedBy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+            },
+            "description": {
+              "type": "string",
+              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+            }
+          },
+          "examples": [
+            {
+              "controlId": "IA-2",
+              "designation": "common",
+              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+              "inheritedBy": [
+                "11111111-2222-3333-4444-555555555555"
+              ],
+              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+            },
+            {
+              "controlId": "PE-2",
+              "designation": "common",
+              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+            }
+          ],
+          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
+          "title": "Control Designation"
         }
       }
     },
@@ -3016,209 +2664,162 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0",
-      "title": "HDF System Primitives",
-      "description": "Types for describing system architecture, authorization boundaries, and components.",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.8.0",
+      "title": "HDF Data Flow Primitives",
+      "description": "Types for describing data flows between components within a system and across system boundaries. Data flows model network connections, API calls, database queries, and other inter-component communication.",
       "$defs": {
-        "Authorization_Status": {
-          "type": "string",
-          "enum": [
-            "authorized",
-            "denied",
-            "pendingAuthorization",
-            "conditionallyAuthorized",
-            "notYetRequested",
-            "revoked"
-          ],
-          "description": "Authorization to Operate (ATO) status for the system.",
-          "title": "Authorization Status"
-        },
-        "Categorization_Level": {
-          "type": "string",
-          "enum": [
-            "low",
-            "moderate",
-            "high"
-          ],
-          "description": "FIPS 199 security categorization level (impact level).",
-          "title": "Categorization Level"
-        },
-        "Input_Override": {
+        "Cross_System_Reference": {
           "type": "object",
           "unevaluatedProperties": false,
           "required": [
-            "inputName",
-            "value"
+            "systemRef",
+            "componentId"
           ],
           "properties": {
-            "baselineRef": {
-              "type": "string",
-              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
-            },
-            "inputName": {
-              "type": "string",
-              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
-            },
-            "value": {
-              "description": "The overridden value. Should match the type of the original input."
-            },
-            "justification": {
-              "type": "string",
-              "description": "Rationale for why this override is needed."
-            },
-            "approvedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
-              "description": "Identity of the person or system that approved this override."
-            }
-          },
-          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
-          "title": "Input Override"
-        },
-        "Target_Selector": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
-          "title": "Target Selector"
-        },
-        "Control_Designation": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "controlId",
-            "designation",
-            "description"
-          ],
-          "properties": {
-            "controlId": {
-              "type": "string",
-              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
-            },
-            "designation": {
-              "type": "string",
-              "title": "Designation",
-              "enum": [
-                "common",
-                "system-specific",
-                "hybrid"
-              ],
-              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
-            },
-            "providedBy": {
-              "type": "string",
-              "format": "uuid",
-              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
-            },
             "systemRef": {
               "type": "string",
               "format": "uri-reference",
-              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
+              "description": "URI reference to the hdf-system document containing the target component. May be a relative path, absolute URI, or fragment identifier."
             },
-            "inheritedBy": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+            "componentId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the component in the referenced system."
+            }
+          },
+          "description": "Reference to a component in a different system document, enabling cross-boundary data flow modeling.",
+          "title": "Cross-System Reference"
+        },
+        "External_Endpoint": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "external",
+            "description"
+          ],
+          "properties": {
+            "external": {
+              "type": "boolean",
+              "const": true,
+              "description": "Must be true. Discriminator indicating this endpoint is outside all modeled systems."
             },
             "description": {
               "type": "string",
-              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+              "description": "Human-readable description of the external endpoint. Example: 'Third-party payment gateway (Stripe API)'."
+            }
+          },
+          "description": "An endpoint outside all modeled systems (e.g., a third-party API, public internet, or partner system not represented in HDF).",
+          "title": "External Endpoint"
+        },
+        "Data_Flow_Endpoint": {
+          "description": "A data flow endpoint: either a local component (UUID), a component in another system (cross-system reference), or an external endpoint outside all modeled systems.",
+          "title": "Data Flow Endpoint",
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of a component in the current system."
+            },
+            {
+              "$ref": "#/$defs/Cross_System_Reference"
+            },
+            {
+              "$ref": "#/$defs/External_Endpoint"
+            }
+          ]
+        },
+        "Data_Flow": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "from",
+            "to"
+          ],
+          "properties": {
+            "from": {
+              "type": "string",
+              "format": "uuid",
+              "description": "UUID of the local component that is one end of this data flow. Always references a component in the current system document."
+            },
+            "to": {
+              "$ref": "#/$defs/Data_Flow_Endpoint",
+              "description": "The other end of this data flow. Can be a local component (UUID), a cross-system component reference, or an external endpoint."
+            },
+            "protocol": {
+              "type": "string",
+              "description": "Communication protocol. Examples: 'http', 'https', 'grpc', 'ssh', 'jdbc', 'k8s-api', 'socket', 'sftp'."
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "description": "Network port number."
+            },
+            "direction": {
+              "type": "string",
+              "title": "Direction",
+              "enum": [
+                "unidirectional",
+                "bidirectional"
+              ],
+              "description": "Data flow direction. 'unidirectional' means data flows from→to only. 'bidirectional' means data flows in both directions (e.g., request/response)."
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of this data flow's purpose and the data exchanged."
+            },
+            "authentication": {
+              "type": "string",
+              "description": "Authentication mechanism used for this connection. Examples: 'mTLS', 'OAuth2', 'API key', 'SAML', 'Kerberos'."
             }
           },
           "examples": [
             {
-              "controlId": "IA-2",
-              "designation": "common",
-              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-              "inheritedBy": [
-                "11111111-2222-3333-4444-555555555555"
-              ],
-              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "protocol": "https",
+              "port": 443,
+              "direction": "bidirectional",
+              "description": "REST API calls from WebTier to API Gateway",
+              "authentication": "mTLS"
             },
             {
-              "controlId": "PE-2",
-              "designation": "common",
-              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+              "from": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+              "to": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+              "protocol": "jdbc",
+              "port": 5432,
+              "direction": "unidirectional",
+              "description": "Database queries from API Gateway to PostgreSQL",
+              "authentication": "username/password + TLS"
+            },
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": {
+                "systemRef": "https://systems.agency.gov/auth-system.json",
+                "componentId": "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+              },
+              "protocol": "https",
+              "direction": "bidirectional",
+              "description": "SAML authentication requests to central auth system",
+              "authentication": "SAML 2.0"
+            },
+            {
+              "from": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+              "to": {
+                "external": true,
+                "description": "Stripe payment processing API"
+              },
+              "protocol": "https",
+              "port": 443,
+              "direction": "bidirectional",
+              "description": "Payment processing via Stripe",
+              "authentication": "API key + TLS"
             }
           ],
-          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
-          "title": "Control Designation"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.8.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/statistics/v3.8.0",
-      "title": "HDF Statistics Primitives",
-      "description": "Statistics types for tracking assessment run metrics.",
-      "$defs": {
-        "Statistic_Block": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "total"
-          ],
-          "properties": {
-            "total": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "The total count. Example: the total number of requirements in a given category for a run."
-            }
-          },
-          "description": "Statistics for a given item, such as the total count.",
-          "title": "Statistic Block"
-        },
-        "Statistic_Hash": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [],
-          "properties": {
-            "passed": {
-              "$ref": "#/$defs/Statistic_Block",
-              "description": "Statistics for requirements that passed."
-            },
-            "failed": {
-              "$ref": "#/$defs/Statistic_Block",
-              "description": "Statistics for requirements that failed."
-            },
-            "notApplicable": {
-              "$ref": "#/$defs/Statistic_Block",
-              "description": "Statistics for requirements that are not applicable to the target."
-            },
-            "notReviewed": {
-              "$ref": "#/$defs/Statistic_Block",
-              "description": "Statistics for requirements that were not reviewed (manual check required)."
-            },
-            "error": {
-              "$ref": "#/$defs/Statistic_Block",
-              "description": "Statistics for requirements that encountered an error during assessment."
-            }
-          },
-          "description": "Statistics for requirement results, grouped by status.",
-          "title": "Statistic Hash"
-        },
-        "Statistics": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [],
-          "properties": {
-            "duration": {
-              "type": "number",
-              "minimum": 0,
-              "description": "How long (in seconds) this assessment run took."
-            },
-            "requirements": {
-              "$ref": "#/$defs/Statistic_Hash",
-              "description": "Breakdowns of requirement statistics by result status."
-            }
-          },
-          "description": "Statistics for the assessment run(s) such as duration and result counts.",
-          "title": "Statistics"
+          "description": "A data flow between two endpoints. The 'from' endpoint is always a local component; the 'to' endpoint can be local, cross-system, or external. Use 'direction' to indicate whether data flows one-way or both ways.",
+          "title": "Data Flow"
         }
       }
     },
@@ -4686,587 +4287,6 @@
           ],
           "description": "Represents a package referenced by a vulnerability finding or by an amendment's scope.\n\nOn Evaluated_Requirement.affectedPackages it says 'this CVE affects these package versions'. On Standalone_Override.affectedPackages it says 'this amendment is scoped to these packages' (used by VEX, OSCAL POA&M, FedRAMP component-aware amendments).\n\nNOT a system-level component identifier — see `components[]` on hdf-system for those.\n\nValidity requires at least one of: (name + version + ecosystem), purl alone, or cpe alone.\n\npurl and cpe are self-describing identifiers that encode name/version implicitly, so either may stand on its own; the name+version+ecosystem combination is the explicit form for sources without formal identifiers.",
           "title": "Affected Package"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.8.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/runner/v3.8.0",
-      "title": "HDF Runner Primitive",
-      "description": "Information about the test execution environment where the security tool/scanner was executed.",
-      "$defs": {
-        "Runner": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "name"
-          ],
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "The name of the runner environment. Examples: 'ubuntu', 'macos', 'windows', 'docker', 'kubernetes-pod', 'manual'."
-            },
-            "release": {
-              "type": "string",
-              "description": "The version/release of the operating system or runtime. Example: '20.04', '13.2', '11'."
-            },
-            "architecture": {
-              "type": "string",
-              "description": "The CPU architecture of the runner system. Example: 'x86_64', 'arm64', 'aarch64'."
-            },
-            "hostname": {
-              "type": "string",
-              "description": "The short hostname of the runner system. Example: 'ci-runner-01', 'jenkins-agent-03', 'k8s-node-worker-03'."
-            },
-            "fqdn": {
-              "type": "string",
-              "description": "The fully qualified domain name of the runner system, when known. Distinct from the short 'hostname'; kept separate for the same reason as on host components (an FQDN is not reliably decomposable). Example: 'ci-runner-01.build.example.com'."
-            },
-            "domain": {
-              "type": "string",
-              "description": "The directory domain the runner system belongs to (Active Directory / NetBIOS / LDAP), NOT the DNS suffix of the FQDN. Example: 'CORP'."
-            },
-            "containerImage": {
-              "type": "string",
-              "description": "The container image used for the test execution. Example: 'inspec/inspec:latest', 'ghcr.io/my-org/scanner:v2.1.0'. Useful for CI/CD pipelines where tests run in containers."
-            },
-            "containerId": {
-              "type": "string",
-              "description": "The container instance identifier. Example: 'a1b2c3d4e5f6', 'security-scan-job-xyz123'. Can be a Docker container ID, Kubernetes pod name, or other container runtime identifier."
-            },
-            "operator": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
-              "description": "The identity of the person or system responsible for executing the test. This could be a human auditor manually completing a checklist, an automated CI/CD system, or a security tool. Optional field to support both automated and manual HDF generation."
-            }
-          },
-          "examples": [
-            {
-              "name": "docker",
-              "release": "20.04",
-              "architecture": "x86_64",
-              "hostname": "github-runner-prod-01",
-              "fqdn": "github-runner-prod-01.build.example.com",
-              "domain": "CORP",
-              "containerImage": "ghcr.io/inspec/inspec:5.22.3",
-              "containerId": "security-scan-job-a1b2c3d4",
-              "operator": {
-                "identifier": "github-actions",
-                "type": "system",
-                "description": "Automated CI/CD pipeline"
-              }
-            },
-            {
-              "name": "kubernetes-pod",
-              "release": "1.28.4",
-              "architecture": "arm64",
-              "hostname": "k8s-worker-node-05",
-              "containerImage": "gcr.io/my-org/security-scanner:v3.2.1",
-              "containerId": "compliance-scan-pod-xyz789",
-              "operator": {
-                "identifier": "security-automation@example.com",
-                "type": "email"
-              }
-            },
-            {
-              "name": "manual",
-              "release": "macOS 14.2",
-              "architecture": "arm64",
-              "hostname": "auditor-mbp-02",
-              "operator": {
-                "identifier": "jane.smith",
-                "type": "username",
-                "description": "Senior Security Auditor - Manual Assessment"
-              }
-            }
-          ],
-          "description": "Information about the test execution environment. This is distinct from the target being scanned - the runner is where the security tool executes, while targets are what is being assessed.",
-          "title": "Runner"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.8.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/events/v3.8.0",
-      "title": "HDF Change Event Primitives",
-      "description": "Shared building blocks for HDF change-event wire documents. The envelope is entity-agnostic: hdf-requirement-change-event composes it today, and any future sibling event type (e.g. component change events — hdf-comparison already models componentDiffs alongside requirementDiffs) reuses it verbatim.",
-      "$defs": {
-        "Change_Event_Envelope": {
-          "type": "object",
-          "required": [
-            "eventId",
-            "source",
-            "sequence",
-            "systemRef",
-            "componentId",
-            "timestamp",
-            "priorChecksum"
-          ],
-          "properties": {
-            "eventId": {
-              "type": "string",
-              "format": "uuid",
-              "description": "Identity of this event occurrence, unique per source. (source, eventId) is the deduplication key: consumers may treat events with identical source and eventId as duplicates. UUIDv7 (time-ordered) is recommended but not required."
-            },
-            "source": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "URI identifying the producer context that emitted this event (for example, a scanner instance and profile). eventId uniqueness and sequence numbering are scoped per source."
-            },
-            "sequence": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Monotonically increasing sequence number per entity key. The ONLY ordering authority for folding: consumers keep the greatest sequence per key regardless of arrival order or timestamp. Deliberately per-entity-key (event-sourcing aggregate-version practice) rather than per-source."
-            },
-            "systemRef": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "URI to the hdf-system document (authorization boundary) this event applies to. Resolves to the latest version of the evolving system document."
-            },
-            "componentId": {
-              "type": "string",
-              "format": "uuid",
-              "description": "componentId of the system component this event concerns."
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Occurrence time of the observed change (RFC 3339, trimmed UTC). Display and audit metadata only — NEVER an ordering key; ordering is sequence's job."
-            },
-            "schemaRef": {
-              "type": "string",
-              "format": "uri",
-              "description": "The versioned schema $id this event validates against, so events self-describe on heterogeneous streams. Recommended on every wire event."
-            },
-            "priorChecksum": {
-              "oneOf": [
-                {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "The effectiveChecksum of the entity state this event supersedes, forming a per-key hash chain: a mismatch or gap against stored state is detectable, letting a consumer mark the key unverified instead of serving stale posture.\n\nNull at chain start (no prior state, e.g. a new entity or the first event after a seed).\n\nThe chain provides tamper/gap evidence given a trusted head; completeness is anchored out-of-band by periodic re-centering rescans."
-            }
-          },
-          "$comment": "Examples, in order: 1) Steady-state envelope: mid-chain event from an InSpec producer. priorChecksum links to the previous effectiveChecksum for this key; 2) Chain-start envelope: first event for a key after seeding — priorChecksum is null (the CloudTrail null-previous-digest convention), sequence starts low.",
-          "examples": [
-            {
-              "eventId": "0190f6f2-1c4e-7c3a-9f2a-3b1d5e7a9c01",
-              "source": "inspec://web01/rhel9-stig",
-              "sequence": 412,
-              "systemRef": "apptier.hdf-system.json",
-              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
-              "timestamp": "2026-07-22T14:03:11Z",
-              "schemaRef": "https://mitre.github.io/hdf-libs/schemas/hdf-requirement-change-event/v3.8.0",
-              "priorChecksum": {
-                "algorithm": "sha256",
-                "value": "704f62b2d0803438ad6b7b9bab45e2c4f350b7344135a2a7f8ef986d98669021"
-              }
-            },
-            {
-              "eventId": "0190f6f2-2a5b-7e4d-b1c8-4f2e6a8b0d12",
-              "source": "inspec://web01/rhel9-stig",
-              "sequence": 1,
-              "systemRef": "apptier.hdf-system.json",
-              "componentId": "6e0f2a3b-9c01-4d5e-8f7a-1b2c3d4e5f60",
-              "timestamp": "2026-07-22T09:00:00Z",
-              "priorChecksum": null
-            }
-          ],
-          "description": "Entity-agnostic transport identity for a change event: dedup ((source, eventId)), ordering (per-key sequence), system anchor (systemRef + componentId), occurrence time, schema self-description, and the prior-state hash-chain link. Composed into each concrete event type via allOf; entity-specific keys and payload live on the event type.",
-          "title": "Change Event Envelope"
-        },
-        "Event_Requirement_State": {
-          "type": "string",
-          "enum": [
-            "new",
-            "absent",
-            "updated",
-            "fixed",
-            "regressed"
-          ],
-          "description": "The producer-computable subset of the comparison vocabulary's Requirement_State. Kept value-identical with the parent enum (test-enforced): the batch-only states (moved, split, merged) are outputs of cross-document identity resolution a per-key producer cannot compute. Declared as a distinct named type (rather than a $ref intersection) so generated Go/TS types keep stable, distinct enum names.",
-          "title": "Event Requirement State"
-        },
-        "Event_Change_Reason": {
-          "type": "string",
-          "enum": [
-            "resultChanged",
-            "overrideAdded",
-            "overrideExpired",
-            "overrideRemoved",
-            "overrideModified",
-            "impactChanged",
-            "configChanged"
-          ],
-          "description": "The producer-computable subset of the comparison vocabulary's Change_Reason, value-identical with the parent enum (test-enforced). Batch-only reasons (baselineUpgraded, controlMapped, scannerChanged, targetChanged, metadataChanged) require cross-corpus context and are excluded.",
-          "title": "Event Change Reason"
-        },
-        "Effective_Projection": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "effectiveStatus",
-            "effectiveImpact"
-          ],
-          "properties": {
-            "effectiveStatus": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Result_Status",
-              "description": "The resolved effective compliance status at this point in the chain."
-            },
-            "effectiveImpact": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "The resolved effective impact score (0.0–1.0) at this point in the chain."
-            }
-          },
-          "$comment": "Examples, in order: 1) Prior posture of a failing SSH-cipher control before remediation; 2) Prior posture of a control passing under a waiver (the projection carries the resolved status; the governing override type travels in the requirement payload, not here).",
-          "examples": [
-            {
-              "effectiveStatus": "failed",
-              "effectiveImpact": 0.5
-            },
-            {
-              "effectiveStatus": "passed",
-              "effectiveImpact": 0.5
-            }
-          ],
-          "description": "The minimal resolved-posture projection — the same field set the per-requirement effectiveChecksum hashes (status and impact; the governing disposition is carried by the full requirement payload).",
-          "title": "Effective Projection"
-        },
-        "Derivation": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "seed",
-            "source",
-            "throughSequence",
-            "eventsApplied",
-            "asOf"
-          ],
-          "properties": {
-            "seed": {
-              "type": "object",
-              "unevaluatedProperties": false,
-              "required": [
-                "uri",
-                "checksum"
-              ],
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "format": "uri-reference",
-                  "description": "URI to the seed snapshot document (relative path or absolute URL)."
-                },
-                "checksum": {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
-                  "description": "Checksum of the seed snapshot, REQUIRED: the derivation pins an immutable snapshot by content, not just location."
-                }
-              },
-              "$comment": "Location + expected-hash reference (the SRI/OCI/SPDX pattern). Shares its core shape with hdf-evidence-package's Content_Reference and ADR-0006's proposed External_Reference; consolidation onto one reference primitive is tracked by bead hdf-libs-avp2.",
-              "description": "The authoritative snapshot this document was reassembled from, pinned by content."
-            },
-            "source": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "URI of the event-stream producer context whose events were applied (matches the events' envelope source)."
-            },
-            "throughSequence": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "The event watermark: the highest per-key sequence number applied. Downstream precedence rule: a full-scan document supersedes the reconciled view as of its scan time; between scans, the reconciled document with the highest throughSequence is the current posture."
-            },
-            "eventsApplied": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Number of change events applied to the seed to produce this document."
-            },
-            "asOf": {
-              "type": "string",
-              "format": "date-time",
-              "description": "The posture-as-of time of this reconciled view (RFC 3339, trimmed UTC) — the analog of PROV's generatedAtTime."
-            }
-          },
-          "$comment": "Examples, in order: 1) A reconciled result set: reassembled from the pinned seed scan plus 3 change events through watermark 414. The document's generator names the reconciler, never the scanner.",
-          "examples": [
-            {
-              "seed": {
-                "uri": "apptier-seed-scan.hdf.json",
-                "checksum": {
-                  "algorithm": "sha256",
-                  "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                }
-              },
-              "source": "inspec://web01/rhel9-stig",
-              "throughSequence": 414,
-              "eventsApplied": 3,
-              "asOf": "2026-07-24T10:15:00Z"
-            }
-          ],
-          "description": "Derived-document lineage for a reconciled result set (an hdf-results produced by applyChangeEvents rather than a scanner). Records exactly which seed and event horizon the document represents so it can never masquerade as primary scan evidence. Conceptually PROV qualified derivation: derived entity, used entity (seed), activity (event application), generation time (asOf).",
-          "title": "Derivation"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.8.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.8.0",
-      "title": "HDF Parameter Primitives",
-      "description": "Input/parameter type definitions for typed, traceable configuration values that bridge governance prose and scanner automation.",
-      "$defs": {
-        "Input_Type": {
-          "type": "string",
-          "enum": [
-            "String",
-            "Numeric",
-            "Boolean",
-            "Array",
-            "Hash",
-            "Regexp"
-          ],
-          "description": "The data type of the input value. Aligns with InSpec input types.",
-          "title": "Input Type"
-        },
-        "Comparison_Operator": {
-          "type": "string",
-          "enum": [
-            "eq",
-            "ne",
-            "lt",
-            "le",
-            "gt",
-            "ge",
-            "contains",
-            "matches",
-            "in",
-            "notIn"
-          ],
-          "description": "Comparison operator for evaluating the input value against observed values. Numeric: eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.",
-          "title": "Comparison Operator"
-        },
-        "Input_Constraints": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "properties": {
-            "min": {
-              "type": "number",
-              "description": "Minimum allowed value (for Numeric inputs)."
-            },
-            "max": {
-              "type": "number",
-              "description": "Maximum allowed value (for Numeric inputs)."
-            },
-            "pattern": {
-              "type": "string",
-              "description": "Regular expression pattern the value must match (for String inputs)."
-            },
-            "allowedValues": {
-              "type": "array",
-              "description": "Enumeration of permitted values."
-            }
-          },
-          "description": "Validation constraints for an input value.",
-          "title": "Input Constraints"
-        },
-        "Input": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "name"
-          ],
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "The input name. Must be unique within a baseline or results document. Example: 'max_concurrent_sessions'."
-            },
-            "type": {
-              "$ref": "#/$defs/Input_Type",
-              "description": "The data type of this input."
-            },
-            "value": {
-              "description": "The input value. Type should match the declared type field. Accepts any JSON value."
-            },
-            "description": {
-              "type": "string",
-              "description": "Human-readable description of what this input controls."
-            },
-            "required": {
-              "type": "boolean",
-              "description": "Whether this input must be provided. Defaults to false if omitted."
-            },
-            "sensitive": {
-              "type": "boolean",
-              "description": "Whether this input contains sensitive data (passwords, keys). Sensitive values should be redacted in output. Defaults to false if omitted."
-            },
-            "operator": {
-              "$ref": "#/$defs/Comparison_Operator",
-              "description": "The comparison operator used when evaluating this input against observed values."
-            },
-            "constraints": {
-              "$ref": "#/$defs/Input_Constraints",
-              "description": "Validation constraints for the input value."
-            }
-          },
-          "examples": [
-            {
-              "name": "max_concurrent_sessions",
-              "type": "Numeric",
-              "value": 3,
-              "description": "Maximum concurrent sessions per user",
-              "required": true,
-              "sensitive": false,
-              "operator": "le",
-              "constraints": {
-                "min": 1,
-                "max": 100
-              }
-            },
-            {
-              "name": "allowed_ciphers",
-              "type": "String",
-              "value": "AES256-GCM",
-              "description": "Permitted TLS cipher suite",
-              "constraints": {
-                "pattern": "^AES"
-              }
-            },
-            {
-              "name": "db_password",
-              "type": "String",
-              "sensitive": true
-            }
-          ],
-          "description": "A typed input parameter that bridges governance requirements and scanner automation. Inputs carry expected configuration values with type information, comparison operators, and validation constraints, enabling traceability from policy through to scan results.",
-          "title": "Input"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.8.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/epss/v3.8.0",
-      "title": "HDF EPSS Primitive",
-      "description": "Type for representing FIRST.org's Exploit Prediction Scoring System (EPSS) data for a vulnerability. EPSS estimates the probability that a CVE will be exploited in the wild in the next 30 days. See https://www.first.org/epss/ for the underlying model and methodology.",
-      "$defs": {
-        "Epss": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "score",
-            "percentile",
-            "date"
-          ],
-          "properties": {
-            "score": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "Exploit probability as a value between 0.0 and 1.0 inclusive. Higher values indicate greater predicted likelihood of exploitation in the next 30 days. Example: 0.97532 means roughly a 97.5% predicted probability."
-            },
-            "percentile": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1,
-              "description": "Rank of this score relative to all scored CVEs, expressed as a value between 0.0 and 1.0 inclusive. A percentile of 0.99 means this CVE is scored at or above 99% of all scored CVEs."
-            },
-            "date": {
-              "type": "string",
-              "format": "date",
-              "$comment": "This is the date FIRST.org published the score, not the date the underlying CVE was discovered or disclosed. EPSS scores are recomputed daily and shift as new exploitation evidence is observed.",
-              "description": "ISO 8601 date (YYYY-MM-DD) on which FIRST.org published this EPSS score."
-            }
-          },
-          "$comment": "Examples, in order: 1) High exploit probability and high percentile, characteristic of a widely-exploited vulnerability like Log4Shell (CVE-2021-44228) shortly after disclosure; 2) Low score but moderate percentile, the common case for CVEs that have some observed exploitation evidence but are not under active mass exploitation; 3) Very low score, typical of a CVE with no known exploitation activity or proof-of-concept availability.",
-          "examples": [
-            {
-              "score": 0.97532,
-              "percentile": 0.99987,
-              "date": "2026-05-26"
-            },
-            {
-              "score": 0.04521,
-              "percentile": 0.78432,
-              "date": "2026-05-26"
-            },
-            {
-              "score": 0.00042,
-              "percentile": 0.10215,
-              "date": "2026-05-26"
-            }
-          ],
-          "description": "FIRST.org Exploit Prediction Scoring System (EPSS) data for a single vulnerability. All three fields are required when an Epss object is present; the date disambiguates which day's score this is, since EPSS recomputes daily.",
-          "title": "EPSS"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.8.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/kev/v3.8.0",
-      "title": "HDF Kev Primitives",
-      "description": "Types for representing CISA Known Exploited Vulnerabilities (KEV) catalog membership. The KEV catalog (https://www.cisa.gov/known-exploited-vulnerabilities-catalog) flags CVEs that are confirmed actively exploited in the wild and drives federal patching urgency under CISA Binding Operational Directive 22-01.",
-      "$defs": {
-        "Kev": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "inKev"
-          ],
-          "if": {
-            "properties": {
-              "inKev": {
-                "const": true
-              }
-            },
-            "required": [
-              "inKev"
-            ]
-          },
-          "then": {
-            "required": [
-              "dateAdded",
-              "dueDate"
-            ]
-          },
-          "properties": {
-            "inKev": {
-              "type": "boolean",
-              "description": "Whether this vulnerability is currently in the CISA Known Exploited Vulnerabilities catalog. When true, dateAdded and dueDate are required."
-            },
-            "dateAdded": {
-              "type": "string",
-              "format": "date",
-              "description": "ISO 8601 calendar date (YYYY-MM-DD) the vulnerability was added to the CISA KEV catalog. Required when inKev is true."
-            },
-            "dueDate": {
-              "type": "string",
-              "format": "date",
-              "description": "ISO 8601 calendar date (YYYY-MM-DD) by which federal agencies must remediate per CISA BOD 22-01. Normally later than dateAdded, but the schema does not enforce ordering because CISA occasionally adjusts published dates. Required when inKev is true."
-            },
-            "notes": {
-              "type": "string",
-              "description": "CISA's notes describing the vulnerability, observed exploitation, or remediation guidance."
-            }
-          },
-          "$comment": "Examples, in order: 1) High-urgency case: recently added KEV entry with a short federal patching deadline; 2) Older KEV entry whose due date has already passed — useful for reporting overdue remediation; 3) Vulnerability evaluated against the KEV catalog and confirmed not present — dateAdded/dueDate are not required when inKev is false.",
-          "examples": [
-            {
-              "inKev": true,
-              "dateAdded": "2026-03-15",
-              "dueDate": "2026-04-05",
-              "notes": "Active ransomware exploitation observed; apply vendor patch immediately."
-            },
-            {
-              "inKev": true,
-              "dateAdded": "2023-11-07",
-              "dueDate": "2023-11-28",
-              "notes": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."
-            },
-            {
-              "inKev": false
-            }
-          ],
-          "title": "Kev"
         }
       }
     }

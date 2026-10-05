@@ -1,110 +1,202 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-plan/v3.8.0",
-  "title": "HDF Plan",
-  "description": "Defines an assessment plan — what baselines to run against which targets, with resolved inputs and scheduling. Maps to OSCAL Assessment Plan.",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-baseline/v3.8.0",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
     "name",
-    "assessments"
+    "requirements"
+  ],
+  "allOf": [
+    {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Baseline_Metadata"
+    }
   ],
   "properties": {
-    "externalReferences": {
-      "type": "array",
-      "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference"
-      },
-      "description": "Optional references to external artifacts relevant to this assessment plan (CTI/STIX, advisories, methodology docs, or any URI-addressable artifact). Inert context; see External_Reference."
-    },
-    "planId": {
-      "type": "string",
-      "format": "uuid",
-      "description": "Unique identifier for this plan. Optional in casual use, expected in production documents. Auto-generated if omitted during creation."
-    },
-    "name": {
-      "type": "string",
-      "description": "Human-readable plan name. Example: 'Portal Monthly Assessment'."
-    },
-    "type": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.8.0#/$defs/Plan_Type",
-      "description": "The type of assessment plan."
-    },
-    "description": {
-      "type": "string",
-      "description": "Description of the plan's purpose and scope."
-    },
-    "systemRef": {
-      "type": "string",
-      "format": "uri-reference",
-      "description": "URI to the hdf-system document this plan targets. Example: 'portal-prod.hdf-system.json'."
-    },
-    "assessments": {
+    "requirements": {
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.8.0#/$defs/Assessment"
+        "$ref": "#/$defs/Baseline_Requirement"
       },
-      "description": "The assessments to perform. Each assessment pairs a baseline with targets and resolved inputs."
+      "description": "The set of requirements - contains no findings as the assessment has not yet occurred."
     },
-    "schedule": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.8.0#/$defs/Schedule",
-      "description": "Optional scheduling configuration for recurring assessments."
-    },
-    "labels": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "string"
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Requirement_Group"
       },
-      "description": "Optional key-value labels for grouping and querying plans."
+      "description": "A set of descriptions for the requirement groups."
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.8.0#/$defs/Input"
+      },
+      "description": "The input(s) or attribute(s) to be used in the run."
     },
     "integrity": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",
-      "description": "Cryptographic integrity information for verifying this plan document has not been tampered with."
+      "description": "Cryptographic integrity information for verifying this baseline has not been tampered with."
     },
-    "version": {
-      "type": "string",
-      "description": "Version of this plan document."
+    "remediation": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Remediation",
+      "description": "Optional reference to automated remediation resources (Ansible playbooks, Terraform scripts, etc.) for implementing the security controls defined in this baseline."
+    },
+    "depends": {
+      "type": "array",
+      "items": {
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Dependency"
+      },
+      "description": "The set of dependencies this baseline depends on."
     },
     "generator": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Generator",
-      "description": "Information about the tool that generated this plan."
+      "description": "The tool that generated this file."
     },
     "extensions": {
       "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Extensions",
-      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this plan was converted from."
+      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this baseline was converted from."
     }
   },
   "examples": [
     {
-      "name": "Portal Monthly Assessment",
-      "type": "automated",
-      "systemRef": "portal-prod.hdf-system.json",
-      "assessments": [
+      "name": "ubuntu-2204-stig-baseline",
+      "title": "Canonical Ubuntu 22.04 LTS STIG Baseline",
+      "version": "1.2.0",
+      "maintainer": "DISA STIG Team",
+      "license": "Apache-2.0",
+      "summary": "Security Technical Implementation Guide for Ubuntu 22.04 LTS",
+      "supports": [
         {
-          "baselineRef": "RHEL9-STIG",
-          "targetSelector": {
-            "labels.component": "WebTier"
-          },
-          "inputs": {
-            "max_concurrent_sessions": 5,
-            "password_min_length": 15
-          },
-          "runner": {
-            "name": "cinc-auditor",
-            "version": "6.8.1"
-          }
+          "platformName": "ubuntu",
+          "platformFamily": "debian",
+          "release": "22.04"
         }
       ],
-      "schedule": {
-        "cron": "0 2 1 * *",
-        "notifyOnRegression": [
-          "security-team@agency.gov"
-        ]
-      }
+      "requirements": [
+        {
+          "id": "SV-260476",
+          "title": "Ubuntu 22.04 LTS must enforce password complexity",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "IA-5"
+            ],
+            "severity": "medium",
+            "gtitle": "SRG-OS-000069-GPOS-00037"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Use of a complex password helps to increase the time and resources required to compromise the password."
+            },
+            {
+              "label": "check",
+              "data": "Verify the value of 'minlen' in /etc/security/pwquality.conf is 15 or more."
+            },
+            {
+              "label": "fix",
+              "data": "Configure Ubuntu 22.04 LTS to enforce a minimum 15-character password length by adding 'minlen = 15' to /etc/security/pwquality.conf."
+            }
+          ]
+        },
+        {
+          "id": "SV-260477",
+          "title": "Ubuntu 22.04 LTS must configure audit logging",
+          "impact": 0.7,
+          "tags": {
+            "nist": [
+              "AU-3",
+              "AU-12"
+            ],
+            "severity": "high",
+            "gtitle": "SRG-OS-000037-GPOS-00015"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "Without establishing what type of events occurred, it would be difficult to establish, correlate, and investigate security incidents."
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "id": "controls/SV-260476.rb",
+          "title": "Password Configuration",
+          "requirements": [
+            "SV-260476"
+          ]
+        }
+      ]
     }
   ],
+  "description": "Information on the set of requirements that can be assessed, including baseline metadata and requirement definitions.",
+  "title": "HDF Baseline",
   "$defs": {
+    "Baseline_Requirement": {
+      "type": "object",
+      "unevaluatedProperties": false,
+      "required": [
+        "id",
+        "impact",
+        "tags",
+        "descriptions"
+      ],
+      "allOf": [
+        {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Requirement_Core"
+        }
+      ],
+      "properties": {
+        "descriptions": {
+          "$ref": "#/$defs/Baseline_Requirement_Descriptions",
+          "description": "Array of labeled descriptions. At least one description with label 'default' must be present. Convention: place default description first. Common labels: 'default', 'check', 'fix', 'rationale'."
+        },
+        "severity": {
+          "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Severity",
+          "description": "Explicit severity rating. Typically derived from impact score but provided explicitly for clarity."
+        }
+      },
+      "description": "A requirement definition without assessment results.",
+      "title": "Baseline Requirement"
+    },
+    "Baseline_Requirement_Descriptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "unevaluatedProperties": false,
+        "required": [
+          "label",
+          "data"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Description category. The 'default' label is required for the primary description. Common labels: 'default', 'check', 'fix', 'rationale'. Tools may use custom labels."
+          },
+          "data": {
+            "type": "string",
+            "description": "The description text content."
+          }
+        }
+      },
+      "contains": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "const": "default"
+          }
+        }
+      },
+      "description": "Array of labeled descriptions. At least one description with label 'default' must be present.",
+      "title": "Baseline Requirement Descriptions"
+    },
     "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0",
@@ -1287,270 +1379,136 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.8.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/plan/v3.8.0",
-      "title": "HDF Plan Primitives",
-      "description": "Types for defining assessment plans — what to scan, how to configure it, and when to run.",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/parameter/v3.8.0",
+      "title": "HDF Parameter Primitives",
+      "description": "Input/parameter type definitions for typed, traceable configuration values that bridge governance prose and scanner automation.",
       "$defs": {
-        "Plan_Type": {
+        "Input_Type": {
           "type": "string",
           "enum": [
-            "automated",
-            "manual",
-            "hybrid"
+            "String",
+            "Numeric",
+            "Boolean",
+            "Array",
+            "Hash",
+            "Regexp"
           ],
-          "description": "The type of assessment. 'automated' for scanner-driven, 'manual' for human-performed, 'hybrid' for both.",
-          "title": "Plan Type"
+          "description": "The data type of the input value. Aligns with InSpec input types.",
+          "title": "Input Type"
         },
-        "Runner_Config": {
+        "Comparison_Operator": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "le",
+            "gt",
+            "ge",
+            "contains",
+            "matches",
+            "in",
+            "notIn"
+          ],
+          "description": "Comparison operator for evaluating the input value against observed values. Numeric: eq/ne/lt/le/gt/ge. String: eq/ne/contains/matches. Collection: in/notIn.",
+          "title": "Comparison Operator"
+        },
+        "Input_Constraints": {
           "type": "object",
           "unevaluatedProperties": false,
+          "properties": {
+            "min": {
+              "type": "number",
+              "description": "Minimum allowed value (for Numeric inputs)."
+            },
+            "max": {
+              "type": "number",
+              "description": "Maximum allowed value (for Numeric inputs)."
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Regular expression pattern the value must match (for String inputs)."
+            },
+            "allowedValues": {
+              "type": "array",
+              "description": "Enumeration of permitted values."
+            }
+          },
+          "description": "Validation constraints for an input value.",
+          "title": "Input Constraints"
+        },
+        "Input": {
+          "type": "object",
+          "unevaluatedProperties": false,
+          "required": [
+            "name"
+          ],
           "properties": {
             "name": {
               "type": "string",
-              "description": "Name of the assessment runner. Example: 'cinc-auditor', 'inspec', 'openscap'."
+              "description": "The input name. Must be unique within a baseline or results document. Example: 'max_concurrent_sessions'."
             },
-            "version": {
-              "type": "string",
-              "description": "Version of the runner."
-            }
-          },
-          "description": "Configuration for the assessment runner/scanner.",
-          "title": "Runner Config"
-        },
-        "Assessment": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "baselineRef"
-          ],
-          "properties": {
-            "baselineRef": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "Reference to the baseline to evaluate. May be a baseline name (e.g. 'RHEL9-STIG'), a relative path to an HDF Baseline document (e.g. 'rhel9-stig.hdf-baseline.json'), or an absolute URI."
-            },
-            "componentRef": {
-              "type": "string",
-              "format": "uuid",
-              "description": "componentId of the system component this assessment targets. Use for direct component binding. Alternative to targetSelector."
-            },
-            "targetSelector": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Target_Selector",
-              "description": "Label selector to match targets for this assessment. Overrides the system component's targetSelector if provided."
-            },
-            "inputs": {
-              "type": "object",
-              "additionalProperties": true,
-              "description": "Resolved input values for this assessment. Keys are input names, values are the final resolved values (after baseline defaults + system overrides)."
-            },
-            "runner": {
-              "$ref": "#/$defs/Runner_Config",
-              "description": "Runner/scanner configuration for this assessment."
-            },
-            "description": {
-              "type": "string",
-              "description": "Description of this assessment's purpose."
-            }
-          },
-          "examples": [
-            {
-              "baselineRef": "RHEL9-STIG",
-              "targetSelector": {
-                "labels.component": "WebTier"
-              },
-              "inputs": {
-                "max_concurrent_sessions": 5,
-                "password_min_length": 15
-              },
-              "runner": {
-                "name": "cinc-auditor",
-                "version": "6.8.1"
-              }
-            }
-          ],
-          "description": "A single assessment within a plan — defines which baseline to run against which targets with what configuration.",
-          "title": "Assessment"
-        },
-        "Schedule": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "properties": {
-            "cron": {
-              "type": "string",
-              "description": "Cron expression for recurring assessments. Example: '0 2 1 * *' (2 AM on the 1st of each month)."
-            },
-            "startDate": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Earliest date to begin assessments. ISO 8601 format."
-            },
-            "endDate": {
-              "type": "string",
-              "format": "date-time",
-              "description": "Date after which assessments should no longer run. ISO 8601 format."
-            },
-            "notifyOnRegression": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "Email addresses or notification endpoints to alert when regressions are detected."
-            },
-            "notifyOnCompletion": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "Email addresses or notification endpoints to alert when assessments complete."
-            }
-          },
-          "examples": [
-            {
-              "cron": "0 2 1 * *",
-              "notifyOnRegression": [
-                "security-team@agency.gov"
-              ]
-            }
-          ],
-          "description": "Scheduling configuration for recurring assessments.",
-          "title": "Schedule"
-        }
-      }
-    },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0",
-      "title": "HDF System Primitives",
-      "description": "Types for describing system architecture, authorization boundaries, and components.",
-      "$defs": {
-        "Authorization_Status": {
-          "type": "string",
-          "enum": [
-            "authorized",
-            "denied",
-            "pendingAuthorization",
-            "conditionallyAuthorized",
-            "notYetRequested",
-            "revoked"
-          ],
-          "description": "Authorization to Operate (ATO) status for the system.",
-          "title": "Authorization Status"
-        },
-        "Categorization_Level": {
-          "type": "string",
-          "enum": [
-            "low",
-            "moderate",
-            "high"
-          ],
-          "description": "FIPS 199 security categorization level (impact level).",
-          "title": "Categorization Level"
-        },
-        "Input_Override": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "inputName",
-            "value"
-          ],
-          "properties": {
-            "baselineRef": {
-              "type": "string",
-              "description": "Name of the baseline this override applies to. If omitted, applies to all baselines that define this input."
-            },
-            "inputName": {
-              "type": "string",
-              "description": "Name of the input being overridden. Must match an Input.name in the referenced baseline."
+            "type": {
+              "$ref": "#/$defs/Input_Type",
+              "description": "The data type of this input."
             },
             "value": {
-              "description": "The overridden value. Should match the type of the original input."
-            },
-            "justification": {
-              "type": "string",
-              "description": "Rationale for why this override is needed."
-            },
-            "approvedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
-              "description": "Identity of the person or system that approved this override."
-            }
-          },
-          "description": "An override of a baseline input value for a specific component. Enables system-specific tailoring of baseline parameters.",
-          "title": "Input Override"
-        },
-        "Target_Selector": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "A label selector that matches targets by label key-value pairs. All specified labels must match (AND logic). Example: { \"labels.component\": \"WebTier\" } matches targets with labels.component = \"WebTier\".",
-          "title": "Target Selector"
-        },
-        "Control_Designation": {
-          "type": "object",
-          "unevaluatedProperties": false,
-          "required": [
-            "controlId",
-            "designation",
-            "description"
-          ],
-          "properties": {
-            "controlId": {
-              "type": "string",
-              "description": "The control identifier (e.g., 'SC-7', 'AC-2 (1)'). Must match a NIST tag in a baseline requirement's tags."
-            },
-            "designation": {
-              "type": "string",
-              "title": "Designation",
-              "enum": [
-                "common",
-                "system-specific",
-                "hybrid"
-              ],
-              "description": "NIST SP 800-53 control designation. 'common': fully provided by another component or system. 'system-specific': implemented by the inheriting component(s) only. 'hybrid': shared responsibility between provider and inheritor."
-            },
-            "providedBy": {
-              "type": "string",
-              "format": "uuid",
-              "description": "componentId of a local component that provides this control. Omit when the provider is an external system."
-            },
-            "systemRef": {
-              "type": "string",
-              "format": "uri-reference",
-              "description": "Reference to another hdf-system document whose component provides this control. Use when the provider is in a different system. Omit when the provider is local."
-            },
-            "inheritedBy": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "description": "componentIds that inherit this control. If omitted, all components in the system inherit it."
+              "description": "The input value. Type should match the declared type field. Accepts any JSON value."
             },
             "description": {
               "type": "string",
-              "description": "Justification for this designation — who provides the control, why it's inherited, and any relevant authorization references."
+              "description": "Human-readable description of what this input controls."
+            },
+            "required": {
+              "type": "boolean",
+              "description": "Whether this input must be provided. Defaults to false if omitted."
+            },
+            "sensitive": {
+              "type": "boolean",
+              "description": "Whether this input contains sensitive data (passwords, keys). Sensitive values should be redacted in output. Defaults to false if omitted."
+            },
+            "operator": {
+              "$ref": "#/$defs/Comparison_Operator",
+              "description": "The comparison operator used when evaluating this input against observed values."
+            },
+            "constraints": {
+              "$ref": "#/$defs/Input_Constraints",
+              "description": "Validation constraints for the input value."
             }
           },
           "examples": [
             {
-              "controlId": "IA-2",
-              "designation": "common",
-              "providedBy": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-              "inheritedBy": [
-                "11111111-2222-3333-4444-555555555555"
-              ],
-              "description": "User identification and authentication provided by Keycloak SSO via SAML 2.0."
+              "name": "max_concurrent_sessions",
+              "type": "Numeric",
+              "value": 3,
+              "description": "Maximum concurrent sessions per user",
+              "required": true,
+              "sensitive": false,
+              "operator": "le",
+              "constraints": {
+                "min": 1,
+                "max": 100
+              }
             },
             {
-              "controlId": "PE-2",
-              "designation": "common",
-              "description": "Physical access authorizations provided by AWS GovCloud per FedRAMP High authorization."
+              "name": "allowed_ciphers",
+              "type": "String",
+              "value": "AES256-GCM",
+              "description": "Permitted TLS cipher suite",
+              "constraints": {
+                "pattern": "^AES"
+              }
+            },
+            {
+              "name": "db_password",
+              "type": "String",
+              "sensitive": true
             }
           ],
-          "description": "Declares a control's designation within a system — whether it is common (provided by another component or system), system-specific (implemented locally), or hybrid (shared responsibility). Maps to NIST SP 800-53 Appendix C control designations and OSCAL SSP by-component provided/inherited semantics.",
-          "title": "Control Designation"
+          "description": "A typed input parameter that bridges governance requirements and scanner automation. Inputs carry expected configuration values with type information, comparison operators, and validation constraints, enabling traceability from policy through to scan results.",
+          "title": "Input"
         }
       }
     },

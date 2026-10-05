@@ -117,7 +117,8 @@ describe('Requirement_Result.rawSourceRecord — validation', () => {
   beforeAll(() => {
     ajv = createAjvWithPrimitives();
     validateResult = ajv.compile({
-      $ref: 'https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0#/$defs/Requirement_Result',
+      // Derived from the schema's own $id so a version bump does not break this.
+      $ref: `${resultSchema.$id as string}#/$defs/Requirement_Result`,
     });
   });
 
