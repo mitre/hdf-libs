@@ -224,9 +224,16 @@ hdf label set /tmp/example-hdf-label-test.json --component-id "deadbeef-1234-567
 
 # Generate unique componentIds
 hdf label set /tmp/example-hdf-label-test.json --generate-component-id
+
+# Attach identifiers owned by other systems
+hdf label set /tmp/example-hdf-label-test.json --external-id cmdb=CI0012345 --external-id emass=1234
+hdf label show /tmp/example-hdf-label-test.json
+
+# Remove one scheme
+hdf label remove /tmp/example-hdf-label-test.json --external-id emass
 ```
 
-**Expected**: Labels are applied/removed on components[]. componentId is stamped correctly.
+**Expected**: Labels are applied/removed on components[]. componentId is stamped correctly; a `--component-id` that is not a UUID is rejected and nothing is written. External IDs land in `components[].externalIds` (not in `labels`), merge by scheme, and are listed by `hdf label show`.
 
 ---
 

@@ -16,16 +16,20 @@ import (
 func NewLabelCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "label",
-		Short: "Manage labels on HDF file targets",
-		Long: `Add, remove, or display labels on targets in an HDF file.
+		Short: "Manage labels and external IDs on HDF file targets",
+		Long: `Add, remove, or display labels and external IDs on targets in an HDF file.
 
-Labels are key=value pairs stored on each target in the HDF document.
+Labels are key=value pairs stored on each target in the HDF document, used for
+grouping and selection. External IDs are scheme=value foreign keys into other
+systems (a CMDB asset ID, an eMASS system ID, a cloud resource ID), stored in
+each target's externalIds and never used as a selector.
 
 Examples:
   hdf label show results.json
   hdf label set results.json system=Portal environment=production
   hdf label remove results.json system environment
-  hdf label set results.json env=prod -o labeled.json`,
+  hdf label set results.json env=prod -o labeled.json
+  hdf label set results.json --external-id cmdb=CI0012345`,
 	}
 
 	cmd.AddCommand(newLabelShowCmd())
@@ -38,8 +42,8 @@ Examples:
 func newLabelShowCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "show <file>",
-		Short: "Display labels on all targets",
-		Long: `Display the labels currently set on all targets in an HDF file.
+		Short: "Display labels and external IDs on all targets",
+		Long: `Display the labels and external IDs currently set on all targets in an HDF file.
 
 Examples:
   hdf label show results.json
@@ -51,19 +55,29 @@ Examples:
 
 func newLabelSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "set <file> <key>=<value> [<key>=<value>...]",
-		Short: "Set labels on all targets",
+		Use:   "set <file> [<key>=<value>...]",
+		Short: "Set labels and external IDs on all targets",
 		Long: `Set one or more labels on all targets in an HDF file.
 
 Labels are specified as key=value pairs. Existing labels with the same key
 are overwritten. The file is modified in-place unless --output is specified.
+
+--external-id scheme=value writes a foreign key into each target's externalIds.
+Repeat the flag for several schemes. A scheme already present is overwritten;
+other schemes are left as they are. The value is carried verbatim, so it may be
+any non-empty string. By default every target gets the identifier; pass
+--component-name to write it on one target only. The command fails, and writes
+nothing, when the document has no target to carry the identifier, or when
+--component-name matches no target or more than one.
 
 Examples:
   hdf label set results.json system=Portal
   hdf label set results.json env=prod team=security
   hdf label set results.json env=prod -o labeled.json
   hdf label set results.json --component-id aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
-  hdf label set results.json --generate-component-id`,
+  hdf label set results.json --generate-component-id
+  hdf label set results.json --external-id cmdb=CI0012345 --external-id emass=1234
+  hdf label set results.json --external-id cmdb=CI0012345 --component-name web-server-01`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: runLabelSet,
 	}
@@ -71,28 +85,39 @@ Examples:
 	cmd.Flags().StringP("output", "o", "", "Write to a different file instead of modifying in-place")
 	cmd.Flags().String("component-id", "", "Set componentId (a UUID) on all components")
 	cmd.Flags().Bool("generate-component-id", false, "Generate a unique componentId for each component")
+	cmd.Flags().StringArray("external-id", nil, "Set an external ID as scheme=value (repeatable, e.g. --external-id cmdb=CI0012345); surrounding whitespace is trimmed from the scheme, the value is carried verbatim")
+	cmd.Flags().String("component-name", "", "Apply --external-id only to the component with this name")
 
 	return cmd
 }
 
 func newLabelRemoveCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "remove <file> <key> [<key>...]",
-		Short: "Remove labels from all targets",
+		Use:   "remove <file> [<key>...]",
+		Short: "Remove labels and external IDs from all targets",
 		Long: `Remove one or more label keys from all targets in an HDF file.
 
 Missing keys are silently ignored. The file is modified in-place unless
 --output is specified.
 
+--external-id scheme removes that scheme from each target's externalIds.
+Repeat the flag for several schemes; pass --component-name to remove it from
+one target only. The name must match exactly one component: a name is not
+identity, so a document may carry two components with the same one, and an
+ambiguous name is rejected before anything is written.
+
 Examples:
   hdf label remove results.json system
   hdf label remove results.json system environment
-  hdf label remove results.json system -o cleaned.json`,
-		Args: cobra.MinimumNArgs(2),
+  hdf label remove results.json system -o cleaned.json
+  hdf label remove results.json --external-id cmdb`,
+		Args: cobra.MinimumNArgs(1),
 		RunE: runLabelRemove,
 	}
 
 	cmd.Flags().StringP("output", "o", "", "Write to a different file instead of modifying in-place")
+	cmd.Flags().StringArray("external-id", nil, "Remove an external ID scheme (repeatable, e.g. --external-id cmdb); surrounding whitespace is trimmed from the scheme")
+	cmd.Flags().String("component-name", "", "Remove --external-id only from the component with this name")
 
 	return cmd
 }
@@ -150,36 +175,92 @@ func runLabelShow(_ *cobra.Command, args []string) error {
 		fmt.Printf("Component: %s [%s]\n", info.Name, info.Type)
 		if len(info.Labels) == 0 {
 			fmt.Println("  (no labels)")
-		} else {
-			keys := make([]string, 0, len(info.Labels))
-			for k := range info.Labels {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				fmt.Printf("  %s = %s\n", k, info.Labels[k])
-			}
+		}
+		printSortedPairs("  ", info.Labels)
+		if len(info.ExternalIDs) > 0 {
+			fmt.Println("  External IDs:")
+			printSortedPairs("    ", info.ExternalIDs)
 		}
 	}
 
 	return nil
 }
 
-func runLabelSet(cmd *cobra.Command, args []string) error {
-	filePath := args[0]
-	labelPairs := args[1:]
+// printSortedPairs prints "key = value" lines in key order.
+func printSortedPairs(indent string, pairs map[string]string) {
+	keys := make([]string, 0, len(pairs))
+	for k := range pairs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		fmt.Printf("%s%s = %s\n", indent, k, pairs[k])
+	}
+}
 
-	componentID, _ := cmd.Flags().GetString("component-id")
-	generateCID, _ := cmd.Flags().GetBool("generate-component-id")
+// externalIDFlag reads the repeatable --external-id flag. pflag reports a lone
+// empty value as no values at all, which would turn `--external-id ""` into a
+// silent no-op, so a flag that was set but came back empty is restored.
+func externalIDFlag(cmd *cobra.Command) []string {
+	values, _ := cmd.Flags().GetStringArray("external-id")
+	if len(values) == 0 && cmd.Flags().Changed("external-id") {
+		return []string{""}
+	}
+	return values
+}
 
-	if len(labelPairs) == 0 && componentID == "" && !generateCID {
-		return fmt.Errorf("no labels or component-id flags provided; nothing to set\n" +
+// labelSetRequest is everything `label set` was asked to write, parsed and
+// validated before the file is read so a bad argument can never leave a partial
+// write behind.
+type labelSetRequest struct {
+	labels        map[string]string
+	componentID   string
+	generateCID   bool
+	externalIDs   map[string]string
+	componentName string
+}
+
+func parseLabelSetRequest(cmd *cobra.Command, labelPairs []string) (labelSetRequest, error) {
+	var req labelSetRequest
+	req.componentID, _ = cmd.Flags().GetString("component-id")
+	req.generateCID, _ = cmd.Flags().GetBool("generate-component-id")
+	req.componentName, _ = cmd.Flags().GetString("component-name")
+	externalIDPairs := externalIDFlag(cmd)
+
+	if len(labelPairs) == 0 && req.componentID == "" && !req.generateCID && len(externalIDPairs) == 0 && req.componentName == "" {
+		return req, fmt.Errorf("no labels, component-id or external-id flags provided; nothing to set\n" +
 			"Usage: hdf label set <file> key=value [key=value...]\n" +
 			"  or:  hdf label set <file> --component-id <uuid>\n" +
-			"  or:  hdf label set <file> --generate-component-id")
+			"  or:  hdf label set <file> --generate-component-id\n" +
+			"  or:  hdf label set <file> --external-id <scheme>=<value>")
 	}
 
-	if err := checkComponentIDFlag(componentID); err != nil {
+	var err error
+	if req.labels, err = parseLabelsFlag(labelPairs); err != nil {
+		return req, err
+	}
+	if idErr := checkComponentIDFlag(req.componentID); idErr != nil {
+		return req, idErr
+	}
+	if req.externalIDs, err = parseExternalIDsFlag(externalIDPairs); err != nil {
+		return req, err
+	}
+	if req.componentName != "" {
+		if len(req.externalIDs) == 0 {
+			return req, fmt.Errorf("--component-name selects the component for --external-id; pass at least one --external-id")
+		}
+		if len(req.labels) > 0 || req.componentID != "" || req.generateCID {
+			return req, fmt.Errorf("--component-name applies to --external-id only; labels and component-id flags are written to every component, so set them in a separate invocation")
+		}
+	}
+	return req, nil
+}
+
+func runLabelSet(cmd *cobra.Command, args []string) error {
+	filePath := args[0]
+
+	req, err := parseLabelSetRequest(cmd, args[1:])
+	if err != nil {
 		return err
 	}
 
@@ -192,26 +273,21 @@ func runLabelSet(cmd *cobra.Command, args []string) error {
 		return gateErr
 	}
 
-	result := data
+	result, err := hdfdoc.ApplyLabels(data, req.labels)
+	if err != nil {
+		return err
+	}
 
-	// Apply key=value labels if provided
-	if len(labelPairs) > 0 {
-		labels, parseErr := parseLabelsFlag(labelPairs)
-		if parseErr != nil {
-			return parseErr
-		}
-		result, err = hdfdoc.ApplyLabels(result, labels)
+	if req.componentID != "" || req.generateCID {
+		result, err = hdfdoc.ApplyComponentID(result, req.componentID, req.generateCID)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Apply --component-id or --generate-component-id
-	if componentID != "" || generateCID {
-		result, err = hdfdoc.ApplyComponentID(result, componentID, generateCID)
-		if err != nil {
-			return err
-		}
+	result, err = hdfdoc.ApplyExternalIDs(result, req.externalIDs, req.componentName)
+	if err != nil {
+		return err
 	}
 
 	outputPath, _ := cmd.Flags().GetString("output")
@@ -233,6 +309,26 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 	filePath := args[0]
 	keys := args[1:]
 
+	componentName, _ := cmd.Flags().GetString("component-name")
+	schemes, err := parseExternalIDSchemes(externalIDFlag(cmd))
+	if err != nil {
+		return err
+	}
+
+	if len(keys) == 0 && len(schemes) == 0 && componentName == "" {
+		return fmt.Errorf("no label keys or --external-id schemes provided; nothing to remove\n" +
+			"Usage: hdf label remove <file> key [key...]\n" +
+			"  or:  hdf label remove <file> --external-id <scheme>")
+	}
+	if componentName != "" {
+		if len(schemes) == 0 {
+			return fmt.Errorf("--component-name selects the component for --external-id; pass at least one --external-id")
+		}
+		if len(keys) > 0 {
+			return fmt.Errorf("--component-name applies to --external-id only; label keys are removed from every component, so remove them in a separate invocation")
+		}
+	}
+
 	data, err := readInputFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
@@ -247,6 +343,11 @@ func runLabelRemove(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	result, err = hdfdoc.RemoveExternalIDs(result, schemes, componentName)
+	if err != nil {
+		return err
+	}
+
 	outputPath, _ := cmd.Flags().GetString("output")
 	return writeLabelOutput(result, filePath, outputPath)
 }
@@ -257,6 +358,10 @@ func writeLabelOutput(data []byte, originalPath, outputPath string) error {
 	target := originalPath
 	if outputPath != "" {
 		target = outputPath
+	}
+
+	if err := validateHDFDocument(data); err != nil {
+		return fmt.Errorf("document failed validation before write: %w", err)
 	}
 
 	// Ensure trailing newline for well-formed JSON files
