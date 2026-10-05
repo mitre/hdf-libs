@@ -31,6 +31,8 @@
             {
               "codeDesc": "Package: ca-certificates@2023.2.64-1.amzn2.0.1 | Type: rpm | Location: /var/lib/rpm/Packages | Match Type: exact-direct-match",
               "message": "Severity: Low vulnerability is fixed for versions 2023.2.68-1.amzn2.0.1",
+              "resource": "package",
+              "resourceId": "pkg:rpm/amzn/ca-certificates@2023.2.64-1.amzn2.0.1?arch=noarch\u0026upstream=ca-certificates-2023.2.64-1.amzn2.0.1.src.rpm\u0026distro=amzn-2",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -94,6 +96,8 @@
             {
               "codeDesc": "Package: krb5-libs@1.15.1-55.amzn2.2.7 | Type: rpm | Location: /var/lib/rpm/Packages | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.15.1-55.amzn2.2.8",
+              "resource": "package",
+              "resourceId": "pkg:rpm/amzn/krb5-libs@1.15.1-55.amzn2.2.7?arch=aarch64\u0026upstream=krb5-1.15.1-55.amzn2.2.7.src.rpm\u0026distro=amzn-2",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -154,6 +158,8 @@
             {
               "codeDesc": "Package: openssl-libs@1:1.0.2k-24.amzn2.0.12 | Type: rpm | Location: /var/lib/rpm/Packages | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.0.2k-24.amzn2.0.13",
+              "resource": "package",
+              "resourceId": "pkg:rpm/amzn/openssl-libs@1.0.2k-24.amzn2.0.12?arch=aarch64\u0026epoch=1\u0026upstream=openssl-1.0.2k-24.amzn2.0.12.src.rpm\u0026distro=amzn-2",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -247,6 +253,8 @@
             {
               "codeDesc": "Package: pip@23.0.1 | Type: python | Location: /var/lang/lib/python3.9/site-packages/pip-23.0.1.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 23.3",
+              "resource": "package",
+              "resourceId": "pkg:pypi/pip@23.0.1",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -330,6 +338,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -398,6 +408,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -487,6 +499,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -558,6 +572,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -632,6 +648,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Severity: Medium vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -751,6 +769,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -826,6 +846,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -898,6 +920,8 @@
             {
               "codeDesc": "Package: python@3.9.19 | Type: binary | Location: /var/lang/bin/python3.9 | Match Type: cpe-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Unknown vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:generic/python@3.9.19",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -998,6 +1022,8 @@
             {
               "codeDesc": "Package: setuptools@58.1.0 | Type: python | Location: /var/lang/lib/python3.9/site-packages/setuptools-58.1.0.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 65.5.1",
+              "resource": "package",
+              "resourceId": "pkg:pypi/setuptools@58.1.0",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -1088,6 +1114,8 @@
             {
               "codeDesc": "Package: setuptools@58.1.0 | Type: python | Location: /var/lang/lib/python3.9/site-packages/setuptools-58.1.0.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: High vulnerability is fixed for versions 70.0.0",
+              "resource": "package",
+              "resourceId": "pkg:pypi/setuptools@58.1.0",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -1156,6 +1184,8 @@
             {
               "codeDesc": "Package: stdlib@go1.22.4 | Type: go-module | Location: /usr/local/bin/aws-lambda-rie | Match Type: cpe-match",
               "message": "Severity: High vulnerability is unknown",
+              "resource": "package",
+              "resourceId": "pkg:golang/stdlib@1.22.4",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
@@ -1228,6 +1258,8 @@
             {
               "codeDesc": "Package: urllib3@1.26.18 | Type: python | Location: /var/runtime/urllib3-1.26.18.dist-info/METADATA | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 1.26.19",
+              "resource": "package",
+              "resourceId": "pkg:pypi/urllib3@1.26.18",
               "startTime": "2024-08-29T17:47:41.623Z",
               "status": "failed"
             }
