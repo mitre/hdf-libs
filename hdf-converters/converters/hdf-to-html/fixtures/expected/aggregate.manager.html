@@ -439,9 +439,9 @@ pre.code { background: var(--pico-code-background-color); color: var(--pico-code
 <table class="summary" aria-label="Status by baseline">
 <thead><tr><th scope="col">Baseline</th><th scope="col">Passed</th><th scope="col">Failed</th><th scope="col">Not Reviewed</th><th scope="col">Not Applicable</th><th scope="col">Error</th><th scope="col">Total</th><th scope="col">Compliance</th></tr></thead>
 <tbody>
-<tr><th scope="row">rich.json › OWASP ZAP Scan: code.jquery.com</th><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0.00%</td></tr>
-<tr><th scope="row">rich.json › OWASP ZAP Scan: mymac.com</th><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>3</td><td>33.33%</td></tr>
-<tr><th scope="row">finding-detail.json › sast</th><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0.00%</td></tr>
+<tr><th scope="row">rich.json › OWASP ZAP Scan of http://code.jquery.com</th><td>0</td><td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0.00%</td></tr>
+<tr><th scope="row">rich.json › OWASP ZAP Scan of http://mymac.com:8191</th><td>1</td><td>2</td><td>0</td><td>0</td><td>0</td><td>3</td><td>33.33%</td></tr>
+<tr><th scope="row">finding-detail.json › Static analysis</th><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0.00%</td></tr>
 </tbody>
 <tfoot>
 <tr><th scope="row">All baselines</th><td>1</td><td>3</td><td>0</td><td>1</td><td>0</td><td>5</td><td>25.00%</td></tr>
@@ -564,15 +564,17 @@ pre.code { background: var(--pico-code-background-color); color: var(--pico-code
 <summary><h3>rich.json</h3><span class="count">4</span></summary>
 <div class="fold-body">
 <details class="fold group baseline" id="block-7" open="open">
-<summary><h4>OWASP ZAP Scan: code.jquery.com</h4><span class="count">1</span></summary>
+<summary><h4>OWASP ZAP Scan of http://code.jquery.com</h4><span class="count">1</span></summary>
 <div class="fold-body">
-<details class="fold" id="block-8" open="open">
-<summary><h5>Baseline details</h5><span class="count">2</span></summary>
+<details class="fold" id="block-8">
+<summary><h5>Baseline details</h5><span class="count">3</span></summary>
 <div class="fold-body">
 <dl>
+<dt>Name</dt><dd>OWASP ZAP Scan: code.jquery.com</dd>
 <dt>Title</dt><dd>OWASP ZAP Scan of http://code.jquery.com</dd>
 <dt>Summary</dt><dd>ZAP Version 2.7.0</dd>
 </dl>
+<p class="to-top"><a href="#block-8">Back to the top of the baseline details</a></p>
 </div>
 </details>
 <div class="req-head" aria-hidden="true"><span>Status</span><span>ID</span><span>Severity</span><span>Title</span><span>800-53 Controls &amp; CCIs</span></div>
@@ -650,15 +652,17 @@ This issue still applies to error type pages (401, 403, 500, etc) as those pages
 </div>
 </details>
 <details class="fold group baseline" id="block-13">
-<summary><h4>OWASP ZAP Scan: mymac.com</h4><span class="count">3</span></summary>
+<summary><h4>OWASP ZAP Scan of http://mymac.com:8191</h4><span class="count">3</span></summary>
 <div class="fold-body">
-<details class="fold" id="block-14" open="open">
-<summary><h5>Baseline details</h5><span class="count">2</span></summary>
+<details class="fold" id="block-14">
+<summary><h5>Baseline details</h5><span class="count">3</span></summary>
 <div class="fold-body">
 <dl>
+<dt>Name</dt><dd>OWASP ZAP Scan: mymac.com</dd>
 <dt>Title</dt><dd>OWASP ZAP Scan of http://mymac.com:8191</dd>
 <dt>Summary</dt><dd>ZAP Version 2.7.0</dd>
 </dl>
+<p class="to-top"><a href="#block-14">Back to the top of the baseline details</a></p>
 </div>
 </details>
 <div class="req-head" aria-hidden="true"><span>Status</span><span>ID</span><span>Severity</span><span>Title</span><span>800-53 Controls &amp; CCIs</span></div>
@@ -913,7 +917,7 @@ The source code for [ ] was found at [http://mymac.com:8191/WebGoat/js/goatApp/t
 </div>
 </details>
 </article>
-<p class="to-top"><a href="#block-13">Back to the top of OWASP ZAP Scan: mymac.com</a></p>
+<p class="to-top"><a href="#block-13">Back to the top of OWASP ZAP Scan of http://mymac.com:8191</a></p>
 </div>
 </details>
 <p class="to-top"><a href="#block-6">Back to the top of rich.json</a></p>
@@ -923,12 +927,13 @@ The source code for [ ] was found at [http://mymac.com:8191/WebGoat/js/goatApp/t
 <summary><h3>finding-detail.json</h3><span class="count">1</span></summary>
 <div class="fold-body">
 <details class="fold group baseline" id="block-26" open="open">
-<summary><h4>sast</h4><span class="count">1</span></summary>
+<summary><h4>Static analysis</h4><span class="count">1</span></summary>
 <div class="fold-body">
 <details class="fold" id="block-27">
-<summary><h5>Baseline details</h5><span class="count">8</span></summary>
+<summary><h5>Baseline details</h5><span class="count">9</span></summary>
 <div class="fold-body">
 <dl>
+<dt>Name</dt><dd>sast</dd>
 <dt>Title</dt><dd>Static analysis</dd>
 <dt>Version</dt><dd>1.2</dd>
 <dt>Summary</dt><dd>Rails SAST</dd>

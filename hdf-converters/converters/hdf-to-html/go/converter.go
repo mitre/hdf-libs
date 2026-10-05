@@ -139,6 +139,8 @@ func render(docs []Document, opts Options, aggregated bool) ([]byte, error) {
 			return nil, err
 		}
 		src.ref, src.hasRef = assessmentTime(&src.doc)
+		src.baselineLabels = baselineLabels(src.doc.Baselines)
+		src.attributed = attributesResults(&src.doc)
 	}
 	r.document()
 	return []byte(r.b.String()), nil
@@ -148,10 +150,75 @@ func render(docs []Document, opts Options, aggregated bool) ([]byte, error) {
 type source struct {
 	name string
 	doc  hdf.HDFResults
+	// baselineLabels names each of doc's baselines as the report shows it.
+	baselineLabels []string
+	// attributed is whether doc ties any of its requirements to a component.
+	attributed bool
 	// ref is the instant override expiry is judged against. Epoch when the
 	// document carries no usable time, which leaves every override in force.
 	ref    time.Time
 	hasRef bool
+}
+
+// baselineLabels names each baseline as the report shows it: its title, which
+// is what carries the scan target in real scanner output, falling back to its
+// name. A label two baselines would share takes the 1-based document position
+// of the baseline it names (hdf-engine's 0-based baselineIndex plus one).
+func baselineLabels(baselines []hdf.EvaluatedBaseline) []string {
+	shared := make(map[string]int, len(baselines))
+	labels := make([]string, len(baselines))
+	for i := range baselines {
+		labels[i] = baselineLabel(&baselines[i])
+		shared[labels[i]]++
+	}
+	for i := range labels {
+		if shared[labels[i]] > 1 {
+			labels[i] += ordinalSuffix(i)
+		}
+	}
+	// A title that already ends in another baseline's suffix would collide with
+	// the label built for it, so a label that is still taken takes another.
+	taken := make(map[string]bool, len(labels))
+	for i := range labels {
+		for taken[labels[i]] {
+			labels[i] += ordinalSuffix(i)
+		}
+		taken[labels[i]] = true
+	}
+	return labels
+}
+
+func baselineLabel(b *hdf.EvaluatedBaseline) string {
+	if title := hdfutil.Deref(b.Title); title != "" {
+		return title
+	}
+	return b.Name
+}
+
+func ordinalSuffix(i int) string {
+	return " #" + strconv.Itoa(i+1)
+}
+
+// labelComponent is the well-known baseline label naming the component a
+// baseline's requirements were assessed against.
+const labelComponent = "component"
+
+// attributesResults reports whether the document ties any requirement to a
+// component. HDF results carry that link at baseline granularity only — a
+// baseline's labels.component names a component, or a component's baselineRefs
+// name a baseline — so a per-component number means nothing without one.
+func attributesResults(doc *hdf.HDFResults) bool {
+	for i := range doc.Baselines {
+		if doc.Baselines[i].Labels[labelComponent] != "" {
+			return true
+		}
+	}
+	for i := range doc.Components {
+		if len(doc.Components[i].BaselineRefs) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 type renderer struct {
@@ -183,6 +250,12 @@ const collapsedAbove = 2
 // the content. title is HTML; label is the plain text the return link names.
 // An empty id takes the next number.
 func (r *renderer) openFold(class, id, tag, title, label string, count int) fold {
+	return r.openFoldCounted(class, id, tag, title, label, count, true)
+}
+
+// openFoldCounted is openFold with the choice of whether the heading states its
+// count. A block that drops it still collapses at the same size.
+func (r *renderer) openFoldCounted(class, id, tag, title, label string, count int, counted bool) fold {
 	if id == "" {
 		r.folds++
 		id = "block-" + strconv.Itoa(r.folds)
@@ -196,8 +269,12 @@ func (r *renderer) openFold(class, id, tag, title, label string, count int) fold
 	if f.long {
 		open = ""
 	}
+	badge := ""
+	if counted {
+		badge = `<span class="count">` + strconv.Itoa(count) + closeSpan
+	}
 	r.line(`<details class="` + classes + `" id="` + id + `"` + open + ">")
-	r.line("<summary><" + tag + ">" + title + "</" + tag + `><span class="count">` + strconv.Itoa(count) + "</span></summary>")
+	r.line("<summary><" + tag + ">" + title + "</" + tag + ">" + badge + "</summary>")
 	r.line(`<div class="fold-body">`)
 	return f
 }
@@ -562,8 +639,8 @@ func (r *renderer) component(c *hdf.Component) {
 		{"Dataset ID", hdfutil.Deref(c.DatasetID)},
 		{"Owner", identity(c.Owner)},
 	}
-	f := r.openFold("component", "", "h3", escape(c.Name)+` <span class="type">`+escape(string(c.Type))+closeSpan, c.Name,
-		countFacts(facts)+len(c.Labels)+len(c.ExternalIDS))
+	f := r.openFoldCounted("component", "", "h3", escape(c.Name)+` <span class="type">`+escape(string(c.Type))+closeSpan, c.Name,
+		countFacts(facts)+len(c.Labels)+len(c.ExternalIDS), r.src.attributed)
 	r.definitionList(facts)
 	r.chips("Labels", c.Labels)
 	r.chips("External IDs", c.ExternalIDS)
@@ -852,11 +929,11 @@ func (r *renderer) statusByBaseline(t *statusTally) {
 	r.openTable(`class="summary" aria-label="Status by baseline"`, summaryHead("Baseline"))
 	for si := range r.sources {
 		for i := range r.sources[si].doc.Baselines {
-			name := r.sources[si].doc.Baselines[i].Name
+			label := r.sources[si].baselineLabels[i]
 			if r.aggregated {
-				name = r.sources[si].name + " \u203a " + name
+				label = r.sources[si].name + " \u203a " + label
 			}
-			r.line(summaryRow(escape(name), t.perBaseline[si][i]))
+			r.line(summaryRow(escape(label), t.perBaseline[si][i]))
 		}
 	}
 	r.closeTable(summaryRow("All baselines", t.all))
@@ -968,7 +1045,7 @@ func (r *renderer) results() {
 			f = r.openFold("group source", "", "h3", escape(r.src.name), r.src.name, total)
 		}
 		for i := range r.src.doc.Baselines {
-			r.baseline(&r.src.doc.Baselines[i])
+			r.baseline(&r.src.doc.Baselines[i], r.src.baselineLabels[i])
 		}
 		if r.aggregated {
 			r.closeFold(f)
@@ -977,9 +1054,12 @@ func (r *renderer) results() {
 	r.line(closeSection)
 }
 
-func (r *renderer) baseline(baseline *hdf.EvaluatedBaseline) {
-	f := r.openFold("group baseline", "", r.baselineHeading(), escape(baseline.Name), baseline.Name, len(baseline.Requirements))
+func (r *renderer) baseline(baseline *hdf.EvaluatedBaseline, label string) {
+	f := r.openFold("group baseline", "", r.baselineHeading(), escape(label), label, len(baseline.Requirements))
 	facts := []pair{
+		// The label may be the title, so the name is stated here: it is the key
+		// `hdf query --baseline` and hdf_compliance groups select on.
+		{"Name", baseline.Name},
 		{"Title", hdfutil.Deref(baseline.Title)},
 		{"Version", hdfutil.Deref(baseline.Version)},
 		{"Summary", hdfutil.Deref(baseline.Summary)},

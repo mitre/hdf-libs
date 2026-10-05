@@ -19,6 +19,7 @@ import (
 
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	testhdf "github.com/mitre/hdf-libs/hdf-schema/testhdf/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -1136,7 +1137,8 @@ func TestConvertHDFToHTML_FindingDetail(t *testing.T) {
 		"Descriptive string, not an authorization role." + sub("Justification", "protected_at_runtime"),
 		`<summary><h4>POA&amp;Ms</h4><span class="count">1</span></summary>`,
 		"Tighten strong parameters." + sub("Milestone", "pending · Patch · Remove :role · 2099-12-31T00:00:00Z"),
-		`<summary><h4>Baseline details</h4><span class="count">8</span></summary>`,
+		`<summary><h4>Baseline details</h4><span class="count">9</span></summary>`,
+		"<dt>Name</dt><dd>sast</dd>",
 		"<dt>Title</dt><dd>Static analysis</dd>", "<dt>Version</dt><dd>1.2</dd>", "<dt>Summary</dt><dd>Rails SAST</dd>",
 		"<dt>Description</dt><dd>Brakeman rules</dd>", "<dt>Maintainer</dt><dd>AppSec</dd>", "<dt>License</dt><dd>Apache-2.0</dd>",
 		"<dt>Copyright</dt><dd>Example</dd>", "<dt>Status message</dt><dd>loaded</dd>",
@@ -1299,6 +1301,170 @@ func TestConvertHDFToHTML_LongBlocksAreCollapsed(t *testing.T) {
 	for _, m := range regexp.MustCompile(`href="#([^"]+)"`).FindAllStringSubmatch(html, -1) {
 		assert.Contains(t, html, `id="`+m[1]+`"`, "link target %s", m[1])
 	}
+}
+
+// Real Prisma Cloud output names all 16 of its baselines "Prisma Cloud Scan"
+// and carries the host each one scanned in the title alone, so a report that
+// prints the name shows 16 rows a reader cannot tell apart.
+func TestConvertHDFToHTML_LabelsBaselinesByTitle(t *testing.T) {
+	var doc hdf.HDFResults
+	require.NoError(t, json.Unmarshal(fixtures.Results.DuplicateBaselines, &doc))
+	require.Len(t, doc.Baselines, 16)
+
+	out, err := ConvertHDFToHTML(fixtures.Results.DuplicateBaselines)
+	require.NoError(t, err)
+	html := string(out)
+
+	table := statusByBaselineTable(t, html)
+	labels := summaryRowLabels(table)
+	require.Len(t, labels, 17, "16 baseline rows and the footer")
+	assert.Equal(t, "All baselines", labels[16])
+
+	assert.Contains(t, table, `<th scope="row">Prisma Cloud Scan (my-fake-host-1.somewhere.cloud)</th>`)
+
+	seen := map[string]bool{}
+	for i, label := range labels[:16] {
+		baseline := &doc.Baselines[i]
+		assert.Equal(t, "Prisma Cloud Scan", baseline.Name, "every baseline carries the same name")
+		assert.Equal(t, hdfutil.Deref(baseline.Title), label, "the row is labelled by the baseline's own title")
+		assert.False(t, seen[label], "label %q repeats", label)
+		assert.NotContains(t, label, " #", "every title is already distinct, so no row needs an ordinal")
+		assert.Contains(t, html, "<summary><h3>"+label+"</h3>", "the baseline fold carries the same label as its row")
+		seen[label] = true
+	}
+	// The label is the title, so the details fold states the name: it is the key
+	// `hdf query --baseline` selects on.
+	assert.Equal(t, 16, strings.Count(html, "<dt>Name</dt><dd>Prisma Cloud Scan</dd>"))
+
+	// Nothing in the document ties a requirement to a component, so the cards are
+	// an inventory and carry no number.
+	summaries := componentSummaries(html)
+	require.Len(t, summaries, len(doc.Components))
+	for _, summary := range summaries {
+		assert.NotContains(t, summary, `<span class="count">`)
+	}
+}
+
+var componentSummary = regexp.MustCompile(`<details class="fold component"[^>]*>\n(<summary>.*?</summary>)`)
+
+func componentSummaries(html string) []string {
+	matches := componentSummary.FindAllStringSubmatch(html, -1)
+	summaries := make([]string, 0, len(matches))
+	for _, m := range matches {
+		summaries = append(summaries, m[1])
+	}
+	return summaries
+}
+
+// Two baselines a document gives the same label are told apart by their 1-based
+// document position (baselineIndex + 1), so the report never shows one row twice.
+func TestConvertHDFToHTML_DisambiguatesRepeatedBaselineLabels(t *testing.T) {
+	titled := func(title string, reqID string) hdf.EvaluatedBaseline {
+		b := testhdf.Baseline("scan", testhdf.Req(reqID, testhdf.Impact(0.5), testhdf.Status(hdf.Failed)))
+		if title != "" {
+			b.Title = &title
+		}
+		return b
+	}
+
+	for _, tc := range []struct {
+		name   string
+		doc    hdf.HDFResults
+		labels []string
+	}{
+		{
+			name:   "a repeated title takes each baseline's ordinal",
+			doc:    testhdf.Doc(titled("Nightly scan", "A"), titled("Nightly scan", "B"), titled("Weekly scan", "C")),
+			labels: []string{"Nightly scan #1", "Nightly scan #2", "Weekly scan"},
+		},
+		{
+			name:   "a baseline with no title falls back to its name",
+			doc:    testhdf.Doc(titled("", "A"), titled("Nightly scan", "B")),
+			labels: []string{"scan", "Nightly scan"},
+		},
+		{
+			name:   "two untitled baselines take the ordinal on their shared name",
+			doc:    testhdf.Doc(titled("", "A"), titled("", "B")),
+			labels: []string{"scan #1", "scan #2"},
+		},
+		{
+			// The ordinal is appended, not substituted, so a title that already
+			// reads like one still ends up with a label of its own.
+			name:   "a title already ending in another baseline's ordinal keeps its own label",
+			doc:    testhdf.Doc(titled("Nightly scan #2", "A"), titled("Nightly scan", "B"), titled("Nightly scan", "C")),
+			labels: []string{"Nightly scan #2", "Nightly scan #2 #2", "Nightly scan #3"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			html := renderDoc(t, tc.doc, Manager)
+			labels := summaryRowLabels(statusByBaselineTable(t, html))
+			require.Len(t, labels, len(tc.labels)+1)
+			assert.Equal(t, tc.labels, labels[:len(tc.labels)])
+			assert.Equal(t, len(tc.labels), len(uniqueStrings(tc.labels)), "every label must be its own")
+			for _, label := range tc.labels {
+				assert.Contains(t, html, "<summary><h3>"+label+"</h3>")
+			}
+		})
+	}
+}
+
+func uniqueStrings(values []string) map[string]bool {
+	set := make(map[string]bool, len(values))
+	for _, v := range values {
+		set[v] = true
+	}
+	return set
+}
+
+// The count on a component card describes the component's own facts, which says
+// nothing about coverage unless the document says which component a baseline's
+// requirements were assessed against.
+func TestConvertHDFToHTML_ComponentCountOnlyWhereResultsAreAttributed(t *testing.T) {
+	base := func() hdf.HDFResults {
+		doc := testhdf.Results(testhdf.Req("V-1", testhdf.Impact(0.5), testhdf.Status(hdf.Failed)))
+		doc.Components = []hdf.Component{{Name: "web01", Type: hdf.Host, Hostname: hdfutil.Ptr("web01.example.gov")}}
+		return doc
+	}
+
+	unattributed := base()
+	summaries := componentSummaries(renderDoc(t, unattributed, Executive))
+	require.Len(t, summaries, 1)
+	assert.NotContains(t, summaries[0], `<span class="count">`, "no baseline names a component")
+
+	labelled := base()
+	labelled.Baselines[0].Labels = map[string]string{"component": "web01"}
+	summaries = componentSummaries(renderDoc(t, labelled, Executive))
+	require.Len(t, summaries, 1)
+	assert.Contains(t, summaries[0], `<span class="count">1</span>`, "the baseline names the component it was assessed against")
+
+	referenced := base()
+	referenced.Components[0].BaselineRefs = []string{"example"}
+	summaries = componentSummaries(renderDoc(t, referenced, Executive))
+	require.Len(t, summaries, 1)
+	assert.Contains(t, summaries[0], `<span class="count">1</span>`, "the component names the baseline that applies to it")
+}
+
+// statusByBaselineTable is the Status-by-baseline table alone, so a label
+// assertion cannot be satisfied by the same text appearing elsewhere.
+func statusByBaselineTable(t *testing.T, html string) string {
+	t.Helper()
+	const open = `<table class="summary" aria-label="Status by baseline">`
+	i := strings.Index(html, open)
+	require.GreaterOrEqual(t, i, 0, "the report must carry a Status-by-baseline table")
+	j := strings.Index(html[i:], "</table>")
+	require.GreaterOrEqual(t, j, 0)
+	return html[i : i+j]
+}
+
+var summaryRowLabel = regexp.MustCompile(`<tr><th scope="row">(.*?)</th>`)
+
+func summaryRowLabels(table string) []string {
+	matches := summaryRowLabel.FindAllStringSubmatch(table, -1)
+	labels := make([]string, 0, len(matches))
+	for _, m := range matches {
+		labels = append(labels, m[1])
+	}
+	return labels
 }
 
 func TestIsLongText(t *testing.T) {

@@ -175,6 +175,27 @@ function summaryRow(name: string, ...cells: string[]): string {
   return `<tr><th scope="row">${name}</th>${columns}</tr>`;
 }
 
+/** The Status-by-baseline table alone, so a label assertion cannot be satisfied by the same text appearing elsewhere. */
+function statusByBaselineTable(html: string): string {
+  const start = html.indexOf('<table class="summary" aria-label="Status by baseline">');
+  expect(start, 'the report must carry a Status-by-baseline table').toBeGreaterThanOrEqual(0);
+  const end = html.indexOf('</table>', start);
+  expect(end).toBeGreaterThanOrEqual(0);
+  return html.slice(start, end);
+}
+
+const SUMMARY_ROW_LABEL = /<tr><th scope="row">(.*?)<\/th>/g;
+
+function summaryRowLabels(table: string): string[] {
+  return [...table.matchAll(SUMMARY_ROW_LABEL)].map((m) => m[1]!);
+}
+
+const COMPONENT_SUMMARY = /<details class="fold component"[^>]*>\n(<summary>.*?<\/summary>)/g;
+
+function componentSummaries(html: string): string[] {
+  return [...html.matchAll(COMPONENT_SUMMARY)].map((m) => m[1]!);
+}
+
 describe('hdf-to-html converter', () => {
   it('shows every component with its identity, labels and external ids', () => {
     const doc = richDoc();
@@ -649,6 +670,103 @@ describe('hdf-to-html converter', () => {
   });
 });
 
+describe('hdf-to-html baseline labels and component attribution', () => {
+  // Real Prisma Cloud output names all 16 of its baselines "Prisma Cloud Scan"
+  // and carries the host each one scanned in the title alone, so a report that
+  // prints the name shows 16 rows a reader cannot tell apart.
+  it('labels baselines by title, reading the shared Prisma fixture', () => {
+    const input = sharedResults.duplicateBaselines.read();
+    const doc = JSON.parse(input) as { baselines: { name: string; title: string }[]; components: unknown[] };
+    expect(doc.baselines).toHaveLength(16);
+
+    const out = convertHdfToHtml(input);
+    const table = statusByBaselineTable(out);
+    const labels = summaryRowLabels(table);
+    expect(labels).toHaveLength(17);
+    expect(labels[16]).toBe('All baselines');
+    expect(table).toContain('<th scope="row">Prisma Cloud Scan (my-fake-host-1.somewhere.cloud)</th>');
+
+    const seen = new Set<string>();
+    labels.slice(0, 16).forEach((label, i) => {
+      expect(doc.baselines[i]!.name, 'every baseline carries the same name').toBe('Prisma Cloud Scan');
+      expect(label, "the row is labelled by the baseline's own title").toBe(doc.baselines[i]!.title);
+      expect(seen.has(label), `label ${label} repeats`).toBe(false);
+      expect(label, 'every title is already distinct, so no row needs an ordinal').not.toContain(' #');
+      expect(out, 'the baseline fold carries the same label as its row').toContain(`<summary><h3>${label}</h3>`);
+      seen.add(label);
+    });
+    // The label is the title, so the details fold states the name: it is the key
+    // `hdf query --baseline` selects on.
+    expect(count(out, '<dt>Name</dt><dd>Prisma Cloud Scan</dd>')).toBe(16);
+
+    // Nothing in the document ties a requirement to a component, so the cards
+    // are an inventory and carry no number.
+    const summaries = componentSummaries(out);
+    expect(summaries).toHaveLength(doc.components.length);
+    for (const summary of summaries) expect(summary).not.toContain('<span class="count">');
+  });
+
+  // Two baselines a document gives the same label are told apart by their 1-based
+  // document position (baselineIndex + 1), so the report never shows one row twice.
+  const titled = (title: string, reqId: string): Doc => {
+    const b = testhdf.baseline('scan', testhdf.req(reqId, { impact: 0.5, status: 'failed' })) as unknown as Doc;
+    if (title !== '') b.title = title;
+    return b;
+  };
+
+  it.each([
+    ['a repeated title takes each ordinal', [titled('Nightly scan', 'A'), titled('Nightly scan', 'B'), titled('Weekly scan', 'C')],
+      ['Nightly scan #1', 'Nightly scan #2', 'Weekly scan']],
+    ['no title falls back to the name', [titled('', 'A'), titled('Nightly scan', 'B')], ['scan', 'Nightly scan']],
+    ['two untitled baselines take the ordinal on their shared name', [titled('', 'A'), titled('', 'B')], ['scan #1', 'scan #2']],
+    // The ordinal is appended, not substituted, so a title that already reads
+    // like one still ends up with a label of its own.
+    ['a title already ending in another ordinal keeps its own label',
+      [titled('Nightly scan #2', 'A'), titled('Nightly scan', 'B'), titled('Nightly scan', 'C')],
+      ['Nightly scan #2', 'Nightly scan #2 #2', 'Nightly scan #3']],
+  ] as const)('disambiguates repeated baseline labels: %s', (_name, baselines, want) => {
+    const doc = testhdf.doc(...(baselines as unknown as never[])) as unknown as Doc;
+    expectValidResults(doc as never);
+    const out = render(doc, 'manager');
+    const labels = summaryRowLabels(statusByBaselineTable(out));
+    expect(labels).toHaveLength(want.length + 1);
+    expect(labels.slice(0, want.length)).toEqual([...want]);
+    expect(new Set(want).size, 'every label must be its own').toBe(want.length);
+    for (const label of want) expect(out).toContain(`<summary><h3>${label}</h3>`);
+  });
+
+  // The count on a component card describes the component's own facts, which
+  // says nothing about coverage unless the document says which component a
+  // baseline's requirements were assessed against.
+  it('states a component count only where results are attributed', () => {
+    const base = (): Doc => {
+      const doc = testhdf.results(testhdf.req('V-1', { impact: 0.5, status: 'failed' })) as unknown as Doc;
+      doc.components = [{ name: 'web01', type: 'host', hostname: 'web01.example.gov' }];
+      return doc;
+    };
+
+    const unattributed = base();
+    expectValidResults(unattributed as never);
+    let summaries = componentSummaries(render(unattributed, 'executive'));
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0], 'no baseline names a component').not.toContain('<span class="count">');
+
+    const labelled = base();
+    (labelled.baselines as Doc[])[0]!.labels = { component: 'web01' };
+    expectValidResults(labelled as never);
+    summaries = componentSummaries(render(labelled, 'executive'));
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0], 'the baseline names the component it was assessed against').toContain('<span class="count">1</span>');
+
+    const referenced = base();
+    (referenced.components as Doc[])[0]!.baselineRefs = ['example'];
+    expectValidResults(referenced as never);
+    summaries = componentSummaries(render(referenced, 'executive'));
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0], 'the component names the baseline that applies to it').toContain('<span class="count">1</span>');
+  });
+});
+
 describe('hdf-to-html aggregated report', () => {
   // Each document's overrides are judged at that document's own assessment
   // time, so the same waiver can be in force in one source and expired in another.
@@ -851,7 +969,7 @@ describe('hdf-to-html parity with the Go peer', () => {
       summaryRow('All sources', '1', '3', '0', '1', '0', '5', '25.00%'),
       '<dt>Source</dt><dd>rich.json</dd>',
       '<summary><h3>finding-detail.json</h3><span class="count">1</span></summary>',
-      '<summary><h4>sast</h4><span class="count">1</span></summary>',
+      '<summary><h4>Static analysis</h4><span class="count">1</span></summary>',
       '<h5>Result Details</h5>',
     ]) {
       expect(out).toContain(want);

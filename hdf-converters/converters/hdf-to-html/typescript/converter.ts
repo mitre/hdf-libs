@@ -91,6 +91,10 @@ interface Source {
   name: string;
   doc: Json;
   baselines: Json[];
+  /** Each baseline named as the report shows it. */
+  baselineLabels: string[];
+  /** Whether the document ties any of its requirements to a component. */
+  attributed: boolean;
   ref: AssessmentTime;
 }
 
@@ -111,12 +115,66 @@ function render(documents: HtmlReportDocument[], options: HtmlReportOptions, agg
       throw new Error(`${document.name}: ${(err as Error).message}`);
     }
     const baselines = list(doc.baselines).map(obj);
-    return { name: document.name, doc, baselines, ref: assessmentTime(doc, baselines) };
+    return {
+      name: document.name,
+      doc,
+      baselines,
+      baselineLabels: baselineLabels(baselines),
+      attributed: attributesResults(doc, baselines),
+      ref: assessmentTime(doc, baselines),
+    };
   });
 
   const r = new Renderer(reportType, sources, aggregated);
   r.document();
   return r.lines.join('');
+}
+
+/**
+ * Names each baseline as the report shows it: its title, which is what carries
+ * the scan target in real scanner output, falling back to its name. A label two
+ * baselines would share takes the 1-based document position of the baseline it
+ * names (hdf-engine's 0-based baselineIndex plus one).
+ */
+function baselineLabels(baselines: Json[]): string[] {
+  const shared = new Map<string, number>();
+  const labels = baselines.map((baseline) => {
+    const title = text(baseline.title);
+    const label = title !== '' ? title : text(baseline.name);
+    shared.set(label, (shared.get(label) ?? 0) + 1);
+    return label;
+  });
+  const suffixed = labels.map((label, i) => ((shared.get(label) ?? 0) > 1 ? label + ordinalSuffix(i) : label));
+  // A title that already ends in another baseline's suffix would collide with
+  // the label built for it, so a label that is still taken takes another.
+  const taken = new Set<string>();
+  return suffixed.map((label, i) => {
+    let unique = label;
+    while (taken.has(unique)) unique += ordinalSuffix(i);
+    taken.add(unique);
+    return unique;
+  });
+}
+
+function ordinalSuffix(i: number): string {
+  return ` #${i + 1}`;
+}
+
+/** The well-known baseline label naming the component a baseline's requirements were assessed against. */
+const LABEL_COMPONENT = 'component';
+
+/**
+ * Whether the document ties any requirement to a component. HDF results carry
+ * that link at baseline granularity only — a baseline's labels.component names a
+ * component, or a component's baselineRefs name a baseline — so a per-component
+ * number means nothing without one.
+ */
+function attributesResults(doc: Json, baselines: Json[]): boolean {
+  for (const baseline of baselines) {
+    const labels = obj(baseline.labels);
+    if (Object.prototype.hasOwnProperty.call(labels, LABEL_COMPONENT) && text(labels[LABEL_COMPONENT]) !== '') return true;
+  }
+  return list(doc.components).map(obj).some((c) => list(c.baselineRefs).length > 0);
 }
 
 /** A JSON value as an object; anything else reads as an empty one, as Go's zero struct does. */
@@ -423,14 +481,28 @@ class Renderer {
    * An empty id takes the next number.
    */
   private openFold(cls: string, id: string, tag: string, title: string, label: string, count: number): Fold {
+    return this.openFoldCounted(cls, id, tag, title, label, count, true);
+  }
+
+  /** openFold with the choice of whether the heading states its count. A block that drops it still collapses at the same size. */
+  private openFoldCounted(
+    cls: string,
+    id: string,
+    tag: string,
+    title: string,
+    label: string,
+    count: number,
+    counted: boolean,
+  ): Fold {
     if (id === '') {
       this.folds++;
       id = `block-${this.folds}`;
     }
     const long = count > COLLAPSED_ABOVE;
     const classes = cls === '' ? 'fold' : `fold ${cls}`;
+    const badge = counted ? `<span class="count">${count}</span>` : '';
     this.line(`<details class="${classes}" id="${id}"${long ? '' : ' open="open"'}>`);
-    this.line(`<summary><${tag}>${title}</${tag}><span class="count">${count}</span></summary>`);
+    this.line(`<summary><${tag}>${title}</${tag}>${badge}</summary>`);
     this.line('<div class="fold-body">');
     return { id, label, long };
   }
@@ -581,13 +653,14 @@ class Renderer {
   private component(c: Json): void {
     const pairs: Pair[] = [['Source', this.aggregated ? this.src.name : ''] as const];
     for (const [term, key] of COMPONENT_FIELDS) pairs.push(componentField(c, term, key));
-    const f = this.openFold(
+    const f = this.openFoldCounted(
       'component',
       '',
       'h3',
       `${escapeHtml(text(c.name))} <span class="type">${escapeHtml(text(c.type))}</span>`,
       text(c.name),
       countFacts(pairs) + Object.keys(obj(c.labels)).length + Object.keys(obj(c.externalIds)).length,
+      this.src.attributed,
     );
     this.definitionList(pairs);
     this.chips('Labels', c.labels);
@@ -772,9 +845,9 @@ class Renderer {
     this.line(summaryHead('Baseline'));
     this.line('<tbody>');
     this.sources.forEach((src, si) => {
-      src.baselines.forEach((baseline, i) => {
-        const name = this.aggregated ? `${src.name} \u203a ${text(baseline.name)}` : text(baseline.name);
-        this.line(summaryRow(escapeHtml(name), perBaseline[si]![i]!));
+      src.baselineLabels.forEach((own, i) => {
+        const label = this.aggregated ? `${src.name} \u203a ${own}` : own;
+        this.line(summaryRow(escapeHtml(label), perBaseline[si]![i]!));
       });
     });
     this.line('</tbody>');
@@ -812,23 +885,19 @@ class Renderer {
         const total = src.baselines.reduce((n, baseline) => n + list(baseline.requirements).length, 0);
         f = this.openFold('group source', '', 'h3', escapeHtml(src.name), src.name, total);
       }
-      for (const baseline of src.baselines) this.baseline(baseline);
+      src.baselines.forEach((baseline, i) => this.baseline(baseline, src.baselineLabels[i]!));
       if (f) this.closeFold(f);
     }
     this.line('</section>');
   }
 
-  private baseline(baseline: Json): void {
+  private baseline(baseline: Json, label: string): void {
     const requirements = list(baseline.requirements).map(obj);
-    const f = this.openFold(
-      'group baseline',
-      '',
-      this.baselineHeading,
-      escapeHtml(text(baseline.name)),
-      text(baseline.name),
-      requirements.length,
-    );
+    const f = this.openFold('group baseline', '', this.baselineHeading, escapeHtml(label), label, requirements.length);
     const facts: Pair[] = [
+      // The label may be the title, so the name is stated here: it is the key
+      // `hdf query --baseline` and hdf_compliance groups select on.
+      ['Name', text(baseline.name)],
       ['Title', text(baseline.title)],
       ['Version', text(baseline.version)],
       ['Summary', text(baseline.summary)],
