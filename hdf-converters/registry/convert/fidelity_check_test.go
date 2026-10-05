@@ -173,3 +173,32 @@ func TestCheckResultFidelity_MatchReportsTheRelation(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "1 result, matching the input's raw findings", note)
 }
+
+// rollingUpStub declares roll-up and a result count, but declines to state one
+// for this input — the bypass Copilot found on PR #423.
+type rollingUpDecliningStub struct{ plainStub }
+
+func (rollingUpDecliningStub) RollsUpRequirements() bool { return true }
+func (rollingUpDecliningStub) ExpectedResultCount([]byte) (int, string, error) {
+	return 0, "", ErrNoExpectation
+}
+
+// A converter that does NOT roll up may still decline per input.
+type decliningStub struct{ plainStub }
+
+func (decliningStub) ExpectedResultCount([]byte) (int, string, error) {
+	return 0, "", ErrNoExpectation
+}
+
+func TestCheckResultFidelity_ARolledUpConverterMayNotDeclineForAnInput(t *testing.T) {
+	_, err := CheckResultFidelity(rollingUpDecliningStub{}, []byte("in"), []byte(oneResult))
+	require.Error(t, err, "declining leaves a rolled-up conversion with no under-extraction guard")
+	require.Contains(t, err.Error(), "must state a result count for every input")
+	require.Contains(t, err.Error(), "no output written")
+}
+
+func TestCheckResultFidelity_AnOrdinaryConverterMayStillDecline(t *testing.T) {
+	note, err := CheckResultFidelity(decliningStub{}, []byte("in"), []byte(oneResult))
+	require.NoError(t, err, "the per-input opt-out is preserved for converters that do not roll up")
+	require.Empty(t, note)
+}

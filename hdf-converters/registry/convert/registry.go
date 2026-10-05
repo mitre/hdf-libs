@@ -146,6 +146,16 @@ var converterRegistry = make(map[FormatPair]Converter)
 // RegisterConverter adds a converter to the registry.
 // Format names are normalized (lowercase, trimmed) before registration.
 func RegisterConverter(source, dest string, converter Converter) {
+	// The roll-up/result-count invariant is enforced here as well as in
+	// applyConverterOptions, because this entry point accepts any Converter —
+	// a hand-built or re-wrapped one can declare RollsUpRequirements() without
+	// ever passing through the option helpers, and would otherwise register
+	// with the guard silently absent.
+	if r, rolls := converter.(RequirementRollingUp); rolls && r.RollsUpRequirements() {
+		if _, counts := converter.(ResultCountExpecter); !counts {
+			panic("convert: a converter declaring RollsUpRequirements() must also implement ResultCountExpecter — roll-up moves the raw-finding count from requirements to results, so without a result-count declaration it has no under-extraction guard (ADR-0017 §6)")
+		}
+	}
 	pair := FormatPair{
 		Source: normalizeFormat(source),
 		Dest:   normalizeFormat(dest),

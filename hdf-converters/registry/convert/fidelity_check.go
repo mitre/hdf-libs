@@ -85,6 +85,15 @@ func CheckResultFidelity(conv Converter, input, output []byte) (string, error) {
 	}
 	expected, unit, err := ex.ExpectedResultCount(input)
 	if errors.Is(err, ErrNoExpectation) {
+		// An ordinary result declaration may decline for a given input. A
+		// rolled-up converter may not: roll-up is exactly what stops the
+		// requirement count tracking the findings, so declining would leave this
+		// conversion with no under-extraction guard at all — and ADR-0017 §6
+		// calls the result-count anchor mandatory, which a per-input opt-out
+		// would make advisory.
+		if r, rolls := conv.(RequirementRollingUp); rolls && r.RollsUpRequirements() {
+			return "", errors.New("a converter that rolls its requirements up must state a result count for every input, and this one declined: roll-up moves the raw-finding count from the requirements to the results, so there is no under-extraction guard left; no output written")
+		}
 		return "", nil
 	}
 	if err != nil {

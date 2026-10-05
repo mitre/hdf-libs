@@ -213,3 +213,20 @@ func TestWithRequirementRollUp_ComposesWithBothCountDeclarations(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, out, "the wrappers must still convert through the embedded converter")
 }
+
+// hand-built converters never pass through the option helpers, so the
+// roll-up/result-count invariant has to hold at RegisterConverter too.
+type handBuiltRollingUp struct{}
+
+func (handBuiltRollingUp) Name() string                      { return "Hand-built rolling up" }
+func (handBuiltRollingUp) Convert(in []byte) ([]byte, error) { return in, nil }
+func (handBuiltRollingUp) RollsUpRequirements() bool         { return true }
+
+func TestRegisterConverter_RefusesAHandBuiltRollUpWithoutAResultCount(t *testing.T) {
+	require.PanicsWithValue(t,
+		"convert: a converter declaring RollsUpRequirements() must also implement ResultCountExpecter — roll-up moves the raw-finding count from requirements to results, so without a result-count declaration it has no under-extraction guard (ADR-0017 §6)",
+		func() { RegisterConverter("hand-built-rollup-no-count", "hdf", handBuiltRollingUp{}) })
+
+	_, err := GetConverter("hand-built-rollup-no-count", "hdf")
+	require.ErrorIs(t, err, ErrConverterNotFound, "the refusal must not half-register the converter")
+}
