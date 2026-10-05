@@ -232,11 +232,14 @@ func encode(collectionKey string, keep []any, opts Options, total, returned int,
 			return "", fmt.Errorf("toon encode: %w", err)
 		}
 		return s, nil
-	default:
-		b, err := json.Marshal(env)
-		if err != nil {
-			return "", fmt.Errorf("json encode: %w", err)
-		}
-		return string(b), nil
+	case JSON:
 	}
+
+	// JSON is the documented default, so an unset or unrecognized encoding
+	// takes this path too.
+	b, err := json.Marshal(env)
+	if err != nil {
+		return "", fmt.Errorf("json encode: %w", err)
+	}
+	return string(b), nil
 }

@@ -142,3 +142,18 @@ export {
 } from './hipcheck/index.js';
 
 export type { HipcheckNistMapping, HipcheckNistMappings } from './hipcheck/types.js';
+
+// Hadolint exports
+export {
+  getHadolintNistMapping,
+  hadolintRuleExists,
+  getAllHadolintRuleIds,
+  getHadolintMappingProvenance,
+} from './hadolint/index.js';
+
+export type {
+  HadolintNistMapping,
+  HadolintNistMappings,
+  HadolintMappingDataset,
+  HadolintMappingProvenance,
+} from './hadolint/types.js';
