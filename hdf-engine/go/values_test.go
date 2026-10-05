@@ -80,6 +80,25 @@ func TestValuesAllCoversBothModes(t *testing.T) {
 // — would hand the caller a slice backed by v.In's array when it has spare
 // capacity, so writing through the result would corrupt the predicate it came
 // from. Nothing else in the package would notice.
+// A policy sharing one value list across several rules is the reason to reach
+// for a YAML anchor, so the forms have to survive one. They do because the
+// decoder resolves an alias before this type's unmarshaller runs — which is why
+// UnmarshalYAML's yaml.AliasNode arm is unreachable rather than a refusal.
+func TestValuesAcceptAYamlAnchor(t *testing.T) {
+	var doc struct {
+		Shared  Values `yaml:"shared"`
+		Direct  Values `yaml:"direct"`
+		Negated Values `yaml:"negated"`
+	}
+	src := "shared: &sev [high, critical]\ndirect: *sev\nnegated: {not: *sev}\n"
+	require.NoError(t, yaml.Unmarshal([]byte(src), &doc))
+
+	assert.Equal(t, []string{"high", "critical"}, doc.Direct.In, "an anchored list carries through as a list")
+	assert.Empty(t, doc.Direct.Not)
+	assert.Equal(t, []string{"high", "critical"}, doc.Negated.Not, "and inside not: it negates the same values")
+	assert.Empty(t, doc.Negated.In)
+}
+
 func TestValuesAllDoesNotAliasEitherField(t *testing.T) {
 	in := make([]string, 1, 4) // spare capacity: the aliasing bug needs it to bite
 	in[0] = "a"

@@ -115,6 +115,11 @@ func (v *Values) UnmarshalYAML(node *yaml.Node) error {
 		}
 		v.Not = form.Not.In
 		return nil
+	case yaml.DocumentNode, yaml.AliasNode:
+		// Named for exhaustiveness, not reachability: the decoder resolves an
+		// alias to its target before a custom unmarshaller runs, so an anchored
+		// value list arrives here already a sequence.
+		fallthrough
 	default:
 		return fmt.Errorf("a predicate value is a value, a list, or {not: ...}")
 	}
