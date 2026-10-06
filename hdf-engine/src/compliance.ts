@@ -442,6 +442,10 @@ export function addCounts(...counts: StatusCounts[]): StatusCounts {
   const out = newStatusCounts();
   const dst = statusBuckets(out);
   for (const c of counts) {
+    // Skipped, not treated as a zero set: these are exported helpers, so a
+    // JavaScript caller reaches them without the compiler's non-null guarantee,
+    // and AddCounts in go/compliance.go skips a nil the same way.
+    if (c == null) continue;
     statusBuckets(c).forEach((bucket, i) => addSeverities(dst[i]!, bucket));
   }
   return out;
@@ -456,6 +460,7 @@ export function addCounts(...counts: StatusCounts[]): StatusCounts {
  */
 export function severityTotals(counts: StatusCounts): SeverityCounts {
   const out = newSeverityCounts();
+  if (counts == null) return out;
   for (const bucket of statusBuckets(counts)) addSeverities(out, bucket);
   return out;
 }

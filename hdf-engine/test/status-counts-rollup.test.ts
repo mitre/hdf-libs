@@ -76,4 +76,19 @@ describe('StatusCounts roll-up — parity with go/rollup_counts_test.go', () => 
   it('sums no count sets to an empty one', () => {
     expect(addCounts()).toEqual(counts({}));
   });
+
+  // Parity: TestCountHelpersTolerateNil in go/rollup_counts_test.go. Both are
+  // exported, so a JavaScript caller reaches them without the compiler's
+  // non-null guarantee; Go tolerating what TypeScript throws on would be the two
+  // languages disagreeing about the same call.
+  it('skips a nullish count set rather than throwing', () => {
+    const one = counts({ passed: { critical: 1, total: 1 } });
+    expect(addCounts(null as unknown as StatusCounts, null as unknown as StatusCounts)).toEqual(counts({}));
+    expect(addCounts(null as unknown as StatusCounts, one, undefined as unknown as StatusCounts)).toEqual(one);
+  });
+
+  it('projects a nullish count set onto an empty severity set', () => {
+    expect(severityTotals(null as unknown as StatusCounts)).toEqual(severity({}));
+    expect(severityTotals(undefined as unknown as StatusCounts)).toEqual(severity({}));
+  });
 });
