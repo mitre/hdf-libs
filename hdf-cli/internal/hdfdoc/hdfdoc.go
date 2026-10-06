@@ -8,11 +8,19 @@ package hdfdoc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
+
+// ErrNoComponents reports a document with no component to write the requested
+// field on. It is wrapped as the PREFIX of the message naming the field, so
+// every such refusal reads as one sentence; callers for which a componentless
+// document is legitimate (a converter whose source names no target) match on it
+// to warn instead of failing.
+var ErrNoComponents = errors.New("document has no components")
 
 // ApplyLabels merges the given labels into the "labels" field of every component
 // in the HDF JSON document. With no labels, or no components array, the input is
@@ -58,10 +66,14 @@ func ValidateComponentID(id string) error {
 
 // ApplyComponentID sets componentId on every component in the HDF JSON document:
 // a fresh UUID per component when generate is true, otherwise the fixedID (when
-// non-empty). A fixedID that is not a UUID is an error; no components array is a
-// no-op.
+// non-empty). A fixedID that is not a UUID is an error, and so is a document with
+// no component to stamp — returning the input unchanged would report an id as
+// attached when it was not. Asking for neither is a no-op on any document.
 func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error) {
-	if !generate && fixedID != "" {
+	if !generate && fixedID == "" {
+		return data, nil
+	}
+	if !generate {
 		if err := ValidateComponentID(fixedID); err != nil {
 			return nil, err
 		}
@@ -71,14 +83,14 @@ func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	if components == nil {
-		return data, nil
+	if len(components) == 0 {
+		return nil, fmt.Errorf("%w to set componentId on", ErrNoComponents)
 	}
 
 	for _, comp := range components {
 		if generate {
 			comp["componentId"] = uuid.New().String()
-		} else if fixedID != "" {
+		} else {
 			comp["componentId"] = fixedID
 		}
 	}
@@ -102,7 +114,7 @@ func ApplyExternalIDs(data []byte, ids map[string]string, componentName string) 
 		return nil, err
 	}
 	if len(components) == 0 {
-		return nil, fmt.Errorf("document has no components to set external IDs on")
+		return nil, fmt.Errorf("%w to set external IDs on", ErrNoComponents)
 	}
 
 	selected, err := selectComponents(components, componentName)

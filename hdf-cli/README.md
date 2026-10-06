@@ -449,7 +449,8 @@ FLAGS
       --from string           Source format (auto-detected if omitted)
       --to string             Destination format (default: hdf)
       --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
-      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only)
+      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only;
+                              warns and still writes when the converter emits no components)
       --labels strings        Labels applied to all targets, --to hdf only (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
       --report-type string    Detail level for --to html: executive, manager or administrator (default administrator)
@@ -727,6 +728,9 @@ writes nothing when the pair is malformed, a scheme is given twice, the document
 has no components, or `--component-name` matches none or more than one.
 
 Example output:
+`--component-id` and `--generate-component-id` are refused on a document with no
+components for the same reason — there is nothing to stamp, and rewriting the
+file while reporting success would claim an id was attached when it was not.
 
 ```console
 $ hdf label set results.json system=Portal environment=production -o labeled.json

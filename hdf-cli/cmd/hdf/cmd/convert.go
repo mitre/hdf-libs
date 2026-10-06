@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -445,12 +446,18 @@ func applyConvertFlags(cmd *cobra.Command, output []byte) ([]byte, error) {
 
 	componentID, _ := cmd.Flags().GetString("component-id")
 	if componentID != "" {
-		var err error
-		output, err = hdfdoc.ApplyComponentID(output, componentID, false)
-		if err != nil {
+		stamped, err := hdfdoc.ApplyComponentID(output, componentID, false)
+		switch {
+		// A converter whose source names no target legitimately produces no
+		// component, so the conversion stands and only the flag goes unapplied.
+		case errors.Is(err, hdfdoc.ErrNoComponents):
+			fmt.Fprintf(os.Stderr, "Warning: --component-id was not applied: %v\n", err)
+		case err != nil:
 			return nil, fmt.Errorf("failed to apply component-id: %w", err)
+		default:
+			output = stamped
+			printDebug("Applied componentId %s to output", componentID)
 		}
-		printDebug("Applied componentId %s to output", componentID)
 	}
 	return output, nil
 }

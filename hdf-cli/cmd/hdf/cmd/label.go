@@ -70,6 +70,9 @@ any non-empty string. By default every target gets the identifier; pass
 nothing, when the document has no target to carry the identifier, or when
 --component-name matches no target or more than one.
 
+--component-id and --generate-component-id stamp every target, and fail the same
+way on a document with no target to stamp.
+
 Examples:
   hdf label set results.json system=Portal
   hdf label set results.json env=prod team=security

@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -170,7 +171,7 @@ func hdfConvertSingle(ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResu
 		return toolError(terr), convertOutput{}, nil
 	}
 
-	hdfBytes, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
+	hdfBytes, cidNotice, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
 	if terr != nil {
 		return toolError(terr), convertOutput{}, nil
 	}
@@ -181,6 +182,7 @@ func hdfConvertSingle(ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResu
 	}
 
 	out := convertSummary(hdfBytes)
+	out.Notice = cidNotice
 
 	// Never overwrite the source being converted, even with overwrite set —
 	// that would destroy the input mid-read (hdf_convert source=x output=x).
@@ -196,7 +198,7 @@ func hdfConvertSingle(ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResu
 	}
 	out.OutputPath = writtenPath
 	if notice != "" {
-		out.Notice = notice
+		out.Notice = appendNotice(out.Notice, notice)
 		out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
 	}
 
@@ -361,7 +363,7 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 	if terr != nil {
 		return failEntry(entry, terr)
 	}
-	hdfBytes, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
+	hdfBytes, cidNotice, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
 	if terr != nil {
 		return failEntry(entry, terr)
 	}
@@ -388,7 +390,7 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 		}
 	}
 	// Register in the content cache so the handle resolves even with no write.
-	entry.Notice = registerProduced(ldr, hdfBytes, writtenPath)
+	entry.Notice = appendNotice(cidNotice, registerProduced(ldr, hdfBytes, writtenPath))
 	if encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version())); herr == nil {
 		entry.Handle = encoded
 	}
@@ -449,31 +451,38 @@ func boundBatchResponse(out *convertOutput) {
 
 // convertAndPostProcess runs the converter and threads labels/componentId onto
 // the output. Every failure becomes a taxonomy error so the caller never checks
-// a bare error against a nil return.
-func convertAndPostProcess(conv convreg.Converter, data []byte, labels map[string]string, componentID string) ([]byte, *mcperr.Error) {
+// a bare error against a nil return. The returned notice is non-empty when the
+// conversion stands but a componentId could not be applied.
+func convertAndPostProcess(conv convreg.Converter, data []byte, labels map[string]string, componentID string) ([]byte, string, *mcperr.Error) {
 	hdfBytes, err := conv.Convert(data)
 	if err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, "conversion failed: "+err.Error(), nil).
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, "conversion failed: "+err.Error(), nil).
 			WithNextCall("verify the input is valid output from the source tool")
 	}
 	// Count fidelity: a converter that declares how many requirements — or, when
 	// it rolls its requirements up, how many results — its input must yield is
 	// held to it, the same refusal the CLI makes.
 	if _, err := convreg.CheckRequirementFidelity(conv, data, hdfBytes); err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
 			WithNextCall("this indicates a converter defect; do not rely on the output")
 	}
 	if _, err := convreg.CheckResultFidelity(conv, data, hdfBytes); err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
 			WithNextCall("this indicates a converter defect; do not rely on the output")
 	}
 	if hdfBytes, err = hdfdoc.ApplyLabels(hdfBytes, labels); err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, "applying labels failed: "+err.Error(), nil)
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, "applying labels failed: "+err.Error(), nil)
 	}
-	if hdfBytes, err = hdfdoc.ApplyComponentID(hdfBytes, componentID, false); err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, "applying componentId failed: "+err.Error(), nil)
+	stamped, err := hdfdoc.ApplyComponentID(hdfBytes, componentID, false)
+	switch {
+	// A converter whose source names no target legitimately produces no
+	// component, so the conversion stands and only the flag goes unapplied.
+	case errors.Is(err, hdfdoc.ErrNoComponents):
+		return hdfBytes, "componentId not applied: " + err.Error() + ".", nil
+	case err != nil:
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, "applying componentId failed: "+err.Error(), nil)
 	}
-	return hdfBytes, nil
+	return stamped, "", nil
 }
 
 // rawInput returns the raw tool-output bytes from a {path} source or inline
