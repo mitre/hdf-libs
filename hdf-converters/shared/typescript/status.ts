@@ -98,17 +98,21 @@ export function governingOverride(
   req: EvaluatedRequirement,
   now?: string
 ): NonNullable<EvaluatedRequirement['statusOverrides']>[number] | undefined {
-  const overrides = (req.statusOverrides ?? []).filter((o) => o != null);
+  // One entry per member, slot preserved: Go's typed decode turns a null
+  // member into a zero override that still takes part in the selection, and
+  // dropping it here is how the two languages came to disagree about which
+  // override governs. Parity: GoverningOverrideIndex in go/status.go.
+  const overrides = req.statusOverrides ?? [];
   const i = governingOverrideIndex(
     overrides.map((o) => ({
-      status: o.status ? String(o.status) : undefined,
-      appliedAt: schemaTimestamp(o.appliedAt),
-      expiresAt: schemaTimestamp(o.expiresAt),
+      status: o?.status ? String(o.status) : undefined,
+      appliedAt: schemaTimestamp(o?.appliedAt),
+      expiresAt: schemaTimestamp(o?.expiresAt),
     })),
     () => true,
     now
   );
-  return i >= 0 ? overrides[i] : undefined;
+  return i >= 0 ? (overrides[i] ?? undefined) : undefined;
 }
 
 /**
@@ -157,7 +161,7 @@ export function requirementDisposition(req: EvaluatedRequirement, now?: string):
   // the document carries, so passing it through preserves information an export
   // would otherwise drop. See the Go twin for why this is a fallback, not a
   // source, and why hdf-engine's filter deliberately does not take it.
-  const overrides = (req.statusOverrides ?? []).filter((o) => o != null);
-  if (overrides.length === 0 && req.disposition) return String(req.disposition);
+  // Counts members, nulls included, as Go's len(r.StatusOverrides) does.
+  if ((req.statusOverrides ?? []).length === 0 && req.disposition) return String(req.disposition);
   return '';
 }

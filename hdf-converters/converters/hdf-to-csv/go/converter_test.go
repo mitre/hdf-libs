@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	corpus "github.com/mitre/hdf-libs/hdf-converters/v3/internal/corpus"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
@@ -682,4 +683,27 @@ func TestConvertHDFToCSV_MalformedContainersAreRejected(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, out)
 	})
+}
+
+// The Disposition column must come from the governing override, as the two
+// effective columns beside it already do. A document that carries no stored
+// disposition but whose requirement is governed by a waiver therefore names the
+// waiver — which an exporter reading the stored cache renders blank.
+func TestConvertHDFToCSV_DispositionIsComputed(t *testing.T) {
+	req := testhdf.Req("V-WAIVED", testhdf.Impact(0.5), testhdf.Status(hdf.Failed))
+	status := hdf.Passed
+	req.StatusOverrides = []hdf.StatusOverride{{
+		Type: hdf.OverrideTypeWaiver, Reason: "accepted by the AO", Status: &status,
+		AppliedBy: hdf.Identity{Type: hdf.Email, Identifier: "ao@example.gov"},
+		AppliedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+	}}
+	input, err := json.Marshal(testhdf.Results(req))
+	require.NoError(t, err)
+	out, err := ConvertHDFToCSV(input)
+	require.NoError(t, err)
+	records, err := csv.NewReader(bytes.NewReader(out)).ReadAll()
+	require.NoError(t, err)
+	require.Len(t, records, 2)
+	assert.Equal(t, "waiver", records[1][24], "Disposition is the governing override's type, not a stored field the document does not carry")
 }
