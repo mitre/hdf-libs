@@ -122,6 +122,31 @@ The converter catalog page is generated from the live registry and golden-tested
 
 **Identifiers.** A requirement id must be stable across runs and unique within the document. Prefer the tool's own rule or check identifier. Where one identifier can legitimately recur — the same control implemented by two components — qualify it so the two stay distinguishable, rather than emitting duplicates that no consumer can match.
 
+**Instance identity.** Every result must say *what* it describes, in the structured fields rather than only in `codeDesc` prose. `Requirement_Result.resource` names the **kind** of thing; `resourceId` names the **identity** of that thing. The requirement id answers "which requirement is this?"; the result's identity answers "which instance of it?". Set both or neither — a `resource` with no `resourceId` is a half-identified result, and an empty-string `resourceId` is worse than an absent one.
+
+`resourceId` does **not** have to be unique within a requirement's `results[]`. It names a resource, not a finding: two flaws at the same file and line genuinely affect the same resource, so two results carrying the same `resourceId` is a true statement. Findings are distinguished by the whole result — `codeDesc`, `message`, and the source record — never by `resourceId`. Do not append a finding discriminator to force uniqueness; that makes the field name a finding and re-creates the overloading this convention exists to undo.
+
+The mapping per converter, as ratified:
+
+| Converter | `resource` | `resourceId` |
+|---|---|---|
+| grype | `package` | the artifact purl, else `name@version` |
+| twistlock | `package` | `packageName@packageVersion` (the source has no purl) |
+| cyclonedx | `component` | the component purl, else its `bom-ref`, else the unresolved `affects[].ref` for a VEX document with no `components[]` |
+| veracode (static flaws) | `file` | `sourcefilepath + sourcefile + ":" + line` |
+| veracode (SCA) | `component` | `component_id`, else `sha1` |
+| neuvector | `file` when `file_name` is present, otherwise `package` | the file path, else `package_name@package_version` |
+| zap | `url` | the instance `uri` |
+
+Four things that caught us, worth knowing before mapping a new tool:
+
+- **A file and line is a *location*, not an instance.** Veracode reports two distinct flaws at `UserController.java:898`; ZAP fires the same alert at one URL with a different `param`. Both are correct, and both are why uniqueness is not required.
+- **A discriminator can be mostly absent.** NeuVector's `file_name` is the only thing separating its duplicate groups, but it is empty on 220 of 305 entries — so the primary identifier covers 28% of results and needs a fallback that keeps the `resource` kind truthful. Check population across every fixture before committing to a field.
+- **Scan-level identity is not result-level identity.** An image digest, registry or repository describes the whole scan and belongs in `components[]`. Putting it in `resourceId` asserts that every finding affects the entire image.
+- **A converter whose results aggregate several instances cannot carry an identity at all.** `scoutsuite-to-hdf` newline-joins its flagged items into one result, so no single `resourceId` is honest; it carries a guard test asserting both fields stay unset, which fails deliberately once the items are split into one result each. `prisma-to-hdf` has a recorded exception for a different reason — its discriminator exists only in free-text prose, and parsing it was rejected as too fragile.
+
+A no-findings placeholder result carries no identity: there is no instance to name.
+
 **Delegation.** Several tools can emit SARIF, CycloneDX or JUnit as well as their native format. Detect and delegate to the existing converter rather than reimplementing that format; `checkov-to-hdf` routes SARIF input to `sarif-to-hdf` in both languages.
 
 **Empty results.** A scan that found nothing is not the same as a scan that failed. Emit a no-findings placeholder requirement so an empty document stays distinguishable from a broken one.

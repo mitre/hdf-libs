@@ -703,6 +703,83 @@ describe('hdfToChecklist empty-requirements guard', () => {
   );
 });
 
+// Parity: TestOverrideSeverity_GoverningNotFirst in shared/go/checklist.
+// overrideSeverity returned on the FIRST impact-bearing override — array
+// position, no expiry check, no appliedAt comparison. This converter reads
+// arbitrary HDF documents, so those timestamps genuinely differ and position is
+// not recency.
+describe('checklist SEVERITY_OVERRIDE selection', () => {
+  const doc = (overrides: unknown[]): string =>
+    JSON.stringify({
+      generator: { name: 'test', version: '1' },
+      timestamp: '2026-01-01T00:00:00Z',
+      statistics: { duration: 1.0 },
+      baselines: [
+        {
+          name: 'b',
+          requirements: [
+            {
+              id: 'V-1',
+              title: 't',
+              impact: 0.5,
+              tags: {},
+              descriptions: [{ label: 'default', data: 'd' }],
+              results: [{ status: 'failed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
+              statusOverrides: overrides,
+            },
+          ],
+        },
+      ],
+    });
+
+  const adjust = (value: number, appliedAt: string, expiresAt: string, reason: string) => ({
+    type: 'riskAdjustment',
+    reason,
+    appliedBy: { type: 'simple', identifier: 't' },
+    appliedAt,
+    expiresAt,
+    impact: { value },
+  });
+
+  const sevOf = (overrides: unknown[]) => {
+    const vuln = hdfToChecklist(doc(overrides)).stigs[0]!.vulns[0]!;
+    return { severity: vuln.severityOverride, justification: vuln.severityJustification };
+  };
+
+  it('ignores an expired adjustment in favour of the live one', () => {
+    const got = sevOf([
+      adjust(0.9, '2024-01-01T00:00:00Z', '2020-01-01T00:00:00Z', 'lapsed'),
+      adjust(0.1, '2025-01-01T00:00:00Z', '2099-12-31T00:00:00Z', 'live'),
+    ]);
+    expect(got.severity).toBe('low');
+    expect(got.justification).toBe('live');
+  });
+
+  it('takes the most recently applied of several live adjustments', () => {
+    const got = sevOf([
+      adjust(0.9, '2024-01-01T00:00:00Z', '2099-12-31T00:00:00Z', 'older'),
+      adjust(0.1, '2025-01-01T00:00:00Z', '2099-12-31T00:00:00Z', 'newer'),
+    ]);
+    expect(got.severity).toBe('low');
+    expect(got.justification).toBe('newer');
+  });
+
+  it('lets a newer impact-less waiver leave an older re-score in place', () => {
+    const got = sevOf([
+      adjust(0.1, '2025-01-01T00:00:00Z', '2099-12-31T00:00:00Z', 'adjustment'),
+      {
+        type: 'waiver',
+        reason: 'waived',
+        appliedBy: { type: 'simple', identifier: 't' },
+        appliedAt: '2026-01-01T00:00:00Z',
+        expiresAt: '2099-12-31T00:00:00Z',
+      },
+    ]);
+    expect(got.severity).toBe('low');
+    expect(got.justification).toBe('adjustment');
+  });
+});
+
 interface ChecklistOverrideProseCase {
   name: string;
   note: string;

@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { deriveControlTypeFromTags, inputChecksum, limitArray, mapCWEToNIST, markUnratedSeverity, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, deriveControlTypeFromTags, ecosystemFromPurlType, inputChecksum, limitArray, mapCWEToNIST, markUnratedSeverity, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { parseBom, buildBom, BOMType, type BuildBomParts } from '../../../shared/typescript/bom/index.js';
 import { canonicalize } from '../../../shared/typescript/exportmap.js';
 import {
@@ -12,8 +12,10 @@ import {
   cvssVersionFromString,
 } from '../../../shared/typescript/cvss.js';
 import type {
+  AffectedPackage,
   Component,
   Cvss,
+  Ecosystem,
   EvaluatedBaseline,
   EvaluatedRequirement,
   Checksum,
@@ -63,6 +65,7 @@ interface CycloneDXComponent {
   version?: string;
   group?: string;
   'bom-ref'?: string;
+  purl?: string;
   description?: string;
   licenses?: CycloneDXLicenseEntry[];
   components?: CycloneDXComponent[];
@@ -268,6 +271,63 @@ function buildRefs(vuln: CycloneDXVulnerability): Reference[] | undefined {
     add(a.url);
   }
   return refs.length > 0 ? refs : undefined;
+}
+
+/**
+ * The per-result instance identity for a CycloneDX finding: the affected
+ * component's purl, which is what distinguishes the several vulnerabilities that
+ * land on different components. purl is optional in CycloneDX, so this falls
+ * back to the bom-ref — also document-unique, and the only identifier a VEX
+ * document (which carries no components[] to resolve the ref against) publishes
+ * at all.
+ */
+function componentInstanceId(
+  componentLookup: Map<string, CycloneDXComponent>,
+  ref: string
+): string {
+  return componentLookup.get(ref)?.purl ?? ref;
+}
+
+/**
+ * Extracts the type segment of a purl ('pkg:maven/...' -> 'maven'). Returns
+ * undefined for anything that is not a purl.
+ */
+function purlType(purl: string | undefined): string | undefined {
+  if (!purl?.startsWith('pkg:')) return undefined;
+  const slash = purl.indexOf('/', 'pkg:'.length);
+  return slash === -1 ? undefined : purl.slice('pkg:'.length, slash);
+}
+
+/**
+ * Assembles the requirement's affected-package inventory from the components its
+ * affects[] entries resolve to, de-duplicated by ref in first-seen order.
+ * Components with neither a purl nor an ecosystem yield no schema-valid entry
+ * and are skipped rather than emitted half-built.
+ */
+function buildAffectedPackages(
+  componentLookup: Map<string, CycloneDXComponent>,
+  affects: CycloneDXAffect[]
+): AffectedPackage[] {
+  const out: AffectedPackage[] = [];
+  const seen = new Set<string>();
+  for (const affect of affects) {
+    const comp = componentLookup.get(affect.ref);
+    if (!comp || seen.has(affect.ref)) continue;
+    seen.add(affect.ref);
+    // CycloneDX has no package-type field of its own, so the ecosystem comes
+    // from the purl type and is left unset when there is no purl — the shared
+    // resolver's 'generic' default would assert an ecosystem the BOM never did.
+    const type = purlType(comp.purl);
+    const ecosystem: Ecosystem | undefined = type ? ecosystemFromPurlType(type) : undefined;
+    const pkg = buildAffectedPackage({
+      name: comp.name,
+      version: comp.version,
+      ecosystem,
+      purl: comp.purl,
+    });
+    if (pkg) out.push(pkg);
+  }
+  return out;
 }
 
 /**
@@ -710,13 +770,18 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     // the resolved component's inventory fields; unresolved refs (VEX) get none.
     const results =
       affects.length > 0
-        ? affects.map((affect) =>
-            createResult(
+        ? affects.map((affect) => {
+            const instanceId = componentInstanceId(componentLookup, affect.ref);
+            return createResult(
               ResultStatus.Failed,
               componentSummary(componentLookup, affect.ref),
-              { codeDesc: formatCodeDesc(componentLookup, affect.ref), startTime: scanTime }
-            )
-          )
+              {
+                codeDesc: formatCodeDesc(componentLookup, affect.ref),
+                startTime: scanTime,
+                ...(instanceId ? { resource: 'component', resourceId: instanceId } : {}),
+              }
+            );
+          })
         : [
             createResult(ResultStatus.Failed, undefined, {
               codeDesc: `Vulnerability ${vuln.id}`,
@@ -741,6 +806,10 @@ export async function convertCyclonedxToHdf(input: string, converterVersion = '1
     }
     if (cweIds.length > 0) {
       req.cwe = cweIds;
+    }
+    const affectedPackages = buildAffectedPackages(componentLookup, affects);
+    if (affectedPackages.length > 0) {
+      req.affectedPackages = affectedPackages;
     }
     const refs = buildRefs(vuln);
     if (refs !== undefined) {

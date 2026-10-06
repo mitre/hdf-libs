@@ -11,6 +11,7 @@ require (
 	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.1
 	github.com/mitre/hdf-libs/hdf-validators/go/v3 v3.7.1
 	github.com/stretchr/testify v1.12.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

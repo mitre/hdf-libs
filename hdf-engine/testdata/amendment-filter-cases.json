@@ -1,0 +1,1046 @@
+{
+  "$comment": "One requirement per amendment shape the disposition and poams filters must tell apart, plus the expected match set for each filter. hdf-engine/go/filter_test.go and test/query.test.ts read THIS file and run THESE cases, so the two Filter implementations are held to one cross-language contract rather than two hand-kept copies. 'now' is the injected reference clock: expiry is a property of the fixture, never of the day the suite runs, so no date here needs maintaining. dispositionValues pins the closed override-type vocabulary both languages validate against, so the two lists cannot drift from each other or from the schema enum. POAM-MIDWINDOW is what makes the injected clock load-bearing: its deadline sits after 'now' and before any real wall clock, so it counts as valid only while the injection is honoured. That is not a near-term date the clock will pass \u2014 both ends are fixed, so the relationship holds forever. Reusing this fixture through the real CLI answers --poams valid with ONE match, not two: production injects no clock, so POAM-MIDWINDOW reads as lapsed there. That is correct in both places, and worth knowing before diffing CLI output against these expectations. WAIVED-THEN-ADJUSTED is not a contrived shape: 'hdf enrich --recompute-cvss' authors a riskAdjustment carrying impact.value and no status, and APPENDS it to whatever overrides a requirement already has (shared/go/enrich_stix.go buildRiskAdjustment), so any already-waived finding that is later enriched acquires exactly this. It is what proves disposition and effective status may name different overrides: its disposition is the newer riskAdjustment while its effective status still comes from the older waiver. poamType: disposition collapses every governing plan to the flat 'poam' because the field is typed Override_Type, whose members do not include a plan's own kind. poamType recovers it as a SEPARATE predicate rather than a dotted or colon-joined value inside disposition \u2014 a label is a key=value pair and a plan's type is a typed enum, so borrowing the label separator would signal the wrong shape, and mixing two separators in one policy file invites typos that are hard to diagnose. It reads the GOVERNING plan only: a requirement that CARRIES a remediation but is governed by a newer mitigation matches mitigation and not remediation, which is what stops a lapsed plan answering for a live one.",
+  "now": "2026-01-01T00:00:00Z",
+  "fixture": {
+    "baselines": [
+      {
+        "name": "amendments",
+        "requirements": [
+          {
+            "id": "PLAIN",
+            "title": "No amendment of any kind",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "WAIVED",
+            "title": "Governing waiver, still in force",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "compensating control in place",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "WAIVER-LAPSED",
+            "title": "Waiver that has expired and no longer governs",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "compensating control, since lapsed",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "FALSE-POSITIVE",
+            "title": "Non-expiring false positive",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "falsePositive",
+                "status": "passed",
+                "reason": "scanner misidentified the package",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-CURRENT",
+            "title": "Failing with a plan that is still in force",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-LAPSED",
+            "title": "Failing with a plan whose deadline has passed",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation was scheduled and the date passed",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-EMPTY",
+            "title": "Failing with an empty poams array, which means the same as none",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [],
+            "tags": {}
+          },
+          {
+            "id": "POAM-MIDWINDOW",
+            "title": "Plan that is live at the injected clock and lapsed at the wall clock",
+            "impact": 0.7,
+            "tags": {},
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "deadline chosen to fall between the injected clock and any real wall clock",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2026-06-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "ADJUSTED-DOWN",
+            "title": "Governing riskAdjustment re-scoring 0.9 down to 0.3",
+            "impact": 0.9,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "riskAdjustment",
+                "reason": "environmental context lowers the exposure",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z",
+                "impact": {
+                  "value": 0.3
+                }
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "ADJUSTMENT-LAPSED",
+            "title": "The same re-score, expired",
+            "impact": 0.9,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "riskAdjustment",
+                "reason": "environmental context lowers the exposure",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z",
+                "impact": {
+                  "value": 0.3
+                }
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "WAIVED-THEN-ADJUSTED",
+            "title": "An older waiver decided the status; a newer riskAdjustment re-scored the impact",
+            "impact": 0.9,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "compensating control in place",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              },
+              {
+                "type": "riskAdjustment",
+                "reason": "environmental context lowers the exposure",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z",
+                "impact": {
+                  "value": 0.3
+                }
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-NEWER-THAN-WAIVER",
+            "title": "Live waiver, then a newer live plan",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "test",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "WAIVER-NEWER-THAN-POAM",
+            "title": "Live plan, then a newer live waiver",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "test",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-OVER-LAPSED-WAIVER",
+            "title": "A newer waiver that has lapsed, and an older plan still in force",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "statusOverrides": [
+              {
+                "type": "waiver",
+                "status": "passed",
+                "reason": "test",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "remediation scheduled",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-MITIGATION",
+            "title": "Governed by a live mitigation plan",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "mitigation",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-RISK-ACCEPTED",
+            "title": "Governed by a live risk acceptance",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "riskAcceptance",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-VENDOR",
+            "title": "Governed by a live vendor dependency",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "vendorDependency",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+            "title": "A lapsed remediation and a newer live mitigation",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "poams": [
+              {
+                "type": "remediation",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-06-01T00:00:00Z",
+                "expiresAt": "2020-01-01T00:00:00Z"
+              },
+              {
+                "type": "mitigation",
+                "explanation": "plan",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ],
+            "tags": {}
+          },
+          {
+            "id": "POAM-OVERRIDE-LIVE",
+            "title": "Failing, plan filed as an override \u2014 the shape amend apply produces",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {},
+            "statusOverrides": [
+              {
+                "type": "poam",
+                "status": "failed",
+                "reason": "remediation planned",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2025-01-01T00:00:00Z",
+                "expiresAt": "2099-12-31T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "POAM-OVERRIDE-LAPSED",
+            "title": "Failing, plan filed as an override that has lapsed",
+            "impact": 0.7,
+            "descriptions": [
+              {
+                "label": "default",
+                "data": "test"
+              }
+            ],
+            "results": [
+              {
+                "status": "failed",
+                "codeDesc": "check",
+                "startTime": "2024-01-01T00:00:00Z"
+              }
+            ],
+            "tags": {},
+            "statusOverrides": [
+              {
+                "type": "poam",
+                "status": "failed",
+                "reason": "remediation planned",
+                "appliedBy": {
+                  "type": "simple",
+                  "identifier": "test"
+                },
+                "appliedAt": "2024-01-01T00:00:00Z",
+                "expiresAt": "2024-06-30T00:00:00Z"
+              }
+            ]
+          }
+        ],
+        "supports": [],
+        "groups": []
+      }
+    ],
+    "platform": {
+      "name": "test",
+      "release": "1.0"
+    },
+    "statistics": {
+      "duration": 1.0
+    },
+    "version": "2.0.0"
+  },
+  "cases": [
+    {
+      "name": "disposition waiver excludes a lapsed waiver, a waiver a NEWER override has superseded (WAIVED-THEN-ADJUSTED is governed by its riskAdjustment now), and a waiver a NEWER POA&M has superseded (POAM-NEWER-THAN-WAIVER)",
+      "options": {
+        "disposition": [
+          "waiver"
+        ]
+      },
+      "expect": [
+        "WAIVED",
+        "WAIVER-NEWER-THAN-POAM"
+      ]
+    },
+    {
+      "name": "disposition ORs across values",
+      "options": {
+        "disposition": [
+          "waiver",
+          "falsePositive"
+        ]
+      },
+      "expect": [
+        "WAIVED",
+        "WAIVER-NEWER-THAN-POAM",
+        "FALSE-POSITIVE"
+      ]
+    },
+    {
+      "name": "disposition is case-insensitive, as the status filter already is",
+      "options": {
+        "disposition": [
+          "FALSEPOSITIVE"
+        ]
+      },
+      "expect": [
+        "FALSE-POSITIVE"
+      ]
+    },
+    {
+      "name": "disposition names the governing override even when it carries only an impact \u2014 a riskAdjustment typically does, so requiring a status made this filter unable to match its own canonical shape",
+      "options": {
+        "disposition": [
+          "riskAdjustment"
+        ]
+      },
+      "expect": [
+        "ADJUSTED-DOWN",
+        "WAIVED-THEN-ADJUSTED"
+      ]
+    },
+    {
+      "name": "a disposition nothing carries matches nothing",
+      "options": {
+        "disposition": [
+          "operationalRequirement"
+        ]
+      },
+      "expect": []
+    },
+    {
+      "name": "poams valid honours the INJECTED clock, not the wall clock",
+      "options": {
+        "poams": "valid"
+      },
+      "expect": [
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "WAIVER-NEWER-THAN-POAM",
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-MITIGATION",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+        "POAM-OVERRIDE-LIVE"
+      ]
+    },
+    {
+      "name": "poams none-valid collapses absent, empty and lapsed",
+      "options": {
+        "poams": "none-valid"
+      },
+      "expect": [
+        "PLAIN",
+        "WAIVED",
+        "WAIVER-LAPSED",
+        "FALSE-POSITIVE",
+        "POAM-LAPSED",
+        "POAM-EMPTY",
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED",
+        "WAIVED-THEN-ADJUSTED",
+        "POAM-OVERRIDE-LAPSED"
+      ]
+    },
+    {
+      "name": "an unrecognized poams value matches nothing rather than degrading",
+      "options": {
+        "poams": "absent"
+      },
+      "expect": []
+    },
+    {
+      "name": "the motivating policy: still failing after amendments, with no current plan. WAIVED-THEN-ADJUSTED is absent because its effective STATUS still comes from the older waiver even though its disposition names the newer riskAdjustment \u2014 the two may name different overrides, which is what per-field eligibility means",
+      "options": {
+        "status": [
+          "failed"
+        ],
+        "poams": "none-valid"
+      },
+      "effectiveStatus": true,
+      "expect": [
+        "PLAIN",
+        "WAIVER-LAPSED",
+        "POAM-LAPSED",
+        "POAM-EMPTY",
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED",
+        "POAM-OVERRIDE-LAPSED"
+      ]
+    },
+    {
+      "name": "impact compares the EFFECTIVE impact: a governing re-score takes the requirement out of the band it left",
+      "options": {
+        "impact": ">=0.9"
+      },
+      "expect": [
+        "ADJUSTMENT-LAPSED"
+      ]
+    },
+    {
+      "name": "and puts it in the band it was re-scored into",
+      "options": {
+        "impact": "<0.5"
+      },
+      "expect": [
+        "ADJUSTED-DOWN",
+        "WAIVED-THEN-ADJUSTED"
+      ]
+    },
+    {
+      "name": "rawImpact reaches the requirement own score, which effective impact no longer reports once an override governs",
+      "options": {
+        "rawImpact": ">=0.9"
+      },
+      "expect": [
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED",
+        "WAIVED-THEN-ADJUSTED"
+      ]
+    },
+    {
+      "name": "the governance policy the pair exists for: an override may not move a critical below 0.7",
+      "options": {
+        "rawImpact": ">=0.9",
+        "impact": "<0.7"
+      },
+      "expect": [
+        "ADJUSTED-DOWN",
+        "WAIVED-THEN-ADJUSTED"
+      ]
+    },
+    {
+      "name": "disposition poam \u2014 a governing POA&M names itself, which the schema has always said and nothing implemented",
+      "options": {
+        "disposition": [
+          "poam"
+        ]
+      },
+      "expect": [
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-MITIGATION",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+        "POAM-OVERRIDE-LIVE"
+      ]
+    },
+    {
+      "name": "a POA&M and an override are ONE ordered set: the most recently applied non-expired entry governs, whichever kind it is",
+      "options": {
+        "disposition": [
+          "poam",
+          "waiver"
+        ]
+      },
+      "expect": [
+        "WAIVED",
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "WAIVER-NEWER-THAN-POAM",
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-MITIGATION",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION",
+        "POAM-OVERRIDE-LIVE"
+      ]
+    },
+    {
+      "name": "expiry outranks recency across kinds \u2014 POAM-OVER-LAPSED-WAIVER's waiver is newer by appliedAt but lapsed, so the older live plan governs",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "id": "POAM-OVER-LAPSED-WAIVER"
+      },
+      "expect": [
+        "POAM-OVER-LAPSED-WAIVER"
+      ]
+    },
+    {
+      "name": "a lapsed POA&M governs nothing, exactly as a lapsed override does",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "id": "POAM-LAPSED"
+      },
+      "expect": []
+    },
+    {
+      "name": "poamType selects the GOVERNING plan's kind, which disposition collapses to the flat poam",
+      "options": {
+        "poamType": [
+          "mitigation"
+        ]
+      },
+      "expect": [
+        "POAM-MITIGATION",
+        "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
+      ]
+    },
+    {
+      "name": "poamType ORs across kinds",
+      "options": {
+        "poamType": [
+          "riskAcceptance",
+          "vendorDependency"
+        ]
+      },
+      "expect": [
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR"
+      ]
+    },
+    {
+      "name": "a kind nothing is governed by selects nothing \u2014 POAM-LAPSED-REMEDIATION-LIVE-MITIGATION CARRIES a remediation but is not GOVERNED by it",
+      "options": {
+        "poamType": [
+          "remediation"
+        ],
+        "id": "POAM-LAPSED-REMEDIATION-LIVE-MITIGATION"
+      },
+      "expect": []
+    },
+    {
+      "name": "poamType narrows disposition rather than replacing it: both together mean the governing entry is a plan AND of that kind",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "poamType": [
+          "vendorDependency"
+        ]
+      },
+      "expect": [
+        "POAM-VENDOR"
+      ]
+    },
+    {
+      "name": "a requirement governed by an OVERRIDE matches no poamType, whatever plans it also carries",
+      "options": {
+        "poamType": [
+          "remediation"
+        ],
+        "id": "WAIVER-NEWER-THAN-POAM"
+      },
+      "expect": []
+    },
+    {
+      "name": "not on poamType: absence satisfies it, so everything without a governing mitigation matches",
+      "options": {
+        "poamType": {
+          "not": [
+            "mitigation"
+          ]
+        }
+      },
+      "expect": [
+        "ADJUSTED-DOWN",
+        "ADJUSTMENT-LAPSED",
+        "FALSE-POSITIVE",
+        "PLAIN",
+        "POAM-CURRENT",
+        "POAM-EMPTY",
+        "POAM-LAPSED",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "WAIVED",
+        "WAIVED-THEN-ADJUSTED",
+        "WAIVER-LAPSED",
+        "WAIVER-NEWER-THAN-POAM",
+        "POAM-OVERRIDE-LIVE",
+        "POAM-OVERRIDE-LAPSED"
+      ]
+    },
+    {
+      "name": "not on disposition and not on poamType compose \u2014 a governing plan that is not a mitigation",
+      "options": {
+        "disposition": [
+          "poam"
+        ],
+        "poamType": {
+          "not": [
+            "mitigation"
+          ]
+        }
+      },
+      "expect": [
+        "POAM-CURRENT",
+        "POAM-MIDWINDOW",
+        "POAM-NEWER-THAN-WAIVER",
+        "POAM-OVER-LAPSED-WAIVER",
+        "POAM-RISK-ACCEPTED",
+        "POAM-VENDOR",
+        "POAM-OVERRIDE-LIVE"
+      ]
+    }
+  ],
+  "dispositionValues": [
+    "waiver",
+    "attestation",
+    "poam",
+    "inherited",
+    "falsePositive",
+    "riskAdjustment",
+    "operationalRequirement"
+  ],
+  "poamTypeValues": [
+    "remediation",
+    "mitigation",
+    "riskAcceptance",
+    "vendorDependency"
+  ]
+}

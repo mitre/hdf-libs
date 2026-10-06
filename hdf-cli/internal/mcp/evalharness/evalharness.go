@@ -37,8 +37,26 @@ const (
 	// a capability, not bloat, and the alternative — cutting description text
 	// that was added after measured agent failures — trades accuracy for tokens.
 	// The per-tool ceiling below is the real anti-bloat invariant; a deployment
-	// that does not need every tool advertises a subset (--tools).
-	ToolsListTotalBudget = 5400
+	// that does not need every tool advertises a subset (--tools). Raised to
+	// 5460 (owner decision 2026-09-24) when hdf_query gained disposition,
+	// poams and rawImpact: the amendments layer was reachable from the CLI and
+	// not from the MCP, so an agent could not ask what a user could. Measured
+	// 5444 with the descriptions already trimmed twice.
+	// Raised to 5580 (owner decision 2026-09-25) with hdf_query's four
+	// vulnerability filters; measured 5567. This is the fifth raise and the
+	// ratchet has never been examined as a whole — hdf-libs-5cim9 is that audit.
+	// Raised to 5600 (owner decision 2026-09-28) for hdf_query's baselineLabel;
+	// measured 5599. This one lands BEFORE that audit deliberately: the audit is
+	// scoped beyond the threshold epic, and holding a filter out of the MCP
+	// meanwhile would leave an agent unable to ask what a CLI user can — the
+	// exact divergence the reflective guard exists to catch, and which caught
+	// this. The cost is 19 tokens and the wording is already at its floor
+	// (trimming the description twice measured 988 either way).
+	// Raised to 5630 (owner decision 2026-09-29) when hdf_query's disposition
+	// description had to say a governing POA&M counts too; measured 5617.
+	// Raised to 5700 (owner decision 2026-09-29) for hdf_query's poamType;
+	// measured 5669.
+	ToolsListTotalBudget = 5700
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -49,8 +67,27 @@ const (
 	// description can SAY that sources[] combines several documents — a
 	// benchmark smoke showed a 20B model never discovering it from the
 	// parameter hint alone, so the sentence is capability, not prose; measured
-	// 738 with the naming aside kept.
-	ToolsListPerToolBudget = 740
+	// 738 with the naming aside kept. Raised to 840 (owner decision 2026-09-24)
+	// for hdf_query's three amendments-layer filters. The cost is structural —
+	// roughly 95 tokens for three properties, not prose: trimming took it from
+	// 848 to 833 and no further, and the only remaining lever was dropping the
+	// disposition enum from its description, which would cost a guess-and-be-
+	// refused round trip and make it the one closed vocabulary not listed the
+	// way status and severity are. Measured 833.
+	// Raised to 970 (owner decision 2026-09-25) for hdf_query's cvss, epss, kev
+	// and cwe; measured 956. hdf_query is now roughly a fifth of the whole
+	// listing, which is the specific thing hdf-libs-5cim9 exists to weigh.
+	// Raised to 990 (owner decision 2026-09-28) for baselineLabel; measured 988.
+	// Raised to 1020 (owner decision 2026-09-29): the disposition description named
+	// only the override and was FALSE once a governing POA&M began resolving, so
+	// this raise buys correctness rather than surface. Trimmed twice before raising
+	// (22 tokens down to 17); measured 1006. hdf_query is now about a fifth of the
+	// listing and this is its fourth raise — hdf-libs-5cim9 should run before a fifth.
+	// Raised to 1080 (owner decision 2026-09-29) for poamType; measured 1058.
+	// hdf_query is now roughly a fifth of the listing and this is its fifth raise
+	// — the audit in hdf-libs-5cim9 was named as the thing to do before a fifth,
+	// and it has not run. Say so rather than let the ratchet look routine.
+	ToolsListPerToolBudget = 1080
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -60,8 +97,24 @@ const (
 	// aggregate tool included, against the full ~5079. Raised from 2900 to 3500 when
 	// hdf_aggregate joined the read profile, and to 3700 with sources[] on the two
 	// read tools that carry it. This ceiling only needs to catch the read surface
-	// creeping back toward full; the wire measurement is a faithful proxy.
-	ReadProfileBudget = 3700
+	// creeping back toward full; the wire measurement is a faithful proxy. Raised
+	// to 3760 (owner decision 2026-09-24) with hdf_query's amendments filters;
+	// measured 3744. The read profile still sits far below the full surface,
+	// which is what this ceiling exists to protect.
+	// Raised to 3880 (owner decision 2026-09-25) with the vulnerability filters;
+	// measured 3867. Raised to 3900 (owner decision 2026-09-28) with
+	// baselineLabel; measured 3899. Raised to 3930 (owner decision 2026-09-29) when
+	// hdf_query's disposition description had to say that a governing POA&M counts
+	// too — the old wording named only the override and was false after that change;
+	// measured 3917. The description was trimmed twice before raising, which
+	// recovered 5 of the 22 tokens. This is the eighth raise and the ratchet has
+	// still never been examined as a whole; hdf-libs-5cim9 is that audit.
+	// Raised to 4000 (owner decision 2026-09-29) for hdf_query's poamType, which
+	// recovers the POA&M kind that disposition flattens to "poam"; measured 3969.
+	// Unlike the raise above, trimming did NOT help — three wordings measured
+	// 3969/3971/3972, so the cheapest was the clearest and the cost is the field
+	// itself, not its prose. Ninth raise; hdf-libs-5cim9 should run before a tenth.
+	ReadProfileBudget = 4000
 )
 
 var (

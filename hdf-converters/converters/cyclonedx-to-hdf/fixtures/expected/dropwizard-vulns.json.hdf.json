@@ -3,6 +3,14 @@
     {
       "requirements": [
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "guava",
+              "purl": "pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar",
+              "version": "24.1.1-jre"
+            }
+          ],
           "cwe": [
             "CWE-173",
             "CWE-200",
@@ -19,6 +27,8 @@
             {
               "codeDesc": "Component com.google.guava/guava@24.1.1-jre is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1a021b8e-d143-4072-84f0-0e18292f1967\n\n- Group: com.google.guava\n\n- Name: guava\n\n- Version: 24.1.1-jre\n\n- Description: Guava is a suite of core and expanded libraries that include utility classes, google's collections, io classes, and much much more.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -45,6 +55,14 @@
           "title": "GHSA-5mg8-w23w-74h3 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "guava",
+              "purl": "pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar",
+              "version": "24.1.1-jre"
+            }
+          ],
           "cwe": [
             "CWE-379",
             "CWE-552"
@@ -59,6 +77,8 @@
             {
               "codeDesc": "Component com.google.guava/guava@24.1.1-jre is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1a021b8e-d143-4072-84f0-0e18292f1967\n\n- Group: com.google.guava\n\n- Name: guava\n\n- Version: 24.1.1-jre\n\n- Description: Guava is a suite of core and expanded libraries that include utility classes, google's collections, io classes, and much much more.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -84,6 +104,14 @@
           "title": "GHSA-7g45-4rm6-3mm3 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -97,6 +125,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -121,6 +151,14 @@
           "title": "GHSA-5p34-5m6p-p58g (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -134,6 +172,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -158,6 +198,14 @@
           "title": "GHSA-27xj-rqx5-2255 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -171,6 +219,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -195,6 +245,14 @@
           "title": "GHSA-58pp-9c76-5625 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -208,6 +266,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -232,6 +292,14 @@
           "title": "GHSA-v3xw-c963-f5hc (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -245,6 +313,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -269,6 +339,14 @@
           "title": "GHSA-h4rc-386g-6m85 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -282,6 +360,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -306,6 +386,14 @@
           "title": "GHSA-9vvp-fxw6-jcxr (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -319,6 +407,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -343,6 +433,14 @@
           "title": "GHSA-rf6r-2c4q-2vwg (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -356,6 +454,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -380,6 +480,14 @@
           "title": "GHSA-758m-v56v-grj4 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -393,6 +501,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -417,6 +527,14 @@
           "title": "GHSA-95cm-88f5-f2c7 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -430,6 +548,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -454,6 +574,14 @@
           "title": "GHSA-c2q3-4qrh-fm48 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -467,6 +595,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -491,6 +621,14 @@
           "title": "GHSA-mc6h-4qgp-37qh (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -504,6 +642,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -528,6 +668,14 @@
           "title": "GHSA-j823-4qch-3rgm (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -541,6 +689,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -565,6 +715,14 @@
           "title": "GHSA-c265-37vj-cwcc (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -578,6 +736,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -602,6 +762,14 @@
           "title": "GHSA-4w82-r329-3q67 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -615,6 +783,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -639,6 +809,14 @@
           "title": "GHSA-rpr3-cw39-3pxh (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -652,6 +830,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -676,6 +856,14 @@
           "title": "GHSA-fmmc-742q-jg75 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -689,6 +877,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -713,6 +903,14 @@
           "title": "GHSA-gjmw-vf9h-g25v (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -726,6 +924,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -750,6 +950,14 @@
           "title": "GHSA-mx7p-6679-8g3q (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -763,6 +971,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -787,6 +997,14 @@
           "title": "GHSA-q93h-jc49-78gg (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -800,6 +1018,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -824,6 +1044,14 @@
           "title": "GHSA-p43x-xfjf-5jhr (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-94",
             "CWE-502"
@@ -838,6 +1066,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -862,6 +1092,14 @@
           "title": "GHSA-h3cw-g4mq-c5x2 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -875,6 +1113,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -899,6 +1139,14 @@
           "title": "GHSA-qjw2-hr98-qgfh (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -912,6 +1160,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -936,6 +1186,14 @@
           "title": "GHSA-8w26-6f25-cm9x (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -949,6 +1207,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -973,6 +1233,14 @@
           "title": "GHSA-m6x4-97wx-4q27 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -986,6 +1254,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1010,6 +1280,14 @@
           "title": "GHSA-v585-23hc-c647 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1023,6 +1301,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1047,6 +1327,14 @@
           "title": "GHSA-r695-7vr9-jgc2 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1060,6 +1348,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1084,6 +1374,14 @@
           "title": "GHSA-vfqx-33qm-g869 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1097,6 +1395,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1121,6 +1421,14 @@
           "title": "GHSA-f9xh-2qgp-cq57 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1134,6 +1442,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1158,6 +1468,14 @@
           "title": "GHSA-cvm9-fjm9-3572 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1171,6 +1489,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1195,6 +1515,14 @@
           "title": "GHSA-9gph-22xh-8x98 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1208,6 +1536,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1232,6 +1562,14 @@
           "title": "GHSA-89qr-369f-5m5x (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1245,6 +1583,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1269,6 +1609,14 @@
           "title": "GHSA-8c4j-34r4-xr8g (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1282,6 +1630,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1306,6 +1656,14 @@
           "title": "GHSA-9m6f-7xcq-8vf8 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1319,6 +1677,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1343,6 +1703,14 @@
           "title": "GHSA-5r5r-6hpj-8gg9 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1356,6 +1724,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1380,6 +1750,14 @@
           "title": "GHSA-wh8g-3j2c-rqj5 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502",
             "CWE-913"
@@ -1394,6 +1772,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1418,6 +1798,14 @@
           "title": "GHSA-r3gr-cxrf-hg25 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-400",
             "CWE-502"
@@ -1432,6 +1820,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1456,6 +1846,14 @@
           "title": "GHSA-jjjh-jjxp-wpff (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1469,6 +1867,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1493,6 +1893,14 @@
           "title": "GHSA-5949-rw7g-wx7w (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-787"
           ],
@@ -1506,6 +1914,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1530,6 +1940,14 @@
           "title": "GHSA-57j2-w4cx-62h2 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-611"
           ],
@@ -1543,6 +1961,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1567,6 +1987,14 @@
           "title": "GHSA-288c-cq4h-88gq (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1580,6 +2008,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1604,6 +2034,14 @@
           "title": "GHSA-gww7-p5w4-wrfv (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-400",
             "CWE-502"
@@ -1618,6 +2056,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1642,6 +2082,14 @@
           "title": "GHSA-rgv9-q543-rqg4 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jackson-databind",
+              "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
+              "version": "2.9.10"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -1655,6 +2103,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.9.10?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1679,6 +2129,14 @@
           "title": "GHSA-fqwf-pjwf-7vqv (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "dropwizard-validation",
+              "purl": "pkg:maven/io.dropwizard/dropwizard-validation@1.3.15?type=jar",
+              "version": "1.3.15"
+            }
+          ],
           "cwe": [
             "CWE-74"
           ],
@@ -1692,6 +2150,8 @@
             {
               "codeDesc": "Component io.dropwizard/dropwizard-validation@1.3.15 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 9623a310-0e79-4f71-b9a7-b7046f1fbf30\n\n- Group: io.dropwizard\n\n- Name: dropwizard-validation\n\n- Version: 1.3.15",
+              "resource": "component",
+              "resourceId": "pkg:maven/io.dropwizard/dropwizard-validation@1.3.15?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1717,6 +2177,14 @@
           "title": "GHSA-8jpx-m2wh-2v34 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "dropwizard-validation",
+              "purl": "pkg:maven/io.dropwizard/dropwizard-validation@1.3.15?type=jar",
+              "version": "1.3.15"
+            }
+          ],
           "cwe": [
             "CWE-74"
           ],
@@ -1730,6 +2198,8 @@
             {
               "codeDesc": "Component io.dropwizard/dropwizard-validation@1.3.15 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 9623a310-0e79-4f71-b9a7-b7046f1fbf30\n\n- Group: io.dropwizard\n\n- Name: dropwizard-validation\n\n- Version: 1.3.15",
+              "resource": "component",
+              "resourceId": "pkg:maven/io.dropwizard/dropwizard-validation@1.3.15?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1755,6 +2225,14 @@
           "title": "GHSA-3mcp-9wr4-cjqf (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-776"
           ],
@@ -1768,6 +2246,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1793,6 +2273,14 @@
           "title": "GHSA-rvwf-54qp-4r6v (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-121",
             "CWE-787"
@@ -1807,6 +2295,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1831,6 +2321,14 @@
           "title": "GHSA-9w3m-gqgf-c4p9 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-121",
             "CWE-787"
@@ -1845,6 +2343,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1869,6 +2369,14 @@
           "title": "GHSA-w37g-rhq8-7m4j (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-121",
             "CWE-787"
@@ -1883,6 +2391,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1907,6 +2417,14 @@
           "title": "GHSA-c4r9-r8fh-9vj2 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-121",
             "CWE-787"
@@ -1921,6 +2439,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1945,6 +2465,14 @@
           "title": "GHSA-hhhw-99gj-p3c3 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-121",
             "CWE-787"
@@ -1959,6 +2487,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -1983,6 +2513,14 @@
           "title": "GHSA-98wm-3w3q-mw94 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-400",
             "CWE-776"
@@ -1997,6 +2535,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2021,6 +2561,14 @@
           "title": "GHSA-3mc7-4q67-w48m (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "snakeyaml",
+              "purl": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
+              "version": "1.23"
+            }
+          ],
           "cwe": [
             "CWE-20",
             "CWE-502"
@@ -2035,6 +2583,8 @@
             {
               "codeDesc": "Component org.yaml/snakeyaml@1.23 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0f2c6b93-4dda-43b7-b7aa-f03f357c5dcd\n\n- Group: org.yaml\n\n- Name: snakeyaml\n\n- Version: 1.23\n\n- Description: YAML 1.1 parser and emitter for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.yaml/snakeyaml@1.23?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2059,6 +2609,14 @@
           "title": "GHSA-mjmj-j48q-9wg2 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "logback-core",
+              "purl": "pkg:maven/ch.qos.logback/logback-core@1.2.3?type=jar",
+              "version": "1.2.3"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -2072,6 +2630,8 @@
             {
               "codeDesc": "Component ch.qos.logback/logback-core@1.2.3 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 5e7cd916-704f-4746-83a0-ec3850bb3f49\n\n- Group: ch.qos.logback\n\n- Name: logback-core\n\n- Version: 1.2.3\n\n- Description: logback-core module\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/ch.qos.logback/logback-core@1.2.3?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2096,6 +2656,14 @@
           "title": "GHSA-668q-qrv7-99fm (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "logback-core",
+              "purl": "pkg:maven/ch.qos.logback/logback-core@1.2.3?type=jar",
+              "version": "1.2.3"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -2109,6 +2677,8 @@
             {
               "codeDesc": "Component ch.qos.logback/logback-core@1.2.3 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 5e7cd916-704f-4746-83a0-ec3850bb3f49\n\n- Group: ch.qos.logback\n\n- Name: logback-core\n\n- Version: 1.2.3\n\n- Description: logback-core module\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/ch.qos.logback/logback-core@1.2.3?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2133,6 +2703,14 @@
           "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "logback-classic",
+              "purl": "pkg:maven/ch.qos.logback/logback-classic@1.2.3?type=jar",
+              "version": "1.2.3"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -2146,6 +2724,8 @@
             {
               "codeDesc": "Component ch.qos.logback/logback-classic@1.2.3 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 6d8385bd-f9a9-4a97-9031-3a1c717209b7\n\n- Group: ch.qos.logback\n\n- Name: logback-classic\n\n- Version: 1.2.3\n\n- Description: logback-classic module\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/ch.qos.logback/logback-classic@1.2.3?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2170,6 +2750,14 @@
           "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-server",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-400"
           ],
@@ -2183,6 +2771,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 4e012695-d45a-4296-b37b-54a8b6893a50\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The core jetty server artifact.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2207,6 +2797,14 @@
           "title": "GHSA-m394-8rww-3jr7 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-server",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-613"
           ],
@@ -2220,6 +2818,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 4e012695-d45a-4296-b37b-54a8b6893a50\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The core jetty server artifact.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2244,6 +2844,14 @@
           "title": "GHSA-m6cp-vxjx-65j6 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-server",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-400",
             "CWE-551",
@@ -2259,6 +2867,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 4e012695-d45a-4296-b37b-54a8b6893a50\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The core jetty server artifact.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2283,6 +2893,14 @@
           "title": "GHSA-26vr-8j45-3r4w (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-server",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-200"
           ],
@@ -2296,6 +2914,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 4e012695-d45a-4296-b37b-54a8b6893a50\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The core jetty server artifact.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2320,6 +2940,14 @@
           "title": "GHSA-p26g-97m4-6q7c (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-server",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-400",
             "CWE-770"
@@ -2334,6 +2962,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 4e012695-d45a-4296-b37b-54a8b6893a50\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The core jetty server artifact.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2358,6 +2988,14 @@
           "title": "GHSA-qw69-rqj8-6qw8 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-server",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-226"
           ],
@@ -2371,6 +3009,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 4e012695-d45a-4296-b37b-54a8b6893a50\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The core jetty server artifact.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2395,6 +3035,14 @@
           "title": "GHSA-86wm-rrjm-8wh8 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-http",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-http@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-20"
           ],
@@ -2408,6 +3056,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-http@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: c1abfd09-121f-418c-befa-4d6b9e164769\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-http\n\n- Version: 9.4.18.v20190429\n\n- Description: The Eclipse Jetty Project\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-http@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2432,6 +3082,14 @@
           "title": "GHSA-cj7v-27pg-wf7q (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-http",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-http@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-130"
           ],
@@ -2445,6 +3103,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-http@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: c1abfd09-121f-418c-befa-4d6b9e164769\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-http\n\n- Version: 9.4.18.v20190429\n\n- Description: The Eclipse Jetty Project\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-http@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2470,6 +3130,14 @@
           "title": "GHSA-hmr7-m48g-48f6 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-webapp",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-webapp@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-378",
             "CWE-379",
@@ -2485,6 +3153,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-webapp@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 71f396a0-0285-465e-8ce3-6eacb47be941\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-webapp\n\n- Version: 9.4.18.v20190429\n\n- Description: Jetty web application support\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-webapp@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2510,6 +3180,14 @@
           "title": "GHSA-g3wg-6mcf-8jj6 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-xml",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-xml@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-611"
           ],
@@ -2523,6 +3201,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-xml@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 39e5b7f2-b34e-4d46-8f70-841e0ef6a3b9\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-xml\n\n- Version: 9.4.18.v20190429\n\n- Description: The jetty xml utilities.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-xml@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2547,6 +3227,14 @@
           "title": "GHSA-58qw-p7qm-5rvh (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-servlets",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-servlets@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-200"
           ],
@@ -2560,6 +3248,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-servlets@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 7f8bcab9-2ea2-4fde-bdc4-fc0840ce0bfc\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-servlets\n\n- Version: 9.4.18.v20190429\n\n- Description: Utility Servlets from Jetty\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-servlets@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2584,6 +3274,14 @@
           "title": "GHSA-gwcr-j4wh-j3cq (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "jetty-servlets",
+              "purl": "pkg:maven/org.eclipse.jetty/jetty-servlets@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-149"
           ],
@@ -2597,6 +3295,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty/jetty-servlets@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 7f8bcab9-2ea2-4fde-bdc4-fc0840ce0bfc\n\n- Group: org.eclipse.jetty\n\n- Name: jetty-servlets\n\n- Version: 9.4.18.v20190429\n\n- Description: Utility Servlets from Jetty\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty/jetty-servlets@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2622,6 +3322,14 @@
           "title": "GHSA-3gh6-v5v9-6v9j (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "junit",
+              "purl": "pkg:maven/junit/junit@4.12?type=jar",
+              "version": "4.12"
+            }
+          ],
           "cwe": [
             "CWE-200",
             "CWE-732"
@@ -2636,6 +3344,8 @@
             {
               "codeDesc": "Component junit/junit@4.12 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 8005328c-f1b3-4ac3-8aa6-1e5013d8cef2\n\n- Group: junit\n\n- Name: junit\n\n- Version: 4.12\n\n- Description: JUnit is a unit testing framework for Java, created by Erich Gamma and Kent Beck.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.eclipse.org/legal/epl-v10.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/junit/junit@4.12?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2662,6 +3372,14 @@
           "title": "GHSA-269g-pwp5-87pp (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "byte-buddy",
+              "purl": "pkg:maven/net.bytebuddy/byte-buddy@1.9.7?type=jar",
+              "version": "1.9.7"
+            }
+          ],
           "descriptions": [
             {
               "data": "INT-f70z-tbpp-4o5d",
@@ -2672,6 +3390,8 @@
             {
               "codeDesc": "Component net.bytebuddy/byte-buddy@1.9.7 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0052b14c-fb6a-404e-89fb-48cad6d2535d\n\n- Group: net.bytebuddy\n\n- Name: byte-buddy\n\n- Version: 1.9.7\n\n- Description: Byte Buddy is a Java library for creating Java classes at run time. This artifact is a build of Byte Buddy with all ASM dependencies repackaged into its own name space.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/net.bytebuddy/byte-buddy@1.9.7?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2692,6 +3412,14 @@
           "title": "INT-f70z-tbpp-4o5d (INTERNAL)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "byte-buddy",
+              "purl": "pkg:maven/net.bytebuddy/byte-buddy@1.9.7?type=jar",
+              "version": "1.9.7"
+            }
+          ],
           "descriptions": [
             {
               "data": "Description: testing",
@@ -2702,6 +3430,8 @@
             {
               "codeDesc": "Component net.bytebuddy/byte-buddy@1.9.7 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 0052b14c-fb6a-404e-89fb-48cad6d2535d\n\n- Group: net.bytebuddy\n\n- Name: byte-buddy\n\n- Version: 1.9.7\n\n- Description: Byte Buddy is a Java library for creating Java classes at run time. This artifact is a build of Byte Buddy with all ASM dependencies repackaged into its own name space.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/net.bytebuddy/byte-buddy@1.9.7?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2722,6 +3452,14 @@
           "title": "INT-63e3-49kp-blqt (INTERNAL)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "hibernate-core",
+              "purl": "pkg:maven/org.hibernate/hibernate-core@5.2.18.Final?type=jar",
+              "version": "5.2.18.Final"
+            }
+          ],
           "cwe": [
             "CWE-89"
           ],
@@ -2735,6 +3473,8 @@
             {
               "codeDesc": "Component org.hibernate/hibernate-core@5.2.18.Final is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 8c0378f7-4c0e-4ee3-849d-740b0035c371\n\n- Group: org.hibernate\n\n- Name: hibernate-core\n\n- Version: 5.2.18.Final\n\n- Description: The core O/RM functionality as provided by Hibernate\n\n- Licenses: [\n  {\n    \"license\": {\n      \"name\": \"GNU Lesser General Public License\",\n      \"url\": \"http://www.gnu.org/licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.hibernate/hibernate-core@5.2.18.Final?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2759,6 +3499,14 @@
           "title": "GHSA-j8jw-g6fq-mp7h (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "hibernate-core",
+              "purl": "pkg:maven/org.hibernate/hibernate-core@5.2.18.Final?type=jar",
+              "version": "5.2.18.Final"
+            }
+          ],
           "cwe": [
             "CWE-89"
           ],
@@ -2772,6 +3520,8 @@
             {
               "codeDesc": "Component org.hibernate/hibernate-core@5.2.18.Final is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 8c0378f7-4c0e-4ee3-849d-740b0035c371\n\n- Group: org.hibernate\n\n- Name: hibernate-core\n\n- Version: 5.2.18.Final\n\n- Description: The core O/RM functionality as provided by Hibernate\n\n- Licenses: [\n  {\n    \"license\": {\n      \"name\": \"GNU Lesser General Public License\",\n      \"url\": \"http://www.gnu.org/licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.hibernate/hibernate-core@5.2.18.Final?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2796,6 +3546,14 @@
           "title": "GHSA-8grg-q944-cch5 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "dom4j",
+              "purl": "pkg:maven/org.dom4j/dom4j@2.1.1?type=jar",
+              "version": "2.1.1"
+            }
+          ],
           "cwe": [
             "CWE-611"
           ],
@@ -2809,6 +3567,8 @@
             {
               "codeDesc": "Component org.dom4j/dom4j@2.1.1 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 627bb70b-4b85-4801-8239-f03de04ca5db\n\n- Group: org.dom4j\n\n- Name: dom4j\n\n- Version: 2.1.1\n\n- Description: flexible XML framework for Java\n\n- Licenses: [\n  {\n    \"license\": {\n      \"name\": \"BSD 3-clause New License\",\n      \"url\": \"https://github.com/dom4j/dom4j/blob/master/LICENSE\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.dom4j/dom4j@2.1.1?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2833,6 +3593,14 @@
           "title": "GHSA-hwj3-m3p6-hj38 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "httpclient",
+              "purl": "pkg:maven/org.apache.httpcomponents/httpclient@4.5.7?type=jar",
+              "version": "4.5.7"
+            }
+          ],
           "cwe": [
             "CWE-79"
           ],
@@ -2846,6 +3614,8 @@
             {
               "codeDesc": "Component org.apache.httpcomponents/httpclient@4.5.7 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 893beba4-580b-4ada-a4cf-067fbe145507\n\n- Group: org.apache.httpcomponents\n\n- Name: httpclient\n\n- Version: 4.5.7\n\n- Description: Apache HttpComponents Client\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.apache.httpcomponents/httpclient@4.5.7?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2870,6 +3640,14 @@
           "title": "GHSA-7r82-7xv7-xcpj (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "liquibase-core",
+              "purl": "pkg:maven/org.liquibase/liquibase-core@3.6.3?type=jar",
+              "version": "3.6.3"
+            }
+          ],
           "cwe": [
             "CWE-611"
           ],
@@ -2883,6 +3661,8 @@
             {
               "codeDesc": "Component org.liquibase/liquibase-core@3.6.3 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: ab3bfc00-8d35-4a4d-b314-86573681d910\n\n- Group: org.liquibase\n\n- Name: liquibase-core\n\n- Version: 3.6.3\n\n- Description: Liquibase is a tool for managing and executing database changes.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"Apache-2.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.liquibase/liquibase-core@3.6.3?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2907,6 +3687,14 @@
           "title": "GHSA-jvfv-hrrc-6q72 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "http2-server",
+              "purl": "pkg:maven/org.eclipse.jetty.http2/http2-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-400",
             "CWE-410"
@@ -2921,6 +3709,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty.http2/http2-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 55521fe9-aed2-403e-9df2-75fc5af90f54\n\n- Group: org.eclipse.jetty.http2\n\n- Name: http2-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The Eclipse Jetty Project\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty.http2/http2-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2945,6 +3735,14 @@
           "title": "GHSA-wgmr-mf83-7x4j (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "http2-server",
+              "purl": "pkg:maven/org.eclipse.jetty.http2/http2-server@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-400"
           ],
@@ -2958,6 +3756,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty.http2/http2-server@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 55521fe9-aed2-403e-9df2-75fc5af90f54\n\n- Group: org.eclipse.jetty.http2\n\n- Name: http2-server\n\n- Version: 9.4.18.v20190429\n\n- Description: The Eclipse Jetty Project\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty.http2/http2-server@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -2982,6 +3782,14 @@
           "title": "GHSA-qppj-fm5r-hxr3 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "http2-common",
+              "purl": "pkg:maven/org.eclipse.jetty.http2/http2-common@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-400"
           ],
@@ -2995,6 +3803,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty.http2/http2-common@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: f4a06b14-3945-4381-b3dd-b46407b02b6b\n\n- Group: org.eclipse.jetty.http2\n\n- Name: http2-common\n\n- Version: 9.4.18.v20190429\n\n- Description: The Eclipse Jetty Project\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty.http2/http2-common@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -3019,6 +3829,14 @@
           "title": "GHSA-rggv-cv7r-mw98 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "http2-common",
+              "purl": "pkg:maven/org.eclipse.jetty.http2/http2-common@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-400"
           ],
@@ -3032,6 +3850,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty.http2/http2-common@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: f4a06b14-3945-4381-b3dd-b46407b02b6b\n\n- Group: org.eclipse.jetty.http2\n\n- Name: http2-common\n\n- Version: 9.4.18.v20190429\n\n- Description: The Eclipse Jetty Project\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty.http2/http2-common@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -3056,6 +3876,14 @@
           "title": "GHSA-qppj-fm5r-hxr3 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "http2-hpack",
+              "purl": "pkg:maven/org.eclipse.jetty.http2/http2-hpack@9.4.18.v20190429?type=jar",
+              "version": "9.4.18.v20190429"
+            }
+          ],
           "cwe": [
             "CWE-190"
           ],
@@ -3069,6 +3897,8 @@
             {
               "codeDesc": "Component org.eclipse.jetty.http2/http2-hpack@9.4.18.v20190429 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: d2a5e2bf-ead6-4768-866a-385166eb6709\n\n- Group: org.eclipse.jetty.http2\n\n- Name: http2-hpack\n\n- Version: 9.4.18.v20190429\n\n- Description: The Eclipse Jetty Project\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/org.eclipse.jetty.http2/http2-hpack@9.4.18.v20190429?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -3093,6 +3923,14 @@
           "title": "GHSA-wgh7-54f2-x98r (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "amqp-client",
+              "purl": "pkg:maven/com.rabbitmq/amqp-client@4.4.1?type=jar",
+              "version": "4.4.1"
+            }
+          ],
           "cwe": [
             "CWE-295"
           ],
@@ -3106,6 +3944,8 @@
             {
               "codeDesc": "Component com.rabbitmq/amqp-client@4.4.1 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 2687d928-5b18-4ce5-ab4c-8ef513f0b48c\n\n- Group: com.rabbitmq\n\n- Name: amqp-client\n\n- Version: 4.4.1\n\n- Description: The RabbitMQ Java client library allows Java applications to interface with RabbitMQ.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"MPL-1.1\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.rabbitmq/amqp-client@4.4.1?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -3131,6 +3971,14 @@
           "title": "GHSA-w4g2-9hj6-5472 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "amqp-client",
+              "purl": "pkg:maven/com.rabbitmq/amqp-client@4.4.1?type=jar",
+              "version": "4.4.1"
+            }
+          ],
           "cwe": [
             "CWE-400"
           ],
@@ -3144,6 +3992,8 @@
             {
               "codeDesc": "Component com.rabbitmq/amqp-client@4.4.1 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 2687d928-5b18-4ce5-ab4c-8ef513f0b48c\n\n- Group: com.rabbitmq\n\n- Name: amqp-client\n\n- Version: 4.4.1\n\n- Description: The RabbitMQ Java client library allows Java applications to interface with RabbitMQ.\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"MPL-1.1\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.rabbitmq/amqp-client@4.4.1?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -3168,6 +4018,14 @@
           "title": "GHSA-mm8h-8587-p46h (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "h2",
+              "purl": "pkg:maven/com.h2database/h2@1.4.197?type=jar",
+              "version": "1.4.197"
+            }
+          ],
           "cwe": [
             "CWE-502"
           ],
@@ -3181,6 +4039,8 @@
             {
               "codeDesc": "Component com.h2database/h2@1.4.197 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: c19e7b95-5753-489e-b720-c9dd79f15cc8\n\n- Group: com.h2database\n\n- Name: h2\n\n- Version: 1.4.197\n\n- Description: H2 Database Engine\n\n- Licenses: [\n  {\n    \"license\": {\n      \"name\": \"MPL 2.0 or EPL 1.0\",\n      \"url\": \"http://h2database.com/html/license.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.h2database/h2@1.4.197?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -3206,6 +4066,14 @@
           "title": "GHSA-h376-j262-vhq6 (GITHUB)"
         },
         {
+          "affectedPackages": [
+            {
+              "ecosystem": "maven",
+              "name": "h2",
+              "purl": "pkg:maven/com.h2database/h2@1.4.197?type=jar",
+              "version": "1.4.197"
+            }
+          ],
           "cwe": [
             "CWE-88"
           ],
@@ -3219,6 +4087,8 @@
             {
               "codeDesc": "Component com.h2database/h2@1.4.197 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: c19e7b95-5753-489e-b720-c9dd79f15cc8\n\n- Group: com.h2database\n\n- Name: h2\n\n- Version: 1.4.197\n\n- Description: H2 Database Engine\n\n- Licenses: [\n  {\n    \"license\": {\n      \"name\": \"MPL 2.0 or EPL 1.0\",\n      \"url\": \"http://h2database.com/html/license.html\"\n    }\n  }\n]",
+              "resource": "component",
+              "resourceId": "pkg:maven/com.h2database/h2@1.4.197?type=jar",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }

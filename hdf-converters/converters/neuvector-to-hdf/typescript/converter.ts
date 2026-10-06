@@ -200,6 +200,25 @@ function vulnID(vuln: NeuVectorVuln): string {
 }
 
 /**
+ * The per-result instance identity for a NeuVector finding, as a (resource kind,
+ * id) pair. file_name is the discriminator — the only field separating the two
+ * braces@3.0.2 entries that both report CVE-2024-4068 — but NeuVector populates
+ * it on a minority of entries. An entry without one names no file, so it
+ * identifies the vulnerable package instead (the identity
+ * name/package_name/package_version already keys the requirement on) rather than
+ * claiming a 'file' resource with nothing to point at. With neither, the id is ''
+ * and the caller leaves the fields unset.
+ */
+function vulnInstance(vuln: NeuVectorVuln): { resource: string; id: string } {
+  if (vuln.file_name) return { resource: 'file', id: vuln.file_name };
+  if (!vuln.package_name) return { resource: '', id: '' };
+  return {
+    resource: 'package',
+    id: vuln.package_version ? `${vuln.package_name}@${vuln.package_version}` : vuln.package_name,
+  };
+}
+
+/**
  * Generates a human-readable title for the vulnerability.
  */
 function vulnTitle(vuln: NeuVectorVuln): string {
@@ -325,10 +344,12 @@ function buildRequirement(vuln: NeuVectorVuln, scanTime: Date, ml: ModuleLookup)
     { label: 'default', data: vuln.description },
   ];
 
+  const instance = vulnInstance(vuln);
   const results = [
     createResult(ResultStatus.Failed, vulnMessage(vuln), {
       codeDesc: buildCodeDesc(vuln),
       startTime: scanTime,
+      ...(instance.id ? { resource: instance.resource, resourceId: instance.id } : {}),
     }),
   ];
 

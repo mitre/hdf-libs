@@ -684,3 +684,31 @@ describe('unrated severity marker', () => {
     expect(byId('CVE-2099-1007')?.tags).not.toHaveProperty('severity_rating');
   });
 });
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose: for twistlock the instance is the vulnerable
+// package, so resource is "package" and resourceId is packageName@packageVersion
+// (the source carries no purl). The five entries sharing CVE-2021-43529 differ
+// ONLY in the package.
+describe('twistlock result instance identity', () => {
+  it('sets resource and resourceId to the vulnerable packageName@packageVersion', async () => {
+    const hdf = JSON.parse(
+      await convertTwistlockToHdf(loadFixture('twistlock-twistcli-sample-1.json')),
+    ) as HDFResults;
+    const ids = hdf.baselines[0]!.requirements
+      .filter((r) => r.id === 'CVE-2021-43529')
+      .map((r) => {
+        expect(r.results).toHaveLength(1);
+        expect(r.results[0]!.resource).toBe('package');
+        return r.results[0]!.resourceId;
+      });
+
+    expect(ids).toEqual([
+      'nss-util@3.67.0-7.el8_5',
+      'nss-sysinit@3.67.0-7.el8_5',
+      'nss@3.67.0-7.el8_5',
+      'nss-softokn@3.67.0-7.el8_5',
+      'nss-softokn-freebl@3.67.0-7.el8_5',
+    ]);
+  });
+});

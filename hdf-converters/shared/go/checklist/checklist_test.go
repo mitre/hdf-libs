@@ -694,6 +694,67 @@ func TestHDFToChecklistRunsInputGuard(t *testing.T) {
 	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
 }
 
+// overrideSeverity returned on the FIRST override carrying an impact — array
+// position, with no expiry check and no appliedAt comparison. Unlike
+// sarif-to-hdf, this converter reads arbitrary HDF documents rather than
+// overrides it wrote itself in one run, so those timestamps genuinely differ and
+// position is not recency. Two consequences, both silent: an EXPIRED adjustment
+// still drove SEVERITY_OVERRIDE, and with several the earlier array entry won.
+func TestOverrideSeverity_GoverningNotFirst(t *testing.T) {
+	at := func(s string) time.Time {
+		parsed, err := time.Parse(time.RFC3339, s)
+		require.NoError(t, err)
+		return parsed
+	}
+	adjust := func(v float64, applied, expires string, reason string) hdf.StatusOverride {
+		return hdf.StatusOverride{
+			Type: hdf.RiskAdjustment, Reason: reason,
+			AppliedAt: at(applied), ExpiresAt: at(expires),
+			Impact: &hdf.ImpactOverride{Value: v},
+		}
+	}
+
+	t.Run("an expired adjustment no longer drives the severity override", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{ID: "V-1", Impact: 0.5, StatusOverrides: []hdf.StatusOverride{
+			adjust(0.9, "2024-01-01T00:00:00Z", "2020-01-01T00:00:00Z", "lapsed"),
+			adjust(0.1, "2025-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "live"),
+		}}
+		sev, just := overrideSeverity(req)
+		assert.Equal(t, "low", sev, "the live adjustment to 0.1 governs, not the lapsed one to 0.9")
+		assert.Equal(t, "live", just, "and the justification comes from the override that was selected")
+	})
+
+	t.Run("the most recently applied of several live adjustments wins", func(t *testing.T) {
+		req := &hdf.EvaluatedRequirement{ID: "V-1", Impact: 0.5, StatusOverrides: []hdf.StatusOverride{
+			adjust(0.9, "2024-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "older"),
+			adjust(0.1, "2025-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "newer"),
+		}}
+		sev, just := overrideSeverity(req)
+		assert.Equal(t, "low", sev)
+		assert.Equal(t, "newer", just)
+	})
+
+	t.Run("an override carrying no impact does not displace an older one that does", func(t *testing.T) {
+		waiver := hdf.StatusOverride{
+			Type: hdf.OverrideTypeWaiver, Reason: "waived",
+			AppliedAt: at("2026-01-01T00:00:00Z"), ExpiresAt: at("2099-12-31T00:00:00Z"),
+		}
+		req := &hdf.EvaluatedRequirement{ID: "V-1", Impact: 0.5, StatusOverrides: []hdf.StatusOverride{
+			adjust(0.1, "2025-01-01T00:00:00Z", "2099-12-31T00:00:00Z", "adjustment"),
+			waiver,
+		}}
+		sev, just := overrideSeverity(req)
+		assert.Equal(t, "low", sev, "eligibility is per field: only an impact-carrying override sets SEVERITY_OVERRIDE")
+		assert.Equal(t, "adjustment", just)
+	})
+
+	t.Run("no impact-carrying override means no severity override at all", func(t *testing.T) {
+		sev, just := overrideSeverity(&hdf.EvaluatedRequirement{ID: "V-1", Impact: 0.5})
+		assert.Equal(t, "", sev)
+		assert.Equal(t, "", just)
+	})
+}
+
 type checklistOverrideProseCase struct {
 	Name         string          `json:"name"`
 	Note         string          `json:"note"`
