@@ -733,9 +733,6 @@ components for the same reason — there is nothing to stamp, and rewriting the
 file while reporting success would claim an id was attached when it was not.
 
 Example output:
-`--component-id` and `--generate-component-id` are refused on a document with no
-components for the same reason — there is nothing to stamp, and rewriting the
-file while reporting success would claim an id was attached when it was not.
 
 ```console
 $ hdf label set results.json system=Portal environment=production -o labeled.json
