@@ -22,9 +22,10 @@ import {
   severityTotals,
   type StatusCounts,
 } from '@mitre/hdf-engine';
-import type { EvaluatedBaseline, HDFResults, Severity } from '@mitre/hdf-schema';
+import type { EvaluatedBaseline, EvaluatedRequirement, HDFResults, Severity } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
 import { byCodePoint } from '../../../shared/typescript/exportmap.js';
+import { requirementEffectiveImpact, requirementDisposition } from '../../../shared/typescript/status.js';
 import { SCRIPT, SCRIPT_HASH, STYLESHEET } from './assets.js';
 
 const CONVERTER_NAME = 'hdf-to-html';
@@ -263,7 +264,7 @@ export function compliance(c: StatusCounts): string {
 
 /** The requirement's severity through the engine, exactly as its tally derives it. */
 function requirementSeverity(req: Json): string {
-  return deriveSeverity(numeric(req.impact), (req.severity ?? null) as Severity | null);
+  return deriveSeverity(requirementEffectiveImpact(req as unknown as EvaluatedRequirement), (req.severity ?? null) as Severity | null);
 }
 
 /**
@@ -939,8 +940,10 @@ class Renderer {
       ['Title', text(req.title)],
       ['Severity', severity],
       ['Impact', impact.toFixed(2)],
-      ['Effective impact', typeof req.effectiveImpact === 'number' ? req.effectiveImpact.toFixed(2) : ''],
-      ['Disposition', text(req.disposition)],
+      // Through the ladder, never the stored cache: the summary table this page
+      // also shows already counts the ladder, and the cache may be stale or absent.
+      ['Effective impact', requirementEffectiveImpact(req as unknown as EvaluatedRequirement).toFixed(2)],
+      ['Disposition', requirementDisposition(req as unknown as EvaluatedRequirement, this.src.ref.stamp)],
       ['Control type', text(req.controlType)],
       ['Verification method', text(req.verificationMethod)],
       ['Applicability', text(req.applicability)],

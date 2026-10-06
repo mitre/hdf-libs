@@ -1062,7 +1062,8 @@ func descriptionHeading(label string) string {
 
 func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	effective := r.effectiveStatus(*req)
-	severity := hdfengine.DeriveSeverity(req.Impact, req.Severity)
+	severity := hdfengine.DeriveSeverity(shared.RequirementEffectiveImpact(*req), req.Severity)
+	disposition := shared.RequirementDisposition(*req, r.src.ref)
 	nist := hdfutil.TagStrings(req.Tags, "nist")
 	cci := hdfutil.TagStrings(req.Tags, "cci")
 
@@ -1090,7 +1091,7 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 
 	r.resultRows(req.Results)
 
-	rows := requirementRows(req, effective, severity, location, nist, cci, lead)
+	rows := requirementRows(req, effective, severity, disposition, location, nist, cci, lead)
 	f := r.openFold("", "", r.detailHeading(), "Result Details", "the result details", len(rows))
 	r.openTable(`class="details" aria-label="Result details"`, "")
 	for _, row := range rows {
@@ -1157,15 +1158,15 @@ func (r *renderer) description(text string) {
 
 // requirementRows is the detail table: the two statuses, every field that has a
 // value, then the references and the descriptions other than the lead.
-func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, location string, nist, cci []string, lead int) []string {
+func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, disposition, location string, nist, cci []string, lead int) []string {
 	statuses := make([]string, len(req.Results))
 	for i := range req.Results {
 		statuses[i] = string(req.Results[i].Status)
 	}
-	effectiveImpact := ""
-	if req.EffectiveImpact != nil {
-		effectiveImpact = hdfutil.FormatFixed(*req.EffectiveImpact, 2)
-	}
+	// Through the ladder, never the stored cache: the stored effectiveImpact and
+	// disposition are output caches a document may carry stale or not at all,
+	// and the summary table this page also shows already counts the ladder.
+	effectiveImpact := hdfutil.FormatFixed(shared.RequirementEffectiveImpact(*req), 2)
 	rows := []string{
 		detailRow("Effective status", statusBadge(effective)),
 		detailRow("Assessed status", statusBadge(hdfutil.WorstStatus(statuses))),
@@ -1176,7 +1177,7 @@ func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, locatio
 		{"Severity", severity},
 		{"Impact", hdfutil.FormatFixed(req.Impact, 2)},
 		{"Effective impact", effectiveImpact},
-		{"Disposition", string(hdfutil.Deref(req.Disposition))},
+		{"Disposition", disposition},
 		{"Control type", string(hdfutil.Deref(req.ControlType))},
 		{"Verification method", string(hdfutil.Deref(req.VerificationMethod))},
 		{"Applicability", string(hdfutil.Deref(req.Applicability))},
