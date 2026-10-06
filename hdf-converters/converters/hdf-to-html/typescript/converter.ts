@@ -5,15 +5,7 @@
  * and is pinned by the shared goldens.
  */
 
-import {
-  canonicalJson,
-  computeEffectiveStatus,
-  formatTimestamp,
-  governingStatusOverrideIndex,
-  parseTimestamp,
-  worstStatus,
-  type StatusOverrideInput,
-} from '@mitre/hdf-utilities';
+import { canonicalJson, computeEffectiveStatus, formatTimestamp, governingStatusOverrideIndex, parseTimestamp, worstStatus, type StatusOverrideInput, isGoZeroTime } from '@mitre/hdf-utilities';
 import {
   addCounts,
   calculateCompliance,
@@ -21,6 +13,7 @@ import {
   deriveSeverity,
   severityTotals,
   type StatusCounts,
+  severityBucket,
 } from '@mitre/hdf-engine';
 import type { EvaluatedBaseline, EvaluatedRequirement, HDFResults, Severity } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
@@ -203,12 +196,10 @@ function formatTime(value: unknown): string {
   return parsed ? formatTimestamp(parsed) : '';
 }
 
-/** Go's zero time (0001-01-01T00:00:00Z), which the legacy converters write when a source has no time. It is not a time. */
-const GO_ZERO_TIME = -62135596800000;
 
 function toDate(value: unknown): Date | null {
   const parsed = parsedDate(value);
-  return parsed && parsed.getTime() !== GO_ZERO_TIME ? parsed : null;
+  return parsed && !isGoZeroTime(parsed) ? parsed : null;
 }
 
 function parsedDate(value: unknown): Date | null {
@@ -292,7 +283,9 @@ function complianceLevel(pct: number): readonly [cls: string, label: string] {
 
 /** Maps a severity onto the fixed set the stylesheet knows; an informational, absent or unrecognized one is 'none'. */
 export function severityClass(severity: string): string {
-  return severity === 'critical' || severity === 'high' || severity === 'medium' || severity === 'low' ? severity : 'none';
+  // The engine's bucket rule; its informational catch-all is the stylesheet's 'none'.
+  const bucket = severityBucket(severity);
+  return bucket === 'informational' ? 'none' : bucket;
 }
 
 export function severityLabel(severity: string): string {

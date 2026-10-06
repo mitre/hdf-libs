@@ -29,6 +29,7 @@
  *   effectiveStatus disposition effectiveChecksum  not merged — derived after merging
  */
 import type { AffectedPackage, EvaluatedRequirement, Severity } from '@mitre/hdf-schema';
+import { UNRATED_SEVERITY_TAG, UNRATED_SEVERITY_VALUE } from './unrated.js';
 
 /**
  * Merge the entries of one baseline's requirement slice that share an id, per
@@ -166,8 +167,6 @@ function unionBy<T>(
  * converterutil.ts, which re-exports rollUpRequirements from this module and
  * would form an import cycle. rollup.test.ts asserts the two agree.
  */
-const UNRATED_SEVERITY_TAG = 'severity_rating';
-const UNRATED_SEVERITY_VALUE = 'unrated';
 
 /** Whether a tag map carries the shared unrated-severity marker. */
 function isUnratedMarked(tags: EvaluatedRequirement['tags']): boolean {

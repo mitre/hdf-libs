@@ -276,13 +276,7 @@ func buildAffectedPackage(vuln TwistlockVuln, packageTypes map[string]string, di
 // when a version is absent, and returns "" when there is no package name at all,
 // in which case the caller leaves the fields unset rather than inventing an id.
 func packageInstanceID(vuln TwistlockVuln) string {
-	if vuln.PackageName == "" {
-		return ""
-	}
-	if vuln.PackageVersion == "" {
-		return vuln.PackageName
-	}
-	return vuln.PackageName + "@" + vuln.PackageVersion
+	return shared.PackageInstanceID("", vuln.PackageName, vuln.PackageVersion)
 }
 
 // buildPackageTypeIndex collects package name → type mappings from the

@@ -1060,13 +1060,10 @@ func buildCodeDesc(v *Vulnerability) string {
 }
 
 func packageLabel(d *Dependency) string {
-	if d == nil || d.Package.Name == "" {
+	if d == nil {
 		return ""
 	}
-	if d.Version != "" {
-		return d.Package.Name + "@" + d.Version
-	}
-	return d.Package.Name
+	return shared.PackageInstanceID("", d.Package.Name, d.Version)
 }
 
 // --- Triage state → overrides ---

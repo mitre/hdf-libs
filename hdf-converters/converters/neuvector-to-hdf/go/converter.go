@@ -232,13 +232,10 @@ func vulnInstance(vuln NeuVectorVuln) (resource, id string) {
 	if vuln.FileName != "" {
 		return "file", vuln.FileName
 	}
-	if vuln.PackageName == "" {
-		return "", ""
+	if id := shared.PackageInstanceID("", vuln.PackageName, vuln.PackageVersion); id != "" {
+		return "package", id
 	}
-	if vuln.PackageVersion == "" {
-		return "package", vuln.PackageName
-	}
-	return "package", vuln.PackageName + "@" + vuln.PackageVersion
+	return "", ""
 }
 
 // vulnTitle generates a human-readable title for the vulnerability.

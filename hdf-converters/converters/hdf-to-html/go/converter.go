@@ -684,9 +684,9 @@ func complianceText(c *hdfengine.StatusCounts) string {
 // severityClass maps a severity onto the fixed set the stylesheet knows; an
 // informational, absent or unrecognized severity is "none".
 func severityClass(severity string) string {
-	switch severity {
-	case severityCritical, severityHigh, severityMedium, severityLow:
-		return severity
+	// The engine's bucket rule; its informational catch-all is the stylesheet's "none".
+	if b := hdfengine.SeverityBucket(severity); b != "informational" {
+		return b
 	}
 	return severityNone
 }
