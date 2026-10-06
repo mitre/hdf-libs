@@ -339,6 +339,26 @@ func TestCheckOutputOverwritesInput(t *testing.T) {
 	})
 }
 
+// On conversion, a componentless output is a legitimate result — a source that
+// names no target yields no component — so an unapplied --component-id warns and
+// the conversion still succeeds. `hdf label set` refuses the same case, because
+// there the document is the thing the user pointed at.
+func TestConvertComponentID_NoComponentsWarnsAndStillWrites(t *testing.T) {
+	const componentID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	input := converterFixturePath(t, "gosec-to-hdf", "input/real.json")
+	out := filepath.Join(t.TempDir(), "out.json")
+
+	_, stderr, err := executeCommand("convert", "--from", "gosec", input, "-o", out, "--component-id", componentID)
+	require.NoError(t, err, "a converter that produces no component must not fail the conversion")
+	assert.Contains(t, stderr, "no components")
+	assert.Contains(t, stderr, "--component-id")
+
+	data, readErr := os.ReadFile(out)
+	require.NoError(t, readErr)
+	assert.NotContains(t, string(data), componentID, "nothing was stamped, and the output must not pretend otherwise")
+	assert.NotContains(t, string(data), `"components"`)
+}
+
 func TestConvertCommand_HDFOnlyFlagsRejectedForOtherTargets(t *testing.T) {
 	input := converterFixturePath(t, "hdf-to-html", "input/rich.json")
 	second := converterFixturePath(t, "hdf-to-html", "input/finding-detail.json")
