@@ -45,6 +45,7 @@ type CDXComponent struct {
 	Version     string            `json:"version"`
 	Group       string            `json:"group"`
 	BomRef      string            `json:"bom-ref"`
+	Purl        string            `json:"purl"`
 	Description string            `json:"description,omitempty"`
 	Licenses    []CDXLicenseEntry `json:"licenses,omitempty"`
 	Components  []CDXComponent    `json:"components"`
@@ -473,6 +474,66 @@ func formatCodeDesc(componentLookup map[string]CDXComponent, ref string) string 
 	return fmt.Sprintf("Component %s is vulnerable", name)
 }
 
+// componentInstanceID is the per-result instance identity for a CycloneDX
+// finding: the affected component's purl, which is what distinguishes the
+// several vulnerabilities that land on different components. purl is optional in
+// CycloneDX, so this falls back to the bom-ref — also document-unique, and the
+// only identifier a VEX document (which carries no components[] to resolve the
+// ref against) publishes at all.
+func componentInstanceID(componentLookup map[string]CDXComponent, ref string) string {
+	if comp, found := componentLookup[ref]; found && comp.Purl != "" {
+		return comp.Purl
+	}
+	return ref
+}
+
+// purlType extracts the type segment of a purl ("pkg:maven/..." -> "maven").
+// Returns "" for anything that is not a purl.
+func purlType(purl string) string {
+	rest, ok := strings.CutPrefix(purl, "pkg:")
+	if !ok {
+		return ""
+	}
+	t, _, found := strings.Cut(rest, "/")
+	if !found {
+		return ""
+	}
+	return t
+}
+
+// buildAffectedPackages assembles the requirement's affected-package inventory
+// from the components its affects[] entries resolve to, de-duplicated by ref in
+// first-seen order. Components with neither a purl nor an ecosystem yield no
+// schema-valid entry and are skipped rather than emitted half-built.
+func buildAffectedPackages(componentLookup map[string]CDXComponent, affects []CDXAffect) []hdf.AffectedPackage {
+	var out []hdf.AffectedPackage
+	seen := make(map[string]bool, len(affects))
+	for _, affect := range affects {
+		comp, found := componentLookup[affect.Ref]
+		if !found || seen[affect.Ref] {
+			continue
+		}
+		seen[affect.Ref] = true
+		// CycloneDX has no package-type field of its own, so the ecosystem comes
+		// from the purl type and is left unset when there is no purl — the shared
+		// resolver's "generic" default would assert an ecosystem the BOM never did.
+		var ecosystem hdf.Ecosystem
+		if t := purlType(comp.Purl); t != "" {
+			ecosystem = shared.EcosystemFromPurlType(t)
+		}
+		pkg := shared.BuildAffectedPackage(shared.AffectedPackageOptions{
+			Name:      comp.Name,
+			Version:   comp.Version,
+			Ecosystem: ecosystem,
+			Purl:      comp.Purl,
+		})
+		if pkg != nil {
+			out = append(out, *pkg)
+		}
+	}
+	return out
+}
+
 // hasMLModelComponent reports whether any (possibly nested) component is a
 // machine-learning-model, i.e. the CycloneDX document is an AI-BOM.
 func hasMLModelComponent(components []CDXComponent) bool {
@@ -691,6 +752,10 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 					CodeDesc:  formatCodeDesc(componentLookup, affect.Ref),
 					StartTime: scanTime,
 				}
+				if instanceID := componentInstanceID(componentLookup, affect.Ref); instanceID != "" {
+					result.Resource = hdfutil.Ptr("component")
+					result.ResourceID = hdfutil.Ptr(instanceID)
+				}
 				if msg := componentSummary(componentLookup, affect.Ref); msg != "" {
 					result.Message = &msg
 				}
@@ -715,17 +780,18 @@ func ConvertCycloneDXToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 		// converter cannot reliably distinguish the two, so stamping
 		// "automated" would misclassify VEX-derived requirements.
 		req := hdf.EvaluatedRequirement{
-			ID:           vuln.ID,
-			Title:        &title,
-			Impact:       impact,
-			Tags:         tags,
-			Cvss:         buildCvssEntries(ratings),
-			Cwe:          cwes,
-			Code:         hdfutil.Ptr(buildVulnCode(vuln)),
-			ControlType:  shared.DeriveControlTypeFromTags(nist),
-			Descriptions: descriptions,
-			Refs:         buildRefs(vuln),
-			Results:      results,
+			ID:               vuln.ID,
+			Title:            &title,
+			Impact:           impact,
+			Tags:             tags,
+			Cvss:             buildCvssEntries(ratings),
+			Cwe:              cwes,
+			Code:             hdfutil.Ptr(buildVulnCode(vuln)),
+			ControlType:      shared.DeriveControlTypeFromTags(nist),
+			Descriptions:     descriptions,
+			Refs:             buildRefs(vuln),
+			Results:          results,
+			AffectedPackages: buildAffectedPackages(componentLookup, vuln.Affects),
 		}
 
 		// Reconstruct a structured override from the CycloneDX VEX analysis: the

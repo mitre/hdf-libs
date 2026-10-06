@@ -12,6 +12,12 @@ allowBuilds:
 # fresh patch, add the package to minimumReleaseAgeExclude — a conscious,
 # reviewed opt-out (bare name, an @org/* pattern, or pkg@x.y.z).
 minimumReleaseAge: 10080
+# GHSA-68fv-2mgg-jv7q's only patched source-map-js (1.2.2) is younger than the
+# cooldown, and it is the whole 1.x line's fix, so the choice is this opt-out or
+# a known-vulnerable dev tree. Pinned to the exact version so a later release
+# serves its cooldown normally; goes when 1.2.2 ages past the window.
+minimumReleaseAgeExclude:
+  - source-map-js@1.2.2
 # Forced patched versions for transitive advisories (see the security gate).
 # Every target is a RANGE, never an exact version: an exact pin names the floor
 # itself, so when the advisory's patched floor rises the pin becomes the new
@@ -38,6 +44,14 @@ overrides:
   # GHSA-w5hq-g745-h8pq — uuid 9.0.1 buffer bounds, via @hyperjump/json-schema
   # (dev); goes when that package declares ^11.
   "uuid@<11.1.1": "^11.1.1"
+  # GHSA-68fv-2mgg-jv7q — source-map-js 1.2.1 event-loop DoS, reached through 86
+  # paths (vite/postcss, vitest, vue's compiler) and all dev; goes when those
+  # declare ^1.2.2 themselves.
+  "source-map-js@<1.2.2": "^1.2.2"
+  # GHSA-g2v6-rqmx-r4w6 — @vue/server-renderer 3.5.31, carried by vue under
+  # vitepress 1.x (dev). Overriding vue rather than the renderer keeps the @vue/*
+  # family on one version; goes with the vitepress 2.x bump.
+  "vue@<3.5.42": "^3.5.43"
   # GHSA-4x5r-pxfx-6jf8 — @babel/core 7.28.6 sourceMappingURL read, reached
   # through babel's own plugin chain under stryker (dev). The advisory floor is
   # 7.29.1 but that release was skipped, so 7.29.7 is the real 7.x fix; goes when

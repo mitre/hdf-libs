@@ -561,14 +561,35 @@ func buildCWERequirement(cat Category, sevLevel string, impact float64, firstBui
 	return req
 }
 
-// synthesizeFlawCode renders a static flaw's source-context locus from its
-// function prototype and source-file position. Returns "" when the flaw carries
-// neither a prototype nor a source location (the NOT-IN-SOURCE case).
-func synthesizeFlawCode(flaw Flaw) string {
+// flawLocus is a static flaw's source position — sourcefilepath+sourcefile, with
+// :line appended when both are present. It is both the per-result instance
+// identity (resourceId) and the position half of the synthesized code snippet,
+// so the two cannot drift apart. Returns "" for the NOT-IN-SOURCE case.
+func flawLocus(flaw Flaw) string {
 	locus := flaw.SourceFilePath + flaw.SourceFile
 	if locus != "" && flaw.Line != "" {
 		locus += ":" + flaw.Line
 	}
+	return locus
+}
+
+// scaInstanceID is the per-result instance identity for an SCA finding: the
+// component_id Veracode assigns the third-party component. Falls back to the
+// component's sha1 — component_id is optional in the report and sha1 is the
+// documented secondary identity — and returns "" when neither is present, in
+// which case the caller leaves the fields unset rather than inventing an id.
+func scaInstanceID(comp Component) string {
+	if comp.ComponentID != "" {
+		return comp.ComponentID
+	}
+	return comp.SHA1
+}
+
+// synthesizeFlawCode renders a static flaw's source-context locus from its
+// function prototype and source-file position. Returns "" when the flaw carries
+// neither a prototype nor a source location (the NOT-IN-SOURCE case).
+func synthesizeFlawCode(flaw Flaw) string {
+	locus := flawLocus(flaw)
 	switch {
 	case flaw.FunctionPrototype != "" && locus != "":
 		return flaw.FunctionPrototype + " at " + locus
@@ -592,6 +613,11 @@ func buildFlawResult(flaw Flaw, firstBuildDate string) hdf.RequirementResult {
 		Status:    hdf.Failed,
 		CodeDesc:  codeDesc,
 		StartTime: startTime,
+	}
+
+	if locus := flawLocus(flaw); locus != "" {
+		result.Resource = hdfutil.Ptr("file")
+		result.ResourceID = hdfutil.Ptr(locus)
 	}
 
 	if msg := formatFlawMessage(flaw); msg != "" {
@@ -862,11 +888,18 @@ func buildSCAResult(comp Component, firstBuildDate string) hdf.RequirementResult
 		startTime = time.Now().UTC()
 	}
 
-	return hdf.RequirementResult{
+	result := hdf.RequirementResult{
 		Status:    hdf.Failed,
 		CodeDesc:  codeDesc,
 		StartTime: startTime,
 	}
+
+	if instanceID := scaInstanceID(comp); instanceID != "" {
+		result.Resource = hdfutil.Ptr("component")
+		result.ResourceID = hdfutil.Ptr(instanceID)
+	}
+
+	return result
 }
 
 // formatDesc extracts text from Desc paragraphs.

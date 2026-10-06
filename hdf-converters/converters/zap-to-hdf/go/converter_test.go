@@ -903,3 +903,28 @@ func TestConvertZapToHDF_VerificationMethod(t *testing.T) {
 			"requirement %q expected verificationMethod=automated", req.ID)
 	}
 }
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose: ZAP already emits one result per alert.instances[]
+// entry, and the instance is a URL, so resource is "url" and resourceId is that
+// instance's uri. The two 90022 results differ by uri.
+func TestConvertZap_SetsResultResourceIdentityToInstanceURI(t *testing.T) {
+	result, err := ConvertZapToHDF(loadFixture(t, "input/minimal.json"), testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "90022")
+	require.Len(t, req.Results, 2)
+
+	var got []string
+	for _, res := range req.Results {
+		require.NotNil(t, res.Resource, "resource is nil — the instance identity lives only in prose")
+		assert.Equal(t, "url", *res.Resource)
+		require.NotNil(t, res.ResourceID)
+		got = append(got, *res.ResourceID)
+	}
+
+	assert.Equal(t, []string{
+		"https://example.com/api/submit",
+		"https://example.com/api/login",
+	}, got)
+}
