@@ -109,7 +109,7 @@ CLI: `hdf enrich <results> <source>` (see the [hdf-cli README](../hdf-cli/README
 
 ```bash
 npm install @mitre/hdf-converters@next   # newest v3 stable
-npm install @mitre/hdf-converters@3.5.1  # pin an exact version
+npm install @mitre/hdf-converters@3.7.2  # pin an exact version
 ```
 
 This package's npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), which publishes the v2 line and owns the `latest` dist-tag — a plain `npm install @mitre/hdf-converters` installs v2, not this library. Always install the v3 line via `@next` or an exact version (npm does not permit a `v3` dist-tag — tag names may not be valid semver ranges).
