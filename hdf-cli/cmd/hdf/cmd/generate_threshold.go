@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -72,7 +73,7 @@ so the validator checks that each control has the expected status.`,
 			}
 
 			if outputPath != "" {
-				if err := os.WriteFile(outputPath, out, 0o600); err != nil {
+				if err := atomicfile.WriteFile(outputPath, out, 0o600); err != nil {
 					return fmt.Errorf("failed to write threshold file: %w", err)
 				}
 				fmt.Fprintf(os.Stderr, "Wrote threshold to %s\n", outputPath)

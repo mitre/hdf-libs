@@ -359,9 +359,9 @@ func TestConvertToHTML_DirectoryInput_OneReportPerInput(t *testing.T) {
 		_, _, err = executeCommand("convert", dir, "--to", "html", "-o", outDir)
 		require.NoError(t, err)
 
-		first, err := os.ReadFile(filepath.Join(outDir, "host1--results.hdf.html"))
+		first, err := os.ReadFile(filepath.Join(outDir, "results.1.hdf.html"))
 		require.NoError(t, err)
-		second, err := os.ReadFile(filepath.Join(outDir, "host2--results.hdf.html"))
+		second, err := os.ReadFile(filepath.Join(outDir, "results.2.hdf.html"))
 		require.NoError(t, err)
 		assert.NotEqual(t, string(first), string(second), "each input is reported on its own")
 
@@ -370,10 +370,11 @@ func TestConvertToHTML_DirectoryInput_OneReportPerInput(t *testing.T) {
 		assert.Len(t, entries, 2, "one report per input, none overwritten")
 	})
 
-	// A qualified name can still meet a file that was already called that.
-	t.Run("two inputs that name one report are refused before anything is written", func(t *testing.T) {
+	// Numbering takes the next free index rather than a name an input already
+	// owns, so a file literally called results.1.json keeps its own report.
+	t.Run("a literal numbered name is not taken by the numbering", func(t *testing.T) {
 		dir := t.TempDir()
-		for _, rel := range []string{"host1/results.json", "host2/results.json", "host1--results.json"} {
+		for _, rel := range []string{"host1/results.json", "host2/results.json", "results.1.json"} {
 			full := filepath.Join(dir, rel)
 			require.NoError(t, os.MkdirAll(filepath.Dir(full), 0o750))
 			require.NoError(t, os.WriteFile(full, fixtures.Results.Minimal, 0o600))
@@ -381,9 +382,14 @@ func TestConvertToHTML_DirectoryInput_OneReportPerInput(t *testing.T) {
 
 		outDir := filepath.Join(t.TempDir(), "reports") + string(filepath.Separator)
 		_, _, err := executeCommand("convert", dir, "--to", "html", "-o", outDir)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "host1--results.hdf.html")
-		assert.NoDirExists(t, outDir)
+		require.NoError(t, err)
+
+		for _, name := range []string{"results.1.hdf.html", "results.2.hdf.html", "results.3.hdf.html"} {
+			assert.FileExists(t, filepath.Join(outDir, name))
+		}
+		entries, err := os.ReadDir(outDir)
+		require.NoError(t, err)
+		assert.Len(t, entries, 3, "three inputs, three reports, none lost to a collision")
 	})
 }
 

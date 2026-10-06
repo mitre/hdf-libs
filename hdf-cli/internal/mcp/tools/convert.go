@@ -17,6 +17,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/outnames"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register fingerprints for auto-detect
 	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
@@ -232,6 +233,22 @@ func hdfConvertBatch(ctx context.Context, ldr *loader.Loader, in convertInput) (
 		return toolError(terr), convertOutput{}, nil
 	}
 
+	// Name every output before anything is created, so a name two inputs share
+	// is numbered rather than losing a document to a collision partway through.
+	// Each entry reports its outputPath, which is where the caller reads the
+	// positional number back to its input.
+	outPaths := make([]string, len(paths))
+	if in.OutputDir != "" {
+		names, nerr := outnames.Names(paths, "hdf")
+		if nerr != nil {
+			return toolError(mcperr.Arg(nerr.Error(),
+				"pass each source as a path ending in a file name")), convertOutput{}, nil
+		}
+		for i, n := range names {
+			outPaths[i] = path.Join(in.OutputDir, n)
+		}
+	}
+
 	// Decide the write mode once so the batch carries a single notice, not one
 	// per file. Conversion itself is pure and always runs.
 	shouldWrite := in.OutputDir != "" && !in.DryRun && writesEnabled()
@@ -242,13 +259,13 @@ func hdfConvertBatch(ctx context.Context, ldr *loader.Loader, in convertInput) (
 	}
 
 	var out convertOutput
-	for _, rel := range paths {
+	for i, rel := range paths {
 		// A batch is the most expensive tool call: let a client stop it between
 		// files, returning what has been converted so far.
 		if err := ctx.Err(); err != nil {
 			return nil, out, err
 		}
-		entry := convertOneFile(ldr, rel, in, shouldWrite)
+		entry := convertOneFile(ldr, rel, outPaths[i], in, shouldWrite)
 		out.Batch = append(out.Batch, entry.toMap())
 		if in.FailFast && entry.Code != "" {
 			break
@@ -349,7 +366,7 @@ func enumerateBatchPaths(in convertInput) ([]string, *mcperr.Error) {
 // becomes an error entry (taxonomy code + message) rather than aborting the
 // batch. A conversion that succeeds but whose write fails keeps valid:true and
 // surfaces the write error, with the handle resolving from the in-memory cache.
-func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite bool) fileConvertSummary {
+func convertOneFile(ldr *loader.Loader, rel, outPath string, in convertInput, shouldWrite bool) fileConvertSummary {
 	entry := fileConvertSummary{InputPath: rel}
 	confined, err := hdfutil.SafePath(mcpRoot(), rel)
 	if err != nil {
@@ -380,7 +397,7 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 
 	writtenPath := ""
 	if shouldWrite {
-		wp, _, werr := writeArtifact(batchOutputPath(in.OutputDir, rel), false, in.Overwrite, hdfBytes)
+		wp, _, werr := writeArtifact(outPath, false, in.Overwrite, hdfBytes)
 		if werr != nil {
 			entry.Error = werr.Message
 			entry.Code = string(werr.Code)
@@ -403,17 +420,6 @@ func failEntry(entry fileConvertSummary, terr *mcperr.Error) fileConvertSummary 
 	entry.Error = terr.Message
 	entry.Code = string(terr.Code)
 	return entry
-}
-
-// batchOutputPath derives an output path deterministically from the input, using
-// the CLI's <stem>.hdf.json bulk-convert convention (bead g4b3 owns any change).
-// Paths are forward-slash on the wire (like agent-supplied paths and URLs) so
-// the MCP surface is identical across host OSes; SafePath converts to the native
-// separator at the filesystem boundary.
-func batchOutputPath(outputDir, inputPath string) string {
-	base := path.Base(inputPath)
-	stem := strings.TrimSuffix(base, path.Ext(base))
-	return path.Join(outputDir, stem+".hdf.json")
 }
 
 // boundBatchResponse token-bounds the per-file array to the concise budget,

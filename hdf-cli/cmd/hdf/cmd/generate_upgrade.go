@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	xccdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/xccdf-results-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/matching"
 	generators "github.com/mitre/hdf-libs/hdf-generators/go/v3"
@@ -534,7 +535,7 @@ func writeBaselineJSON(result generators.UpgradeResult, dir string) error {
 		return fmt.Errorf("failed to marshal baseline: %w", err)
 	}
 	baselinePath := filepath.Join(dir, "baseline.json")
-	if err := os.WriteFile(baselinePath, baselineJSON, 0o600); err != nil {
+	if err := atomicfile.WriteFile(baselinePath, baselineJSON, 0o600); err != nil {
 		return fmt.Errorf("failed to write %s: %w", baselinePath, err)
 	}
 	printDebug("Wrote %s", baselinePath)
@@ -563,7 +564,7 @@ func writeInPlaceProfile(profile generators.InSpecProfile, profileDir string) er
 		if err := os.MkdirAll(dir, 0o750); err != nil { //nolint:gosec // profile dirs need group read
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
-		if err := os.WriteFile(controlPath, []byte(content), 0o600); err != nil {
+		if err := atomicfile.WriteFile(controlPath, []byte(content), 0o600); err != nil {
 			return fmt.Errorf("failed to write %s: %w", controlPath, err)
 		}
 		printDebug("Wrote %s", controlPath)
@@ -594,14 +595,14 @@ func writeUpgradeReports(result generators.UpgradeResult, reportDir string) erro
 		return fmt.Errorf("failed to generate report JSON: %w", err)
 	}
 	jsonPath := filepath.Join(reportDir, "delta.json")
-	if err := os.WriteFile(jsonPath, jsonData, 0o600); err != nil {
+	if err := atomicfile.WriteFile(jsonPath, jsonData, 0o600); err != nil {
 		return fmt.Errorf("failed to write %s: %w", jsonPath, err)
 	}
 	printDebug("Wrote %s", jsonPath)
 
 	md := generators.GenerateDeltaMarkdown(result)
 	mdPath := filepath.Join(reportDir, "delta.md")
-	if err := os.WriteFile(mdPath, []byte(md), 0o600); err != nil {
+	if err := atomicfile.WriteFile(mdPath, []byte(md), 0o600); err != nil {
 		return fmt.Errorf("failed to write %s: %w", mdPath, err)
 	}
 	printDebug("Wrote %s", mdPath)
@@ -907,9 +908,6 @@ func copyDir(src, dst string) error {
 		if err != nil {
 			return err
 		}
-		// #nosec G703 -- target is filepath.Join(dst, rel) where rel comes from
-		// filepath.Rel(src, path) and path is always a descendant of src
-		// (filepath.Walk invariant), so rel never contains "..".
-		return os.WriteFile(target, data, info.Mode())
+		return atomicfile.WriteFile(target, data, info.Mode())
 	})
 }

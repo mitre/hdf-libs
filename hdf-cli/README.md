@@ -443,7 +443,7 @@ INPUT/OUTPUT
               recursively; other files there are passed over and counted on stderr
   -o <output> Output file path; defaults to stdout if omitted
   -o <dir>/   One output per input, named after the input file; inputs that share a file
-              name are named by their path below the directory they share (host1--results)
+              name are each numbered in argument order (results.1, results.2)
 
 FLAGS
       --from string           Source format (auto-detected if omitted)

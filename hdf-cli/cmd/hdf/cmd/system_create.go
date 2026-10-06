@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/spf13/cobra"
@@ -580,7 +581,7 @@ func writeSystemDoc(systemName string, components []map[string]interface{}, outp
 		return nil
 	}
 
-	if err := os.WriteFile(outputPath, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(outputPath, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write system document: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "System document written to %s (%d components)\n", outputPath, len(components))
