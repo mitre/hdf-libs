@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -1062,5 +1063,20 @@ func TestHdfCompliance_ThresholdRulesThroughTheHandler(t *testing.T) {
 	if strings.Contains(joined, "cannot apply") {
 		t.Errorf("the handler reported the grid-only refusal instead of evaluating the rule: %v",
 			out.ThresholdVerdict.Failures)
+	}
+}
+
+// As hdf_query does: a cancelled request is reported as the cancellation, never
+// as a threshold verdict assembled from whatever had been evaluated.
+func TestHdfCompliance_CancelledContextIsNotAVerdict(t *testing.T) {
+	path := writeRoot(t, "c.json", readToolsFixture(t, "compliance-results.json"))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, _, err := hdfCompliance(loader.New(0, 0, 0))(ctx, nil, complianceInput{
+		Source:    handle.Source{Path: path},
+		Threshold: &thresholdInput{Inline: map[string]any{"failed": map[string]any{"total": map[string]any{"max": 0}}}},
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("a cancelled request must surface context.Canceled, got %v", err)
 	}
 }
