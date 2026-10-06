@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -535,4 +536,29 @@ func TestGitLabFetcher_FetchAndConvert(t *testing.T) {
 	assert.NotEmpty(t, raw)
 	assert.Contains(t, string(raw), "vulnerabilities")
 	assert.Contains(t, string(raw), "scan")
+}
+
+// Go forwards custom headers such as PRIVATE-TOKEN across hosts on a redirect;
+// the fetcher built for the CLI must therefore not follow one, so the token
+// stays on the host the user named and the 3xx fails as a non-200 response.
+func TestNewGitLabFetcher_DoesNotFollowRedirects(t *testing.T) {
+	var leaked int32
+	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("PRIVATE-TOKEN") != "" {
+			atomic.AddInt32(&leaked, 1)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer other.Close()
+	named := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, other.URL+r.URL.Path, http.StatusFound)
+	}))
+	defer named.Close()
+	t.Setenv("GITLAB_TOKEN", "secret-token")
+
+	f, err := NewGitLabFetcher(GitLabParams{URL: named.URL, ProjectID: "1", Ref: "main", JobName: "scan", ArtifactPath: "a.json"}, shared.TLSOptions{})
+	require.NoError(t, err)
+	_, err = f.Fetch(context.Background())
+	require.Error(t, err, "a redirect must fail the fetch rather than be followed")
+	assert.Zero(t, atomic.LoadInt32(&leaked), "the token must never reach the redirect target")
 }

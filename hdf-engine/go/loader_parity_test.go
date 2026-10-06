@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	fixtures "github.com/mitre/hdf-libs/hdf-fixtures/v3"
 )
 
 // The cross-language parity contract for the loader core: for each shared
@@ -19,13 +21,19 @@ func TestLoader_CrossLanguageParity(t *testing.T) {
 		wantFormat  InputFormat
 		wantDocType string
 		wantValid   bool
+		// bytes, when set, is the document itself: a shared-corpus row has no testdata file.
+		bytes []byte
 	}{
-		{"query-fixture.json", FormatJSON, "results", true},
-		{"baseline-fixture.json", FormatJSON, "baseline", true},
+		{"query-fixture.json", FormatJSON, "results", true, nil},
+		{"win2022-stig.json (hdf-fixtures)", FormatJSON, "baseline", true, fixtures.Baseline.Win2022Stig},
 	}
 	for _, c := range cases {
 		t.Run(c.fixture, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", "testdata", c.fixture))
+			data := c.bytes
+			var err error
+			if data == nil {
+				data, err = os.ReadFile(filepath.Join("..", "testdata", c.fixture))
+			}
 			if err != nil {
 				t.Fatalf("read %s: %v", c.fixture, err)
 			}

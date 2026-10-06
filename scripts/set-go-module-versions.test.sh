@@ -115,6 +115,33 @@ else
   fail=$((fail + 1)); echo "FAIL rewrote a third-party require"
 fi
 
+# A nested checkout inside the root — an agent worktree under .claude/worktrees,
+# a scratch clone — carries its own go.mod files, which belong to whatever branch
+# that checkout has out, not to the release being prepared. Descending into one
+# refused a real release over a go.mod the tag would never include.
+mkdir -p "$work/nested/.claude/worktrees/stale"
+cat > "$work/nested/go.mod" <<'EOF'
+module example.com/nested
+
+go 1.26.6
+
+require github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.5.1
+EOF
+: > "$work/nested/.claude/worktrees/stale/.git"
+cat > "$work/nested/.claude/worktrees/stale/go.mod" <<'EOF'
+module example.com/stale
+
+go 1.26.6
+
+require github.com/mitre/hdf-libs/brand-new/go v0.0.0-00010101000000-000000000000
+EOF
+check "skips a nested checkout's go.mod" 0 "$work/nested" v3.7.0
+if grep -q 'hdf-utilities/go/v3 v3.7.0' "$work/nested/go.mod" && grep -q 'v0.0.0-00010101000000-000000000000' "$work/nested/.claude/worktrees/stale/go.mod"; then
+  pass=$((pass + 1)); echo "ok   rewrites the root and leaves the nested checkout alone"
+else
+  fail=$((fail + 1)); echo "FAIL touched the nested checkout or missed the root"
+fi
+
 # Running it twice must be a no-op, since the release procedure may re-run it.
 check "is idempotent" 0 "$work/good" v3.7.0
 

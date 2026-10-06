@@ -112,4 +112,17 @@ describe('a scalar bound reaching validateThresholds unnormalized', () => {
     const raw = { passed: { total: 1.5 } } as unknown as ThresholdConfig;
     expect(() => validateThresholds(raw, counts(2), 100, [])).toThrow(/whole number of controls/);
   });
+  // Parity: TestThresholdBoundRefusesTheSharedRefusals in go. A mapping that
+  // is not a bound must be refused up front: typed through as one, {min: "abc"}
+  // compares a count against a string and never fires — the silent no-op this
+  // whole function exists to close.
+  it('refuses every bound the shared refusals table lists', () => {
+    expect(boundCases.refusals.length).toBeGreaterThan(0);
+    for (const c of boundCases.refusals) {
+      expect(
+        () => normalizeThresholdConfig({ passed: { total: c.bound as unknown as ThresholdBound } } as ThresholdConfig),
+        c.name,
+      ).toThrow();
+    }
+  });
 });

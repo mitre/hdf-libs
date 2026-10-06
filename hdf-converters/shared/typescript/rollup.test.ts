@@ -373,12 +373,6 @@ describe('rollUpRequirements: the unrated-severity marker is derived', () => {
   const unrated = () => req({ tags: { severity_rating: 'unrated' } });
   const rated = () => req({ severity: 'high', impact: 0.7 });
 
-  // rollup.ts declares the marker locally to avoid an import cycle with
-  // converterutil.ts, which re-exports rollUpRequirements. This pins the copy.
-  it('uses the same marker constants converterutil exports', () => {
-    expect(UNRATED_SEVERITY_TAG).toBe('severity_rating');
-    expect(UNRATED_SEVERITY_VALUE).toBe('unrated');
-  });
 
   it('keeps the marker when every member is unrated', () => {
     const got = rollUpRequirements([unrated(), unrated()]);

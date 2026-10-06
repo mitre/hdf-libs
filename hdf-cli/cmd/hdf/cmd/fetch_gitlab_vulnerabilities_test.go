@@ -349,3 +349,18 @@ func TestFetchGitlabVulnerabilitiesCmd_NoTokenFlagAndHelp(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no GitLab API token found")
 }
+
+// A project path comes from the server's group listing, so a misbehaving or
+// compromised instance chooses the file name. Joining it under --out-dir must
+// never land outside that directory: a `..` would otherwise write beside it.
+func TestGroupOutputTarget_StaysInsideOutDir(t *testing.T) {
+	outDir := filepath.Join(t.TempDir(), "hdf")
+	got, err := groupOutputTarget(outDir, "security-demo/juice-shop")
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(outDir, "security-demo__juice-shop"), got)
+
+	for _, bad := range []string{"..", ".", "../x", "a/..", "../../etc/passwd", "..\\..\\x", ""} {
+		_, err := groupOutputTarget(outDir, bad)
+		assert.Error(t, err, "%q must be refused, not written", bad)
+	}
+}

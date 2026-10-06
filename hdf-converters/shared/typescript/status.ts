@@ -11,27 +11,15 @@ import {
   computeEffectiveImpact,
   governingOverrideIndex,
   governingImpactOverrideIndex,
-  parseTimestamp,
+  absentIfGoZeroTime,
   type EffectiveStatusInput,
   type StatusOverrideInput,
 } from '@mitre/hdf-utilities';
 import type { EvaluatedRequirement } from '@mitre/hdf-schema';
 
-const GO_ZERO_TIME_MS = new Date('0001-01-01T00:00:00Z').getTime();
-
-/**
- * Normalizes Go's zero time to absent — the single rule every consumer of a
- * schema timestamp in this package shares. StatusOverride's timestamps are
- * non-pointer time.Time in Go, so an unset one round-trips as
- * 0001-01-01T00:00:00Z and decodes back to IsZero — "never set", which is what
- * the Go peers report. Carried through raw it would instead read here as a real
- * instant in year 1, before every reference time.
- */
-export function absentIfGoZeroTime(value: string | undefined): string | undefined {
-  if (value === undefined) return undefined;
-  const parsed = parseTimestamp(value);
-  return parsed !== null && parsed.getTime() === GO_ZERO_TIME_MS ? undefined : value;
-}
+// The Go zero-time rule lives in hdf-utilities; kept on this surface for the
+// consumers that already reach it here.
+export { absentIfGoZeroTime };
 
 /**
  * RFC3339 string from a schema timestamp (quicktype Date or raw string), with
@@ -98,17 +86,21 @@ export function governingOverride(
   req: EvaluatedRequirement,
   now?: string
 ): NonNullable<EvaluatedRequirement['statusOverrides']>[number] | undefined {
-  const overrides = (req.statusOverrides ?? []).filter((o) => o != null);
+  // One entry per member, slot preserved: Go's typed decode turns a null
+  // member into a zero override that still takes part in the selection, and
+  // dropping it here is how the two languages came to disagree about which
+  // override governs. Parity: GoverningOverrideIndex in go/status.go.
+  const overrides = req.statusOverrides ?? [];
   const i = governingOverrideIndex(
     overrides.map((o) => ({
-      status: o.status ? String(o.status) : undefined,
-      appliedAt: schemaTimestamp(o.appliedAt),
-      expiresAt: schemaTimestamp(o.expiresAt),
+      status: o?.status ? String(o.status) : undefined,
+      appliedAt: schemaTimestamp(o?.appliedAt),
+      expiresAt: schemaTimestamp(o?.expiresAt),
     })),
     () => true,
     now
   );
-  return i >= 0 ? overrides[i] : undefined;
+  return i >= 0 ? (overrides[i] ?? undefined) : undefined;
 }
 
 /**
@@ -145,6 +137,12 @@ export function governingImpactOverride(
  * and it is not read. The one exception is a requirement carrying NO overrides
  * at all, where the stored field is the only evidence in the document.
  *
+ * This reads statusOverrides only. hdf-engine's filter and hdf-diff's checksum
+ * fold poams[] into the same governing set and report 'poam' when a plan
+ * governs; an export does not, because the exporters carry the plan separately
+ * and a disposition of 'poam' would duplicate it in a column that names an
+ * override type. Pinned by the "does not read poams" test.
+ *
  * Parity: RequirementDisposition in shared/go/status.go.
  */
 export function requirementDisposition(req: EvaluatedRequirement, now?: string): string {
@@ -157,7 +155,7 @@ export function requirementDisposition(req: EvaluatedRequirement, now?: string):
   // the document carries, so passing it through preserves information an export
   // would otherwise drop. See the Go twin for why this is a fallback, not a
   // source, and why hdf-engine's filter deliberately does not take it.
-  const overrides = (req.statusOverrides ?? []).filter((o) => o != null);
-  if (overrides.length === 0 && req.disposition) return String(req.disposition);
+  // Counts members, nulls included, as Go's len(r.StatusOverrides) does.
+  if ((req.statusOverrides ?? []).length === 0 && req.disposition) return String(req.disposition);
   return '';
 }

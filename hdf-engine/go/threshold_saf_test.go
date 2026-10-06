@@ -185,3 +185,25 @@ func TestBoundAcceptsAYAMLMergeKey(t *testing.T) {
 	require.Error(t, err, "a merge key must not smuggle an unknown key past the check")
 	assert.Contains(t, err.Error(), "bogus")
 }
+
+// Parity: "refuses every bound the shared refusals table lists" in
+// test/threshold-saf.test.ts. Go already refused these through the typed
+// decode and the key switch; the table pins that both languages do.
+func TestThresholdBoundRefusesTheSharedRefusals(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "testdata", "saf-bound-shorthand-cases.json"))
+	require.NoError(t, err)
+	var table struct {
+		Refusals []struct {
+			Name  string          `json:"name"`
+			Bound json.RawMessage `json:"bound"`
+		} `json:"refusals"`
+	}
+	require.NoError(t, json.Unmarshal(data, &table))
+	require.NotEmpty(t, table.Refusals)
+	for _, c := range table.Refusals {
+		t.Run(c.Name, func(t *testing.T) {
+			var got ThresholdBound
+			assert.Error(t, yaml.Unmarshal(c.Bound, &got))
+		})
+	}
+}

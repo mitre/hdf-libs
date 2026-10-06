@@ -79,7 +79,11 @@ func stageTempFile(f *os.File, data []byte, perm os.FileMode) error {
 		_ = os.Remove(f.Name())
 		return err
 	}
-	return f.Close()
+	if err := f.Close(); err != nil {
+		_ = os.Remove(f.Name())
+		return err
+	}
+	return nil
 }
 
 // resolveDestination follows a symlinked destination to the file it names, so

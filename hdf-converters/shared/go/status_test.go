@@ -234,3 +234,15 @@ func TestRequirementEffectiveStatus_SharedExpiryCaseTable(t *testing.T) {
 		})
 	}
 }
+
+// The export disposition names an override TYPE and reads statusOverrides
+// only; a plan is carried separately by the exporters, so a governing POA&M
+// must not surface here as "poam" the way hdf-engine and hdf-diff report it.
+func TestRequirementDisposition_DoesNotReadPoams(t *testing.T) {
+	far := time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)
+	req := hdf.EvaluatedRequirement{ID: "V-1", Impact: 0.5, Poams: []hdf.PoamElement{{AppliedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), ExpiresAt: far}}}
+	assert.Equal(t, "", RequirementDisposition(req, time.Time{}), "a plan alone governs no export disposition")
+	stored := hdf.OverrideType("waiver")
+	req.Disposition = &stored
+	assert.Equal(t, "waiver", RequirementDisposition(req, time.Time{}), "with no overrides the stored field is the fallback, plan or not")
+}

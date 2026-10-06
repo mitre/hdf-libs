@@ -420,13 +420,7 @@ func mapGrypeTypeToEcosystem(grypeType string) hdf.Ecosystem {
 // the artifact names nothing at all, so the caller leaves both fields unset
 // rather than emitting an empty identity.
 func packageInstanceID(a GrypeArtifact) string {
-	if a.PURL != "" {
-		return a.PURL
-	}
-	if a.Version != "" {
-		return a.Name + "@" + a.Version
-	}
-	return a.Name
+	return shared.PackageInstanceID(a.PURL, a.Name, a.Version)
 }
 
 // buildAffectedPackages produces a single AffectedPackage from the match's

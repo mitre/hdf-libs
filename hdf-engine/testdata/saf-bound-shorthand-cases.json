@@ -1,35 +1,97 @@
 {
-  "$comment": "SAF CLI accepts a count bound in two shapes: an object ({min, max}) and a bare scalar. Measured in mitre/saf src/commands/validate/threshold.ts (pinned 705d3f26), which guards the scalar path with `typeof !== 'object'` and then asserts `count !== N` — so a scalar means EXACTLY N, not a minimum. Both languages read this table so they cannot disagree about that. Go reaches it through ThresholdBound's YAML decoding; TypeScript does no YAML decoding of its own, so it reaches the same rule through normalizeThresholdConfig, which a consumer calls on whatever it parsed. cases[].bound is the value as written in a spec; want is the ThresholdBound it must mean.",
+  "$comment": "SAF CLI accepts a count bound in two shapes: an object ({min, max}) and a bare scalar. Measured in mitre/saf src/commands/validate/threshold.ts (pinned 705d3f26), which guards the scalar path with `typeof !== 'object'` and then asserts `count !== N` \u2014 so a scalar means EXACTLY N, not a minimum. Both languages read this table so they cannot disagree about that. Go reaches it through ThresholdBound's YAML decoding; TypeScript does no YAML decoding of its own, so it reaches the same rule through normalizeThresholdConfig, which a consumer calls on whatever it parsed. cases[].bound is the value as written in a spec; want is the ThresholdBound it must mean. The refusals array lists bounds BOTH languages must reject: Go through ThresholdBound.UnmarshalYAML, TypeScript through normalizeThresholdConfig.",
   "cases": [
     {
       "name": "a scalar is an exact bound, not a minimum",
       "bound": 19,
-      "want": { "min": 19, "max": 19 }
+      "want": {
+        "min": 19,
+        "max": 19
+      }
     },
     {
       "name": "zero is a bound, not an absence",
       "bound": 0,
-      "want": { "min": 0, "max": 0 }
+      "want": {
+        "min": 0,
+        "max": 0
+      }
     },
     {
       "name": "an object with only min keeps max unset",
-      "bound": { "min": 213 },
-      "want": { "min": 213 }
+      "bound": {
+        "min": 213
+      },
+      "want": {
+        "min": 213
+      }
     },
     {
       "name": "an object with only max keeps min unset",
-      "bound": { "max": 24 },
-      "want": { "max": 24 }
+      "bound": {
+        "max": 24
+      },
+      "want": {
+        "max": 24
+      }
     },
     {
       "name": "an object carrying both is unchanged",
-      "bound": { "min": 11, "max": 11 },
-      "want": { "min": 11, "max": 11 }
+      "bound": {
+        "min": 11,
+        "max": 11
+      },
+      "want": {
+        "min": 11,
+        "max": 11
+      }
     },
     {
       "name": "an object carrying controls is unchanged",
-      "bound": { "max": 0, "controls": ["SV-230221"] },
-      "want": { "max": 0, "controls": ["SV-230221"] }
+      "bound": {
+        "max": 0,
+        "controls": [
+          "SV-230221"
+        ]
+      },
+      "want": {
+        "max": 0,
+        "controls": [
+          "SV-230221"
+        ]
+      }
+    }
+  ],
+  "refusals": [
+    {
+      "name": "a string min is refused, not compared as text",
+      "bound": {
+        "min": "abc"
+      }
+    },
+    {
+      "name": "a boolean min is refused",
+      "bound": {
+        "min": true
+      }
+    },
+    {
+      "name": "a fractional max is refused",
+      "bound": {
+        "max": 1.5
+      }
+    },
+    {
+      "name": "an unknown key is refused, so a typo cannot pass as a bound",
+      "bound": {
+        "mni": 1
+      }
+    },
+    {
+      "name": "controls must be a list of strings",
+      "bound": {
+        "controls": "V-1"
+      }
     }
   ]
 }

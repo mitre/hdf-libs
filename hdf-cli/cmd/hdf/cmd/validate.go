@@ -80,24 +80,8 @@ Examples:
 			quiet = localQuiet
 			// Same refusal as validate threshold: a name attached to a real file
 			// could misattribute it, and one name cannot label several documents.
-			if err := validateSourceName(localSourceName); err != nil {
+			if err := checkSourceNameArgs(localSourceName, args); err != nil {
 				return err
-			}
-			if localSourceName != "" {
-				// One name cannot label several documents, so more than one
-				// argument is refused even when every one of them is `-`: a bulk
-				// run would otherwise print the name against the first document
-				// and the raw `-` against the rest.
-				if len(args) > 1 {
-					return fmt.Errorf("--source-name names a single document read from stdin, "+
-						"but %d arguments were given", len(args))
-				}
-				for _, arg := range args {
-					if arg != "-" {
-						return fmt.Errorf("--source-name names a document read from stdin; "+
-							"drop it, or pass - instead of %s", arg)
-					}
-				}
 			}
 			sourceName = localSourceName
 

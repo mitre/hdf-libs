@@ -1,13 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import {
-  stripHtml,
-  replaceHtmlTags,
-  parseTimestamp,
-  formatTimestamp,
-  formatTimestampSeconds,
-  trimUtcFraction,
-  encodeBase64Utf8,
-} from '../src/string/index.js';
+import { stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from '../src/string/index.js';
 
 describe('stripHtml', () => {
   it('should strip simple tags', () => {
@@ -266,5 +258,28 @@ describe('encodeBase64Utf8', () => {
     const encoded = encodeBase64Utf8(text);
     expect(encoded).toBe(Buffer.from(text, 'utf-8').toString('base64'));
     expect(Buffer.from(encoded, 'base64').toString('utf-8')).toBe(text);
+  });
+});
+
+// Go's zero time is what a Go-serialized override carries for an unset
+// timestamp: StatusOverride's fields are non-pointer time.Time, so an unset
+// one round-trips as 0001-01-01T00:00:00Z and decodes back to IsZero, which
+// every Go reader treats as "never set". TypeScript has no such notion, so
+// every consumer must apply the same rule; this is its one home.
+describe('Go zero time', () => {
+  it('isGoZeroTime recognizes the zero instant and nothing else', () => {
+    expect(isGoZeroTime(new Date('0001-01-01T00:00:00Z'))).toBe(true);
+    expect(isGoZeroTime(new Date('0001-01-01T00:00:00.000Z'))).toBe(true);
+    expect(isGoZeroTime(new Date('1970-01-01T00:00:00Z'))).toBe(false);
+    expect(isGoZeroTime(new Date('2099-12-31T00:00:00Z'))).toBe(false);
+  });
+
+  it('absentIfGoZeroTime reads the zero time as absent and passes everything else through untouched', () => {
+    expect(absentIfGoZeroTime('0001-01-01T00:00:00Z')).toBeUndefined();
+    expect(absentIfGoZeroTime('2099-12-31T00:00:00Z')).toBe('2099-12-31T00:00:00Z');
+    expect(absentIfGoZeroTime('2099-12-31')).toBe('2099-12-31');
+    expect(absentIfGoZeroTime(undefined)).toBeUndefined();
+    expect(absentIfGoZeroTime('')).toBeUndefined();
+    expect(absentIfGoZeroTime('not a time')).toBe('not a time');
   });
 });

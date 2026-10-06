@@ -43,6 +43,7 @@ import {
   mapCWEToNIST,
   markUnratedSeverity,
   validateInputSize,
+  packageInstanceId,
 } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildCvssEntry, cvssSeverityFromScore, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import { requirementStatusInput } from '../../../shared/typescript/status.js';
@@ -726,8 +727,7 @@ function buildSourceLocation(loc: Location | null | undefined): SourceLocation |
 }
 
 function packageLabel(d: Location['dependency']): string {
-  if (!d?.package?.name) return '';
-  return d.version ? `${d.package.name}@${d.version}` : d.package.name;
+  return packageInstanceId('', d?.package?.name ?? '', d?.version ?? '');
 }
 
 function buildCodeDesc(v: Vulnerability): string {

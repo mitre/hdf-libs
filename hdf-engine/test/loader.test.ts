@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { baseline } from '@mitre/hdf-fixtures';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -20,7 +21,7 @@ describe('load — parity with go/loader.go Load', () => {
   });
 
   it('loads a valid baseline document', () => {
-    const res = load(read('baseline-fixture.json'));
+    const res = load(baseline.win2022Stig.read());
     expect(res.docType).toBe('baseline');
     expect(res.valid).toBe(true);
     expect(res.baseline).toBeDefined();
@@ -63,13 +64,14 @@ describe('load — parity with go/loader.go Load', () => {
 // Mirror of go/loader_parity_test.go TestLoader_CrossLanguageParity: the SAME
 // shared fixtures asserted to the SAME (format, docType, valid) on the TS side.
 describe('cross-language parity (mirror of go/loader_parity_test.go)', () => {
-  const cases: { fixture: string; format: string; docType: string; valid: boolean }[] = [
+  // data, when set, is the document itself: a shared-corpus row has no testdata file.
+  const cases: { fixture: string; format: string; docType: string; valid: boolean; data?: string }[] = [
     { fixture: 'query-fixture.json', format: 'json', docType: 'results', valid: true },
-    { fixture: 'baseline-fixture.json', format: 'json', docType: 'baseline', valid: true },
+    { fixture: 'win2022-stig.json (hdf-fixtures)', format: 'json', docType: 'baseline', valid: true, data: baseline.win2022Stig.read() },
   ];
   for (const c of cases) {
     it(c.fixture, () => {
-      const res = load(read(c.fixture));
+      const res = load(c.data ?? read(c.fixture));
       expect(res.format).toBe(c.format);
       expect(res.docType).toBe(c.docType);
       expect(res.valid).toBe(c.valid);

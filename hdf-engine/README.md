@@ -53,8 +53,8 @@ const matches = filter(results, {
 
 ```go
 matches := hdfengine.Filter(ctx, results, hdfengine.Options{
-    Status:   []string{"failed"},
-    Severity: []string{"critical", "high"},
+    Status:   hdfengine.In("failed"),
+    Severity: hdfengine.In("critical", "high"),
 })
 ```
 
@@ -137,7 +137,7 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 ### Query
 
 - `filter(results, options)` / `Filter(ctx, results, opts)` — matching requirements
-- `FilterOptions` / `Options` — `status`, `severity`, `impact`, `cci`, `nist`, `id`, `tag`, `search`, `baseline`, `limit`, `count`, and a `statusOf` hook to override how status is resolved
+- `FilterOptions` / `Options` — `status`, `severity`, `impact`, `rawImpact`, `cvss`, `epss`, `kev`, `cwe`, `cci`, `nist`, `id`, `tag`, `search`, `baseline`, `baselineLabel`, `disposition`, `poams`, `poamType`, `now`, `limit`, `count`, and a `statusOf` hook to override how status is resolved
 - `Match` — one result row
 
 ### Compliance
