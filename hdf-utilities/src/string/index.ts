@@ -77,26 +77,6 @@ const ISO_DATETIME_NO_ZONE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?
 // V8's Date treats it as host-local, so we append a 'GMT' designator to match.
 const CTIME_NO_ZONE = /^[A-Za-z]{3} [A-Za-z]{3} +\d{1,2} \d{2}:\d{2}:\d{2} \d{4}$/;
 
-/**
- * Parse a timestamp string in various common formats into a Date.
- *
- * A zone-less ISO datetime (e.g. `2024-01-15T10:30:00`) is interpreted as
- * UTC — matching Go's `hdfutil.ParseTimestamp` — rather than host-local time,
- * so converter output does not depend on the machine's timezone.
- *
- * Returns `null` if the input is empty or cannot be parsed.
- *
- * @param s - Timestamp string to parse
- * @returns Parsed Date or null if unparseable
- *
- * @example
- * ```typescript
- * parseTimestamp('2024-01-15T10:30:00Z'); // Date object
- * parseTimestamp('2024-01-15T10:30:00');  // Date object (interpreted as UTC)
- * parseTimestamp('not a date'); // null
- * parseTimestamp(''); // null
- * ```
- */
 const GO_ZERO_TIME_MS = new Date('0001-01-01T00:00:00Z').getTime();
 
 /**
@@ -123,6 +103,26 @@ export function absentIfGoZeroTime(value: string | undefined): string | undefine
   return parsed !== null && isGoZeroTime(parsed) ? undefined : value;
 }
 
+/**
+ * Parse a timestamp string in various common formats into a Date.
+ *
+ * A zone-less ISO datetime (e.g. `2024-01-15T10:30:00`) is interpreted as
+ * UTC — matching Go's `hdfutil.ParseTimestamp` — rather than host-local time,
+ * so converter output does not depend on the machine's timezone.
+ *
+ * Returns `null` if the input is empty or cannot be parsed.
+ *
+ * @param s - Timestamp string to parse
+ * @returns Parsed Date or null if unparseable
+ *
+ * @example
+ * ```typescript
+ * parseTimestamp('2024-01-15T10:30:00Z'); // Date object
+ * parseTimestamp('2024-01-15T10:30:00');  // Date object (interpreted as UTC)
+ * parseTimestamp('not a date'); // null
+ * parseTimestamp(''); // null
+ * ```
+ */
 export function parseTimestamp(s: string): Date | null {
   if (!s || s.trim().length === 0) {
     return null;
