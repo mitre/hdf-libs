@@ -151,3 +151,14 @@ func TestFetch_PaginatesAndAssemblesEnvelope(t *testing.T) {
 	assert.Len(t, result.Baselines, 2)
 	assert.Equal(t, "security-demo/juice-shop", result.Components[0].Name)
 }
+
+// A listed project path becomes an output file name downstream, so the shape
+// GitLab guarantees is enforced here and anything else refuses the listing.
+func TestValidProjectPath(t *testing.T) {
+	for _, ok := range []string{"security-demo/juice-shop", "ns/sub-group/proj_1.2", "a"} {
+		assert.True(t, validProjectPath(ok), ok)
+	}
+	for _, bad := range []string{"", ".", "..", "../x", "a/..", "a//b", "a/./b", "bad space/x", "a\\b", "ns/proj?x"} {
+		assert.False(t, validProjectPath(bad), "%q must be refused", bad)
+	}
+}
