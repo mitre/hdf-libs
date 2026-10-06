@@ -39,8 +39,11 @@ overrides:
   "esbuild@<0.25.0": "^0.25.0"
   # minimatch 10.1.3 via @stryker-mutator/core (dev); goes when stryker declares ^10.2.3.
   "minimatch@>=10.0.0 <10.2.3": "^10.2.3"
-  # shell-quote 1.8.3 via concurrently (dev); goes when concurrently declares ^1.8.5.
-  "shell-quote@<1.8.5": "^1.10.0"
+  # GHSA-pqg4-j6r4-53mv — shell-quote quote() command injection, every release
+  # from 1.8.4 through 1.10.0, via concurrently (dev; its latest still declares
+  # 1.9.0). Supersedes the earlier <1.8.5 hold, which pinned into this range.
+  # Goes when concurrently declares ^1.11.0.
+  "shell-quote@<1.11.0": "^1.11.0"
   # GHSA-w5hq-g745-h8pq — uuid 9.0.1 buffer bounds, via @hyperjump/json-schema
   # (dev); goes when that package declares ^11.
   "uuid@<11.1.1": "^11.1.1"
