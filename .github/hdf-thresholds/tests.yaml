@@ -16,24 +16,37 @@
 # happened to give the same answer, but re-measure from a FULLY GREEN run or
 # the mark can be low by however many documents were missing:
 #
-#   go-hdf-cli        windows 7, ubuntu 4  — a large-file case, a stdin case,
+#   go-hdf-cli        windows 11, ubuntu 4  — a large-file case, a stdin case,
 #                     an HDF_BENCH=1 opt-in, one self-sizing fixture guard, and
-#                     on windows three more for the POSIX permission model
-#                     (permission-denied read, redacted-path read failure,
-#                     permission-denied write)
+#                     on windows seven more for the POSIX permission model and
+#                     NTFS rename semantics (permission-denied read,
+#                     redacted-path read failure, permission-denied write, and
+#                     the four internal/atomicfile cases below)
 #   ts-hdf-schema     5 on both  — one assertion removed in v2, four needing
 #                     the converter layer hdf-schema cannot depend on
 #   go-hdf-converters windows 1  — XCCDF schema validation
 #   every other document 0
 #
-# 7 is therefore the per-document high-water mark, and the windows hdf-cli
+# 11 is therefore the per-document high-water mark, and the windows hdf-cli
 # document sits exactly at it: one new skip there fails the gate.
 #
-# Known limit: a document now at 0 can grow to 7 unnoticed, and the pipeline
+# The windows figure moved 7 → 11 by SOURCE COUNT, not by the measurement
+# protocol above: a gate cannot be measured from the run it gates, and these
+# four skips are new in the same change. internal/atomicfile stages a temp file
+# and renames it over the destination, and windows departs from that twice —
+# NTFS carries no Unix mode bits (so requested-mode and preserved-mode assert
+# nothing there) and MoveFileEx cannot replace a destination another handle
+# holds open (so the repeated-reader case is a race rather than a guarantee,
+# and the chmod-based failure injection does not deny the write). All four are
+# covered on unix and the windows outcome is asserted deterministically by
+# TestWriteFile_OpenReaderSeesOneCompleteVersion. RE-MEASURE from the first
+# fully green run and correct this if the count differs.
+#
+# Known limit: a document now at 0 can grow to 11 unnoticed, and the pipeline
 # total can drift while no single document crosses the line.
 skipped:
     total:
-        max: 7
+        max: 11
 failed:
     total:
         max: 0

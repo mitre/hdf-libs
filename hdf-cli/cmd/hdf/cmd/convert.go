@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/outnames"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	hdfpassthrough "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-passthrough/go"
 	legacyhdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/legacyhdf-to-hdf/go"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
@@ -724,7 +726,7 @@ func writeConvertOutput(data []byte, path string) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0o600)
+	return atomicfile.WriteFile(path, data, 0o600)
 }
 
 // runConvertBulk converts multiple files, writing output to a directory.
@@ -735,16 +737,22 @@ func runConvertBulk(cmd *cobra.Command, files []string, fromFormat, toFormat, ou
 		return fmt.Errorf("bulk convert requires -o <output-directory> for multiple files")
 	}
 
-	// Name every output before creating the directory, so a set that cannot be
-	// written without losing a report is refused having written nothing.
-	paths, err := bulkOutputPaths(outputDir, files, toFormat)
+	// Name every output before anything is created, so a name that collides is
+	// numbered rather than one conversion silently overwriting another partway
+	// through.
+	slashed := make([]string, len(files))
+	for i, f := range files {
+		slashed[i] = filepath.ToSlash(f)
+	}
+	names, err := outnames.Names(slashed, toFormat)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot name the bulk outputs: %w", err)
 	}
-	outputs := make(map[string]string, len(files))
-	for i, file := range files {
-		outputs[file] = paths[i]
+	outPath := make(map[string]string, len(files))
+	for i, f := range files {
+		outPath[f] = filepath.Join(outputDir, names[i])
 	}
+	reportNumberedOutputs(files, slashed, names, toFormat)
 
 	// Ensure output directory exists.
 	if err := os.MkdirAll(outputDir, 0o750); err != nil { // #nosec G301 -- CLI creates user-requested directory
@@ -752,87 +760,27 @@ func runConvertBulk(cmd *cobra.Command, files []string, fromFormat, toFormat, ou
 	}
 
 	return runBulk(files, "conversion", "converted", func(file string) error {
-		return runConvert(cmd, []string{file}, fromFormat, toFormat, outputs[file])
+		return runConvert(cmd, []string{file}, fromFormat, toFormat, outPath[file])
 	})
 }
 
-// bulkOutputPaths names an output file for every input. Inputs that share a file
-// name — routine for a directory of per-host scans — would all be named after
-// that one base name, so each of them is named by its path below the directory
-// they share instead, with the separators mapped to a character a file name can
-// hold. Two different inputs that still name one output are refused: one of them
-// silently overwriting the other reports both files converted while keeping only
-// the last. The same input named twice is left alone — an argument list may do
-// that on purpose, and the second conversion writes the same bytes.
-func bulkOutputPaths(outputDir string, files []string, toFormat string) ([]string, error) {
-	grouped := map[string][]int{}
-	for i, file := range files {
-		base := filepath.Base(file)
-		grouped[base] = append(grouped[base], i)
-	}
-
-	paths := make([]string, len(files))
-	for _, group := range grouped {
-		if len(group) == 1 {
-			paths[group[0]] = bulkOutputPath(outputDir, files[group[0]], toFormat)
-			continue
-		}
-		shared := commonParentDir(files, group)
-		for _, i := range group {
-			paths[i] = bulkOutputPath(outputDir, qualifiedInputName(files[i], shared), toFormat)
+// reportNumberedOutputs prints the input→output mapping for the outputs that
+// had to be numbered. A number is positional, so without this a caller cannot
+// tell which of two same-named scans produced which file; the per-input result
+// line names only the input. Printed before the first conversion so the mapping
+// survives a later failure, and to stderr so --json output stays parseable.
+func reportNumberedOutputs(files, slashed, names []string, toFormat string) {
+	var numbered []int
+	for i, name := range names {
+		if name != outnames.Plain(slashed[i], toFormat) {
+			numbered = append(numbered, i)
 		}
 	}
-
-	named := make(map[string]string, len(paths))
-	for i, path := range paths {
-		first, repeat := named[path]
-		switch {
-		case !repeat:
-			named[path] = files[i]
-		case !sameInputFile(first, files[i]):
-			return nil, fmt.Errorf("%s and %s would both be written to %s; convert them separately or to different directories",
-				first, files[i], path)
-		}
+	if len(numbered) == 0 {
+		return
 	}
-	return paths, nil
-}
-
-// sameInputFile reports whether two arguments name one file, which an argument
-// list may do on purpose — a literal repeated, or one a glob also matched.
-func sameInputFile(a, b string) bool {
-	absA, errA := filepath.Abs(a)
-	absB, errB := filepath.Abs(b)
-	if errA != nil || errB != nil {
-		return filepath.Clean(a) == filepath.Clean(b)
+	fmt.Fprintln(os.Stderr, "Inputs share an output name; numbering them in argument order:")
+	for _, i := range numbered {
+		fmt.Fprintf(os.Stderr, "  %s -> %s\n", sanitizeOutput(files[i]), names[i])
 	}
-	return absA == absB
-}
-
-// commonParentDir returns the deepest directory every named input lies under, or
-// "" when they share none (a mix of absolute and relative paths, or two volumes).
-func commonParentDir(files []string, group []int) string {
-	parts := strings.Split(filepath.ToSlash(filepath.Dir(files[group[0]])), "/")
-	for _, i := range group[1:] {
-		other := strings.Split(filepath.ToSlash(filepath.Dir(files[i])), "/")
-		shared := 0
-		for shared < len(parts) && shared < len(other) && parts[shared] == other[shared] {
-			shared++
-		}
-		parts = parts[:shared]
-	}
-	return strings.Join(parts, "/")
-}
-
-// qualifiedInputName renders an input path as a single file-name component: its
-// path below root, with the separators (and a Windows volume colon) mapped to
-// characters a file name can carry.
-func qualifiedInputName(file, root string) string {
-	name := filepath.ToSlash(filepath.Clean(file))
-	if root != "" {
-		if rel, err := filepath.Rel(root, file); err == nil {
-			name = filepath.ToSlash(rel)
-		}
-	}
-	name = strings.ReplaceAll(name, ":", "-")
-	return strings.Trim(strings.ReplaceAll(name, "/", "--"), "-")
 }

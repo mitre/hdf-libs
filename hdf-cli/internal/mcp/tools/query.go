@@ -228,21 +228,8 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 					"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
 			}
 		}
-		for _, c := range []struct {
-			field  string
-			values []string
-			valid  func(string) bool
-			legal  []string
-		}{
-			{"status", in.Status, hdfengine.ValidStatus, hdfengine.StatusValues},
-			{"severity", in.Severity, hdfengine.ValidSeverity, hdfengine.SeverityValues},
-		} {
-			for _, v := range c.values {
-				if !c.valid(v) {
-					return argError(fmt.Sprintf("unknown %s %q", c.field, v),
-						fmt.Sprintf("%s accepts only: %s", c.field, strings.Join(c.legal, ", "))), errorQueryOutput(), nil
-				}
-			}
+		if refusal := refuseUnknownStatusSeverity(in.Status, in.Severity); refusal != nil {
+			return refusal, errorQueryOutput(), nil
 		}
 		for _, v := range in.PoamType {
 			if !hdfengine.ValidPoamType(v) {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -161,7 +162,7 @@ func writePlanOutput(plan map[string]interface{}, outputPath string) error {
 		return nil
 	}
 
-	if err := os.WriteFile(outputPath, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(outputPath, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write plan: %w", err)
 	}
 
