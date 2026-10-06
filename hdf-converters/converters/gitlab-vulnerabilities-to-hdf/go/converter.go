@@ -1180,21 +1180,14 @@ func closeOpenOverrides(overrides []hdf.StatusOverride, at time.Time) {
 func currentDecisionProvenance(v *Vulnerability, fetchedAt time.Time) (time.Time, *User) {
 	switch v.State {
 	case "DISMISSED":
-		return firstTime(fetchedAt, derefString(v.DismissedAt), v.UpdatedAt, v.DetectedAt), v.DismissedBy
+		return firstTime(fetchedAt, hdfutil.Deref(v.DismissedAt), v.UpdatedAt, v.DetectedAt), v.DismissedBy
 	case "RESOLVED":
-		return firstTime(fetchedAt, derefString(v.ResolvedAt), v.UpdatedAt, v.DetectedAt), v.ResolvedBy
+		return firstTime(fetchedAt, hdfutil.Deref(v.ResolvedAt), v.UpdatedAt, v.DetectedAt), v.ResolvedBy
 	default:
 		// Only dismissals and resolutions synthesize an override; anything else
 		// reaching here is dated but unattributed.
 		return firstTime(fetchedAt, v.UpdatedAt, v.DetectedAt), nil
 	}
-}
-
-func derefString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 // firstTime parses the first candidate that is a valid timestamp, falling

@@ -66,12 +66,12 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 		// (which would fabricate a HOST_NAME the source never had).
 		if c.Hostname != nil {
 			a.HostName = *c.Hostname
-		} else if c.Name != derefStr(c.FQDN) && c.Name != derefStr(c.IPAddress) {
+		} else if c.Name != hdfutil.Deref(c.FQDN) && c.Name != hdfutil.Deref(c.IPAddress) {
 			a.HostName = c.Name
 		}
-		a.HostIP = derefStr(c.IPAddress)
-		a.HostFQDN = derefStr(c.FQDN)
-		a.HostMAC = derefStr(c.MACAddress)
+		a.HostIP = hdfutil.Deref(c.IPAddress)
+		a.HostFQDN = hdfutil.Deref(c.FQDN)
+		a.HostMAC = hdfutil.Deref(c.MACAddress)
 	}
 	// Merge asset extras from root extensions (round-trip).
 	if extras, ok := mapVal(results.Extensions, "assetExtras"); ok {
@@ -93,8 +93,8 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 
 func baselineToStig(bl *hdf.EvaluatedBaseline) Stig {
 	stig := Stig{
-		Title:   derefStr(bl.Title),
-		Version: derefStr(bl.Version),
+		Title:   hdfutil.Deref(bl.Title),
+		Version: hdfutil.Deref(bl.Version),
 	}
 	// Round-trip metadata from baseline extensions.
 	stig.StigID = strVal(bl.Extensions, "stigid")
@@ -122,7 +122,7 @@ func requirementToVuln(req *hdf.EvaluatedRequirement) Vuln {
 		RuleVer:               tagStr(tags, "stig_id"),
 		GroupID:               orDefault(tagStr(tags, "group_id"), req.ID),
 		GroupTitle:            tagStr(tags, "gtitle"),
-		RuleTitle:             derefStr(req.Title),
+		RuleTitle:             hdfutil.Deref(req.Title),
 		Weight:                tagStr(tags, "weight"),
 		Severity:              resolveSeverity(req, tags),
 		CCIs:                  resolveCCIs(tags),
@@ -400,11 +400,4 @@ func intVal(m map[string]interface{}, key string) int {
 	default:
 		return 0
 	}
-}
-
-func derefStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

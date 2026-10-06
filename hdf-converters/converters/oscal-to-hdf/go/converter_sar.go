@@ -216,14 +216,6 @@ func subjectToComponent(subj *SubjectRef) hdf.Component {
 	return c
 }
 
-// strOrEmpty dereferences an optional string, treating absence as empty.
-func strOrEmpty(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
 // resultToEvaluatedBaseline converts a single OSCAL Result to an HDF
 // EvaluatedBaseline from its findings grouped by requirement id, so that
 // multiple findings for the same requirement produce multiple results on it.

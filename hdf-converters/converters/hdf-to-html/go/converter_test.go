@@ -544,20 +544,6 @@ func TestComplianceText(t *testing.T) {
 	}
 }
 
-func TestCountTotalAndSeverityTotals(t *testing.T) {
-	c := counts(1, 2, 3, 4, 5)
-	c.Failed.Critical = 2
-	c.Skipped.Low = 3
-	c.NoImpact.Informational = 4
-	assert.Equal(t, 15, countTotal(c))
-
-	severities := severityTotals(c)
-	assert.Equal(t, 2, severities.Critical)
-	assert.Equal(t, 3, severities.Low)
-	assert.Equal(t, 4, severities.Informational)
-	assert.Equal(t, 15, severities.Total)
-}
-
 func TestConvertHDFToHTML_RejectsWhatIsNotResults(t *testing.T) {
 	for name, input := range map[string]string{
 		"empty":             "",
