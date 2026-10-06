@@ -338,3 +338,60 @@ func TestCheckOutputOverwritesInput(t *testing.T) {
 		assert.Contains(t, err.Error(), "would overwrite input file")
 	})
 }
+
+func TestConvertCommand_HDFOnlyFlagsRejectedForOtherTargets(t *testing.T) {
+	input := converterFixturePath(t, "hdf-to-html", "input/rich.json")
+	second := converterFixturePath(t, "hdf-to-html", "input/finding-detail.json")
+	const componentID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+	flagCases := []struct {
+		flag string
+		args []string
+	}{
+		{"labels", []string{"--labels", "env=prod"}},
+		{"component-id", []string{"--component-id", componentID}},
+	}
+
+	t.Run("single input", func(t *testing.T) {
+		for _, tc := range flagCases {
+			t.Run(tc.flag, func(t *testing.T) {
+				out := filepath.Join(t.TempDir(), "report.html")
+				_, _, err := executeCommand(append([]string{"convert", input, "--to", "html", "-o", out}, tc.args...)...)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "--"+tc.flag+" applies to --to hdf only, not --to html")
+				assert.NoFileExists(t, out)
+			})
+		}
+	})
+
+	t.Run("combined report", func(t *testing.T) {
+		for _, tc := range flagCases {
+			t.Run(tc.flag, func(t *testing.T) {
+				out := filepath.Join(t.TempDir(), "report.html")
+				_, _, err := executeCommand(append([]string{"convert", input, second, "--to", "html", "-o", out}, tc.args...)...)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "--"+tc.flag+" applies to --to hdf only, not --to html")
+				assert.NoFileExists(t, out)
+			})
+		}
+	})
+
+	t.Run("one report per input", func(t *testing.T) {
+		outDir := filepath.Join(t.TempDir(), "reports") + string(filepath.Separator)
+		_, _, err := executeCommand("convert", input, second, "--to", "html", "-o", outDir, "--labels", "env=prod")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "--labels applies to --to hdf only, not --to html")
+		assert.NoDirExists(t, outDir, "the flag is refused before any file is converted")
+	})
+
+	t.Run("an HDF target still takes them", func(t *testing.T) {
+		out := filepath.Join(t.TempDir(), "out.json")
+		_, _, err := executeCommand("convert", input, "--to", "hdf", "-o", out,
+			"--labels", "env=prod", "--component-id", componentID)
+		require.NoError(t, err)
+		data, readErr := os.ReadFile(out)
+		require.NoError(t, readErr)
+		assert.Contains(t, string(data), `"env": "prod"`)
+		assert.Contains(t, string(data), componentID)
+	})
+}

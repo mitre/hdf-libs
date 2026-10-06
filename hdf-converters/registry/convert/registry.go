@@ -66,6 +66,27 @@ type OutputVersionSetter interface {
 	SetOutputVersion(version string)
 }
 
+// ReportTypeSetter is an optional interface for converters whose output comes
+// at selectable levels of detail (the HTML report). It returns an error for a
+// level the converter does not offer; an empty value selects its default.
+type ReportTypeSetter interface {
+	SetReportType(reportType string) error
+}
+
+// NamedInput is one input to a converter that combines several; Name is how the
+// output refers to it, usually the file name.
+type NamedInput struct {
+	Name string
+	Data []byte
+}
+
+// MultiInputConverter is an optional interface for converters that can combine
+// several inputs into one output (the aggregated HTML report). Inputs are HDF
+// documents of the type Convert takes, in the order the output should list them.
+type MultiInputConverter interface {
+	ConvertMany(inputs []NamedInput) ([]byte, error)
+}
+
 // EmptyInputAccepting is an optional interface a converter implements when empty
 // input is a valid signal rather than an error — e.g. exit-code-first scanners
 // (TruffleHog) that emit no report on a clean run. The convert command consults

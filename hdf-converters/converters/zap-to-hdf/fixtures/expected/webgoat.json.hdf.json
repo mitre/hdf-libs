@@ -23,6 +23,8 @@
           "results": [
             {
               "codeDesc": "URI: http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip | Method: GET | Param: X-Content-Type-Options",
+              "resource": "url",
+              "resourceId": "http://ciscobinary.openh264.org/openh264-macosx64-0410d336bb748149a4f560eb6108090f078254b1.zip",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -93,6 +95,8 @@
           "results": [
             {
               "codeDesc": "URI: http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css | Method: GET | Param: X-Content-Type-Options",
+              "resource": "url",
+              "resourceId": "http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -163,6 +167,8 @@
           "results": [
             {
               "codeDesc": "URI: http://detectportal.firefox.com/success.txt | Method: GET | Param: X-Content-Type-Options",
+              "resource": "url",
+              "resourceId": "http://detectportal.firefox.com/success.txt",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -229,101 +235,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/hint.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/hint.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessoninfo.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8/votes",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -372,41 +418,57 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/attack | Method: GET | Param: JSESSIONID | Evidence: Set-Cookie: JSESSIONID",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/attack",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/logout | Method: GET | Param: JSESSIONID | Evidence: Set-Cookie: JSESSIONID",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/logout",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/JWT/votings/login?user=Guest | Method: GET | Param: access_token | Evidence: Set-Cookie: access_token",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/JWT/votings/login?user=Guest",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/fonts/fontawesome-webfont.woff?v=4.0.3 | Method: GET | Param: JSESSIONID | Evidence: Set-Cookie: JSESSIONID",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/fonts/fontawesome-webfont.woff?v=4.0.3",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/start.mvc | Method: GET | Param: JSESSIONID | Evidence: Set-Cookie: JSESSIONID",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/start.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/ | Method: GET | Param: JSESSIONID | Evidence: Set-Cookie: JSESSIONID",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/login?logout | Method: GET | Param: JSESSIONID | Evidence: Set-Cookie: JSESSIONID",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/login?logout",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/login | Method: POST | Param: JSESSIONID | Evidence: Set-Cookie: JSESSIONID",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/login",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -461,120 +523,160 @@
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old.baseUrl%\u003e",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.2 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.2]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.2",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.2",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.backup | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.backup]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.backup",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.backup",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bz2.baseUrl%\u003e | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bz2.baseUrl%\u003e]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bz2.baseUrl%\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bz2.baseUrl%\u003e",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.old",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.gz | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.gz]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.gz",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.gz",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.~bk | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.~bk]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.~bk",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.~bk",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.0 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.0]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.0",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.0",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e~ | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e~]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e~",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e~",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bac | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bac]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bac",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bac",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.gz | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.gz]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.gz",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.gz",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bak.baseUrl%\u003e | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bak.baseUrl%\u003e]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bak.baseUrl%\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.bak.baseUrl%\u003e",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.bac | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.bac]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.bac",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.bac",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.orig.baseUrl%\u003e | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.orig.baseUrl%\u003e]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.orig.baseUrl%\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.orig.baseUrl%\u003e",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.backup.baseUrl%\u003e | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.backup.baseUrl%\u003e]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.backup.baseUrl%\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.backup.baseUrl%\u003e",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.exe | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.exe]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.exe",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.exe",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.1 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.1]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.1",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.zip | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.zip]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.zip",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.zip",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.swp | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.swp]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.swp",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e.swp",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.1 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.1]",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.1",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -627,101 +729,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923 | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8/votes",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessoninfo.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922 | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: COPY | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -770,101 +912,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/challenge.js?_=1544107787918 | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/challenge.js?_=1544107787918",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923 | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8 | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonprogress.mvc | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699 | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessoninfo.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924 | Method: MOVE | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -913,101 +1095,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/ixvsrz0hz5 | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/ixvsrz0hz5",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/challenge.js?_=1544107787918/00dfqjxpr0 | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/challenge.js?_=1544107787918/00dfqjxpr0",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonprogress.mvc/ov8o4i4cxb | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc/ov8o4i4cxb",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss/l75ohjdbcz | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss/l75ohjdbcz",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/66hxlzn8iv | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/66hxlzn8iv",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson/o0zqg3osop | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson/o0zqg3osop",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc/yxxfu40mzc | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc/yxxfu40mzc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc/kqmx8plyqp | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/labels.mvc/kqmx8plyqp",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922/ry1v48bqo2 | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922/ry1v48bqo2",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699/nup8fuk9jv | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699/nup8fuk9jv",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/wavpiy56r0 | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug/wavpiy56r0",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/hint.mvc/2c7ugyjrbx | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/hint.mvc/2c7ugyjrbx",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson/0ovfht8qeu | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson/0ovfht8qeu",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/o7eg68rtmj | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/o7eg68rtmj",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson/ecpghb5i3h | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson/ecpghb5i3h",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698/0qcvijm5f6 | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698/0qcvijm5f6",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson/qo4qznscod | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson/qo4qznscod",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes/hyp7hbjya6 | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8/votes/hyp7hbjya6",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson/og02v787sa | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson/og02v787sa",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson/3ylc0lqab1 | Method: PUT | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson/3ylc0lqab1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1060,101 +1282,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" name=\"intercept-request\" method=\"POST\" action=\"/WebGoat/HttpProxies/intercept-request\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: POST | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" name=\"task\" method=\"POST\" action=\"#attack/307/100\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/registration | Method: GET | Evidence: \u003cform class=\"form-horizontal\" action=\"/WebGoat/register.mvc\" method=\"POST\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/registration",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" id=\"change-password-form\" method=\"POST\" name=\"form\" successCallback=\"onBypassResponse\" action=\"/WebGoat/auth-bypass/verify-account\" enctype=\"application/json;charset=UTF-8\" style=\"display:none\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/WebWolf/mail/\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/PasswordReset/reset/create-password-reset-link\" enctype=\"application/json;charset=UTF-8\" role=\"form\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: POST | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" name=\"task\" method=\"POST\" action=\"/WebGoat/InsecureLogin/task\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson | Method: GET | Evidence: \u003cform id=\"register-form\" class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"PUT\" name=\"form\" action=\"SqlInjection/challenge\" enctype=\"application/json;charset=UTF-8\" style=\"display: none;\" role=\"form\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" method=\"POST\" name=\"diff-form\" action=\"IDOR/diff-attributes\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge1.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/1\" style=\"width: 200px;\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge1.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/BypassRestrictions.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" name=\"frontendValidation\" id=\"frontendValidation\" method=\"POST\" action=\"/WebGoat/BypassRestrictions/frontendValidation/\" enctype=\"application/json;charset=UTF-8\" onsubmit=\"return validate()\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/BypassRestrictions.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/SqlInjection/attack5a\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/login?logout | Method: GET | Evidence: \u003cform method=\"POST\" style=\"width: 200px;\" action=\"/WebGoat/login\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/login?logout",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" action=\"/WebGoat/PasswordReset/questions\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/HttpBasics/attack1\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge6.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/flag\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge6.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge6.lesson.lesson | Method: GET | Evidence: \u003cform id=\"register-form\" class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"PUT\" name=\"form\" action=\"/WebGoat/challenge/6\" enctype=\"application/json;charset=UTF-8\" style=\"display: none;\" role=\"form\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge6.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge5.lesson.lesson | Method: GET | Evidence: \u003cform id=\"login-form\" class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/5\" enctype=\"application/json;charset=UTF-8\" role=\"form\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge5.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/BypassRestrictions.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" name=\"fieldRestrictions\" method=\"POST\" action=\"/WebGoat/BypassRestrictions/FieldRestrictions\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/BypassRestrictions.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge7.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/flag\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge7.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1206,101 +1468,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/jwt-voting.js?_=1544107787947 | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/jwt-voting.js?_=1544107787947",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/libs/text.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/libs/text.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/start.mvc | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/start.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: POST",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544107787952 | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544107787952",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/libs/backbone-min.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/libs/backbone-min.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/ClientSideFiltering.lesson.lesson | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/ClientSideFiltering.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544106249403 | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544106249403",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/libs/underscore-min.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/libs/underscore-min.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/view/UserAndInfoView.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/view/UserAndInfoView.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/libs/jquery.form.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/libs/jquery.form.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/view/LessonContentView.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/view/LessonContentView.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/modernizr-2.6.2.min.js | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/modernizr-2.6.2.min.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/VulnerableComponents.lesson.lesson | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/VulnerableComponents.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1344,101 +1646,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922 | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonprogress.mvc | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/challenge.js?_=1544107787918 | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/challenge.js?_=1544107787918",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924 | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessoninfo.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699 | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8 | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes | Method: PROPPATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8/votes",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1487,101 +1829,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessoninfo.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8/votes",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8 | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699 | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonprogress.mvc | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: PROPFIND | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1630,31 +2012,43 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/7 | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/7",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/alt-path | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/alt-path",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/flag | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/flag",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1698,31 +2092,43 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/7 | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/7",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/alt-path | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/alt-path",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/flag | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/flag",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1766,31 +2172,43 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/7 | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/7",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/alt-path | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/alt-path",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/flag | Method: POST | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/flag",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E | Method: GET | Evidence: Internal Server Error",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1834,101 +2252,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/eh79fr0hqg | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc/eh79fr0hqg",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc/wreq5y0a7l | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc/wreq5y0a7l",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson/zm4mz99dlc | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson/zm4mz99dlc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922/lh51ktufa2 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922/lh51ktufa2",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes/2t85ricln1 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8/votes/2t85ricln1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson/p0kmik78y1 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson/p0kmik78y1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id/czpve71c6f | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id/czpve71c6f",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/f9r0o7rim6 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/f9r0o7rim6",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection/64anwrsu4c | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection/64anwrsu4c",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698/7oq2rqa5sa | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698/7oq2rqa5sa",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson/6oiufjzooj | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson/6oiufjzooj",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc/nn288rrdbp | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/labels.mvc/nn288rrdbp",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson/fja4tms7h6 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson/fja4tms7h6",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699/25gvf9s6s7 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699/25gvf9s6s7",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonprogress.mvc/omuhh6arma | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc/omuhh6arma",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/c3e684sost | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/c3e684sost",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924/v0fu6lixpx | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924/v0fu6lixpx",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson/n8prgootk5 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson/n8prgootk5",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc/ruq25qpun7 | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessoninfo.mvc/ruq25qpun7",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson/0oqh22nenm | Method: PATCH | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson/0oqh22nenm",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -1977,101 +2435,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonprogress.mvc | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922 | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8 | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/hint.mvc | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/hint.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson | Method: UNLOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/AuthBypass.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2124,26 +2622,36 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP | Method: GET | Param: username_reg | Evidence: ZAP",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP | Method: GET | Param: confirm_password_reg | Evidence: ZAP",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP | Method: GET | Param: email_reg | Evidence: foo-bar@example.com",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/JWT/votings/login?user=Guest | Method: GET | Param: user | Evidence: Guest",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/JWT/votings/login?user=Guest",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP | Method: GET | Param: password_reg | Evidence: ZAP",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/6?confirm_password_reg=ZAP\u0026email_reg=foo-bar%40example.com\u0026password_reg=ZAP\u0026register-submit=Register+Now\u0026username_reg=ZAP",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2187,101 +2695,141 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/hint.mvc | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/hint.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonprogress.mvc | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonprogress.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8 | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699 | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/stored-xss.js?_=1544108073699",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/labels.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessoninfo.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonoverview.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/HttpBasics.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922 | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjectionAdvanced.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes | Method: LOCK | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8/votes",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2330,31 +2878,43 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/alt-path | Method: POST | Evidence: HTTP/1.1 500",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/alt-path",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/7 | Method: POST | Evidence: HTTP/1.1 500",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/7",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E | Method: GET | Evidence: HTTP/1.1 500",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile | Method: GET | Evidence: HTTP/1.1 500",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR/profile/%7BuserId%7D?View+Profile=View+Profile",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E | Method: GET | Evidence: HTTP/1.1 500",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/flag | Method: POST | Evidence: HTTP/1.1 500",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/flag",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2403,12 +2963,16 @@
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/\u003c%=index%\u003e | Method: GET",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/.svn/text-base/\u003c%=index%\u003e.svn-base",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e/\u003c%=index%\u003e",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e | Method: GET",
               "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/.svn/text-base/\u003c%=overview.baseUrl%\u003e.svn-base",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/\u003c%=overview.baseUrl%\u003e",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2465,11 +3029,15 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E | Method: GET | Param: X-XSS-Protection",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E/%3C%25=index%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E | Method: GET | Param: X-XSS-Protection",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2522,86 +3090,120 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebWolf/landing/password-reset | Method: GET | Evidence: \u003cform role=\"form\" method=\"POST\" action=\"http://localhost:9090/landing\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebWolf/landing/password-reset",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge1.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/1\" style=\"width: 200px;\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge1.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge6.lesson.lesson | Method: GET | Evidence: \u003cform id=\"login-form\" class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/6\" enctype=\"application/json;charset=UTF-8\" role=\"form\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge6.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/IDOR.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/IDOR/login\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/IDOR.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/WebWolf/mail/send\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/login?logout | Method: GET | Evidence: \u003cform method=\"POST\" style=\"width: 200px;\" action=\"/WebGoat/login\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/login?logout",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/login | Method: GET | Evidence: \u003cform method=\"POST\" style=\"width: 200px;\" action=\"/WebGoat/login\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/login",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/login?error | Method: GET | Evidence: \u003cform method=\"POST\" style=\"width: 200px;\" action=\"/WebGoat/login\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/login?error",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/SqlInjection/attack5a\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/registration | Method: GET | Evidence: \u003cform class=\"form-horizontal\" action=\"/WebGoat/register.mvc\" method=\"POST\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/registration",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge5.lesson.lesson | Method: GET | Evidence: \u003cform id=\"login-form\" class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/5\" enctype=\"application/json;charset=UTF-8\" role=\"form\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge5.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/register.mvc | Method: POST | Evidence: \u003cform class=\"form-horizontal\" action=\"/WebGoat/register.mvc\" method=\"POST\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/register.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge7.lesson.lesson | Method: GET | Evidence: \u003cform id=\"login-form\" class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/7\" enctype=\"application/json;charset=UTF-8\" role=\"form\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge7.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/Challenge8.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" method=\"POST\" name=\"form\" action=\"/WebGoat/challenge/flag\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/Challenge8.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/MissingFunctionAC.lesson.lesson | Method: GET | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" method=\"POST\" name=\"form\" action=\"/WebGoat/access-control/hidden-menu\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/MissingFunctionAC.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: POST | Evidence: \u003cform class=\"attack-form\" accept-charset=\"UNKNOWN\" name=\"task\" method=\"POST\" action=\"#attack/307/100\" enctype=\"application/json;charset=UTF-8\"\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/libs/jquery.form.js | Method: GET | Evidence: \u003cform\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/libs/jquery.form.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2653,11 +3255,15 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/libs/jquery.form.js | Method: GET | Evidence: \u003cform\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/js/libs/jquery.form.js",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson | Method: GET | Evidence: \u003cform\u003e",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/PasswordReset.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2711,36 +3317,48 @@
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+ | Method: GET | Param: query",
               "message": "query ASC  -- ",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/debug/labels.mvc?query=query+ASC++--+",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc?query=query%22+AND+%221%22%3D%221%22+--+ | Method: GET | Param: query",
               "message": "query\" OR \"1\"=\"1\" -- ",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/service/lessonmenu.mvc?query=query%22+AND+%221%22%3D%221%22+--+",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js?query=query%22+AND+%221%22%3D%221%22+--+ | Method: GET | Param: query",
               "message": "query\" OR \"1\"=\"1\" -- ",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/lesson_js?query=query%22+AND+%221%22%3D%221%22+--+",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/register.mvc?query=query+AND+1%3D1 | Method: GET | Param: query",
               "message": "query AND 1=1",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/register.mvc?query=query+AND+1%3D1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8?query=query+AND+1%3D1 | Method: GET | Param: query",
               "message": "query OR 1=1",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8?query=query+AND+1%3D1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8?query=query+AND+1%3D1 | Method: GET | Param: query",
               "message": "query AND 1=1",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/challenge/8?query=query+AND+1%3D1",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2796,11 +3414,15 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson | Method: GET | Evidence: 192.168.1.151:9090",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/WebWolfIntroduction.lesson.lesson",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             },
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id | Method: GET | Evidence: 192.168.4.0",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }
@@ -2853,6 +3475,8 @@
           "results": [
             {
               "codeDesc": "URI: http://mymac.com:8191/WebGoat/start.mvc | Method: GET",
+              "resource": "url",
+              "resourceId": "http://mymac.com:8191/WebGoat/start.mvc",
               "startTime": "2018-12-06T10:53:11Z",
               "status": "failed"
             }

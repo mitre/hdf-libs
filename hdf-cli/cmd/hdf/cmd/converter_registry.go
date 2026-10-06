@@ -20,6 +20,9 @@ type (
 	Converter                = convreg.Converter
 	VersionedConverter       = convreg.VersionedConverter
 	OutputVersionSetter      = convreg.OutputVersionSetter
+	ReportTypeSetter         = convreg.ReportTypeSetter
+	MultiInputConverter      = convreg.MultiInputConverter
+	NamedInput               = convreg.NamedInput
 	EmptyInputAccepting      = convreg.EmptyInputAccepting
 	RequirementCountExpecter = convreg.RequirementCountExpecter
 	ResultCountExpecter      = convreg.ResultCountExpecter

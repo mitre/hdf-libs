@@ -13,23 +13,48 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
+	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
 // cvssImpactWarnTolerance — 0.05 on the impact scale ≈ 0.5 on CVSS 0-10.
 const cvssImpactWarnTolerance = 0.05
 
-// validOverrideTypes is the set of Override_Type enum values from the
-// hdf-amendments schema. Headless authoring is type-agnostic across all of them.
-var validOverrideTypes = map[string]bool{
-	"waiver":                 true,
-	"attestation":            true,
-	"poam":                   true,
-	"inherited":              true,
-	"falsePositive":          true,
-	"riskAdjustment":         true,
-	"operationalRequirement": true,
+// overrideTypeValues is the Override_Type enum from the hdf-amendments schema, in
+// the order help text should present it. Headless authoring is type-agnostic
+// across all of them.
+//
+// It is kept separate from the engine's DispositionValues on purpose: that one
+// answers "which override types may be FILTERED", this one "which may be
+// WRITTEN". They coincide today — every type is both — and a test asserts they
+// still do, so a genuine divergence has to be a deliberate edit rather than drift
+// between two hand-typed lists.
+var overrideTypeValues = []string{
+	string(hdf.OverrideTypeWaiver),
+	string(hdf.Attestation),
+	string(hdf.Poam),
+	string(hdf.Inherited),
+	string(hdf.FalsePositive),
+	string(hdf.RiskAdjustment),
+	string(hdf.OperationalRequirement),
 }
+
+// validOverrideTypes is the authoring gate, DERIVED from overrideTypeValues so
+// the accepted set and the advertised set cannot disagree.
+var validOverrideTypes = func() map[string]bool {
+	out := make(map[string]bool, len(overrideTypeValues))
+	for _, t := range overrideTypeValues {
+		out[t] = true
+	}
+	return out
+}()
+
+// OverrideTypeValues returns the override types headless authoring accepts.
+func OverrideTypeValues() []string { return overrideTypeValues }
+
+// OverrideTypeHelpVocabulary renders those types for flag help and command prose,
+// so neither carries a transcription of the list.
+func OverrideTypeHelpVocabulary() string { return strings.Join(overrideTypeValues, ", ") }
 
 // --- Headless create ---
 
@@ -412,6 +437,13 @@ func buildDraftFromResults(doc map[string]interface{}, amendType, statusFilter, 
 		return nil, fmt.Errorf("invalid override type %q", amendType)
 	}
 
+	// Validated here as well as at the flag, because an empty draft is a valid
+	// FILE: a typo used to be written out as a legitimate-looking draft with no
+	// stubs, which is worse than a command printing nothing.
+	if err := ValidateStatusFilter(statusFilter); err != nil {
+		return nil, err
+	}
+
 	resolvedExpiry, err := resolveDraftExpiry(expires, now)
 	if err != nil {
 		return nil, err
@@ -422,7 +454,7 @@ func buildDraftFromResults(doc map[string]interface{}, amendType, statusFilter, 
 
 	overrides := make([]map[string]interface{}, 0, len(reqs))
 	for _, r := range reqs {
-		if statusFilter != "" && r.Status != statusFilter {
+		if !StatusFilterMatches(statusFilter, r.Status) {
 			continue
 		}
 		if selectLower != "" && !matchesSelect(r, selectLower) {

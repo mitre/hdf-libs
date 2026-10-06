@@ -80,11 +80,18 @@ describe.skipIf(!hasGo())('parser cross-language equivalence (Go ↔ TS)', () =>
   }, 120_000);
 
   for (const { name, kind, path: fixturePath } of FIXTURES) {
+    // Generous per-case budget because each case SPAWNS the Go dumper, so its
+    // wall time tracks machine load as much as the work. The root `check` runs
+    // every package's suite concurrently under `pnpm -r`, and on a loaded
+    // machine the largest fixture has taken minutes against the default 5s
+    // budget while passing in ~600ms run alone. Parity is asserted by the diff,
+    // not by the clock, so a tight bound here buys nothing and costs a flaky
+    // gate; a real regression still shows up as a mismatch.
     it(`Go and TS parsers agree on ${name}`, () => {
       const raw = readFileSync(fixturePath, 'utf-8');
       const tsOutput = dumpParse(raw, kind);
       const goOutput = runGoDumper(kind, fixturePath);
       expect(goOutput).toEqual(tsOutput);
-    });
+    }, 120_000);
   }
 });

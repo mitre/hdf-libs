@@ -8,47 +8,31 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// canonicalFilters resolves the status and severity filters a read tool accepts
-// to the engine's schema spellings, or returns the refusal for the first
-// unrecognized value. An unvalidated typo matches nothing, which an agent cannot
-// tell apart from "asked and found none" — so every tool taking these filters
-// rejects at the boundary instead, and they all reject identically.
-func canonicalFilters(status, severity []string) (canonStatus, canonSeverity []string, refusal *sdkmcp.CallToolResult) {
-	canonStatus, refusal = canonicalFilterList(status, "status", hdfengine.CanonicalStatusFilter, hdfengine.StatusFilterValues())
-	if refusal != nil {
-		return nil, nil, refusal
-	}
-	canonSeverity, refusal = canonicalFilterList(severity, "severity", hdfengine.CanonicalSeverityFilter, hdfengine.SeverityFilterValues())
-	if refusal != nil {
-		return nil, nil, refusal
-	}
-	return canonStatus, canonSeverity, nil
-}
-
-func canonicalFilterList(values []string, field string, canonical func(string) (string, bool), legal []string) ([]string, *sdkmcp.CallToolResult) {
-	if len(values) == 0 {
-		return values, nil
-	}
-	out := make([]string, 0, len(values))
-	for _, v := range values {
-		c, ok := canonical(v)
-		if !ok {
-			return nil, argError(fmt.Sprintf("unknown %s %q", field, v),
-				fmt.Sprintf("use %s %s", field, orList(legal)))
+// refuseUnknownStatusSeverity returns the refusal for the first status or
+// severity value outside its closed vocabulary, or nil when every value is
+// understood. A value the vocabulary does not hold matches nothing and reports a
+// clean run, which reads to an agent as "asked and found none" rather than as
+// the mistake it is.
+//
+// hdf_query and hdf_aggregate share it so the same typo draws the same refusal
+// from either tool: the two advertise the same two filters, and a reader
+// comparing their answers has no way to tell a strict tool from a lenient one.
+func refuseUnknownStatusSeverity(status, severity []string) *sdkmcp.CallToolResult {
+	for _, c := range []struct {
+		field  string
+		values []string
+		valid  func(string) bool
+		legal  []string
+	}{
+		{"status", status, hdfengine.ValidStatus, hdfengine.StatusValues},
+		{"severity", severity, hdfengine.ValidSeverity, hdfengine.SeverityValues},
+	} {
+		for _, v := range c.values {
+			if !c.valid(v) {
+				return argError(fmt.Sprintf("unknown %s %q", c.field, v),
+					fmt.Sprintf("%s accepts only: %s", c.field, strings.Join(c.legal, ", ")))
+			}
 		}
-		out = append(out, c)
 	}
-	return out, nil
-}
-
-// orList renders a closed vocabulary the way the other argument refusals do
-// ("system, plan, evidence, or amendments").
-func orList(values []string) string {
-	switch len(values) {
-	case 0:
-		return ""
-	case 1:
-		return values[0]
-	}
-	return strings.Join(values[:len(values)-1], ", ") + ", or " + values[len(values)-1]
+	return nil
 }

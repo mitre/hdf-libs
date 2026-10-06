@@ -6,6 +6,8 @@ import {
   governingStatusOverride,
   governingOverrideIndex,
   computeEffectiveStatus,
+  computeEffectiveImpact,
+  type EffectiveStatusInput,
 } from '../src/status/index.js';
 
 const REF = '2026-01-01T00:00:00Z';
@@ -225,4 +227,121 @@ describe('computeEffectiveStatus', () => {
       })
     ).toBe('notApplicable');
   });
+});
+
+// The impact twin of the status ladder. The schema has always defined
+// effectiveImpact as "the most recent non-expired override with an impact
+// field", and governingOverrideIndex was generalized for exactly that, but
+// nothing computed it — so a riskAdjustment was invisible to every consumer
+// asking about impact. Parity: TestComputeEffectiveImpact in go/status_test.go.
+describe('computeEffectiveImpact', () => {
+  const adjustment = (impact: number, appliedAt: string, expiresAt?: string) => ({
+    impact,
+    appliedAt,
+    ...(expiresAt ? { expiresAt } : {}),
+  });
+
+  const cases: { name: string; input: EffectiveStatusInput; want: number }[] = [
+    { name: 'no overrides falls back to the raw impact', input: { impact: 0.9 }, want: 0.9 },
+    {
+      name: 'a governing adjustment wins',
+      input: { impact: 0.9, overrides: [adjustment(0.3, APPLIED_OLD, FAR_FUTURE)] },
+      want: 0.3,
+    },
+    {
+      name: 'an expired adjustment does not',
+      input: { impact: 0.9, overrides: [adjustment(0.3, APPLIED_OLD, LONG_AGO)] },
+      want: 0.9,
+    },
+    {
+      name: 'the most recently applied of several wins',
+      input: { impact: 0.9, overrides: [adjustment(0.3, APPLIED_OLD), adjustment(0.5, APPLIED_NEW)] },
+      want: 0.5,
+    },
+    {
+      name: 'an override carrying no impact is not eligible',
+      input: { impact: 0.9, overrides: [{ status: 'passed', appliedAt: APPLIED_NEW }] },
+      want: 0.9,
+    },
+    {
+      // Eligibility is per-field: a waiver adjudicates status and says nothing
+      // about impact, so the older adjustment still governs impact.
+      name: 'a status override newer than the impact one does not displace it',
+      input: {
+        impact: 0.9,
+        overrides: [adjustment(0.3, APPLIED_OLD), { status: 'passed', appliedAt: APPLIED_NEW }],
+      },
+      want: 0.3,
+    },
+    {
+      // Why impact is optional rather than defaulted: 0 is a legitimate re-score
+      // meaning "no longer applicable", and a default could not tell it from
+      // "this override carries no impact".
+      name: 'an adjustment to zero is honoured, not treated as absent',
+      input: { impact: 0.9, overrides: [adjustment(0, APPLIED_OLD)] },
+      want: 0,
+    },
+  ];
+
+  for (const c of cases) {
+    it(c.name, () => {
+      expect(computeEffectiveImpact(c.input, REF)).toBeCloseTo(c.want, 5);
+    });
+  }
+});
+
+// Parity: TestComputeEffectiveStatus_Rung3IgnoresImpactOverrides in go/.
+// Rung 3 (impact 0 -> notApplicable) reads the requirement's OWN impact and
+// deliberately ignores an impact override. Rung 3 asks whether the control was
+// in scope, which the profile author states at authoring time; effective impact
+// asks how much risk it carries now, which an assessor states at adjudication
+// time. See status-determination.md, "Settled — rung 3 reads the requirement's
+// own impact, deliberately".
+// CHARACTERIZATION: these pin behaviour that already shipped, so they passed the
+// moment they were written and were NOT red-first. Mutation stands in for the
+// red step — changing rung 3 to read computeEffectiveImpact fails the second and
+// third cases. The first and fourth are mutation-invariant on purpose: they pin
+// the adjacent rungs so the decision reads in context.
+describe('computeEffectiveStatus — rung 3 ignores impact overrides', () => {
+  const adjust = (impact: number) => ({
+    impact,
+    appliedAt: APPLIED_OLD,
+    expiresAt: FAR_FUTURE,
+  });
+  const waived = { status: 'notApplicable', appliedAt: APPLIED_OLD, expiresAt: FAR_FUTURE };
+
+  const cases: { name: string; input: EffectiveStatusInput; want: string }[] = [
+    {
+      // InSpec supplies no pass/fail for an impact-0 control, so rung 3 is the
+      // only thing distinguishing "reviewed, not applicable" from "no data".
+      name: 'an authored impact of 0 with no results is notApplicable, not notReviewed',
+      input: { impact: 0 },
+      want: 'notApplicable',
+    },
+    {
+      name: 'an adjustment to 0 leaves a real finding failing — it is re-scored, not closed',
+      input: { impact: 0.7, resultStatuses: ['failed'], overrides: [adjust(0)] },
+      want: 'failed',
+    },
+    {
+      // The mirror: raising the impact of an out-of-scope control does not bring
+      // it into scope either. Rung 3 reads the authored value only.
+      name: 'an adjustment away from 0 does not make an out-of-scope control applicable',
+      input: { impact: 0, overrides: [adjust(0.9)] },
+      want: 'notApplicable',
+    },
+    {
+      // An override that DOES carry a status is making a scope claim, and rung 1
+      // lets it win — that is the sanctioned way to say this.
+      name: 'a status-carrying override still outranks the authored impact',
+      input: { impact: 0.7, resultStatuses: ['failed'], overrides: [waived] },
+      want: 'notApplicable',
+    },
+  ];
+
+  for (const c of cases) {
+    it(c.name, () => {
+      expect(computeEffectiveStatus(c.input, REF)).toBe(c.want);
+    });
+  }
 });

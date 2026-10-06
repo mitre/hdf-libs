@@ -565,3 +565,31 @@ describe('veracode unrated severity marker (CWE path)', () => {
     expect(info.tags!['severity_rating']).toBeUndefined();
   });
 });
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose. Veracode's two halves have two instances: a static
+// flaw sits at a source location (resource "file", resourceId the
+// sourcefilepath+sourcefile:line locus), an SCA finding on a third-party
+// component (resource "component", resourceId its component_id).
+describe('veracode result instance identity', () => {
+  it('sets a static flaw result to its source locus', async () => {
+    const hdf = JSON.parse(await convertVeracodeToHdf(loadFixture('veracode.xml'))) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === '18')!;
+
+    expect(req.results).toHaveLength(2);
+    expect(req.results.map((r) => r.resource)).toEqual(['file', 'file']);
+    expect(req.results.map((r) => r.resourceId)).toEqual([
+      'com/veracode/verademo/controller/ToolsController.java:53',
+      'com/veracode/verademo/controller/ToolsController.java:83',
+    ]);
+  });
+
+  it('sets an SCA result to its component_id', async () => {
+    const hdf = JSON.parse(await convertVeracodeToHdf(loadFixture('veracode.xml'))) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'CVE-2012-5783')!;
+
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.resource).toBe('component');
+    expect(req.results[0]!.resourceId).toBe('1793362a-098a-47f2-95e8-0565117aa7fd');
+  });
+});

@@ -272,6 +272,13 @@ function buildSiteRequirements(site: ZapSite, startTime: Date): EvaluatedRequire
           codeDesc: buildCodeDesc(instance),
           startTime,
         };
+        // The instance identity is the URL the alert fired against; uri is
+        // optional in ZAP's report schema, and an instance without one names no
+        // resource at all, so the fields stay unset rather than invented.
+        if (instance.uri) {
+          result.resource = 'url';
+          result.resourceId = instance.uri;
+        }
         if (instance.attack) {
           result.message = instance.attack;
         }

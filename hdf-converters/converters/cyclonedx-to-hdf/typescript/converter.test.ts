@@ -866,3 +866,53 @@ describe('unrated-severity marker', () => {
     }
   });
 });
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose: for cyclonedx the instance is the affected
+// component, so resource is "component" and resourceId is that component's purl,
+// falling back to its bom-ref (purl is optional in CycloneDX) and, for a VEX
+// document with no components[], to the unresolved ref CycloneDX published.
+describe('cyclonedx result instance identity', () => {
+  it('sets resource and resourceId to the affected component purl', async () => {
+    const hdf = JSON.parse(
+      await convertCyclonedxToHdf(loadFixture('dropwizard-vulns.json')),
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'GHSA-5mg8-w23w-74h3')!;
+
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.resource).toBe('component');
+    expect(req.results[0]!.resourceId).toBe('pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar');
+
+    // The purl the result now names is also the package data the requirement
+    // used to drop: affectedPackages was undefined for every cyclonedx requirement.
+    expect(req.affectedPackages).toEqual([
+      {
+        purl: 'pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar',
+        name: 'guava',
+        version: '24.1.1-jre',
+        ecosystem: 'maven',
+      },
+    ]);
+  });
+
+  it('falls back to the bom-ref when the component carries no purl', async () => {
+    const hdf = JSON.parse(
+      await convertCyclonedxToHdf(loadFixture('minimal-vulns.json')),
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'GHSA-5mg8-w23w-74h3')!;
+
+    expect(req.results[0]!.resource).toBe('component');
+    expect(req.results[0]!.resourceId).toBe('1a021b8e-d143-4072-84f0-0e18292f1967');
+    expect(req.affectedPackages).toBeUndefined();
+  });
+
+  it('uses the unresolved ref as the identity for a VEX document', async () => {
+    const hdf = JSON.parse(await convertCyclonedxToHdf(loadFixture('vex.json'))) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'CVE-2020-25649')!;
+
+    expect(req.results[0]!.resource).toBe('component');
+    expect(req.results[0]!.resourceId).toBe(
+      'urn:cdx:3e671687-395b-41f5-a30f-a58921a69b79/1#pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.10.0?type=jar',
+    );
+  });
+});

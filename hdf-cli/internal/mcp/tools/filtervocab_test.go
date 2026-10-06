@@ -22,26 +22,6 @@ func argRefusal(t *testing.T, res *sdkmcp.CallToolResult) (message, nextCall str
 	return payload.Error, payload.NextCall
 }
 
-func TestOrList(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []string
-		want string
-	}{
-		{"empty", nil, ""},
-		{"one", []string{"passed"}, "passed"},
-		{"two", []string{"passed", "failed"}, "passed, or failed"},
-		{"five", []string{"critical", "high", "medium", "low", "informational"}, "critical, high, medium, low, or informational"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := orList(tt.in); got != tt.want {
-				t.Errorf("orList(%v) = %q, want %q", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
 // query-results.json holds exactly five requirements, one per bucket:
 // V-PASS-01 (passed, high), V-FAIL-CRIT-02 (failed, critical),
 // V-FAIL-MED-03 (failed, medium), V-NA-04 (notApplicable, informational) and
@@ -58,7 +38,7 @@ func TestAggregate_UnknownStatusRefused(t *testing.T) {
 	if message != `unknown status "bogus_value"` {
 		t.Errorf("message = %q, want `unknown status \"bogus_value\"`", message)
 	}
-	if nextCall != "use status passed, failed, notApplicable, notReviewed, or error" {
+	if nextCall != "status accepts only: passed, failed, notApplicable, notReviewed, error" {
 		t.Errorf("nextCall = %q, want the legal status values", nextCall)
 	}
 	if out.Aggregate.Total != 0 || len(out.PerSource) != 0 {
@@ -76,7 +56,7 @@ func TestAggregate_UnknownSeverityRefused(t *testing.T) {
 	if message != `unknown severity "catastrophic"` {
 		t.Errorf("message = %q, want `unknown severity \"catastrophic\"`", message)
 	}
-	if nextCall != "use severity critical, high, medium, low, or informational" {
+	if nextCall != "severity accepts only: critical, high, medium, low, informational" {
 		t.Errorf("nextCall = %q, want the legal severity values", nextCall)
 	}
 	if out.Aggregate.Total != 0 {
@@ -94,6 +74,26 @@ func TestAggregate_UnknownStatusAmongValidOnesRefused(t *testing.T) {
 	}
 	if message, _ := argRefusal(t, res); message != `unknown status "fail"` {
 		t.Errorf("message = %q, want the unknown entry named", message)
+	}
+}
+
+// The two tools share one refusal, so the same typo cannot draw a refusal from
+// one and a clean empty answer — or differently worded advice — from the other.
+func TestQueryAndAggregateRefuseTheSameValueIdentically(t *testing.T) {
+	srcs := sourcesUnderRoot(t, "query-results.json")
+	aggRes, _ := callAggregate(t, aggregateInput{Sources: srcs, Status: []string{"faild"}})
+	queryRes, _ := callQuery(t, queryInput{Source: handle.Source{Path: "query-results.json"}, Status: []string{"faild"}})
+	if aggRes == nil || !aggRes.IsError || queryRes == nil || !queryRes.IsError {
+		t.Fatal("both tools must refuse the same unknown status")
+	}
+	aggMessage, aggNext := argRefusal(t, aggRes)
+	queryMessage, queryNext := argRefusal(t, queryRes)
+	if aggMessage != queryMessage || aggNext != queryNext {
+		t.Errorf("refusals differ:\n  hdf_aggregate: %q / %q\n  hdf_query:     %q / %q",
+			aggMessage, aggNext, queryMessage, queryNext)
+	}
+	if aggMessage != `unknown status "faild"` {
+		t.Errorf("message = %q, want `unknown status \"faild\"`", aggMessage)
 	}
 }
 
@@ -148,52 +148,5 @@ func TestAggregate_SeverityNoneAliasAccepted(t *testing.T) {
 	}
 	if got := out.Aggregate.Counts["no_impact"]["informational"]; got != 1 {
 		t.Errorf("no_impact/informational = %d, want 1 (V-NA-04)", got)
-	}
-}
-
-// hdf_query shares the refusal with hdf_aggregate, so the two sibling tools give
-// an agent the same answer for the same bad filter.
-func TestQuery_UnknownStatusRefused(t *testing.T) {
-	path := writeRoot(t, "query-results.json", readToolsFixture(t, "query-results.json"))
-	res, out := callQuery(t, queryInput{Source: handle.Source{Path: path}, Status: []string{"bogus_value"}})
-	if res == nil || !res.IsError {
-		t.Fatal("an unknown status must be refused with an isError result")
-	}
-	message, nextCall := argRefusal(t, res)
-	if message != `unknown status "bogus_value"` {
-		t.Errorf("message = %q, want the same wording hdf_aggregate uses", message)
-	}
-	if nextCall != "use status passed, failed, notApplicable, notReviewed, or error" {
-		t.Errorf("nextCall = %q, want the legal status values", nextCall)
-	}
-	if len(out.Requirements) != 0 {
-		t.Errorf("a refused query must return no rows, got %d", len(out.Requirements))
-	}
-}
-
-func TestQuery_UnknownSeverityRefused(t *testing.T) {
-	path := writeRoot(t, "query-results.json", readToolsFixture(t, "query-results.json"))
-	res, _ := callQuery(t, queryInput{Source: handle.Source{Path: path}, Severity: []string{"catastrophic"}})
-	if res == nil || !res.IsError {
-		t.Fatal("an unknown severity must be refused with an isError result")
-	}
-	if message, _ := argRefusal(t, res); message != `unknown severity "catastrophic"` {
-		t.Errorf("message = %q, want the same wording hdf_aggregate uses", message)
-	}
-}
-
-// The accepted spellings reach the engine canonicalized, so a snake_case filter
-// returns the row the schema spelling returns rather than nothing.
-func TestQuery_StatusAliasSelectsTheSameRow(t *testing.T) {
-	path := writeRoot(t, "query-results.json", readToolsFixture(t, "query-results.json"))
-	res, out := callQuery(t, queryInput{Source: handle.Source{Path: path}, Status: []string{"not_applicable"}})
-	if res != nil && res.IsError {
-		t.Fatalf("not_applicable is an accepted spelling: %s", payloadText(t, res))
-	}
-	if out.Total != 1 {
-		t.Fatalf("not_applicable total = %d, want 1 (V-NA-04 only)", out.Total)
-	}
-	if got := out.Requirements[0]["id"]; got != "V-NA-04" {
-		t.Errorf("matched id = %v, want V-NA-04 (V-PASS-01, V-FAIL-CRIT-02, V-FAIL-MED-03 and V-ERR-LOW-05 are excluded)", got)
 	}
 }

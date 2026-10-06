@@ -1,0 +1,61 @@
+# hdf-to-html assets — provenance
+
+These three files are the report's only stylesheet and script. Go embeds them
+with //go:embed and the TypeScript peer's `typescript/assets.ts` is generated
+from them (`pnpm --filter @mitre/hdf-converters run generate`), so the two
+languages cannot drift. `go/assets_test.go` fails if either copy differs from
+the file.
+
+They live under `go/` because //go:embed cannot reach outside its own package
+directory; this follows `converters/oscal-to-hdf/go/oscal-vocabulary.json`,
+which is likewise a shared source of truth kept beside the Go package that
+embeds it.
+
+## `blades.min.css` — vendored, third party, byte-exact
+
+- Package: `@anyblades/pico`, version `2.5.0`, from the npm registry
+  (`npm pack @anyblades/pico@2.5.0`), file `css/blades.min.css` inside the
+  tarball. This is the combined Pico + Blades build: the banner reads "Blades
+  CSS v2.4" over "Pico CSS v2.5", and `.breakout`, `.timeline`, `.columns`,
+  `.responsive`, `.borderless`, `.markerless` and `.dark-auto` are all present.
+  In 2.4.2 the same build was published as `css/pico.blades.min.css`; 2.5.0
+  renamed it and added `pico.conditional[.min].css`.
+- sha256 of the file as retrieved: `470576422d0e01a8e7596655c10bd841885a840fd280db9ee3d53ef56f194ca7`
+- Size: 92676 bytes.
+- Retrieved: 2026-10-04.
+- License: MIT. "Copyright (c) 2019-2025 Pico", "Copyright (c) 2026
+  Pico+Blades" (`LICENSE.md` in the same tarball). The file carries its own
+  copyright and licence banner, which is why it is embedded unedited and not
+  minified further.
+- Upstream: https://github.com/anyblades/pico — https://blades.ninja/css/pico/
+
+Facts this report relies on, re-checked against 2.5.0 rather than carried over
+from the 2.4 research: the file declares no `@media print` rule at all (so the
+report's print block is wholly its own), names no `@font-face` and no `@import`,
+and every one of its 14 `url()`s is a `data:` URI, so it fetches nothing. Its
+theme scopes moved from `:root` to `:scope` between 2.4 and 2.5 — equivalent at
+document level, and `report.css` declares its own palette under the matching
+three scopes so a forced theme moves both palettes together.
+
+The file is never edited. Anything it does not provide — the status and severity
+palette, the dashboard, the print rules — is added in `report.css`, after it, and
+is driven through `--pico-*` variables rather than by overriding Blades
+selectors. Upgrading means replacing this file with a newer release of the same
+package and re-recording the lines above.
+
+## `report.css` — ours
+
+The report layer. Carries the status/severity tokens Blades does not ship
+(`--pico-s-*` solid, `--pico-t-*` tint, in Pico's own three theme scopes), the
+dashboard and requirement layout, and the `@media print` block — Pico and Blades
+ship no print rules at all, so that block is the report's own. It also raises two
+of Pico's own tokens that fall short of WCAG 2.2 AA where the report uses them;
+the reason is recorded beside each.
+
+## `report.js` — ours
+
+The only script the report carries: the light/dark toggle, opening every
+disclosure for printing, and the results filter. The content security policy in
+every report admits this script by sha256 and nothing else; the hash is computed
+from these bytes rather than written down (`go/assets.go`), and
+`go/assets_test.go` recomputes it.

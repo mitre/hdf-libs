@@ -1,21 +1,17 @@
 name: CI
 
+# NO path filter on either trigger, deliberately. Only this workflow reports the
+# three checks the main ruleset requires, so a PR whose every changed file matched
+# a filter sits BLOCKED on statuses that can never arrive. A same-name stub
+# workflow does not rescue it either: GitHub path filters match "any changed
+# file", not "all", so a mixed doc+code PR fires both and two runs claim one
+# required check name. This repo is public; minutes are free, latency isn't.
 on:
   push:
     # Scoped to main so a branch with an open PR doesn't run CI twice per
     # update (once for the branch push, once for the PR synchronize).
     branches: [main]
-    # '**.md' is deliberately NOT ignored: only this workflow reports the checks
-    # the ruleset requires, so a Markdown-only PR would stay BLOCKED forever.
-    paths-ignore:
-      - 'docs/**'
-      - '.beads/**'
-      - 'LICENSE*'
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '.beads/**'
-      - 'LICENSE*'
 
 permissions:
   contents: read
@@ -142,6 +138,10 @@ jobs:
           tar xzf "$tmp/zizmor.tar.gz" -C "$tmp" zizmor
           "$tmp/zizmor" --no-exit-codes --format sarif .github/workflows/ \
             > scan-artifacts/zizmor.sarif
+      # release.yml's version assertion cannot run here (no goreleaser dist),
+      # so its test runs instead — the script needs only bash and jq.
+      - name: The release version assertion still asserts
+        run: bash scripts/check-release-version.test.sh
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-workflows
@@ -348,6 +348,11 @@ jobs:
       # breaks for consumers, so scan every built dist before anything ships.
       - name: Published packages declare every runtime import
         run: pnpm run lint:published-deps
+      # The pre-commit hook runs this too, but --no-verify and a clone without
+      # husky both skip it, and a stale pin fails the audit on whatever
+      # unrelated PR runs next — so the gate has to live here as well.
+      - name: Dependency overrides are range-targeted and documented
+        run: pnpm run lint:overrides
       # One eslint.config.mjs at the root governs every package, so one
       # invocation covers the workspace. eslint exits 1 on findings — the gate's
       # threshold is what judges those — so only a fatal tool error fails here.

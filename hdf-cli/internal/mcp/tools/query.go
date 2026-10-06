@@ -32,17 +32,30 @@ type queryInput struct {
 	Sources   []handle.Source `json:"sources,omitempty" jsonschema:"instead of source: several results documents combined as one set, each {path} or {handle}"`
 	Status    []string        `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
 	Severity  []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
-	Impact    string          `json:"impact,omitempty" jsonschema:"comparison e.g. >0.5, =0"`
+	Impact    string          `json:"impact,omitempty" jsonschema:"effective impact (after overrides); e.g. >0.5, =0"`
+	RawImpact string          `json:"rawImpact,omitempty" jsonschema:"impact before overrides; same grammar"`
+	Cvss      string          `json:"cvss,omitempty" jsonschema:"CVSS score, computed else base, highest entry; e.g. >=7"`
+	Epss      string          `json:"epss,omitempty" jsonschema:"EPSS exploit probability (not percentile); e.g. >=0.5"`
+	Kev       string          `json:"kev,omitempty" jsonschema:"CISA known-exploited: true | false (false includes no KEV data)"`
+	Cwe       []string        `json:"cwe,omitempty" jsonschema:"CWE ids (OR); reads cwe[] only, not tags"`
 	CCI       []string        `json:"cci,omitempty"`
 	NIST      []string        `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
-	ID        string          `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title"`
+	ID        string          `json:"id,omitempty" jsonschema:"requirement/STIG ID, GID, or group title; exact by default, a * or ? wildcard globs"`
 	Tag       []string        `json:"tag,omitempty" jsonschema:"key:value (OR)"`
 	Search    string          `json:"search,omitempty" jsonschema:"text match over id/title/descriptions"`
 	Baseline  string          `json:"baseline,omitempty" jsonschema:"baseline name, glob allowed"`
-	Verbosity string          `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
-	Limit     int             `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
-	Page      int             `json:"page,omitempty" jsonschema:"0-based page when truncated"`
-	Fields    []string        `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
+	// Labels live on the BASELINE, so this selects every requirement in a
+	// baseline carrying one. A baseline with no labels matches nothing.
+	BaselineLabel []string `json:"baselineLabel,omitempty" jsonschema:"baseline labels as key:value, glob on value (OR)"`
+	// The amendments layer: what adjudicated the requirement, and whether a
+	// remediation plan is still in force.
+	Disposition []string `json:"disposition,omitempty" jsonschema:"governing override or POA&M type, most recent unexpired; a plan reports poam: waiver|attestation|poam|inherited|falsePositive|riskAdjustment|operationalRequirement (OR)"`
+	PoamType    []string `json:"poamType,omitempty" jsonschema:"kind of the governing POA&M: remediation|mitigation|riskAcceptance|vendorDependency (OR); disposition reports every plan as poam"`
+	Poams       string   `json:"poams,omitempty" jsonschema:"valid | none-valid (none, empty, or lapsed)"`
+	Verbosity   string   `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
+	Limit       int      `json:"limit,omitempty" jsonschema:"cap on rows (0 = all)"`
+	Page        int      `json:"page,omitempty" jsonschema:"0-based page when truncated"`
+	Fields      []string `json:"fields,omitempty" jsonschema:"opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation"`
 }
 
 // correlationProjectors is the bounded correlation set (bead-established): the
@@ -196,17 +209,59 @@ func RegisterQuery(s *sdkmcp.Server, ldr *loader.Loader) {
 // paginated result set.
 func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput] {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in queryInput) (*sdkmcp.CallToolResult, queryOutput, error) {
-		if in.Impact != "" && !hdfengine.ValidImpactFilter(in.Impact) {
-			return argError(fmt.Sprintf("invalid impact filter %q", in.Impact),
-				"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
+		// Every filter value is validated before any document is read: a value
+		// outside its vocabulary would match nothing and report a clean run,
+		// which reads to an agent as "asked and found none" rather than as the
+		// mistake it is. Same refusals the CLI makes, through the same helpers.
+		if in.Kev != "" && !hdfengine.ValidKevFilter(in.Kev) {
+			return argError(fmt.Sprintf("unknown kev filter %q", in.Kev),
+				"kev accepts only: true, false"), errorQueryOutput(), nil
+		}
+		for _, c := range []struct{ field, comparison string }{
+			{"impact", in.Impact},
+			{"rawImpact", in.RawImpact},
+			{"cvss", in.Cvss},
+			{"epss", in.Epss},
+		} {
+			if c.comparison != "" && !hdfengine.ValidImpactFilter(c.comparison) {
+				return argError(fmt.Sprintf("invalid %s filter %q", c.field, c.comparison),
+					"use a comparison like >0.5, >=0.7, <0.5, or =0"), errorQueryOutput(), nil
+			}
+		}
+		if refusal := refuseUnknownStatusSeverity(in.Status, in.Severity); refusal != nil {
+			return refusal, errorQueryOutput(), nil
+		}
+		for _, v := range in.PoamType {
+			if !hdfengine.ValidPoamType(v) {
+				return argError(fmt.Sprintf("unknown poamType %q", v),
+					fmt.Sprintf("poamType accepts only: %s", strings.Join(hdfengine.PoamTypeValues, ", "))), errorQueryOutput(), nil
+			}
+		}
+		for _, v := range in.Tag {
+			if !hdfengine.ValidTag(v) {
+				return argError(fmt.Sprintf("malformed tag %q", v),
+					"tag takes a key:value expression, e.g. nist:AC-2"), errorQueryOutput(), nil
+			}
+		}
+		for _, v := range in.BaselineLabel {
+			if !hdfengine.ValidBaselineLabel(v) {
+				return argError(fmt.Sprintf("malformed baselineLabel %q", v),
+					"baselineLabel takes a key:value expression, e.g. environment:production"), errorQueryOutput(), nil
+			}
+		}
+		for _, d := range in.Disposition {
+			if !hdfengine.ValidDisposition(d) {
+				return argError(fmt.Sprintf("unknown disposition %q", d),
+					fmt.Sprintf("disposition accepts only: %s", strings.Join(hdfengine.DispositionValues, ", "))), errorQueryOutput(), nil
+			}
+		}
+		if in.Poams != "" && !hdfengine.ValidPoamFilter(in.Poams) {
+			return argError(fmt.Sprintf("unknown poams filter %q", in.Poams),
+				fmt.Sprintf("poams accepts only: %s or %s", hdfengine.PoamValid, hdfengine.PoamNoneValid)), errorQueryOutput(), nil
 		}
 		if f, ok := unknownCorrelationField(in.Fields); ok {
 			return argError(fmt.Sprintf("unknown correlation field %q", f),
 				fmt.Sprintf("fields accepts only: %s", strings.Join(correlationFieldNames, ", "))), errorQueryOutput(), nil
-		}
-		status, severity, refusal := canonicalFilters(in.Status, in.Severity)
-		if refusal != nil {
-			return refusal, errorQueryOutput(), nil
 		}
 		view, terr, err := resolveView(in.Source, in.Sources, ldr, singleSourceErrors{
 			WrongDocType: wrongDocTypeForQuery,
@@ -225,9 +280,12 @@ func hdfQuery(ldr *loader.Loader) sdkmcp.ToolHandlerFor[queryInput, queryOutput]
 
 		results := view.Results
 		matches := hdfengine.Filter(ctx, results, hdfengine.Options{
-			Status: status, Severity: severity, Impact: in.Impact,
-			CCI: in.CCI, NIST: in.NIST, ID: in.ID, Tag: in.Tag,
-			Search: in.Search, Baseline: in.Baseline,
+			Status: hdfengine.In(in.Status...), Severity: hdfengine.In(in.Severity...), Impact: in.Impact,
+			RawImpact: in.RawImpact,
+			Cvss:      in.Cvss, Epss: in.Epss, Kev: in.Kev, Cwe: hdfengine.In(in.Cwe...),
+			CCI: hdfengine.In(in.CCI...), NIST: hdfengine.In(in.NIST...), ID: in.ID, Tag: hdfengine.In(in.Tag...),
+			Search: in.Search, Baseline: in.Baseline, BaselineLabel: hdfengine.In(in.BaselineLabel...),
+			Disposition: hdfengine.In(in.Disposition...), PoamType: hdfengine.In(in.PoamType...), Poams: in.Poams,
 			Count:    true, // return every match; the tool applies limit + token paging
 			StatusOf: shared.RequirementEffectiveStatus,
 		})

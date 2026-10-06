@@ -139,60 +139,79 @@ func RegisterConvert(s *sdkmcp.Server, ldr *loader.Loader) {
 
 func hdfConvert(ldr *loader.Loader) sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
+		if res := refuseBadComponentID(in.ComponentID); res != nil {
+			return res, convertOutput{}, nil
+		}
 		if len(in.Sources) > 0 || in.Directory != "" {
 			return hdfConvertBatch(ctx, ldr, in)
 		}
-		data, terr := rawInput(in.Source, in.Content)
-		if terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-		conv, terr := resolveConverter(in.From, data)
-		if terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-
-		hdfBytes, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
-		if terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-
-		// Refuse schema-invalid output — never write or hand back a bad artifact (§13).
-		if terr := refuseInvalidResults(hdfBytes); terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-
-		out := convertSummary(hdfBytes)
-
-		// Never overwrite the source being converted, even with overwrite set —
-		// that would destroy the input mid-read (hdf_convert source=x output=x).
-		if in.Source != nil {
-			if terr := refuseOverwritingInput(in.Output, in.Source.Path); terr != nil {
-				return toolError(terr), convertOutput{}, nil
-			}
-		}
-
-		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, hdfBytes)
-		if werr != nil {
-			return toolError(werr), convertOutput{}, nil
-		}
-		out.OutputPath = writtenPath
-		if notice != "" {
-			out.Notice = notice
-			out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
-		}
-
-		// Register the converted document in the content cache and mint the handle
-		// against the ACTUAL written path — empty when nothing was written, which
-		// routes resolution to the in-memory cache so the handle is consumable
-		// even with writes disabled (jobi.1 / D1).
-		out.Notice = appendNotice(out.Notice, registerProduced(ldr, hdfBytes, writtenPath))
-		encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version()))
-		if herr != nil {
-			return nil, convertOutput{}, fmt.Errorf("encoding handle: %w", herr)
-		}
-		out.Handle = encoded
-		return nil, out, nil
+		return hdfConvertSingle(ldr, in)
 	}
+}
+
+// refuseBadComponentID rejects a componentId that is set but not a UUID, before any input is read.
+func refuseBadComponentID(componentID string) *sdkmcp.CallToolResult {
+	if componentID == "" {
+		return nil
+	}
+	if err := hdfdoc.ValidateComponentID(componentID); err != nil {
+		return argError(err.Error(), "pass componentId as an RFC 4122 UUID, or omit it")
+	}
+	return nil
+}
+
+// hdfConvertSingle converts one source or inline content and returns its summary and handle.
+func hdfConvertSingle(ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
+	data, terr := rawInput(in.Source, in.Content)
+	if terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+	conv, terr := resolveConverter(in.From, data)
+	if terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+
+	hdfBytes, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
+	if terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+
+	// Refuse schema-invalid output — never write or hand back a bad artifact (§13).
+	if terr := refuseInvalidResults(hdfBytes); terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+
+	out := convertSummary(hdfBytes)
+
+	// Never overwrite the source being converted, even with overwrite set —
+	// that would destroy the input mid-read (hdf_convert source=x output=x).
+	if in.Source != nil {
+		if terr := refuseOverwritingInput(in.Output, in.Source.Path); terr != nil {
+			return toolError(terr), convertOutput{}, nil
+		}
+	}
+
+	writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, hdfBytes)
+	if werr != nil {
+		return toolError(werr), convertOutput{}, nil
+	}
+	out.OutputPath = writtenPath
+	if notice != "" {
+		out.Notice = notice
+		out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
+	}
+
+	// Register the converted document in the content cache and mint the handle
+	// against the ACTUAL written path — empty when nothing was written, which
+	// routes resolution to the in-memory cache so the handle is consumable
+	// even with writes disabled (jobi.1 / D1).
+	out.Notice = appendNotice(out.Notice, registerProduced(ldr, hdfBytes, writtenPath))
+	encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version()))
+	if herr != nil {
+		return nil, convertOutput{}, fmt.Errorf("encoding handle: %w", herr)
+	}
+	out.Handle = encoded
+	return nil, out, nil
 }
 
 // hdfConvertBatch converts many source files in one call: it auto-detects each

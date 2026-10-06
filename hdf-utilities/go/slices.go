@@ -9,6 +9,18 @@ const DefaultMaxItems = 100000
 // floatPtr, and ptr[T] helpers.
 func Ptr[T any](v T) *T { return &v }
 
+// Deref reads the value behind a pointer, or the zero value when it is nil.
+// The inverse of Ptr, and the replacement for per-converter deref/derefString
+// helpers; a named string type keeps its type, so call sites that want a plain
+// string convert the result.
+func Deref[T any](p *T) T {
+	if p == nil {
+		var zero T
+		return zero
+	}
+	return *p
+}
+
 // LimitSlice returns at most maxItems elements from items. The second return
 // value is true if the slice was truncated. If maxItems <= 0, DefaultMaxItems
 // is used.

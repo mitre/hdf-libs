@@ -90,6 +90,28 @@ func TestNames_DottedStemsDoNotCrossCollide(t *testing.T) {
 	assert.Len(t, uniq(got), 4, "every input must get its own output name")
 }
 
+// A colliding group alongside an unrelated input: only the group is numbered,
+// and the bystander keeps its plain name.
+func TestNames_CollidingGroupBesideADistinctInput(t *testing.T) {
+	got, err := Names([]string{"scans/host1/results.json", "scans/host2/results.json", "scans/other.json"}, "html")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"results.1.hdf.html", "results.2.hdf.html", "other.hdf.html"}, got)
+}
+
+// An input whose own file name looks like a qualified name is just another stem:
+// it collides with nothing and no longer has to be refused, which is what
+// replacing the directory-prefix scheme bought.
+func TestNames_InputNamedLikeAQualifiedNameIsNotACollision(t *testing.T) {
+	got, err := Names([]string{
+		"scans/host1/results.json",
+		"scans/host2/results.json",
+		"scans/host1--results.json",
+	}, "html")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"results.1.hdf.html", "results.2.hdf.html", "host1--results.hdf.html"}, got)
+	assert.Len(t, uniq(got), 3)
+}
+
 // The same file named twice is one conversion, not a collision: it keeps one
 // unnumbered name, as the CLI has always tolerated a repeated argument.
 func TestNames_RepeatedInputTolerated(t *testing.T) {

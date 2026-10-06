@@ -1354,3 +1354,59 @@ describe('SAR component map group numbering', () => {
     expect(subjectGroupKeys(components[0].props as SarProp[], prefix), c.why).toStrictEqual(c.order);
   });
 });
+
+// Parity: TestConvertHDFToOSCALSAR_GoverningOverrideNotArrayPosition in go/.
+// Three sites took statusOverrides[0] as the governing override. Nothing sorts
+// that array and this repo's writers append, so on a document amended twice the
+// newest override is last. riskDeadline was the worst: it published the first
+// entry's expiry as the OSCAL risk deadline without checking expiry at all.
+describe('hdf-to-oscal-sar governing override', () => {
+  const doc = JSON.stringify({
+    generator: { name: 'test', version: '1' },
+    timestamp: '2026-01-01T00:00:00Z',
+    statistics: { duration: 1.0 },
+    baselines: [
+      {
+        name: 'b',
+        requirements: [
+          {
+            id: 'SV-1',
+            title: 'amended twice',
+            impact: 0.9,
+            tags: {},
+            descriptions: [{ label: 'default', data: 'd' }],
+            results: [{ status: 'failed', codeDesc: 'c', startTime: '2024-01-01T00:00:00Z' }],
+            disposition: 'riskAdjustment',
+            statusOverrides: [
+              {
+                type: 'waiver',
+                status: 'passed',
+                reason: 'OLDER',
+                appliedBy: { type: 'simple', identifier: 'a' },
+                appliedAt: '2024-06-01T00:00:00Z',
+                expiresAt: '2030-01-01T00:00:00Z',
+              },
+              {
+                type: 'riskAdjustment',
+                reason: 'NEWER',
+                appliedBy: { type: 'simple', identifier: 'b' },
+                appliedAt: '2025-01-01T00:00:00Z',
+                expiresAt: '2099-12-31T00:00:00Z',
+                impact: { value: 0.3 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  it('names the governing override and its expiry, not the first array entry', async () => {
+    const out = await convertHdfToOscalSar(doc);
+    expect(out).toContain('Override: riskAdjustment');
+    expect(out).toContain('Reason: NEWER');
+    expect(out).not.toContain('Reason: OLDER');
+    expect(out).toContain('2099-12-31T00:00:00Z');
+    expect(out).not.toContain('2030-01-01T00:00:00Z');
+  });
+});
