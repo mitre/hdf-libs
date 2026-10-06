@@ -53,8 +53,8 @@ const matches = filter(results, {
 
 ```go
 matches := hdfengine.Filter(ctx, results, hdfengine.Options{
-    Status:   []string{"failed"},
-    Severity: []string{"critical", "high"},
+    Status:   hdfengine.In("failed"),
+    Severity: hdfengine.In("critical", "high"),
 })
 ```
 

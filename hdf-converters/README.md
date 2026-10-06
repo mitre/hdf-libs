@@ -126,7 +126,7 @@ All exports use ESM (`"type": "module"`).
 import { convertGrypeToHdf } from '@mitre/hdf-converters';
 
 const grypeJson = fs.readFileSync('grype-report.json', 'utf-8');
-const hdfResults = convertGrypeToHdf(grypeJson, 'grype-report.json');
+const hdfResults = await convertGrypeToHdf(grypeJson); // second argument is the converter version stamped into generator.version, not a filename
 ```
 
 ### Auto-detect input format
