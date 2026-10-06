@@ -523,6 +523,8 @@ EXAMPLES
 
 `hdf system create` takes its input as a positional file path or URL and auto-detects the format. Its `--from` flag (`cyclonedx | spdx | cyclonedx-mlbom | spdx-ai`) does not select a parser the way `hdf convert --from` does: it only asserts that the detected BOM format matches, and the command fails if it does not.
 
+`hdf system update-component --component-name <name>` selects the component to refresh, and the name must match exactly one: a component name is a label, not identity (`componentId` is), so a document may legitimately carry two components with the same name, and an ambiguous name is refused before anything is written rather than refreshing whichever came first. Omit `--component-name` to reconcile every subject by its stable `boms[].uniqueId`. `hdf label set/remove --component-name` applies the same rule through the same selector, with the same message.
+
 Example output:
 
 ```console
@@ -726,6 +728,9 @@ named on the command line is overwritten and the others are left alone. The valu
 is carried verbatim and may be any non-empty string. `set` exits non-zero and
 writes nothing when the pair is malformed, a scheme is given twice, the document
 has no components, or `--component-name` matches none or more than one.
+`--component-id` and `--generate-component-id` are refused on a document with no
+components for the same reason — there is nothing to stamp, and rewriting the
+file while reporting success would claim an id was attached when it was not.
 
 Example output:
 `--component-id` and `--generate-component-id` are refused on a document with no
