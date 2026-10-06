@@ -101,7 +101,7 @@ func RegisterCompliance(s *sdkmcp.Server, ldr *loader.Loader) {
 }
 
 func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, complianceOutput] {
-	return func(_ context.Context, _ *sdkmcp.CallToolRequest, in complianceInput) (*sdkmcp.CallToolResult, complianceOutput, error) {
+	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in complianceInput) (*sdkmcp.CallToolResult, complianceOutput, error) {
 		view, terr, err := resolveView(in.Source, in.Sources, ldr, singleSourceErrors{
 			WrongDocType: func(docType string) *mcperr.Error {
 				return mcperr.New(mcperr.WrongDocType,
@@ -161,7 +161,7 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 				input := hdfengine.NewThresholdInput(results, shared.RequirementEffectiveStatus)
 				var failures []string
 				for _, spec := range specs {
-					for _, violation := range hdfengine.Evaluate(spec.Config, input) {
+					for _, violation := range hdfengine.EvaluateContext(ctx, spec.Config, input) {
 						// The message alone. A violation now carries the
 						// requirements that breached it, and the CLI prints them
 						// — but an unbounded list of ids in a tool response is a
@@ -394,7 +394,7 @@ func partitionBy(results hdf.HDFResults, keyOf func(hdf.EvaluatedRequirement) []
 
 // groupSeverity is the severity group key for a requirement — the single
 // canonical rule (hdfengine.DeriveSeverity: explicit STIG tag first, impact-
-// derived fallback with the zero band normalized to "none") that hdf_query rows
+// derived fallback with the zero band normalized to "informational") that hdf_query rows
 // and the compliance counts also use, so no surface reports one requirement at
 // two severities. Over the EFFECTIVE impact for the same reason those do: a
 // governing riskAdjustment would otherwise partition a requirement into one

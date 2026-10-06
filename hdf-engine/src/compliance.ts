@@ -269,6 +269,7 @@ export function countControlsByStatusSeverity(results: HDFResults): StatusCounts
 export function countControlsByStatus(
   results: HDFResults,
   statusOf?: (req: EvaluatedRequirement) => string,
+  now?: string,
 ): StatusCounts {
   const counts = newStatusCounts();
   for (const baseline of results.baselines ?? []) {
@@ -278,7 +279,9 @@ export function countControlsByStatus(
       // into the band it was re-scored into. This function already resolves
       // STATUS through the injected resolver; deriving severity from the raw
       // impact counted one post-adjudication and the other pre-adjudication.
-      addCount(counts, status, deriveSeverity(effectiveImpactOf(req), reqSeverity(req)));
+      // As of now, so an impact override judged expired by a threshold's reference
+      // time stops re-scoring here too. Parity: CountControlsByStatusAt in go.
+      addCount(counts, status, deriveSeverity(effectiveImpactOf(req, now), reqSeverity(req)));
     }
   }
   return counts;
@@ -333,6 +336,7 @@ export function mapControlIDs(results: HDFResults): ControlIDMapping[] {
 export function mapControlIDsByStatus(
   results: HDFResults,
   statusOf?: (req: EvaluatedRequirement) => string,
+  now?: string,
 ): ControlIDMapping[] {
   const mappings: ControlIDMapping[] = [];
   for (const baseline of results.baselines ?? []) {
@@ -343,7 +347,7 @@ export function mapControlIDsByStatus(
         status: statusToThresholdKey(status),
         // Effective impact, matching countControlsByStatus, so a control
         // listing and the counts it is listed alongside cannot disagree.
-        severity: severityBucket(deriveSeverity(effectiveImpactOf(req), reqSeverity(req))),
+        severity: severityBucket(deriveSeverity(effectiveImpactOf(req, now), reqSeverity(req))),
         title: req.title ?? '',
       });
     }
@@ -385,6 +389,23 @@ export function normalizeThresholdConfig(config: ThresholdConfig): ThresholdConf
         `a bound must be a whole number of controls or a min/max mapping, got ${JSON.stringify(value)}`,
       );
     }
+      // Mirror Go's unmarshaller: only min, max and controls are keys, min and
+      // max are whole numbers, controls a list of strings. Passing anything else
+      // through typed as a bound is how {min: "abc"} came to compare a count
+      // against text and never fire.
+      for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+        if (key === 'min' || key === 'max') {
+          if (!Number.isInteger(v)) {
+            throw new Error(`a bound's ${key} must be a whole number of controls, got ${JSON.stringify(v)}`);
+          }
+        } else if (key === 'controls') {
+          if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) {
+            throw new Error(`a bound's controls must be a list of control ids, got ${JSON.stringify(v)}`);
+          }
+        } else {
+          throw new Error(`field ${key} is not a known bound`);
+        }
+      }
     return value as ThresholdBound;
   };
 
