@@ -1516,3 +1516,23 @@ func TestConvertHDFToHTML_SeverityAndDispositionFollowTheLadder(t *testing.T) {
 	assert.Contains(t, html, detail("Effective impact", "0.10"), "computed through the ladder, not read from a cache the document does not carry")
 	assert.Contains(t, html, detail("Disposition", "riskAdjustment"), "the governing override's type, not a stored field")
 }
+
+// The badge and the Effective impact row judge an impact override at the
+// assessment time, as status and disposition already do: a re-score in force
+// when the assessment ran, expired since, still governs the report, and one
+// that had expired before the assessment ran does not.
+func TestConvertHDFToHTML_ImpactOverrideExpiryIsJudgedAtAssessmentTime(t *testing.T) {
+	adjusted := func(expiresAt string) hdf.HDFResults {
+		doc := waived(t, expiresAt)
+		req := &doc.Baselines[0].Requirements[0]
+		req.Impact = 0.9
+		req.StatusOverrides[0].Type = hdf.RiskAdjustment
+		req.StatusOverrides[0].Status = nil
+		req.StatusOverrides[0].Impact = &hdf.ImpactOverride{Value: 0.1}
+		return doc
+	}
+	inForceThen := renderDoc(t, adjusted("2020-06-01T00:00:00Z"), Manager)
+	assert.Contains(t, inForceThen, detail("Effective impact", "0.10"), "expired by the wall clock, in force when the assessment ran")
+	expiredThen := renderDoc(t, adjusted("2019-12-31T00:00:00Z"), Manager)
+	assert.Contains(t, expiredThen, detail("Effective impact", "0.90"), "expired before the assessment ran")
+}

@@ -103,10 +103,17 @@ func RequirementStatusInput(r hdf.EvaluatedRequirement) hdfutil.EffectiveStatusI
 
 // RequirementEffectiveImpact is the requirement's canonical effective impact via
 // the shared ladder: the governing non-expired impact override's value, else the
-// requirement's own. The stored effectiveImpact field is an output cache and is
-// never read, exactly as effectiveStatus is not.
+// requirement's own, judged against the clock. The stored effectiveImpact field
+// is an output cache and is never read, exactly as effectiveStatus is not.
 func RequirementEffectiveImpact(r hdf.EvaluatedRequirement) float64 {
-	return hdfutil.ComputeEffectiveImpact(RequirementStatusInput(r), time.Time{})
+	return RequirementEffectiveImpactAt(r, time.Time{})
+}
+
+// RequirementEffectiveImpactAt judges override expiry at ref rather than the
+// clock, for a renderer that promises assessment-time output. A zero ref means
+// now. Parity: requirementEffectiveImpact's now argument in status.ts.
+func RequirementEffectiveImpactAt(r hdf.EvaluatedRequirement, ref time.Time) float64 {
+	return hdfutil.ComputeEffectiveImpact(RequirementStatusInput(r), ref)
 }
 
 // RequirementEffectiveStatus is the requirement's canonical effective status

@@ -143,16 +143,19 @@ The `fetch` function is supplied by the caller, so this package never reads the 
 ### Compliance
 
 - `countControlsByStatusSeverity` / `CountControlsByStatusSeverity` — counts by status and severity
-- `countControlsByStatus` / `CountControlsByStatus` — counts with a caller-supplied status resolver
+- `countControlsByStatus` / `CountControlsByStatus` — counts with a caller-supplied status resolver; an optional `now` (TypeScript) or `CountControlsByStatusAt` (Go) judges override expiry at a reference time instead of the clock
 - `calculateCompliance` / `CalculateCompliance` — the percentage
 - `deriveSeverity` / `DeriveSeverity` — a requirement's severity, explicit or derived from impact
 - `filterValues`, `filterAliases`, `advertisedFilterValues` / `FilterValues`, `FilterAliases`, `AdvertisedFilterValues` — a field's closed vocabulary, the non-canonical forms accepted for it, and the subset a help string or tool schema should NAME. Each alias carries `advertise`: a separator variant of the canonical name is taught, a name a release retired is honoured and never taught. Callers build help text from these rather than keeping their own list
 - `severityBucket` / `SeverityBucket` — the counting bucket a severity falls in; anything outside the schema enum lands in `informational`, so a caller assembling its own control map buckets the way the counts do
 - `overallStatus` (TypeScript only) — the worst status across a requirement's results; the Go peer is internal to the package
-- `mapControlIDs`, `mapControlIDsByStatus` / `MapControlIDs`, `MapControlIDsByStatus` — control id to status and severity bucket
+- `mapControlIDs`, `mapControlIDsByStatus` / `MapControlIDs`, `MapControlIDsByStatus` — control id to status and severity bucket; `mapControlIDsByStatus` takes the same optional `now`, and Go has `MapControlIDsByStatusAt`
 - `agentOverrideCount` / `AgentOverrideCount` — overrides attributed to an agent
-- `validateThresholds` / `ValidateThresholds` — threshold verdicts
-- `StatusCounts`, `SeverityCounts`, `ControlIDMapping`, `ThresholdConfig`, `ThresholdSeverity`, `ThresholdBound`, `ComplianceBound`
+- `validateThresholds` / `ValidateThresholds` — threshold verdicts over the grid bounds alone
+- `evaluateRules` / `EvaluateRules`, `EvaluateRulesContext` — rule verdicts: each `rules:` entry is a filter predicate plus a bound. The Go context variant stops filtering on cancellation and returns what it had, so a caller checks `ctx.Err()` before treating the result as a verdict
+- `evaluate` / `Evaluate`, `EvaluateContext` — the grid bounds and the rules in one verdict, as `hdf validate threshold` applies them
+- `NewThresholdInput`, `NewThresholdInputAt` (Go only) — the counts, control map and status resolver a verdict needs; the `At` form judges override expiry at a reference time, which the rules half then shares
+- `StatusCounts`, `SeverityCounts`, `ControlIDMapping`, `ThresholdConfig`, `ThresholdSeverity`, `ThresholdBound`, `ComplianceBound`, `ThresholdRule`, `RulePredicate`, `RuleOptions`, `ThresholdInput`, `Violation`
 
 ### Merge
 

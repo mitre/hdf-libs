@@ -178,6 +178,12 @@ func hdfCompliance(ldr *loader.Loader) sdkmcp.ToolHandlerFor[complianceInput, co
 						failures = append(failures, failure)
 					}
 				}
+				// EvaluateContext returns what it had evaluated when ctx was
+				// cancelled; a verdict assembled from that would be confidently
+				// wrong, so the cancellation is the result, as in hdf_query.
+				if err := ctx.Err(); err != nil {
+					return nil, complianceOutput{}, err
+				}
 				out.ThresholdVerdict = &thresholdVerdict{Pass: len(failures) == 0, Failures: failures}
 			}
 		}

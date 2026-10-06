@@ -65,10 +65,12 @@ export function requirementEffectiveStatus(req: EvaluatedRequirement): string {
  * The requirement's canonical effective impact via the shared ladder: the
  * governing non-expired impact override's value, else the requirement's own. The
  * stored effectiveImpact field is an output cache and is never read, exactly as
- * effectiveStatus is not. Parity: RequirementEffectiveImpact in shared/go.
+ * effectiveStatus is not. Expiry is judged at now, else the clock, for a
+ * renderer that promises assessment-time output. Parity: RequirementEffectiveImpact
+ * and RequirementEffectiveImpactAt in shared/go.
  */
-export function requirementEffectiveImpact(req: EvaluatedRequirement): number {
-  return computeEffectiveImpact(requirementStatusInput(req));
+export function requirementEffectiveImpact(req: EvaluatedRequirement, now?: string): number {
+  return computeEffectiveImpact(requirementStatusInput(req), now);
 }
 
 /**
