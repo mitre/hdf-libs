@@ -284,6 +284,30 @@ describe('hdf-to-html converter', () => {
     expect(inForceThen).toContain(detail('Effective status', badge('passed', 'Passed')));
   });
 
+  // Parity: TestConvertHDFToHTML_ImpactOverrideExpiryIsJudgedAtAssessmentTime.
+  it('judges an impact override at the assessment time, as it does a status override', () => {
+    const adjusted = (expiresAt: string): Doc => {
+      const doc = JSON.parse(JSON.stringify(waived(expiresAt))) as Doc;
+      const req = ((doc.baselines as Doc[])[0]!.requirements as Doc[])[0]!;
+      req.impact = 0.9;
+      req.statusOverrides = [
+        {
+          type: 'riskAdjustment',
+          reason: 'Compensating control reduces exposure',
+          appliedBy: { type: 'email', identifier: 'issm@example.gov' },
+          appliedAt: '2019-06-01T00:00:00Z',
+          expiresAt,
+          impact: { value: 0.1 },
+        },
+      ];
+      return doc;
+    };
+    // Expired by the wall clock, in force when the assessment ran.
+    expect(render(adjusted('2020-06-01T00:00:00Z'), 'manager')).toContain(detail('Effective impact', '0.10'));
+    // Expired before the assessment ran.
+    expect(render(adjusted('2019-12-31T00:00:00Z'), 'manager')).toContain(detail('Effective impact', '0.90'));
+  });
+
   it('falls back to the latest result time when the document has no timestamp', () => {
     const doc = waived('2019-12-31T00:00:00Z');
     delete doc.timestamp;

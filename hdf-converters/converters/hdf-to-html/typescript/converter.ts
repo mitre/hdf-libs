@@ -254,8 +254,8 @@ export function compliance(c: StatusCounts): string {
 }
 
 /** The requirement's severity through the engine, exactly as its tally derives it. */
-function requirementSeverity(req: Json): string {
-  return deriveSeverity(requirementEffectiveImpact(req as unknown as EvaluatedRequirement), (req.severity ?? null) as Severity | null);
+function requirementSeverity(req: Json, now?: string): string {
+  return deriveSeverity(requirementEffectiveImpact(req as unknown as EvaluatedRequirement, now), (req.severity ?? null) as Severity | null);
 }
 
 /**
@@ -680,6 +680,7 @@ class Renderer {
         return countControlsByStatus(
           { baselines: [{ requirements } as unknown as EvaluatedBaseline] } as HDFResults,
           (req) => this.effectiveStatus(req as unknown as Json),
+          this.src.ref.stamp,
         );
       });
     });
@@ -881,7 +882,7 @@ class Renderer {
   private requirement(req: Json): void {
     const effective = this.effectiveStatus(req);
     const results = list(req.results).map(obj);
-    const severity = requirementSeverity(req);
+    const severity = requirementSeverity(req, this.src.ref.stamp);
     const tags = obj(req.tags);
     const nist = tagItems(tags, 'nist');
     const cci = tagItems(tags, 'cci');
@@ -935,7 +936,7 @@ class Renderer {
       ['Impact', impact.toFixed(2)],
       // Through the ladder, never the stored cache: the summary table this page
       // also shows already counts the ladder, and the cache may be stale or absent.
-      ['Effective impact', requirementEffectiveImpact(req as unknown as EvaluatedRequirement).toFixed(2)],
+      ['Effective impact', requirementEffectiveImpact(req as unknown as EvaluatedRequirement, this.src.ref.stamp).toFixed(2)],
       ['Disposition', requirementDisposition(req as unknown as EvaluatedRequirement, this.src.ref.stamp)],
       ['Control type', text(req.controlType)],
       ['Verification method', text(req.verificationMethod)],

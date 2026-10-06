@@ -772,7 +772,7 @@ func (r *renderer) tallyBaseline(t *statusTally, baseline hdf.EvaluatedBaseline)
 		t.checks.add(r.effectiveStatus(*req), req.Results)
 	}
 	one := hdf.HDFResults{Baselines: []hdf.EvaluatedBaseline{baseline}}
-	return hdfengine.CountControlsByStatus(one, r.effectiveStatus)
+	return hdfengine.CountControlsByStatusAt(one, r.effectiveStatus, r.src.ref)
 }
 
 func (r *renderer) status() {
@@ -1062,7 +1062,7 @@ func descriptionHeading(label string) string {
 
 func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 	effective := r.effectiveStatus(*req)
-	severity := hdfengine.DeriveSeverity(shared.RequirementEffectiveImpact(*req), req.Severity)
+	severity := hdfengine.DeriveSeverity(shared.RequirementEffectiveImpactAt(*req, r.src.ref), req.Severity)
 	disposition := shared.RequirementDisposition(*req, r.src.ref)
 	nist := hdfutil.TagStrings(req.Tags, "nist")
 	cci := hdfutil.TagStrings(req.Tags, "cci")
@@ -1091,7 +1091,7 @@ func (r *renderer) requirement(req *hdf.EvaluatedRequirement) {
 
 	r.resultRows(req.Results)
 
-	rows := requirementRows(req, effective, severity, disposition, location, nist, cci, lead)
+	rows := requirementRows(req, r.src.ref, effective, severity, disposition, location, nist, cci, lead)
 	f := r.openFold("", "", r.detailHeading(), "Result Details", "the result details", len(rows))
 	r.openTable(`class="details" aria-label="Result details"`, "")
 	for _, row := range rows {
@@ -1158,7 +1158,7 @@ func (r *renderer) description(text string) {
 
 // requirementRows is the detail table: the two statuses, every field that has a
 // value, then the references and the descriptions other than the lead.
-func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, disposition, location string, nist, cci []string, lead int) []string {
+func requirementRows(req *hdf.EvaluatedRequirement, ref time.Time, effective, severity, disposition, location string, nist, cci []string, lead int) []string {
 	statuses := make([]string, len(req.Results))
 	for i := range req.Results {
 		statuses[i] = string(req.Results[i].Status)
@@ -1166,7 +1166,7 @@ func requirementRows(req *hdf.EvaluatedRequirement, effective, severity, disposi
 	// Through the ladder, never the stored cache: the stored effectiveImpact and
 	// disposition are output caches a document may carry stale or not at all,
 	// and the summary table this page also shows already counts the ladder.
-	effectiveImpact := hdfutil.FormatFixed(shared.RequirementEffectiveImpact(*req), 2)
+	effectiveImpact := hdfutil.FormatFixed(shared.RequirementEffectiveImpactAt(*req, ref), 2)
 	rows := []string{
 		detailRow("Effective status", statusBadge(effective)),
 		detailRow("Assessed status", statusBadge(hdfutil.WorstStatus(statuses))),
