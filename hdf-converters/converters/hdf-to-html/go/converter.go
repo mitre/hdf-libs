@@ -669,48 +669,6 @@ func (r *renderer) chips(heading string, m map[string]string) {
 	r.line(closeList)
 }
 
-// statusBuckets lists a count set's five status buckets in the order the
-// report's columns and stat lists use them.
-func statusBuckets(c *hdfengine.StatusCounts) [5]*hdfengine.SeverityCounts {
-	return [5]*hdfengine.SeverityCounts{&c.Passed, &c.Failed, &c.Skipped, &c.NoImpact, &c.Error}
-}
-
-func addSeverities(dst, src *hdfengine.SeverityCounts) {
-	dst.Critical += src.Critical
-	dst.High += src.High
-	dst.Medium += src.Medium
-	dst.Low += src.Low
-	dst.Informational += src.Informational
-	dst.Total += src.Total
-}
-
-// addCounts rolls src into dst: the engine counts one document at a time, and
-// the report rolls baselines up into sources and sources into a whole.
-func addCounts(dst, src *hdfengine.StatusCounts) {
-	d, s := statusBuckets(dst), statusBuckets(src)
-	for i := range d {
-		addSeverities(d[i], s[i])
-	}
-}
-
-func countTotal(c *hdfengine.StatusCounts) int {
-	total := 0
-	for _, bucket := range statusBuckets(c) {
-		total += bucket.Total
-	}
-	return total
-}
-
-// severityTotals sums each severity across the statuses: the severity panel
-// counts every requirement, whatever its status.
-func severityTotals(c *hdfengine.StatusCounts) hdfengine.SeverityCounts {
-	var out hdfengine.SeverityCounts
-	for _, bucket := range statusBuckets(c) {
-		addSeverities(&out, bucket)
-	}
-	return out
-}
-
 // compliancePercent is the compliance percentage hdf-engine computes, to two
 // places, so the report never disagrees with `hdf validate threshold` in the
 // last digit. FormatFixed is toFixed's rounding, which is what the TypeScript
@@ -787,7 +745,6 @@ type statusTally struct {
 
 func (r *renderer) tally() *statusTally {
 	t := &statusTally{
-		all:         &hdfengine.StatusCounts{},
 		perSource:   make([]*hdfengine.StatusCounts, len(r.sources)),
 		perBaseline: make([][]*hdfengine.StatusCounts, len(r.sources)),
 	}
@@ -795,14 +752,13 @@ func (r *renderer) tally() *statusTally {
 		r.src = &r.sources[si]
 		t.anyRef = t.anyRef || r.src.hasRef
 		baselines := r.src.doc.Baselines
-		t.perSource[si] = &hdfengine.StatusCounts{}
 		t.perBaseline[si] = make([]*hdfengine.StatusCounts, len(baselines))
 		for i := range baselines {
 			t.perBaseline[si][i] = r.tallyBaseline(t, baselines[i])
-			addCounts(t.perSource[si], t.perBaseline[si][i])
 		}
-		addCounts(t.all, t.perSource[si])
+		t.perSource[si] = hdfengine.AddCounts(t.perBaseline[si]...)
 	}
+	t.all = hdfengine.AddCounts(t.perSource...)
 	return t
 }
 
@@ -835,7 +791,7 @@ func (r *renderer) status() {
 // asOf states the instant effective status was judged at, when there is one.
 func (r *renderer) asOf(t *statusTally) {
 	switch {
-	case countTotal(t.all) == 0 || !t.anyRef:
+	case hdfengine.SeverityTotals(t.all).Total == 0 || !t.anyRef:
 	case r.aggregated:
 		r.line(`<p class="as-of">Effective status evaluated for each source as of its own assessment time. ` +
 			`Overrides that had expired by then are not applied.</p>`)
@@ -846,7 +802,7 @@ func (r *renderer) asOf(t *statusTally) {
 }
 
 func (r *renderer) dashboard(t *statusTally) {
-	all, severities, checks := t.all, severityTotals(t.all), t.checks
+	all, severities, checks := t.all, hdfengine.SeverityTotals(t.all), t.checks
 	r.line(`<div class="dashboard">`)
 
 	r.line(`<div class="panel">`)
@@ -858,7 +814,7 @@ func (r *renderer) dashboard(t *statusTally) {
 	r.line(stat(classNotApplicable, all.NoImpact.Total, labelNotApplicable, ""))
 	r.line(stat(classNotReviewed, all.Skipped.Total, labelNotReviewed, ""))
 	r.line(stat(statusError, all.Error.Total, labelError, ""))
-	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(countTotal(all)) + `</span><span class="lbl">Total</span></li>`)
+	r.line(`<li class="stat stat-total"><span class="num">` + strconv.Itoa(severities.Total) + `</span><span class="lbl">Total</span></li>`)
 	r.line(closeList)
 	r.line(bar("Requirements by status", []segment{
 		{statusPassed, statusPassed, all.Passed.Total}, {statusFailed, statusFailed, all.Failed.Total},
@@ -1010,7 +966,7 @@ func bar(label string, segments []segment) string {
 func summaryRow(name string, c *hdfengine.StatusCounts) string {
 	var b strings.Builder
 	b.WriteString(`<tr><th scope="row">` + name + "</th>")
-	for _, n := range []int{c.Passed.Total, c.Failed.Total, c.Skipped.Total, c.NoImpact.Total, c.Error.Total, countTotal(c)} {
+	for _, n := range []int{c.Passed.Total, c.Failed.Total, c.Skipped.Total, c.NoImpact.Total, c.Error.Total, hdfengine.SeverityTotals(c).Total} {
 		b.WriteString("<td>" + strconv.Itoa(n) + "</td>")
 	}
 	b.WriteString("<td>" + complianceText(c) + rowClose)

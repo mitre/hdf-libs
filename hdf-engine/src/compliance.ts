@@ -409,6 +409,58 @@ export function normalizeThresholdConfig(config: ThresholdConfig): ThresholdConf
 }
 
 /**
+ * A count set's five status buckets, so a bucket-wise operation is written once
+ * and cannot miss one. Parity: statusBuckets in go/compliance.go.
+ */
+function statusBuckets(counts: StatusCounts): SeverityCounts[] {
+  return [counts.passed, counts.failed, counts.skipped, counts.error, counts.noImpact];
+}
+
+function addSeverities(dst: SeverityCounts, src: SeverityCounts): void {
+  dst.critical += src.critical;
+  dst.high += src.high;
+  dst.medium += src.medium;
+  dst.low += src.low;
+  dst.informational += src.informational;
+  dst.total += src.total;
+}
+
+/**
+ * addCounts sums count sets bucket by bucket and severity by severity, returning
+ * a new set and leaving its arguments untouched — a caller that reports the parts
+ * beside the whole is summing the very objects it still has to print. Each
+ * bucket's `total` is added, never recomputed from the severity fields.
+ *
+ * The counting functions above measure one document at a time, so a caller that
+ * composes documents — the HTML report rolling baselines into a source and
+ * sources into a whole, each evaluated as of its own assessment time — needs this
+ * rather than a second counting pass. Combining whole DOCUMENTS is merge's job,
+ * not this function's (ADR-0016 §1). Parity: AddCounts in go/compliance.go,
+ * pinned by testdata/status-counts-rollup-cases.json.
+ */
+export function addCounts(...counts: StatusCounts[]): StatusCounts {
+  const out = newStatusCounts();
+  const dst = statusBuckets(out);
+  for (const c of counts) {
+    statusBuckets(c).forEach((bucket, i) => addSeverities(dst[i]!, bucket));
+  }
+  return out;
+}
+
+/**
+ * severityTotals projects a count set onto severity alone, summing each severity
+ * across every status — so `total` is the whole set's requirement count. A
+ * severity breakdown answers "how much risk is in this document", which is a
+ * question about all of it, not about its failures. Parity: SeverityTotals in
+ * go/compliance.go.
+ */
+export function severityTotals(counts: StatusCounts): SeverityCounts {
+  const out = newSeverityCounts();
+  for (const bucket of statusBuckets(counts)) addSeverities(out, bucket);
+  return out;
+}
+
+/**
  * calculateCompliance returns the compliance percentage rounded to two decimals:
  * passed / (passed + failed + skipped + error) * 100; notApplicable excluded.
  */

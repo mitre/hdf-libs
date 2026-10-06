@@ -419,6 +419,61 @@ func addCount(counts *StatusCounts, status hdf.ResultStatus, severity string) {
 	}
 }
 
+// statusBuckets lists a count set's five status buckets, so a bucket-wise
+// operation is written once and cannot miss one.
+func statusBuckets(counts *StatusCounts) [5]*SeverityCounts {
+	return [5]*SeverityCounts{&counts.Passed, &counts.Failed, &counts.Skipped, &counts.Error, &counts.NoImpact}
+}
+
+func addSeverities(dst, src *SeverityCounts) {
+	dst.Critical += src.Critical
+	dst.High += src.High
+	dst.Medium += src.Medium
+	dst.Low += src.Low
+	dst.Informational += src.Informational
+	dst.Total += src.Total
+}
+
+// AddCounts sums count sets bucket by bucket and severity by severity, returning
+// a new set and leaving its arguments untouched — a caller that reports the parts
+// beside the whole is summing the very objects it still has to print. Each
+// bucket's Total is added, never recomputed from the severity fields.
+//
+// The counting functions above measure one document at a time, so a caller that
+// composes documents — the HTML report rolling baselines into a source and
+// sources into a whole, each evaluated as of its own assessment time — needs this
+// rather than a second counting pass. Combining whole DOCUMENTS is Merge's job,
+// not this function's (ADR-0016 §1).
+func AddCounts(counts ...*StatusCounts) *StatusCounts {
+	out := &StatusCounts{}
+	dst := statusBuckets(out)
+	for _, c := range counts {
+		if c == nil {
+			continue
+		}
+		src := statusBuckets(c)
+		for i := range dst {
+			addSeverities(dst[i], src[i])
+		}
+	}
+	return out
+}
+
+// SeverityTotals projects a count set onto severity alone, summing each severity
+// across every status — so Total is the whole set's requirement count. A severity
+// breakdown answers "how much risk is in this document", which is a question
+// about all of it, not about its failures.
+func SeverityTotals(counts *StatusCounts) SeverityCounts {
+	var out SeverityCounts
+	if counts == nil {
+		return out
+	}
+	for _, bucket := range statusBuckets(counts) {
+		addSeverities(&out, bucket)
+	}
+	return out
+}
+
 // CalculateCompliance returns the compliance percentage, rounded to two decimals.
 // compliance = passed / (passed + failed + skipped + error) * 100; notApplicable
 // (no_impact) requirements are excluded.
