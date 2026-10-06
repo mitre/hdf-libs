@@ -278,3 +278,22 @@ describe('computeDisposition', () => {
     expect(computeDisposition(req, REF_TIME)).toBe('riskAdjustment');
   });
 });
+
+// Parity: TestComputeEffectiveImpact_StoredFallbackOnlyWithoutOverrides in go.
+// The stored effectiveImpact is a fallback for the no-overrides case only; the
+// moment any override exists it is unread, matching the shared ladder.
+describe('computeEffectiveImpact: the stored fallback', () => {
+  const base = { id: 'V-1', impact: 0.9, effectiveImpact: 0.2 };
+
+  it('is honoured only when the requirement carries no overrides', () => {
+    expect(computeEffectiveImpact(base, REF_TIME)).toBeCloseTo(0.2, 9);
+  });
+
+  it('is unread the moment any override exists, even one carrying no impact', () => {
+    const withWaiver = {
+      ...base,
+      statusOverrides: [{ type: 'waiver', status: 'passed', appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z' }],
+    };
+    expect(computeEffectiveImpact(withWaiver, REF_TIME)).toBeCloseTo(0.9, 9);
+  });
+});

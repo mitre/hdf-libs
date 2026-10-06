@@ -70,6 +70,13 @@ func GoverningOverride(overrides []hdf.StatusOverride, ref time.Time) *hdf.Statu
 // disposition for such a requirement. The asymmetry is deliberate for now —
 // a filter that matched on an unprovenanced value would select requirements it
 // cannot justify, where an export is only restating what it was given.
+//
+// A second, related asymmetry: this reads statusOverrides only. hdf-engine's
+// filter and hdf-diff's checksum fold poams[] into the same governing set and
+// report "poam" when a plan governs; an export does not, because the exporters
+// carry the plan separately and a disposition of "poam" would duplicate it in
+// a column that names an override type. Pinned by
+// TestRequirementDisposition_DoesNotReadPoams.
 func RequirementDisposition(r hdf.EvaluatedRequirement, ref time.Time) string {
 	if o := GoverningOverride(r.StatusOverrides, ref); o != nil {
 		return string(o.Type)
