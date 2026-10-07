@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- **Documented: on Windows, an `hdf` command that rewrites a file fails while another process holds that file open, leaving the destination's previous content complete and naming it in the error** — the atomic replace every output has used since 3.7.2 cannot delete a destination another handle has open, as the Windows CI leg's `TestWriteFile_OpenReaderSeesOneCompleteVersion` measures.
+
 ## [3.7.2] - 2026-10-06
 
 ### Added
