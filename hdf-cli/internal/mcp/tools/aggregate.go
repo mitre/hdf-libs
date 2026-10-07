@@ -20,8 +20,8 @@ import (
 // rows — so a cross-document call can never become an unbounded merged result.
 type aggregateInput struct {
 	Sources  []handle.Source `json:"sources" jsonschema:"documents to aggregate, each {path} or {handle}"`
-	Status   []string        `json:"status,omitempty" jsonschema:"passed|failed|notApplicable|notReviewed|error (OR)"`
-	Severity []string        `json:"severity,omitempty" jsonschema:"critical|high|medium|low|informational (OR)"`
+	Status   []string        `json:"status,omitempty" jsonschema:"result statuses to match (OR)"`
+	Severity []string        `json:"severity,omitempty" jsonschema:"severities to match (OR)"`
 	NIST     []string        `json:"nist,omitempty" jsonschema:"NIST controls, globs allowed (AC-*)"`
 	Page     int             `json:"page,omitempty" jsonschema:"0-based page when perSource is truncated"`
 }
@@ -89,6 +89,10 @@ func RegisterAggregate(s *sdkmcp.Server, ldr *loader.Loader) {
 			"per-requirement rows. A source that fails to load is reported in failures[] and the rest still aggregate. " +
 			"For a single document use hdf_compliance; for requirement rows use hdf_query.",
 		Annotations: appmcp.ReadOnly(),
+		InputSchema: mustEnumSchema[aggregateInput](map[string]closedVocabulary{
+			"status":   {values: schemaEnum("Result_Status")},
+			"severity": {values: schemaEnum("Severity")},
+		}),
 	}, hdfAggregate(ldr))
 }
 

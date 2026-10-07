@@ -56,7 +56,10 @@ const (
 	// description had to say a governing POA&M counts too; measured 5617.
 	// Raised to 5700 (owner decision 2026-09-29) for hdf_query's poamType;
 	// measured 5669.
-	ToolsListTotalBudget = 5700
+	// Raised to 5800 (owner decision 2026-10-05) for the twelve advertised enum
+	// arrays; measured 5778. An enum costs tokens here and saves a rejected call
+	// plus a retry, which no budget in this file counts.
+	ToolsListTotalBudget = 5800
 	// ToolsListPerToolBudget is the ceiling for any single tool's schema. No tool
 	// may exceed it regardless of how many tools exist — the invariant that keeps
 	// any one schema from bloating (hdf_aggregate measured 589). Raised from 600
@@ -87,7 +90,10 @@ const (
 	// hdf_query is now roughly a fifth of the listing and this is its fifth raise
 	// — the audit in hdf-libs-5cim9 was named as the thing to do before a fifth,
 	// and it has not run. Say so rather than let the ratchet look routine.
-	ToolsListPerToolBudget = 1080
+	// Raised to 1120 (owner decision 2026-10-05) when the closed vocabularies became
+	// real enum arrays: status, severity, verbosity and fields now advertise their
+	// members as data instead of prose an agent has to parse. Measured 1102.
+	ToolsListPerToolBudget = 1120
 	// ToolsListHardFail is the absolute ceiling; exceeding it is always a failure.
 	ToolsListHardFail = 6500
 	// ReadProfileBudget locks in the tool-subsetting reduction: the read profile
@@ -114,7 +120,9 @@ const (
 	// Unlike the raise above, trimming did NOT help — three wordings measured
 	// 3969/3971/3972, so the cheapest was the clearest and the cost is the field
 	// itself, not its prose. Ninth raise; hdf-libs-5cim9 should run before a tenth.
-	ReadProfileBudget = 4000
+	// Raised to 4100 (owner decision 2026-10-05) for the advertised enum arrays on
+	// the read tools; measured 4072.
+	ReadProfileBudget = 4100
 )
 
 var (

@@ -27,8 +27,15 @@
             "type": "integer"
           },
           "severity": {
-            "description": "critical|high|medium|low|informational (OR)",
+            "description": "severities to match (OR)",
             "items": {
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low",
+                "informational"
+              ],
               "type": "string"
             },
             "type": [
@@ -56,8 +63,15 @@
             ]
           },
           "status": {
-            "description": "passed|failed|notApplicable|notReviewed|error (OR)",
+            "description": "result statuses to match (OR)",
             "items": {
+              "enum": [
+                "passed",
+                "failed",
+                "notApplicable",
+                "notReviewed",
+                "error"
+              ],
               "type": "string"
             },
             "type": [
@@ -329,7 +343,13 @@
             ]
           },
           "docType": {
-            "description": "document to author: system, plan, evidence, or amendments",
+            "description": "which document to author",
+            "enum": [
+              "system",
+              "plan",
+              "evidence",
+              "amendments"
+            ],
             "type": "string"
           },
           "dryRun": {
@@ -430,7 +450,14 @@
         "additionalProperties": false,
         "properties": {
           "groupBy": {
-            "description": "baseline | severity | nistFamily | tool | cwe",
+            "description": "bucketing dimension for the breakdown",
+            "enum": [
+              "baseline",
+              "severity",
+              "nistFamily",
+              "tool",
+              "cwe"
+            ],
             "type": "string"
           },
           "source": {
@@ -814,7 +841,12 @@
             "type": "object"
           },
           "mode": {
-            "description": "temporal (results across time, default) or system-drift (system docs)",
+            "default": "temporal",
+            "description": "which document pair to compare",
+            "enum": [
+              "temporal",
+              "system-drift"
+            ],
             "type": "string"
           },
           "output": {
@@ -843,7 +875,12 @@
             "type": "object"
           },
           "verbosity": {
-            "description": "concise (default) or full",
+            "default": "concise",
+            "description": "how much detail each change carries",
+            "enum": [
+              "concise",
+              "full"
+            ],
             "type": "string"
           }
         },
@@ -997,7 +1034,12 @@
             "type": "object"
           },
           "verbosity": {
-            "description": "concise (default) or full",
+            "default": "concise",
+            "description": "how much detail the summary carries",
+            "enum": [
+              "concise",
+              "full"
+            ],
             "type": "string"
           }
         },
@@ -1224,8 +1266,14 @@
             "type": "string"
           },
           "fields": {
-            "description": "opt-in correlation fields to add per row: cwe|cvss|affectedPackages|sourceLocation",
+            "description": "opt-in correlation fields to add per row",
             "items": {
+              "enum": [
+                "affectedPackages",
+                "cvss",
+                "cwe",
+                "sourceLocation"
+              ],
               "type": "string"
             },
             "type": [
@@ -1286,8 +1334,15 @@
             "type": "string"
           },
           "severity": {
-            "description": "critical|high|medium|low|informational (OR)",
+            "description": "severities to match (OR)",
             "items": {
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low",
+                "informational"
+              ],
               "type": "string"
             },
             "type": [
@@ -1328,8 +1383,15 @@
             ]
           },
           "status": {
-            "description": "passed|failed|notApplicable|notReviewed|error (OR)",
+            "description": "result statuses to match (OR)",
             "items": {
+              "enum": [
+                "passed",
+                "failed",
+                "notApplicable",
+                "notReviewed",
+                "error"
+              ],
               "type": "string"
             },
             "type": [
@@ -1348,7 +1410,12 @@
             ]
           },
           "verbosity": {
-            "description": "concise (default) or full",
+            "default": "concise",
+            "description": "how much detail each row carries",
+            "enum": [
+              "concise",
+              "full"
+            ],
             "type": "string"
           }
         },
@@ -1445,7 +1512,12 @@
             "type": "string"
           },
           "mode": {
-            "description": "validation mode: schema, checksums, or completeness",
+            "description": "which check to run",
+            "enum": [
+              "schema",
+              "checksums",
+              "completeness"
+            ],
             "type": "string"
           },
           "source": {
