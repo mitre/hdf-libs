@@ -8,11 +8,19 @@ package hdfdoc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 )
+
+// ErrNoComponents reports a document with no component to write the requested
+// field on. It is wrapped as the PREFIX of the message naming the field, so
+// every such refusal reads as one sentence; callers for which a componentless
+// document is legitimate (a converter whose source names no target) match on it
+// to warn instead of failing.
+var ErrNoComponents = errors.New("document has no components")
 
 // ApplyLabels merges the given labels into the "labels" field of every component
 // in the HDF JSON document. With no labels, or no components array, the input is
@@ -58,10 +66,14 @@ func ValidateComponentID(id string) error {
 
 // ApplyComponentID sets componentId on every component in the HDF JSON document:
 // a fresh UUID per component when generate is true, otherwise the fixedID (when
-// non-empty). A fixedID that is not a UUID is an error; no components array is a
-// no-op.
+// non-empty). A fixedID that is not a UUID is an error, and so is a document with
+// no component to stamp — returning the input unchanged would report an id as
+// attached when it was not. Asking for neither is a no-op on any document.
 func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error) {
-	if !generate && fixedID != "" {
+	if !generate && fixedID == "" {
+		return data, nil
+	}
+	if !generate {
 		if err := ValidateComponentID(fixedID); err != nil {
 			return nil, err
 		}
@@ -71,14 +83,14 @@ func ApplyComponentID(data []byte, fixedID string, generate bool) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	if components == nil {
-		return data, nil
+	if len(components) == 0 {
+		return nil, fmt.Errorf("%w to set componentId on", ErrNoComponents)
 	}
 
 	for _, comp := range components {
 		if generate {
 			comp["componentId"] = uuid.New().String()
-		} else if fixedID != "" {
+		} else {
 			comp["componentId"] = fixedID
 		}
 	}
@@ -102,7 +114,7 @@ func ApplyExternalIDs(data []byte, ids map[string]string, componentName string) 
 		return nil, err
 	}
 	if len(components) == 0 {
-		return nil, fmt.Errorf("document has no components to set external IDs on")
+		return nil, fmt.Errorf("%w to set external IDs on", ErrNoComponents)
 	}
 
 	selected, err := selectComponents(components, componentName)
@@ -175,26 +187,44 @@ func parseComponents(data []byte) (doc map[string]interface{}, components []map[
 		return nil, nil, fmt.Errorf("components field is not an array")
 	}
 
-	components = make([]map[string]interface{}, len(list))
-	for i, cRaw := range list {
-		comp, ok := cRaw.(map[string]interface{})
-		if !ok {
-			return nil, nil, fmt.Errorf("component at index %d is not an object", i)
-		}
-		components[i] = comp
+	components, err = ComponentMaps(list)
+	if err != nil {
+		return nil, nil, err
 	}
 	return doc, components, nil
 }
 
-// selectComponents returns every component when name is empty, otherwise the one
-// component with that name. A name no component has, or one several share, is an
-// error: a name is a label and componentId is identity, so a repeated name names
-// no single component and the caller's one-component contract cannot be kept.
-func selectComponents(components []map[string]interface{}, name string) ([]map[string]interface{}, error) {
-	if name == "" {
-		return components, nil
+// ComponentMaps types a document's decoded components array for the selector.
+// The maps alias the array's own objects, so a caller that mutates one mutates
+// the document.
+func ComponentMaps(list []interface{}) ([]map[string]interface{}, error) {
+	components := make([]map[string]interface{}, len(list))
+	for i, cRaw := range list {
+		comp, ok := cRaw.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("component at index %d is not an object", i)
+		}
+		components[i] = comp
 	}
+	return components, nil
+}
 
+// NoSuchComponentError reports a component name no component in the document
+// carries. It is typed so a command can add its own remedy to the message
+// without re-implementing the match.
+type NoSuchComponentError struct{ Name string }
+
+func (e *NoSuchComponentError) Error() string {
+	return fmt.Sprintf("no component named %q in the document", e.Name)
+}
+
+// SelectComponentByName returns the one component named name. A name no
+// component has, or one several share, is an error: a name is a label and
+// componentId is identity, so a repeated name names no single component and
+// picking the first would act on a component the caller did not choose. Every
+// command that selects a component by name goes through here, so they cannot
+// drift into disagreeing about what an ambiguous name means.
+func SelectComponentByName(components []map[string]interface{}, name string) (map[string]interface{}, error) {
 	var selected []map[string]interface{}
 	for _, comp := range components {
 		if n, _ := comp["name"].(string); n == name {
@@ -202,10 +232,23 @@ func selectComponents(components []map[string]interface{}, name string) ([]map[s
 		}
 	}
 	if len(selected) == 0 {
-		return nil, fmt.Errorf("no component named %q in the document", name)
+		return nil, &NoSuchComponentError{Name: name}
 	}
 	if len(selected) > 1 {
 		return nil, fmt.Errorf("component name %q matches %d components; it must match exactly one", name, len(selected))
 	}
-	return selected, nil
+	return selected[0], nil
+}
+
+// selectComponents returns every component when name is empty, otherwise the one
+// component with that name.
+func selectComponents(components []map[string]interface{}, name string) ([]map[string]interface{}, error) {
+	if name == "" {
+		return components, nil
+	}
+	selected, err := SelectComponentByName(components, name)
+	if err != nil {
+		return nil, err
+	}
+	return []map[string]interface{}{selected}, nil
 }

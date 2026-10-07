@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	bom "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/bom"
 	"github.com/spf13/cobra"
@@ -85,7 +88,9 @@ func newSystemUpdateComponentCmd() *cobra.Command {
 BOM is a positional file path or URL. Two modes:
 
   Targeted (--component-name <name>): the named component's boms[] entry and
-  metadata are replaced from a single-subject BOM.
+  metadata are replaced from a single-subject BOM. The name must match exactly
+  one component — a name two components share is refused before anything is
+  written, since a component name is a label and not identity.
 
   Reconcile (no --component-name): each subject in the BOM is matched to an
   existing component by its stable boms[].uniqueId and that entry is refreshed.
@@ -110,7 +115,7 @@ Examples:
 
 	cmd.Flags().StringVar(&systemFile, "system", "", "Existing HDF system document (required)")
 	cmd.Flags().StringVar(&fromFormat, "from", "", "Assert the BOM format: cyclonedx | spdx | cyclonedx-mlbom | spdx-ai (default: auto-detect)")
-	cmd.Flags().StringVar(&componentName, "component-name", "", "Target a single component by name (default: reconcile all subjects by uniqueId)")
+	cmd.Flags().StringVar(&componentName, "component-name", "", "Target the one component with this name (default: reconcile all subjects by uniqueId)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: overwrite --system)")
 	cmd.Flags().BoolVar(&embed, "embed", false, "Embed referenced data (e.g. SBOM) inline instead of storing a reference")
 	cmd.Flags().BoolVar(&addNew, "add-new", false, "In reconcile mode, append subjects that match no existing component")
@@ -300,15 +305,30 @@ func runSystemUpdateComponent(systemFile, fromFile, fromFormat, componentName, o
 
 // updateComponentTargeted replaces the named component's boms[] entry and
 // derived fields from a single-subject BOM. A URL input keeps the passthrough
-// path; a multi-subject BOM is rejected (reconcile handles those).
+// path; a multi-subject BOM is rejected (reconcile handles those). The target is
+// resolved first, through the selector `hdf label` uses, so an ambiguous or
+// unknown name is refused before any subject is built or anything is written.
 func updateComponentTargeted(components []interface{}, data []byte, bomDoc map[string]interface{}, bomFormat, fromFile, componentName string, embed bool) (string, error) {
+	comps, err := hdfdoc.ComponentMaps(components)
+	if err != nil {
+		return "", err
+	}
+	target, err := hdfdoc.SelectComponentByName(comps, componentName)
+	if err != nil {
+		var unknown *hdfdoc.NoSuchComponentError
+		if errors.As(err, &unknown) {
+			return "", fmt.Errorf("component %q not found in system document; use 'hdf system add-component' to add it", componentName)
+		}
+		return "", err
+	}
+
 	var newComp map[string]interface{}
 	if bomDoc == nil {
 		newComp = map[string]interface{}{
 			"boms": []map[string]interface{}{newSBOMBom(ensureBOMFormat(bomFormat), filepath.ToSlash(fromFile), nil)},
 		}
 	} else {
-		comps, err := buildComponentsFromBOM(data, bomDoc, bomFormat, bomComponentBuildOpts{
+		built, err := buildComponentsFromBOM(data, bomDoc, bomFormat, bomComponentBuildOpts{
 			fileRef:      filepath.ToSlash(fromFile),
 			embed:        embed,
 			nameOverride: componentName,
@@ -316,35 +336,28 @@ func updateComponentTargeted(components []interface{}, data []byte, bomDoc map[s
 		if err != nil {
 			return "", err
 		}
-		if len(comps) != 1 {
-			return "", fmt.Errorf("--component-name targets a single component, but this input produced %d subjects; omit --component-name to reconcile by subject id", len(comps))
+		if len(built) != 1 {
+			return "", fmt.Errorf("--component-name targets a single component, but this input produced %d subjects; omit --component-name to reconcile by subject id", len(built))
 		}
-		newComp = comps[0]
+		newComp = built[0]
 	}
 
-	for _, c := range components {
-		comp, ok := c.(map[string]interface{})
-		if !ok || comp["name"] != componentName {
-			continue
-		}
-		comp["boms"] = newComp["boms"]
-		// A parsed BOM fully replaces the component's metadata: set the derived
-		// fields the refreshed component carries and DELETE any it does not, so
-		// updating e.g. an aiModel component with an SBOM leaves no stale
-		// modelId/version behind. A URL passthrough carries no derivable metadata,
-		// so the component's existing fields are kept untouched.
-		if bomDoc != nil {
-			for _, k := range []string{"type", "description", "version", "modelId", "datasetId"} {
-				if v, ok := newComp[k]; ok {
-					comp[k] = v
-				} else {
-					delete(comp, k)
-				}
+	target["boms"] = newComp["boms"]
+	// A parsed BOM fully replaces the component's metadata: set the derived
+	// fields the refreshed component carries and DELETE any it does not, so
+	// updating e.g. an aiModel component with an SBOM leaves no stale
+	// modelId/version behind. A URL passthrough carries no derivable metadata,
+	// so the component's existing fields are kept untouched.
+	if bomDoc != nil {
+		for _, k := range []string{"type", "description", "version", "modelId", "datasetId"} {
+			if v, ok := newComp[k]; ok {
+				target[k] = v
+			} else {
+				delete(target, k)
 			}
 		}
-		return fmt.Sprintf("Component %q updated", componentName), nil
 	}
-	return "", fmt.Errorf("component %q not found in system document; use 'hdf system add-component' to add it", componentName)
+	return fmt.Sprintf("Component %q updated", componentName), nil
 }
 
 // updateComponentsReconcile matches each incoming subject to an existing
@@ -575,7 +588,7 @@ func writeSystemJSON(sysDoc map[string]interface{}, outputPath, message string) 
 		return fmt.Errorf("system document failed validation before write: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(outputPath, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write system document: %w", err)
 	}
 	fmt.Fprintln(os.Stderr, message)

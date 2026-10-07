@@ -22,6 +22,7 @@ and `tags.cci` fields in HDF output.
 | AWS Config | NIST SP 800-53 | Rule identifier or rule name |
 | Hipcheck | NIST SP 800-53 Rev 5 | Analysis name (`binary`, `mitre/binary`) |
 | Hadolint | NIST SP 800-53 Rev 5 | Rule code string (`DL3002`, `SC2154`) |
+| Checkov | CCI + NIST SP 800-53 Rev 5 | Check ID string (`CKV_AWS_1`) |
 
 Go equivalents are available in `go/` subdirectories (see below).
 
@@ -374,6 +375,32 @@ than emit an empty `nist` tag.
 > these are candidate control associations for triage, not evidence a control is
 > assessed or satisfied.
 
+### Checkov
+
+Maps Checkov check IDs to CCIs and NIST 800-53 Rev 5 controls. A check maps to
+both at once, so a Checkov finding can carry the same `cci` and `nist` tags the
+STIG-derived converters carry.
+
+```typescript
+import {
+  getCheckovCciNistMapping,
+  checkovCheckExists,
+  getAllCheckovCheckIds,
+  getCheckovMappingProvenance,
+} from '@mitre/hdf-mappings';
+
+const mapping = getCheckovCciNistMapping('CKV_AWS_1');
+// Returns: {cci: ['CCI-000235', 'CCI-000226'], nist: ['AC-6(10)', 'AC-6(1)']}
+
+if (checkovCheckExists('CKV_NOPE_1')) { /* false: an unmapped check */ }
+
+const ids = getAllCheckovCheckIds();
+// Returns the 1341 mapped check IDs, sorted
+
+const {source, checkovVersion, nistRevision} = getCheckovMappingProvenance();
+// source pins the published package the table was ported from; nistRevision is 5
+```
+
 ## Go API
 
 Each mapping is also available as a Go package:
@@ -387,6 +414,7 @@ hdf-mappings/go/
   nikto/      — Nikto test→NIST lookups (NISTControl, NISTControlByInt)
   hipcheck/   — Hipcheck analysis→NIST lookups (NISTControls, Exists, AllAnalyses)
   hadolint/   — Hadolint rule→NIST lookups (Lookup, LookupForRevision, Exists, AllRuleIDs)
+  checkov/    — Checkov check→CCI+NIST lookups (Lookup, LookupForRevision, Exists, AllCheckIDs, GetProvenance)
   scoutsuite/ — ScoutSuite rule→NIST lookups (NISTControls)
   awsconfig/  — AWS Config→NIST lookups (NISTControls, GetByRuleName, GetByIdentifier)
   nist/       — revision selection (Revision, SetRevision) + Rev 4↔5 crosswalk (Translate, TranslateControls)

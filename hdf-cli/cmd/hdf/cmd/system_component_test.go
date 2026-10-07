@@ -706,3 +706,45 @@ func TestFindComponentByBOMUniqueID_SkipsMalformedComponents(t *testing.T) {
 		assert.Len(t, gotBoms, 1)
 	})
 }
+
+// ---- update-component --component-name selection tests ----
+
+// A component name is not identity — the schema lets a system document carry two
+// components with the same one — so refreshing whichever came first silently
+// updates the wrong component's BOM. `hdf label` has refused an ambiguous name
+// since external IDs landed; this is the same refusal, from the same selector.
+func TestSystemComponentUpdate_AmbiguousComponentNameIsRejected(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	sbom := bomFixturePath(t, "cyclonedx-sbom.json")
+
+	add := NewRootCmd()
+	add.SetArgs([]string{"system", "add-component", sbom, "--system", sysFile, "--component-name", "juice-shop"})
+	require.NoError(t, add.Execute())
+	require.Len(t, readSystemComponents(t, sysFile), 2, "the fixture needs two components sharing a name")
+
+	before, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+
+	_, _, updateErr := executeCommand("system", "update-component", sbom, "--system", sysFile, "--component-name", "juice-shop")
+	require.Error(t, updateErr)
+	assert.Contains(t, updateErr.Error(), `component name "juice-shop" matches 2 components; it must match exactly one`)
+
+	after, err := os.ReadFile(sysFile)
+	require.NoError(t, err)
+	assert.Equal(t, string(before), string(after), "an ambiguous name is refused before anything is written")
+
+	_, _, labelErr := executeCommand("label", "set", sysFile, "--external-id", "cmdb=CI0012345", "--component-name", "juice-shop")
+	require.Error(t, labelErr)
+	assert.Equal(t, updateErr.Error(), labelErr.Error(), "both commands select through one implementation")
+}
+
+// Sharing the selector must not cost the not-found message its remedy, which is
+// specific to this command.
+func TestSystemComponentUpdate_UnknownComponentNameKeepsItsRemedy(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	_, _, err := executeCommand("system", "update-component", bomFixturePath(t, "cyclonedx-sbom.json"),
+		"--system", sysFile, "--component-name", "cache")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `component "cache" not found in system document`)
+	assert.Contains(t, err.Error(), "hdf system add-component")
+}

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -92,7 +93,7 @@ func runAmendCreateHeadless(specPath, outputPath string) error {
 		fmt.Println(string(output))
 		return nil
 	}
-	if err := os.WriteFile(outputPath, append(output, '\n'), 0o600); err != nil { // #nosec G306 -- CLI writes user-provided path
+	if err := atomicfile.WriteFile(outputPath, append(output, '\n'), 0o600); err != nil {
 		return fmt.Errorf("failed to write amendments: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Created %s with %d amendments\n", outputPath, len(specs))
@@ -419,7 +420,7 @@ func runAmendDraft(resultsPath, amendType, statusFilter, selectStr, expires, out
 		fmt.Println(string(output))
 		return nil
 	}
-	if err := os.WriteFile(outputPath, append(output, '\n'), 0o600); err != nil { // #nosec G306 -- CLI writes user-provided path
+	if err := atomicfile.WriteFile(outputPath, append(output, '\n'), 0o600); err != nil {
 		return fmt.Errorf("failed to write draft: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Wrote draft %s with %d %s stub(s). "+

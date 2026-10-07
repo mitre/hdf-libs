@@ -1,0 +1,106 @@
+{
+  "$comment": "Shared Go/TypeScript case table for the two StatusCounts roll-up helpers: AddCounts/addCounts (a bucket-wise sum of count sets) and SeverityTotals/severityTotals (the severity-only projection of one count set, whose `total` is the grand total across every status). Read by go/rollup_counts_test.go and test/status-counts-rollup.test.ts, so the two implementations cannot drift. Count sets are written in the TypeScript field spelling (noImpact); the Go test maps the table onto its own json tags. Omitted numbers are zero, so a case shows only the buckets it exercises. `inputs` is the argument list, `want` the summed count set, `wantSeverityTotals` the severity projection of `want`.",
+  "cases": [
+    {
+      "name": "no inputs sum to an empty count set",
+      "note": "the report asks for a sum before it knows whether a source has any baselines at all",
+      "inputs": [],
+      "want": {},
+      "wantSeverityTotals": {}
+    },
+    {
+      "name": "one count set sums to itself",
+      "inputs": [
+        {
+          "passed": { "critical": 1, "high": 2, "total": 3 },
+          "failed": { "medium": 4, "total": 4 }
+        }
+      ],
+      "want": {
+        "passed": { "critical": 1, "high": 2, "total": 3 },
+        "failed": { "medium": 4, "total": 4 }
+      },
+      "wantSeverityTotals": { "critical": 1, "high": 2, "medium": 4, "total": 7 }
+    },
+    {
+      "name": "two count sets add severity by severity inside each status bucket",
+      "inputs": [
+        {
+          "passed": { "critical": 1, "high": 1, "total": 2 },
+          "failed": { "low": 3, "total": 3 }
+        },
+        {
+          "passed": { "medium": 2, "total": 2 },
+          "failed": { "low": 1, "informational": 1, "total": 2 }
+        }
+      ],
+      "want": {
+        "passed": { "critical": 1, "high": 1, "medium": 2, "total": 4 },
+        "failed": { "low": 4, "informational": 1, "total": 5 }
+      },
+      "wantSeverityTotals": { "critical": 1, "high": 1, "medium": 2, "low": 4, "informational": 1, "total": 9 }
+    },
+    {
+      "name": "three count sets roll up in one call",
+      "note": "the baselines then sources then whole shape the HTML report rolls up in",
+      "inputs": [
+        { "passed": { "high": 1, "total": 1 } },
+        { "passed": { "high": 1, "total": 1 } },
+        { "skipped": { "informational": 2, "total": 2 } }
+      ],
+      "want": {
+        "passed": { "high": 2, "total": 2 },
+        "skipped": { "informational": 2, "total": 2 }
+      },
+      "wantSeverityTotals": { "high": 2, "informational": 2, "total": 4 }
+    },
+    {
+      "name": "a status bucket never bleeds into another",
+      "inputs": [
+        { "passed": { "critical": 1, "total": 1 } },
+        { "failed": { "critical": 1, "total": 1 } },
+        { "skipped": { "critical": 1, "total": 1 } },
+        { "error": { "critical": 1, "total": 1 } },
+        { "noImpact": { "critical": 1, "total": 1 } }
+      ],
+      "want": {
+        "passed": { "critical": 1, "total": 1 },
+        "failed": { "critical": 1, "total": 1 },
+        "skipped": { "critical": 1, "total": 1 },
+        "error": { "critical": 1, "total": 1 },
+        "noImpact": { "critical": 1, "total": 1 }
+      },
+      "wantSeverityTotals": { "critical": 5, "total": 5 }
+    },
+    {
+      "name": "severity totals span every status, not only the failures",
+      "inputs": [
+        {
+          "passed": { "critical": 1, "high": 2, "medium": 3, "low": 4, "informational": 5, "total": 15 },
+          "failed": { "critical": 6, "total": 6 },
+          "skipped": { "high": 7, "total": 7 },
+          "error": { "low": 8, "total": 8 },
+          "noImpact": { "informational": 9, "total": 9 }
+        }
+      ],
+      "want": {
+        "passed": { "critical": 1, "high": 2, "medium": 3, "low": 4, "informational": 5, "total": 15 },
+        "failed": { "critical": 6, "total": 6 },
+        "skipped": { "high": 7, "total": 7 },
+        "error": { "low": 8, "total": 8 },
+        "noImpact": { "informational": 9, "total": 9 }
+      },
+      "wantSeverityTotals": { "critical": 7, "high": 9, "medium": 3, "low": 12, "informational": 14, "total": 45 }
+    },
+    {
+      "name": "each bucket's total is added, never recomputed from its severities",
+      "note": "a count set whose total disagrees with its severities is not one the engine produces; the case pins that the helpers sum what they are given and invent no number, so a future implementation that derives total from the severity fields fails here instead of silently restating its inputs",
+      "inputs": [
+        { "passed": { "critical": 1, "total": 9 } },
+        { "passed": { "critical": 1, "total": 1 } }
+      ],
+      "want": { "passed": { "critical": 2, "total": 10 } },
+      "wantSeverityTotals": { "critical": 2, "total": 10 }
+    }
+  ]
+}

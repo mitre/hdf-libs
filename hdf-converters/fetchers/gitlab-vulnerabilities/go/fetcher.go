@@ -487,6 +487,9 @@ type envelope struct {
 // pipeline lifted from the first page.
 type projectBlock struct {
 	converter.Project
+	// Same JSON key as the embedded Project's typed field; encoding/json gives the
+	// shallower field precedence, so this raw copy is what decodes and the inner
+	// pointer stays nil. Deliberate: the envelope keeps the pipeline verbatim.
 	LatestDefaultBranchPipeline json.RawMessage `json:"latestDefaultBranchPipeline"`
 }
 
@@ -666,9 +669,15 @@ func (f *GitLabVulnerabilitiesFetcher) listProjects(ctx context.Context, token s
 			return nil, fmt.Errorf("%s: group %q not found or not readable with this token", errPrefix, f.params.Group)
 		}
 		for _, n := range gd.Group.Projects.Nodes {
-			if !n.Archived && n.FullPath != "" {
-				paths = append(paths, n.FullPath)
+			if n.Archived || n.FullPath == "" {
+				continue
 			}
+			// The path names an output file downstream, so a listing the server
+			// controls must not be able to point it outside the directory.
+			if !validProjectPath(n.FullPath) {
+				return nil, fmt.Errorf("%s: group %q lists a project path %q that is not a GitLab namespace path", errPrefix, f.params.Group, n.FullPath)
+			}
+			paths = append(paths, n.FullPath)
 		}
 		if !gd.Group.Projects.PageInfo.HasNextPage {
 			break
@@ -869,4 +878,29 @@ func (f *GitLabVulnerabilitiesFetcher) token() (string, error) {
 		return "", fmt.Errorf("%s: %w", errPrefix, err)
 	}
 	return token, nil
+}
+
+// validProjectPath reports whether a full path is shaped like a GitLab
+// namespace path: slash-separated segments of [A-Za-z0-9_.-], none empty and
+// none `.` or `..`. GitLab never emits anything else, and anything else could
+// name a file outside the output directory.
+func validProjectPath(fullPath string) bool {
+	if fullPath == "" {
+		return false
+	}
+	for _, seg := range strings.Split(fullPath, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return false
+		}
+		for _, r := range seg {
+			if !isNamespaceRune(r) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func isNamespaceRune(r rune) bool {
+	return r == '_' || r == '.' || r == '-' || (r >= '0' && r <= '9') || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
 }

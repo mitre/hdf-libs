@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -501,7 +501,7 @@ func writeEventsOutput(cmd *cobra.Command, path string, data []byte) error {
 		_, err := cmd.OutOrStdout().Write(data)
 		return err
 	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+	if err := atomicfile.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}
 	return nil

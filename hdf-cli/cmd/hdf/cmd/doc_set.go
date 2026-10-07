@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 )
 
 // runGenericDocSet is a shared implementation for set commands across document
@@ -50,7 +52,7 @@ func runGenericDocSet(inputPath, outputPath, expectedDocType string, unsetFields
 		target = outputPath
 	}
 
-	if err := os.WriteFile(target, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(target, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write document: %w", err)
 	}
 

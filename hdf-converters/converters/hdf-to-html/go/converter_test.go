@@ -544,20 +544,6 @@ func TestComplianceText(t *testing.T) {
 	}
 }
 
-func TestCountTotalAndSeverityTotals(t *testing.T) {
-	c := counts(1, 2, 3, 4, 5)
-	c.Failed.Critical = 2
-	c.Skipped.Low = 3
-	c.NoImpact.Informational = 4
-	assert.Equal(t, 15, countTotal(c))
-
-	severities := severityTotals(c)
-	assert.Equal(t, 2, severities.Critical)
-	assert.Equal(t, 3, severities.Low)
-	assert.Equal(t, 4, severities.Informational)
-	assert.Equal(t, 15, severities.Total)
-}
-
 func TestConvertHDFToHTML_RejectsWhatIsNotResults(t *testing.T) {
 	for name, input := range map[string]string{
 		"empty":             "",
@@ -629,6 +615,8 @@ func TestConvertHDFToHTML_OptionalDetailBranches(t *testing.T) {
 	req := testhdf.Req("V-1", testhdf.Impact(0.7), testhdf.Status(hdf.Failed), testhdf.Tag("nist", "AC-1"),
 		testhdf.Tag("cci", []any{"CCI-1", 7, "CCI-2"}))
 	req.Severity = &severity
+	// Stored caches left in on purpose: the rows below must come from the ladder,
+	// so these are now the evidence that the cache is ignored.
 	req.EffectiveImpact = &impact
 	req.Disposition = &disposition
 	req.StatusOverrides = []hdf.StatusOverride{{
@@ -658,8 +646,8 @@ func TestConvertHDFToHTML_OptionalDetailBranches(t *testing.T) {
 		"<dt>Port</dt><dd>5432</dd>", "<dt>Provider</dt><dd>aws</dd>", "<dt>Owner</dt><dd>dba@example.gov (email)</dd>",
 		"<dt>Operator</dt><dd>ops</dd>",
 		"<dt>Duration</dt><dd>12.35 s</dd>",
-		detail("Severity", "critical"), detail("Impact", "0.70"), detail("Effective impact", "0.30"),
-		detail("Disposition", "waiver"), detail("NIST Controls", "AC-1"), detail("CCI Controls", "CCI-1, CCI-2"),
+		detail("Severity", "critical"), detail("Impact", "0.70"), detail("Effective impact", "0.70"),
+		detail("Disposition", "operationalRequirement"), detail("NIST Controls", "AC-1"), detail("CCI Controls", "CCI-1, CCI-2"),
 		`<span class="sev c-critical"><span class="vh">Severity: </span>Critical</span>`,
 		`<span class="tags"><span class="vh">Controls: </span><span class="tag">AC-1</span><span class="tag">CCI-1</span><span class="tag">CCI-2</span></span>`,
 		"<td>operationalRequirement</td><td></td>",
@@ -1498,4 +1486,53 @@ func TestConvertHDFToHTML_ThemeSwitchInEveryReportType(t *testing.T) {
 	assert.Contains(t, reportCSS, reportDark)
 	assert.Contains(t, bladesCSS, bladesLight)
 	assert.Contains(t, bladesCSS, bladesDark)
+}
+
+// The badge, the "Effective impact" row and the "Disposition" row must agree
+// with the summary table, which counts through the shared ladder. A governing
+// riskAdjustment that re-scores 0.9 to 0.1 therefore moves the badge from
+// critical to low, shows 0.10, and names the adjustment — none of which is
+// visible if the report reads the raw impact and the stored caches instead.
+// Severity is left unset so the impact, not an explicit string, drives the band.
+func TestConvertHDFToHTML_SeverityAndDispositionFollowTheLadder(t *testing.T) {
+	req := testhdf.Req("V-RESCORED", testhdf.Impact(0.9), testhdf.Status(hdf.Failed))
+	req.StatusOverrides = []hdf.StatusOverride{{
+		Type: hdf.RiskAdjustment, Reason: "compensating control in place",
+		AppliedBy: hdf.Identity{Type: hdf.Email, Identifier: "a@example.gov"},
+		AppliedAt: mustTime(t, "2020-01-01T00:00:00Z"),
+		ExpiresAt: mustTime(t, "2099-12-31T00:00:00Z"),
+		Impact:    &hdf.ImpactOverride{Value: 0.1},
+	}}
+	doc := testhdf.Results(req)
+
+	input, err := json.Marshal(doc)
+	require.NoError(t, err)
+	out, err := ConvertHDFToHTML(input)
+	require.NoError(t, err)
+	html := string(out)
+
+	assert.Contains(t, html, `<span class="sev c-low">`, "the badge must follow the re-scored impact")
+	assert.NotContains(t, html, `<span class="sev c-critical">`, "and must not keep the raw band")
+	assert.Contains(t, html, detail("Effective impact", "0.10"), "computed through the ladder, not read from a cache the document does not carry")
+	assert.Contains(t, html, detail("Disposition", "riskAdjustment"), "the governing override's type, not a stored field")
+}
+
+// The badge and the Effective impact row judge an impact override at the
+// assessment time, as status and disposition already do: a re-score in force
+// when the assessment ran, expired since, still governs the report, and one
+// that had expired before the assessment ran does not.
+func TestConvertHDFToHTML_ImpactOverrideExpiryIsJudgedAtAssessmentTime(t *testing.T) {
+	adjusted := func(expiresAt string) hdf.HDFResults {
+		doc := waived(t, expiresAt)
+		req := &doc.Baselines[0].Requirements[0]
+		req.Impact = 0.9
+		req.StatusOverrides[0].Type = hdf.RiskAdjustment
+		req.StatusOverrides[0].Status = nil
+		req.StatusOverrides[0].Impact = &hdf.ImpactOverride{Value: 0.1}
+		return doc
+	}
+	inForceThen := renderDoc(t, adjusted("2020-06-01T00:00:00Z"), Manager)
+	assert.Contains(t, inForceThen, detail("Effective impact", "0.10"), "expired by the wall clock, in force when the assessment ran")
+	expiredThen := renderDoc(t, adjusted("2019-12-31T00:00:00Z"), Manager)
+	assert.Contains(t, expiredThen, detail("Effective impact", "0.90"), "expired before the assessment ran")
 }

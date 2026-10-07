@@ -479,3 +479,14 @@ func TestStampEffectiveChecksums_SkipsUntypeableRequirement(t *testing.T) {
 	require.True(t, ok, "well-formed sibling must still be stamped")
 	assert.Equal(t, ecVectorFailedHalf, cs["value"])
 }
+
+// The stored effectiveImpact is a fallback for the no-overrides case only; the
+// moment any override exists it is unread, matching the shared ladder.
+func TestComputeEffectiveImpact_StoredFallbackOnlyWithoutOverrides(t *testing.T) {
+	stored := 0.2
+	req := hdf.EvaluatedRequirement{ID: "V-1", Impact: 0.9, EffectiveImpact: &stored}
+	assert.InDelta(t, 0.2, ComputeEffectiveImpact(req, "2026-01-01T00:00:00Z"), 1e-9, "no overrides: the stored field is honoured")
+
+	req.StatusOverrides = []hdf.StatusOverride{{Type: hdf.OverrideTypeWaiver, AppliedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)}}
+	assert.InDelta(t, 0.9, ComputeEffectiveImpact(req, "2026-01-01T00:00:00Z"), 1e-9, "an override without impact leaves the requirement's own, never the cache")
+}

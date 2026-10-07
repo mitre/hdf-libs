@@ -1,4 +1,4 @@
-import { isUnratedSeverity, parseJSON, parseTimestamp, roundImpact } from '@mitre/hdf-utilities';
+import { isUnratedSeverity, parseJSON, parseTimestamp, roundImpact, parsePurl } from '@mitre/hdf-utilities';
 import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
@@ -293,9 +293,7 @@ function componentInstanceId(
  * undefined for anything that is not a purl.
  */
 function purlType(purl: string | undefined): string | undefined {
-  if (!purl?.startsWith('pkg:')) return undefined;
-  const slash = purl.indexOf('/', 'pkg:'.length);
-  return slash === -1 ? undefined : purl.slice('pkg:'.length, slash);
+  return purl ? parsePurl(purl)?.type : undefined;
 }
 
 /**

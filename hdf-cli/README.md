@@ -55,7 +55,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.7.0
+VERSION=3.7.2
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -66,7 +66,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${V
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.2_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -212,15 +212,15 @@ Requirements: 1603
 Components:   0
 
   ✓ passed          134
-  ✗ failed          273
-  ? not_reviewed    1196
+  ✗ failed          271
+  ○ not_applicable  233
+  ? not_reviewed    965
 
 $ hdf list results.json --detail requirements -s failed
-Requirements: 273
+Requirements: 271
 
 ID         Status  Title
 ---------  ------  ------------------------------------------------------------
-SV-257777  failed  RHEL 9 must be a vendor-supported release.
 V-242387   failed  The Kubernetes Kubelet must have the read-only port flag ...
 V-242391   failed  The Kubernetes Kubelet must have anonymous authentication...
 V-242392   failed  The Kubernetes kubelet must enable explicit authorization.
@@ -312,17 +312,18 @@ Example output:
 
 ```console
 $ hdf query results.json --status failed --limit 5
-Found 4 matching requirement(s):
+Found 5 matching requirement(s):
 
-ID         Status  Severity  Title
----------  ------  --------  -------------------------------------------------------
-SV-257777  failed  HIGH      RHEL 9 must be a vendor-supported release.
-V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
-V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
-V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
+ID        Status  Severity  Title
+--------  ------  --------  -------------------------------------------------------
+V-242387  failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
+V-242391  failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
+V-242392  failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
+V-242393  failed  MED       Kubernetes Worker Nodes must not have sshd service r...
+V-242394  failed  MED       Kubernetes Worker Nodes must not have the sshd servi...
 
 $ hdf query results.json --status failed --count
-273
+271
 ```
 
 ### diff
@@ -443,13 +444,14 @@ INPUT/OUTPUT
               recursively; other files there are passed over and counted on stderr
   -o <output> Output file path; defaults to stdout if omitted
   -o <dir>/   One output per input, named after the input file; inputs that share a file
-              name are named by their path below the directory they share (host1--results)
+              name are each numbered in argument order (results.1, results.2)
 
 FLAGS
       --from string           Source format (auto-detected if omitted)
       --to string             Destination format (default: hdf)
       --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
-      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only)
+      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only;
+                              warns and still writes when the converter emits no components)
       --labels strings        Labels applied to all targets, --to hdf only (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
       --report-type string    Detail level for --to html: executive, manager or administrator (default administrator)
@@ -521,6 +523,8 @@ EXAMPLES
 ```
 
 `hdf system create` takes its input as a positional file path or URL and auto-detects the format. Its `--from` flag (`cyclonedx | spdx | cyclonedx-mlbom | spdx-ai`) does not select a parser the way `hdf convert --from` does: it only asserts that the detected BOM format matches, and the command fails if it does not.
+
+`hdf system update-component --component-name <name>` selects the component to refresh, and the name must match exactly one: a component name is a label, not identity (`componentId` is), so a document may legitimately carry two components with the same name, and an ambiguous name is refused before anything is written rather than refreshing whichever came first. Omit `--component-name` to reconcile every subject by its stable `boms[].uniqueId`. `hdf label set/remove --component-name` applies the same rule through the same selector, with the same message.
 
 Example output:
 
@@ -725,6 +729,9 @@ named on the command line is overwritten and the others are left alone. The valu
 is carried verbatim and may be any non-empty string. `set` exits non-zero and
 writes nothing when the pair is malformed, a scheme is given twice, the document
 has no components, or `--component-name` matches none or more than one.
+`--component-id` and `--generate-component-id` are refused on a document with no
+components for the same reason — there is nothing to stamp, and rewriting the
+file while reporting success would claim an id was attached when it was not.
 
 Example output:
 
@@ -997,16 +1004,18 @@ USAGE
 
 FLAGS
   -u, --url string              GitLab instance URL (default "https://gitlab.com")
-      --project string          Project full path (namespace/project); exclusive with --group
+      --project string          Project full path (namespace/project)
       --group string            Group full path; fetches every non-archived project in it
       --include-subgroups       With --group, include projects of subgroups (default true)
-      --state string            Comma-separated states: DETECTED, CONFIRMED, DISMISSED, RESOLVED (default: all)
-      --report-type string      Comma-separated report types: SAST, DAST, DEPENDENCY_SCANNING, ... (default: all)
-      --format string           Output format: hdf or raw (default "hdf")
+      --state string            Comma-separated vulnerability states to fetch: DETECTED, CONFIRMED, DISMISSED, RESOLVED (default: all)
+      --report-type string      Comma-separated report types to fetch: SAST, DAST, DEPENDENCY_SCANNING, ... (default: all)
+      --format string           Output format: hdf (convert to HDF) or raw (fetched envelope) (default "hdf")
   -o, --output string           Output file path with --project (default: stdout)
       --out-dir string          Output directory with --group; one file per project
-      --max-pages int           Maximum pages per project or group listing (default 200)
-      --max-response-size int   Max response size in bytes per request (default 25MB, -1 for no limit)
+      --page-size int           Findings requested per GraphQL page (default: 25, sized to GitLab's query complexity cap)
+      --max-pages int           Maximum pages per project, group listing or finding history (default: 500)
+      --max-response-size int   Maximum response size in bytes per request (default: 25MB, -1 for no limit)
+      --no-validate             Skip schema validation of converter output before writing
       --check                   Run the probe only and print the tier and ingestion diagnosis (every project with --group)
 
 EXAMPLES
@@ -1177,9 +1186,9 @@ These flags apply to all commands.
 | `openvex` | | OpenVEX statements → HDF Amendments (JSON) |
 | `oscal` | | OSCAL document (auto-detect type) |
 | `oscal-sar` | `oscal-assessment-results` | OSCAL Assessment Results → HDF Results |
-| `oscal-assessment-plan` | | OSCAL Assessment Plan → HDF Plan |
+| `oscal-assessment-plan` | `oscal-sap` | OSCAL Assessment Plan → HDF Plan |
 | `oscal-catalog` | | OSCAL Catalog → HDF Baseline |
-| `oscal-component-definition` | | OSCAL Component Definition → HDF Baseline |
+| `oscal-component-definition` | `oscal-component` | OSCAL Component Definition → HDF Baseline |
 | `oscal-profile` | | OSCAL Profile → HDF Baseline (requires `--catalog`) |
 | `oscal-ssp` | | OSCAL System Security Plan → HDF System |
 | `oscal-poam` | | OSCAL Plan of Action and Milestones → HDF Amendments |

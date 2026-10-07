@@ -9,6 +9,7 @@ import (
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/hdfdoc"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/spf13/cobra"
 )
 
@@ -69,6 +70,9 @@ any non-empty string. By default every target gets the identifier; pass
 --component-name to write it on one target only. The command fails, and writes
 nothing, when the document has no target to carry the identifier, or when
 --component-name matches no target or more than one.
+
+--component-id and --generate-component-id stamp every target, and fail the same
+way on a document with no target to stamp.
 
 Examples:
   hdf label set results.json system=Portal
@@ -369,7 +373,7 @@ func writeLabelOutput(data []byte, originalPath, outputPath string) error {
 		data = append(data, '\n')
 	}
 
-	if err := os.WriteFile(target, data, 0o600); err != nil { // #nosec G703 -- output path from user CLI arg
+	if err := atomicfile.WriteFile(target, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 

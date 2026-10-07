@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, digestToChecksums, inputChecksum, limitArray, mapCWEToNIST, extractCWEIDs, validateInputSize, buildHdfResults, packageInstanceId } from '../../../shared/typescript/converterutil.js';
 import { buildCvss, cvssVersionFromVector, cvssVersionFromString } from '../../../shared/typescript/cvss.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import type {
@@ -211,11 +211,8 @@ function vulnID(vuln: NeuVectorVuln): string {
  */
 function vulnInstance(vuln: NeuVectorVuln): { resource: string; id: string } {
   if (vuln.file_name) return { resource: 'file', id: vuln.file_name };
-  if (!vuln.package_name) return { resource: '', id: '' };
-  return {
-    resource: 'package',
-    id: vuln.package_version ? `${vuln.package_name}@${vuln.package_version}` : vuln.package_name,
-  };
+  const id = packageInstanceId('', vuln.package_name ?? '', vuln.package_version ?? '');
+  return id ? { resource: 'package', id } : { resource: '', id: '' };
 }
 
 /**

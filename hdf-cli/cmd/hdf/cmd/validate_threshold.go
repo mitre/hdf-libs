@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -61,30 +62,14 @@ Designed for CI/CD compliance gates.`,
 		// many files. MinimumNArgs rather than ArbitraryArgs: an unmatched shell
 		// glob must be an error, never a vacuous pass.
 		Args: cobra.MinimumNArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			noFindings = localNoFindings
 			// Refused rather than preferred or ignored. Preferring it would let a
 			// mislabelled name misattribute a real file, which is the opposite of
 			// what the flag exists for; ignoring it would leave half the command
 			// dead with no warning. One name also cannot label several documents.
-			if err := validateSourceName(localSourceName); err != nil {
+			if err := checkSourceNameArgs(localSourceName, args); err != nil {
 				return err
-			}
-			if localSourceName != "" {
-				// One name cannot label several documents, so more than one
-				// argument is refused even when every one of them is `-`: a bulk
-				// run would otherwise print the name against the first document
-				// and the raw `-` against the rest.
-				if len(args) > 1 {
-					return fmt.Errorf("--source-name names a single document read from stdin, "+
-						"but %d arguments were given", len(args))
-				}
-				for _, arg := range args {
-					if arg != "-" {
-						return fmt.Errorf("--source-name names a document read from stdin; "+
-							"drop it, or pass - instead of %s", arg)
-					}
-				}
 			}
 			sourceName = localSourceName
 			// The template is the same for every file, so resolve it once.
@@ -106,10 +91,10 @@ Designed for CI/CD compliance gates.`,
 				// files were passed, and a CI loop over per-tool thresholds got
 				// the shape that says least.
 				return runBulk(files, "threshold validation", "passed thresholds", func(file string) error {
-					return runValidateThresholdFile(file, specs)
+					return runValidateThresholdFile(cmd.Context(), file, specs)
 				}, withFailureDetail())
 			}
-			return runValidateThresholdFile(files[0], specs)
+			return runValidateThresholdFile(cmd.Context(), files[0], specs)
 		},
 	}
 
@@ -308,7 +293,7 @@ func describeFinding(f hdfengine.Match) string {
 }
 
 // runValidateThresholdFile applies every parsed policy to one document.
-func runValidateThresholdFile(file string, specs []threshold.Spec) error {
+func runValidateThresholdFile(ctx context.Context, file string, specs []threshold.Spec) error {
 	data, err := readInputFile(file)
 	if err != nil {
 		return err
@@ -341,7 +326,7 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 		// Evaluate, not ValidateThresholds: the grid alone cannot apply a rule,
 		// and returning its verdict over a rules-bearing policy would report a
 		// passing gate over policy nobody applied.
-		for _, violation := range hdfengine.Evaluate(spec.Config, input) {
+		for _, violation := range hdfengine.EvaluateContext(ctx, spec.Config, input) {
 			// Attribute only when there is something to disambiguate, so the
 			// single-policy output — nearly every run — is unchanged. The label
 			// goes into the violation MESSAGE rather than only the printed line,
@@ -352,6 +337,11 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 			}
 			violations = append(violations, violation)
 		}
+	}
+	// A cancelled run returns what it had evaluated; that must not read as a
+	// clean verdict, so the cancellation is the result.
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	if len(violations) > 0 {
 		// Mirrors `hdf validate`'s verdict shape: a ✗ headline on stderr naming
@@ -410,6 +400,32 @@ func runValidateThresholdFile(file string, specs []threshold.Spec) error {
 // fix, and a control character in a filename is worth surfacing rather than
 // quietly removing. This is NOT sanitizeOutput: that one deliberately preserves
 // newline, tab and carriage return because it guards multi-line document prose.
+// checkSourceNameArgs applies the argument rules a --source-name carries, for
+// every command that takes the flag: one name cannot label several documents,
+// so more than one argument is refused even when every one of them is `-` (a
+// bulk run would otherwise print the name against the first document and the
+// raw `-` against the rest), and a real file is refused because a name applied
+// to it could misattribute it.
+func checkSourceNameArgs(name string, args []string) error {
+	if err := validateSourceName(name); err != nil {
+		return err
+	}
+	if name == "" {
+		return nil
+	}
+	if len(args) > 1 {
+		return fmt.Errorf("--source-name names a single document read from stdin, "+
+			"but %d arguments were given", len(args))
+	}
+	for _, arg := range args {
+		if arg != "-" {
+			return fmt.Errorf("--source-name names a document read from stdin; "+
+				"drop it, or pass - instead of %s", arg)
+		}
+	}
+	return nil
+}
+
 func validateSourceName(name string) error {
 	for i, r := range name {
 		// unicode.IsControl covers C0, DEL and C1 — so U+0085 NEL, a real break

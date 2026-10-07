@@ -9,7 +9,7 @@
  * Twin of go/converter.go.
  */
 
-import { parseJSON } from '@mitre/hdf-utilities';
+import { parseJSON, severityToImpactWithAliases } from '@mitre/hdf-utilities';
 import { DEFAULT_STATIC_ANALYSIS_NIST_TAGS, getHadolintNistMapping, nistToCci } from '@mitre/hdf-mappings';
 import { detectConverter } from '../../../shared/typescript/fingerprint.js';
 import { registerAllFingerprints } from '../../../shared/typescript/register-all.js';
@@ -63,7 +63,7 @@ const LEVEL_IMPACT: Record<string, number> = {
 };
 
 function impactFor(level: string): number {
-  return LEVEL_IMPACT[level] ?? 0.0;
+  return severityToImpactWithAliases(level, LEVEL_IMPACT, 0.0);
 }
 
 /**

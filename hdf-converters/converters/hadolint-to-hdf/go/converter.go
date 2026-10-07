@@ -63,10 +63,7 @@ var levelImpact = map[string]float64{
 }
 
 func impactFor(level string) float64 {
-	if impact, ok := levelImpact[level]; ok {
-		return impact
-	}
-	return 0.0
+	return hdfutil.SeverityToImpactWithAliases(level, levelImpact, 0.0)
 }
 
 // controlsFor resolves a rule's NIST controls and CCIs, falling back to the

@@ -311,20 +311,3 @@ func isDirectoryOutput(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
 }
-
-// bulkOutputPath computes the output filename for a bulk conversion.
-// Input "scan.nessus" with toFormat "hdf" → "scan.hdf.json"
-// Input "report.sarif" with toFormat "csv" produces "report.hdf.csv".
-func bulkOutputPath(outputDir, inputPath, toFormat string) string {
-	base := filepath.Base(inputPath)
-	ext := filepath.Ext(base)
-	stem := base[:len(base)-len(ext)]
-
-	var outName string
-	if toFormat == "hdf" || toFormat == "" {
-		outName = stem + ".hdf.json"
-	} else {
-		outName = stem + ".hdf." + toFormat
-	}
-	return filepath.Join(outputDir, outName)
-}

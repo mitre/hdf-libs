@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	xccdf "github.com/mitre/hdf-libs/hdf-converters/v3/converters/xccdf-results-to-hdf/go"
 	generators "github.com/mitre/hdf-libs/hdf-generators/go/v3"
 	schema "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
@@ -159,7 +160,7 @@ func writeInSpecProfile(profile generators.InSpecProfile, outputDir string) erro
 
 	// Write inspec.yml
 	ymlPath := filepath.Join(outputDir, "inspec.yml")
-	if err := os.WriteFile(ymlPath, []byte(profile.InSpecYml), 0o600); err != nil {
+	if err := atomicfile.WriteFile(ymlPath, []byte(profile.InSpecYml), 0o600); err != nil {
 		return fmt.Errorf("failed to write inspec.yml: %w", err)
 	}
 	printDebug("Wrote %s", ymlPath)
@@ -180,7 +181,7 @@ func writeInSpecProfile(profile generators.InSpecProfile, outputDir string) erro
 		if err := os.MkdirAll(controlDir, 0o750); err != nil { //nolint:gosec // profile dirs need group read
 			return fmt.Errorf("failed to create directory %s: %w", controlDir, err)
 		}
-		if err := os.WriteFile(controlPath, []byte(profile.Controls[name]), 0o600); err != nil {
+		if err := atomicfile.WriteFile(controlPath, []byte(profile.Controls[name]), 0o600); err != nil {
 			return fmt.Errorf("failed to write %s: %w", name, err)
 		}
 		printDebug("Wrote %s", controlPath)

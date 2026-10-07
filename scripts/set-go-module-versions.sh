@@ -89,11 +89,16 @@ major_matches_path() {
   fi
 }
 
+# A nested checkout under the root (an agent worktree, a scratch clone) has its
+# own .git and its own go.mod files, which belong to whatever that checkout has
+# out rather than to this release; the prune stops at any directory carrying one.
+# Hidden directories are pruned by name first, so the per-directory test does
+# not fork its way through the in-repo package store.
 # Read into an array without mapfile: macOS ships bash 3.2, where it does not exist.
 gomods=()
 while IFS= read -r found; do
   gomods+=("$found")
-done < <(find . -name go.mod -not -path '*/node_modules/*' | sort)
+done < <(find . -mindepth 1 \( -name node_modules -o -name '.*' -o -exec test -e '{}/.git' \; \) -prune -o -name go.mod -print | sort)
 if [ "${#gomods[@]}" -eq 0 ]; then
   echo "ERROR: no go.mod files found under $root" >&2
   exit 1

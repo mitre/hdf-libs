@@ -83,6 +83,8 @@ export {
   mapControlIDs,
   mapControlIDsByStatus,
   severityBucket,
+  addCounts,
+  severityTotals,
   calculateCompliance,
   validateThresholds,
   overallStatus,

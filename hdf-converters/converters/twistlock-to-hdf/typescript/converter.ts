@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -242,8 +242,7 @@ export function buildAffectedPackage(
  * caller leaves the fields unset rather than inventing an id.
  */
 function packageInstanceId(vuln: TwistlockVuln): string | undefined {
-  if (!vuln.packageName) return undefined;
-  return vuln.packageVersion ? `${vuln.packageName}@${vuln.packageVersion}` : vuln.packageName;
+  return sharedPackageInstanceId('', vuln.packageName ?? '', vuln.packageVersion ?? '') || undefined;
 }
 
 /**

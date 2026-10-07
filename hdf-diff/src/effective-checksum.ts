@@ -25,11 +25,15 @@ function overrideWindows(overrides: readonly OverrideLike[]): StatusOverrideInpu
 }
 
 /**
- * Determine the effective impact of a requirement: the most recently applied
- * non-expired override carrying an impact value wins (the schema's definition
- * of effectiveImpact, selected by the shared governing helper); with no
- * overrides, a stored effectiveImpact field is honored; otherwise the base
- * impact. (Go parity: ComputeEffectiveImpact in hdf-diff/go/effective_checksum.go.)
+ * Resolves a requirement's impact for the effective checksum: the governing
+ * impact override when one exists, else the requirement's own. With no
+ * overrides at all it honours a stored effectiveImpact — deliberately, and
+ * unlike computeEffectiveImpact in @mitre/hdf-utilities, which never reads the
+ * cache. The checksum is an epoch-sensitive contract: a document whose producer
+ * recorded a re-score without the override detail would otherwise change its
+ * checksum on upgrade with nothing in it having changed. The field is a
+ * fallback, not a source: any override at all makes it unread. Pinned by the
+ * "stored fallback" test. (Go parity: ComputeEffectiveImpact in go/effective_checksum.go.)
  */
 export function computeEffectiveImpact(
   requirement: Record<string, unknown>,

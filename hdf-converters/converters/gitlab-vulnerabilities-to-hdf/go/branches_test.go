@@ -105,8 +105,6 @@ func TestTagHelpers_NilInputs(t *testing.T) {
 	assert.Nil(t, scannerTag(nil))
 	assert.Nil(t, userTag(nil))
 	assert.Nil(t, nullableString(nil))
-	assert.Equal(t, "", derefString(nil))
-	assert.Equal(t, "x", derefString(str("x")))
 	fetched := time.Date(2026, 9, 20, 19, 50, 18, 0, time.UTC)
 	assert.Equal(t, fetched, firstTime(fetched, "", "bogus"), "no source time falls back to the fetch time, never a zero or epoch date")
 }

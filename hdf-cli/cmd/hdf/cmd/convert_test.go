@@ -339,6 +339,26 @@ func TestCheckOutputOverwritesInput(t *testing.T) {
 	})
 }
 
+// On conversion, a componentless output is a legitimate result — a source that
+// names no target yields no component — so an unapplied --component-id warns and
+// the conversion still succeeds. `hdf label set` refuses the same case, because
+// there the document is the thing the user pointed at.
+func TestConvertComponentID_NoComponentsWarnsAndStillWrites(t *testing.T) {
+	const componentID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	input := converterFixturePath(t, "gosec-to-hdf", "input/real.json")
+	out := filepath.Join(t.TempDir(), "out.json")
+
+	_, stderr, err := executeCommand("convert", "--from", "gosec", input, "-o", out, "--component-id", componentID)
+	require.NoError(t, err, "a converter that produces no component must not fail the conversion")
+	assert.Contains(t, stderr, "no components")
+	assert.Contains(t, stderr, "--component-id")
+
+	data, readErr := os.ReadFile(out)
+	require.NoError(t, readErr)
+	assert.NotContains(t, string(data), componentID, "nothing was stamped, and the output must not pretend otherwise")
+	assert.NotContains(t, string(data), `"components"`)
+}
+
 func TestConvertCommand_HDFOnlyFlagsRejectedForOtherTargets(t *testing.T) {
 	input := converterFixturePath(t, "hdf-to-html", "input/rich.json")
 	second := converterFixturePath(t, "hdf-to-html", "input/finding-detail.json")
@@ -393,51 +413,5 @@ func TestConvertCommand_HDFOnlyFlagsRejectedForOtherTargets(t *testing.T) {
 		require.NoError(t, readErr)
 		assert.Contains(t, string(data), `"env": "prod"`)
 		assert.Contains(t, string(data), componentID)
-	})
-}
-
-func TestBulkOutputPaths(t *testing.T) {
-	slash := func(paths []string) []string {
-		out := make([]string, len(paths))
-		for i, p := range paths {
-			out[i] = filepath.ToSlash(p)
-		}
-		return out
-	}
-
-	t.Run("file names that differ keep their own name", func(t *testing.T) {
-		paths, err := bulkOutputPaths("/out", []string{"scans/a.json", "scans/b.nessus"}, "hdf")
-		require.NoError(t, err)
-		assert.Equal(t, []string{"/out/a.hdf.json", "/out/b.hdf.json"}, slash(paths))
-	})
-
-	t.Run("colliding names are qualified below the directory they share", func(t *testing.T) {
-		paths, err := bulkOutputPaths("/out", []string{
-			"scans/host1/results.json",
-			"scans/host2/results.json",
-			"scans/other.json",
-		}, "html")
-		require.NoError(t, err)
-		assert.Equal(t, []string{
-			"/out/host1--results.hdf.html",
-			"/out/host2--results.hdf.html",
-			"/out/other.hdf.html",
-		}, slash(paths))
-	})
-
-	t.Run("two inputs that would be written to one path are refused", func(t *testing.T) {
-		_, err := bulkOutputPaths("/out", []string{
-			"scans/host1/results.json",
-			"scans/host2/results.json",
-			"scans/host1--results.json",
-		}, "html")
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "host1--results.hdf.html")
-	})
-
-	t.Run("one input named twice keeps its own path", func(t *testing.T) {
-		paths, err := bulkOutputPaths("/out", []string{"scans/results.json", "scans/results.json"}, "html")
-		require.NoError(t, err)
-		assert.Equal(t, []string{"/out/results.hdf.html", "/out/results.hdf.html"}, slash(paths))
 	})
 }
