@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-openapi",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "OpenAPI 3.1 components for HDF, generated from the HDF JSON Schema 2020-12 bundles",
   "publishConfig": {
     "access": "public"

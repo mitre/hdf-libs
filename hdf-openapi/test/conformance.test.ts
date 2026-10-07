@@ -150,18 +150,19 @@ const ROOTS_WITH_EXAMPLES = Object.entries(ROOT_COMPONENT_NAMES).filter(([file])
 
 /**
  * Roots carrying NO root-level example, and therefore absent from every example-driven
- * check below. Tracked rather than filtered silently: a root that loses its example would
- * otherwise drop out of the negatives with nothing to say so. ADR-0008 Phase 4 adds the
- * missing `hdf-comparison` root example, at which point this list empties.
+ * check below. Now empty: every root carries one. Kept rather than deleted because the
+ * assertion below is what notices if a root ever loses its example — it would otherwise
+ * drop out of the negatives silently. hdf-schema's own suite asserts the same property at
+ * the source, so this is the downstream half of that guard.
  */
-const ROOTS_WITHOUT_EXAMPLES = ['HdfComparison'];
+const ROOTS_WITHOUT_EXAMPLES: string[] = [];
 
 /**
  * Roots whose own example carries no value under any closed vocabulary, so no enum can be
  * violated in it without inventing data. `hdf-baseline`'s example omits `severity`,
  * `controlType` and every other enum-bearing field. Tracked for the same reason as
- * [[ROOTS_WITHOUT_EXAMPLES]] — the alternative is a test that quietly checks six roots
- * while claiming seven.
+ * [[ROOTS_WITHOUT_EXAMPLES]] — the alternative is a test that quietly checks fewer roots
+ * than it claims.
  */
 const ROOTS_WITHOUT_REACHABLE_ENUM = ['HdfBaseline'];
 

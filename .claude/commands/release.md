@@ -202,12 +202,12 @@ These edits are uniform across the workspace and safe to script. Use a small Pyt
 
 | File pattern | What to change |
 |---|---|
-| Workspace `package.json` — **discover, never enumerate**: `grep -l '"version": "OLD"' hdf-*/package.json` (12 at the time of writing, including `hdf-fixtures`, which a hand-kept list of 10 missed; root and `site/` are not lockstep-versioned) | `"version": "OLD"` → `"version": "NEW"` on the top-level `version` line only |
+| Workspace `package.json` — **discover, never enumerate**: `grep -l '"version": "OLD"' hdf-*/package.json` (13 at the time of writing, including `hdf-fixtures`, which a hand-kept list of 10 missed; root and `site/` are not lockstep-versioned) | `"version": "OLD"` → `"version": "NEW"` on the top-level `version` line only |
 | `hdf-schema/package.json` | Same |
 | `hdf-engine/go/engine.go` — the `Version()` constant | `return "OLD"` → `return "NEW"`. TestVersion asserts this equals `hdf-engine/package.json`, so a missed bump fails CI (bead 4908.19). It is NOT an ldflags stamp — the engine is consumed as a library where no linker flags are set. |
 | `hdf-engine/src/version.ts` — the `engineVersion` constant (re-exported by `index.ts`) | `'OLD'` → `'NEW'`. The TypeScript twin of the above, asserted against `hdf-engine/package.json` by `hdf-engine/test/index.test.ts`. Missing it is what left hdf-engine a release behind the workspace at 3.6.0. |
 | `hdf-cli/internal/mcp/evals/testdata/tool-responses.golden.json` — the MCP tool-response golden | Regenerate, never hand-edit: `cd hdf-cli && REGEN_GOLDEN=1 go test ./internal/mcp/evals -run TestGolden_ToolResponses`. Every response stamps `engineSchemaVersion` (and the base64 document handles encode it), so the golden pins the engine version and `TestGolden_ToolResponses` fails the pre-commit hook of *any* commit made while the bump sits in the working tree — including an unrelated fix commit staged ahead of it. Confirm the diff is version-only before staging it with the bump. |
-| `hdf-schema/src/schemas/*.schema.json` (7 root schemas) | `"$id"` URLs ending in `/vOLD` → `/vNEW`. Also any `$ref` URLs in primitives that quote a version path. |
+| `hdf-schema/src/schemas/*.schema.json` (8 root schemas) | `"$id"` URLs ending in `/vOLD` → `/vNEW`. Also any `$ref` URLs in primitives that quote a version path. |
 | Cross-module `go.mod` requires — **discover them, never enumerate**: `grep -rlE 'github.com/mitre/hdf-libs/[^ ]+ v[0-9]' --include=go.mod . \| grep -v node_modules` (nine files at the time of writing, including `hdf-extension-graph/go/go.mod`, `hdf-fixtures/go.mod` and `hdf-schema/testhdf/go/go.mod`, which a hand-kept list has missed twice) | Lines matching `github.com/mitre/hdf-libs/<x>/v3 vOLD` → `vNEW`. Regex: `s/(hdf-libs/[^ ]+) vOLD/$1 vNEW/g`. Then the hard gate: `grep -rE 'hdf-libs/[^ ]+ vOLD' --include=go.mod .` must return nothing. Use `scripts/set-go-module-versions.sh vNEW` rather than editing by hand — it rewrites with `go mod edit` (a regex misses a require carrying a trailing comment) and then re-reads every file to prove none was left behind. **The version it writes must be the exact version the commit will be tagged with**, so a pre-release writes its own `-rc.N` suffix; see Phase 7.5. |
 
 Use `git status` after the script run to spot-check no `node_modules`, `dist/`, or `.git/` paths got touched.
@@ -223,7 +223,7 @@ The docs site at mitre.github.io/hdf-libs/ archives every released schema versio
 cd hdf-schema && pnpm build:schemas && cd ..
 # Generator writes the current version's archive entries as a side effect
 cd site && pnpm generate && cd ..
-# Confirm the new files appear (7 schemas × 1 new version dir each)
+# Confirm the new files appear (8 schemas × 1 new version dir each)
 ls site/public/schemas/*/v$NEW/index.json
 # Stage them with the rest of the release commit
 git add 'site/public/schemas/*/v$NEW/'
@@ -238,8 +238,8 @@ These claims are not URL-pattern uniform — they're prose ("All schemas are at 
 | File | What to look for |
 |---|---|
 | `README.md` (root) | Any *"schemas are at vX"* / *"current schema vX"* / *"latest vX"* sentences. Update to NEW. |
-| `site/docs/specification/hdf-specification.md` | (a) **Document title** (line 1) `# Heimdall Data Format (HDF) vX Specification`. (b) **Version metadata** (`**Version**: X`). (c) **Every `**Schema ID**: …/vX` line** — there's one per top-level document type (currently 6: results, baseline, system, plan, amendments, comparison). |
-| `site/docs/contributing/developer-guide.md` | `$ref` URI pattern examples (currently around line 143). These show the canonical URL pattern, not historical examples, so they bump. |
+| `site/docs/specification/hdf-specification.md` | (a) **Document title** (line 1) `# Heimdall Data Format (HDF) vX Specification`. (b) **Version metadata** (`**Version**: X`). (c) **Every `**Schema ID**: …/vX` line** — there's one per top-level document type (currently 8: results, baseline, system, plan, amendments, comparison, evidence-package, requirement-change-event). |
+| `site/docs/contributing/developer-guide.md` | `$ref` URI pattern examples (the `### $ref URI Pattern` section). These show the canonical URL pattern, not historical examples, so they bump. |
 | `hdf-cli/README.md` | Archive-naming example `hdf_<version>_<os>_<arch>.tar.gz (e.g., hdf_X_darwin_arm64.tar.gz)`. Bump the example. |
 | `hdf-schema/README.md` | **Add a new `### What's new in vNEW` subsection** above the existing `### What's new in vOLD`. Keep the old "What's new" sections — they're historical. |
 | `CLAUDE.md` (root) | Any field annotations marked `*(vX)*` are historical and stay. New 3.2-style annotations for fields added in this release should be added if applicable. |
@@ -303,7 +303,7 @@ If any step fails, fix before proposing the commit. A common failure: forgetting
    - **Body:** Two or three sentences. State the unified-lockstep model. Call out anything special (new fields documented in spec, removed enum, behavior change). Do *not* enumerate files — `git diff` shows them.
 5. Wait for explicit user approval before committing. The pre-commit hook will run `pnpm check`; if you ran Phase 6 first, this is a no-op.
 6. **Never tag a stable release manually.** Stable tagging is handled by the release workflow (`goreleaser` + per-module tags in lockstep: `vX`, `hdf-cli/vX`, `hdf-converters/vX`, etc.). Do not run `git tag vNEW` for the stable. The one sanctioned manual tag is the **`vNEW-rc.N` prerelease tag** that triggers Phase 7.5's dry-run — pushing that tag drives the workflow's prerelease path; it is not a manual publish.
-7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` only (there is no per-major `v3` tag — the Publish step sets exactly `--tag next` for a stable and `--tag rc` for an rc) — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other packages (10 at the time of writing) keep the default `latest` behavior for a stable and get `next` for an rc — do not "harmonize" them onto `next`.
+7. **npm dist-tags are workflow-owned — and `@mitre/hdf-converters` must NEVER reach `latest`.** That npm name is shared with heimdall2, whose v2 line owns `latest`; this repo's stables publish it under `next` only (there is no per-major `v3` tag — the Publish step sets exactly `--tag next` for a stable and `--tag rc` for an rc) — all handled by `release.yml` (see the comment block in its Publish step). Never run a manual `pnpm publish`/`npm publish` for hdf-converters and never `npm dist-tag add … latest` on it. The other packages (11 at the time of writing) keep the default `latest` behavior for a stable and get `next` for an rc — do not "harmonize" them onto `next`.
 
 ### Phase 7.5 — Prerelease (RC) publish dry-run *(only when the publishing pipeline changed)*
 
@@ -342,7 +342,7 @@ Non-empty (or any change to how packages are published — OIDC, dist-tag logic,
 3. Verify the publish landed correctly — the same checks as Phase 8, but against the RC:
    - all per-module tags appear at `vNEW-rc.1` in lockstep;
    - **npm dist-tags:** `@mitre/hdf-converters` got `rc` and **`latest` is UNTOUCHED** (still the 2.x heimdall2 line) — `npm view @mitre/hdf-converters dist-tags`. An RC that moves `latest` is an incident (restore per Phase 8).
-   - the other 8 packages published under a prerelease tag (`rc`/`next`), **not** `latest`;
+   - the other 11 packages published under a prerelease tag (`rc`/`next`), **not** `latest`;
    - the supply-chain artifacts are actually attached to the GitHub prerelease: syft SBOM, cosign signature, SLSA build provenance (whichever the pipeline change added);
    - **the Go modules actually build for a consumer** — this is the check that catches a bad prepare-release commit, and the one whose absence let four prereleases ship unbuildable. Do it outside the repo so no `replace` or workspace can mask it:
 
@@ -386,13 +386,13 @@ Beads were already closed at merge time (Phase 1.5); this phase is the **public*
 - [ ] Phase 1.5 pre-release bead reconciliation: every delivered open/in_progress bead verified against the code and closed citing its PR; remaining-open cards triaged as blocking-bug vs. patchable
 - [ ] Phase 1.6 suppression review: pnpm overrides re-validated against current advisory floors; `ignoreGhsas` checked for now-available fixes; dependabot `ignore` rules checked against their still-blocking conditions; retirements filed as their own commits
 - [ ] *(minor/major)* Phase 1.7 vendored external-schema freshness: `HDF_PROVENANCE_NETWORK=1 go test ./shared/... -run SchemaLoadProvenanceSourcesStillResolve` passes (it re-fetches every recorded source and SHA-256-compares); drift refreshed + revalidated, or confirmed no-op
-- [ ] Every workspace `package.json` at NEW (12 at the time of writing — discover with `grep -l '"version": "OLD"' hdf-*/package.json`, never a fixed list; `hdf-fixtures` was missed by the old count of 10)
+- [ ] Every workspace `package.json` at NEW (13 at the time of writing — discover with `grep -l '"version": "OLD"' hdf-*/package.json`, never a fixed list; `hdf-fixtures` was missed by the old count of 10)
 - [ ] `hdf-engine/go/engine.go` `Version()`, `hdf-engine/src/version.ts` `engineVersion`, and the regenerated MCP tool-response golden at NEW
 - [ ] Every `go.mod` with a cross-module require (discovered by grep, not a fixed count) at `hdf-libs/<x>/v3 vNEW`; the post-sweep grep for `vOLD` returns nothing
-- [ ] *(minor/major)* 7 schema `$id` URLs at NEW
-- [ ] *(minor/major)* 7 new archive files staged: `site/public/schemas/<name>/vNEW/index.json` (one per main schema). `cd site && pnpm generate` writes them; `git add 'site/public/schemas/*/vNEW/'` stages them. See Phase 2.5.
+- [ ] *(minor/major)* 8 schema `$id` URLs at NEW
+- [ ] *(minor/major)* 8 new archive files staged: `site/public/schemas/<name>/vNEW/index.json` (one per main schema). `cd site && pnpm generate` writes them; `git add 'site/public/schemas/*/vNEW/'` stages them. See Phase 2.5.
 - [ ] *(minor/major)* Root `README.md` current-version claims updated
-- [ ] *(minor/major)* `site/docs/specification/hdf-specification.md`: title + version metadata + 6 `Schema ID` URLs + new-field rows in every affected requirement/type table
+- [ ] *(minor/major)* `site/docs/specification/hdf-specification.md`: title + version metadata + 8 `Schema ID` URLs + new-field rows in every affected requirement/type table
 - [ ] *(minor/major)* `site/docs/contributing/developer-guide.md` `$ref` URI pattern at NEW
 - [ ] *(minor/major)* `hdf-cli/README.md` archive example at NEW
 - [ ] *(minor/major)* `hdf-schema/README.md` new "What's new in vNEW" section added
