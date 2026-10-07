@@ -51,8 +51,8 @@ env:
   ZIZMOR_SHA256: 'ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed'
   # The released hdf CLI the gates run. Bumped post-publish by the release
   # skill (Phase 9) from the linux_amd64 line of that release's checksums.txt.
-  HDF_CLI_VERSION: '3.7.1'
-  HDF_CLI_SHA256: '6d4fe47c3d58fea788e27432bdd0b8e04d3ab90106e09b0f9025d69addd1e83a'
+  HDF_CLI_VERSION: '3.7.2'
+  HDF_CLI_SHA256: '77509e5beaf4077ce68d0adbbb4915417796fe927fb13f07472f35e74ce5b220'
 
 # ─── Pipeline ──────────────────────────────────────────────────────────────
 #
