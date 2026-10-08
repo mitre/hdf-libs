@@ -22,6 +22,7 @@
   "scripts": {
     "build": "pnpm run clean && pnpm run build:components && tsdown",
     "build:components": "node --import tsx src/generate-components.ts",
+    "sync:golden": "node scripts/sync-mcp-golden.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src test scripts",
     "test": "pnpm run test:ts",
