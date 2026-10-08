@@ -6,6 +6,8 @@
 // which runs both over the same fixtures).
 
 import { createHash } from 'node:crypto';
+import { blake3 } from '@noble/hashes/blake3.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import { agentOverrideCount } from './compliance.js';
 import type { HDFResults } from '@mitre/hdf-schema';
 
@@ -119,8 +121,8 @@ export function parseEvidencePackage(pkg: string): { planRef: string; contents: 
 
 /** Verifies each content entry against fetch(uri) using the algorithm the entry
  * recorded, preserving entry order. No checksum → skipped; an algorithm this
- * build cannot compute → error, never mismatch, because a mismatch would tell
- * the operator their evidence changed when it did not; a fetch throw → error;
+ * build cannot compute → unsupported, never mismatch (that would say their evidence
+ * changed when it did not) and never error, since the bytes may be intact; a fetch throw → error;
  * hash mismatch → mismatch (carrying expected+actual). */
 export function verifyChecksums(contents: EvidenceContent[], fetch: FetchFn): ChecksumResult[] {
   return contents.map((c) => {
@@ -227,10 +229,10 @@ export function completeness(planned: string[], covered: string[]): Completeness
   return { planned, covered, missing, complete: missing.length === 0 };
 }
 
-/** The algorithms this build can verify. blake3 is in the schema's Hash_Algorithm
- * enum but is not computable here, so it is refused by name rather than silently
- * treated as something else. Kept identical to Go's ChecksumHex. */
-const SUPPORTED_ALGORITHMS = ['sha256', 'sha384', 'sha512'] as const;
+/** The algorithms this build can verify — every value Hash_Algorithm admits. An
+ * algorithm outside the enum is refused by name rather than silently treated as
+ * something else. Kept identical to Go's ChecksumHex. */
+const SUPPORTED_ALGORITHMS = ['sha256', 'sha384', 'sha512', 'blake3'] as const;
 
 /** Names the algorithm an entry's checksum is verified under: an unstated
  * algorithm means sha256, so reporting '' would understate it. */
@@ -242,8 +244,15 @@ function supportedAlgorithm(algorithm: string | undefined): boolean {
   return !algorithm || (SUPPORTED_ALGORITHMS as readonly string[]).includes(algorithm);
 }
 
+/** Formats the algorithm list exactly as Go's ChecksumHex does, so the two languages
+ * emit the SAME user-visible refusal rather than two spellings of it. */
+function algorithmList(): string {
+  const all = SUPPORTED_ALGORITHMS as readonly string[];
+  return `${all.slice(0, -1).join(', ')} and ${all[all.length - 1]}`;
+}
+
 function unsupportedAlgorithmMessage(algorithm: string | undefined): string {
-  return `unsupported checksum algorithm "${algorithm}": this build computes ${SUPPORTED_ALGORITHMS.join(', ')}`;
+  return `unsupported checksum algorithm "${algorithm}": this build computes ${algorithmList()}`;
 }
 
 /** Hashes data with the named Hash_Algorithm, hex-encoded. An empty algorithm
@@ -252,6 +261,12 @@ function unsupportedAlgorithmMessage(algorithm: string | undefined): string {
 export function checksumHex(algorithm: string | undefined, data: Uint8Array): string {
   if (!supportedAlgorithm(algorithm)) {
     throw new Error(unsupportedAlgorithmMessage(algorithm));
+  }
+  if (algorithm === 'blake3') {
+    // Node's crypto offers blake2b512 and blake2s256 only, so this is the one
+    // algorithm in the enum that needs a package. The 32-byte default-length digest
+    // is what the BLAKE3 reference vectors direct implementations to compare.
+    return bytesToHex(blake3(data));
   }
   return createHash(!algorithm ? 'sha256' : algorithm)
     .update(data)

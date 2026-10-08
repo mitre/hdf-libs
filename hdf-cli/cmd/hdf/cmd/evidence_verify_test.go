@@ -282,7 +282,7 @@ func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
 		return p
 	}
 	// Real documents, so the recorded digests are of real bytes.
-	for _, n := range []string{"system.json", "rhel9-results.json"} {
+	for _, n := range []string{"system.json", "rhel9-results.json", "plan.json"} {
 		body, readErr := os.ReadFile(filepath.Join(evidenceFixtureDir, n))
 		require.NoError(t, readErr)
 		write(n, string(body))
@@ -302,6 +302,11 @@ func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
 				"checksum": map[string]string{"algorithm": "sha512", "value": sum("system.json", "sha512")}},
 			{"type": "hdf-results", "uri": "rhel9-results.json",
 				"checksum": map[string]string{"algorithm": "sha384", "value": sum("rhel9-results.json", "sha384")}},
+			// blake3 belongs here on the same terms as the others now that it is computed:
+			// a correct digest must verify AND the line must name the algorithm, which is
+			// what an operator reads to know what was actually checked.
+			{"type": "hdf-plan", "uri": "plan.json",
+				"checksum": map[string]string{"algorithm": "blake3", "value": sum("plan.json", "blake3")}},
 		},
 	}
 	body, marshalErr := json.Marshal(pkg)
@@ -312,6 +317,7 @@ func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "(sha512 match)", "the line must name the algorithm the entry recorded")
 	assert.Contains(t, stdout, "(sha384 match)")
+	assert.Contains(t, stdout, "(blake3 match)", "a correct blake3 verifies and is named as such")
 	assert.NotContains(t, stdout, "(sha256 match)",
 		"neither entry recorded sha256, so no line may claim it")
 
@@ -325,9 +331,11 @@ func TestEvidenceVerify_NamesTheAlgorithmItActuallyVerifiedWith(t *testing.T) {
 		} `json:"results"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(jsonOut), &parsed))
-	require.Len(t, parsed.Results, 2)
+	require.Len(t, parsed.Results, 3)
 	assert.Equal(t, "sha512", parsed.Results[0].Algorithm)
 	assert.Equal(t, "sha384", parsed.Results[1].Algorithm)
+	assert.Equal(t, "blake3", parsed.Results[2].Algorithm)
+	assert.Equal(t, "match", parsed.Results[2].Status)
 	assert.Equal(t, "match", parsed.Results[0].Status)
 	assert.Equal(t, "match", parsed.Results[1].Status)
 }
@@ -483,36 +491,27 @@ func TestEvidenceVerify_CompletenessNeverCreditsAnUnreachableDocument(t *testing
 		"the run must not report completeness passing beside a reference it could not reach")
 }
 
-// A recorded algorithm this build cannot compute is reported, not fatal — the same
-// posture as a reference it cannot reach, because both are claims the tool cannot
-// check and the bytes may be perfectly intact. What must NOT happen is the entry
-// disappearing: when the engine gained a distinct status, every consumer switch that
-// did not handle it dropped the entry from the per-entry list AND from every count,
-// so a package with an unverifiable checksum reported "0/0 valid" and exited 0 with
-// no mention of it at all. Silence is worse than either verdict.
-func TestEvidenceVerify_ReportsAnUncomputableAlgorithmWithoutFailing(t *testing.T) {
+// Every algorithm Hash_Algorithm admits is computed by this build, and the CLI
+// schema-validates a package before verifying it — so an algorithm it cannot compute has
+// no route in at all. The unsupported status is still reachable for a LIBRARY consumer
+// that hands contents straight to the engine, which hdf-engine's own tests cover; through
+// the CLI it is refused here, at validation, naming the algorithm and the admitted set.
+func TestEvidenceVerify_RefusesAnOffSchemaChecksumAlgorithm(t *testing.T) {
 	dir := t.TempDir()
-	for _, n := range []string{"system.json", "rhel9-results.json", "postgres-results.json", "plan.json"} {
+	for _, n := range []string{"system.json", "plan.json", "rhel9-results.json", "postgres-results.json"} {
 		body, err := os.ReadFile(filepath.Join(evidenceFixtureDir, n))
 		require.NoError(t, err)
 		require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
 	}
 	pkg := map[string]interface{}{
-		// Deliberately NOT named after the algorithm: the header line prints the package
-		// name, so calling it "blake3" made the assertion below pass whether or not the
-		// entry was ever rendered.
-		"name":    "unverifiable-algorithm",
+		"name":    "off-schema-algorithm",
 		"planRef": "plan.json",
 		"contents": []map[string]interface{}{
-			// A published BLAKE3 vector for the empty input, so the value is a real
-			// blake3 digest rather than an invented hex string. It cannot match this
-			// file, but nothing computes it, so no comparison ever happens.
 			{"type": "hdf-system", "uri": "system.json", "checksum": map[string]string{
-				"algorithm": "blake3",
-				"value":     "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+				"algorithm": "md5",
+				"value":     "d41d8cd98f00b204e9800998ecf8427e",
 			}},
 			{"type": "hdf-results", "uri": "rhel9-results.json"},
-			{"type": "hdf-results", "uri": "postgres-results.json"},
 		},
 	}
 	body, err := json.Marshal(pkg)
@@ -520,31 +519,51 @@ func TestEvidenceVerify_ReportsAnUncomputableAlgorithmWithoutFailing(t *testing.
 	pkgPath := filepath.Join(dir, "pkg.json")
 	require.NoError(t, os.WriteFile(pkgPath, body, 0o600))
 
-	stdout, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
-	require.NoError(t, verifyErr, "an uncomputable algorithm is reported, not fatal")
-	assert.Contains(t, stdout, "system.json",
-		"the entry must still appear; vanishing from the output is the fail-open this pins")
-	assert.Contains(t, stdout, "blake3", "and the line must name the algorithm it could not compute")
+	_, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	require.Error(t, verifyErr, "an off-schema algorithm is refused, not silently carried")
+	// The validator names the ADMITTED SET rather than the offending value, so that is
+	// what is asserted. blake3 appearing in it is the load-bearing part here: the set the
+	// schema admits and the set this build computes are now the same.
+	assert.Contains(t, verifyErr.Error(), "contents.0.checksum.algorithm",
+		"the refusal points at the offending field")
+	assert.Contains(t, verifyErr.Error(), "blake3",
+		"and lists the admitted set, which includes blake3 because this build computes it")
+}
 
-	jsonOut, _, jsonErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--json")
-	require.NoError(t, jsonErr)
-	var parsed struct {
-		Results []struct {
-			URI    string `json:"uri"`
-			Status string `json:"status"`
-		} `json:"results"`
-		Unsupported int `json:"unsupported"`
+// The point of computing blake3 rather than reporting it: a WRONG blake3 has to fail the
+// command. Before this it was waved through as unverifiable, so a tampered file behind a
+// blake3 checksum travelled undetected where the same tampering behind sha256 failed.
+func TestEvidenceVerify_FailsAWrongBlake3Checksum(t *testing.T) {
+	dir := t.TempDir()
+	for _, n := range []string{"system.json", "rhel9-results.json"} {
+		body, err := os.ReadFile(filepath.Join(evidenceFixtureDir, n))
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, n), body, 0o600))
 	}
-	require.NoError(t, json.Unmarshal([]byte(jsonOut), &parsed))
-	require.Len(t, parsed.Results, 3, "every contents entry must be listed, including the unverifiable one")
-	assert.Equal(t, "unsupported", parsed.Results[0].Status)
-	assert.Equal(t, 1, parsed.Unsupported, "and it must be counted, not silently dropped")
+	body, err := os.ReadFile(filepath.Join(dir, "system.json"))
+	require.NoError(t, err)
+	correct, err := hdfengine.ChecksumHex("blake3", body)
+	require.NoError(t, err)
 
-	// The opt-in that an assessor needing everything verified would use.
-	_, _, strictErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only", "--require-reachable")
-	require.Error(t, strictErr, "--require-reachable must fail on an unverifiable checksum too")
-	assert.Contains(t, strictErr.Error(), "1 checksum(s) name an algorithm this build cannot compute",
-		"the message must name what actually happened")
-	assert.NotContains(t, strictErr.Error(), "0 recorded reference(s)",
-		"and must not name a count of zero, which sends the operator hunting a reference fault")
+	// A real blake3 digest of DIFFERENT bytes, so the value is well-formed and of the
+	// right length — an invented hex string could fail for its shape instead.
+	wrong, err := hdfengine.ChecksumHex("blake3", append(body, '\n'))
+	require.NoError(t, err)
+	require.NotEqual(t, correct, wrong)
+
+	pkg, err := json.Marshal(map[string]interface{}{
+		"name": "wrong-blake3",
+		"contents": []map[string]interface{}{
+			{"type": "hdf-system", "uri": "system.json",
+				"checksum": map[string]string{"algorithm": "blake3", "value": wrong}},
+		},
+	})
+	require.NoError(t, err)
+	pkgPath := filepath.Join(dir, "pkg.json")
+	require.NoError(t, os.WriteFile(pkgPath, pkg, 0o600))
+
+	stdout, _, verifyErr := executeCommand("evidence", "verify", pkgPath, "--checksums-only")
+	require.Error(t, verifyErr, "a wrong blake3 must fail, exactly as a wrong sha256 does")
+	assert.Contains(t, verifyErr.Error(), "mismatch")
+	assert.Contains(t, stdout, "blake3", "and the report names the algorithm it verified with")
 }

@@ -66,7 +66,7 @@ func errorValidateOutput() validateOutput {
 func RegisterValidate(s *sdkmcp.Server, ldr *loader.Loader) {
 	sdkmcp.AddTool(s, &sdkmcp.Tool{
 		Name:        "hdf_validate",
-		Description: "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file sha256 checksums), or completeness (verify every planned baseline has results). The checksums and completeness modes also report the agent-attributed override count across the package's results.",
+		Description: "Validate an HDF document in one of three modes: schema (JSON-Schema conformance for any of the eight document types, with line-numbered errors), checksums (verify an evidence package's referenced-file checksums, each under the algorithm its entry records), or completeness (verify every planned baseline has results). The checksums and completeness modes also report the agent-attributed override count across the package's results.",
 		Annotations: appmcp.ReadOnly(),
 	}, hdfValidate(ldr))
 }
@@ -178,8 +178,9 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 			out.Errors = append(out.Errors, validateError{Path: r.URI, Message: "cannot verify checksum: " + r.Error})
 		case hdfengine.ChecksumUnsupported:
 			// NOT an error and NOT invalid: the recorded algorithm is one this build
-			// cannot compute (Hash_Algorithm admits blake3), so the bytes may be intact
-			// and the document schema-valid. Reported in the notice so the caller knows a
+			// cannot compute, so the bytes may be intact. Every algorithm Hash_Algorithm
+			// admits is computed now, so this is reachable only for an OFF-SCHEMA
+			// algorithm. Reported in the notice so the caller knows a
 			// checksum went unchecked — falling through to no case at all would have
 			// reported an unverified entry as verified.
 			// The algorithm is named alongside the entry: a caller told a checksum went

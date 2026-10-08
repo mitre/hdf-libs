@@ -8,7 +8,7 @@
      "checksum": {"algorithm": "sha384", "value": "2370dce69b725b0f2e864c5a838ae259ae962e9af90bac68d2cefc4156a52699517af9739a7d305efbeb8ecb27dee50a"}},
     {"type": "hdf-results", "uri": "agent-results.json",
      "checksum": {"algorithm": "sha256", "value": "651e8f83291553986888187f0d7a6a350bf7fd98c8ad463001ca2ba524890edd"}},
-    {"type": "hdf-results", "uri": "absent-results.json",
-     "checksum": {"algorithm": "blake3", "value": "00"}}
+    {"type": "hdf-plan", "uri": "plan.json",
+     "checksum": {"algorithm": "blake3", "value": "fcfb76d5583c912dbc10292255d5aec40d67404f4444364f86770139bdad49a8"}}
   ]
 }

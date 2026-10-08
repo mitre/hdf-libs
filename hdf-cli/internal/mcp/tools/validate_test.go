@@ -48,9 +48,16 @@ func evidencePkg(planRef string, entries ...map[string]any) []byte {
 }
 
 func contentEntry(typ, uri, checksum string) map[string]any {
+	return contentEntryAlg(typ, uri, "sha256", checksum)
+}
+
+// contentEntryAlg is the shared implementation, with the algorithm as a parameter: every
+// MCP-level checksum test hardcoded sha256, so nothing here covered the engine honouring
+// the algorithm an entry actually records.
+func contentEntryAlg(typ, uri, algorithm, checksum string) map[string]any {
 	e := map[string]any{"type": typ, "uri": uri}
 	if checksum != "" {
-		e["checksum"] = map[string]any{"algorithm": "sha256", "value": checksum}
+		e["checksum"] = map[string]any{"algorithm": algorithm, "value": checksum}
 	}
 	return e
 }
@@ -380,17 +387,20 @@ func TestSchemaTypeForDoc_CoversEngineKnownTypes(t *testing.T) {
 // in validate.go handled two statuses — mismatch and error — with no default, so when
 // the engine gained a distinct unsupported status the entry fell through: the package
 // reported valid with no mention that a checksum had gone unchecked, telling a caller
-// "valid" about bytes nobody verified. It is NOT an error (Hash_Algorithm admits
-// blake3 and the bytes may be intact), so it belongs in the notice, not in errors.
+// "valid" about bytes nobody verified. It is NOT an error (the bytes may be intact), so it
+// belongs in the notice, not in errors. Reached here with an OFF-SCHEMA algorithm, which
+// is the only way left now that every algorithm the enum admits is computed — and unlike
+// `hdf evidence verify`, this path reports such a document rather than refusing it.
 func TestHdfValidate_NoticesAnAlgorithmItCannotCompute(t *testing.T) {
 	results := fixtures.Results.Minimal
 	pkg := evidencePkg("", map[string]any{
 		"type": "hdf-results", "uri": "r.json",
-		// A published BLAKE3 vector for the empty input — a real digest, never computed
-		// here, so it is never compared against the file.
+		// md5, which is OFF-SCHEMA: every algorithm Hash_Algorithm admits is computed
+		// now, so an uncomputable one can only arrive in a document this tooling did not
+		// write. The value is never compared.
 		"checksum": map[string]any{
-			"algorithm": "blake3",
-			"value":     "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+			"algorithm": "md5",
+			"value":     "d41d8cd98f00b204e9800998ecf8427e",
 		},
 	})
 	writeRoot(t, "ev.json", pkg)
@@ -406,10 +416,63 @@ func TestHdfValidate_NoticesAnAlgorithmItCannotCompute(t *testing.T) {
 	if len(out.Errors) != 0 {
 		t.Errorf("errors = %+v, want none — this is reported in the notice, not as an error", out.Errors)
 	}
-	if !strings.Contains(out.Notice, "blake3") {
+	if !strings.Contains(out.Notice, "md5") {
 		t.Errorf("notice = %q, want it to name the algorithm that went unverified", out.Notice)
 	}
 	if !strings.Contains(out.Notice, "r.json") {
 		t.Errorf("notice = %q, want it to name the entry", out.Notice)
 	}
+}
+
+// Every MCP-level checksum test recorded sha256, so nothing here covered the checksums
+// mode honouring the algorithm an entry actually records — and the tool's own Description
+// told clients it verified "sha256 checksums" while the engine verified whatever was
+// recorded. This pins both halves for the algorithm that needs a dependency to compute.
+func TestHdfValidate_ChecksumsMode_HonoursBlake3(t *testing.T) {
+	results := fixtures.Results.Minimal
+	correct, err := hdfengine.ChecksumHex("blake3", results)
+	if err != nil {
+		t.Fatalf("computing the expected blake3: %v", err)
+	}
+
+	t.Run("a correct blake3 verifies", func(t *testing.T) {
+		writeRoot(t, "ev.json", evidencePkg("", contentEntryAlg("hdf-results", "r.json", "blake3", correct)))
+		writeInRoot(t, "r.json", results)
+
+		_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "checksums"})
+		if !out.Valid {
+			t.Errorf("valid = false for a CORRECT blake3 checksum; errors = %+v", out.Errors)
+		}
+		if len(out.Errors) != 0 {
+			t.Errorf("errors = %+v, want none", out.Errors)
+		}
+	})
+
+	t.Run("a wrong blake3 is reported as a mismatch", func(t *testing.T) {
+		// A real blake3 digest of DIFFERENT bytes, so the value is well-formed and of the
+		// right length — an invented hex string could fail for its shape instead.
+		wrong, wrongErr := hdfengine.ChecksumHex("blake3", append(results, '\n'))
+		if wrongErr != nil {
+			t.Fatalf("computing a differing blake3: %v", wrongErr)
+		}
+		if wrong == correct {
+			t.Fatal("precondition: the two digests must differ")
+		}
+		writeRoot(t, "ev.json", evidencePkg("", contentEntryAlg("hdf-results", "r.json", "blake3", wrong)))
+		writeInRoot(t, "r.json", results)
+
+		_, out := callValidate(t, validateInput{Source: &handle.Source{Path: "ev.json"}, Mode: "checksums"})
+		if out.Valid {
+			t.Error("valid = true for a WRONG blake3 checksum; the mismatch must make it invalid")
+		}
+		var found bool
+		for _, e := range out.Errors {
+			if e.Path == "r.json" && strings.Contains(e.Message, "mismatch") {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("want a mismatch error naming r.json, got %+v", out.Errors)
+		}
+	})
 }

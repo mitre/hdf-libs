@@ -610,7 +610,7 @@ func TestToVerifyResults_MapsStatusesAndCounts(t *testing.T) {
 		// The table enumerates the WHOLE status type on purpose: a status this function
 		// does not translate becomes an entry with an empty status and no count, which is
 		// how an unverified entry gets reported as verified.
-		{URI: "e", Type: "hdf-results", Status: hdfengine.ChecksumUnsupported, Error: "no blake3"},
+		{URI: "e", Type: "hdf-results", Status: hdfengine.ChecksumUnsupported, Error: "no md5"},
 	}
 	results, counts := toVerifyResults(in)
 	require.Len(t, results, 5)

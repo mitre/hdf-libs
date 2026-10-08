@@ -14,8 +14,8 @@ import (
 	"sort"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
-
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
+	"lukechampine.com/blake3"
 )
 
 // ChecksumStatus classifies a single content entry's checksum verification.
@@ -268,11 +268,11 @@ func effectiveAlgorithm(recorded string) string {
 }
 
 // ChecksumHex hashes data with the named Hash_Algorithm, hex-encoded. An empty
-// algorithm means sha256, so a package that records only a value keeps its
-// meaning. blake3 is in the schema's enum but not computable here, so it is
-// refused by name rather than silently treated as something else. This is the
-// single definition of which algorithms this codebase can verify — the CLI
-// reads it rather than keeping its own copy.
+// algorithm means sha256, so a package that records only a value keeps its meaning.
+// Every algorithm the enum admits is computed here; one from outside it is refused by
+// name rather than silently treated as something else. This is the single definition
+// of which algorithms this codebase can verify — the CLI reads it rather than keeping
+// its own copy.
 func ChecksumHex(algorithm string, data []byte) (string, error) {
 	switch algorithm {
 	case "", "sha256":
@@ -283,8 +283,14 @@ func ChecksumHex(algorithm string, data []byte) (string, error) {
 	case "sha512":
 		sum := sha512.Sum512(data)
 		return hex.EncodeToString(sum[:]), nil
+	case "blake3":
+		// The 32-byte default-length digest, which is what the BLAKE3 reference vectors
+		// direct implementations to compare against; the function's extended output has no
+		// meaning for a recorded Checksum.
+		sum := blake3.Sum256(data)
+		return hex.EncodeToString(sum[:]), nil
 	default:
-		return "", fmt.Errorf("unsupported checksum algorithm %q: this build computes sha256, sha384 and sha512", algorithm)
+		return "", fmt.Errorf("unsupported checksum algorithm %q: this build computes sha256, sha384, sha512 and blake3", algorithm)
 	}
 }
 

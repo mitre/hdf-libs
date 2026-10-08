@@ -743,6 +743,10 @@ func TestEvidenceBundle_HonoursTheRecordedChecksumAlgorithm(t *testing.T) {
 	src, err := os.ReadFile(filepath.Join(evidenceFixtureDir, "rhel9-results.json"))
 	require.NoError(t, err)
 	sum384, sum512 := sha512.Sum384(src), sha512.Sum512(src)
+	// Through the engine, which is pinned to the BLAKE3 reference vectors by
+	// hdf-engine's own tests, rather than hardcoded here where it would rot.
+	blake3Of, err := hdfengine.ChecksumHex("blake3", src)
+	require.NoError(t, err)
 
 	for _, tc := range []struct {
 		algorithm, value, wantErr string
@@ -750,11 +754,11 @@ func TestEvidenceBundle_HonoursTheRecordedChecksumAlgorithm(t *testing.T) {
 		{"sha384", hex.EncodeToString(sum384[:]), ""},
 		{"sha512", hex.EncodeToString(sum512[:]), ""},
 		{"sha512", strings.Repeat("b", 128), "checksum mismatch"},
-		// blake3 is deliberately absent from this table. There is no stdlib blake3, and
-		// an algorithm this build cannot compute is no longer a bundle failure — the
-		// document is carried and the checksum reported as unverified, which
-		// TestEvidenceBundle_CarriesADocumentWhoseAlgorithmItCannotVerify pins. A
-		// mismatch row stays above, because a WRONG sha512 is still a failure.
+		// blake3 is now computed, so it belongs in this table on the same terms as the
+		// others: a correct digest verifies and a wrong one aborts the bundle. Carrying a
+		// blake3 document with its checksum merely REPORTED was the gap this closes.
+		{"blake3", blake3Of, ""},
+		{"blake3", strings.Repeat("b", 64), "checksum mismatch"},
 	} {
 		t.Run(tc.algorithm+"/"+tc.wantErr, func(t *testing.T) {
 			dir := t.TempDir()
@@ -1584,56 +1588,34 @@ func TestEvidenceBundle_RequiresAnOutputPath(t *testing.T) {
 		"nor surface as a filesystem failure after the work is done")
 }
 
-// A schema-valid package recording a blake3 checksum could not be bundled at all:
-// the recompute refused and no archive was written. That made the schema's own enum
-// unusable. Bundle already has this exact case — a recorded-but-blank checksum value
-// is carried, counted and reported — so an algorithm it cannot compute is treated the
-// same way rather than aborting. The document still travels; what the archive cannot
-// claim is that its checksum was verified, and the report says so.
-func TestEvidenceBundle_CarriesADocumentWhoseAlgorithmItCannotVerify(t *testing.T) {
+// The counterpart of the verify case: bundle schema-validates too, so an algorithm it
+// cannot compute cannot reach the checksum layer. A checksum that is RECORDED BUT BLANK
+// remains the reachable "carried and reported as unverified" case, covered by
+// TestEvidenceBundle_ReportsAnEmptyChecksumValue and
+// TestEvidenceBundle_TreatsABlankChecksumAsUnverifiableNotChanged.
+func TestEvidenceBundle_RefusesAnOffSchemaChecksumAlgorithm(t *testing.T) {
 	dir, _ := bundleTree(t)
 	pkg := map[string]any{
-		"name": "blake3",
+		"name": "off-schema-algorithm",
 		"contents": []map[string]any{{
 			"type": "hdf-results", "uri": "scans/rhel9-results.json",
-			// A published BLAKE3 vector for the empty input — a real digest, not an
-			// invented one. Nothing computes it, so it is never compared.
 			"checksum": map[string]string{
-				"algorithm": "blake3",
-				"value":     "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
+				"algorithm": "md5",
+				"value":     "d41d8cd98f00b204e9800998ecf8427e",
 			},
 		}},
 	}
 	data, err := json.Marshal(pkg)
 	require.NoError(t, err)
-	pkgPath := filepath.Join(dir, "b3.json")
+	pkgPath := filepath.Join(dir, "offschema.json")
 	require.NoError(t, os.WriteFile(pkgPath, data, 0o600))
-	out := filepath.Join(dir, "b3.zip")
+	out := filepath.Join(dir, "offschema.zip")
 
-	_, stderr, bundleErr := executeCommand("evidence", "bundle", pkgPath, "-o", out)
-	require.NoError(t, bundleErr, "an uncomputable algorithm must not abort the bundle")
-
-	names := make([]string, 0, 2)
-	for name := range zipEntries(t, out) {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	assert.Equal(t, []string{"b3.json", "scans/rhel9-results.json"}, names,
-		"the document travels even though its checksum could not be verified")
-	assert.Contains(t, stderr, "could not be verified",
-		"and the report must say the checksum was not verified")
-	assert.Contains(t, stderr, "blake3", "naming the algorithm it could not compute")
-
-	// The help used to promise "Every recorded checksum on a reference that travels is
-	// verified before anything is written", which this behaviour falsified. Guarding the
-	// unconditional phrasing only — freezing the whole paragraph would rot on the next
-	// wording change and pin nothing worth pinning.
-	help, _, helpErr := executeCommand("evidence", "bundle", "--help")
-	require.NoError(t, helpErr)
-	assert.NotContains(t, help, "Every recorded checksum on a reference that travels is verified",
-		"an unconditional guarantee is false while any algorithm cannot be computed")
-	assert.Contains(t, help, "cannot compute",
-		"the help must name the uncomputable-algorithm exception it now carries")
+	_, _, bundleErr := executeCommand("evidence", "bundle", pkgPath, "-o", out)
+	require.Error(t, bundleErr, "an off-schema algorithm is refused at validation")
+	assert.Contains(t, bundleErr.Error(), "contents.0.checksum.algorithm",
+		"the refusal points at the offending field; the validator names the admitted set, not the value")
+	assert.NoFileExists(t, out, "and no archive is written")
 }
 
 // absolutePlanRefTree builds a package whose planRef is an absolute in-subtree path,
@@ -1804,4 +1786,28 @@ func firstExternalURI(t *testing.T, pkgPath string) string {
 	require.True(t, ok)
 	uri, _ := entry["uri"].(string)
 	return uri
+}
+
+// The Long help made a claim about blake3 that the tooling falsified, and the test that
+// had asserted on this paragraph was removed with the behaviour it described — leaving the
+// stale sentence unguarded in the highest-visibility place in the command. This pins what
+// the paragraph now guarantees so the next change to either has to touch both.
+func TestEvidenceBundle_HelpDescribesChecksumVerificationAccurately(t *testing.T) {
+	stdout, _, err := executeCommand("evidence", "bundle", "--help")
+	require.NoError(t, err)
+	// Whitespace-collapsed before matching: the help is hard-wrapped, so a sentence spans
+	// a newline. Matching the raw text would make the NotContains assertions below pass
+	// for a stale sentence that merely happens to wrap across the phrase — a false green
+	// in exactly the direction this test exists to catch.
+	help := strings.Join(strings.Fields(stdout), " ")
+
+	assert.Contains(t, help, "this build computes every algorithm Hash_Algorithm admits",
+		"the help must state the guarantee the tooling actually provides")
+	assert.Contains(t, help, "Two kinds cannot be verified",
+		"an empty value and a reference that cannot travel; an uncomputable algorithm is no longer one")
+	// The specific falsehoods this guards against returning.
+	assert.NotContains(t, help, "neither Go nor Node implements",
+		"blake3 is computed now, so the help must not say otherwise")
+	assert.NotContains(t, help, "algorithm this build cannot compute",
+		"no longer a reachable case through this command")
 }

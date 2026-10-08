@@ -91,13 +91,12 @@ field that records it — with one deliberate exception, a remote externalRefere
 since inert context was never a candidate. Everything stays recorded in the package,
 which travels in the archive and is the durable list.
 
-Every recorded checksum this build can compute is verified before anything is written. Three
-kinds cannot be: one recording an empty value, one naming an algorithm this build cannot compute
-(Hash_Algorithm admits blake3, which neither Go nor Node implements), and one on a reference that
-cannot travel, whose bytes are not here to check. The first two travel and the run says so; a
-reference recording no checksum at all travels silently — 'hdf evidence verify' reports those. A
-mismatch or a missing document fails the command and writes no archive — a partial bundle is
-worse than none, because it looks complete.
+Every recorded checksum is verified before anything is written: this build computes every
+algorithm Hash_Algorithm admits. Two kinds cannot be verified: one recording an empty value, and
+one on a reference that cannot travel, whose bytes are not here to check. Both travel and the run
+says so; a reference recording no checksum at all travels silently — 'hdf evidence verify' reports
+those. A mismatch or a missing document fails the command and writes no archive — a partial bundle
+is worse than none, because it looks complete.
 
 -o refuses a path naming the package or anything it references, so bundling cannot
 destroy the evidence it is packaging. It also refuses a path that already exists, so a
@@ -419,10 +418,12 @@ func runEvidenceBundle(pkgPath, outputPath string, overwrite bool, makeWriter fu
 		}
 		got, hashErr := hdfengine.ChecksumHex(t.algorithm, data)
 		if hashErr != nil {
-			// Not a refusal. The bytes may be intact and the package is schema-valid —
-			// Hash_Algorithm admits blake3, which this build cannot compute. Aborting here
-			// made a valid package unbundleable; carried and reported instead, exactly as a
-			// recorded-but-blank checksum value already is.
+			// Not a refusal. The bytes may be intact, so the document is carried and the
+			// checksum reported as unverified, exactly as a recorded-but-blank value
+			// already is. This build computes every algorithm Hash_Algorithm admits, so a
+			// schema-valid package no longer reaches here at all; it remains for an
+			// off-schema document, which validation refuses before this point in the CLI
+			// but which a library caller can still hand to the engine.
 			unverifiable = append(unverifiable, fmt.Sprintf("%s (%s)", subject, hashErr))
 			return nil
 		}

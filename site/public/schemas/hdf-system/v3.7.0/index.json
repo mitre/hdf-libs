@@ -297,7 +297,7 @@
             "sha512",
             "blake3"
           ],
-          "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it, and a producer may record one — but HDF tooling does NOT verify blake3: Go and Node both lack it in their standard libraries, so a blake3 checksum is reported as unverified rather than checked. Record sha256, sha384 or sha512 where the checksum needs to be verifiable.",
+          "description": "Cryptographic hash algorithms a checksum or integrity record may name. blake3 covers container-image and other artifact digests that use it. HDF tooling verifies every algorithm in this enum, so any of them may be recorded where the checksum needs to be verifiable.",
           "title": "Hash Algorithm"
         },
         "Requirement_Group": {

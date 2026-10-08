@@ -3,8 +3,11 @@ package hdfengine
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -253,15 +256,16 @@ func TestVerifyChecksums_HonoursTheRecordedAlgorithm(t *testing.T) {
 		// sha512 entry is exactly the false mismatch this card removes.
 		{name: "sha512 entry is not compared as sha256", algorithm: "sha512", value: hexOf("sha256"), want: ChecksumMismatch},
 		{name: "a genuinely wrong sha512 still mismatches", algorithm: "sha512", value: "00", want: ChecksumMismatch},
-		{
-			name: "blake3 is unsupported, not a mismatch and not an error", algorithm: "blake3", value: hexOf("sha256"),
-			want: ChecksumUnsupported, wantErr: `unsupported checksum algorithm "blake3"`,
-		},
+		{name: "blake3 stated", algorithm: "blake3", value: hexOf("blake3"), want: ChecksumMatch},
+		// The point of computing blake3 at all: a wrong one has to FAIL, where it was
+		// previously waved through as unverifiable.
+		{name: "a genuinely wrong blake3 mismatches", algorithm: "blake3", value: "00", want: ChecksumMismatch},
+		{name: "blake3 entry is not compared as sha256", algorithm: "blake3", value: hexOf("sha256"), want: ChecksumMismatch},
 		{
 			// md5 can only arrive in an off-schema document: Hash_Algorithm admits only
-			// sha256, sha384, sha512 and blake3. Classified the same as blake3 because the
-			// reason is the same — this build cannot compute it.
-			name: "an off-enum algorithm is unsupported too", algorithm: "md5", value: hexOf("sha256"),
+			// sha256, sha384, sha512 and blake3, every one of which this build now computes.
+			// So unsupported is reachable ONLY from outside the enum.
+			name: "an off-enum algorithm is unsupported", algorithm: "md5", value: hexOf("sha256"),
 			want: ChecksumUnsupported, wantErr: `unsupported checksum algorithm "md5"`,
 		},
 	} {
@@ -317,13 +321,15 @@ func TestVerifyChecksums_SeparatesAnUncomputableAlgorithmFromAReadFailure(t *tes
 	present := func(string) ([]byte, error) { return data, nil }
 	absent := func(string) ([]byte, error) { return nil, errors.New("file not found") }
 
+	// md5, not blake3: every algorithm the schema admits is now computable, so the only
+	// way to reach "uncomputable" is an off-schema document.
 	got := VerifyChecksums([]EvidenceContent{
-		{URI: "a.json", Type: "hdf-system", Checksum: "ab", ChecksumAlgorithm: "blake3", ChecksumRecorded: true},
+		{URI: "a.json", Type: "hdf-system", Checksum: "ab", ChecksumAlgorithm: "md5", ChecksumRecorded: true},
 	}, present)
 	if got[0].Status != ChecksumUnsupported {
-		t.Errorf("blake3 status = %s, want %s", got[0].Status, ChecksumUnsupported)
+		t.Errorf("md5 status = %s, want %s", got[0].Status, ChecksumUnsupported)
 	}
-	if !strings.Contains(got[0].Error, `unsupported checksum algorithm "blake3"`) {
+	if !strings.Contains(got[0].Error, `unsupported checksum algorithm "md5"`) {
 		t.Errorf("error = %q, want it to name the algorithm", got[0].Error)
 	}
 	if got[0].Actual != "" {
@@ -337,5 +343,92 @@ func TestVerifyChecksums_SeparatesAnUncomputableAlgorithmFromAReadFailure(t *tes
 	}, absent)
 	if readFail[0].Status != ChecksumError {
 		t.Errorf("unreadable file status = %s, want %s", readFail[0].Status, ChecksumError)
+	}
+}
+
+// blake3Vectors is the committed subset of the BLAKE3 reference implementation's own
+// test_vectors.json (see testdata/blake3-vectors.json, which records its provenance). The
+// expected digests therefore come from the specification's authors, not from the library
+// this repo depends on — a digest produced by that library and pasted back in would prove
+// only that it agrees with itself.
+type blake3Vectors struct {
+	Cases []struct {
+		InputLen int    `json:"input_len"`
+		Hash     string `json:"hash"`
+	} `json:"cases"`
+}
+
+// blake3VectorInput builds the input the vector file specifies: the first n bytes of the
+// repeating 251-byte sequence 0, 1, 2, ..., 250, 0, 1, ... Generated here rather than
+// committed, so the rule is stated in code in both languages.
+func blake3VectorInput(n int) []byte {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = byte(i % 251)
+	}
+	return b
+}
+
+func loadBlake3Vectors(t *testing.T) blake3Vectors {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "blake3-vectors.json"))
+	if err != nil {
+		t.Fatalf("reading the committed BLAKE3 vectors: %v", err)
+	}
+	var v blake3Vectors
+	if err := json.Unmarshal(raw, &v); err != nil {
+		t.Fatalf("parsing the committed BLAKE3 vectors: %v", err)
+	}
+	if len(v.Cases) == 0 {
+		t.Fatal("the committed BLAKE3 vectors are empty, so this test would assert nothing")
+	}
+	return v
+}
+
+func TestChecksumHex_ComputesBlake3(t *testing.T) {
+	v := loadBlake3Vectors(t)
+
+	// Named explicitly so a vector file that lost its multi-chunk cases fails here rather
+	// than silently narrowing coverage to inputs below one chunk.
+	var sawEmpty, sawMultiChunk bool
+	for _, c := range v.Cases {
+		switch {
+		case c.InputLen == 0:
+			sawEmpty = true
+		case c.InputLen > 1024:
+			sawMultiChunk = true
+		}
+
+		got, err := ChecksumHex("blake3", blake3VectorInput(c.InputLen))
+		if err != nil {
+			t.Fatalf("ChecksumHex(blake3, %d bytes): %v", c.InputLen, err)
+		}
+		// The vector's hash is an extended output; a default-length digest is its first
+		// 32 bytes, which is what the upstream file directs implementations to check.
+		want := c.Hash[:64]
+		if got != want {
+			t.Errorf("ChecksumHex(blake3, %d bytes) = %s, want %s", c.InputLen, got, want)
+		}
+	}
+	if !sawEmpty {
+		t.Error("no empty-input vector was exercised")
+	}
+	if !sawMultiChunk {
+		t.Error("no multi-chunk vector was exercised, so the parent-node path is untested")
+	}
+}
+
+// An off-schema algorithm still has to be refused: no schema-valid document can carry one,
+// but the status exists for documents this tooling did not write. The WHOLE message is
+// pinned, list included, because the TypeScript peer asserts the identical string — that
+// is what keeps one refusal from drifting into two spellings across the two languages.
+func TestChecksumHex_StillRefusesAnOffSchemaAlgorithm(t *testing.T) {
+	_, err := ChecksumHex("md5", []byte("x"))
+	if err == nil {
+		t.Fatal("ChecksumHex(md5) returned no error; an off-schema algorithm must be refused")
+	}
+	const want = `unsupported checksum algorithm "md5": this build computes sha256, sha384, sha512 and blake3`
+	if err.Error() != want {
+		t.Errorf("message = %q, want %q (the TypeScript peer asserts this same string)", err.Error(), want)
 	}
 }

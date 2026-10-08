@@ -3,7 +3,6 @@ package hdfengine
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -69,9 +68,11 @@ func TestEvidence_CrossLanguageParity(t *testing.T) {
 	}
 }
 
-// The package-level aggregators walk the same shared package fixture in both
-// languages: every hdf-results entry is fetched and parsed, an unreadable one
-// is skipped, and the per-document results are concatenated in entry order.
+// The package-level aggregators walk the same shared package fixture in both languages:
+// every hdf-results entry is fetched and parsed and the per-document results are
+// concatenated in entry order. The skip-an-unreadable-entry path is NOT exercised here —
+// every entry this fixture names now resolves — and is covered by the unit tests in both
+// languages instead.
 func TestEvidence_PackageAggregation_CrossLanguageParity(t *testing.T) {
 	dir := filepath.Join("..", "testdata", "evidence")
 	pkg, err := os.ReadFile(filepath.Join(dir, "package.json"))
@@ -125,23 +126,27 @@ func TestEvidence_ChecksumAlgorithm_CrossLanguageParity(t *testing.T) {
 		}
 	}
 
-	// sha512 and sha384 entries record CORRECT hashes, so guessing sha256 would
-	// report them as mismatches. blake3 is in the schema's enum but not computable
-	// here, so it is UNSUPPORTED — never a mismatch (which would say the evidence
-	// changed) and never an error (the bytes may be intact) — and it is reported
-	// without ever reading the (absent) file.
+	// Each entry records a CORRECT hash under its own algorithm, so guessing sha256 for any
+	// of them would report a mismatch. Entries [0] and [3] name the SAME file under sha512
+	// and blake3: one set of bytes, two algorithms, both of which must match, which is what
+	// pins the two languages' blake3 against one real document. It is the PLAN rather than a
+	// results document deliberately — a second hdf-results entry for one file would be
+	// counted twice by the aggregation helpers, making this fixture's blake3 coverage change
+	// a different test's subject.
 	got := VerifyChecksums(contents, fetch)
-	wantStatus := []ChecksumStatus{ChecksumMatch, ChecksumMatch, ChecksumMatch, ChecksumUnsupported}
+	wantStatus := []ChecksumStatus{ChecksumMatch, ChecksumMatch, ChecksumMatch, ChecksumMatch}
 	for i, want := range wantStatus {
 		if got[i].Status != want {
 			t.Errorf("checksum[%d] (%s) status = %s, want %s — error %q",
 				i, contents[i].ChecksumAlgorithm, got[i].Status, want, got[i].Error)
 		}
 	}
-	if !strings.Contains(got[3].Error, `unsupported checksum algorithm "blake3"`) {
-		t.Errorf("blake3 error = %q, want it to name the unsupported algorithm", got[3].Error)
+	if got[3].Algorithm != "blake3" {
+		t.Errorf("checksum[3] algorithm = %q, want blake3", got[3].Algorithm)
 	}
+	// Only a mismatch carries expected+actual, so a match reports no actual hash. Asserted
+	// so the blake3 entry is held to the same contract as every other status.
 	if got[3].Actual != "" {
-		t.Errorf("an unverifiable entry must report no actual hash, got %q", got[3].Actual)
+		t.Errorf("a matched entry reports no actual hash, got %q", got[3].Actual)
 	}
 }

@@ -175,6 +175,12 @@ func runEvidenceVerify(pkgPath string, checksumsOnly, requireReachable bool) err
 		if n := len(unreachableBy); n > 0 {
 			why = append(why, fmt.Sprintf("%d recorded reference(s) could not be resolved", n))
 		}
+		// RETAINED THOUGH CURRENTLY UNREACHABLE HERE: this build computes every algorithm
+		// Hash_Algorithm admits, and validation refuses an off-schema one before any
+		// checksum is read, so counts.unsupported cannot rise through this command today.
+		// Kept deliberately — if a value is ever added to the enum before the tooling
+		// implements it, deleting this would make --require-reachable silently stop
+		// failing, which is the fail-open class this command exists to prevent.
 		if counts.unsupported > 0 {
 			why = append(why, fmt.Sprintf("%d checksum(s) name an algorithm this build cannot compute",
 				counts.unsupported))
@@ -456,6 +462,8 @@ func renderVerifyOutput(doc map[string]interface{}, results []evidenceVerifyResu
 	if counts.unreachable > 0 {
 		fmt.Printf(", %d not reachable here", counts.unreachable)
 	}
+	// Same retention as the --require-reachable branch above: unreachable through this
+	// command today, kept so a future unimplemented enum value is still reported.
 	if counts.unsupported > 0 {
 		fmt.Printf(", %d not verifiable here", counts.unsupported)
 	}

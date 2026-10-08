@@ -65,14 +65,16 @@ describe('evidence-verify engine — parity with go/evidence.go', () => {
     const { contents } = parseEvidencePackage(readText('package.json'));
     expect(contents.map((c) => c.checksumAlgorithm)).toEqual(['sha512', 'sha384', 'sha256', 'blake3']);
 
-    // The sha512 and sha384 entries record CORRECT hashes, so guessing sha256
-    // would report them as mismatches \u2014 the defect this card fixes. blake3 is in
-    // the schema's enum but not computable here, so it is UNSUPPORTED — never a
-    // mismatch (which would say the evidence changed) and never an error (the bytes
-    // may be intact) — and is reported without ever reading the (absent) file.
+    // Every entry records a CORRECT hash under its own algorithm, so guessing sha256 for
+    // any of them would report a mismatch. Entries [0] and [3] name the SAME file under
+    // sha512 and blake3: one set of bytes, two algorithms, both of which must match, which
+    // is what pins this language's blake3 against Go's over one real document. It is the
+    // PLAN rather than a results document deliberately: a second hdf-results entry for one
+    // file would be counted twice by the aggregation helpers.
     const got = verifyChecksums(contents, fetch);
-    expect(got.map((r) => r.status)).toEqual(['match', 'match', 'match', 'unsupported']);
-    expect(got[3]?.error).toContain('unsupported checksum algorithm "blake3"');
+    expect(got.map((r) => r.status)).toEqual(['match', 'match', 'match', 'match']);
+    expect(got[3]?.algorithm).toBe('blake3');
+    // Only a mismatch carries expected+actual, so a match reports no actual hash.
     expect(got[3]?.actual).toBeUndefined();
   });
 });
@@ -111,8 +113,14 @@ describe('evidence-verify engine — unit', () => {
   });
 
   it('refuses an algorithm it cannot compute rather than guessing', () => {
-    expect(() => checksumHex('blake3', new Uint8Array([1]))).toThrow(/unsupported checksum algorithm "blake3"/);
-    expect(() => checksumHex('md5', new Uint8Array([1]))).toThrow(/unsupported checksum algorithm "md5"/);
+    // Every algorithm Hash_Algorithm admits is computable now, so the refusal is reachable
+    // only from OUTSIDE the enum — a document this tooling did not write.
+    // The WHOLE message, list included: go/evidence_test.go asserts this identical string,
+    // which is what keeps one refusal from drifting into two spellings across languages.
+    expect(() => checksumHex('md5', new Uint8Array([1]))).toThrow(
+      'unsupported checksum algorithm "md5": this build computes sha256, sha384, sha512 and blake3',
+    );
+    expect(() => checksumHex('sha1', new Uint8Array([1]))).toThrow(/unsupported checksum algorithm "sha1"/);
   });
   it('parses planRef and contents (checksum value or empty)', () => {
     const pkg = JSON.stringify({
@@ -249,5 +257,50 @@ describe('evidence-verify engine — unit', () => {
     const got = verifyChecksums([{ uri: 'x', type: 'hdf-results', checksum: 'abc' }], throwing);
     expect(got[0]?.status).toBe('error');
     expect(got[0]?.error).toBe('plain string failure');
+  });
+});
+
+// The committed subset of the BLAKE3 reference implementation's own test_vectors.json
+// (testdata/blake3-vectors.json records its provenance), read by go/evidence_test.go too.
+// The expected digests come from the specification's authors, so a shared misreading by
+// the two libraries this repo depends on cannot pass — which agreeing with each other
+// alone would allow.
+interface Blake3Vectors {
+  cases: { input_len: number; hash: string }[];
+}
+const blake3Vectors = (): Blake3Vectors =>
+  JSON.parse(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'testdata', 'blake3-vectors.json'), 'utf-8'),
+  ) as Blake3Vectors;
+
+// The input the vector file specifies: the first n bytes of the repeating 251-byte
+// sequence 0, 1, 2, ..., 250, 0, 1, ... Generated rather than committed, so the rule is
+// stated in code in both languages.
+const blake3VectorInput = (n: number): Uint8Array =>
+  Uint8Array.from({ length: n }, (_, i) => i % 251);
+
+describe('checksumHex — blake3, against the reference vectors', () => {
+  it('matches every committed BLAKE3 reference vector', () => {
+    const { cases } = blake3Vectors();
+    expect(cases.length).toBeGreaterThan(0);
+    for (const c of cases) {
+      // The vector's hash is an extended output; a default-length digest is its first
+      // 32 bytes, which is what the upstream file directs implementations to check.
+      expect(checksumHex('blake3', blake3VectorInput(c.input_len))).toBe(c.hash.slice(0, 64));
+    }
+  });
+
+  // Named explicitly so a vector file that lost its multi-chunk cases fails here rather
+  // than silently narrowing coverage to inputs below one chunk.
+  it('exercises the empty input and a multi-chunk input', () => {
+    const lens = blake3Vectors().cases.map((c) => c.input_len);
+    expect(lens).toContain(0);
+    expect(lens.some((n) => n > 1024)).toBe(true);
+  });
+
+  // No schema-valid document can carry an off-schema algorithm, but the refusal exists
+  // for documents this tooling did not write.
+  it('still refuses an off-schema algorithm', () => {
+    expect(() => checksumHex('md5', new Uint8Array([1]))).toThrow();
   });
 });
