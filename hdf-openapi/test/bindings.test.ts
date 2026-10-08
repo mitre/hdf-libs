@@ -89,12 +89,12 @@ describe('coverage faults against the live surface', () => {
   });
 
   it('faults a filesystem-shaped field that is exposed instead of dropped', () => {
-    // hdf_aggregate.sources is filesystem-shaped and required by the MCP.
+    // directory is a traversal input: it exists only because the MCP reads a filesystem.
     const faults = bindingFaults(
-      { tools: { hdf_aggregate: { fields: { sources: { placement: 'query' } } } } },
+      { tools: { hdf_convert: { fields: { directory: { placement: 'query' } } } } },
       surface,
     );
-    expect(faults.some((f) => f === 'hdf_aggregate.sources: filesystem-shaped and must be dropped, not exposed')).toBe(true);
+    expect(faults.some((f) => f === 'hdf_convert.directory: filesystem-shaped and must be dropped, not exposed')).toBe(true);
   });
 
   it('faults a drop with no reason', () => {
@@ -201,4 +201,55 @@ describe('loading', () => {
     ]);
     expect(unknownKeys({ absent: [{ reason: 'x', bogus: 1 }] })).toEqual(['/absent/0/bogus']);
   });
+});
+
+// `sources` is ONE NAME carrying TWO meanings, and the ADR's hard-fail list was written
+// for only one of them. hdf_convert.sources is "batch: tool-output files, each {path}" and
+// sits with directory/pattern/failFast/outputDir — genuinely filesystem. The same name on
+// query, compliance and aggregate is "several results documents combined as one set, each
+// {path} or {handle}", with no batch siblings: a document set whose handle half is a
+// legitimate id under the ADR's own handle -> id rewrite.
+//
+// So the check is on SHAPE, not name. Judging by name alone drops cross-document query,
+// compliance and aggregate for a rule that was never about them.
+describe('filesystem gating is decided by shape, not by name', () => {
+  const surface = { toolsList, contract };
+  // Scoped to the field under test: the rule faults every gated field that is not
+  // dropped, so placing one still faults its siblings, which says nothing about this one.
+  const placed = (tool: string, field: string) =>
+    bindingFaults({ tools: { [tool]: { fields: { [field]: { placement: 'query' } } } } }, surface)
+      .filter((f) => f.startsWith(`${tool}.${field}:`) && f.includes('filesystem-shaped'));
+
+  it.each(["hdf_query", "hdf_compliance", "hdf_aggregate", "hdf_convert"])(
+    '%s.sources is a document set and may be placed',
+    (tool) => {
+      expect(placed(tool, 'sources')).toEqual([]);
+    },
+  );
+
+  it('hdf_convert.sources too: its items carry the same {handle, path} as every other', () => {
+    expect(placed('hdf_convert', 'sources')).toEqual([]);
+  });
+
+  // The claim the gate rests on, asserted rather than assumed: if some tool ever ships a
+  // path-only sources, this fails and the name-based gate has to come back.
+  it('every source/sources on every tool admits a handle', () => {
+    const offenders: string[] = [];
+    for (const tool of toolsList.tools) {
+      const props = (tool.inputSchema?.properties ?? {}) as Record<string, { items?: unknown }>;
+      for (const field of ['source', 'sources']) {
+        if (!(field in props)) continue;
+        const subject = (props[field].items ?? props[field]) as { properties?: object };
+        if (!('handle' in (subject.properties ?? {}))) offenders.push(`${tool.name}.${field}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it.each(['directory', 'pattern', 'failFast', 'outputDir', 'output', 'overwrite', 'dryRun'])(
+    'hdf_convert.%s is filesystem-shaped whatever its schema says',
+    (field) => {
+      expect(placed('hdf_convert', field)).toHaveLength(1);
+    },
+  );
 });

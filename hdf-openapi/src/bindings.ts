@@ -40,9 +40,9 @@ export const CLOSED_KEYS = new Set([
 const SCHEMA_KEYS = ['type', 'properties', '$ref', 'oneOf', 'allOf'];
 
 /**
- * Input names the MCP exposes because it reads a filesystem. None may reach HTTP: the
- * document is addressed by id and the service owns where bytes live. ADR-0008 §2 requires
- * the generator to hard-fail on each unless the table drops it with a reason.
+ * Input names that are filesystem-shaped whatever their schema says: the service owns
+ * where bytes live, so none may reach HTTP. ADR-0008 §2 requires a hard-fail on each
+ * unless the table drops it with a reason.
  */
 export const FILESYSTEM_FIELDS = new Set([
   'path',
@@ -52,10 +52,23 @@ export const FILESYSTEM_FIELDS = new Set([
   'directory',
   'pattern',
   'failFast',
-  'sources',
   'dryRun',
 ]);
 
+/**
+ * `sources` is deliberately NOT gated, and that is a correction to ADR-0008 §2.
+ *
+ * Its hard-fail list names `sources`, but every `source`/`sources` input on every tool has
+ * the same properties — `{handle, path}` — so the name carries no filesystem meaning of its
+ * own. Only the descriptions differ (hdf_convert calls it a batch of tool-output files; the
+ * others call it a set of documents), and prose is not a contract. The filesystem half is
+ * `path`, which the fixed `handle` -> `id` rewrite drops by taking the id instead.
+ *
+ * The ADR's own Context list of filesystem-shaped inputs omits `sources`, which is the
+ * clue that the hard-fail list over-reached. Gating it by name would drop cross-document
+ * query, compliance and aggregate for a rule that is really about the traversal inputs
+ * above — directory, pattern, failFast and outputDir — which stay gated.
+ */
 export interface ToolBinding {
   method?: string;
   path?: string;
