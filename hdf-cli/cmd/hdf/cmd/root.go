@@ -4,7 +4,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
@@ -38,6 +40,53 @@ func SchemaStatusToDisplay(status hdf.ResultStatus) string {
 	default:
 		return StatusNotReviewed
 	}
+}
+
+// FilterHelpVocabulary renders the forms a --status/--severity/--disposition flag
+// should name, for use in flag help: the canonical vocabulary, then the aliases
+// worth teaching, in one parenthesised clause. Built from the engine so a help
+// string cannot drift from what the refusal names, and so a retired name stays
+// accepted without being advertised.
+func FilterHelpVocabulary(field string) string {
+	canonical := hdfengine.FilterValues(field)
+	if canonical == nil {
+		return ""
+	}
+	taught := make([]string, 0, 2)
+	for _, a := range hdfengine.FilterAliases(field) {
+		if a.Advertise {
+			taught = append(taught, a.Form)
+		}
+	}
+	if len(taught) == 0 {
+		return strings.Join(canonical, ", ")
+	}
+	return fmt.Sprintf("%s (%s also accepted)", strings.Join(canonical, ", "), strings.Join(taught, " and "))
+}
+
+// ValidateStatusFilter refuses a --status value outside the engine's closed
+// vocabulary, naming the accepted values. Every command taking a status filter
+// calls this: a typo that merely matches nothing is indistinguishable from a
+// clean run, and `hdf list` and `hdf amend draft` both reported one as an empty
+// result with a success exit code.
+func ValidateStatusFilter(status string) error {
+	if status == "" || hdfengine.ValidStatus(status) {
+		return nil
+	}
+	return fmt.Errorf("unknown --status value %q (expected one of: %s)",
+		status, strings.Join(hdfengine.StatusValues, ", "))
+}
+
+// StatusFilterMatches reports whether a requirement's status satisfies a status
+// filter. BOTH sides go through the engine's alias map, because the two arrive in
+// different vocabularies depending on the caller — `hdf list` holds the display
+// spelling and `hdf amend draft` the schema one — and a filter must mean the same
+// thing on every surface. An empty filter matches everything.
+func StatusFilterMatches(filter, status string) bool {
+	if filter == "" {
+		return true
+	}
+	return hdfengine.NormalizeFilterValue("status", filter) == hdfengine.NormalizeFilterValue("status", status)
 }
 
 var (

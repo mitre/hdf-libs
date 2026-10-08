@@ -1,0 +1,271 @@
+{
+  "timestamp": "2020-01-01T00:00:00Z",
+  "baselines": [
+    {
+      "name": "sast",
+      "title": "Static analysis",
+      "version": "1.2",
+      "summary": "Rails SAST",
+      "description": "Brakeman rules",
+      "maintainer": "AppSec",
+      "license": "Apache-2.0",
+      "copyright": "Example",
+      "statusMessage": "loaded",
+      "requirements": [
+        {
+          "id": "BRAKE0105",
+          "title": "Mass assignment",
+          "impact": 0.5,
+          "descriptions": [
+            {
+              "label": "default",
+              "data": ""
+            },
+            {
+              "label": "fix",
+              "data": "Permit fewer keys."
+            }
+          ],
+          "controlType": "technical",
+          "verificationMethod": "automated",
+          "applicability": "required",
+          "sourceLocation": {
+            "ref": "app/controllers/attestations_controller.rb",
+            "line": 35
+          },
+          "cwe": [
+            "CWE-915",
+            "CWE-20"
+          ],
+          "cvss": [
+            {
+              "version": "3.1",
+              "baseScore": 7.25,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N",
+              "source": "nvd"
+            },
+            {
+              "version": "4.0",
+              "baseScore": 5,
+              "computedScore": 9.8,
+              "computedSeverity": "critical"
+            }
+          ],
+          "epss": {
+            "score": 0.00123,
+            "percentile": 0.5,
+            "date": "2020-01-01"
+          },
+          "kev": {
+            "inKev": true,
+            "dateAdded": "2020-01-02",
+            "dueDate": "2020-02-01",
+            "notes": "ransomware use"
+          },
+          "affectedPackages": [
+            {
+              "name": "rails",
+              "version": "6.1.0",
+              "ecosystem": "gem",
+              "fixedInVersion": "6.1.7"
+            },
+            {
+              "purl": "pkg:gem/rack@2.0.0",
+              "cpe": "cpe:2.3:a:rack"
+            }
+          ],
+          "evidence": [
+            {
+              "type": "url",
+              "data": "https://example.gov/scan/1",
+              "description": "scan log"
+            }
+          ],
+          "refs": [
+            {
+              "ref": "Brakeman docs"
+            },
+            {
+              "url": "https://brakemanscanner.org/docs/warning_types/mass_assignment/"
+            },
+            {
+              "uri": "urn:example:rule:105"
+            },
+            {
+              "ref": [
+                {
+                  "source": {
+                    "name": "debian",
+                    "url": "https://z.example/tracker"
+                  }
+                },
+                {
+                  "advisories": [
+                    {
+                      "url": "https://a.example/adv"
+                    },
+                    {
+                      "url": "https://z.example/tracker"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "tags": {
+            "nist": [
+              "SA-11"
+            ],
+            "cci": [
+              "CCI-003173"
+            ],
+            "wascid": "15",
+            "owasp": [
+              "A04",
+              7,
+              "A08"
+            ],
+            "reviewed": true,
+            "score": 3,
+            "nested": {
+              "a": 1
+            },
+            "empty": []
+          },
+          "results": [
+            {
+              "status": "failed",
+              "codeDesc": "attestations_controller.rb line 35",
+              "startTime": "2020-01-01T00:00:00Z",
+              "message": "permit(:role)",
+              "resource": "File",
+              "resourceId": "app/controllers/attestations_controller.rb",
+              "exception": "RuntimeError",
+              "backtrace": [
+                "a.rb:1",
+                "b.rb:2"
+              ],
+              "runTime": 0.0125
+            }
+          ],
+          "statusOverrides": [
+            {
+              "type": "falsePositive",
+              "status": "notApplicable",
+              "impact": {
+                "value": 0
+              },
+              "justification": "protected_at_runtime",
+              "reason": "Descriptive string, not an authorization role.",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "appsec@example.gov"
+              },
+              "appliedAt": "2019-12-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "externalReferences": [
+                {
+                  "sourceName": "mitre-att&ck",
+                  "externalId": "T1059",
+                  "rel": "reference"
+                }
+              ],
+              "cvss": {
+                "version": "3.1",
+                "baseScore": 7.25,
+                "computedScore": 8.1,
+                "computedSeverity": "high",
+                "baseVector": "CVSS:3.1/AV:N",
+                "threatVector": "E:H"
+              }
+            }
+          ],
+          "poams": [
+            {
+              "type": "remediation",
+              "explanation": "Tighten strong parameters.",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "dev@example.gov"
+              },
+              "appliedAt": "2019-12-02T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "milestones": [
+                {
+                  "title": "Patch",
+                  "description": "Remove :role",
+                  "status": "pending",
+                  "estimatedCompletion": "2099-12-31T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "externalReferences": [
+            {
+              "sourceName": "cve",
+              "externalId": "CVE-2021-44228",
+              "rel": "definition"
+            },
+            {
+              "sourceName": "stix",
+              "externalId": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "href": "https://cti.example.org/bundles/log4shell.json#vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+              "rel": "investigate",
+              "kind": "threat-intel",
+              "document": {
+                "type": "vulnerability",
+                "spec_version": "2.1",
+                "id": "vulnerability--f7c1b8e0-1234-4a2b-9c3d-000000000001",
+                "name": "CVE-2021-44228",
+                "external_references": [
+                  {
+                    "source_name": "cve",
+                    "external_id": "CVE-2021-44228"
+                  }
+                ]
+              }
+            },
+            {
+              "sourceName": "x-triage",
+              "kind": "annotation",
+              "description": "Reviewed with the application team.",
+              "document": {
+                "note": "safe to permit <role> & \"type\"",
+                "reviewed": true,
+                "count": 2,
+                "tags": [],
+                "meta": {}
+              }
+            }
+          ]
+        }
+      ],
+      "externalReferences": [
+        {
+          "sourceName": "mitre-att&ck",
+          "externalId": "T1059",
+          "href": "https://attack.mitre.org/techniques/T1059/",
+          "rel": "canonical"
+        }
+      ]
+    }
+  ],
+  "externalReferences": [
+    {
+      "sourceName": "stix",
+      "href": "https://cti.example.org/bundles/log4shell.json",
+      "rel": "investigate",
+      "mediaType": "application/json",
+      "checksum": {
+        "algorithm": "sha256",
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "addedBy": {
+        "type": "email",
+        "identifier": "analyst@agency.gov"
+      },
+      "addedAt": "2026-07-26T00:00:00Z"
+    }
+  ]
+}

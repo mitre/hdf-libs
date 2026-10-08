@@ -93,6 +93,8 @@ func TestConvertAssessmentResultsToHDF_StatusMapping(t *testing.T) {
 				passedCount++
 			case hdf.Failed:
 				failedCount++
+			case hdf.Error, hdf.NotApplicable, hdf.NotReviewed:
+				// This fixture's findings are satisfied/not-satisfied only.
 			}
 		}
 	}

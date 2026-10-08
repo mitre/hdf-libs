@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { validateResults } from '@mitre/hdf-validators';
 import { enrichStix } from './enrichStix.js';
 import { parseStixBundle, detectStixBundle } from './stix.js';
@@ -114,7 +114,7 @@ describe('enrichStix — STIX bundle → results externalReferences[]', () => {
     expect(() => enrichStix(results(), '{"type":"something-else","objects":[]}')).toThrow();
   });
 
-  it('throws a clean error on non-object results roots (null, array, scalar)', () => {
+  it('throws a clean error on non-object document roots (null, array, scalar)', () => {
     expect(() => enrichStix('null', bundle())).toThrow(/not a JSON object/);
     expect(() => enrichStix('[]', bundle())).toThrow(/not a JSON object/);
     expect(() => enrichStix('42', bundle())).toThrow(/not a JSON object/);
@@ -483,7 +483,7 @@ describe('enrichStix — fan-out cap', () => {
     expect(reqRefs(requirementById(doc, 'CVE-2021-9999'))).toHaveLength(MAX_STIX_REFS);
   });
 
-  it('caps STIX refs on the results root', () => {
+  it('caps STIX refs on the document root', () => {
     const doc = JSON.parse(
       enrichStix(resultsWithFinding({ id: 'SV-1' }), bundleCiting(n, 'CVE-2021-0000')),
     ) as Doc;
@@ -496,5 +496,71 @@ describe('enrichStix — fan-out cap', () => {
     const refs = reqRefs(requirementById(doc, 'CVE-2021-9999'));
     expect(refs).toHaveLength(MAX_STIX_REFS + 1);
     expect(refs.filter((r) => (r as Doc).sourceName === 'nvd')).toHaveLength(1);
+  });
+});
+
+interface EnrichWarningExpectations {
+  maxStixRefsPerContainer: number;
+  originalReferences: number;
+  documentRootWarning: string;
+  findingWarning: string;
+  forbiddenPhrase: string;
+}
+
+const warningExpectations = JSON.parse(
+  readFileSync(join(FIXTURES, '..', 'enrich-stix-warning-cases.json'), 'utf-8'),
+) as EnrichWarningExpectations;
+
+// An hdf-system document (name + components, no baselines), so every bundle
+// object attaches at the document root.
+function systemDocument(): string {
+  return JSON.stringify({
+    name: 'Payment Processing System',
+    components: [
+      {
+        componentId: '9f1c2f7a-4a4e-4f3b-9a7e-2b0c1d3e4f50',
+        type: 'host',
+        name: 'web-01.example.test',
+      },
+    ],
+  });
+}
+
+function enrichWarnings(doc: string, bundleJson: string): string[] {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  try {
+    enrichStix(doc, bundleJson);
+    return warn.mock.calls.map((c) => String(c[0]));
+  } finally {
+    warn.mockRestore();
+  }
+}
+
+// enrichStix is document-type agnostic — it attaches unmatched objects to
+// whatever root it is handed — so these cases drive it directly with a document
+// that has no results root, and the label must name the document root. (`hdf
+// enrich` itself admits results documents only today.) The expected strings come
+// from shared/enrich-stix-warning-cases.json, which the Go twin reads too, so
+// the two languages cannot drift into two plausible labels.
+describe('enrichStix — truncation warning names the document root', () => {
+  const { originalReferences: n, forbiddenPhrase } = warningExpectations;
+
+  it('matches the shared table against the implementation cap', () => {
+    expect(warningExpectations.maxStixRefsPerContainer).toBe(MAX_STIX_REFS);
+    expect(n).toBeGreaterThan(MAX_STIX_REFS);
+  });
+
+  it('names the document root when the unmatched objects overflow the cap', () => {
+    const warnings = enrichWarnings(systemDocument(), bundleCiting(n, 'CVE-2021-0000'));
+    expect(warnings).toContain(warningExpectations.documentRootWarning);
+    expect(warnings.filter((w) => w.includes(forbiddenPhrase))).toEqual([]);
+  });
+
+  it('names the finding when a matched finding overflows the cap', () => {
+    const warnings = enrichWarnings(
+      resultsWithFinding({ id: 'CVE-2021-9999' }),
+      bundleCiting(n, 'CVE-2021-9999'),
+    );
+    expect(warnings).toContain(warningExpectations.findingWarning);
   });
 });

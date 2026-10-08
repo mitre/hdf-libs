@@ -520,18 +520,49 @@ range widens), and the version we pinned as "patched" becomes the new vulnerable
 floor. The next unrelated commit then trips the pre-commit gate on a failure that
 has nothing to do with its change.
 
+Two rules keep the block from rotting, and `pnpm run lint:overrides` enforces
+both on every commit:
+
+**Targets are ranges, never exact versions.** Write `"pkg@<X": "^X"`, not
+`"pkg@<X": "X"`. An exact target is what caused the two outages above: it names
+precisely the version a later advisory goes on to name. A range target is not a
+cure — pnpm reuses the lockfile's resolution, so the held version only moves on a
+re-resolve, and an advisory naming the held version still turns the gate red. What
+it buys is that the remedy is then `pnpm update <pkg>` rather than an edit here,
+and the pin stops asserting a floor that will age. **Verify the floor actually exists**
+on the registry
+(`npm view <pkg>@<version> version`) — advisories state `>=X.Y.Z` semantically,
+but the real release may skip that exact version (`shell-quote` had no `1.8.5`;
+the fix shipped in `1.10.0`, so the target is `^1.10.0`).
+
+**Every entry carries a comment** saying what it holds back and what would let it
+go. A pin nobody can tell is still load-bearing survives every audit by default,
+and the block only grows.
+
 **Re-validate the overrides on each dependabot cycle** (when a batch of dep PRs
 lands), not reactively when a commit trips over them:
 
 1. `pnpm audit --prod --audit-level=moderate` and `pnpm audit --dev --audit-level=high`.
-2. For each flagged package already in the `overrides:` block, bump its pin to the
-   advisory's current patched floor. **Verify the target version actually exists**
-   on the registry (`npm view <pkg>@<version> version`) — advisories state
-   `>=X.Y.Z` semantically, but the real next release may skip that exact version
-   (e.g. `shell-quote` had no `1.8.5`; the fix shipped in `1.10.0`).
-3. `pnpm install`, re-run both audits to confirm exit 0, then `pnpm build` + the
-   affected package's tests (a bumped override can pull in a breaking transitive
-   major — `fast-uri` feeds ajv's validation path, for instance).
+2. **Test each entry for inertness, and remove the inert ones — do not bump them.**
+   An entry is inert when removing it introduces no advisory. That is the whole
+   test, and it is the only one that is sound: **do not** instead ask whether some
+   resolved version still matches the entry's range. The range is a selector a
+   human wrote and it can be broader than the advisory it was written for — a
+   `brace-expansion@<5.0.12` pin matched a resolved 1.1.21 while the advisory
+   only ever affected 5.x, so the range test called it load-bearing when it
+   protected nothing and merely forced a cross-major substitution.
+   So: remove the entry, `pnpm install --lockfile-only`, and diff the advisory
+   set (step 3). No new advisory means the entry goes. A pin kept "just in case"
+   is the precedent that leaves the block littered with dead entries.
+   *Watch the lockfile quoting:* scoped names are quoted (`'@babel/core@7.28.6':`),
+   so a parser that assumes an unquoted key will report a live pin as absent.
+3. `pnpm install`, re-run both audits to confirm exit 0, and **diff the advisory
+   set against the pre-change baseline** — removing an entry that was actually
+   load-bearing shows up here as a new advisory and nowhere else. Then `pnpm build`
+   plus the affected package's tests, since an override can pull a breaking
+   transitive major.
 4. Advisories with no viable fix are suppressed by GHSA id under
    `auditConfig.ignoreGhsas` — use sparingly and only when there's genuinely no
-   patched version.
+   patched version. Re-check these too: once an advisory has a reachable patched
+   version, it belongs in `overrides:` or a plain dependency update, not in a
+   standing ignore.

@@ -74,15 +74,18 @@ func defaultOverrideOutcome(o *hdf.StandaloneOverride) {
 	switch o.Type {
 	case hdf.OperationalRequirement:
 		// Schema forbids both axes on this type.
+		return
 	case hdf.RiskAdjustment:
 		o.Impact = &hdf.ImpactOverride{Value: 0}
+		return
 	case hdf.Poam:
 		s := hdf.Failed
 		o.Status = &s
-	default:
-		s := hdf.Passed
-		o.Status = &s
+		return
+	case hdf.Attestation, hdf.FalsePositive, hdf.Inherited, hdf.OverrideTypeWaiver:
 	}
+	s := hdf.Passed
+	o.Status = &s
 }
 
 // OverrideStatus sets the override's effective status.

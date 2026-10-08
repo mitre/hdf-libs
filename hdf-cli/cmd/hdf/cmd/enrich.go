@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	"github.com/spf13/cobra"
 )
@@ -28,8 +29,9 @@ externalReferences[] to it.
 Accepts the document types that declare externalReferences and can carry
 enrichment: results, system, plan and comparison. A results document is matched
 by CVE, so a reference lands on the findings that cite it and anything unmatched
-lands at the root. The other three have no findings to match on, so every
-reference lands at the root — nothing is invented to hang one from. An
+lands at the document root. The other three have no findings to match on, so
+every reference lands at the document root — nothing is invented to hang one
+from. An
 evidence-package also declares the field, but 'hdf evidence add-reference' owns
 that array on that type, so enrich refuses one and says so. A baseline and an
 amendments document declare no externalReferences at all and are refused.
@@ -109,7 +111,7 @@ func runEnrich(docPath, sourcePath, fromFormat, outputPath string, recomputeCVSS
 		if len(enriched) > 0 && enriched[len(enriched)-1] != '\n' {
 			enriched = append(enriched, '\n')
 		}
-		if writeErr := os.WriteFile(outputPath, enriched, 0o600); writeErr != nil { // #nosec G306 G703 -- CLI intentionally writes to user-provided path
+		if writeErr := atomicfile.WriteFile(outputPath, enriched, 0o600); writeErr != nil {
 			return fmt.Errorf("failed to write output file: %w", writeErr)
 		}
 		fmt.Fprintf(os.Stderr, "Enriched output written to %s\n", outputPath)

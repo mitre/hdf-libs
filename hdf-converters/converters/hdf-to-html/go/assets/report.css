@@ -1,0 +1,243 @@
+/* The report layer, inlined after the vendored Pico+Blades stylesheet. It holds
+   only what no framework ships: the status and severity palette, the dashboard,
+   and the print rules. Everything else is driven through --pico-* variables so
+   the vendored file is never edited. */
+
+:root {
+  /* Stated here rather than inherited so the report's typography is system
+     fonts by declaration, with nothing to download. */
+  --pico-font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pico-font-family-monospace: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --pico-font-family: var(--pico-font-family-sans-serif);
+  /* Pico scales the root to 131.25% on a wide screen. A compliance report is a
+     dense document read at length, so it stays at the browser's own size. */
+  --pico-font-size: 100%;
+  /* The page's own text colour, captured before the headings below redefine it. */
+  --pico-report-ink: var(--pico-color);
+}
+/* Pico's heading scale is for prose; these are the report's section, panel and
+   block labels, so they are driven back through its own per-heading token. */
+h2 { --pico-font-size: 1.3rem; letter-spacing: -0.01em; }
+h3 { --pico-font-size: 1.02rem; }
+h4, h5 { --pico-font-size: 0.78rem; margin: 1.2rem 0 0.45rem; color: var(--pico-muted-color); text-transform: uppercase; letter-spacing: 0.07em; }
+/* The three scopes Pico itself uses: light by default or when light is chosen,
+   dark when the system asks and nothing was chosen, dark when dark was chosen. */
+:root:not([data-theme="dark"]), [data-theme="light"] {
+  /* Pico's own input border is 1.47:1 against the page, under the 3:1 WCAG 1.4.11
+     asks of a control boundary; the report raises it in both schemes. */
+  --pico-form-element-border-color: #767f91;
+  --pico-s-passed: #2e7d32; --pico-s-passed-inverse: #ffffff; --pico-t-passed: #e8f5e9; --pico-t-passed-inverse: #1b5e20;
+  --pico-s-failed: #c62828; --pico-s-failed-inverse: #ffffff; --pico-t-failed: #ffebee; --pico-t-failed-inverse: #8e1616;
+  --pico-s-not-applicable: #0277bd; --pico-s-not-applicable-inverse: #ffffff; --pico-t-not-applicable: #e1f5fe; --pico-t-not-applicable-inverse: #01497c;
+  --pico-s-not-reviewed: #b45300; --pico-s-not-reviewed-inverse: #ffffff; --pico-t-not-reviewed: #fff3e0; --pico-t-not-reviewed-inverse: #7a3600;
+  --pico-s-error: #3f51b5; --pico-s-error-inverse: #ffffff; --pico-t-error: #e8eaf6; --pico-t-error-inverse: #1a237e;
+  --pico-s-unknown: #5c6670; --pico-s-unknown-inverse: #ffffff; --pico-t-unknown: #e9edf1; --pico-t-unknown-inverse: #16212d;
+  --pico-s-critical: #c62828; --pico-s-critical-inverse: #ffffff; --pico-t-critical: #ffebee; --pico-t-critical-inverse: #8e1616;
+  --pico-s-high: #bf360c; --pico-s-high-inverse: #ffffff; --pico-t-high: #fbe9e7; --pico-t-high-inverse: #8a2607;
+  --pico-s-medium: #b45300; --pico-s-medium-inverse: #ffffff; --pico-t-medium: #fff3e0; --pico-t-medium-inverse: #7a3600;
+  --pico-s-low: #806600; --pico-s-low-inverse: #ffffff; --pico-t-low: #fffde7; --pico-t-low-inverse: #5c4a00;
+  --pico-s-none: #0277bd; --pico-s-none-inverse: #ffffff; --pico-t-none: #e1f5fe; --pico-t-none-inverse: #01497c;
+}
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --pico-form-element-border-color: #6b7488;
+    /* Pico's dark muted text is 4.41:1 on its own sectioning background. */
+    --pico-muted-color: #868fa0;
+    --pico-s-passed: #4cb04f; --pico-s-passed-inverse: #06200a; --pico-t-passed: #12301a; --pico-t-passed-inverse: #b9e4bb;
+    --pico-s-failed: #ef7a70; --pico-s-failed-inverse: #2b0603; --pico-t-failed: #3d1614; --pico-t-failed-inverse: #ffc9c4;
+    --pico-s-not-applicable: #03a9f4; --pico-s-not-applicable-inverse: #02202e; --pico-t-not-applicable: #0c3048; --pico-t-not-applicable-inverse: #b3e5fc;
+    --pico-s-not-reviewed: #fe9900; --pico-s-not-reviewed-inverse: #2e1b00; --pico-t-not-reviewed: #3d2a0a; --pico-t-not-reviewed-inverse: #ffe0b2;
+    --pico-s-error: #9fa8da; --pico-s-error-inverse: #10153d; --pico-t-error: #262c58; --pico-t-error-inverse: #dfe2f5;
+    --pico-s-unknown: #aab6c2; --pico-s-unknown-inverse: #101820; --pico-t-unknown: #26374a; --pico-t-unknown-inverse: #e8edf2;
+    --pico-s-critical: #ef7a70; --pico-s-critical-inverse: #2b0603; --pico-t-critical: #3d1614; --pico-t-critical-inverse: #ffc9c4;
+    --pico-s-high: #ff8a65; --pico-s-high-inverse: #2e0d02; --pico-t-high: #3f1d12; --pico-t-high-inverse: #ffccbc;
+    --pico-s-medium: #ff9800; --pico-s-medium-inverse: #2e1b00; --pico-t-medium: #3d2a0a; --pico-t-medium-inverse: #ffe0b2;
+    --pico-s-low: #ffeb3b; --pico-s-low-inverse: #2b2600; --pico-t-low: #3a3508; --pico-t-low-inverse: #fff59d;
+    --pico-s-none: #03a9f4; --pico-s-none-inverse: #02202e; --pico-t-none: #0c3048; --pico-t-none-inverse: #b3e5fc;
+  }
+}
+[data-theme="dark"] {
+  --pico-form-element-border-color: #6b7488;
+  --pico-muted-color: #868fa0;
+  --pico-s-passed: #4cb04f; --pico-s-passed-inverse: #06200a; --pico-t-passed: #12301a; --pico-t-passed-inverse: #b9e4bb;
+  --pico-s-failed: #ef7a70; --pico-s-failed-inverse: #2b0603; --pico-t-failed: #3d1614; --pico-t-failed-inverse: #ffc9c4;
+  --pico-s-not-applicable: #03a9f4; --pico-s-not-applicable-inverse: #02202e; --pico-t-not-applicable: #0c3048; --pico-t-not-applicable-inverse: #b3e5fc;
+  --pico-s-not-reviewed: #fe9900; --pico-s-not-reviewed-inverse: #2e1b00; --pico-t-not-reviewed: #3d2a0a; --pico-t-not-reviewed-inverse: #ffe0b2;
+  --pico-s-error: #9fa8da; --pico-s-error-inverse: #10153d; --pico-t-error: #262c58; --pico-t-error-inverse: #dfe2f5;
+  --pico-s-unknown: #aab6c2; --pico-s-unknown-inverse: #101820; --pico-t-unknown: #26374a; --pico-t-unknown-inverse: #e8edf2;
+  --pico-s-critical: #ef7a70; --pico-s-critical-inverse: #2b0603; --pico-t-critical: #3d1614; --pico-t-critical-inverse: #ffc9c4;
+  --pico-s-high: #ff8a65; --pico-s-high-inverse: #2e0d02; --pico-t-high: #3f1d12; --pico-t-high-inverse: #ffccbc;
+  --pico-s-medium: #ff9800; --pico-s-medium-inverse: #2e1b00; --pico-t-medium: #3d2a0a; --pico-t-medium-inverse: #ffe0b2;
+  --pico-s-low: #ffeb3b; --pico-s-low-inverse: #2b2600; --pico-t-low: #3a3508; --pico-t-low-inverse: #fff59d;
+  --pico-s-none: #03a9f4; --pico-s-none-inverse: #02202e; --pico-t-none: #0c3048; --pico-t-none-inverse: #b3e5fc;
+}
+.c-passed { --c: var(--pico-s-passed); --c-inverse: var(--pico-s-passed-inverse); --t: var(--pico-t-passed); --t-inverse: var(--pico-t-passed-inverse); }
+.c-failed { --c: var(--pico-s-failed); --c-inverse: var(--pico-s-failed-inverse); --t: var(--pico-t-failed); --t-inverse: var(--pico-t-failed-inverse); }
+.c-not-applicable { --c: var(--pico-s-not-applicable); --c-inverse: var(--pico-s-not-applicable-inverse); --t: var(--pico-t-not-applicable); --t-inverse: var(--pico-t-not-applicable-inverse); }
+.c-not-reviewed { --c: var(--pico-s-not-reviewed); --c-inverse: var(--pico-s-not-reviewed-inverse); --t: var(--pico-t-not-reviewed); --t-inverse: var(--pico-t-not-reviewed-inverse); }
+.c-error { --c: var(--pico-s-error); --c-inverse: var(--pico-s-error-inverse); --t: var(--pico-t-error); --t-inverse: var(--pico-t-error-inverse); }
+.c-unknown { --c: var(--pico-s-unknown); --c-inverse: var(--pico-s-unknown-inverse); --t: var(--pico-t-unknown); --t-inverse: var(--pico-t-unknown-inverse); }
+.c-critical { --c: var(--pico-s-critical); --c-inverse: var(--pico-s-critical-inverse); --t: var(--pico-t-critical); --t-inverse: var(--pico-t-critical-inverse); }
+.c-high { --c: var(--pico-s-high); --c-inverse: var(--pico-s-high-inverse); --t: var(--pico-t-high); --t-inverse: var(--pico-t-high-inverse); }
+.c-medium { --c: var(--pico-s-medium); --c-inverse: var(--pico-s-medium-inverse); --t: var(--pico-t-medium); --t-inverse: var(--pico-t-medium-inverse); }
+.c-low { --c: var(--pico-s-low); --c-inverse: var(--pico-s-low-inverse); --t: var(--pico-t-low); --t-inverse: var(--pico-t-low-inverse); }
+.c-none { --c: var(--pico-s-none); --c-inverse: var(--pico-s-none-inverse); --t: var(--pico-t-none); --t-inverse: var(--pico-t-none-inverse); }
+
+html { scroll-padding-top: 5rem; }
+:focus-visible { outline: 3px solid var(--pico-primary); outline-offset: 2px; }
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip { position: absolute; left: 0.75rem; top: -4rem; z-index: 20; background: var(--pico-card-background-color); color: var(--pico-color); padding: 0.5rem 0.9rem; border-radius: var(--pico-border-radius); border: 2px solid var(--pico-primary); font-weight: 600; text-decoration: none; }
+.skip:focus { top: 0.6rem; }
+
+.topbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.25rem; background: var(--pico-primary-background); color: var(--pico-primary-inverse); padding: 0.85rem 1.75rem; }
+.topbar .brand { font-size: 1.2rem; font-weight: 700; margin: 0; color: inherit; }
+.topbar .report-type { font-size: 0.8rem; font-weight: 600; border: 1px solid currentcolor; border-radius: 5rem; padding: 0.1rem 0.7rem; }
+.topbar nav { margin-left: auto; padding: 0; }
+.topbar nav ul { margin: 0; color: inherit; }
+.topbar nav li { padding: 0; }
+.topbar a { color: inherit; text-decoration: none; font-size: 0.9rem; font-weight: 600; padding: 0.3rem 0.75rem; border-radius: 5rem; }
+.topbar a:hover { text-decoration: underline; }
+.topbar :focus-visible { outline-color: var(--pico-primary-inverse); }
+.theme-toggle { display: none; width: auto; font-size: 0.85rem; font-weight: 600; margin: 0; padding: 0.2rem 0.85rem; border: 1px solid currentcolor; border-radius: 5rem; background: transparent; color: inherit; }
+.js .theme-toggle { display: inline-flex; align-items: center; }
+
+section.card { padding: var(--pico-block-spacing-vertical) var(--pico-block-spacing-horizontal); border: var(--pico-border-width) solid var(--pico-card-border-color); border-radius: var(--pico-border-radius); background: var(--pico-card-background-color); box-shadow: var(--pico-card-box-shadow); }
+section.card > h2 { margin-bottom: 0.85rem; }
+section.card > h3 { margin-top: 1.25rem; }
+.as-of, .empty, .formula { color: var(--pico-muted-color); font-size: 0.88rem; }
+
+details.fold { margin: 0.6rem 0; border: var(--pico-border-width) solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); background: var(--pico-card-background-color); }
+details.fold > summary { display: flex; align-items: center; gap: 0.6rem; line-height: inherit; padding: 0.55rem 2.2rem 0.55rem 0.9rem; position: relative; border-radius: var(--pico-border-radius); }
+details.fold > summary::after { position: absolute; right: 0.9rem; top: calc(50% - 0.5rem); margin-inline-start: 0; }
+details.fold > summary:hover { background: var(--pico-card-sectioning-background-color); }
+details.fold[open] > summary { border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color); background: var(--pico-card-sectioning-background-color); }
+details.fold > summary > :where(h3, h4, h5) { display: inline; margin: 0; min-width: 0; overflow-wrap: anywhere; color: var(--pico-report-ink); }
+details.fold.source > summary > h3, details.fold.baseline > summary > :where(h3, h4) { font-size: 1.02rem; text-transform: none; letter-spacing: 0; }
+details.fold > summary > .count { flex: none; margin-left: auto; }
+.fold-body { padding: 0.75rem 0.9rem 0.9rem; }
+.fold-body > :first-child { margin-top: 0; }
+.fold-body > :last-child { margin-bottom: 0; }
+.count { display: inline-block; min-width: 1.6rem; text-align: center; font-size: 0.75rem; font-weight: 700; border-radius: 5rem; padding: 0.05rem 0.5rem; background: var(--pico-t-unknown); color: var(--pico-t-unknown-inverse); }
+.to-top { margin: 0.9rem 0 0; font-size: 0.85rem; text-align: right; }
+.page-top { position: fixed; right: 1rem; bottom: 1rem; z-index: 9; padding: 0.4rem 0.9rem; border-radius: 5rem; background: var(--pico-primary-background); color: var(--pico-primary-inverse); text-decoration: none; font-weight: 600; }
+
+.dashboard { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.25fr) minmax(0, 1fr); gap: 1rem; margin: 1rem 0 1.25rem; align-items: stretch; }
+.facts, .components { display: grid; grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr)); gap: 0.75rem; align-items: start; }
+.facts > details.fold, .components > details.fold { margin: 0; background: var(--pico-card-sectioning-background-color); }
+.panel { border: var(--pico-border-width) solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); padding: 1rem 1.1rem 1.15rem; background: var(--pico-card-sectioning-background-color); display: flex; flex-direction: column; }
+.panel > h3 { font-size: 1.02rem; margin-bottom: 0.7rem; }
+.stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.6rem; }
+.stat { display: flex; flex-direction: column; gap: 0.1rem; border-radius: var(--pico-border-radius); padding: 0.65rem 0.8rem 0.7rem; background: var(--t); color: var(--t-inverse); border-left: 6px solid var(--c); }
+.stat .num { font-size: 1.9rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .lbl { font-weight: 700; font-size: 0.92rem; }
+.stat .sub { font-size: 0.78rem; }
+.stat-total { background: none; color: var(--pico-color); border: var(--pico-border-width) dashed var(--pico-form-element-border-color); border-left: 6px solid var(--pico-s-unknown); }
+.bar { display: flex; gap: 2px; height: 0.8rem; border-radius: 5rem; overflow: hidden; background: var(--pico-progress-background-color); margin-top: auto; }
+.stats + .bar { margin-top: 1rem; }
+.seg { flex: var(--n) 0 0; background: var(--c); }
+
+.compliance { text-align: center; align-items: center; }
+/* The ring's auto margins can only centre it if nothing else around it claims
+   vertical space, so the heading and the lines below it carry none of their own. */
+.compliance > h3 { align-self: flex-start; margin-bottom: 0; }
+.compliance > p { margin: 0; }
+.compliance > .level { margin-bottom: 0.45rem; }
+/* The ring: the percentage swept out of the track, with the same number printed
+   inside it, and the engine's 60/90 bands as its colour. The auto block margins
+   centre it in whatever height the row settles on. */
+.gauge { --ring: var(--pico-s-failed); width: 10.5rem; height: 10.5rem; margin: auto; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--ring) calc(var(--pct) * 1%), var(--pico-progress-background-color) 0); }
+.gauge .pct { width: 8.1rem; height: 8.1rem; border-radius: 50%; background: var(--pico-card-sectioning-background-color); display: grid; place-items: center; font-size: 1.75rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--pico-report-ink); }
+.compliance-high .gauge { --ring: var(--pico-s-passed); }
+.compliance-medium .gauge { --ring: var(--pico-s-not-reviewed); }
+.level { font-weight: 700; display: inline-block; border-radius: 5rem; padding: 0.1rem 0.85rem; background: var(--t); color: var(--t-inverse); }
+.compliance-high { --t: var(--pico-t-passed); --t-inverse: var(--pico-t-passed-inverse); }
+.compliance-medium { --t: var(--pico-t-not-reviewed); --t-inverse: var(--pico-t-not-reviewed-inverse); }
+.compliance-low { --t: var(--pico-t-failed); --t-inverse: var(--pico-t-failed-inverse); }
+
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1.25rem; margin: 0.5rem 0; }
+dt { font-weight: 600; color: var(--pico-muted-color); }
+dd { margin: 0; overflow-wrap: anywhere; }
+.table-wrap { overflow-x: auto; border: var(--pico-border-width) solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); margin: 0.5rem 0; }
+.table-wrap > table { margin: 0; font-size: 0.9rem; }
+th, td { padding: 0.5rem 0.8rem; vertical-align: top; }
+thead th { background: var(--pico-card-sectioning-background-color); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--pico-muted-color); }
+tfoot th, tfoot td { font-weight: 700; background: var(--pico-card-sectioning-background-color); }
+td.text { white-space: pre-wrap; overflow-wrap: anywhere; }
+table.summary td, table.summary thead th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+table.details th { width: 11.5rem; background: var(--pico-card-sectioning-background-color); color: var(--pico-muted-color); font-weight: 600; }
+
+.component .type { font-weight: 600; font-size: 0.75rem; border-radius: 5rem; padding: 0.05rem 0.6rem; background: var(--pico-primary-background); color: var(--pico-primary-inverse); }
+.chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.25rem 0 0; padding: 0; }
+.chips li { display: inline-flex; border: var(--pico-border-width) solid var(--pico-form-element-border-color); border-radius: var(--pico-border-radius); overflow: hidden; font-size: 0.82rem; background: var(--pico-card-background-color); }
+.chips .k { background: var(--pico-t-unknown); color: var(--pico-t-unknown-inverse); padding: 0.15rem 0.5rem; font-weight: 700; }
+.chips .v { padding: 0.15rem 0.55rem; overflow-wrap: anywhere; }
+
+.toolbar { display: none; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.75rem; margin: 0 0 1.1rem; padding: 0.75rem; border: var(--pico-border-width) solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); background: var(--pico-card-sectioning-background-color); }
+.js .toolbar { display: flex; }
+.toolbar input { flex: 1 1 16rem; width: auto; margin: 0; }
+.toolbar button { width: auto; margin: 0; font-size: 0.86rem; padding: 0.3rem 0.85rem; }
+.toolbar button[aria-pressed="false"] { --pico-background-color: var(--pico-card-background-color); --pico-border-color: var(--pico-form-element-border-color); --pico-color: var(--pico-contrast); }
+.filters { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.shown { color: var(--pico-muted-color); font-size: 0.86rem; margin-left: auto; }
+
+details.fold.source { border-left: 5px solid var(--pico-primary); }
+details.fold.baseline { border-left: 5px solid var(--pico-muted-border-color); }
+article.requirement { margin: 0.5rem 0; padding: 0; border: var(--pico-border-width) solid var(--pico-muted-border-color); border-left: 6px solid var(--c); border-radius: var(--pico-border-radius); background: var(--pico-card-background-color); box-shadow: none; }
+article.requirement > details { margin: 0; }
+.req-head, article.requirement summary { display: grid; grid-template-columns: 11rem minmax(6rem, 11rem) 7.5rem minmax(10rem, 2fr) minmax(8rem, 1.4fr); gap: 0.85rem; align-items: center; }
+.req-head { padding: 0.4rem 2.6rem 0.4rem 1.1rem; font-size: 0.74rem; font-weight: 700; color: var(--pico-muted-color); text-transform: uppercase; letter-spacing: 0.06em; }
+article.requirement summary { line-height: inherit; padding: 0.7rem 2.6rem 0.7rem 0.95rem; position: relative; }
+article.requirement summary::after { position: absolute; right: 1.1rem; top: calc(50% - 0.5rem); margin-inline-start: 0; }
+article.requirement summary:hover { background: var(--pico-card-sectioning-background-color); }
+article.requirement details[open] > summary { border-bottom: var(--pico-border-width) solid var(--pico-muted-border-color); background: var(--pico-card-sectioning-background-color); }
+article.requirement details[open] > summary { position: sticky; top: 3.4rem; z-index: 5; }
+.req-body { padding: 0.9rem 1.1rem 1.1rem; }
+.req-body > :last-child { margin-bottom: 0; }
+.req-id { font-weight: 700; overflow-wrap: anywhere; }
+.req-title { overflow-wrap: anywhere; }
+.location { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0 0 0.6rem; padding: 0.5rem 0.75rem; border: var(--pico-border-width) solid var(--pico-muted-border-color); border-left: 4px solid var(--pico-primary); border-radius: var(--pico-border-radius); background: var(--pico-card-sectioning-background-color); }
+.location .k, .sub .k { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--pico-muted-color); }
+.sub { display: block; margin-top: 0.35rem; font-size: 0.85rem; }
+.tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.tag { font-size: 0.75rem; font-weight: 600; border: var(--pico-border-width) solid var(--pico-form-element-border-color); border-radius: 5rem; padding: 0.05rem 0.55rem; background: var(--pico-card-background-color); white-space: nowrap; }
+.tag.enriched { background: var(--pico-primary-background); border-color: var(--pico-primary-background); color: var(--pico-primary-inverse); }
+/* Status and severity carry a mark and a word as well as a colour, so neither
+   colour vision nor a greyscale printer is needed to read them. */
+.status, .sev { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 5rem; padding: 0.15rem 0.7rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap; width: fit-content; }
+.status { color: var(--c-inverse); background: var(--c); }
+.status .ico { font-weight: 400; }
+.sev { background: var(--t); color: var(--t-inverse); }
+.sev::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--c); flex: none; }
+details.doc { margin: 0.5rem 0 0; }
+details.doc > summary { font-weight: 600; font-size: 0.85rem; width: fit-content; }
+details.doc > pre { white-space: pre-wrap; }
+pre { margin: 0.25rem 0 0.5rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.85rem; }
+pre.prose { font-family: var(--pico-font-family-sans-serif); font-size: 0.92rem; margin: 0; padding: 0; background: none; color: inherit; }
+.req-body > pre.prose { margin-bottom: 0.25rem; }
+pre.code { background: var(--pico-code-background-color); color: var(--pico-code-color); border-radius: var(--pico-border-radius); padding: 0.85rem 1rem; }
+
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media (forced-colors: active) { .status, .sev, .tag, .stat, .seg, .gauge, .level, .count, .component .type { border: 1px solid; forced-color-adjust: auto; } }
+@media (max-width: 68rem) { .dashboard { grid-template-columns: 1fr 1fr; } .dashboard .panel:first-child { grid-column: 1 / -1; } }
+@media (max-width: 60rem) { .topbar { position: static; } article.requirement details[open] > summary { top: 0; } .req-head { display: none; } article.requirement summary { grid-template-columns: 1fr 1fr; } .req-title, .tags { grid-column: 1 / -1; } }
+@media (max-width: 40rem) { .dashboard { grid-template-columns: 1fr; } .topbar { padding: 0.75rem 1rem; } dl { grid-template-columns: 1fr; gap: 0 0; } dd { margin-bottom: 0.4rem; } }
+
+/* Pico ships no print rules. Collapsed content is invisible on paper and to the
+   reader's find-in-page, so every disclosure is opened and the chrome removed. */
+@media print {
+  :root, [data-theme="dark"] { color-scheme: light; }
+  body { background: #ffffff; color: #000000; }
+  .topbar { position: static; }
+  .skip, .toolbar, .theme-toggle, .page-top, .to-top, .topbar nav { display: none !important; }
+  details { display: block; }
+  details > *:not(summary) { display: revert !important; }
+  details > summary::after { display: none; }
+  main { padding: 0; max-width: none; }
+  section.card, article.requirement, details.fold { box-shadow: none; }
+  thead { display: table-header-group; }
+  tr, article.requirement, pre, figure, table { break-inside: avoid; }
+  h2, h3, h4 { break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { margin: 1.5cm; }
+}

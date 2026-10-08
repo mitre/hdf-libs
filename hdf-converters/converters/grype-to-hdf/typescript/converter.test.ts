@@ -556,3 +556,25 @@ describe('unknown-severity convention', () => {
     }
   });
 });
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose: for grype the instance is the matched package, so
+// resource is "package" and resourceId is that package's purl. The two entries
+// sharing Grype/CVE-2022-48174 differ ONLY in the package.
+describe('grype result instance identity', () => {
+  it('sets resource and resourceId to the matched package purl', async () => {
+    const hdf = parseJSON<HDFResults>(await convertGrypeToHdf(loadFixture('anchore_grype.json')));
+    const ids = hdf.baselines[0]!.requirements
+      .filter((r) => r.id === 'Grype/CVE-2022-48174')
+      .map((r) => {
+        expect(r.results).toHaveLength(1);
+        expect(r.results[0]!.resource).toBe('package');
+        return r.results[0]!.resourceId;
+      });
+
+    expect(ids).toEqual([
+      'pkg:apk/alpine/busybox@1.31.1-r9?arch=aarch64&distro=alpine-3.11.3',
+      'pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64&upstream=busybox&distro=alpine-3.11.3',
+    ]);
+  });
+});

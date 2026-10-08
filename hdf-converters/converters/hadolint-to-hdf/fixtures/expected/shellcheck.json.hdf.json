@@ -1,0 +1,190 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "Last USER should not be root",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: Dockerfile | Line: 11 | Column: 1",
+              "message": "Last USER should not be root",
+              "startTime": "2026-09-28T21:14:19.859758Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 11,
+            "ref": "Dockerfile"
+          },
+          "id": "DL3002",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-000225"
+            ],
+            "nist": [
+              "AC-6"
+            ]
+          },
+          "code": "{\"code\":\"DL3002\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"warning\",\"line\":11,\"message\":\"Last USER should not be root\"}",
+          "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/hadolint/hadolint/wiki/DL3002"
+            }
+          ],
+          "title": "Last USER should not be root",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: Dockerfile | Line: 15 | Column: 1",
+              "message": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+              "startTime": "2026-09-28T21:14:19.859758Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "File: Dockerfile | Line: 44 | Column: 1",
+              "message": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+              "startTime": "2026-09-28T21:14:19.859758Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 15,
+            "ref": "Dockerfile"
+          },
+          "id": "DL3041",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "CM-2"
+            ]
+          },
+          "code": "{\"code\":\"DL3041\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"warning\",\"line\":15,\"message\":\"Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.\"}",
+          "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://github.com/hadolint/hadolint/wiki/DL3041"
+            }
+          ],
+          "title": "Specify version with `dnf install -y \u003cpackage\u003e-\u003cversion\u003e`.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "value is referenced but not assigned.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: Dockerfile | Line: 25 | Column: 1",
+              "message": "value is referenced but not assigned.",
+              "startTime": "2026-09-28T21:14:19.859758Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 25,
+            "ref": "Dockerfile"
+          },
+          "id": "SC2154",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11"
+            ]
+          },
+          "code": "{\"code\":\"SC2154\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"warning\",\"line\":25,\"message\":\"value is referenced but not assigned.\"}",
+          "controlType": "management",
+          "refs": [
+            {
+              "url": "https://github.com/koalaman/shellcheck/wiki/SC2154"
+            }
+          ],
+          "title": "value is referenced but not assigned.",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "Multiple consecutive `RUN` instructions. Consider consolidation.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "File: Dockerfile | Line: 27 | Column: 1",
+              "message": "Multiple consecutive `RUN` instructions. Consider consolidation.",
+              "startTime": "2026-09-28T21:14:19.859758Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "File: Dockerfile | Line: 28 | Column: 1",
+              "message": "Multiple consecutive `RUN` instructions. Consider consolidation.",
+              "startTime": "2026-09-28T21:14:19.859758Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 27,
+            "ref": "Dockerfile"
+          },
+          "id": "DL3059",
+          "impact": 0.3,
+          "tags": {
+            "nist": [
+              "CM-7"
+            ]
+          },
+          "code": "{\"code\":\"DL3059\",\"column\":1,\"file\":\"Dockerfile\",\"level\":\"info\",\"line\":27,\"message\":\"Multiple consecutive `RUN` instructions. Consider consolidation.\"}",
+          "controlType": "operational",
+          "refs": [
+            {
+              "url": "https://github.com/hadolint/hadolint/wiki/DL3059"
+            }
+          ],
+          "title": "Multiple consecutive `RUN` instructions. Consider consolidation.",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "9a76a179b1d601af0df47cc6ad32fd7d0b86b69c2f76050e96a7245b61b8e6ba"
+      },
+      "name": "Hadolint Scan",
+      "title": "Hadolint Scan of Dockerfile"
+    }
+  ],
+  "components": [
+    {
+      "name": "Dockerfile",
+      "type": "repository"
+    }
+  ],
+  "generator": {
+    "name": "hadolint-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-09-28T21:14:19.859758Z",
+  "tool": {
+    "name": "hadolint"
+  }
+}

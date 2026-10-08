@@ -1,0 +1,139 @@
+{
+  "$comment": "Shared Go/TypeScript case table for the requirement status bridge's override-expiry window (shared/go/status.go and shared/typescript/status.ts). Every case is run by shared/go/status_test.go and shared/typescript/status.test.ts, so the two bridges cannot drift on what counts as an expiry. Each language decodes `requirement` with its own generated schema type, which is where the divergence lived: Go's StatusOverride.ExpiresAt is a non-pointer time.Time, so an absent expiry round-trips as the Go zero time 0001-01-01T00:00:00Z and decodes back to IsZero (never expires), while TypeScript carries the literal string and read it as an expiry in year 1.",
+  "cases": [
+    {
+      "name": "the Go zero time is no expiry",
+      "note": "What a Go-serialized override carries for an absent expiry; Go's IsZero check reads it back as never expiring, so the override still governs.",
+      "want": "passed",
+      "requirement": {
+        "id": "SV-230221",
+        "title": "RHEL 8 must be a vendor-supported release.",
+        "impact": 0.7,
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "System Package redhat-release should be installed",
+            "startTime": "2025-03-14T09:12:44Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z",
+            "expiresAt": "0001-01-01T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "the Go zero time with a millisecond fraction is no expiry",
+      "note": "A TypeScript consumer that re-serializes the quicktype Date emits the zero instant as 0001-01-01T00:00:00.000Z; the fraction must not make it a real year-1 expiry.",
+      "want": "passed",
+      "requirement": {
+        "id": "SV-230221",
+        "title": "RHEL 8 must be a vendor-supported release.",
+        "impact": 0.7,
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "System Package redhat-release should be installed",
+            "startTime": "2025-03-14T09:12:44Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z",
+            "expiresAt": "0001-01-01T00:00:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a missing expiresAt is no expiry",
+      "note": "expiresAt is schema-required, but a malformed document can omit it; both bridges must read the absence the same way they read the Go zero time.",
+      "want": "passed",
+      "requirement": {
+        "id": "SV-230221",
+        "title": "RHEL 8 must be a vendor-supported release.",
+        "impact": 0.7,
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "System Package redhat-release should be installed",
+            "startTime": "2025-03-14T09:12:44Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a far-future expiry still governs",
+      "note": "The normalization must not swallow a real expiry window that has not closed yet.",
+      "want": "passed",
+      "requirement": {
+        "id": "SV-230221",
+        "title": "RHEL 8 must be a vendor-supported release.",
+        "impact": 0.7,
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "System Package redhat-release should be installed",
+            "startTime": "2025-03-14T09:12:44Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a past expiry no longer governs",
+      "note": "A closed window falls back to the result roll-up in both languages.",
+      "want": "failed",
+      "requirement": {
+        "id": "SV-230221",
+        "title": "RHEL 8 must be a vendor-supported release.",
+        "impact": 0.7,
+        "results": [
+          {
+            "status": "failed",
+            "codeDesc": "System Package redhat-release should be installed",
+            "startTime": "2025-03-14T09:12:44Z"
+          }
+        ],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2019-06-01T00:00:00Z",
+            "expiresAt": "2020-01-01T00:00:00Z"
+          }
+        ]
+      }
+    }
+  ]
+}

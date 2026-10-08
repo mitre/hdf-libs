@@ -73,6 +73,94 @@ Requirement-change-event chains anchor their integrity in effective checksums, w
 
 The `effectiveStatus` field on `EvaluatedRequirement` carries the post-adjudication status a producer computed at write time. It is an **output cache, not an input**: the canonical `computeEffectiveStatus` never reads it — the ladder above computes from results, overrides, and impact alone, so a stale stored value (in either direction) cannot influence the answer. The field's correctness is a **write-path guarantee**: every producer (converters, the amendments-apply flow) must emit a value equal to what the ladder computes. External consumers that cannot run the computation — raw-JSON readers, dashboards, `jq` pipelines — may read the field directly and are relying on that write-path guarantee.
 
+### Who resolves, and who deliberately does not
+
+Every non-test read of a requirement's `impact`, `effectiveStatus` or `disposition` in this workspace was classified in one sweep, because the two defects found by hand before it (`hdf query` counting severity pre-adjudication while resolving status post-adjudication, and `hdf-to-csv` reporting a stored impact nothing accounted for) were both invisible to a passing test suite.
+
+**The question is never "does this call the ladder". It is "which question is this reader answering".** A raw read is correct in about half these places. A reader is wrong only when its stated purpose is post-adjudication and its code is pre-adjudication.
+
+| Reader | Reads | Why |
+|---|---|---|
+| `Filter` / `hdf query`, `hdf list`, MCP `hdf_query` | effective | Report a requirement's current posture; their status column already resolves overrides |
+| `CountControlsByStatus`, `MapControlIDsByStatus`, MCP severity grouping | effective | Override-aware by contract; the injected status resolver is the giveaway |
+| `CountControlsByStatusSeverity`, `MapControlIDs` | **raw, by design** | The documented no-override-awareness twins — that is their entire purpose |
+| `hdf generate` control stubs (`hdf-generators`) | **raw, by design** | Generating a profile's declared impact, not reporting an assessment |
+| `hdf-to-xccdf` severity | **raw, by design** | XCCDF severity describes the *rule*, not the outcome of running it |
+| Checklist `resolveSeverity` (base severity) | **raw, by design** | CKL models base severity and `SEVERITY_OVERRIDE` separately; the base is the raw one |
+| `hdf-diff` field comparisons, `hdf-extension-graph` modifications, `hdf-parsers` flatten | **raw, structural** | A differ reports that a *field* changed; the stored field is the subject, not a posture claim |
+| `baselineAsResults` (MCP) | **raw, unavoidable** | A baseline document carries no results and no overrides |
+| Reads of `statusOverrides[].impact.value` (`hdf-to-oscal-poam`, `hdf-to-cyclonedx-vex`, `hdf amend`) | n/a | The override's own field, not the requirement's |
+| `hdf-diff` `ComputeEffectiveImpact` / `ComputeDisposition` | computes, then **falls back to the stored cache when a requirement carries no overrides** | Predates the shared ladder; feeds the effective checksum, so changing it is a checksum epoch |
+
+| Exporters' disposition text and labels (`hdf-to-oscal-sar`, `hdf-to-ocsf`, `hdf-to-ecs`, CKL/CKLB) | resolved, with one fallback | Resolve from the overrides; fall back to the stored field only on a requirement carrying none at all — see the exception below |
+
+Open defects found by the sweep are tracked rather than listed here, so this table does not rot into a bug list. The shape that recurs is an exporter trusting a stored `effective*`/`disposition` field.
+
+**One exception, at the export boundary.** A requirement carrying **no overrides at all** still reports its stored `disposition` when exported (`RequirementDisposition`, `exportmap.Disposition` and their TypeScript twins). There the stored value is the only evidence the document holds — nothing can contradict it — and dropping it would lose the disposition of every document whose producer recorded the verdict without the override detail. An *expired* override still counts as the document carrying overrides, so it suppresses the fallback rather than triggering it.
+
+`hdf query --disposition` deliberately does **not** take that fallback and reports nothing for such a requirement. The asymmetry is the point: a filter matching on an unprovenanced value selects requirements it cannot justify, where an export is only restating what it was handed. No other stored `effective*` field has an equivalent exception.
+
+**Array order carries no meaning.** A reader must never take `statusOverrides[0]` as "the governing override": nothing sorts that array, and this repo's own writers **append**, so the newest override is last. The schema's description says so explicitly — order is not significant, and the governing override is resolved by `appliedAt`. Two shared helpers do it, `GoverningOverride` for typed requirements and `exportmap.GoverningOverride` for the generically-parsed exporters, both on the same `governingOverrideIndex` the three ladders use. One exception is deliberate: `sarif-to-hdf` picks the override whose status produced the rollup, because every override it creates carries the same run timestamp and so recency cannot tell them apart.
+
+**A field is reachable three ways, and a sweep must cover all three:** dotted access (`req.Impact`), map index (`req["impact"]`), and an accessor helper taking the name as a string (`exportmap.GetStr(req, "disposition")`). Enumerate the codebase's own accessors before grepping; the third shape is invisible to patterns written for the first two.
+
+### disposition Field
+
+Disposition has a ladder too, and it is the shortest of the three:
+
+```
+1. the most recent non-expired statusOverride — whatever it carries → its type
+```
+
+There is **no eligibility filter**. Status requires an override carrying a status, impact one carrying an impact; disposition takes the latest non-expired override of any kind, which is the schema's own definition ("the type of the most recent non-expired override … governing this requirement") and the rule `hdf-diff` has always used to compute the effective checksum.
+
+The consequence is worth stating plainly, because it looks like a contradiction and is not: **disposition may name a different override than the one that decided the status.** A requirement waived in June and risk-adjusted in January reports `effectiveStatus: passed` from the waiver and `disposition: riskAdjustment` from the adjustment. That is what per-field eligibility means — disposition answers "what is the most recent thing anyone did to this requirement", not "what set its status".
+
+Filtering it required a status-carrying override until the change that introduced this section, which meant `--disposition riskAdjustment` could not match the shape a `riskAdjustment` normally has — one carrying an impact and no status. That shape is not hypothetical: `hdf enrich --recompute-cvss` authors exactly it, and appends it to whatever overrides a requirement already carries, so a waived finding that is later enriched acquires a newer impact-only override with no human deciding it.
+
+**POA&Ms participate.** The schema defines disposition as "the type of the most recent non-expired override **or POAM** governing this requirement", and for a long time only the override half was implemented. The distinction that matters: a `poam`-TYPED entry in `statusOverrides[]` always resolved, because it went through the override path like any other type — that is what `hdf amend apply` and the OSCAL POA&M importer write. What never resolved was a `poams[]` entry, the schema's actual POA&M array, so `disposition` answered a narrower question than it appeared to. Overrides and POA&Ms are now resolved as **one ordered set**, not two tiers: the most recently applied non-expired entry governs, whichever kind it is. No new comparison was invented for this. `POAM` requires `[type, explanation, appliedBy, appliedAt, expiresAt]` and `Status_Override` requires `[type, reason, appliedBy, appliedAt, expiresAt]`, so the same `appliedAt` drives recency and the same `expiresAt` drives expiry, and the existing `governingOverrideIndex` simply receives a wider input set.
+
+Expiry still outranks recency: a waiver applied more recently than a POA&M but already lapsed does not displace a plan still in force.
+
+Two alternatives were considered and rejected, recorded here because the question will be asked again. **Overrides always outrank POA&Ms** — consult a plan only when no live override exists — on the reasoning that an override adjudicates while a plan only tracks. **POA&Ms always outrank** — a live plan means the finding is still being worked, whatever was decided about it. Both invent a tier the schema does not describe, and each has a case that reads wrong: under the second, a waiver filed after a plan could never take effect on disposition, which is exactly what an accepted risk superseding a remediation looks like.
+
+A POA&M's **own kind is not representable** in this field. `disposition` is typed as `Override_Type` (`waiver`, `attestation`, `poam`, `inherited`, `falsePositive`, `riskAdjustment`, `operationalRequirement`), while a POA&M's `type` is one of `remediation`, `mitigation`, `riskAcceptance`, `vendorDependency` — none of them members. So every governing POA&M reports the flat value `poam`, and which of the four kinds it is cannot be read from disposition. Distinguishing them would mean widening `Override_Type`, which is a schema change.
+
+**This moved the effective checksum.** `effectiveChecksum` hashes `{status, impact, disposition}`, so any requirement whose governing entry is now a POA&M — one carrying a live plan and either no override or only older or lapsed ones — hashes differently than it did before. That is a **checksum epoch**: stored checksums computed by an earlier version will not match a recomputation, and a continuous-monitoring consumer comparing across the boundary sees a one-time flip on those requirements. One further class moves with it: a requirement with no overrides, only lapsed plans, and a stored `disposition` field previously fell back to that cached value and now correctly resolves to none, because a lapsed entry governs nothing and a stored effective* field is an output cache rather than an input. A requirement carrying no `poams[]` entry at all is unaffected and hashes exactly as before.
+
+### effectiveImpact Field
+
+Impact has its own ladder, and it is much shorter than the status one:
+
+```
+1. governing impact override — the most recent non-expired statusOverride carrying an impact → its value
+2. the requirement's own impact
+```
+
+The canonical implementation is `computeEffectiveImpact` in `@mitre/hdf-utilities` (`hdfutil.ComputeEffectiveImpact` in Go), and the stored `effectiveImpact` field is an **output cache under the same write-path guarantee** as `effectiveStatus` — never read as an input.
+
+Eligibility is **per field**. The override that governs status and the override that governs impact need not be the same one: a waiver adjudicates status and says nothing about impact, so a newer waiver does not displace an older `riskAdjustment`'s re-score. Both selections run through one shared rule (`governingOverrideIndex`) with a different eligibility predicate, so they cannot disagree about expiry or recency.
+
+The override's impact is optional rather than defaulted because **0 is a legitimate re-score** meaning "no longer applicable", which a default could not tell from "this override carries no impact".
+
+Everything that asks a requirement's impact post-adjudication goes through this: the `impact` filter and the derived severity in `hdf query`, the override-aware compliance counts and control listings, and threshold rules. The documented no-override-awareness variants (`countControlsByStatusSeverity`, `mapControlIDs`) keep reading the requirement's own impact — that is their purpose. On the query surface, `--impact` is the effective score and `--raw-impact` the unadjusted one; there is no raw twin of `--status`, so the pair exists only where both scores answer different questions (for example, "an override may not move a critical below 0.7").
+
+**Settled — rung 3 reads the requirement's own impact, deliberately.** `impact === 0 → notApplicable` does *not* consult the effective impact, so a `riskAdjustment` re-scoring a finding to 0.0 leaves it `failed`. That is not an oversight, and it is the one place in this document where a rung ignores an override on purpose.
+
+The two fields answer different questions. Rung 3 asks **was this in scope** — a statement the profile author makes at authoring time, and InSpec's convention for a control that does not apply to the target. `effectiveImpact` asks **how much risk does this carry now** — a statement an assessor makes at adjudication time. An override carrying no `status` is not making a scope claim, so it has no business reaching rung 3; one that *does* carry a status is, and rung 1 lets it win. That is the same per-field eligibility as the rest of the ladder, not an exception carved for this case.
+
+Three things hold the line:
+
+- **The schema says so.** `Override_Type` defines `riskAdjustment` as *"impact score adjusted based on environmental context (FedRAMP Risk Adjustment); does not change pass/fail status, only impact via the impact field."* The disposition-branching table below gives it a typical `effectiveStatus` of `failed` and "stays open".
+- **FedRAMP, the model the enum is aligned to, separates the same three acts.** A Risk Adjustment reduces the scanner-defined risk level of a vulnerability that *does exist*; the finding stays on the POA&M and closure depends on actual remediation, not on the adjustment being approved. A validated False Positive — the vulnerability "does not actually exist on the system" — moves to the Closed tab and is not an open risk. An Operational Requirement stays open and is periodically reassessed. There is no Risk Adjustment path to "not applicable"; that is what a False Positive is for.
+- **Authority.** The schema names an Authorizing Official for `waiver` and names none for `riskAdjustment`. Since `notApplicable` leaves the compliance denominator (`CalculateCompliance` counts only passed+failed+skipped+error), letting an adjustment reach `notApplicable` would let an assessor raise a compliance score by scoring alone — doing by re-rating what the schema reserves for a signature.
+
+**Dropping rung 3 altogether was considered and rejected on measurement.** Across the fixture corpus, 1,294 of 5,305 requirements (24.4%) carry impact 0, and **1,234 of them roll up to `notReviewed`** because InSpec supplies no pass/fail for an impact-0 control at all. Without rung 3 they would report `notReviewed` — asserting absence of evidence where the tool actually returned a verdict of "reviewed, not applicable" — and would enter the compliance denominator as skipped. Rung 3 is the only thing that tells those two situations apart. (Measured over `hdf-fixtures/**/*.json` and `hdf-converters/converters/*/fixtures/expected/*.json`, counting `baselines[].requirements[]` with `impact == 0` and rolling their `results[].status` up worst-wins.)
+
+**The consequence to know:** a requirement can report `notApplicable` with a non-informational severity band, because an override may raise the impact of an out-of-scope control. Scope and risk-if-realized are independent, and a `notApplicable` requirement leaves the denominator whatever its band, so this reads oddly rather than meaning anything contradictory.
+
+**If a zero-risk finding should not block a pipeline, bound the band, not the status.** A requirement adjusted to 0.0 reports `failed` with severity `informational`, so `failed.critical.max: 0` and `failed.high.max: 0` pass over it while it stays visible and counted — which is what an auditor asking "what did you decide, and why" needs to see.
+
 ### In hdf-libs
 
 The single canonical implementation is `computeEffectiveStatus` in `@mitre/hdf-utilities` (mirrored in Go as `hdfutil.ComputeEffectiveStatus`). Everything else delegates to it:
@@ -106,7 +194,7 @@ With **no override**, `effectiveStatus` equals the ladder's computation from the
 
 ### Disposition branching
 
-Not every override suppresses the finding. The `disposition` (the governing override's type) determines whether the finding leaves the actionable set or merely gets re-scored:
+Not every override suppresses the finding. The `disposition` — the type of the governing override or POA&M, whichever was most recently applied and is unexpired — determines whether the finding leaves the actionable set or merely gets re-scored:
 
 | Disposition | Typical `effectiveStatus` | Still an open finding? | Meaning |
 |---|---|---|---|

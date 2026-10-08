@@ -1,0 +1,51 @@
+{
+  "data": {
+    "project": {
+      "fullPath": "security-demo/unscanned-app",
+      "pipelines": {
+        "nodes": [
+          {
+            "iid": "4",
+            "sha": "2ff8a411e21797ffa773ec101dd45eddf17caf7b",
+            "ref": "main",
+            "status": "SUCCESS",
+            "createdAt": "2026-09-20T19:38:48Z",
+            "securityReportSummary": {
+              "sast": {
+                "scans": {
+                  "nodes": [
+                    {
+                      "name": "custom-sast",
+                      "status": "REPORT_ERROR",
+                      "errors": [
+                        "[ParsingError] An unexpected error happened!"
+                      ],
+                      "warnings": []
+                    }
+                  ]
+                }
+              },
+              "secretDetection": null,
+              "dependencyScanning": null,
+              "containerScanning": null,
+              "dast": null,
+              "coverageFuzzing": null,
+              "apiFuzzing": null,
+              "clusterImageScanning": null
+            }
+          }
+        ]
+      },
+      "vulnerabilities": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
+      }
+    }
+  },
+  "extensions": {
+    "disabled_filters": []
+  }
+}

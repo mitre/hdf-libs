@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/spf13/cobra"
 )
 
@@ -505,7 +506,7 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 		return nil
 	}
 
-	if err := os.WriteFile(opts.outputPath, output, 0o600); err != nil { // #nosec G703 -- CLI writes user path
+	if err := atomicfile.WriteFile(opts.outputPath, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write evidence package: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Evidence package written to %s (%d documents)\n", opts.outputPath, len(contents))

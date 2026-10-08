@@ -1,0 +1,20 @@
+{
+  "name": "threshold smoke \u2014 an in-force risk adjustment, applied alone",
+  "overrides": [
+    {
+      "requirementId": "Grype/CVE-2022-42919",
+      "type": "riskAdjustment",
+      "reason": "Reachability analysis re-scores this finding; it still fails, at a lower impact.",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "appliedAt": "2025-01-01T00:00:00Z",
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "impact": {
+        "value": 0.3,
+        "justification": "Not reachable from an entry point in this build."
+      }
+    }
+  ]
+}

@@ -63,6 +63,12 @@ describe('integration: detectConverter with real fixtures', () => {
     expect(result!.fingerprint.id).toBe('gitlab-to-hdf');
   });
 
+  it('detects hadolint', () => {
+    const result = detectConverter(fixture('hadolint-to-hdf', 'real.json'));
+    expect(result).not.toBeNull();
+    expect(result!.fingerprint.id).toBe('hadolint-to-hdf');
+  });
+
   it('detects gosec', () => {
     const result = detectConverter(fixture('gosec-to-hdf', 'real.json'));
     expect(result).toBeDefined();
@@ -279,6 +285,7 @@ describe('integration: detectConverter with real fixtures', () => {
       ['deptrack-to-hdf', 'fpf-default.json'],
       ['gitlab-to-hdf', 'minimal-sast.json'],
       ['gosec-to-hdf', 'real.json'],
+      ['hadolint-to-hdf', 'real.json'],
       ['grype-to-hdf', 'anchore_grype.json'],
       ['jfrog-xray-to-hdf', 'jfrog_xray_sample.json'],
       ['msft-defender-cloud-to-hdf', 'minimal.json'],

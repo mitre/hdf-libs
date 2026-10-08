@@ -67,6 +67,8 @@ export function generateControlStub(req: BaselineRequirement): string {
   }
 
   // Impact — always render with at least one decimal place for 0 and whole numbers
+  // RAW impact by design: a generated control declares the impact the profile
+  // asserts, not the impact an assessment later resolved it to.
   if (req.impact !== undefined) {
     const impactStr = Number.isInteger(req.impact)
       ? req.impact.toFixed(1)

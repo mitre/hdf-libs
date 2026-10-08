@@ -3,6 +3,7 @@ import {
   countXmlElements,
   countJsonItemsUnderKey,
   assertRequirementCount,
+  assertResultCount,
   assertOverrideCount,
 } from './anchor.js';
 
@@ -56,6 +57,53 @@ describe('anchor: assertRequirementCount', () => {
 
   it('throws on a count mismatch', () => {
     expect(() => assertRequirementCount({ requirements: [{}] }, 2, 'x')).toThrow();
+  });
+});
+
+describe('anchor: assertResultCount', () => {
+  it('passes on the HDFResults shape (baselines[].requirements[].results)', () => {
+    assertResultCount(
+      JSON.stringify({
+        baselines: [{ requirements: [{ results: [{}, {}] }, { results: [{}] }] }],
+      }),
+      3,
+      'results shape',
+    );
+  });
+
+  it('passes on the HDFBaseline shape, counting a requirement with no results as zero', () => {
+    assertResultCount({ requirements: [{ results: [{}] }, {}] }, 1, 'baseline shape');
+  });
+
+  /**
+   * The result anchor must count from the emitted document generically, never
+   * through a converter's parser (the independence rule at the head of
+   * anchor.ts): a raw JSON document it has never seen a type for counts the same.
+   */
+  it('counts a raw JSON document independent of any converter model', () => {
+    const raw = JSON.stringify({
+      baselines: [
+        {
+          requirements: [
+            {
+              id: 'Grype/CVE-2022-48174',
+              results: [{ codeDesc: 'busybox' }, { codeDesc: 'ssl_client' }],
+            },
+            { id: 'Grype/CVE-2022-28391', results: [{ codeDesc: 'busybox' }] },
+          ],
+        },
+        { requirements: [{ id: 'Grype/CVE-2022-48174', results: [{ codeDesc: 'other host' }] }] },
+      ],
+    });
+    assertResultCount(raw, 4, 'four findings over three requirements in two baselines');
+  });
+
+  it('throws when want is 0 (an anchor with want=0 proves nothing)', () => {
+    expect(() => assertResultCount({ requirements: [] }, 0, 'x')).toThrow();
+  });
+
+  it('throws on a count mismatch', () => {
+    expect(() => assertResultCount({ requirements: [{ results: [{}] }] }, 2, 'x')).toThrow();
   });
 });
 

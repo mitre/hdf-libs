@@ -35,6 +35,7 @@ func TestConvert_PerWrapperType(t *testing.T) {
 		validate func([]byte) validators.ValidationResult
 	}{
 		{"results", "gosec", "gosec-to-hdf/fixtures/input/real.json", validators.ValidateResults},
+		{"results", "hadolint", "hadolint-to-hdf/fixtures/input/real.json", validators.ValidateResults},
 		{"baseline", "oscal-catalog", "oscal-to-hdf/fixtures/input/catalog-800-53-rev5.json", validators.ValidateBaseline},
 		{"raw", "oscal-ssp", "oscal-to-hdf/fixtures/input/ssp-example.json", validators.ValidateSystem},
 		{"plan", "oscal-assessment-plan", "oscal-to-hdf/fixtures/input/sap-fedramp.json", validators.ValidatePlan},

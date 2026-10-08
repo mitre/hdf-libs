@@ -879,3 +879,10 @@ func TestOSCALSeverityFromHDF(t *testing.T) {
 		assert.Equal(t, want, OSCALSeverityFromHDF(in), "OSCALSeverityFromHDF(%q)", in)
 	}
 }
+
+func TestPackageInstanceID(t *testing.T) {
+	assert.Equal(t, "pkg:npm/lodash@4.17.21", PackageInstanceID("pkg:npm/lodash@4.17.21", "lodash", "4.17.21"), "a purl wins outright")
+	assert.Equal(t, "lodash@4.17.21", PackageInstanceID("", "lodash", "4.17.21"))
+	assert.Equal(t, "lodash", PackageInstanceID("", "lodash", ""))
+	assert.Equal(t, "", PackageInstanceID("", "", "4.17.21"), "a version without a name identifies nothing")
+}

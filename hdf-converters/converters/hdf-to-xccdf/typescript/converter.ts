@@ -275,6 +275,8 @@ function buildRuleObj(req: EvaluatedRequirement): Record<string, unknown> {
 
   const rule: Record<string, unknown> = {
     [`${ATTR}id`]: ruleId,
+    // RAW impact by design: XCCDF severity describes the rule, not the
+    // outcome of running it, so an override must not move it.
     [`${ATTR}severity`]: impactToSeverity(req.impact),
     [`${ATTR}selected`]: 'true',
   };

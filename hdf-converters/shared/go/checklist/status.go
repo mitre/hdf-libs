@@ -50,9 +50,10 @@ func (s CheckStatus) CKLBString() string {
 		return "not_a_finding"
 	case StatusNotApplicable:
 		return "not_applicable"
-	default:
-		return "not_reviewed"
+	case StatusNotReviewed:
 	}
+	// An empty or unrecognized status is, by definition, not yet reviewed.
+	return "not_reviewed"
 }
 
 // ToHDF maps the canonical status to an HDF Result_Status.
@@ -64,9 +65,9 @@ func (s CheckStatus) ToHDF() hdf.ResultStatus {
 		return hdf.Passed
 	case StatusNotApplicable:
 		return hdf.NotApplicable
-	default:
-		return hdf.NotReviewed
+	case StatusNotReviewed:
 	}
+	return hdf.NotReviewed
 }
 
 // StatusFromHDF maps an HDF Result_Status back to a canonical CheckStatus.
@@ -80,7 +81,7 @@ func StatusFromHDF(s hdf.ResultStatus) CheckStatus {
 		return StatusOpen
 	case hdf.NotApplicable:
 		return StatusNotApplicable
-	default:
-		return StatusNotReviewed
+	case hdf.NotReviewed:
 	}
+	return StatusNotReviewed
 }

@@ -1,0 +1,131 @@
+{
+  "$comment": "Tag filter contract, read by BOTH hdf-engine/go/filter_test.go and test/query.test.ts so the two implementations cannot drift. Decisions pinned here rather than in prose: (1) the form is key:value with a glob on the VALUE; tag KEYS are open by schema (Requirement_Core.tags is additionalProperties: true) so a key nothing carries selects nothing, which is correct rather than an error. (2) A tag VALUE may be a string or a LIST of strings — nist and cci normally arrive as lists — so matching goes through hdfutil.TagStrings, which is why this does not share labelMatchesGlob with baselineLabel, where a value is exactly one string. (3) A COLONLESS predicate names no key and can never match, so it is REFUSED at every gate-bearing boundary. Before that refusal existed the colonless form was DROPPED: the filter list was built only from predicates containing a colon, and when every predicate was colonless no filter was appended at all, so the predicate vanished and the gate silently matched EVERYTHING — widening the population a rule bounded instead of narrowing it, a false green under any min bound and a wrong selection under any max. That is the inverse of the baselineLabel bug, which selected nothing; both are now refused rather than either being silently tolerated.",
+  "fixtureFile": "query-fixture.json",
+  "unfilteredCount": 5,
+  "cases": [
+    {
+      "name": "exact value on a list-valued tag",
+      "tags": [
+        "nist:AC-2"
+      ],
+      "expect": [
+        "SV-230221"
+      ]
+    },
+    {
+      "name": "a list-valued tag matches any member, not just the first",
+      "tags": [
+        "nist:AC-2(1)"
+      ],
+      "expect": [
+        "SV-230221"
+      ]
+    },
+    {
+      "name": "exact value on a string-valued tag",
+      "tags": [
+        "stig_id:RHEL-09-212010"
+      ],
+      "expect": [
+        "SV-230222"
+      ]
+    },
+    {
+      "name": "glob on the value",
+      "tags": [
+        "stig_id:RHEL-09-21*"
+      ],
+      "expect": [
+        "SV-230221",
+        "SV-230222",
+        "SV-230223"
+      ]
+    },
+    {
+      "name": "several values OR together",
+      "tags": [
+        "nist:SC-8",
+        "nist:SA-11"
+      ],
+      "expect": [
+        "SV-100001",
+        "SV-100002"
+      ]
+    },
+    {
+      "name": "a key nothing carries matches nothing",
+      "tags": [
+        "severity_override:high"
+      ],
+      "expect": []
+    },
+    {
+      "name": "a value nothing carries matches nothing",
+      "tags": [
+        "nist:ZZ-99"
+      ],
+      "expect": []
+    },
+    {
+      "name": "a glob cannot stand in for an absent key",
+      "tags": [
+        "severity_override:*"
+      ],
+      "expect": []
+    },
+    {
+      "name": "a requirement missing the key is excluded even when others carry it",
+      "tags": [
+        "cci:*"
+      ],
+      "expect": [
+        "SV-100001",
+        "SV-230221",
+        "SV-230222"
+      ]
+    },
+    {
+      "name": "a colonless predicate selects nothing rather than everything",
+      "tags": [
+        "production"
+      ],
+      "expect": []
+    },
+    {
+      "name": "one colonless predicate does not disable a well-formed sibling",
+      "tags": [
+        "production",
+        "nist:SC-8"
+      ],
+      "expect": [
+        "SV-100001"
+      ]
+    }
+  ],
+  "validity": [
+    {
+      "value": "nist:AC-2",
+      "valid": true
+    },
+    {
+      "value": "stig_id:RHEL-09-21*",
+      "valid": true
+    },
+    {
+      "value": "nist:",
+      "valid": true
+    },
+    {
+      "value": "production",
+      "valid": false
+    },
+    {
+      "value": "",
+      "valid": false
+    },
+    {
+      "value": ":AC-2",
+      "valid": false
+    }
+  ]
+}

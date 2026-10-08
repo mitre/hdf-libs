@@ -48,6 +48,7 @@ func NewValidateCmd() *cobra.Command { //nolint:dupl // Cobra command setup; fla
 		localSchemaType string
 		localQuiet      bool
 		localSchemaVer  string
+		localSourceName string
 	)
 
 	cmd := &cobra.Command{
@@ -77,6 +78,12 @@ Examples:
 			validateSchemaVer = ver
 			schemaType = localSchemaType
 			quiet = localQuiet
+			// Same refusal as validate threshold: a name attached to a real file
+			// could misattribute it, and one name cannot label several documents.
+			if err := checkSourceNameArgs(localSourceName, args); err != nil {
+				return err
+			}
+			sourceName = localSourceName
 
 			files, err := expandGlobs(args)
 			if err != nil {
@@ -91,6 +98,10 @@ Examples:
 
 	cmd.Flags().StringVarP(&localSchemaType, "type", "t", "", "Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event")
 	cmd.Flags().BoolVarP(&localQuiet, "quiet", "q", false, "Suppress output on success (exit code only)")
+	// Shares displayNameFor with `validate threshold`, so it shares the gap too:
+	// a document on stdin has no filename and every verdict reads <stdin>.
+	cmd.Flags().StringVar(&localSourceName, "source-name", "",
+		"Name to report for a document read from stdin; one line, no control characters (default \"<stdin>\")")
 	cmd.Flags().StringVar(&localSchemaVer, "schema-ver", "", "HDF major schema version to validate against: 2 (legacy Heimdall/InSpec exec-json) or 3 (default, latest). Accepts 'hdf@2'/'hdf@3'; majors only.")
 
 	cmd.AddCommand(newValidateThresholdCmd())
@@ -136,11 +147,7 @@ func runValidate(_ *cobra.Command, args []string) error {
 
 	printDebug("Read %d bytes", len(data))
 
-	// Determine display name for output
-	displayName := filename
-	if filename == "-" {
-		displayName = "<stdin>"
-	}
+	displayName := displayNameFor(filename)
 
 	// v2 selected: validate against the pinned legacy (Heimdall/InSpec exec-json)
 	// schema at the same rigor as v3, rather than the v3 schemas.

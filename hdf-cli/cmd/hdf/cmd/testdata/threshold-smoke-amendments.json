@@ -1,0 +1,103 @@
+{
+  "name": "threshold-smoke-amendments",
+  "overrides": [
+    {
+      "appliedAt": "2026-09-30T15:34:30Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "milestones": [
+        {
+          "description": "Upgrade the affected package",
+          "estimatedCompletion": "2099-06-30T00:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "reason": "Upstream fix scheduled; tracked to completion.",
+      "requirementId": "Grype/CVE-2022-27943",
+      "status": "failed",
+      "type": "poam"
+    },
+    {
+      "appliedAt": "2026-09-30T15:34:30Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "reason": "Compensating control at the network boundary.",
+      "requirementId": "Grype/CVE-2019-1010204",
+      "status": "passed",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2026-09-30T15:34:30Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "reason": "Manually verified not reachable in this build.",
+      "requirementId": "Grype/CVE-2023-4039",
+      "status": "passed",
+      "type": "attestation"
+    },
+    {
+      "appliedAt": "2026-09-30T15:34:30Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "reason": "Scanner matched a vendored copy that is not shipped.",
+      "requirementId": "Grype/CVE-2024-4032",
+      "status": "notApplicable",
+      "type": "falsePositive"
+    },
+    {
+      "appliedAt": "2026-09-30T15:34:30Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "reason": "Adjudicated by the platform authorisation boundary.",
+      "requirementId": "Grype/CVE-2024-7264",
+      "status": "passed",
+      "type": "inherited"
+    },
+    {
+      "appliedAt": "2024-06-01T00:00:00Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "reason": "Waived while the fix was unavailable.",
+      "requirementId": "Grype/CVE-2020-13844",
+      "status": "passed",
+      "type": "waiver"
+    },
+    {
+      "appliedAt": "2025-01-01T00:00:00Z",
+      "appliedBy": {
+        "type": "simple",
+        "identifier": "threshold-smoke-fixture"
+      },
+      "expiresAt": "2099-12-31T23:59:59Z",
+      "reason": "Waiver superseded: a remediation plan now exists and is the more recent decision.",
+      "requirementId": "Grype/CVE-2020-13844",
+      "type": "poam",
+      "status": "failed",
+      "milestones": [
+        {
+          "description": "Apply the vendor patch",
+          "estimatedCompletion": "2099-03-31T00:00:00Z",
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}

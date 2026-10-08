@@ -58,6 +58,12 @@ export interface StatusOverrideInput {
   appliedAt?: string;
   /** RFC3339 timestamp; undefined means the override never expires. */
   expiresAt?: string;
+  /**
+   * The override's re-scored impact, undefined when the override carries none.
+   * Nullable rather than defaulted because 0 is a legitimate re-score meaning
+   * "no longer applicable", which a default could not distinguish from absence.
+   */
+  impact?: number;
 }
 
 function isExpired(override: StatusOverrideInput, ref: Date): boolean {
@@ -163,4 +169,48 @@ export function computeEffectiveStatus(
     return 'notApplicable';
   }
   return rolledUp;
+}
+
+/**
+ * The index of the override that governs a requirement's impact: the most
+ * recently applied non-expired override carrying an impact, matching the
+ * schema's definition of effectiveImpact. Eligibility is per-field, so a newer
+ * override carrying only a status does not displace an older re-score — a waiver
+ * adjudicates status and says nothing about impact.
+ *
+ * Parity: GoverningImpactOverrideIndex in go/status.go.
+ */
+export function governingImpactOverrideIndex(
+  overrides: readonly StatusOverrideInput[],
+  referenceTimestamp?: string
+): number {
+  return governingOverrideIndex(
+    overrides,
+    (i) => overrides[i]?.impact !== undefined,
+    referenceTimestamp
+  );
+}
+
+/**
+ * Determines a requirement's effective impact: the governing impact override's
+ * value, else the requirement's own impact. The impact twin of
+ * computeEffectiveStatus, following the rule the schema states for the
+ * effectiveImpact field — "the most recent non-expired override with an impact
+ * field".
+ *
+ * The stored effectiveImpact field is an output cache and is never read, exactly
+ * as effectiveStatus is not: the only sanctioned channel for impact to diverge
+ * from the requirement's own value is a governing override.
+ *
+ * Parity: ComputeEffectiveImpact in go/status.go.
+ */
+export function computeEffectiveImpact(
+  input: EffectiveStatusInput,
+  referenceTimestamp?: string
+): number {
+  const index = governingImpactOverrideIndex(input.overrides ?? [], referenceTimestamp);
+  if (index >= 0) {
+    return input.overrides![index]!.impact!;
+  }
+  return input.impact;
 }

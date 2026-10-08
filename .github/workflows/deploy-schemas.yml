@@ -18,11 +18,11 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-# NODE_VERSION pinned to the current LTS (22). Matches each published
-# package's `engines.node: ">=22.0.0"` and the version used by ci.yml,
-# pre-release.yml, and release.yml.
+# NODE_VERSION tracks the Active LTS — 24 (Krypton) as of 2026-10 — and matches
+# every published package's `engines.node` and the pin in ci.yml, pre-release.yml
+# and release.yml. See ci.yml's note: the policy is Active LTS, not this number.
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
 
 jobs:
   deploy:

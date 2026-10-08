@@ -67,6 +67,51 @@ func TestHdfConvert_MatchingCountConverts(t *testing.T) {
 	}
 }
 
+// resultFidelityFake declares a result count, which ADR-0017 §6 makes the
+// mandatory guard for a converter that rolls its requirements up: roll-up stops
+// the requirement count tracking the findings, so only the result count still
+// catches a silent under-extraction. The MCP must refuse on it, not just the CLI.
+type resultFidelityFake struct {
+	inner         convreg.Converter
+	expectResults int
+}
+
+func (f *resultFidelityFake) Name() string                      { return "Result fidelity fake" }
+func (f *resultFidelityFake) Convert(in []byte) ([]byte, error) { return f.inner.Convert(in) }
+func (f *resultFidelityFake) ExpectedResultCount([]byte) (int, string, error) {
+	return f.expectResults, "raw findings", nil
+}
+
+func registerResultFidelityFake(t *testing.T, name string, expectResults int) {
+	t.Helper()
+	inner, err := convreg.GetConverter("gosec", "hdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	convreg.RegisterConverter(name, "hdf", &resultFidelityFake{inner: inner, expectResults: expectResults})
+	t.Cleanup(func() { convreg.UnregisterConverter(name, "hdf") })
+}
+
+func TestHdfConvert_RefusesLostResults(t *testing.T) {
+	registerResultFidelityFake(t, "result-fidelity-mismatch", 99)
+	res, out := callConvert(t, convertInput{Content: string(gosecFixture(t)), From: "result-fidelity-mismatch"})
+	if res == nil || !res.IsError {
+		t.Fatalf("a conversion whose result count disagrees with the declaration must be refused, got %+v", out)
+	}
+	tr := toolResultPayload(t, res)
+	if tr.Code != mcperr.SchemaInvalid {
+		t.Errorf("code = %q, want %q", tr.Code, mcperr.SchemaInvalid)
+	}
+	for _, want := range []string{"conversion lost findings", "expected 99 results", "raw findings"} {
+		if !strings.Contains(tr.Message, want) {
+			t.Errorf("message %q lacks %q", tr.Message, want)
+		}
+	}
+	if out.Handle != "" || out.Valid {
+		t.Errorf("a refused conversion must not mint a handle: %+v", out)
+	}
+}
+
 // The batch path shares the single-file pipeline, so the same refusal lands
 // on the per-file entry.
 func TestHdfConvert_BatchRefusesLostFindings(t *testing.T) {

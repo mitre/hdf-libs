@@ -149,7 +149,12 @@ describe('hdf-to-ocsf converter', () => {
 
   it('builds the override comment from disposition and/or justification', () => {
     const comment = (r: Record<string, unknown>) => lines(convertHdfToOcsf(doc({ id: 'X', impact: 0.5, results: [baseResult], ...r }), VERSION))[0].comment;
-    expect(comment({ disposition: 'waiver', statusOverrides: [{ reason: 'accepted' }] })).toBe('waiver: accepted');
+    // The disposition now comes from the override, not the stored field, so the
+    // override has to carry the type it is claimed to have.
+    expect(comment({ disposition: 'waiver', statusOverrides: [{ type: 'waiver', reason: 'accepted' }] })).toBe('waiver: accepted');
+    // A stored disposition that disagrees with the governing override loses.
+    expect(comment({ disposition: 'waiver', statusOverrides: [{ type: 'riskAdjustment', reason: 'accepted' }] })).toBe('riskAdjustment: accepted');
+    // With NO overrides the stored field is the only evidence, so it stands.
     expect(comment({ disposition: 'falsePositive' })).toBe('falsePositive');
     expect(comment({ statusOverrides: [{ reason: 'r only' }] })).toBe('r only');
     expect(comment({})).toBeUndefined(); // no override -> no comment

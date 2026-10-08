@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-schema",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "JSON schemas and multi-language type definitions for Heimdall Data Format (HDF)",
   "publishConfig": {
     "access": "public"
@@ -91,7 +91,7 @@
     "tsx": "^4.20.6"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "keywords": [
     "hdf",

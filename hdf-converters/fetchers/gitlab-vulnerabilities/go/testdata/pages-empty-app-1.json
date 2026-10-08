@@ -1,0 +1,20 @@
+{
+  "data": {
+    "project": {
+      "fullPath": "security-demo/empty-app",
+      "pipelines": {
+        "nodes": []
+      },
+      "vulnerabilities": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
+      }
+    }
+  },
+  "extensions": {
+    "disabled_filters": []
+  }
+}

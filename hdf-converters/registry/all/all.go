@@ -19,8 +19,10 @@ import (
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/cyclonedx-vex-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/deptrack-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gitlab-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gitlab-vulnerabilities-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/gosec-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/grype-to-hdf/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hadolint-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/jfrog-xray-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/kics-to-hdf/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/msft-defender-cloud-to-hdf/go"
@@ -67,6 +69,7 @@ import (
 
 	// Export converters.
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-csv/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-html/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-oscal-poam/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-oscal-sar/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-xml/go"

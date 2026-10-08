@@ -199,17 +199,13 @@ func createRow(baseline *hdf.EvaluatedBaseline, requirement *hdf.EvaluatedRequir
 	}
 
 	// Post-override posture via the canonical ladder — the stored
-	// effectiveStatus field is never read (output cache); the column is always
-	// populated and sortable.
-	effStatus := hdfutil.ComputeEffectiveStatus(shared.RequirementStatusInput(*requirement), time.Time{})
-	effImpact := requirement.Impact
-	if requirement.EffectiveImpact != nil {
-		effImpact = *requirement.EffectiveImpact
-	}
-	disposition := ""
-	if requirement.Disposition != nil {
-		disposition = string(*requirement.Disposition)
-	}
+	// effectiveStatus and effectiveImpact fields are never read (output caches);
+	// the columns are always populated and sortable.
+	effStatus := shared.RequirementEffectiveStatus(*requirement)
+	effImpact := shared.RequirementEffectiveImpact(*requirement)
+	// Through the ladder like the two effective columns above it; the stored
+	// disposition is an output cache the document may carry stale or not at all.
+	disposition := shared.RequirementDisposition(*requirement, time.Time{})
 
 	// statusOverrides[] provenance — emit ALL overrides joined with "; ".
 	overrideReason := joinOverrides(requirement.StatusOverrides, func(o hdf.StatusOverride) string { return o.Reason })

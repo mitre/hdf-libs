@@ -28,7 +28,7 @@ hdf-converters/fetchers/
 
 CLI wiring lives in `hdf-cli/cmd/hdf/cmd/fetch_<tool>.go`, registered under the `fetch` subcommand. That is hdf-cli orchestration (flags, output paths, validation gating) — it stays in the CLI package, not in `fetchers/`.
 
-**Read `hdf-converters/fetchers/README.md` and one existing fetcher before starting.** `gitlab` and `sonarqube` are the closest token-auth REST analogues; `aws-securityhub` is the reference for a dual-language (Go + TS) fetcher.
+**Read `site/docs/contributing/writing-a-fetcher.md` for the conventions, `hdf-converters/fetchers/README.md` for what is in tree, and one existing fetcher before starting.** `gitlab` and `sonarqube` are the closest token-auth REST analogues; `aws-securityhub` is the reference for a dual-language (Go + TS) fetcher.
 
 ## Phase 1 — Research & Plan (enter plan mode)
 
@@ -84,7 +84,7 @@ Required in every Go fetcher (see `gitlab/go/gitlab.go` for the reference):
 
 TS fetchers do **not** accept credentials, file paths, env lookups, or TLS config. They accept a **pre-authenticated transport** and use it for every call. The caller (heimdall2, saf-cli) acquires credentials entirely.
 
-- **SDK-based services** (AWS, Splunk): the caller passes a configured SDK client (`SecurityHubClient`, `splunkjs.Service`). The SDK carries credentials; the library never reads env vars or credential files. See `fetchAWSSecurityHubToHdf(client, options)` and `verifyAWSSecurityHubCredentials(client)`.
+- **SDK-based services** (AWS today; any service with a JS SDK): the caller passes a configured SDK client, e.g. `SecurityHubClient`. The SDK carries credentials; the library never reads env vars or credential files. See `fetchAWSSecurityHubToHdf(client, options)` and `verifyAWSSecurityHubCredentials(client)`. Splunk has no TypeScript fetcher in tree — its fetcher is Go only.
 - **Bespoke REST APIs** (DefectDojo, Tenable.SC): the caller passes an `authFetch` callable of shape `(path, init?) => Promise<Response>` that injects the right headers/cookies/tokens.
 
 > The security contract: **a library that never receives credentials cannot log, persist, or leak them.** Do not add a "convenience" constructor that reads a token from the environment — that belongs in the CLI/application layer, not the library.

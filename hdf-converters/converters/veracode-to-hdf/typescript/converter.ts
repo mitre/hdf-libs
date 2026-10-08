@@ -258,14 +258,35 @@ function formatFlawMessage(flaw: Record<string, unknown>): string {
 }
 
 /**
+ * A static flaw's source position — sourcefilepath+sourcefile, with :line
+ * appended when both are present. It is both the per-result instance identity
+ * (resourceId) and the position half of the synthesized code snippet, so the two
+ * cannot drift apart. Returns '' for the NOT-IN-SOURCE case.
+ */
+function flawLocus(flaw: Record<string, unknown>): string {
+  const locus = attr(flaw, 'sourcefilepath') + attr(flaw, 'sourcefile');
+  const line = attr(flaw, 'line');
+  return locus && line ? `${locus}:${line}` : locus;
+}
+
+/**
+ * The per-result instance identity for an SCA finding: the component_id Veracode
+ * assigns the third-party component. Falls back to the component's sha1 —
+ * component_id is optional in the report and sha1 is the documented secondary
+ * identity — and returns '' when neither is present, in which case the caller
+ * leaves the fields unset rather than inventing an id.
+ */
+function scaInstanceId(comp: Record<string, unknown>): string {
+  return attr(comp, 'component_id') || attr(comp, 'sha1');
+}
+
+/**
  * Synthesize a static flaw's source-context locus from its function prototype
  * and source-file position. Returns '' when the flaw carries neither a prototype
  * nor a source location (the NOT-IN-SOURCE case).
  */
 function synthesizeFlawCode(flaw: Record<string, unknown>): string {
-  let locus = attr(flaw, 'sourcefilepath') + attr(flaw, 'sourcefile');
-  const line = attr(flaw, 'line');
-  if (locus && line) locus += `:${line}`;
+  const locus = flawLocus(flaw);
   const proto = attr(flaw, 'functionprototype');
   if (proto && locus) return `${proto} at ${locus}`;
   if (proto) return proto;
@@ -409,8 +430,14 @@ function buildCWERequirement(cat: Record<string, unknown>, sevLevel: string, imp
   const results = cwes.flatMap(c => {
     const staticflaws = c.staticflaws as Record<string, unknown> | undefined;
     const flaws = ensureArray(staticflaws?.flaw as Record<string, unknown> | Record<string, unknown>[]);
-    return flaws.map((flaw): RequirementResult =>
-      createResult(ResultStatus.Failed, formatFlawMessage(flaw) || undefined, { codeDesc: formatFlawCodeDesc(flaw), startTime }));
+    return flaws.map((flaw): RequirementResult => {
+      const locus = flawLocus(flaw);
+      return createResult(ResultStatus.Failed, formatFlawMessage(flaw) || undefined, {
+        codeDesc: formatFlawCodeDesc(flaw),
+        startTime,
+        ...(locus ? { resource: 'file', resourceId: locus } : {}),
+      });
+    });
   });
 
   const sourceRef = cwes.flatMap(c => {
@@ -557,8 +584,14 @@ function buildCVERequirement(
   // One result per affected component
   const startTime = parseVeracodeTimestamp(firstBuildDate) ?? new Date();
 
-  const results = components.map((comp): RequirementResult =>
-    createResult(ResultStatus.Failed, undefined, { codeDesc: formatSCACodeDesc(comp), startTime }));
+  const results = components.map((comp): RequirementResult => {
+    const instanceId = scaInstanceId(comp);
+    return createResult(ResultStatus.Failed, undefined, {
+      codeDesc: formatSCACodeDesc(comp),
+      startTime,
+      ...(instanceId ? { resource: 'component', resourceId: instanceId } : {}),
+    });
+  });
 
   const cveSummary = attr(vuln, 'cve_summary');
   const cveId = attr(vuln, 'cve_id');

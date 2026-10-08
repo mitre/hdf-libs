@@ -1,3 +1,7 @@
+import { readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
 import { describe, it, expect } from 'vitest';
 import {
   asMap,
@@ -20,7 +24,12 @@ import {
   epochSeconds,
   epochMillis,
   floatNumber,
+  governingOverrideIndexOf,
+  governingOverrideOf,
+  disposition,
 } from './exportmap.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function mkResults(...statuses: string[]): Record<string, unknown> {
   return { results: statuses.map((s) => ({ status: s })) };
@@ -230,5 +239,104 @@ describe('exportmap RawNumber float tokens (OCSF float_t)', () => {
     expect(stringifyLine(canonicalize({ base_score: floatNumber(8) }))).toBe('{"base_score":8.0}');
     // a normal string containing digits is untouched (marker cannot collide)
     expect(stringifyLine({ desc: 'score 10 ok' })).toBe('{"desc":"score 10 ok"}');
+  });
+});
+
+// Parity: TestGoverningOverrideIndex_MapShaped in shared/go/exportmap.
+// The map-shaped resolver for the exporters that work on generically-parsed
+// JSON. Same rule as the typed twin: most recently applied non-expired override,
+// never array position — this repo's writers append, so position is the opposite
+// of recency on a document amended twice.
+describe('governingOverrideIndexOf', () => {
+  const older = {
+    type: 'waiver', status: 'passed', reason: 'older',
+    appliedAt: '2024-06-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const newer = {
+    type: 'riskAdjustment', reason: 'newer',
+    appliedAt: '2025-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const expired = {
+    type: 'riskAdjustment', reason: 'expired',
+    appliedAt: '2026-01-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+  };
+  const NOW = '2026-06-01T00:00:00Z';
+
+  it('takes the newest even when append put it last', () => {
+    expect(governingOverrideIndexOf([older, newer], NOW)).toBe(1);
+  });
+
+  it('gives the same answer in the order the schema used to ask for', () => {
+    expect(governingOverrideIndexOf([newer, older], NOW)).toBe(0);
+  });
+
+  it('never lets an expired override govern, however recently applied', () => {
+    expect(governingOverrideIndexOf([older, newer, expired], NOW)).toBe(1);
+  });
+
+  it('returns -1 when there is nothing to govern', () => {
+    expect(governingOverrideIndexOf([], NOW)).toBe(-1);
+  });
+
+  // The robustness guarantee the Go comment states: a malformed override must
+  // not govern and must not take a whole document's conversion down.
+  it('skips an entry that is not an object rather than throwing', () => {
+    expect(governingOverrideIndexOf(['not an object', newer], NOW)).toBe(1);
+    expect(governingOverrideIndexOf([null, undefined, 42], NOW)).toBe(-1);
+    expect(governingOverrideOf([older, newer], NOW)?.reason).toBe('newer');
+  });
+});
+
+// Parity: TestDisposition_FallbackBoundary in shared/go/exportmap.
+describe('disposition', () => {
+  const governing = {
+    type: 'riskAdjustment', reason: 'r',
+    appliedAt: '2025-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z',
+  };
+  const expired = {
+    type: 'waiver', reason: 'r',
+    appliedAt: '2024-01-01T00:00:00Z', expiresAt: '2020-01-01T00:00:00Z',
+  };
+  const NOW = '2026-06-01T00:00:00Z';
+
+  it('lets the governing override beat a disagreeing stored field', () => {
+    expect(disposition({ disposition: 'waiver', statusOverrides: [governing] }, NOW)).toBe('riskAdjustment');
+  });
+
+  it('falls back to the stored field only when there are no overrides at all', () => {
+    expect(disposition({ disposition: 'waiver' }, NOW)).toBe('waiver');
+  });
+
+  // The boundary that matters: an expired override still means the document
+  // carries overrides, so it suppresses the fallback rather than triggering it.
+  it('lets an expired override suppress the fallback', () => {
+    expect(disposition({ disposition: 'waiver', statusOverrides: [expired] }, NOW)).toBe('');
+  });
+
+  it('yields empty for nothing at all, and for a type-less override', () => {
+    expect(disposition({}, NOW)).toBe('');
+    expect(disposition({ statusOverrides: [{ reason: 'r' }] }, NOW)).toBe('');
+  });
+});
+
+interface ExportmapStatusCase {
+  name: string;
+  note: string;
+  want: { raw: string; rollup: string; overridden: boolean; suppressed: boolean };
+  requirement: Record<string, unknown>;
+}
+
+const statusCases = (
+  JSON.parse(readFileSync(join(__dirname, '..', 'exportmap-status-cases.json'), 'utf-8')) as {
+    cases: ExportmapStatusCase[];
+  }
+).cases;
+
+// statusOf builds the canonical override input from raw JSON itself rather than
+// through the requirement bridge, so the Go zero time has to be normalized here
+// too or the suppression axis flips between languages on the same document.
+describe('statusOf: shared Go/TypeScript case table', () => {
+  it.each(statusCases.map((c) => [c.name, c] as const))('%s', (_name, c) => {
+    expect(statusOf(c.requirement), c.note).toEqual(c.want);
   });
 });

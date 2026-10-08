@@ -11,6 +11,8 @@ import {
   eventID,
   buildHDFBlock,
   runExport,
+  governingOverrideOf,
+  disposition,
 } from '../../../shared/typescript/exportmap.js';
 
 /**
@@ -130,15 +132,19 @@ function buildEvent(
 
 /**
  * Surface override provenance into ECS labels.* (keyword bag): the disposition
- * plus the governing statusOverrides[0] fields. Returns undefined when the
- * requirement carries no disposition or overrides.
+ * plus the fields of the override that GOVERNS — the most recently applied
+ * non-expired one, resolved by appliedAt rather than by array position, because
+ * this repo's writers append and so put the newest override last. Returns
+ * undefined when the requirement carries no disposition or overrides.
  */
 function buildLabels(req: Obj): Obj | undefined {
   const labels: Obj = {};
-  setIf(labels, 'hdf_disposition', getStr(req, 'disposition'));
+  // Resolved, not read from the stored disposition field, which is an output
+  // cache that can disagree with the overrides or be absent entirely.
+  setIf(labels, 'hdf_disposition', disposition(req));
   const overrides = asArr(req.statusOverrides);
   if (overrides && overrides.length > 0) {
-    const ov = asMap(overrides[0]);
+    const ov = governingOverrideOf(overrides);
     if (ov) {
       setIf(labels, 'hdf_override_type', getStr(ov, 'type'));
       setIf(labels, 'hdf_override_reason', getStr(ov, 'reason'));

@@ -28,6 +28,18 @@ const (
 	thresholdNoImpact = hdfengine.ThresholdNoImpact
 )
 
+// thresholdInputFor parses a document once and builds everything an evaluation
+// needs from ONE effective-status resolver. Counts, the control listing and the
+// rules all come from the same resolver by construction, so a gate cannot judge
+// the grid by one notion of "failed" and its rules by another.
+func thresholdInputFor(data []byte) (hdfengine.ThresholdInput, error) {
+	results, err := parseHDFResults(data)
+	if err != nil {
+		return hdfengine.ThresholdInput{}, fmt.Errorf("failed to parse HDF results: %w", err)
+	}
+	return hdfengine.NewThresholdInput(results, shared.RequirementEffectiveStatus), nil
+}
+
 // countControlsByStatusSeverity parses HDF results JSON and counts requirements
 // by their effective status and severity, delegating to the shared hdf-engine
 // library via the shared effective-status resolver so a CLI gate agrees with

@@ -307,6 +307,12 @@ func overrideToVulnerability(o *hdf.StandaloneOverride, componentRegistry map[st
 		if o.Type == hdf.Poam {
 			analysis.Response = []string{"workaround_available"}
 		}
+	case vex.StatusNotAffected:
+		// CycloneDX carries not_affected in analysis.state and its
+		// justification, both already set above; there is no response to add.
+	case vex.StatusUnderInvestigation:
+		// Unreachable: ExportStatusFor never yields it, because an HDF
+		// override records a decision already taken.
 	}
 
 	v := Vulnerability{
@@ -381,6 +387,9 @@ func canonicalToCycloneDXState(canonical vex.Status) string {
 		return "resolved"
 	case vex.StatusAffected:
 		return "exploitable"
+	case vex.StatusUnderInvestigation:
+		// Unreachable from an export (ExportStatusFor never yields it), so this
+		// falls through to the verbatim tail rather than claiming `in_triage`.
 	}
 	return string(canonical)
 }

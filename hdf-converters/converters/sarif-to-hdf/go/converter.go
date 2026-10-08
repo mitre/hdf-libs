@@ -951,13 +951,30 @@ func rollupStatus(statuses []hdf.ResultStatus) hdf.ResultStatus {
 	return hdf.ResultStatus(hdfutil.WorstStatus(strs))
 }
 
-// governingDisposition picks the override type that produced the effective
-// rollup status (the governing override); falls back to the first override.
+// governingDisposition is the type of the override that explains the
+// requirement's effective status: the one asserting that status, else the
+// governing (most recently applied non-expired) one.
+//
+// It previously scanned for an override whose status matched the effective
+// rollup and fell back to overrides[0]. That missed entirely when the governing
+// override carried only an impact — the canonical riskAdjustment shape, which
+// sets no status — and the fallback read array position as recency, which it is
+// not: nothing sorts these and this repo's writers append.
 func governingDisposition(overrides []hdf.StatusOverride, effective hdf.ResultStatus) hdf.OverrideType {
+	// Every override this converter creates carries the same appliedAt (the run
+	// timestamp), so recency cannot tell them apart — but they may differ in type
+	// (waiver vs falsePositive) and in the status they assert. The override whose
+	// status produced the rollup is the one that explains it, so that match stays
+	// the primary rule here. Recency is only the tie-break beneath it.
 	for _, ov := range overrides {
 		if ov.Status != nil && *ov.Status == effective {
 			return ov.Type
 		}
+	}
+	// No override asserts the effective status — the governing one carries only an
+	// impact, say. Fall back to the shared rule rather than to array position.
+	if o := shared.GoverningOverride(overrides, time.Time{}); o != nil {
+		return o.Type
 	}
 	return overrides[0].Type
 }

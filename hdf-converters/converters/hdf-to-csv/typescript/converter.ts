@@ -1,5 +1,5 @@
 import { buildCsv, impactToSeverity, parseTimestamp, formatTimestamp } from '@mitre/hdf-utilities';
-import { requirementEffectiveStatus } from '../../../shared/typescript/status.js';
+import { requirementEffectiveStatus, requirementEffectiveImpact, requirementDisposition } from '../../../shared/typescript/status.js';
 import type { HDFResults, EvaluatedBaseline, EvaluatedRequirement, Component, Description, StatusOverride, Cvss } from '@mitre/hdf-schema';
 import { requireHdfResults } from '../../../shared/typescript/converterutil.js';
 
@@ -170,11 +170,13 @@ function createRow(
   const cciControls = extractArrayFromTags(requirement.tags, 'cci');
 
   // Post-override posture via the canonical ladder — the stored
-  // effectiveStatus field is never read (output cache); the column is always
-  // populated and sortable.
+  // effectiveStatus and effectiveImpact fields are never read (output caches);
+  // the columns are always populated and sortable.
   const effectiveStatus = requirementEffectiveStatus(requirement);
-  const effectiveImpact = numeric(requirement.effectiveImpact ?? requirement.impact).toFixed(2);
-  const disposition = requirement.disposition ? String(requirement.disposition) : '';
+  const effectiveImpact = numeric(requirementEffectiveImpact(requirement)).toFixed(2);
+  // Through the ladder like the two effective columns above it; the stored
+  // disposition is an output cache the document may carry stale or not at all.
+  const disposition = requirementDisposition(requirement);
 
   return {
     'Baseline ID': text(baseline.name),

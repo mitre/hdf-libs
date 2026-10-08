@@ -947,3 +947,65 @@ func TestUnratedSeverityMarker(t *testing.T) {
 		assert.NotContains(t, req.Tags, "severity_rating", id)
 	}
 }
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose: for cyclonedx the instance is the affected
+// component, so resource is "component" and resourceId is that component's purl.
+// The two entries that affect the same guava component are what roll-up has to
+// tell apart from the jackson-databind ones.
+func TestConvertCycloneDX_SetsResultResourceIdentityToComponentPurl(t *testing.T) {
+	result, err := ConvertCycloneDXToHDF(loadFixture(t, "input/dropwizard-vulns.json"), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
+	require.Len(t, req.Results, 1)
+	require.NotNil(t, req.Results[0].Resource)
+	assert.Equal(t, "component", *req.Results[0].Resource)
+	require.NotNil(t, req.Results[0].ResourceID, "resourceId is nil — the instance identity lives only in prose")
+	assert.Equal(t, "pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar", *req.Results[0].ResourceID)
+
+	// The purl the result now names is also the package data the requirement used
+	// to drop: affectedPackages was nil for every cyclonedx requirement.
+	require.Len(t, req.AffectedPackages, 1)
+	require.NotNil(t, req.AffectedPackages[0].Purl)
+	assert.Equal(t, "pkg:maven/com.google.guava/guava@24.1.1-jre?type=jar", *req.AffectedPackages[0].Purl)
+	require.NotNil(t, req.AffectedPackages[0].Name)
+	assert.Equal(t, "guava", *req.AffectedPackages[0].Name)
+	require.NotNil(t, req.AffectedPackages[0].Ecosystem)
+	assert.Equal(t, hdf.Maven, *req.AffectedPackages[0].Ecosystem)
+}
+
+// purl is optional in CycloneDX, so a component without one falls back to its
+// bom-ref — still a document-unique identifier, never an invented one.
+func TestConvertCycloneDX_FallsBackToBomRefWhenComponentHasNoPurl(t *testing.T) {
+	result, err := ConvertCycloneDXToHDF(loadFixture(t, "input/minimal-vulns.json"), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "GHSA-5mg8-w23w-74h3")
+	require.Len(t, req.Results, 1)
+	require.NotNil(t, req.Results[0].Resource)
+	assert.Equal(t, "component", *req.Results[0].Resource)
+	require.NotNil(t, req.Results[0].ResourceID)
+	assert.Equal(t, "1a021b8e-d143-4072-84f0-0e18292f1967", *req.Results[0].ResourceID)
+
+	// No purl and no ecosystem means no schema-valid AffectedPackage; the field
+	// stays absent rather than carrying a half-built entry.
+	assert.Empty(t, req.AffectedPackages)
+}
+
+// A VEX document carries no components[] at all, so affects[].ref resolves to
+// nothing. The ref itself is the identity CycloneDX published, and it is what
+// codeDesc already prints.
+func TestConvertCycloneDX_UsesTheUnresolvedRefAsIdentityForVEX(t *testing.T) {
+	result, err := ConvertCycloneDXToHDF(loadFixture(t, "input/vex.json"), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2020-25649")
+	require.Len(t, req.Results, 1)
+	require.NotNil(t, req.Results[0].Resource)
+	assert.Equal(t, "component", *req.Results[0].Resource)
+	require.NotNil(t, req.Results[0].ResourceID)
+	assert.Equal(t,
+		"urn:cdx:3e671687-395b-41f5-a30f-a58921a69b79/1#pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.10.0?type=jar",
+		*req.Results[0].ResourceID)
+}

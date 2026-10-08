@@ -411,8 +411,8 @@ func TestQuerySeverity_InformationalSelectsImpactZero(t *testing.T) {
 	assert.Equal(t, "1\n", stdout)
 }
 
-// The pre-3.7 spelling keeps selecting the same findings, so a saved command
-// line does not quietly start matching nothing.
+// The name informational replaced in 3.7.0 keeps selecting the same findings,
+// so a saved command line does not quietly start matching nothing.
 func TestQuerySeverity_LegacyNoneStillSelects(t *testing.T) {
 	reqs := []map[string]any{
 		makeReqWithStatus("REQ-ZERO", 0.0, "notReviewed"),
@@ -477,4 +477,320 @@ func TestQueryCommand_JSONRows_CarryPosition(t *testing.T) {
 	assert.Equal(t, float64(1), rows[1]["index"])
 	assert.Equal(t, float64(2), rows[2]["index"])
 	assert.Equal(t, "Query Test Baseline", rows[2]["baseline"])
+}
+
+// An unrecognized --poams value must be refused before any document is read. A
+// value that merely matched nothing would report a clean run over a filter the
+// user believed was applied — the false green the threshold epic exists to kill,
+// reached through a filter value instead of a spec key.
+func TestQueryPoams_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, bad := range []string{"absent", "present", "expired", "none"} {
+		t.Run(bad, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, "--poams", bad)
+			require.Error(t, err, "%q must be refused, not silently match nothing", bad)
+			assert.Contains(t, err.Error(), "none-valid", "the error must name the legal values")
+		})
+	}
+}
+
+// And the two legal values reach the filter. The fixture carries no POA&M, so
+// none-valid selects every requirement and valid selects none — the latter
+// failing with the ordinary no-match error rather than the validation one, which
+// is what distinguishes "reached the filter and matched nothing" from "refused
+// before the document was read".
+func TestQueryPoams_LegalValuesReachTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--poams", "none-valid")
+	assert.NoError(t, err, "no requirement in the fixture carries a POA&M, so all of them are none-valid")
+
+	_, _, err = executeCommand("query", resultsPath, "--poams", "valid")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no matching requirements")
+	assert.NotContains(t, err.Error(), "unknown --poams value")
+}
+
+// A --disposition typo must be refused, not matched against nothing. Override_Type
+// is a closed seven-value enum, so "waver" cannot be a legitimate zero-match — and
+// a filter that reports a clean run over a predicate that never applied is the
+// false green this vocabulary exists to avoid.
+func TestQueryDisposition_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, bad := range []string{"waver", "riskadjustmnet", "suppressed", "none"} {
+		t.Run(bad, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, "--disposition", bad)
+			require.Error(t, err, "%q must be refused, not silently match nothing", bad)
+			assert.Contains(t, err.Error(), "unknown --disposition value")
+			assert.Contains(t, err.Error(), "riskAdjustment", "the error must name the legal values")
+		})
+	}
+}
+
+// A legal value reaches the filter; the fixture carries no overrides, so it
+// matches nothing and fails with the ordinary no-match error rather than the
+// validation one. That is what distinguishes the two outcomes.
+func TestQueryDisposition_LegalValueReachesTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	_, _, err := executeCommand("query", resultsPath, "--disposition", "waiver")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no matching requirements")
+	assert.NotContains(t, err.Error(), "unknown --disposition value")
+}
+
+// The claim in the CHANGELOG and the README is that an unrecognized --status or
+// --severity is refused rather than matched against nothing. This is the test
+// that makes the claim true: a filter reporting a clean run over a predicate
+// that never applied is the false green this vocabulary exists to prevent.
+func TestQueryStatusAndSeverity_UnknownValuesAreRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for flag, bad := range map[string]string{"--status": "faild", "--severity": "crit"} {
+		t.Run(flag, func(t *testing.T) {
+			_, _, err := executeCommand("query", resultsPath, flag, bad)
+			require.Error(t, err, "%s %q must be refused, not silently match nothing", flag, bad)
+			assert.Contains(t, err.Error(), "unknown "+flag+" value")
+		})
+	}
+}
+
+// disposition flattens every governing plan to "poam", so --poam-type is the
+// only way to tell a bare risk acceptance from an unstarted remediation. An
+// unknown kind is refused rather than matched against nothing.
+func TestQueryPoamType_UnknownValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--poam-type", "remediaton")
+	require.Error(t, err, "a typo must be refused, not silently match nothing")
+	assert.Contains(t, err.Error(), "unknown --poam-type value")
+
+	_, _, err = executeCommand("query", resultsPath, "--poam-type", "riskAcceptance")
+	if err != nil {
+		assert.NotContains(t, err.Error(), "unknown --poam-type value",
+			"a legal kind must reach the filter")
+	}
+}
+
+// A colonless --tag is worse than the label case it mirrors: a label predicate
+// merely selected nothing, while a tag predicate was DROPPED from the filter
+// list, so a query made only of colonless values returned the whole document —
+// widening a gate instead of narrowing it.
+func TestQueryTag_ColonlessValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--tag", "production")
+	require.Error(t, err, "a colonless tag must be refused, not silently match everything")
+	assert.Contains(t, err.Error(), "unknown --tag value")
+
+	// A well-formed one reaches the filter. This fixture may match nothing, which
+	// is fine — what matters is that it is not REFUSED.
+	_, _, err = executeCommand("query", resultsPath, "--tag", "nist:AC-2")
+	if err != nil {
+		assert.NotContains(t, err.Error(), "unknown --tag value",
+			"a well-formed key:value expression must reach the filter")
+	}
+}
+
+// A colonless --baseline-label names no key, so it can never match any document.
+// Refusing it is not pedantry: under a threshold max bound, selecting nothing
+// and being ignored produce the identical clean run, which is the false green
+// this vocabulary exists to prevent.
+func TestQueryBaselineLabel_ColonlessValueIsRejected(t *testing.T) {
+	resultsPath := writeTestResults(t)
+
+	_, _, err := executeCommand("query", resultsPath, "--baseline-label", "production")
+	require.Error(t, err, "a colonless label must be refused, not silently match nothing")
+	assert.Contains(t, err.Error(), "unknown --baseline-label value")
+
+	// And a well-formed one reaches the filter, or the refusal above proves only
+	// that the flag is broken. This fixture carries no labels, so it correctly
+	// matches nothing — what matters is that it is not REFUSED.
+	_, _, err = executeCommand("query", resultsPath, "--baseline-label", "environment:production")
+	if err != nil {
+		assert.NotContains(t, err.Error(), "unknown --baseline-label value",
+			"a well-formed key:value expression must reach the filter")
+	}
+}
+
+// And every spelling the engine normalizes reaches the filter through the CLI,
+// so a saved command line keeps working and the two surfaces agree.
+func TestQueryStatusAndSeverity_AcceptedSpellingsReachTheFilter(t *testing.T) {
+	resultsPath := writeTestResults(t)
+	for _, spelling := range []string{"not_applicable", "notApplicable", "NOTAPPLICABLE"} {
+		_, _, err := executeCommand("query", resultsPath, "--status", spelling)
+		// The fixture carries a notApplicable requirement, so every spelling of
+		// it must select something rather than erroring or matching nothing.
+		assert.NoError(t, err, "%q must select the same requirements as its canonical spelling", spelling)
+	}
+	// The pre-3.7 severity name still means informational on this surface
+	// too. Asserted as SELECTION, not as the absence of a validation error: the
+	// fixture's impact-0 requirement derives to informational, so if the alias
+	// stopped resolving this would exit 1 with "No matching requirements found"
+	// and an assertion about the error text would not notice.
+	stdout, _, err := executeCommand("query", resultsPath, "--severity", "none")
+	require.NoError(t, err, "the pre-3.7 name must still select the informational requirement")
+	assert.Contains(t, stdout, "SV-004", "and select the same one its current name does")
+}
+
+// --impact validated after the document was read, so a malformed comparison
+// reported a parse failure on an unreadable file instead of the filter error,
+// and a bulk run repeated the same complaint once per file. Its siblings
+// (--status, --severity, --disposition) all validate before any read; this one
+// did not. A nonexistent path is what tells the two apart.
+func TestQueryImpactFilters_ValidatedBeforeAnyFileIsRead(t *testing.T) {
+	for _, flag := range []string{"--impact", "--raw-impact"} {
+		t.Run(flag, func(t *testing.T) {
+			_, _, err := executeCommand("query", filepath.Join(t.TempDir(), "absent.json"), flag, ">>7")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid "+flag+" filter",
+				"the filter must be refused before the file is opened")
+		})
+	}
+}
+
+// The unadjusted twin of --impact. --impact resolves overrides, so without this
+// the requirement's own score became unreachable; the pair is what expresses
+// "an override may not move a critical below 0.7".
+//
+// The document has to CARRY an override for this to assert anything: over one
+// that does not, the two flags select identically and the test would pass with
+// --raw-impact wired to the effective score.
+func TestQueryRawImpact_ReachesTheUnadjustedScore(t *testing.T) {
+	resultsPath := writeRiskAdjustedResults(t)
+
+	effective, _, err := executeCommand("query", resultsPath, "--impact", ">=0.9")
+	require.NoError(t, err)
+	assert.NotContains(t, effective, "SV-ADJUSTED",
+		"--impact is the post-override score, so the re-scored requirement is out of the band it left")
+	assert.Contains(t, effective, "SV-PLAIN")
+
+	raw, _, err := executeCommand("query", resultsPath, "--raw-impact", ">=0.9")
+	require.NoError(t, err)
+	assert.Contains(t, raw, "SV-ADJUSTED",
+		"--raw-impact reaches the requirement's own score, which is what the override moved it from")
+	assert.Contains(t, raw, "SV-PLAIN")
+	// And it must actually FILTER: without this the test passes on a flag that
+	// is parsed and then never reaches the engine, which selects everything.
+	assert.NotContains(t, raw, "SV-LOW",
+		"--raw-impact must exclude a requirement below the bound, not just include the ones above it")
+}
+
+// writeRiskAdjustedResults writes a schema-valid document holding one requirement
+// at impact 0.9 governed by a riskAdjustment re-scoring it to 0.3, one at 0.9
+// with no override at all, and one below every bound the test uses — the minimum
+// needed to tell the effective score from the raw one AND to tell either from a
+// filter that never ran.
+func writeRiskAdjustedResults(t *testing.T) string {
+	t.Helper()
+	const doc = `{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "SV-ADJUSTED", "title": "re-scored down", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "statusOverrides": [{"type": "riskAdjustment", "reason": "environmental context",
+       "appliedBy": {"type": "simple", "identifier": "assessor"},
+       "appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+       "impact": {"value": 0.3}}]},
+    {"id": "SV-PLAIN", "title": "untouched", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}]},
+    {"id": "SV-LOW", "title": "below both bounds", "impact": 0.1, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}]}
+  ]}]
+}`
+	path := filepath.Join(t.TempDir(), "risk-adjusted.json")
+	require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+	return path
+}
+
+// writeVulnResults writes a schema-valid document that can tell the four
+// vulnerability filters apart: a KEV-listed critical, one whose 9.8 was
+// recomputed down to 5.2, and a low-scoring finding that every bound below must
+// EXCLUDE — an inclusion-only assertion would pass against a filter that never
+// ran, since an absent filter returns everything.
+func writeVulnResults(t *testing.T) string {
+	t.Helper()
+	const doc = `{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "SV-KEV", "title": "critical, known exploited", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 9.8}],
+     "epss": {"score": 0.944, "percentile": 0.999, "date": "2026-01-01"},
+     "kev": {"inKev": true, "dateAdded": "2021-12-10", "dueDate": "2021-12-24"},
+     "cwe": ["CWE-502"]},
+    {"id": "SV-ENRICHED", "title": "vendor 9.8, recomputed to 5.2", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 9.8, "threatVector": "E:U", "threatScore": 5.2, "computedScore": 5.2}],
+     "epss": {"score": 0.02, "percentile": 0.41, "date": "2026-01-01"},
+     "kev": {"inKev": false},
+     "cwe": ["CWE-79"]},
+    {"id": "SV-LOW", "title": "below every bound these tests use", "impact": 0.3, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "cvss": [{"version": "3.1", "baseScore": 2.1}],
+     "epss": {"score": 0.001, "percentile": 0.05, "date": "2026-01-01"}}
+  ]}]
+}`
+	path := filepath.Join(t.TempDir(), "vulns.json")
+	require.NoError(t, os.WriteFile(path, []byte(doc), 0o600))
+	return path
+}
+
+func TestQueryVulnerabilityFilters_ReachTheEngine(t *testing.T) {
+	path := writeVulnResults(t)
+	for _, tc := range []struct {
+		name     string
+		args     []string
+		contains []string
+		excludes []string
+	}{
+		{"cvss compares the recomputed score, not the vendor base score",
+			[]string{"--cvss", ">=7"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+		{"and finds the enriched one in the band it was recomputed into",
+			[]string{"--cvss", ">=5"}, []string{"SV-KEV", "SV-ENRICHED"}, []string{"SV-LOW"}},
+		{"epss is the probability, so the 0.999 PERCENTILE row is not what matches",
+			[]string{"--epss", ">=0.5"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+		{"kev true selects only the catalogued finding",
+			[]string{"--kev", "true"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+		{"kev false covers inKev:false and the field being absent alike",
+			[]string{"--kev", "false"}, []string{"SV-ENRICHED", "SV-LOW"}, []string{"SV-KEV"}},
+		{"cwe matches numerically, whatever the spelling",
+			[]string{"--cwe", "cwe502"}, []string{"SV-KEV"}, []string{"SV-ENRICHED", "SV-LOW"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stdout, _, err := executeCommand(append([]string{"query", path}, tc.args...)...)
+			require.NoError(t, err)
+			for _, id := range tc.contains {
+				assert.Contains(t, stdout, id)
+			}
+			for _, id := range tc.excludes {
+				assert.NotContains(t, stdout, id, "the filter must exclude this, or it proves nothing")
+			}
+		})
+	}
+}
+
+// A value outside a closed vocabulary, or a malformed comparison, is refused
+// before any document is read — the same posture as --status and --impact.
+func TestQueryVulnerabilityFilters_RefuseBadValues(t *testing.T) {
+	absent := filepath.Join(t.TempDir(), "absent.json")
+	for _, tc := range []struct{ flag, bad, wants string }{
+		{"--cvss", ">>7", "invalid --cvss filter"},
+		{"--epss", "~0.5", "invalid --epss filter"},
+		{"--kev", "yes", "unknown --kev value"},
+	} {
+		t.Run(tc.flag, func(t *testing.T) {
+			_, _, err := executeCommand("query", absent, tc.flag, tc.bad)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wants, "must be refused before the file is opened")
+		})
+	}
 }

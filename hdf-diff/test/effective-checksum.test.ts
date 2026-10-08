@@ -188,6 +188,61 @@ describe('computeDisposition', () => {
     expect(computeDisposition(req, REF_TIME)).toBe('waiver');
   });
 
+  // A POA&M governs disposition too — the schema has always defined the field as
+  // 'the most recent non-expired override or POAM', and only the override half
+  // was implemented. Parity: TestComputeDisposition in go/effective_checksum_test.go.
+  const plan = (appliedAt: string, expiresAt: string) => [
+    { type: 'remediation', explanation: 'scheduled', appliedAt, expiresAt },
+  ];
+  const waiver = (appliedAt: string, expiresAt: string) => [
+    { type: 'waiver', status: 'notApplicable', reason: 'r', appliedAt, expiresAt },
+  ];
+  const LIVE = '2099-12-31T00:00:00Z';
+  const LAPSED = '2020-01-01T00:00:00Z';
+  const OLDER = '2024-06-01T00:00:00Z';
+  const NEWER = '2025-01-01T00:00:00Z';
+
+  it('a live POA&M governs when no override does', () => {
+    const req = { ...failingReq(), poams: plan(OLDER, LIVE) };
+    expect(computeDisposition(req, REF_TIME)).toBe('poam');
+  });
+
+  it('a lapsed POA&M governs nothing, as a lapsed override does', () => {
+    const req = { ...failingReq(), poams: plan(OLDER, LAPSED) };
+    expect(computeDisposition(req, REF_TIME)).toBeNull();
+  });
+
+  it('the more recent live entry governs, whichever kind it is', () => {
+    const byPoam = { ...failingReq(), statusOverrides: waiver(OLDER, LIVE), poams: plan(NEWER, LIVE) };
+    expect(computeDisposition(byPoam, REF_TIME), 'the newer plan governs the older waiver').toBe('poam');
+
+    const byWaiver = { ...failingReq(), statusOverrides: waiver(NEWER, LIVE), poams: plan(OLDER, LIVE) };
+    expect(computeDisposition(byWaiver, REF_TIME), 'the newer waiver governs the older plan').toBe('waiver');
+
+    // Expiry outranks recency: the waiver is newer by appliedAt but lapsed.
+    const byLive = { ...failingReq(), statusOverrides: waiver(NEWER, LAPSED), poams: plan(OLDER, LIVE) };
+    expect(computeDisposition(byLive, REF_TIME), 'a lapsed newer waiver cannot displace a live older plan').toBe('poam');
+  });
+
+  // The stored-field fallback is now reached in fewer cases: a requirement with
+  // no overrides but a LAPSED plan used to fall through to the cached
+  // disposition and now resolves to none. Correct — a lapsed entry governs
+  // nothing, and a stored effective* field is an output cache, not an input —
+  // but it moves the checksum, so it is pinned rather than left silent.
+  // Parity: the same subtest in go/effective_checksum_test.go.
+  it('a lapsed plan suppresses the stored-disposition fallback', () => {
+    const withLapsedPlan = { ...failingReq(), disposition: 'falsePositive', poams: plan(OLDER, LAPSED) };
+    expect(
+      computeDisposition(withLapsedPlan, REF_TIME),
+      'a lapsed plan governs nothing, and the cached value is not an input',
+    ).toBeNull();
+
+    // With no plan at all the cache is still honoured, so the narrowing is
+    // specific rather than a removal of the fallback.
+    const bare = { ...failingReq(), disposition: 'falsePositive' };
+    expect(computeDisposition(bare, REF_TIME)).toBe('falsePositive');
+  });
+
   it('honors a stored disposition when no overrides', () => {
     const req = { ...failingReq(), disposition: 'falsePositive' };
     expect(computeDisposition(req, REF_TIME)).toBe('falsePositive');
@@ -221,5 +276,24 @@ describe('computeDisposition', () => {
       ],
     };
     expect(computeDisposition(req, REF_TIME)).toBe('riskAdjustment');
+  });
+});
+
+// Parity: TestComputeEffectiveImpact_StoredFallbackOnlyWithoutOverrides in go.
+// The stored effectiveImpact is a fallback for the no-overrides case only; the
+// moment any override exists it is unread, matching the shared ladder.
+describe('computeEffectiveImpact: the stored fallback', () => {
+  const base = { id: 'V-1', impact: 0.9, effectiveImpact: 0.2 };
+
+  it('is honoured only when the requirement carries no overrides', () => {
+    expect(computeEffectiveImpact(base, REF_TIME)).toBeCloseTo(0.2, 9);
+  });
+
+  it('is unread the moment any override exists, even one carrying no impact', () => {
+    const withWaiver = {
+      ...base,
+      statusOverrides: [{ type: 'waiver', status: 'passed', appliedAt: '2020-01-01T00:00:00Z', expiresAt: '2099-12-31T00:00:00Z' }],
+    };
+    expect(computeEffectiveImpact(withWaiver, REF_TIME)).toBeCloseTo(0.9, 9);
   });
 });

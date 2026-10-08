@@ -1,8 +1,10 @@
 package shared
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -125,6 +127,78 @@ func resultsWithFindingIDs(t *testing.T, req map[string]interface{}) []byte {
 	})
 }
 
+// systemDocument is an hdf-system document (name + components, no baselines), so
+// every bundle object attaches at the document root.
+func systemDocument(t *testing.T) []byte {
+	t.Helper()
+	return mustJSONBytes(t, map[string]interface{}{
+		"name": "Payment Processing System",
+		"components": []interface{}{
+			map[string]interface{}{
+				"componentId": "9f1c2f7a-4a4e-4f3b-9a7e-2b0c1d3e4f50",
+				"type":        "host",
+				"name":        "web-01.example.test",
+			},
+		},
+	})
+}
+
+type enrichWarningExpectations struct {
+	MaxRefs         int    `json:"maxStixRefsPerContainer"`
+	OriginalRefs    int    `json:"originalReferences"`
+	DocumentRoot    string `json:"documentRootWarning"`
+	Finding         string `json:"findingWarning"`
+	ForbiddenPhrase string `json:"forbiddenPhrase"`
+}
+
+func loadEnrichWarningExpectations(t *testing.T) enrichWarningExpectations {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "enrich-stix-warning-cases.json"))
+	require.NoError(t, err)
+	var want enrichWarningExpectations
+	require.NoError(t, json.Unmarshal(raw, &want))
+	return want
+}
+
+// enrichWarnings returns everything EnrichStix logged while enriching doc.
+func enrichWarnings(t *testing.T, doc, bundle []byte) string {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(prev)
+	_, err := EnrichStix(doc, bundle)
+	require.NoError(t, err)
+	return buf.String()
+}
+
+// EnrichStix is document-type agnostic — it attaches unmatched objects to
+// whatever root it is handed — so these cases drive it directly with a document
+// that has no results root, and the label must name the document root. (`hdf
+// enrich` itself admits results documents only today.) The expected strings come
+// from shared/enrich-stix-warning-cases.json, which the TypeScript twin reads
+// too, so the two languages cannot drift into two plausible labels.
+func TestEnrichStix_TruncationWarningNamesTheDocumentRoot(t *testing.T) {
+	want := loadEnrichWarningExpectations(t)
+	require.Equal(t, maxStixRefsPerContainer, want.MaxRefs,
+		"the shared table's cap must track the implementation's")
+	require.Greater(t, want.OriginalRefs, want.MaxRefs, "the shared table must overflow the cap")
+
+	t.Run("document root", func(t *testing.T) {
+		logs := enrichWarnings(t, systemDocument(t),
+			stixBundleCiting(t, want.OriginalRefs, "CVE-2021-0000")) // matches no finding
+		assert.Contains(t, logs, want.DocumentRoot)
+		assert.NotContains(t, logs, want.ForbiddenPhrase,
+			"the warning must not name a document type the input is not")
+	})
+
+	t.Run("matched finding", func(t *testing.T) {
+		results := resultsWithFindingIDs(t, map[string]interface{}{"id": "CVE-2021-9999"})
+		logs := enrichWarnings(t, results, stixBundleCiting(t, want.OriginalRefs, "CVE-2021-9999"))
+		assert.Contains(t, logs, want.Finding)
+	})
+}
+
 // TestEnrichStix_CapsFanOut locks in the bound on the enrichment fan-out: an
 // untrusted bundle must not amplify past maxStixRefsPerContainer per container.
 func TestEnrichStix_CapsFanOut(t *testing.T) {
@@ -138,12 +212,12 @@ func TestEnrichStix_CapsFanOut(t *testing.T) {
 			"matched finding's STIX refs are capped despite %d citing objects", n)
 	})
 
-	t.Run("caps STIX refs on the results root", func(t *testing.T) {
+	t.Run("caps STIX refs on the document root", func(t *testing.T) {
 		results := resultsWithFindingIDs(t, map[string]interface{}{"id": "SV-1"})
 		out, err := EnrichStix(results, stixBundleCiting(t, n, "CVE-2021-0000")) // matches no finding
 		require.NoError(t, err)
 		assert.Len(t, rootRefs(t, enrichDoc(t, out)), maxStixRefsPerContainer,
-			"unmatched objects on the results root are capped")
+			"unmatched objects on the document root are capped")
 	})
 
 	t.Run("preserves pre-existing non-STIX references", func(t *testing.T) {
@@ -175,8 +249,8 @@ func TestEnrichStix_CVEMatchAndRoot(t *testing.T) {
 	require.NoError(t, err)
 	doc := enrichDoc(t, out)
 
-	// Unmatched CVE (CVE-2013-0422) + 6 non-CVE objects → results root.
-	assert.Len(t, rootRefs(t, doc), 7, "unmatched CVE + non-CVE objects land on the results root")
+	// Unmatched CVE (CVE-2013-0422) + 6 non-CVE objects → document root.
+	assert.Len(t, rootRefs(t, doc), 7, "unmatched CVE + non-CVE objects land on the document root")
 
 	// CVE-2012-0158 STIX vulnerability attaches to the finding with that id.
 	req := requirementByID(t, doc, "CVE-2012-0158")

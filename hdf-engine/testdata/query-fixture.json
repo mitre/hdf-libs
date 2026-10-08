@@ -2,6 +2,11 @@
   "baselines": [
     {
       "name": "RHEL9-STIG",
+      "labels": {
+        "environment": "production",
+        "component": "rhel9-host",
+        "team": "platform-sre"
+      },
       "title": "Web Server Security Baseline",
       "version": "1.0.0",
       "summary": "Security hardening checks for Apache HTTP Server",

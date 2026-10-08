@@ -2,6 +2,7 @@ package hdfdoc
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -107,14 +108,41 @@ func TestApplyLabels(t *testing.T) {
 	})
 }
 
+const testComponentID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+
 func TestApplyComponentID_Fixed(t *testing.T) {
-	out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"},{"name":"h2"}]}`), "fixed-123", false)
+	out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"},{"name":"h2"}]}`), testComponentID, false)
 	require.NoError(t, err)
 	var doc map[string]any
 	require.NoError(t, json.Unmarshal(out, &doc))
 	for _, c := range doc["components"].([]any) {
-		assert.Equal(t, "fixed-123", c.(map[string]any)["componentId"])
+		assert.Equal(t, testComponentID, c.(map[string]any)["componentId"])
 	}
+}
+
+func TestApplyComponentID_RejectsNonUUID(t *testing.T) {
+	for _, id := range []string{"CI0012345", "fixed-123", " " + testComponentID, "aaaaaaaabbbb4ccc8dddeeeeeeeeeeee"} {
+		t.Run(id, func(t *testing.T) {
+			out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"}]}`), id, false)
+			require.Error(t, err)
+			assert.Nil(t, out, "a rejected id must hand back no document")
+			assert.Contains(t, err.Error(), fmt.Sprintf("%q", id), "the error names the offending value")
+			assert.Contains(t, err.Error(), "UUID")
+		})
+	}
+}
+
+// A bad id is a bad argument whether or not the document has anything to stamp.
+func TestApplyComponentID_RejectsNonUUIDWithoutComponents(t *testing.T) {
+	_, err := ApplyComponentID([]byte(`{"baselines":[]}`), "CI0012345", false)
+	require.Error(t, err)
+}
+
+func TestValidateComponentID(t *testing.T) {
+	require.NoError(t, ValidateComponentID(testComponentID))
+	require.NoError(t, ValidateComponentID("3F2504E0-4F89-11D3-9A0C-0305E82C3301"), "RFC 4122 input is case-insensitive")
+	require.Error(t, ValidateComponentID("CI0012345"))
+	require.Error(t, ValidateComponentID(""))
 }
 
 func TestApplyComponentID_Generate(t *testing.T) {
@@ -125,20 +153,224 @@ func TestApplyComponentID_Generate(t *testing.T) {
 	comps := doc["components"].([]any)
 	id0 := comps[0].(map[string]any)["componentId"].(string)
 	id1 := comps[1].(map[string]any)["componentId"].(string)
-	assert.NotEmpty(t, id0)
+	require.NoError(t, ValidateComponentID(id0))
 	assert.NotEqual(t, id0, id1, "generate must mint a distinct UUID per component")
 }
 
-func TestApplyComponentID_NoComponents(t *testing.T) {
+// Stamping a document with nothing to stamp used to succeed and rewrite the file
+// with no componentId anywhere — success reported for work not done.
+func TestApplyComponentID_NoComponentsIsAnError(t *testing.T) {
+	requests := map[string]struct {
+		fixedID  string
+		generate bool
+	}{
+		"fixed id": {testComponentID, false},
+		"generate": {"", true},
+	}
+	for docName, doc := range map[string]string{
+		"no components field": `{"baselines":[]}`,
+		"empty components":    `{"components":[]}`,
+	} {
+		for reqName, req := range requests {
+			t.Run(docName+"/"+reqName, func(t *testing.T) {
+				out, err := ApplyComponentID([]byte(doc), req.fixedID, req.generate)
+				require.Error(t, err)
+				assert.Nil(t, out, "a refused stamp must hand back no document")
+				require.ErrorIs(t, err, ErrNoComponents)
+				assert.Contains(t, err.Error(), "no components")
+			})
+		}
+	}
+}
+
+// The two no-components refusals are one sentence with one word changed, so a
+// user who has met either recognizes the other.
+func TestNoComponentsErrorsAgreeAcrossFields(t *testing.T) {
+	_, cidErr := ApplyComponentID([]byte(`{"components":[]}`), testComponentID, false)
+	require.Error(t, cidErr)
+	assert.Equal(t, "document has no components to set componentId on", cidErr.Error())
+
+	_, extErr := ApplyExternalIDs([]byte(`{"components":[]}`), map[string]string{"cmdb": "X"}, "")
+	require.Error(t, extErr)
+	assert.Equal(t, "document has no components to set external IDs on", extErr.Error())
+	require.ErrorIs(t, extErr, ErrNoComponents)
+}
+
+func TestApplyComponentID_NothingRequested(t *testing.T) {
+	out, err := ApplyComponentID([]byte(`{"components":[{"name":"h1"}]}`), "", false)
+	require.NoError(t, err)
+	assert.NotContains(t, string(out), "componentId")
+
+	// Callers that thread an unset componentId unconditionally (the MCP convert
+	// tool) must not be refused for a document that was never asked to carry one.
 	in := []byte(`{"baselines":[]}`)
-	out, err := ApplyComponentID(in, "x", false)
+	out, err = ApplyComponentID(in, "", false)
 	require.NoError(t, err)
 	assert.Equal(t, in, out)
 }
 
 func TestApplyComponentID_Errors(t *testing.T) {
-	_, err := ApplyComponentID([]byte("not json"), "x", false)
+	_, err := ApplyComponentID([]byte("not json"), testComponentID, false)
 	assert.Error(t, err)
-	_, err = ApplyComponentID([]byte(`{"components":"nope"}`), "x", false)
+	_, err = ApplyComponentID([]byte(`{"components":"nope"}`), testComponentID, false)
 	assert.Error(t, err)
+	_, err = ApplyComponentID([]byte(`{"components":["nope"]}`), testComponentID, false)
+	assert.ErrorContains(t, err, "component at index 0 is not an object")
+}
+
+const twoComponentsWithIDs = `{"components":[
+  {"name":"web","type":"host","externalIds":{"cmdb":"OLD","aws":"i-0abc"}},
+  {"name":"db","type":"host"}
+]}`
+
+func externalIDsOf(t *testing.T, out []byte) []map[string]any {
+	t.Helper()
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(out, &doc))
+	comps := doc["components"].([]any)
+	ids := make([]map[string]any, len(comps))
+	for i, c := range comps {
+		ids[i], _ = c.(map[string]any)["externalIds"].(map[string]any)
+	}
+	return ids
+}
+
+func TestApplyExternalIDs_MergesIntoEveryComponent(t *testing.T) {
+	out, err := ApplyExternalIDs([]byte(twoComponentsWithIDs), map[string]string{"cmdb": "CI0012345", "emass": "1234"}, "")
+	require.NoError(t, err)
+
+	ids := externalIDsOf(t, out)
+	assert.Equal(t, map[string]any{"cmdb": "CI0012345", "aws": "i-0abc", "emass": "1234"}, ids[0],
+		"a named scheme is overwritten, an unnamed one kept, a new one added")
+	assert.Equal(t, map[string]any{"cmdb": "CI0012345", "emass": "1234"}, ids[1])
+}
+
+func TestApplyExternalIDs_ComponentName(t *testing.T) {
+	t.Run("only the named component is written", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(twoComponentsWithIDs), map[string]string{"cmdb": "CI-DB"}, "db")
+		require.NoError(t, err)
+		ids := externalIDsOf(t, out)
+		assert.Equal(t, "OLD", ids[0]["cmdb"])
+		assert.Equal(t, map[string]any{"cmdb": "CI-DB"}, ids[1])
+	})
+
+	t.Run("no component by that name is an error", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(twoComponentsWithIDs), map[string]string{"cmdb": "X"}, "cache")
+		require.Error(t, err)
+		assert.Nil(t, out)
+		assert.Contains(t, err.Error(), `"cache"`)
+	})
+}
+
+func TestApplyExternalIDs_NothingToWriteOnIsAnError(t *testing.T) {
+	for name, doc := range map[string]string{
+		"no components field": `{"baselines":[]}`,
+		"empty components":    `{"components":[]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			out, err := ApplyExternalIDs([]byte(doc), map[string]string{"cmdb": "X"}, "")
+			require.Error(t, err)
+			assert.Nil(t, out)
+			assert.Contains(t, err.Error(), "no components")
+		})
+	}
+}
+
+func TestApplyExternalIDs_Errors(t *testing.T) {
+	ids := map[string]string{"cmdb": "X"}
+	_, err := ApplyExternalIDs([]byte("not json"), ids, "")
+	require.Error(t, err)
+	_, err = ApplyExternalIDs([]byte(`{"components":"nope"}`), ids, "")
+	require.Error(t, err)
+	_, err = ApplyExternalIDs([]byte(`{"components":["nope"]}`), ids, "")
+	require.Error(t, err)
+
+	t.Run("no ids is a no-op", func(t *testing.T) {
+		in := []byte(twoComponentsWithIDs)
+		out, err := ApplyExternalIDs(in, nil, "")
+		require.NoError(t, err)
+		assert.Equal(t, in, out)
+	})
+
+	t.Run("a non-object externalIds is replaced", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(`{"components":[{"name":"h","externalIds":null}]}`), ids, "")
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"cmdb": "X"}, externalIDsOf(t, out)[0])
+	})
+}
+
+func TestRemoveExternalIDs(t *testing.T) {
+	t.Run("removes the scheme and keeps the rest", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb"}, "")
+		require.NoError(t, err)
+		ids := externalIDsOf(t, out)
+		assert.Equal(t, map[string]any{"aws": "i-0abc"}, ids[0])
+		assert.Nil(t, ids[1])
+	})
+
+	t.Run("an emptied map is dropped rather than left as {}", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb", "aws"}, "")
+		require.NoError(t, err)
+		assert.NotContains(t, string(out), "externalIds")
+	})
+
+	t.Run("a missing scheme is ignored", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"emass"}, "")
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"cmdb": "OLD", "aws": "i-0abc"}, externalIDsOf(t, out)[0])
+	})
+
+	t.Run("component name limits the removal", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb"}, "db")
+		require.NoError(t, err)
+		assert.Equal(t, "OLD", externalIDsOf(t, out)[0]["cmdb"])
+
+		_, err = RemoveExternalIDs([]byte(twoComponentsWithIDs), []string{"cmdb"}, "cache")
+		require.Error(t, err)
+	})
+
+	t.Run("no schemes or no components is a no-op", func(t *testing.T) {
+		in := []byte(twoComponentsWithIDs)
+		out, err := RemoveExternalIDs(in, nil, "")
+		require.NoError(t, err)
+		assert.Equal(t, in, out)
+
+		in = []byte(`{"baselines":[]}`)
+		out, err = RemoveExternalIDs(in, []string{"cmdb"}, "")
+		require.NoError(t, err)
+		assert.Equal(t, in, out)
+	})
+
+	t.Run("errors", func(t *testing.T) {
+		_, err := RemoveExternalIDs([]byte("not json"), []string{"cmdb"}, "")
+		require.Error(t, err)
+		_, err = RemoveExternalIDs([]byte(`{"components":"nope"}`), []string{"cmdb"}, "")
+		require.Error(t, err)
+		_, err = RemoveExternalIDs([]byte(`{"components":["nope"]}`), []string{"cmdb"}, "")
+		require.Error(t, err)
+	})
+}
+
+const twoComponentsSameName = `{"components":[
+  {"name":"web","type":"host","externalIds":{"cmdb":"OLD"}},
+  {"name":"web","type":"containerImage"}
+]}`
+
+// A name can repeat — componentId is identity, the name is a label — so a name
+// matching several components selects no single one, and the flag's promise of
+// one component cannot be kept.
+func TestExternalIDs_AmbiguousComponentNameIsAnError(t *testing.T) {
+	t.Run("ApplyExternalIDs", func(t *testing.T) {
+		out, err := ApplyExternalIDs([]byte(twoComponentsSameName), map[string]string{"cmdb": "NEW"}, "web")
+		require.Error(t, err)
+		assert.Nil(t, out, "an ambiguous name must hand back no document")
+		assert.Contains(t, err.Error(), `component name "web" matches 2 components`)
+	})
+
+	t.Run("RemoveExternalIDs", func(t *testing.T) {
+		out, err := RemoveExternalIDs([]byte(twoComponentsSameName), []string{"cmdb"}, "web")
+		require.Error(t, err)
+		assert.Nil(t, out, "an ambiguous name must hand back no document")
+		assert.Contains(t, err.Error(), `component name "web" matches 2 components`)
+	})
 }

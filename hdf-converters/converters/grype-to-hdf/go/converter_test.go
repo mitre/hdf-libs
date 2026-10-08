@@ -828,3 +828,41 @@ func TestUnknownSeverity_UsesAgreedRepresentation(t *testing.T) {
 		}
 	}
 }
+
+// Every result carries the instance it describes, in the structured fields rather
+// than only in codeDesc prose: for grype the instance is the matched package, so
+// resource is "package" and resourceId is that package's purl. The two entries
+// sharing Grype/CVE-2022-48174 differ ONLY in the package, which is why roll-up
+// cannot tell them apart without this.
+func TestConvertGrype_SetsResultResourceIdentityToArtifactPurl(t *testing.T) {
+	hdfResults, err := ConvertGrypeToHDF(loadFixture(t, "input/anchore_grype.json"), testConverterVersion)
+	if err != nil {
+		t.Fatalf("Conversion failed: %v", err)
+	}
+
+	var got []string
+	for _, req := range hdfResults.Baselines[0].Requirements {
+		if req.ID != "Grype/CVE-2022-48174" {
+			continue
+		}
+		if len(req.Results) != 1 {
+			t.Fatalf("expected one result per entry, got %d", len(req.Results))
+		}
+		res := req.Results[0]
+		if res.Resource == nil || *res.Resource != "package" {
+			t.Errorf("resource = %v, want \"package\"", res.Resource)
+		}
+		if res.ResourceID == nil {
+			t.Fatalf("resourceId is nil — the instance identity lives only in prose")
+		}
+		got = append(got, *res.ResourceID)
+	}
+
+	want := []string{
+		"pkg:apk/alpine/busybox@1.31.1-r9?arch=aarch64&distro=alpine-3.11.3",
+		"pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64&upstream=busybox&distro=alpine-3.11.3",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("resourceIds for the duplicate-id group =\n  %q\nwant\n  %q", got, want)
+	}
+}

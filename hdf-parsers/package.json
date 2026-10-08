@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-parsers",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "Parse and load HDF documents with validation",
   "publishConfig": {
     "access": "public"
@@ -39,7 +39,7 @@
     "@mitre/hdf-validators": "workspace:^"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "keywords": [
     "hdf",

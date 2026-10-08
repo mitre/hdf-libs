@@ -19,6 +19,8 @@
             {
               "codeDesc": "Component com.google.guava/guava@24.1.1-jre is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1a021b8e-d143-4072-84f0-0e18292f1967\n\n- Group: com.google.guava\n\n- Name: guava\n\n- Version: 24.1.1-jre\n\n- Description: Guava is a suite of core and expanded libraries that include utility classes, google's collections, io classes, and much much more.",
+              "resource": "component",
+              "resourceId": "1a021b8e-d143-4072-84f0-0e18292f1967",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -59,6 +61,8 @@
             {
               "codeDesc": "Component com.google.guava/guava@24.1.1-jre is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1a021b8e-d143-4072-84f0-0e18292f1967\n\n- Group: com.google.guava\n\n- Name: guava\n\n- Version: 24.1.1-jre\n\n- Description: Guava is a suite of core and expanded libraries that include utility classes, google's collections, io classes, and much much more.",
+              "resource": "component",
+              "resourceId": "1a021b8e-d143-4072-84f0-0e18292f1967",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }
@@ -97,6 +101,8 @@
             {
               "codeDesc": "Component com.fasterxml.jackson.core/jackson-databind@2.9.10 is vulnerable",
               "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 1e0c53af-376a-4ca0-9d2e-38811dd17cba\n\n- Group: com.fasterxml.jackson.core\n\n- Name: jackson-databind\n\n- Version: 2.9.10\n\n- Description: General data-binding functionality for Jackson: works on core streaming API",
+              "resource": "component",
+              "resourceId": "1e0c53af-376a-4ca0-9d2e-38811dd17cba",
               "startTime": "2024-07-08T17:30:28Z",
               "status": "failed"
             }

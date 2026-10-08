@@ -773,3 +773,34 @@ func TestConvertTwistlock_UnratedSeverityMarker(t *testing.T) {
 		assert.False(t, present, "%s: rated severity must not carry the severity_rating tag", id)
 	}
 }
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose: for twistlock the instance is the vulnerable
+// package, so resource is "package" and resourceId is packageName@packageVersion.
+// Twistlock's source has no purl. The five entries sharing CVE-2021-43529 differ
+// ONLY in the package, which is why roll-up cannot tell them apart without this.
+func TestConvertTwistlock_SetsResultResourceIdentityToPackageNameVersion(t *testing.T) {
+	result, err := ConvertTwistlockToHDF(loadFixture(t, "input/twistlock-twistcli-sample-1.json"), testVersion)
+	require.NoError(t, err)
+
+	var got []string
+	for _, req := range result.Baselines[0].Requirements {
+		if req.ID != "CVE-2021-43529" {
+			continue
+		}
+		require.Len(t, req.Results, 1, "expected one result per vulnerability entry")
+		res := req.Results[0]
+		require.NotNil(t, res.Resource, "resource is nil")
+		assert.Equal(t, "package", *res.Resource)
+		require.NotNil(t, res.ResourceID, "resourceId is nil — the instance identity lives only in prose")
+		got = append(got, *res.ResourceID)
+	}
+
+	assert.Equal(t, []string{
+		"nss-util@3.67.0-7.el8_5",
+		"nss-sysinit@3.67.0-7.el8_5",
+		"nss@3.67.0-7.el8_5",
+		"nss-softokn@3.67.0-7.el8_5",
+		"nss-softokn-freebl@3.67.0-7.el8_5",
+	}, got, "resourceIds for the duplicate-id group")
+}

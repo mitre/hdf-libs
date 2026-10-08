@@ -838,3 +838,29 @@ func TestValidateResults_FormatsMatchTheRFCs(t *testing.T) {
 		})
 	}
 }
+
+// IsUUID is what callers use to reject a componentId before writing it, so it
+// must give the verdict the schema's `format: uuid` gives for the same string.
+func TestIsUUID_AgreesWithSchemaFormat(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "shipped-format-cases.json"))
+	require.NoError(t, err, "read the shared format table")
+	var table struct {
+		Cases []shippedFormatCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &table))
+
+	checked := 0
+	for _, tc := range table.Cases {
+		if tc.Field != "componentId" {
+			continue
+		}
+		checked++
+		t.Run(tc.Name, func(t *testing.T) {
+			assert.Equal(t, tc.Valid, IsUUID(tc.Value), tc.Why)
+			assert.Equal(t, ValidateResults(formatCaseDocument(t, tc)).Valid, IsUUID(tc.Value),
+				"IsUUID and the schema validator must agree")
+		})
+	}
+	require.NotZero(t, checked, "the table must carry componentId cases")
+	assert.False(t, IsUUID(""), "an empty string is not a UUID")
+}

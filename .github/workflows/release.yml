@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   GO_VERSION: '1.26.6'
 
 jobs:
@@ -213,6 +213,12 @@ jobs:
           # (v3.7.0 and v3.7.0-rc.1 on one commit made the v3.7.0 release ship
           # binaries named 3.7.0-rc.1).
           GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+
+      # Asserts the pin above actually worked. Placed before attestation and
+      # upload, and every publishing job needs build-cli, so a mismatch
+      # publishes nothing. GITHUB_REF_NAME is the same tag the pin uses.
+      - name: Assert the built version is the triggering tag
+        run: bash scripts/check-release-version.sh hdf-cli/dist/metadata.json
 
       # SLSA Build L2 provenance for every artifact listed in checksums.txt
       # (archives + SBOMs). Consumers verify with:

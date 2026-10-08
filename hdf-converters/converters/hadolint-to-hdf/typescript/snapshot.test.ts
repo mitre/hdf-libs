@@ -1,0 +1,7 @@
+import { runSnapshotTests } from '../../../shared/typescript/snapshot.js';
+import { convertHadolintToHdf } from './converter.js';
+
+// Asserts the SAME fixtures/expected/*.hdf.json goldens the Go snapshot test
+// asserts, under the same normalization — this is the TS<->Go parity guarantee.
+// hadolint output carries no scan time of any kind.
+runSnapshotTests('hadolint-to-hdf', convertHadolintToHdf, ['*']);

@@ -32,7 +32,7 @@ const defaultReviewHorizon = 90 * 24 * time.Hour
 // attaching each STIX object as an inert externalReferences[] entry: a
 // CVE-bearing object attaches to the finding whose requirementId is that CVE
 // (fanning out to every match), and everything else — non-CVE objects and CVEs
-// with no matching finding — attaches to the results root. Each entry carries
+// with no matching finding — attaches to the document root. Each entry carries
 // the raw STIX object losslessly in `document`.
 //
 // The pass is informational only: it authors no overrides and fabricates no
@@ -84,13 +84,13 @@ func EnrichStix(resultsInput, bundleInput []byte, opts ...EnrichOptions) ([]byte
 	// an untrusted threat-intel feed: N bundle objects citing one CVE × M
 	// duplicate-id findings that cite it = NxM references, each embedding the
 	// full STIX object. Cap the STIX references on every container (each matched
-	// finding, and the results root) so output size stays linear in the input.
+	// finding, and the document root) so output size stays linear in the input.
 	for _, reqs := range reqByID {
 		for _, req := range reqs {
 			capStixExternalRefs(req, "finding")
 		}
 	}
-	capStixExternalRefs(doc, "results root")
+	capStixExternalRefs(doc, "document root")
 
 	if len(opts) > 0 && opts[0].RecomputeCVSS {
 		recomputeExploitation(bundle, reqByID, opts[0])
@@ -100,7 +100,7 @@ func EnrichStix(resultsInput, bundleInput []byte, opts ...EnrichOptions) ([]byte
 }
 
 // maxStixRefsPerContainer bounds how many STIX externalReferences[] the enrich
-// pass may attach to a single container (a finding or the results root). It caps
+// pass may attach to a single container (a finding or the document root). It caps
 // the quadratic fan-out from an untrusted bundle without dropping the container's
 // pre-existing (non-STIX) references.
 const maxStixRefsPerContainer = 50
@@ -195,7 +195,7 @@ func stixFallbackDescription(obj map[string]interface{}) string {
 }
 
 // appendExternalReference appends a reference to a container's
-// externalReferences[] (results root or a requirement), creating it if absent.
+// externalReferences[] (document root or a requirement), creating it if absent.
 func appendExternalReference(container map[string]interface{}, ref map[string]interface{}) {
 	existing, _ := container["externalReferences"].([]interface{})
 	container["externalReferences"] = append(existing, ref)

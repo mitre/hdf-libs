@@ -3,7 +3,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi } from 'vitest';
 import { ControlType, Ecosystem, VerificationMethodEnum } from '@mitre/hdf-schema';
-import { buildAffectedPackage, defaultOverrideExpiry, oscalSeverityFromHdf, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity } from './converterutil.js';
+import { buildAffectedPackage, defaultOverrideExpiry, oscalSeverityFromHdf, ecosystemFromPurlType, inputChecksum, buildNistCciTags, limitArray, limitArrayWithWarning, extractCWEIDs, validateInputSize, DEFAULT_MAX_INPUT_SIZE, ensureArray, deriveControlTypeFromTags, deriveVerificationMethod, buildHdfResults, buildNoFindingsRequirement, digestToChecksums, markUnratedSeverity, firstNonEmpty, requireHdfResults, requireHdfAmendments, parseSeverity, packageInstanceId } from './converterutil.js';
 import { DEFAULT_MAX_INPUT_SIZE as UTIL_DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 
 describe('inputChecksum', () => {
@@ -581,5 +581,14 @@ describe('oscalSeverityFromHdf', () => {
     expect(oscalSeverityFromHdf('')).toBe('');
     expect(oscalSeverityFromHdf('bogus')).toBe('');
     expect(oscalSeverityFromHdf('constructor')).toBe('');
+  });
+});
+
+describe('packageInstanceId', () => {
+  it('prefers the purl, then name@version, then the name, else nothing', () => {
+    expect(packageInstanceId('pkg:npm/lodash@4.17.21', 'lodash', '4.17.21')).toBe('pkg:npm/lodash@4.17.21');
+    expect(packageInstanceId('', 'lodash', '4.17.21')).toBe('lodash@4.17.21');
+    expect(packageInstanceId('', 'lodash', '')).toBe('lodash');
+    expect(packageInstanceId('', '', '4.17.21')).toBe('');
   });
 });

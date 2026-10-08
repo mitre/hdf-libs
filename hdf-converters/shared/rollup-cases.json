@@ -1,0 +1,3179 @@
+{
+  "$comment": "Shared Go/TypeScript case table for the requirement roll-up helper. Every case is run by shared/go/rollup_test.go and shared/typescript/rollup.test.ts, so the two implementations cannot drift. adrRules names the rows of ADR-0017 §6 the case exercises (see rollup-field-rules.json for the full table). Cases whose source names a committed golden were lifted from it and trimmed by dropping whole elements only — the `code` payload ADR-0017 §5 relocates, and for veracode the extra results and descriptions; no value was edited. Cases marked \"constructed\" cover rules no committed golden exercises.",
+  "adr": "dev-docs/adr-0017-raw-source-artifact-carriage-and-requirement-rollup.md",
+  "section": "6",
+  "cases": [
+    {
+      "name": "grype: one CVE reported against two packages",
+      "source": "converters/grype-to-hdf/fixtures/expected/anchore_grype.json.hdf.json (Grype/CVE-2022-48174)",
+      "adrRules": [
+        "results",
+        "affectedPackages"
+      ],
+      "note": "results concatenate in source order; both purls survive — first-wins would discard ssl_client.",
+      "input": [
+        {
+          "affectedPackages": [
+            {
+              "cpe": "cpe:2.3:a:busybox:busybox:1.31.1-r9:*:*:*:*:*:*:*",
+              "ecosystem": "generic",
+              "name": "busybox",
+              "purl": "pkg:apk/alpine/busybox@1.31.1-r9?arch=aarch64&distro=alpine-3.11.3",
+              "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-48174",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "There is a stack overflow vulnerability in ash.c:6030 in busybox before 1.35. In the environment of Internet of Vehicles, this vulnerability can be executed from command to arbitrary code execution.",
+              "label": "default"
+            },
+            {
+              "data": "vulnerability is unknown",
+              "label": "fix"
+            },
+            {
+              "data": "{\"primary\":[{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\",\"metrics\":{\"baseScore\":9.8,\"exploitabilityScore\":3.9,\"impactScore\":5.9},\"vendorMetadata\":{}}]}",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
+              "message": "Severity: Critical vulnerability is unknown",
+              "startTime": "2024-07-23T12:42:03.544Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Grype/CVE-2022-48174",
+          "impact": 0.9,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://bugs.busybox.net/show_bug.cgi?id=15216"
+            }
+          ],
+          "title": "Grype found a vulnerability to CVE-2022-48174 in golang:1.12-alpine",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "cpe": "cpe:2.3:a:ssl-client:ssl-client:1.31.1-r9:*:*:*:*:*:*:*",
+              "ecosystem": "generic",
+              "name": "ssl_client",
+              "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64&upstream=busybox&distro=alpine-3.11.3",
+              "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-48174",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "There is a stack overflow vulnerability in ash.c:6030 in busybox before 1.35. In the environment of Internet of Vehicles, this vulnerability can be executed from command to arbitrary code execution.",
+              "label": "default"
+            },
+            {
+              "data": "vulnerability is unknown",
+              "label": "fix"
+            },
+            {
+              "data": "{\"primary\":[{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\",\"metrics\":{\"baseScore\":9.8,\"exploitabilityScore\":3.9,\"impactScore\":5.9},\"vendorMetadata\":{}}]}",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
+              "message": "Severity: Critical vulnerability is unknown",
+              "startTime": "2024-07-23T12:42:03.544Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Grype/CVE-2022-48174",
+          "impact": 0.9,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://bugs.busybox.net/show_bug.cgi?id=15216"
+            }
+          ],
+          "title": "Grype found a vulnerability to CVE-2022-48174 in golang:1.12-alpine",
+          "verificationMethod": "automated"
+        }
+      ],
+      "expected": [
+        {
+          "affectedPackages": [
+            {
+              "cpe": "cpe:2.3:a:busybox:busybox:1.31.1-r9:*:*:*:*:*:*:*",
+              "ecosystem": "generic",
+              "name": "busybox",
+              "purl": "pkg:apk/alpine/busybox@1.31.1-r9?arch=aarch64&distro=alpine-3.11.3",
+              "version": "1.31.1-r9"
+            },
+            {
+              "cpe": "cpe:2.3:a:ssl-client:ssl-client:1.31.1-r9:*:*:*:*:*:*:*",
+              "ecosystem": "generic",
+              "name": "ssl_client",
+              "purl": "pkg:apk/alpine/ssl_client@1.31.1-r9?arch=aarch64&upstream=busybox&distro=alpine-3.11.3",
+              "version": "1.31.1-r9"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 9.8,
+              "baseSeverity": "critical",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+              "source": "CVE-2022-48174",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "There is a stack overflow vulnerability in ash.c:6030 in busybox before 1.35. In the environment of Internet of Vehicles, this vulnerability can be executed from command to arbitrary code execution.",
+              "label": "default"
+            },
+            {
+              "data": "vulnerability is unknown",
+              "label": "fix"
+            },
+            {
+              "data": "{\"primary\":[{\"source\":\"nvd@nist.gov\",\"type\":\"Primary\",\"version\":\"3.1\",\"vector\":\"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H\",\"metrics\":{\"baseScore\":9.8,\"exploitabilityScore\":3.9,\"impactScore\":5.9},\"vendorMetadata\":{}}]}",
+              "label": "check"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package: busybox@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
+              "message": "Severity: Critical vulnerability is unknown",
+              "startTime": "2024-07-23T12:42:03.544Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Package: ssl_client@1.31.1-r9 | Type: apk | Location: /lib/apk/db/installed | Match Type: cpe-match",
+              "message": "Severity: Critical vulnerability is unknown",
+              "startTime": "2024-07-23T12:42:03.544Z",
+              "status": "failed"
+            }
+          ],
+          "id": "Grype/CVE-2022-48174",
+          "impact": 0.9,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "refs": [
+            {
+              "url": "https://bugs.busybox.net/show_bug.cgi?id=15216"
+            }
+          ],
+          "title": "Grype found a vulnerability to CVE-2022-48174 in golang:1.12-alpine",
+          "verificationMethod": "automated"
+        }
+      ]
+    },
+    {
+      "name": "twistlock: one CVE across four rpm packages",
+      "source": "converters/twistlock-to-hdf/fixtures/expected/twistlock-twistcli-sample-1.json.hdf.json (CVE-2022-24771)",
+      "adrRules": [
+        "results",
+        "affectedPackages",
+        "tags",
+        "cvss"
+      ],
+      "note": "Four members, not two: the surviving requirement sits at the first member position with four results in source order. The scalar tag cvss_base_score first-wins; the array tags are identical so their union is unchanged.",
+      "input": [
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-host",
+              "version": "6.0.5-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package \"dotnet-host\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"dotnet-host\"\nDetected vulnerable version \"6.0.5-1.el8_6\" of \"dotnet-host\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CVE-2022-24771",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cveid": [
+              "CVE-2022-24771"
+            ],
+            "cvss_base_score": 7.5,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-hostfxr-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package \"dotnet-hostfxr-5.0\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"dotnet-hostfxr-5.0\"\nDetected vulnerable version \"5.0.17-1.el8_6\" of \"dotnet-hostfxr-5.0\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CVE-2022-24771",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cveid": [
+              "CVE-2022-24771"
+            ],
+            "cvss_base_score": 7.5,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "aspnetcore-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package \"aspnetcore-runtime-5.0\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"aspnetcore-runtime-5.0\"\nDetected vulnerable version \"5.0.17-1.el8_6\" of \"aspnetcore-runtime-5.0\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CVE-2022-24771",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cveid": [
+              "CVE-2022-24771"
+            ],
+            "cvss_base_score": 7.5,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
+        },
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package \"dotnet-runtime-5.0\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"dotnet-runtime-5.0\"\nDetected vulnerable version \"5.0.17-1.el8_6\" of \"dotnet-runtime-5.0\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CVE-2022-24771",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cveid": [
+              "CVE-2022-24771"
+            ],
+            "cvss_base_score": 7.5,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
+        }
+      ],
+      "expected": [
+        {
+          "affectedPackages": [
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-host",
+              "version": "6.0.5-1.el8_6"
+            },
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-hostfxr-5.0",
+              "version": "5.0.17-1.el8_6"
+            },
+            {
+              "ecosystem": "rpm",
+              "name": "aspnetcore-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            },
+            {
+              "ecosystem": "rpm",
+              "name": "dotnet-runtime-5.0",
+              "version": "5.0.17-1.el8_6"
+            }
+          ],
+          "cvss": [
+            {
+              "baseScore": 7.5,
+              "baseSeverity": "high",
+              "baseVector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+              "source": "CVE-2022-24771",
+              "version": "3.1"
+            }
+          ],
+          "descriptions": [
+            {
+              "data": "Forge (also called `node-forge`) is a native implementation of Transport Layer Security in JavaScript. Prior to version 1.3.0, RSA PKCS#1 v1.5 signature verification code is lenient in checking the digest algorithm structure. This can allow a crafted structure that steals padding bytes and uses unchecked portion of the PKCS#1 encoded message to forge a signature when a low public exponent is being used. The issue has been addressed in `node-forge` version 1.3.0. There are currently no known workarounds.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Package \"dotnet-host\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"dotnet-host\"\nDetected vulnerable version \"6.0.5-1.el8_6\" of \"dotnet-host\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Package \"dotnet-hostfxr-5.0\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"dotnet-hostfxr-5.0\"\nDetected vulnerable version \"5.0.17-1.el8_6\" of \"dotnet-hostfxr-5.0\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Package \"aspnetcore-runtime-5.0\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"aspnetcore-runtime-5.0\"\nDetected vulnerable version \"5.0.17-1.el8_6\" of \"aspnetcore-runtime-5.0\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Package \"dotnet-runtime-5.0\" should be updated to latest version above impacted versions [*]",
+              "message": "Expected latest version of \"dotnet-runtime-5.0\"\nDetected vulnerable version \"5.0.17-1.el8_6\" of \"dotnet-runtime-5.0\"",
+              "startTime": "2022-05-18T12:24:22Z",
+              "status": "failed"
+            }
+          ],
+          "id": "CVE-2022-24771",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-002605"
+            ],
+            "cveid": [
+              "CVE-2022-24771"
+            ],
+            "cvss_base_score": 7.5,
+            "nist": [
+              "SI-2",
+              "RA-5"
+            ]
+          },
+          "title": "CVE-2022-24771",
+          "verificationMethod": "automated"
+        }
+      ]
+    },
+    {
+      "name": "cyclonedx: one advisory against two logback modules",
+      "source": "converters/cyclonedx-to-hdf/fixtures/expected/dropwizard-vulns.json.hdf.json (GHSA-vmq6-5m68-f53m)",
+      "adrRules": [
+        "results",
+        "cwe"
+      ],
+      "note": "The two members carry the same cwe, so the union is de-duplicated back to one entry.",
+      "input": [
+        {
+          "cwe": [
+            "CWE-502"
+          ],
+          "descriptions": [
+            {
+              "data": "Description: A serialization vulnerability in logback receiver component part of logback allows an attacker to mount a Denial-Of-Service attack by sending poisoned data. This is only exploitable if logback receiver component is deployed. See https://logback.qos.ch/manual/receivers.html",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Component ch.qos.logback/logback-core@1.2.3 is vulnerable",
+              "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 5e7cd916-704f-4746-83a0-ec3850bb3f49\n\n- Group: ch.qos.logback\n\n- Name: logback-core\n\n- Version: 1.2.3\n\n- Description: logback-core module\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "startTime": "2024-07-08T17:30:28Z",
+              "status": "failed"
+            }
+          ],
+          "id": "GHSA-vmq6-5m68-f53m",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
+          "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
+        },
+        {
+          "cwe": [
+            "CWE-502"
+          ],
+          "descriptions": [
+            {
+              "data": "Description: A serialization vulnerability in logback receiver component part of logback allows an attacker to mount a Denial-Of-Service attack by sending poisoned data. This is only exploitable if logback receiver component is deployed. See https://logback.qos.ch/manual/receivers.html",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Component ch.qos.logback/logback-classic@1.2.3 is vulnerable",
+              "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 6d8385bd-f9a9-4a97-9031-3a1c717209b7\n\n- Group: ch.qos.logback\n\n- Name: logback-classic\n\n- Version: 1.2.3\n\n- Description: logback-classic module\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "startTime": "2024-07-08T17:30:28Z",
+              "status": "failed"
+            }
+          ],
+          "id": "GHSA-vmq6-5m68-f53m",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
+          "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
+        }
+      ],
+      "expected": [
+        {
+          "cwe": [
+            "CWE-502"
+          ],
+          "descriptions": [
+            {
+              "data": "Description: A serialization vulnerability in logback receiver component part of logback allows an attacker to mount a Denial-Of-Service attack by sending poisoned data. This is only exploitable if logback receiver component is deployed. See https://logback.qos.ch/manual/receivers.html",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Component ch.qos.logback/logback-core@1.2.3 is vulnerable",
+              "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 5e7cd916-704f-4746-83a0-ec3850bb3f49\n\n- Group: ch.qos.logback\n\n- Name: logback-core\n\n- Version: 1.2.3\n\n- Description: logback-core module\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "startTime": "2024-07-08T17:30:28Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Component ch.qos.logback/logback-classic@1.2.3 is vulnerable",
+              "message": "-Component Summary-\n\n- Type: library\n\n- Bom-ref: 6d8385bd-f9a9-4a97-9031-3a1c717209b7\n\n- Group: ch.qos.logback\n\n- Name: logback-classic\n\n- Version: 1.2.3\n\n- Description: logback-classic module\n\n- Licenses: [\n  {\n    \"license\": {\n      \"id\": \"EPL-1.0\",\n      \"url\": \"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\"\n    }\n  }\n]",
+              "startTime": "2024-07-08T17:30:28Z",
+              "status": "failed"
+            }
+          ],
+          "id": "GHSA-vmq6-5m68-f53m",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001310"
+            ],
+            "nist": [
+              "SI-10"
+            ]
+          },
+          "controlType": "technical",
+          "refs": [
+            {
+              "url": "https://github.com/advisories"
+            }
+          ],
+          "title": "GHSA-vmq6-5m68-f53m (GITHUB)"
+        }
+      ]
+    },
+    {
+      "name": "veracode: impact, cwe, tags and sourceLocation all conflict",
+      "source": "converters/veracode-to-hdf/fixtures/expected/veracode.xml.hdf.json (id \"12\"), trimmed to one result and one description per member",
+      "adrRules": [
+        "impact",
+        "cwe",
+        "tags",
+        "sourceLocation",
+        "results"
+      ],
+      "note": "impact worst-wins (0.5 over 0.3); cwe unions to CWE-331, CWE-327, CWE-614; the array tags union per key; the scalar tag cweDescription first-wins; sourceLocation first-wins (line 127, not 55).",
+      "input": [
+        {
+          "cwe": [
+            "CWE-331",
+            "CWE-327"
+          ],
+          "descriptions": [
+            {
+              "data": "Applications commonly use cryptography to implement authentication mechanisms and to ensure the confidentiality and integrity of sensitive data, both in transit and at rest.  The proper and accurate implementation of cryptography is extremely critical to its efficacy.  Configuration or coding mistakes as well as incorrect assumptions may negate a large degree of the protection it affords, leaving the crypto implementation vulnerable to attack.\nCommon cryptographic mistakes include, but are not limited to, selecting weak keys or weak cipher modes, unintentionally exposing sensitive cryptographic data, using predictable entropy sources, and mismanaging or hard-coding keys.  \nDevelopers often make the dangerous assumption that they can improve security by designing their own cryptographic algorithm; however, one of the basic tenets of cryptography is that any cipher whose effectiveness is reliant on the secrecy of the algorithm is fundamentally flawed.  ",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Sourcefile Path: com/veracode/verademo/controller/\nLine Number: 127\nAffect Policy Compliance: false\nRemediation Effort: 2\nExploit level: -1\nIssue ID: 124\nModule: verademo.war\nType: java.util.Random.nextBoolean\nCWE ID: 331\nDate First Occurence: 2021-12-29 22:11:27 UTC\nCIA Impact: ppn\nDescription: Standard random number generators do not provide a sufficient amount of entropy when used for security purposes. Attackers can brute force the output of pseudorandom number generators such as rand().\r\n\r\nIf this random number is used where security is a concern, such as generating a session key or session identifier, use a trusted cryptographic random number generator instead. These can be found on the Windows platform in the CryptoAPI or in an open source library such as OpenSSL. In Java, use the SecureRandom object to ensure sufficient entropy.\r\n\r\nReferences: \r\nCWE (https://cwe.mitre.org/data/definitions/331.html)\r\n\r\n\nSource File: ResetController.java\nScope: com.veracode.verademo.controller.ResetController\nPCI Related: true\nFunction Prototype: java.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model)\nFunction Relative Location: 26",
+              "startTime": "2021-12-29T22:16:36Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 127,
+            "ref": "ResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nUser.java\nUserController.java"
+          },
+          "id": "12",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-002450"
+            ],
+            "certc": [
+              "1170"
+            ],
+            "certcpp": [
+              "883"
+            ],
+            "certjava": [
+              "1152"
+            ],
+            "cweDescription": "CWE-331: Insufficient Entropy Description: Standard random number generators do not provide a sufficient amount of entropy when used for security purposes. Attackers can brute force the output of pseudorandom number generators such as rand().; \nCWE-327: Use of a Broken or Risky Cryptographic Algorithm Description: The use of a broken or risky cryptographic algorithm is an unnecessary risk that may result in the disclosure of sensitive information.; ",
+            "nist": [
+              "SC-13"
+            ],
+            "owasp": [
+              "1346"
+            ],
+            "sans": [
+              "327",
+              "866"
+            ]
+          },
+          "controlType": "technical",
+          "title": "Cryptographic Issues",
+          "verificationMethod": "automated"
+        },
+        {
+          "cwe": [
+            "CWE-614"
+          ],
+          "descriptions": [
+            {
+              "data": "Applications commonly use cryptography to implement authentication mechanisms and to ensure the confidentiality and integrity of sensitive data, both in transit and at rest.  The proper and accurate implementation of cryptography is extremely critical to its efficacy.  Configuration or coding mistakes as well as incorrect assumptions may negate a large degree of the protection it affords, leaving the crypto implementation vulnerable to attack.\nCommon cryptographic mistakes include, but are not limited to, selecting weak keys or weak cipher modes, unintentionally exposing sensitive cryptographic data, using predictable entropy sources, and mismanaging or hard-coding keys.  \nDevelopers often make the dangerous assumption that they can improve security by designing their own cryptographic algorithm; however, one of the basic tenets of cryptography is that any cipher whose effectiveness is reliant on the secrecy of the algorithm is fundamentally flawed.  ",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Sourcefile Path: com/veracode/verademo/utils/\nLine Number: 55\nAffect Policy Compliance: false\nRemediation Effort: 1\nExploit level: 0\nIssue ID: 147\nModule: verademo.war\nType: javax.servlet.http.HttpServletResponse.addCookie\nCWE ID: 614\nDate First Occurence: 2021-12-29 22:11:27 UTC\nCIA Impact: pnn\nDescription: This call to javax.servlet.http.HttpServletResponse.addCookie() adds a cookie to the HTTP response that does not have the Secure attribute set. Failing to set this attribute allows the browser to send the cookie unencrypted over an HTTP session.\r\n\r\nSet the Secure attribute for all cookies used by HTTPS sessions.\r\n\r\nReferences: \r\nCWE (https://cwe.mitre.org/data/definitions/614.html) \r\nWASC (https://webappsec.pbworks.com/Insufficient-Transport-Layer-Protection)\r\n\r\n\nSource File: Utils.java\nScope: com.veracode.verademo.utils.Utils\nPCI Related: true\nFunction Prototype: void setCookie(javax.servlet.http.HttpServletResponse, java.lang.String, java.lang.String)\nFunction Relative Location: 50",
+              "startTime": "2021-12-29T22:16:36Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 55,
+            "ref": "Utils.java"
+          },
+          "id": "12",
+          "impact": 0.3,
+          "tags": {
+            "cci": [
+              "CCI-002418"
+            ],
+            "cweDescription": "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute Description: Setting the Secure attribute on an HTTP cookie instructs the web browser to send it only over a secure channel, such as a TLS connection.  Issuing a cookie without the Secure attribute allows the browser to transmit it over unencrypted connections, which are susceptible to eavesdropping.  It is particularly important to set the Secure attribute on any cookies containing sensitive data, such as authentication information (e.g. \"remember me\" style functionality).; ",
+            "nist": [
+              "SC-8"
+            ],
+            "owasp": [
+              "1349"
+            ],
+            "sans": [
+              "311"
+            ]
+          },
+          "controlType": "technical",
+          "title": "Cryptographic Issues",
+          "verificationMethod": "automated"
+        }
+      ],
+      "expected": [
+        {
+          "cwe": [
+            "CWE-331",
+            "CWE-327",
+            "CWE-614"
+          ],
+          "descriptions": [
+            {
+              "data": "Applications commonly use cryptography to implement authentication mechanisms and to ensure the confidentiality and integrity of sensitive data, both in transit and at rest.  The proper and accurate implementation of cryptography is extremely critical to its efficacy.  Configuration or coding mistakes as well as incorrect assumptions may negate a large degree of the protection it affords, leaving the crypto implementation vulnerable to attack.\nCommon cryptographic mistakes include, but are not limited to, selecting weak keys or weak cipher modes, unintentionally exposing sensitive cryptographic data, using predictable entropy sources, and mismanaging or hard-coding keys.  \nDevelopers often make the dangerous assumption that they can improve security by designing their own cryptographic algorithm; however, one of the basic tenets of cryptography is that any cipher whose effectiveness is reliant on the secrecy of the algorithm is fundamentally flawed.  ",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Sourcefile Path: com/veracode/verademo/controller/\nLine Number: 127\nAffect Policy Compliance: false\nRemediation Effort: 2\nExploit level: -1\nIssue ID: 124\nModule: verademo.war\nType: java.util.Random.nextBoolean\nCWE ID: 331\nDate First Occurence: 2021-12-29 22:11:27 UTC\nCIA Impact: ppn\nDescription: Standard random number generators do not provide a sufficient amount of entropy when used for security purposes. Attackers can brute force the output of pseudorandom number generators such as rand().\r\n\r\nIf this random number is used where security is a concern, such as generating a session key or session identifier, use a trusted cryptographic random number generator instead. These can be found on the Windows platform in the CryptoAPI or in an open source library such as OpenSSL. In Java, use the SecureRandom object to ensure sufficient entropy.\r\n\r\nReferences: \r\nCWE (https://cwe.mitre.org/data/definitions/331.html)\r\n\r\n\nSource File: ResetController.java\nScope: com.veracode.verademo.controller.ResetController\nPCI Related: true\nFunction Prototype: java.lang.String processReset(java.lang.String, java.lang.String, org.springframework.ui.Model)\nFunction Relative Location: 26",
+              "startTime": "2021-12-29T22:16:36Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Sourcefile Path: com/veracode/verademo/utils/\nLine Number: 55\nAffect Policy Compliance: false\nRemediation Effort: 1\nExploit level: 0\nIssue ID: 147\nModule: verademo.war\nType: javax.servlet.http.HttpServletResponse.addCookie\nCWE ID: 614\nDate First Occurence: 2021-12-29 22:11:27 UTC\nCIA Impact: pnn\nDescription: This call to javax.servlet.http.HttpServletResponse.addCookie() adds a cookie to the HTTP response that does not have the Secure attribute set. Failing to set this attribute allows the browser to send the cookie unencrypted over an HTTP session.\r\n\r\nSet the Secure attribute for all cookies used by HTTPS sessions.\r\n\r\nReferences: \r\nCWE (https://cwe.mitre.org/data/definitions/614.html) \r\nWASC (https://webappsec.pbworks.com/Insufficient-Transport-Layer-Protection)\r\n\r\n\nSource File: Utils.java\nScope: com.veracode.verademo.utils.Utils\nPCI Related: true\nFunction Prototype: void setCookie(javax.servlet.http.HttpServletResponse, java.lang.String, java.lang.String)\nFunction Relative Location: 50",
+              "startTime": "2021-12-29T22:16:36Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "line": 127,
+            "ref": "ResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nResetController.java\nUser.java\nUserController.java"
+          },
+          "id": "12",
+          "impact": 0.5,
+          "tags": {
+            "cci": [
+              "CCI-002450",
+              "CCI-002418"
+            ],
+            "certc": [
+              "1170"
+            ],
+            "certcpp": [
+              "883"
+            ],
+            "certjava": [
+              "1152"
+            ],
+            "cweDescription": "CWE-331: Insufficient Entropy Description: Standard random number generators do not provide a sufficient amount of entropy when used for security purposes. Attackers can brute force the output of pseudorandom number generators such as rand().; \nCWE-327: Use of a Broken or Risky Cryptographic Algorithm Description: The use of a broken or risky cryptographic algorithm is an unnecessary risk that may result in the disclosure of sensitive information.; ",
+            "nist": [
+              "SC-13",
+              "SC-8"
+            ],
+            "owasp": [
+              "1346",
+              "1349"
+            ],
+            "sans": [
+              "327",
+              "866",
+              "311"
+            ]
+          },
+          "controlType": "technical",
+          "title": "Cryptographic Issues",
+          "verificationMethod": "automated"
+        }
+      ]
+    },
+    {
+      "name": "prisma: baseline 0 alone keeps its single entry",
+      "source": "converters/prisma-to-hdf/fixtures/expected/prismacloud_sample.csv.hdf.json (baseline 0, 60522-redhat-RHEL7-high)",
+      "adrRules": [
+        "id"
+      ],
+      "note": "Half of the cross-baseline trap: this id also appears in baselines 1, 4 and 9. Rolling up one baseline at a time leaves it standing in each.",
+      "input": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        }
+      ],
+      "expected": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "my-fake-host-1.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        }
+      ]
+    },
+    {
+      "name": "prisma: baseline 1 alone keeps its single entry",
+      "source": "converters/prisma-to-hdf/fixtures/expected/prismacloud_sample.csv.hdf.json (baseline 1, 60522-redhat-RHEL7-high)",
+      "adrRules": [
+        "id"
+      ],
+      "note": "The other half. Once `code` moves out per ADR-0017 §5 these two entries become byte-identical, which is exactly why a document-wide merge would be undetectable data loss.",
+      "input": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        }
+      ],
+      "expected": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "my-fake-host-2.somewhere.cloud-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        }
+      ]
+    },
+    {
+      "name": "prisma: baseline 9 rolls its three entries into one",
+      "source": "converters/prisma-to-hdf/fixtures/expected/prismacloud_sample.csv.hdf.json (baseline 9, 60522-redhat-RHEL7-high)",
+      "adrRules": [
+        "results"
+      ],
+      "note": "Within one baseline the same id does roll up: three entries, three results.",
+      "input": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ed25519_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        },
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_rsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        }
+      ],
+      "expected": [
+        {
+          "descriptions": [
+            {
+              "data": "(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ecdsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_ed25519_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "Configuration check for redhat-RHEL7\n\n(CIS_Linux_2.0.0 - 5.2.2) Ensure permissions on SSH private host key files are configured",
+              "message": "Cause: File ownership is wrong, expected: 0:root, actual 0:ssh_keys. Full path: /etc/ssh/ssh_host_rsa_key",
+              "startTime": "2026-07-12T22:56:41.753624Z",
+              "status": "failed"
+            }
+          ],
+          "id": "60522-redhat-RHEL7-high",
+          "impact": 0.7,
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ]
+          },
+          "title": "localhost-redhat-RHEL7-linux",
+          "verificationMethod": "automated"
+        }
+      ]
+    },
+    {
+      "name": "title and descriptions first-wins",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "title",
+        "descriptions"
+      ],
+      "note": "Zero real groups conflict here; the rule is stated so the helper has defined behaviour when one does.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "title": "first title"
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "second"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "passed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "title": "second title"
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "passed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "title": "first title"
+        }
+      ]
+    },
+    {
+      "name": "code first-wins",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "code"
+      ],
+      "note": "Conflicts in 66 of 68 real groups today only because payloads are misplaced (ADR-0017 §5).",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "code": "first code"
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "code": "second code"
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "code": "first code"
+        }
+      ]
+    },
+    {
+      "name": "first-wins keeps the first member value when the later member has none",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "title"
+      ],
+      "note": "The mirror case: first-wins is the first member value, present or absent.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "title": "no title on the later member"
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "title": "no title on the later member"
+        }
+      ]
+    },
+    {
+      "name": "first-wins keeps the first member absence over a later member value",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "title"
+      ],
+      "note": "ADR-0017 §6 says first-wins, not first-non-empty: an absent field on the first member stays absent.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "title": "only the later member has a title"
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "controlType, verificationMethod and applicability first-win",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "controlType",
+        "verificationMethod",
+        "applicability"
+      ],
+      "note": "Requirement-level classification, not per instance.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "controlType": "technical",
+          "verificationMethod": "automated",
+          "applicability": "required"
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "controlType": "policy",
+          "verificationMethod": "manual-by-design",
+          "applicability": "advisory"
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "controlType": "technical",
+          "verificationMethod": "automated",
+          "applicability": "required"
+        }
+      ]
+    },
+    {
+      "name": "cvss, epss and kev first-win",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "cvss",
+        "epss",
+        "kev"
+      ],
+      "note": "These describe the vulnerability, not the instance, so the later members add nothing.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "cvss": [
+            {
+              "version": "3.1",
+              "baseScore": 9.8
+            }
+          ],
+          "epss": {
+            "date": "2024-01-01",
+            "percentile": 0.9,
+            "score": 0.5
+          },
+          "kev": {
+            "inKev": true
+          }
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "cvss": [
+            {
+              "version": "3.1",
+              "baseScore": 4.0
+            }
+          ],
+          "epss": {
+            "date": "2024-02-02",
+            "percentile": 0.1,
+            "score": 0.1
+          },
+          "kev": {
+            "inKev": false
+          }
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "cvss": [
+            {
+              "version": "3.1",
+              "baseScore": 9.8
+            }
+          ],
+          "epss": {
+            "date": "2024-01-01",
+            "percentile": 0.9,
+            "score": 0.5
+          },
+          "kev": {
+            "inKev": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "impact, severity and effectiveImpact are worst-wins",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "impact",
+        "severity",
+        "effectiveImpact"
+      ],
+      "note": "Worst-wins regardless of member order: the later, worse member wins.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.3,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "severity": "low",
+          "effectiveImpact": 0.2
+        },
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "severity": "critical",
+          "effectiveImpact": 0.9
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "severity": "critical",
+          "effectiveImpact": 0.9
+        }
+      ]
+    },
+    {
+      "name": "worst-wins is not last-wins",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "impact",
+        "severity",
+        "effectiveImpact"
+      ],
+      "note": "The same pair in the other order gives the same answer.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "severity": "critical",
+          "effectiveImpact": 0.9
+        },
+        {
+          "id": "V-1",
+          "impact": 0.3,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "severity": "low",
+          "effectiveImpact": 0.2
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "severity": "critical",
+          "effectiveImpact": 0.9
+        }
+      ]
+    },
+    {
+      "name": "cwe, refs, externalReferences, evidence, statusOverrides and poams union",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "cwe",
+        "refs",
+        "externalReferences",
+        "evidence",
+        "statusOverrides",
+        "poams"
+      ],
+      "note": "Each list keeps its first-seen order and drops the repeated member: cwe by the string, the rest by the whole value, which is the only key that cannot discard a distinct member.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "cwe": [
+            "CWE-79"
+          ],
+          "refs": [
+            {
+              "url": "https://a.example"
+            }
+          ],
+          "externalReferences": [
+            {
+              "sourceName": "cve",
+              "externalId": "CVE-2024-1"
+            }
+          ],
+          "evidence": [
+            {
+              "type": "log",
+              "data": "first"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "reason": "first",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "poams": [
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "explanation": "first",
+              "type": "remediation"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "cwe": [
+            "CWE-79",
+            "CWE-89"
+          ],
+          "refs": [
+            {
+              "url": "https://a.example"
+            },
+            {
+              "url": "https://b.example"
+            }
+          ],
+          "externalReferences": [
+            {
+              "sourceName": "cve",
+              "externalId": "CVE-2024-1"
+            },
+            {
+              "sourceName": "cve",
+              "externalId": "CVE-2024-2"
+            }
+          ],
+          "evidence": [
+            {
+              "type": "log",
+              "data": "first"
+            },
+            {
+              "type": "log",
+              "data": "second"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "reason": "first",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "reason": "second",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "poams": [
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "explanation": "first",
+              "type": "remediation"
+            },
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "explanation": "second",
+              "type": "remediation"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "cwe": [
+            "CWE-79",
+            "CWE-89"
+          ],
+          "refs": [
+            {
+              "url": "https://a.example"
+            },
+            {
+              "url": "https://b.example"
+            }
+          ],
+          "externalReferences": [
+            {
+              "sourceName": "cve",
+              "externalId": "CVE-2024-1"
+            },
+            {
+              "sourceName": "cve",
+              "externalId": "CVE-2024-2"
+            }
+          ],
+          "evidence": [
+            {
+              "type": "log",
+              "data": "first"
+            },
+            {
+              "type": "log",
+              "data": "second"
+            }
+          ],
+          "statusOverrides": [
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "reason": "first",
+              "status": "passed",
+              "type": "waiver"
+            },
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "reason": "second",
+              "status": "passed",
+              "type": "waiver"
+            }
+          ],
+          "poams": [
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "explanation": "first",
+              "type": "remediation"
+            },
+            {
+              "appliedAt": "2024-01-01T00:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z",
+              "appliedBy": {
+                "identifier": "analyst@example.com",
+                "type": "email"
+              },
+              "explanation": "second",
+              "type": "remediation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "tags union per array-valued key, first-win per scalar key, and a later-only key is added",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "tags"
+      ],
+      "note": "nist unions and de-duplicates AC-1; the scalar severity first-wins; cci exists only on the later member and is added, because the rule is stated per key.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AC-1"
+            ],
+            "severity": "low",
+            "gid": "G1"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AC-2",
+              "AC-1"
+            ],
+            "severity": "high",
+            "cci": [
+              "CCI-1"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "nist": [
+              "AC-1",
+              "AC-2"
+            ],
+            "severity": "low",
+            "gid": "G1",
+            "cci": [
+              "CCI-1"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "a tag key whose members disagree on shape first-wins",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "tags"
+      ],
+      "note": "Only a key both members carry as an array unions; anything else falls to first-wins.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "x": [
+              "a"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "x": "scalar"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "x": [
+              "a"
+            ]
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "effectiveStatus, disposition and effectiveChecksum are dropped, not merged",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "effectiveStatus",
+        "disposition",
+        "effectiveChecksum"
+      ],
+      "note": "ADR-0017 §6 derives these after merging from the merged results and overrides; the first member values describe only that member, so carrying them would be wrong data.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "passed",
+          "disposition": "waiver",
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "effectiveStatus": "failed",
+          "disposition": "falsePositive",
+          "effectiveChecksum": {
+            "algorithm": "sha256",
+            "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "affectedPackages de-duplicate on purl",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "affectedPackages"
+      ],
+      "note": "Same purl on both members: one entry survives.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "affectedPackages": [
+            {
+              "purl": "pkg:npm/lodash@4.17.20",
+              "name": "lodash",
+              "version": "4.17.20"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "affectedPackages": [
+            {
+              "purl": "pkg:npm/lodash@4.17.20",
+              "name": "lodash",
+              "version": "4.17.20"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "affectedPackages": [
+            {
+              "purl": "pkg:npm/lodash@4.17.20",
+              "name": "lodash",
+              "version": "4.17.20"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "affectedPackages without a purl de-duplicate on name and version",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "affectedPackages"
+      ],
+      "note": "ADR-0017 §6 names name + version, not ecosystem: the differing ecosystem does not make a second entry.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "affectedPackages": [
+            {
+              "name": "openssl",
+              "version": "1.1.1k",
+              "ecosystem": "rpm"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "affectedPackages": [
+            {
+              "name": "openssl",
+              "version": "1.1.1k",
+              "ecosystem": "generic"
+            },
+            {
+              "name": "openssl",
+              "version": "3.0.0",
+              "ecosystem": "rpm"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "second",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ],
+          "affectedPackages": [
+            {
+              "name": "openssl",
+              "version": "1.1.1k",
+              "ecosystem": "rpm"
+            },
+            {
+              "name": "openssl",
+              "version": "3.0.0",
+              "ecosystem": "rpm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "identical results are both kept — results are never de-duplicated",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "results"
+      ],
+      "note": "A divergence from heimdall2's collapseResults flag (base-converter.ts:167): ADR-0017 §6 says concatenate, full stop. Each result is one source finding, and dropping one would lose a finding the result-count anchor is there to catch.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "identical",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "identical",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "identical",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "identical",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "a slice with no repeated id is returned unchanged",
+      "source": "constructed",
+      "adrRules": [
+        "id"
+      ],
+      "note": "Same length, same order, same values.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-2",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-3",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-2",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-3",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "the survivor sits at the position of its first member",
+      "source": "constructed",
+      "adrRules": [
+        "id",
+        "results"
+      ],
+      "note": "V-2 is emitted first at index 1 and stays at index 1 even though its second member trails V-3.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-2",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "v2-a",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-3",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-2",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "v2-b",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-2",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "v2-a",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "v2-b",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-3",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "entries with an empty id pass through untouched and never merge",
+      "source": "constructed — mirrors the adversarial corpus requirement-missing-id case",
+      "adrRules": [
+        "id"
+      ],
+      "note": "Divergence from heimdall2, which drops an item whose key is not a string outright (base-converter.ts:120-123, no else). id is schema-required, so an empty one is malformed input: HDF keeps it and keeps the document diffable rather than silently shrinking it.",
+      "input": [
+        {
+          "id": "",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "blank-a",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "blank-b",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "blank-a",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "first",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "",
+          "impact": 0.5,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "blank-b",
+              "status": "failed",
+              "startTime": "2024-01-02T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "an empty slice rolls up to an empty slice",
+      "source": "constructed",
+      "adrRules": [
+        "id"
+      ],
+      "note": "A baseline with no requirements is not an error.",
+      "input": [],
+      "expected": []
+    },
+    {
+      "name": "the unrated-severity marker survives when every member is unrated",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "tags"
+      ],
+      "note": "severity_rating is DERIVED, not a scalar tag: it survives only as an AND across the members. Both members unrated, so the merged requirement is still unrated. This is the shape grype's real Grype/CVE-2024-2511 group has today — marker on both, severity absent, impact 0.5.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "severity_rating": "unrated"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r1",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "severity_rating": "unrated"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r2",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "severity_rating": "unrated"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r1",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "r2",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "the unrated-severity marker is dropped when a later member was rated",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "tags",
+        "severity"
+      ],
+      "note": "The self-contradiction case a plain scalar-tag merge would produce: firstWins would keep the marker while worst-wins takes the later member's genuine high, yielding severity high alongside severity_rating unrated. The marker is dropped instead.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "severity_rating": "unrated"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r1",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r2",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "severity": "high"
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r1",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "r2",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "name": "the unrated-severity marker is not added from a later member alone",
+      "source": "constructed — no committed golden exercises this rule",
+      "adrRules": [
+        "tags",
+        "severity"
+      ],
+      "note": "The mirror case: under the ratified later-only-key rule a plain scalar tag WOULD be added, labelling a requirement unrated although the first member carried a genuine rating. Being derived, it is not added.",
+      "input": [
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r1",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "severity": "high"
+        },
+        {
+          "id": "V-1",
+          "impact": 0.5,
+          "tags": {
+            "severity_rating": "unrated"
+          },
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r2",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "V-1",
+          "impact": 0.7,
+          "tags": {},
+          "descriptions": [
+            {
+              "label": "default",
+              "data": "first"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "r1",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            },
+            {
+              "codeDesc": "r2",
+              "status": "failed",
+              "startTime": "2024-01-01T00:00:00Z"
+            }
+          ],
+          "severity": "high"
+        }
+      ]
+    }
+  ]
+}

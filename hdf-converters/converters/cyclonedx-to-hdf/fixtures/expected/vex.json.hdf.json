@@ -44,7 +44,9 @@
           "results": [
             {
               "codeDesc": "Component urn:cdx:3e671687-395b-41f5-a30f-a58921a69b79/1#pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.10.0?type=jar is vulnerable",
-              "startTime": "2026-07-12T23:29:28.221396Z",
+              "resource": "component",
+              "resourceId": "urn:cdx:3e671687-395b-41f5-a30f-a58921a69b79/1#pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.10.0?type=jar",
+              "startTime": "2026-10-05T14:22:54.248971Z",
               "status": "failed"
             }
           ],
@@ -216,7 +218,7 @@
     "name": "cyclonedx-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:29:28.221396Z",
+  "timestamp": "2026-10-05T14:22:54.248971Z",
   "tool": {
     "name": "CycloneDX"
   }

@@ -1,0 +1,153 @@
+{
+  "data": {
+    "project": {
+      "fullPath": "security-demo/juice-shop",
+      "pipelines": {
+        "nodes": [
+          {
+            "iid": "4",
+            "sha": "a76c7d68cd78b5cf03ec701f6fd55ea06ef510a7",
+            "ref": "sync/upstream-v20.2.0",
+            "status": "SUCCESS",
+            "createdAt": "2026-09-18T01:04:50Z",
+            "finishedAt": "2026-09-18T01:06:11Z",
+            "securityReportSummary": {
+              "sast": {
+                "vulnerabilitiesCount": 0,
+                "scans": {
+                  "nodes": [
+                    {
+                      "name": "semgrep-sast",
+                      "status": "CREATED",
+                      "errors": [],
+                      "warnings": []
+                    }
+                  ]
+                }
+              },
+              "secretDetection": {
+                "vulnerabilitiesCount": 0,
+                "scans": {
+                  "nodes": [
+                    {
+                      "name": "secret_detection",
+                      "status": "CREATED",
+                      "errors": [],
+                      "warnings": []
+                    }
+                  ]
+                }
+              },
+              "dependencyScanning": null,
+              "containerScanning": null,
+              "dast": null,
+              "coverageFuzzing": null,
+              "apiFuzzing": null,
+              "clusterImageScanning": null
+            }
+          }
+        ]
+      },
+      "vulnerabilities": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJzZXZlcml0eSI6ImNyaXRpY2FsIiwidnVsbmVyYWJpbGl0eV9pZCI6Ijk3In0"
+        },
+        "nodes": [
+          {
+            "id": "gid://gitlab/Vulnerability/97",
+            "uuid": "55cc5355-ecd4-511a-ae4c-97635a0097da",
+            "title": "RSA private key",
+            "description": "An RSA private key was identified. Private RSA keys can be used in many types of applications but generally are used for\nauthentication and symmetric key exchange. A malicious actor with access to this key can use it to impersonate an\napplication or service.\n\nFor general guidance on handling security incidents with regards to leaked keys, please see the GitLab documentation on\n[Credential exposure to the internet](https://docs.gitlab.com/ee/security/responding_to_security_incidents.html#credential-exposure-to-public-internet).\n\nTo generate a new RSA key, use the `ssh-keygen` tool:\n\n```console\nssh-keygen -m PEM -t rsa -b 4096 -C \"email@company.com\"\n```\n\nFor more information, please see the [`ssh-keygen` documentation](https://linux.die.net/man/1/ssh-keygen).",
+            "severity": "CRITICAL",
+            "reportType": "SECRET_DETECTION",
+            "state": "CONFIRMED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": "2026-09-20T19:27:19Z",
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-20T19:27:19Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": "Confirmed during security review: reproduced against the running app.",
+            "confirmedBy": {
+              "username": "sec-reviewer",
+              "name": "Security Reviewer",
+              "publicEmail": null
+            },
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/97",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/97",
+            "scanner": {
+              "name": "Gitleaks",
+              "vendor": "GitLab",
+              "externalId": "gitleaks",
+              "reportType": "SECRET_DETECTION"
+            },
+            "primaryIdentifier": {
+              "externalType": "gitleaks_rule_id",
+              "externalId": "RSA private key",
+              "name": "Gitleaks rule ID RSA private key",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "gitleaks_rule_id",
+                "externalId": "RSA private key",
+                "name": "Gitleaks rule ID RSA private key",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSecretDetection",
+              "file": "terraform/networking.tf",
+              "startLine": "171",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/556a44e4001434ea7a242f29ede789565066082d/terraform/networking.tf"
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "stateTransitions": {
+              "nodes": [
+                {
+                  "fromState": "DETECTED",
+                  "toState": "CONFIRMED",
+                  "createdAt": "2026-09-20T19:27:19Z",
+                  "comment": "Confirmed during security review: reproduced against the running app.",
+                  "dismissalReason": null,
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            },
+            "severityOverrides": {
+              "nodes": []
+            }
+          }
+        ]
+      }
+    }
+  },
+  "extensions": {
+    "disabled_filters": []
+  }
+}

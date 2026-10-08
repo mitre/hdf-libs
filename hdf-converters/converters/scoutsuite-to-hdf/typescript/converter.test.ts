@@ -5,6 +5,7 @@ import { convertScoutsuiteToHdf } from './converter.js';
 import { runConverterContractTests } from '../../../shared/typescript/converter-contract.js';
 import { expectValidResults } from '../../../test/helpers/expectValidHdf.js';
 import { assertRequirementCount } from '../../../shared/typescript/anchor.js';
+import type { HDFResults } from '@mitre/hdf-schema';
 
 const FIXTURES_DIR = join(__dirname, '..', 'fixtures');
 
@@ -463,5 +464,30 @@ describe('scoutsuite shared rule key across services', () => {
     for (const req of hdf.baselines[0].requirements) {
       expect(req.id).not.toContain(':');
     }
+  });
+});
+
+// RECORDED EXCEPTION. ScoutSuite's instance identity is one entry of
+// finding.items[], but the converter emits a single result per finding and
+// newline-joins every flagged item into its message, so one resourceId cannot
+// name 16 instances. In the only sample that exists, seven findings flag nothing
+// at all and the eighth flags 16 items — no finding flags exactly one — so there
+// is no result here a per-item identity can honestly sit on. resource and
+// resourceId therefore stay unset until the result-count change splits items[]
+// into one result each.
+//
+// This test fails the moment that split lands, which is the point: whoever makes
+// it has to come back and set the identity.
+describe('scoutsuite result instance identity', () => {
+  it('leaves resource and resourceId unset while items[] share one result', async () => {
+    const hdf = JSON.parse(
+      await convertScoutsuiteToHdf(loadFixture('input/scoutsuite_sample.js')),
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'cloudtrail-not-configured')!;
+
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.message).toContain('16 flagged items out of 16 checked items');
+    expect(req.results[0]!.resource).toBeUndefined();
+    expect(req.results[0]!.resourceId).toBeUndefined();
   });
 });

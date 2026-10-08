@@ -1,0 +1,2679 @@
+{
+  "data": {
+    "project": {
+      "fullPath": "security-demo/juice-shop",
+      "vulnerabilities": {
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "eyJzZXZlcml0eSI6ImxvdyIsInZ1bG5lcmFiaWxpdHlfaWQiOiI2NiJ9"
+        },
+        "nodes": [
+          {
+            "id": "gid://gitlab/Vulnerability/35",
+            "uuid": "ae7a9943-f1fb-50c5-bf25-bb9950f215ff",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/35",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/35",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "rsn/rsnUtil.ts",
+              "startLine": "134",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/rsn/rsnUtil.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/34",
+            "uuid": "af22f4f2-92b6-57c8-8b12-5a4d27961dac",
+            "title": "Relative path traversal",
+            "description": "This application is using untrusted user input in express render() function.\nRendering templates with untrusted user input enables arbitrary file read \nvulnerabilities when using templating engines like Handlebars (hbs). \n\nAn attacker can craft malicious input that traverses the filesystem and exposes sensitive files. \nConsider sanitizing and validating all user input before passing it to render() to prevent arbitrary file reads. \n\nSample safe use of express.render function\n```\napp.get(\"/traversal/2\", async (req, res) => {\n    var indexPath = \"index\";\n    res.render(indexPath, { title: \"Index Page\" })\n});\n```\n\nFor more details see: \nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/34",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/34",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-traversal-rule-express_lfr",
+              "name": "nodejs_scan.javascript-traversal-rule-express_lfr",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-traversal-rule-express_lfr",
+                "name": "nodejs_scan.javascript-traversal-rule-express_lfr",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "23",
+                "name": "CWE-23",
+                "url": "https://cwe.mitre.org/data/definitions/23.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted user input in express render() function can result in arbitrary file read when hbs templating is used.",
+                "name": "NodeJS Scan ID javascript-traversal-rule-express_lfr",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/dataErasure.ts",
+              "startLine": "50",
+              "endLine": "61",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/dataErasure.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/33",
+            "uuid": "af4b5531-b0f7-59ae-9e05-88a511aba8c0",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/33",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/33",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "lib/codingChallenges.ts",
+              "startLine": "22",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/lib/codingChallenges.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/30",
+            "uuid": "b7d32b0b-8a3f-56d7-8c9b-8349cba3028e",
+            "title": "Unchecked input for loop condition",
+            "description": "This application is looping over user controlled objects, which can lead to a layer 7 denial of service vulnerability.\n\nA layer 7 denial of service attack refers to overloading the application layer of the OSI model, typically layer 7. \nThis can happen when user-controlled input such as objects, arrays, strings, etc. are iterated or looped over without proper validation or limits in place.\n\nFor example, if a user can control the size of an array or object passed into the application, \nthey could create an extremely large input that gets looped over. This would consume excessive CPU cycles or memory, \npotentially crashing or slowing down the application.\n\nTo prevent this, limits should be set on the number of iterations, input sizes, recursion depth, etc.\n\nSample case of secure array looped over with user-controlled input\n```\n// Potential DoS if req.body.list.length is large.\napp.post('/dos/layer7-object-dos/for-loop/1', function (req, res) {\n    var list = req.body.list;\n    for (let i = 0; i <= 10; i++) {\n        if(!list[i]){\n          // return;\n        }  \n    }\n    res.send(\"res\")\n});\n```\n\nImplementing protections against layer 7 denial of service attacks is important for securing modern web applications and APIs.\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/30",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/30",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+                "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "606",
+                "name": "CWE-606",
+                "url": "https://cwe.mitre.org/data/definitions/606.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A05:2021",
+                "name": "A05:2021 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A6:2017",
+                "name": "A6:2017 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Layer7 Denial of Service. Looping over user controlled objects can result in DoS.",
+                "name": "NodeJS Scan ID javascript-dos-rule-layer7_object_dos",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/basket.ts",
+              "startLine": "26",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/basket.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/27",
+            "uuid": "bc7e9459-bc03-5d67-876c-2e85d6d2f232",
+            "title": "Improper neutralization of input during web page generation ('Cross-site Scripting')",
+            "description": "This application accepts user input directly from the client side without validation. \nThis could lead to Cross Site Scripting (XSS) if the input contains malicious script code and \nthe application server does not properly escape or sanitize the output.  \nConsider encoding input data before sending it to the client side.  \n\n```\n// safe method of sending user input data\nrouter.get('/safe/1', (req, res) => {\n  var name = encodeURI(req.query.name); \n  res.send(name);\n})\n```\n\nXSS is an attack that exploits a web application or system to treat user input as markup or script code. \nIt is important to encode the data depending on the specific context in which it is used. \n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/27",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/27",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+                "name": "nodejs_scan.javascript-xss-rule-express_xss",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "79",
+                "name": "CWE-79",
+                "url": "https://cwe.mitre.org/data/definitions/79.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A7:2017",
+                "name": "A7:2017 - Cross-Site Scripting (XSS)",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+                "name": "NodeJS Scan ID javascript-xss-rule-express_xss",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/userProfile.ts",
+              "startLine": "101",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/userProfile.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/26",
+            "uuid": "be5cfd10-0f31-5263-98dd-a4684a7e4255",
+            "title": "Observable timing discrepancy",
+            "description": "The application was found executing string comparisons using one of `===`, `!==`, `==` or `!=`\nagainst security sensitive values. String comparisons like this are not constant time, meaning\nthe\nfirst character found not to match in the two strings will immediately exit the conditional\nstatement.\nThis allows an adversary to calculate or observe small timing differences depending on the\nstrings\npassed to this comparison. This potentially allows an adversary the ability to brute force a\nstring\nthat will match the expected value by monitoring different character values.\n\nTo remediate this issue, use the `crypto.timingSafeEqual` method when comparing strings.\n\nExample using `crypto.timingSafeEqual` to safely compare strings:\n```\nfunction constantTimeIsPasswordEqual(userInput) {\n    // Retrieve the password from a secure data store such as a KMS or Hashicorp's vault.\n    const password = getPasswordFromSecureDataStore();\n    // Use crypto timingSafeEqual to ensure the comparison is done in constant time.\n    return crypto.timingSafeEqual(Buffer.from(userInput, 'utf-8'), Buffer.from(password,\n'utf-8'));\n}\n```\n\nFor more information on constant time comparison see:\n- https://nodejs.org/api/crypto.html#crypto_crypto_timingsafeequal_a_b\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/26",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/26",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-possible-timing-attacks",
+              "name": "eslint.detect-possible-timing-attacks",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-possible-timing-attacks"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-possible-timing-attacks",
+                "name": "eslint.detect-possible-timing-attacks",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-possible-timing-attacks"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "208",
+                "name": "CWE-208",
+                "url": "https://cwe.mitre.org/data/definitions/208.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-possible-timing-attacks",
+                "name": "ESLint rule ID/detect-possible-timing-attacks",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "frontend/src/app/change-password/change-password.component.ts",
+              "startLine": "139",
+              "endLine": "141",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/frontend/src/app/change-password/change-password.component.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/24",
+            "uuid": "c53ea24b-e7f1-5de0-a1e1-2a840e0d37c8",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/24",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/24",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/videoHandler.ts",
+              "startLine": "82",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/videoHandler.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/23",
+            "uuid": "ca78911f-cab3-58c4-8341-142f47e59043",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/23",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/23",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/vulnCodeFixes.ts",
+              "startLine": "81",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/vulnCodeFixes.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/21",
+            "uuid": "cc4e2c40-9acc-5d9a-85e2-10853a6f87fe",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/21",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/21",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "lib/codingChallenges.ts",
+              "startLine": "23",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/lib/codingChallenges.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/20",
+            "uuid": "ceabc99b-7f3d-5ac1-bb4a-94ddb63797e0",
+            "title": "Improper neutralization of input during web page generation ('Cross-site Scripting')",
+            "description": "This application accepts user input directly from the client side without validation. \nThis could lead to Cross Site Scripting (XSS) if the input contains malicious script code and \nthe application server does not properly escape or sanitize the output.  \nConsider encoding input data before sending it to the client side.  \n\n```\n// safe method of sending user input data\nrouter.get('/safe/1', (req, res) => {\n  var name = encodeURI(req.query.name); \n  res.send(name);\n})\n```\n\nXSS is an attack that exploits a web application or system to treat user input as markup or script code. \nIt is important to encode the data depending on the specific context in which it is used. \n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/20",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/20",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+              "name": "nodejs_scan.javascript-xss-rule-express_xss",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-xss-rule-express_xss",
+                "name": "nodejs_scan.javascript-xss-rule-express_xss",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "79",
+                "name": "CWE-79",
+                "url": "https://cwe.mitre.org/data/definitions/79.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A7:2017",
+                "name": "A7:2017 - Cross-Site Scripting (XSS)",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Untrusted User Input in Response will result in Reflected Cross Site Scripting Vulnerability.",
+                "name": "NodeJS Scan ID javascript-xss-rule-express_xss",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/chat.ts",
+              "startLine": "218",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/chat.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/19",
+            "uuid": "cf4abb6b-a380-5dff-8ab2-93e1ccbcfaee",
+            "title": "Use of cryptographically weak pseudo-random number generator (PRNG)",
+            "description": "This rule identifies use of cryptographically weak random number generators.\nUsing cryptographically weak random number generators like `crypto.pseudoRandomBytes()` \nand `Math.random()` for security-critical tasks can expose systems to significant \nvulnerabilities. Attackers might predict the generated random numbers, compromising \nthe integrity and confidentiality of cryptographic operations. This could lead to \nbreaches where sensitive data is accessed or manipulated, authentication mechanisms \nare bypassed, or secure communications are intercepted, ultimately undermining the \nsecurity of the entire system or application.\n\nMitigation strategy:\nReplace the use of these cryptographically weak random number generators with \n`crypto.randomBytes()`, a method provided by Node.js's `crypto` module that \ngenerates cryptographically secure random numbers. This method should be used \nfor all operations requiring secure randomness, such as generating keys, tokens, \nor any cryptographic material.\n\nSecure Code Example:\n```\nconst crypto = require('crypto');\nconst secureBytes = crypto.randomBytes(256);\nconsole.log(`Secure random bytes: ${secureBytes.toString('hex')}`);\n```\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/19",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/19",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "crypto.pseudoRandomBytes()/Math.random() is a cryptographically weak random number generator.",
+                "name": "NodeJS Scan ID javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/captcha.ts",
+              "startLine": "14",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/captcha.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/18",
+            "uuid": "d1073c1f-d396-5fa1-94db-e56e05fa1240",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/18",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/18",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "rsn/rsnUtil.ts",
+              "startLine": "133",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/rsn/rsnUtil.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/17",
+            "uuid": "d2058ca4-410e-5dc6-a8db-62cf741a178d",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/17",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/17",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/videoHandler.ts",
+              "startLine": "45",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/videoHandler.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/16",
+            "uuid": "da3ea983-392c-542e-88ba-aae7e4fe4c6a",
+            "title": "Unchecked input for loop condition",
+            "description": "This application is looping over user controlled objects, which can lead to a layer 7 denial of service vulnerability.\n\nA layer 7 denial of service attack refers to overloading the application layer of the OSI model, typically layer 7. \nThis can happen when user-controlled input such as objects, arrays, strings, etc. are iterated or looped over without proper validation or limits in place.\n\nFor example, if a user can control the size of an array or object passed into the application, \nthey could create an extremely large input that gets looped over. This would consume excessive CPU cycles or memory, \npotentially crashing or slowing down the application.\n\nTo prevent this, limits should be set on the number of iterations, input sizes, recursion depth, etc.\n\nSample case of secure array looped over with user-controlled input\n```\n// Potential DoS if req.body.list.length is large.\napp.post('/dos/layer7-object-dos/for-loop/1', function (req, res) {\n    var list = req.body.list;\n    for (let i = 0; i <= 10; i++) {\n        if(!list[i]){\n          // return;\n        }  \n    }\n    res.send(\"res\")\n});\n```\n\nImplementing protections against layer 7 denial of service attacks is important for securing modern web applications and APIs.\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/16",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/16",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+                "name": "nodejs_scan.javascript-dos-rule-layer7_object_dos",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "606",
+                "name": "CWE-606",
+                "url": "https://cwe.mitre.org/data/definitions/606.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A05:2021",
+                "name": "A05:2021 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A6:2017",
+                "name": "A6:2017 - Security Misconfiguration",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "Layer7 Denial of Service. Looping over user controlled objects can result in DoS.",
+                "name": "NodeJS Scan ID javascript-dos-rule-layer7_object_dos",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/dataExport.ts",
+              "startLine": "72",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/dataExport.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/13",
+            "uuid": "df991e42-75b8-529f-8243-32cf1ebb3aa5",
+            "title": "Use of cryptographically weak pseudo-random number generator (PRNG)",
+            "description": "This rule identifies use of cryptographically weak random number generators.\nUsing cryptographically weak random number generators like `crypto.pseudoRandomBytes()` \nand `Math.random()` for security-critical tasks can expose systems to significant \nvulnerabilities. Attackers might predict the generated random numbers, compromising \nthe integrity and confidentiality of cryptographic operations. This could lead to \nbreaches where sensitive data is accessed or manipulated, authentication mechanisms \nare bypassed, or secure communications are intercepted, ultimately undermining the \nsecurity of the entire system or application.\n\nMitigation strategy:\nReplace the use of these cryptographically weak random number generators with \n`crypto.randomBytes()`, a method provided by Node.js's `crypto` module that \ngenerates cryptographically secure random numbers. This method should be used \nfor all operations requiring secure randomness, such as generating keys, tokens, \nor any cryptographic material.\n\nSecure Code Example:\n```\nconst crypto = require('crypto');\nconst secureBytes = crypto.randomBytes(256);\nconsole.log(`Secure random bytes: ${secureBytes.toString('hex')}`);\n```\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/13",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/13",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "crypto.pseudoRandomBytes()/Math.random() is a cryptographically weak random number generator.",
+                "name": "NodeJS Scan ID javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "frontend/src/app/chatbot/chat-welcome-screen/chat-welcome-screen.component.ts",
+              "startLine": "71",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/frontend/src/app/chatbot/chat-welcome-screen/chat-welcome-screen.component.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/11",
+            "uuid": "e2abf093-51d4-5465-a424-051552a78bd6",
+            "title": "Use of cryptographically weak pseudo-random number generator (PRNG)",
+            "description": "This rule identifies use of cryptographically weak random number generators.\nUsing cryptographically weak random number generators like `crypto.pseudoRandomBytes()` \nand `Math.random()` for security-critical tasks can expose systems to significant \nvulnerabilities. Attackers might predict the generated random numbers, compromising \nthe integrity and confidentiality of cryptographic operations. This could lead to \nbreaches where sensitive data is accessed or manipulated, authentication mechanisms \nare bypassed, or secure communications are intercepted, ultimately undermining the \nsecurity of the entire system or application.\n\nMitigation strategy:\nReplace the use of these cryptographically weak random number generators with \n`crypto.randomBytes()`, a method provided by Node.js's `crypto` module that \ngenerates cryptographically secure random numbers. This method should be used \nfor all operations requiring secure randomness, such as generating keys, tokens, \nor any cryptographic material.\n\nSecure Code Example:\n```\nconst crypto = require('crypto');\nconst secureBytes = crypto.randomBytes(256);\nconsole.log(`Secure random bytes: ${secureBytes.toString('hex')}`);\n```\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/11",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/11",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "crypto.pseudoRandomBytes()/Math.random() is a cryptographically weak random number generator.",
+                "name": "NodeJS Scan ID javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "data/datacreator.ts",
+              "startLine": "323",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/data/datacreator.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/10",
+            "uuid": "e2dfc629-d5a1-5ce8-805d-c20fb7d0faac",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/10",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/10",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/vulnCodeFixes.ts",
+              "startLine": "80",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/vulnCodeFixes.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/9",
+            "uuid": "e486f916-0bd8-5c2e-8c9b-e0e9ffa63e32",
+            "title": "Observable timing discrepancy",
+            "description": "The application was found executing string comparisons using one of `===`, `!==`, `==` or `!=`\nagainst security sensitive values. String comparisons like this are not constant time, meaning\nthe\nfirst character found not to match in the two strings will immediately exit the conditional\nstatement.\nThis allows an adversary to calculate or observe small timing differences depending on the\nstrings\npassed to this comparison. This potentially allows an adversary the ability to brute force a\nstring\nthat will match the expected value by monitoring different character values.\n\nTo remediate this issue, use the `crypto.timingSafeEqual` method when comparing strings.\n\nExample using `crypto.timingSafeEqual` to safely compare strings:\n```\nfunction constantTimeIsPasswordEqual(userInput) {\n    // Retrieve the password from a secure data store such as a KMS or Hashicorp's vault.\n    const password = getPasswordFromSecureDataStore();\n    // Use crypto timingSafeEqual to ensure the comparison is done in constant time.\n    return crypto.timingSafeEqual(Buffer.from(userInput, 'utf-8'), Buffer.from(password,\n'utf-8'));\n}\n```\n\nFor more information on constant time comparison see:\n- https://nodejs.org/api/crypto.html#crypto_crypto_timingsafeequal_a_b\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/9",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/9",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-possible-timing-attacks",
+              "name": "eslint.detect-possible-timing-attacks",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-possible-timing-attacks"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-possible-timing-attacks",
+                "name": "eslint.detect-possible-timing-attacks",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-possible-timing-attacks"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "208",
+                "name": "CWE-208",
+                "url": "https://cwe.mitre.org/data/definitions/208.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-possible-timing-attacks",
+                "name": "ESLint rule ID/detect-possible-timing-attacks",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/changePassword.ts",
+              "startLine": "28",
+              "endLine": "31",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/changePassword.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/8",
+            "uuid": "ed21c0f6-cf09-5c1b-bccf-95a943f7956e",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/8",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/8",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/videoHandler.ts",
+              "startLine": "21",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/videoHandler.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/7",
+            "uuid": "ef174b07-0f1f-56cc-b318-cf6c3b5a24d1",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/7",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/7",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "routes/profileImageUrlUpload.ts",
+              "startLine": "29",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/routes/profileImageUrlUpload.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/6",
+            "uuid": "ef806f0c-985b-56c3-b3f9-e493afe44528",
+            "title": "Use of cryptographically weak pseudo-random number generator (PRNG)",
+            "description": "This rule identifies use of cryptographically weak random number generators.\nUsing cryptographically weak random number generators like `crypto.pseudoRandomBytes()` \nand `Math.random()` for security-critical tasks can expose systems to significant \nvulnerabilities. Attackers might predict the generated random numbers, compromising \nthe integrity and confidentiality of cryptographic operations. This could lead to \nbreaches where sensitive data is accessed or manipulated, authentication mechanisms \nare bypassed, or secure communications are intercepted, ultimately undermining the \nsecurity of the entire system or application.\n\nMitigation strategy:\nReplace the use of these cryptographically weak random number generators with \n`crypto.randomBytes()`, a method provided by Node.js's `crypto` module that \ngenerates cryptographically secure random numbers. This method should be used \nfor all operations requiring secure randomness, such as generating keys, tokens, \nor any cryptographic material.\n\nSecure Code Example:\n```\nconst crypto = require('crypto');\nconst secureBytes = crypto.randomBytes(256);\nconsole.log(`Secure random bytes: ${secureBytes.toString('hex')}`);\n```\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/6",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/6",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "crypto.pseudoRandomBytes()/Math.random() is a cryptographically weak random number generator.",
+                "name": "NodeJS Scan ID javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "lib/insecurity.ts",
+              "startLine": "53",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/lib/insecurity.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/4",
+            "uuid": "f29cf4fa-7a95-5bfd-ad6a-4a6c95e7f06e",
+            "title": "Improper limitation of a pathname to a restricted directory ('Path Traversal')",
+            "description": "The application dynamically constructs file or path information. If the path\ninformation comes from user-supplied input, it could be abused to read sensitive files,\naccess other users' data, or aid in exploitation to gain further system access.\n\nUser input should never be used in constructing paths or files for interacting\nwith the filesystem. This includes filenames supplied by user uploads or downloads.\nIf possible, consider hashing user input or using unique values and\nuse `path.normalize` to resolve and validate the path information\nprior to processing any file functionality.\n\nExample using `path.normalize` and not allowing direct user input:\n```\n// User input, saved only as a reference\n// id is a randomly generated UUID to be used as the filename\nconst userData = {userFilename: userSuppliedFilename, id: crypto.randomUUID()};\n// Restrict all file processing to this directory only\nconst basePath = '/app/restricted/';\n\n// Create the full path, but only use our random generated id as the filename\nconst joinedPath = path.join(basePath, userData.id);\n// Normalize path, removing any '..'\nconst fullPath = path.normalize(joinedPath);\n// Verify the fullPath is contained within our basePath\nif (!fullPath.startsWith(basePath)) {\n    console.log(\"Invalid path specified!\");\n}\n// Process / work with file\n// ...\n```\n\nFor more information on path traversal issues see OWASP:\nhttps://owasp.org/www-community/attacks/Path_Traversal\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/4",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/4",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-fs-filename",
+              "name": "eslint.detect-non-literal-fs-filename",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-fs-filename",
+                "name": "eslint.detect-non-literal-fs-filename",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-fs-filename"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "22",
+                "name": "CWE-22",
+                "url": "https://cwe.mitre.org/data/definitions/22.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A01:2021",
+                "name": "A01:2021 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A5:2017",
+                "name": "A5:2017 - Broken Access Control",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-fs-filename",
+                "name": "ESLint rule ID/detect-non-literal-fs-filename",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "lib/utils.ts",
+              "startLine": "111",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/lib/utils.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/3",
+            "uuid": "f470bdc7-de57-583b-a4f8-5e696955eb66",
+            "title": "Use of cryptographically weak pseudo-random number generator (PRNG)",
+            "description": "This rule identifies use of cryptographically weak random number generators.\nUsing cryptographically weak random number generators like `crypto.pseudoRandomBytes()` \nand `Math.random()` for security-critical tasks can expose systems to significant \nvulnerabilities. Attackers might predict the generated random numbers, compromising \nthe integrity and confidentiality of cryptographic operations. This could lead to \nbreaches where sensitive data is accessed or manipulated, authentication mechanisms \nare bypassed, or secure communications are intercepted, ultimately undermining the \nsecurity of the entire system or application.\n\nMitigation strategy:\nReplace the use of these cryptographically weak random number generators with \n`crypto.randomBytes()`, a method provided by Node.js's `crypto` module that \ngenerates cryptographically secure random numbers. This method should be used \nfor all operations requiring secure randomness, such as generating keys, tokens, \nor any cryptographic material.\n\nSecure Code Example:\n```\nconst crypto = require('crypto');\nconst secureBytes = crypto.randomBytes(256);\nconsole.log(`Secure random bytes: ${secureBytes.toString('hex')}`);\n```\n",
+            "severity": "MEDIUM",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:50Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/3",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/3",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+              "url": null
+            },
+            "identifiers": [
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "njsscan_rule_type",
+                "externalId": "crypto.pseudoRandomBytes()/Math.random() is a cryptographically weak random number generator.",
+                "name": "NodeJS Scan ID javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "semgrep_id",
+                "externalId": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "name": "nodejs_scan.javascript-crypto-rule-node_insecure_random_generator",
+                "url": null
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "338",
+                "name": "CWE-338",
+                "url": "https://cwe.mitre.org/data/definitions/338.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "data/datacreator.ts",
+              "startLine": "381",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/data/datacreator.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/68",
+            "uuid": "4a527173-325c-53db-8c4d-bcf574cfaf5e",
+            "title": "Improper neutralization of directives in dynamically evaluated code ('Eval Injection')",
+            "description": "The application was found to dynamically import a module by calling `require` using a\nnon-literal string. An adversary might be able to read the first line of\narbitrary files. If they had write access to the file system, they may also be able to\nexecute arbitrary code.\n\nTo remediate this issue, use a hardcoded string literal when calling `require`. Never call it\nit with dynamically created variables or user-supplied data.\n",
+            "severity": "LOW",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/68",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/68",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-non-literal-require",
+              "name": "eslint.detect-non-literal-require",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-require"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-non-literal-require",
+                "name": "eslint.detect-non-literal-require",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-non-literal-require"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "95",
+                "name": "CWE-95",
+                "url": "https://cwe.mitre.org/data/definitions/95.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A03:2021",
+                "name": "A03:2021 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A1:2017",
+                "name": "A1:2017 - Injection",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-non-literal-require",
+                "name": "ESLint rule ID/detect-non-literal-require",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "scripts/package.mjs",
+              "startLine": "21",
+              "endLine": null,
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/scripts/package.mjs",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            }
+          },
+          {
+            "id": "gid://gitlab/Vulnerability/66",
+            "uuid": "4ce90930-d40c-5a64-939a-c69d534e6f7f",
+            "title": "Observable timing discrepancy",
+            "description": "The application was found executing string comparisons using one of `===`, `!==`, `==` or `!=`\nagainst security sensitive values. String comparisons like this are not constant time, meaning\nthe\nfirst character found not to match in the two strings will immediately exit the conditional\nstatement.\nThis allows an adversary to calculate or observe small timing differences depending on the\nstrings\npassed to this comparison. This potentially allows an adversary the ability to brute force a\nstring\nthat will match the expected value by monitoring different character values.\n\nTo remediate this issue, use the `crypto.timingSafeEqual` method when comparing strings.\n\nExample using `crypto.timingSafeEqual` to safely compare strings:\n```\nfunction constantTimeIsPasswordEqual(userInput) {\n    // Retrieve the password from a secure data store such as a KMS or Hashicorp's vault.\n    const password = getPasswordFromSecureDataStore();\n    // Use crypto timingSafeEqual to ensure the comparison is done in constant time.\n    return crypto.timingSafeEqual(Buffer.from(userInput, 'utf-8'), Buffer.from(password,\n'utf-8'));\n}\n```\n\nFor more information on constant time comparison see:\n- https://nodejs.org/api/crypto.html#crypto_crypto_timingsafeequal_a_b\n",
+            "severity": "LOW",
+            "reportType": "SAST",
+            "state": "DETECTED",
+            "detectedAt": "2026-09-19T21:20:51Z",
+            "confirmedAt": null,
+            "dismissedAt": null,
+            "resolvedAt": null,
+            "updatedAt": "2026-09-21T02:19:29Z",
+            "falsePositive": false,
+            "presentOnDefaultBranch": true,
+            "resolvedOnDefaultBranch": false,
+            "dismissalReason": null,
+            "stateComment": null,
+            "confirmedBy": null,
+            "dismissedBy": null,
+            "resolvedBy": null,
+            "solution": null,
+            "vulnerabilityPath": "/security-demo/juice-shop/-/security/vulnerabilities/66",
+            "webUrl": "https://gitlab.example.com/security-demo/juice-shop/-/security/vulnerabilities/66",
+            "scanner": {
+              "name": "Semgrep",
+              "vendor": "GitLab",
+              "externalId": "semgrep",
+              "reportType": "SAST"
+            },
+            "primaryIdentifier": {
+              "externalType": "semgrep_id",
+              "externalId": "eslint.detect-possible-timing-attacks",
+              "name": "eslint.detect-possible-timing-attacks",
+              "url": "https://semgrep.dev/r/gitlab.eslint.detect-possible-timing-attacks"
+            },
+            "identifiers": [
+              {
+                "externalType": "semgrep_id",
+                "externalId": "eslint.detect-possible-timing-attacks",
+                "name": "eslint.detect-possible-timing-attacks",
+                "url": "https://semgrep.dev/r/gitlab.eslint.detect-possible-timing-attacks"
+              },
+              {
+                "externalType": "cwe",
+                "externalId": "208",
+                "name": "CWE-208",
+                "url": "https://cwe.mitre.org/data/definitions/208.html"
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A02:2021",
+                "name": "A02:2021 - Cryptographic Failures",
+                "url": null
+              },
+              {
+                "externalType": "owasp",
+                "externalId": "A3:2017",
+                "name": "A3:2017 - Sensitive Data Exposure",
+                "url": null
+              },
+              {
+                "externalType": "eslint_rule_id",
+                "externalId": "detect-possible-timing-attacks",
+                "name": "ESLint rule ID/detect-possible-timing-attacks",
+                "url": null
+              }
+            ],
+            "links": [],
+            "cvss": [],
+            "location": {
+              "__typename": "VulnerabilityLocationSast",
+              "file": "frontend/src/app/register/register.component.ts",
+              "startLine": "109",
+              "endLine": "111",
+              "blobPath": "/security-demo/juice-shop/-/blob/359de365164ddd2aef60a48f4687d153bf9adb44/frontend/src/app/register/register.component.ts",
+              "vulnerableClass": null,
+              "vulnerableMethod": null
+            },
+            "initialDetectedPipeline": {
+              "iid": "5",
+              "sha": "556a44e4001434ea7a242f29ede789565066082d",
+              "ref": "master",
+              "createdAt": "2026-09-19T20:47:38Z"
+            },
+            "latestDetectedPipeline": {
+              "iid": "8",
+              "sha": "359de365164ddd2aef60a48f4687d153bf9adb44",
+              "ref": "master",
+              "createdAt": "2026-09-21T02:18:19Z"
+            },
+            "stateTransitions": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": null
+              },
+              "nodes": []
+            },
+            "severityOverrides": {
+              "pageInfo": {
+                "hasNextPage": false,
+                "endCursor": "eyJpZCI6IjEifQ"
+              },
+              "nodes": [
+                {
+                  "originalSeverity": "MEDIUM",
+                  "newSeverity": "LOW",
+                  "createdAt": "2026-09-20T19:30:42Z",
+                  "author": {
+                    "username": "sec-reviewer",
+                    "name": "Security Reviewer",
+                    "publicEmail": null
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "extensions": {
+    "disabled_filters": []
+  }
+}

@@ -224,10 +224,19 @@ func TestSeverityIDFromString(t *testing.T) {
 
 func TestOverrideComment(t *testing.T) {
 	assert.Equal(t, "", overrideComment(map[string]interface{}{}))
+	// The disposition now comes from the override, not the stored field, so the
+	// override has to carry the type it is claimed to have. (It previously had
+	// only a reason, and the "waiver" came from the cache beside it.)
 	assert.Equal(t, "waiver: ok", overrideComment(map[string]interface{}{
 		"disposition":     "waiver",
-		"statusOverrides": []interface{}{map[string]interface{}{"reason": "ok"}},
+		"statusOverrides": []interface{}{map[string]interface{}{"type": "waiver", "reason": "ok"}},
 	}))
+	// A stored disposition that disagrees with the governing override loses.
+	assert.Equal(t, "riskAdjustment: ok", overrideComment(map[string]interface{}{
+		"disposition":     "waiver",
+		"statusOverrides": []interface{}{map[string]interface{}{"type": "riskAdjustment", "reason": "ok"}},
+	}))
+	// With NO overrides the stored field is the only evidence, so it stands.
 	assert.Equal(t, "waiver", overrideComment(map[string]interface{}{"disposition": "waiver"}))
 	assert.Equal(t, "r", overrideComment(map[string]interface{}{
 		"statusOverrides": []interface{}{map[string]interface{}{"reason": "r"}},

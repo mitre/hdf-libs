@@ -70,6 +70,8 @@ func GenerateControlStub(req hdf.BaselineRequirement) string {
 	}
 
 	// Impact — always render with at least one decimal place for whole numbers
+	// RAW impact by design: a generated control declares the impact the profile
+	// asserts, not the impact an assessment later resolved it to.
 	impact := req.Impact
 	if impact == float64(int64(impact)) {
 		lines = append(lines, fmt.Sprintf("  impact %.1f", impact))

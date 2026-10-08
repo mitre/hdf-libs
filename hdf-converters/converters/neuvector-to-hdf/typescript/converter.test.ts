@@ -695,3 +695,34 @@ describe('neuvector to HDF converter', async () => {
     });
   });
 });
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose. NeuVector's discriminator is file_name — the one
+// field that distinguishes the two braces@3.0.2 entries reporting CVE-2024-4068,
+// and until now parsed and read nowhere. file_name is absent on most entries, so
+// those fall back to the package identity, which is what NeuVector's own
+// requirement id keys on.
+describe('neuvector result instance identity', () => {
+  it('sets resource and resourceId to the reporting file_name', async () => {
+    const hdf = JSON.parse(
+      await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json')),
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === 'CVE-2024-4068/braces/3.0.2')!;
+
+    expect(req.results).toHaveLength(1);
+    expect(req.results[0]!.resource).toBe('file');
+    expect(req.results[0]!.resourceId).toBe('app/apps/backend/node_modules/braces/package.json');
+  });
+
+  it('falls back to the package identity when the entry names no file', async () => {
+    const hdf = JSON.parse(
+      await convertNeuvectorToHdf(loadFixture('neuvector-mitre-heimdall2.json')),
+    ) as HDFResults;
+    const req = hdf.baselines[0]!.requirements.find(
+      (r) => r.id === 'CVE-2024-4068/nodejs-nodemon/3.0.1-1.module+el8.10.0+21159+f5a7145d',
+    )!;
+
+    expect(req.results[0]!.resource).toBe('package');
+    expect(req.results[0]!.resourceId).toBe('nodejs-nodemon@3.0.1-1.module+el8.10.0+21159+f5a7145d');
+  });
+});

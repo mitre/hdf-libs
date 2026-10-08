@@ -65,11 +65,14 @@ describe.skipIf(!hasGo())('cross-language equivalence (Go ↔ TS)', () => {
   }, 120_000);
 
   for (const { name, path: fixturePath } of FIXTURES) {
+    // Same generous budget as beforeAll's build, and for the same reason: each
+    // case spawns the Go dumper, so wall time tracks machine load. Equivalence is
+    // asserted by the diff, not by the clock.
     it(`produces identical canonical dumps on ${name}`, () => {
       expect(existsSync(fixturePath), `fixture missing: ${fixturePath}`).toBe(true);
       const tsOutput = dump(loadFixture(fixturePath));
       const goOutput = runGoDumper(fixturePath);
       expect(goOutput).toEqual(tsOutput);
-    });
+    }, 120_000);
   }
 });

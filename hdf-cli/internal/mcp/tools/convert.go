@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -16,6 +17,7 @@ import (
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/loader"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/mcperr"
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/respond"
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/outnames"
 	"github.com/mitre/hdf-libs/hdf-converters/v3/registry"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/registry/all" // register fingerprints for auto-detect
 	convreg "github.com/mitre/hdf-libs/hdf-converters/v3/registry/convert"
@@ -138,60 +140,80 @@ func RegisterConvert(s *sdkmcp.Server, ldr *loader.Loader) {
 
 func hdfConvert(ldr *loader.Loader) sdkmcp.ToolHandlerFor[convertInput, convertOutput] {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
+		if res := refuseBadComponentID(in.ComponentID); res != nil {
+			return res, convertOutput{}, nil
+		}
 		if len(in.Sources) > 0 || in.Directory != "" {
 			return hdfConvertBatch(ctx, ldr, in)
 		}
-		data, terr := rawInput(in.Source, in.Content)
-		if terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-		conv, terr := resolveConverter(in.From, data)
-		if terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-
-		hdfBytes, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
-		if terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-
-		// Refuse schema-invalid output — never write or hand back a bad artifact (§13).
-		if terr := refuseInvalidResults(hdfBytes); terr != nil {
-			return toolError(terr), convertOutput{}, nil
-		}
-
-		out := convertSummary(hdfBytes)
-
-		// Never overwrite the source being converted, even with overwrite set —
-		// that would destroy the input mid-read (hdf_convert source=x output=x).
-		if in.Source != nil {
-			if terr := refuseOverwritingInput(in.Output, in.Source.Path); terr != nil {
-				return toolError(terr), convertOutput{}, nil
-			}
-		}
-
-		writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, hdfBytes)
-		if werr != nil {
-			return toolError(werr), convertOutput{}, nil
-		}
-		out.OutputPath = writtenPath
-		if notice != "" {
-			out.Notice = notice
-			out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
-		}
-
-		// Register the converted document in the content cache and mint the handle
-		// against the ACTUAL written path — empty when nothing was written, which
-		// routes resolution to the in-memory cache so the handle is consumable
-		// even with writes disabled (jobi.1 / D1).
-		out.Notice = appendNotice(out.Notice, registerProduced(ldr, hdfBytes, writtenPath))
-		encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version()))
-		if herr != nil {
-			return nil, convertOutput{}, fmt.Errorf("encoding handle: %w", herr)
-		}
-		out.Handle = encoded
-		return nil, out, nil
+		return hdfConvertSingle(ldr, in)
 	}
+}
+
+// refuseBadComponentID rejects a componentId that is set but not a UUID, before any input is read.
+func refuseBadComponentID(componentID string) *sdkmcp.CallToolResult {
+	if componentID == "" {
+		return nil
+	}
+	if err := hdfdoc.ValidateComponentID(componentID); err != nil {
+		return argError(err.Error(), "pass componentId as an RFC 4122 UUID, or omit it")
+	}
+	return nil
+}
+
+// hdfConvertSingle converts one source or inline content and returns its summary and handle.
+func hdfConvertSingle(ldr *loader.Loader, in convertInput) (*sdkmcp.CallToolResult, convertOutput, error) {
+	data, terr := rawInput(in.Source, in.Content)
+	if terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+	conv, terr := resolveConverter(in.From, data)
+	if terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+
+	hdfBytes, cidNotice, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
+	if terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+
+	// Refuse schema-invalid output — never write or hand back a bad artifact (§13).
+	if terr := refuseInvalidResults(hdfBytes); terr != nil {
+		return toolError(terr), convertOutput{}, nil
+	}
+
+	out := convertSummary(hdfBytes)
+	out.Notice = cidNotice
+
+	// Never overwrite the source being converted, even with overwrite set —
+	// that would destroy the input mid-read (hdf_convert source=x output=x).
+	if in.Source != nil {
+		if terr := refuseOverwritingInput(in.Output, in.Source.Path); terr != nil {
+			return toolError(terr), convertOutput{}, nil
+		}
+	}
+
+	writtenPath, notice, werr := writeArtifact(in.Output, in.DryRun, in.Overwrite, hdfBytes)
+	if werr != nil {
+		return toolError(werr), convertOutput{}, nil
+	}
+	out.OutputPath = writtenPath
+	if notice != "" {
+		out.Notice = appendNotice(out.Notice, notice)
+		out.WritesDisabled = strings.Contains(notice, "WRITES_DISABLED")
+	}
+
+	// Register the converted document in the content cache and mint the handle
+	// against the ACTUAL written path — empty when nothing was written, which
+	// routes resolution to the in-memory cache so the handle is consumable
+	// even with writes disabled (jobi.1 / D1).
+	out.Notice = appendNotice(out.Notice, registerProduced(ldr, hdfBytes, writtenPath))
+	encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version()))
+	if herr != nil {
+		return nil, convertOutput{}, fmt.Errorf("encoding handle: %w", herr)
+	}
+	out.Handle = encoded
+	return nil, out, nil
 }
 
 // hdfConvertBatch converts many source files in one call: it auto-detects each
@@ -211,6 +233,22 @@ func hdfConvertBatch(ctx context.Context, ldr *loader.Loader, in convertInput) (
 		return toolError(terr), convertOutput{}, nil
 	}
 
+	// Name every output before anything is created, so a name two inputs share
+	// is numbered rather than losing a document to a collision partway through.
+	// Each entry reports its outputPath, which is where the caller reads the
+	// positional number back to its input.
+	outPaths := make([]string, len(paths))
+	if in.OutputDir != "" {
+		names, nerr := outnames.Names(paths, "hdf")
+		if nerr != nil {
+			return toolError(mcperr.Arg(nerr.Error(),
+				"pass each source as a path ending in a file name")), convertOutput{}, nil
+		}
+		for i, n := range names {
+			outPaths[i] = path.Join(in.OutputDir, n)
+		}
+	}
+
 	// Decide the write mode once so the batch carries a single notice, not one
 	// per file. Conversion itself is pure and always runs.
 	shouldWrite := in.OutputDir != "" && !in.DryRun && writesEnabled()
@@ -221,13 +259,13 @@ func hdfConvertBatch(ctx context.Context, ldr *loader.Loader, in convertInput) (
 	}
 
 	var out convertOutput
-	for _, rel := range paths {
+	for i, rel := range paths {
 		// A batch is the most expensive tool call: let a client stop it between
 		// files, returning what has been converted so far.
 		if err := ctx.Err(); err != nil {
 			return nil, out, err
 		}
-		entry := convertOneFile(ldr, rel, in, shouldWrite)
+		entry := convertOneFile(ldr, rel, outPaths[i], in, shouldWrite)
 		out.Batch = append(out.Batch, entry.toMap())
 		if in.FailFast && entry.Code != "" {
 			break
@@ -328,7 +366,7 @@ func enumerateBatchPaths(in convertInput) ([]string, *mcperr.Error) {
 // becomes an error entry (taxonomy code + message) rather than aborting the
 // batch. A conversion that succeeds but whose write fails keeps valid:true and
 // surfaces the write error, with the handle resolving from the in-memory cache.
-func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite bool) fileConvertSummary {
+func convertOneFile(ldr *loader.Loader, rel, outPath string, in convertInput, shouldWrite bool) fileConvertSummary {
 	entry := fileConvertSummary{InputPath: rel}
 	confined, err := hdfutil.SafePath(mcpRoot(), rel)
 	if err != nil {
@@ -342,7 +380,7 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 	if terr != nil {
 		return failEntry(entry, terr)
 	}
-	hdfBytes, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
+	hdfBytes, cidNotice, terr := convertAndPostProcess(conv, data, in.Labels, in.ComponentID)
 	if terr != nil {
 		return failEntry(entry, terr)
 	}
@@ -359,7 +397,7 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 
 	writtenPath := ""
 	if shouldWrite {
-		wp, _, werr := writeArtifact(batchOutputPath(in.OutputDir, rel), false, in.Overwrite, hdfBytes)
+		wp, _, werr := writeArtifact(outPath, false, in.Overwrite, hdfBytes)
 		if werr != nil {
 			entry.Error = werr.Message
 			entry.Code = string(werr.Code)
@@ -369,7 +407,7 @@ func convertOneFile(ldr *loader.Loader, rel string, in convertInput, shouldWrite
 		}
 	}
 	// Register in the content cache so the handle resolves even with no write.
-	entry.Notice = registerProduced(ldr, hdfBytes, writtenPath)
+	entry.Notice = appendNotice(cidNotice, registerProduced(ldr, hdfBytes, writtenPath))
 	if encoded, herr := handle.Encode(handle.Compute(writtenPath, hdfBytes, "results", hdfengine.Version())); herr == nil {
 		entry.Handle = encoded
 	}
@@ -382,17 +420,6 @@ func failEntry(entry fileConvertSummary, terr *mcperr.Error) fileConvertSummary 
 	entry.Error = terr.Message
 	entry.Code = string(terr.Code)
 	return entry
-}
-
-// batchOutputPath derives an output path deterministically from the input, using
-// the CLI's <stem>.hdf.json bulk-convert convention (bead g4b3 owns any change).
-// Paths are forward-slash on the wire (like agent-supplied paths and URLs) so
-// the MCP surface is identical across host OSes; SafePath converts to the native
-// separator at the filesystem boundary.
-func batchOutputPath(outputDir, inputPath string) string {
-	base := path.Base(inputPath)
-	stem := strings.TrimSuffix(base, path.Ext(base))
-	return path.Join(outputDir, stem+".hdf.json")
 }
 
 // boundBatchResponse token-bounds the per-file array to the concise budget,
@@ -430,26 +457,38 @@ func boundBatchResponse(out *convertOutput) {
 
 // convertAndPostProcess runs the converter and threads labels/componentId onto
 // the output. Every failure becomes a taxonomy error so the caller never checks
-// a bare error against a nil return.
-func convertAndPostProcess(conv convreg.Converter, data []byte, labels map[string]string, componentID string) ([]byte, *mcperr.Error) {
+// a bare error against a nil return. The returned notice is non-empty when the
+// conversion stands but a componentId could not be applied.
+func convertAndPostProcess(conv convreg.Converter, data []byte, labels map[string]string, componentID string) ([]byte, string, *mcperr.Error) {
 	hdfBytes, err := conv.Convert(data)
 	if err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, "conversion failed: "+err.Error(), nil).
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, "conversion failed: "+err.Error(), nil).
 			WithNextCall("verify the input is valid output from the source tool")
 	}
-	// Count fidelity: a converter that declares how many requirements its input
-	// must yield is held to it, the same refusal the CLI makes.
+	// Count fidelity: a converter that declares how many requirements — or, when
+	// it rolls its requirements up, how many results — its input must yield is
+	// held to it, the same refusal the CLI makes.
 	if _, err := convreg.CheckRequirementFidelity(conv, data, hdfBytes); err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
+			WithNextCall("this indicates a converter defect; do not rely on the output")
+	}
+	if _, err := convreg.CheckResultFidelity(conv, data, hdfBytes); err != nil {
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, err.Error(), nil).
 			WithNextCall("this indicates a converter defect; do not rely on the output")
 	}
 	if hdfBytes, err = hdfdoc.ApplyLabels(hdfBytes, labels); err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, "applying labels failed: "+err.Error(), nil)
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, "applying labels failed: "+err.Error(), nil)
 	}
-	if hdfBytes, err = hdfdoc.ApplyComponentID(hdfBytes, componentID, false); err != nil {
-		return nil, mcperr.New(mcperr.SchemaInvalid, "applying componentId failed: "+err.Error(), nil)
+	stamped, err := hdfdoc.ApplyComponentID(hdfBytes, componentID, false)
+	switch {
+	// A converter whose source names no target legitimately produces no
+	// component, so the conversion stands and only the flag goes unapplied.
+	case errors.Is(err, hdfdoc.ErrNoComponents):
+		return hdfBytes, "componentId not applied: " + err.Error() + ".", nil
+	case err != nil:
+		return nil, "", mcperr.New(mcperr.SchemaInvalid, "applying componentId failed: "+err.Error(), nil)
 	}
-	return hdfBytes, nil
+	return stamped, "", nil
 }
 
 // rawInput returns the raw tool-output bytes from a {path} source or inline

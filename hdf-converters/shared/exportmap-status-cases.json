@@ -1,0 +1,134 @@
+{
+  "$comment": "Shared Go/TypeScript case table for the export-map status resolver (shared/go/exportmap/exportmap.go StatusOf and shared/typescript/exportmap.ts statusOf). Every case is run by both languages' tests, so the two resolvers cannot drift on what counts as an expiry or on the suppression axis. This resolver reads raw JSON maps and builds the canonical StatusOverrideInput itself rather than going through the requirement bridge, so the bridge's own case table does not reach it. The Go zero time is the load-bearing case: a Go-serialized override carries 0001-01-01T00:00:00Z for an unset expiry, and Go's ParseTimestamp + IsZero path reads that back as never expiring.",
+  "cases": [
+    {
+      "name": "the Go zero time is no expiry, so the waiver suppresses",
+      "note": "What a Go-serialized override carries for an absent expiry; read as a year-1 instant it would retire the waiver and leave the finding actionable.",
+      "want": {"raw": "failed", "rollup": "passed", "overridden": true, "suppressed": true},
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z",
+            "expiresAt": "0001-01-01T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "the Go zero time with a millisecond fraction is no expiry",
+      "note": "A TypeScript consumer that re-serializes the quicktype Date emits the zero instant as 0001-01-01T00:00:00.000Z; the fraction must not make it a real year-1 expiry.",
+      "want": {"raw": "failed", "rollup": "passed", "overridden": true, "suppressed": true},
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z",
+            "expiresAt": "0001-01-01T00:00:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a missing expiresAt is no expiry",
+      "note": "expiresAt is schema-required, but a malformed document can omit it; both resolvers must read the absence the same way they read the Go zero time.",
+      "want": {"raw": "failed", "rollup": "passed", "overridden": true, "suppressed": true},
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a far-future expiry still suppresses",
+      "note": "The zero-time normalization must not swallow a real expiry window that has not closed yet.",
+      "want": {"raw": "failed", "rollup": "passed", "overridden": true, "suppressed": true},
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a past expiry no longer suppresses",
+      "note": "A closed window leaves the finding actionable: the override record is still present, so overridden stays true while suppressed goes false.",
+      "want": {"raw": "failed", "rollup": "failed", "overridden": true, "suppressed": false},
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2019-06-01T00:00:00Z",
+            "expiresAt": "2020-01-01T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a riskAdjustment that leaves the status failing does not suppress",
+      "note": "Suppression is the acceptance axis, keyed on the effective status rather than on an override being present: an impact-only re-score stays actionable even inside its window.",
+      "want": {"raw": "failed", "rollup": "failed", "overridden": true, "suppressed": false},
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "riskAdjustment",
+            "impact": {"value": 0.3},
+            "reason": "Compensating control: host is not network-reachable.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2025-03-20T00:00:00Z",
+            "expiresAt": "0001-01-01T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no overrides at all",
+      "note": "Anchors the un-overridden path: the raw verdict carries through and neither flag is set.",
+      "want": {"raw": "failed", "rollup": "failed", "overridden": false, "suppressed": false},
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "startTime": "2025-03-14T09:12:44Z"}]
+      }
+    }
+  ]
+}

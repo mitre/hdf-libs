@@ -29,6 +29,7 @@ linters:
     # High-signal additions used by most Go projects
     - errname       # Error type/variable naming
     - errorlint     # errors.Is/As correctness
+    - exhaustive    # A switch over a typed constant set must cover it
     - gosec         # Security (SAST)
     - misspell      # Spell check
     - nakedret      # Naked returns in long functions

@@ -1,0 +1,103 @@
+{
+  "$comment": "Shared Go/TypeScript case table for the status-override provenance line the checklist exporter writes into a vuln's COMMENTS (shared/go/checklist/from_hdf.go formatOverride and shared/typescript/checklist/from-hdf.ts formatOverride). Every case is run by both languages against the public HDFToChecklist / hdfToChecklist entry point, and wantComments pins the whole string, so the two exporters cannot drift on the prose a .ckl consumer reads. The Go zero time is the load-bearing case: a Go-serialized override carries 0001-01-01T00:00:00Z for an unset timestamp, Go's IsZero guards drop the clause entirely, and a raw read renders a year-1 instant into the COMMENTS text.",
+  "cases": [
+    {
+      "name": "the Go zero time on both timestamps renders neither clause",
+      "note": "What a Go-serialized override carries for unset timestamps; Go's IsZero guards omit both, so the TypeScript peer must not render year-1 instants a reader would take for real dates.",
+      "wantComments": "Override [waiver]: Vendor support contract renewed; waiver recorded in the SSP. (by isso@example.test)",
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "codeDesc": "System Package redhat-release should be installed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "0001-01-01T00:00:00Z",
+            "expiresAt": "0001-01-01T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "the Go zero time with a millisecond fraction renders neither clause",
+      "note": "A TypeScript consumer that re-serializes the quicktype Date emits the zero instant as 0001-01-01T00:00:00.000Z; the fraction must not turn it into a real year-1 timestamp.",
+      "wantComments": "Override [waiver]: Vendor support contract renewed; waiver recorded in the SSP. (by isso@example.test)",
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "codeDesc": "System Package redhat-release should be installed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "0001-01-01T00:00:00.000Z",
+            "expiresAt": "0001-01-01T00:00:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "both timestamps absent renders neither clause",
+      "note": "The reading an unset timestamp must collapse to; the zero-time cases above have to agree with this one in both languages.",
+      "wantComments": "Override [waiver]: Vendor support contract renewed; waiver recorded in the SSP. (by isso@example.test)",
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "codeDesc": "System Package redhat-release should be installed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"}
+          }
+        ]
+      }
+    },
+    {
+      "name": "real timestamps render both clauses",
+      "note": "The zero-time normalization must not swallow genuine dates; both clauses appear in applied-then-expires order.",
+      "wantComments": "Override [riskAdjustment]: Compensating control: host is not network-reachable. (by isso@example.test, applied 2020-01-01T00:00:00Z, expires 2099-12-31T00:00:00Z)",
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "codeDesc": "System Package redhat-release should be installed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "riskAdjustment",
+            "impact": {"value": 0.3},
+            "reason": "Compensating control: host is not network-reachable.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2020-01-01T00:00:00Z",
+            "expiresAt": "2099-12-31T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a real appliedAt with a zero-time expiresAt renders only the applied clause",
+      "note": "The two timestamps are guarded independently, so a half-set override keeps the clause it has.",
+      "wantComments": "Override [waiver]: Vendor support contract renewed; waiver recorded in the SSP. (by isso@example.test, applied 2020-01-01T00:00:00Z)",
+      "requirement": {
+        "id": "SV-230221",
+        "impact": 0.7,
+        "results": [{"status": "failed", "codeDesc": "System Package redhat-release should be installed", "startTime": "2025-03-14T09:12:44Z"}],
+        "statusOverrides": [
+          {
+            "type": "waiver",
+            "status": "passed",
+            "reason": "Vendor support contract renewed; waiver recorded in the SSP.",
+            "appliedBy": {"type": "simple", "identifier": "isso@example.test"},
+            "appliedAt": "2020-01-01T00:00:00Z",
+            "expiresAt": "0001-01-01T00:00:00Z"
+          }
+        ]
+      }
+    }
+  ]
+}

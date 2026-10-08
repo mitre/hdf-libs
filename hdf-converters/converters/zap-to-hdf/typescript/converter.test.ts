@@ -749,3 +749,21 @@ describe('ZAP Converter', () => {
     });
   });
 });
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose: ZAP already emits one result per alert.instances[]
+// entry, and the instance is a URL, so resource is 'url' and resourceId is that
+// instance's uri. The two 90022 results differ by uri.
+describe('zap result instance identity', () => {
+  it('sets resource and resourceId to the instance uri', async () => {
+    const hdf = parseJSON<HDFResults>(await convertZapToHdf(loadFixture('minimal.json')));
+    const req = hdf.baselines[0]!.requirements.find((r) => r.id === '90022')!;
+
+    expect(req.results).toHaveLength(2);
+    expect(req.results.map((r) => r.resource)).toEqual(['url', 'url']);
+    expect(req.results.map((r) => r.resourceId)).toEqual([
+      'https://example.com/api/submit',
+      'https://example.com/api/login',
+    ]);
+  });
+});

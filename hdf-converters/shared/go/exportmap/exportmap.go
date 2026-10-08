@@ -451,3 +451,67 @@ func EpochMillis(s string) (int64, bool) {
 	}
 	return t.UnixMilli(), true
 }
+
+// GoverningOverrideIndex returns the index of the override that governs a
+// requirement — the most recently applied non-expired one — or -1 when none
+// does. The map-shaped twin of shared.GoverningOverrideIndex, for the exporters
+// that work on generically-parsed JSON. A zero ref means now.
+//
+// Resolution is by appliedAt, never by array position. The schema's description
+// says the most recent override "should be first in array", but nothing sorts
+// and this repo's own writers append, so on a document amended twice the newest
+// override is LAST and overrides[0] is the oldest.
+//
+// An entry that is not an object, or whose appliedAt will not parse, sorts
+// earliest rather than failing the export: a malformed override should not be
+// able to take a whole document's conversion down, and it must not govern.
+func GoverningOverrideIndex(overrides []interface{}, ref time.Time) int {
+	inputs := make([]hdfutil.StatusOverrideInput, len(overrides))
+	for i, raw := range overrides {
+		m, ok := AsMap(raw)
+		if !ok {
+			continue
+		}
+		inputs[i] = hdfutil.StatusOverrideInput{
+			Status:    GetStr(m, "status"),
+			AppliedAt: parseOverrideTime(m, "appliedAt"),
+			ExpiresAt: parseOverrideTime(m, "expiresAt"),
+		}
+	}
+	anyOverride := func(i int) bool { _, ok := AsMap(overrides[i]); return ok }
+	return hdfutil.GoverningOverrideIndex(inputs, anyOverride, ref)
+}
+
+// GoverningOverride returns the override map that governs a requirement, or
+// (nil,false) when none does.
+func GoverningOverride(overrides []interface{}, ref time.Time) (map[string]interface{}, bool) {
+	if i := GoverningOverrideIndex(overrides, ref); i >= 0 {
+		return AsMap(overrides[i])
+	}
+	return nil, false
+}
+
+// parseOverrideTime reads an RFC3339 timestamp from an override map, yielding
+// the zero time when absent or unparseable — which the governing rule treats as
+// "sorts earliest" for appliedAt and "never expires" for expiresAt.
+func parseOverrideTime(m map[string]interface{}, key string) time.Time {
+	s := GetStr(m, key)
+	if s == "" {
+		return time.Time{}
+	}
+	return hdfutil.ParseTimestamp(s)
+}
+
+// Disposition is the type of the override that governs a requirement, or "" when
+// none does — the map-shaped twin of shared.RequirementDisposition, including its
+// no-overrides fallback to the stored field. A zero ref means now.
+func Disposition(req map[string]interface{}, ref time.Time) string {
+	overrides, _ := AsSlice(req["statusOverrides"])
+	if gov, ok := GoverningOverride(overrides, ref); ok {
+		return GetStr(gov, "type")
+	}
+	if len(overrides) == 0 {
+		return GetStr(req, "disposition")
+	}
+	return ""
+}

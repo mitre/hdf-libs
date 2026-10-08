@@ -519,6 +519,23 @@ type AffectedPackageOptions struct {
 // is present — callers should skip the entry rather than emit a
 // schema-invalid AffectedPackage. Empty strings are treated as missing.
 //
+// PackageInstanceID is the identity a finding's affected package carries as its
+// resourceId: the purl when the source gives one, else name@version, else the
+// bare name, else "". One rule for every converter that stamps a package, so a
+// downstream join on resourceId meets the same string whichever tool produced it.
+func PackageInstanceID(purl, name, version string) string {
+	if purl != "" {
+		return purl
+	}
+	if name == "" {
+		return ""
+	}
+	if version != "" {
+		return name + "@" + version
+	}
+	return name
+}
+
 // The schema's anyOf requires at least one of:
 //   - name + version + ecosystem
 //   - purl alone

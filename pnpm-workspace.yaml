@@ -12,41 +12,54 @@ allowBuilds:
 # fresh patch, add the package to minimumReleaseAgeExclude — a conscious,
 # reviewed opt-out (bare name, an @org/* pattern, or pkg@x.y.z).
 minimumReleaseAge: 10080
+# GHSA-68fv-2mgg-jv7q's only patched source-map-js (1.2.2) is younger than the
+# cooldown, and it is the whole 1.x line's fix, so the choice is this opt-out or
+# a known-vulnerable dev tree. Pinned to the exact version so a later release
+# serves its cooldown normally; goes when 1.2.2 ages past the window.
+minimumReleaseAgeExclude:
+  - source-map-js@1.2.2
 # Forced patched versions for transitive advisories (see the security gate).
-# These GO STALE: when an advisory's patched floor rises, the version pinned here
-# becomes the new vulnerable floor and the gate fails on the next unrelated commit.
-# Re-validate on each dependabot cycle — do NOT just react when a commit trips it.
+# Every target is a RANGE, never an exact version: an exact pin names the floor
+# itself, so when the advisory's patched floor rises the pin becomes the new
+# vulnerable version, and because the pre-commit hook runs the audit that blocks
+# every commit in the repo at once (fast-uri pinned to 3.1.6, brace-expansion to
+# 5.0.9). A range does not move on its own — pnpm reuses the lockfile's
+# resolution — but the remedy becomes `pnpm update` instead of an edit here.
+# Each entry says what it holds back and what would let it go. An entry that
+# protects nothing is REMOVED, not bumped, and the test for that is whether
+# removing it introduces an advisory, not whether its range still matches
+# something: a selector can be broader than the advisory it was written for.
+# scripts/check-override-freshness.mjs enforces the range and comment rules.
 # Full procedure: site/docs/contributing/developer-guide.md → Dependency Audit Overrides.
 overrides:
-  "minimatch@<3.1.4": "3.1.4"
-  "minimatch@>=9.0.0 <9.0.7": "9.0.7"
-  "minimatch@>=10.0.0 <10.2.3": "10.2.3"
-  "rollup@>=4.0.0 <4.59.0": "4.59.0"
-  "esbuild@<0.25.0": "0.25.0"
-  "shell-quote@<1.8.5": "1.10.0"
-  "underscore@<1.13.8": "1.13.8"
-  "lodash@>=4.0.0 <4.18.0": "4.18.1"
-  "fflate@<0.8.3": "0.8.3"
-  "ajv@>=6.0.0 <6.14.0": "6.14.0"
-  "ajv@>=8.0.0 <8.18.0": "8.18.0"
-  "qs@<6.16.0": "6.16.0"
-  "js-yaml@>=4.0.0 <4.3.2": "4.3.2"
-  "flatted@<3.4.2": "3.4.2"
-  "picomatch@<2.3.2": "2.3.2"
-  "picomatch@>=4.0.0 <4.0.4": "4.0.4"
-  "yaml@>=2.0.0 <2.8.3": "2.8.3"
-  "browserslist@<4.28.7": "4.28.7"
-  "vite@>=6.0.0 <6.4.3": "6.4.3"
-  "brace-expansion@<5.0.12": "5.0.12"
-  "fast-xml-builder@<1.1.9": "1.1.9"
-  "follow-redirects@<1.16.0": "1.16.0"
-  "postcss@<8.5.23": "8.5.23"
-  "nanoid@<3.3.18": "3.3.18"
-  # GHSA-w5hq-g745-h8pq — uuid buffer bounds (via @hyperjump/json-schema, dev).
-  "uuid@<11.1.1": "11.1.1"
-  # GHSA-4x5r-pxfx-6jf8 — @babel/core sourceMappingURL read (via stryker, dev).
-  # Advisory floor is 7.29.1 but that release was skipped; 7.29.7 is the real 7.x fix.
-  "@babel/core@<7.29.1": "7.29.7"
+  # ajv 8.17.1 via @stryker-mutator/core (dev); goes when stryker declares ^8.18.0.
+  "ajv@>=8.0.0 <8.18.0": "^8.18.0"
+  # esbuild 0.21.5 via vite 5.4.x under vitepress 1.x; goes with the vitepress
+  # 2.x bump that also clears the vite suppressions below.
+  "esbuild@<0.25.0": "^0.25.0"
+  # minimatch 10.1.3 via @stryker-mutator/core (dev); goes when stryker declares ^10.2.3.
+  "minimatch@>=10.0.0 <10.2.3": "^10.2.3"
+  # GHSA-pqg4-j6r4-53mv — shell-quote quote() command injection, every release
+  # from 1.8.4 through 1.10.0, via concurrently (dev; its latest still declares
+  # 1.9.0). Supersedes the earlier <1.8.5 hold, which pinned into this range.
+  # Goes when concurrently declares ^1.11.0.
+  "shell-quote@<1.11.0": "^1.11.0"
+  # GHSA-w5hq-g745-h8pq — uuid 9.0.1 buffer bounds, via @hyperjump/json-schema
+  # (dev); goes when that package declares ^11.
+  "uuid@<11.1.1": "^11.1.1"
+  # GHSA-68fv-2mgg-jv7q — source-map-js 1.2.1 event-loop DoS, reached through 86
+  # paths (vite/postcss, vitest, vue's compiler) and all dev; goes when those
+  # declare ^1.2.2 themselves.
+  "source-map-js@<1.2.2": "^1.2.2"
+  # GHSA-g2v6-rqmx-r4w6 — @vue/server-renderer 3.5.31, carried by vue under
+  # vitepress 1.x (dev). Overriding vue rather than the renderer keeps the @vue/*
+  # family on one version; goes with the vitepress 2.x bump.
+  "vue@<3.5.42": "^3.5.43"
+  # GHSA-4x5r-pxfx-6jf8 — @babel/core 7.28.6 sourceMappingURL read, reached
+  # through babel's own plugin chain under stryker (dev). The advisory floor is
+  # 7.29.1 but that release was skipped, so 7.29.7 is the real 7.x fix; goes when
+  # stryker's babel plugins declare ^7.29.7 themselves.
+  "@babel/core@<7.29.1": "^7.29.7"
 auditConfig:
   ignoreGhsas:
     # GHSA-fx2h-pf6j-xcff — vite (transitive under vitepress 1.x); clears when

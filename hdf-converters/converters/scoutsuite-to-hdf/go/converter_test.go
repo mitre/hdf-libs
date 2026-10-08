@@ -595,3 +595,26 @@ func TestUnsharedRuleKeysAreNotServiceQualified(t *testing.T) {
 		assert.NotContains(t, req.ID, ":", "unshared key must not be service-qualified")
 	}
 }
+
+// RECORDED EXCEPTION. ScoutSuite's instance identity is one entry of
+// finding.items[], but the converter emits a single result per finding and
+// newline-joins every flagged item into its message, so one resourceId cannot
+// name 16 instances. In the only sample that exists, seven findings flag nothing
+// at all and the eighth flags 16 items — no finding flags exactly one — so there
+// is no result here a per-item identity can honestly sit on. resource and
+// resourceId therefore stay unset until the result-count change splits items[]
+// into one result each.
+//
+// This test fails the moment that split lands, which is the point: whoever makes
+// it has to come back and set the identity.
+func TestConvertScoutsuite_LeavesResourceIdentityUnsetWhileItemsShareOneResult(t *testing.T) {
+	result, err := ConvertScoutsuiteToHDF(loadFixture(t, "input/scoutsuite_sample.js"), testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "cloudtrail-not-configured")
+	require.Len(t, req.Results, 1, "16 flagged items still share one result")
+	assert.Contains(t, *req.Results[0].Message, "16 flagged items out of 16 checked items",
+		"every flagged item is still carried, in the message")
+	assert.Nil(t, req.Results[0].Resource)
+	assert.Nil(t, req.Results[0].ResourceID)
+}

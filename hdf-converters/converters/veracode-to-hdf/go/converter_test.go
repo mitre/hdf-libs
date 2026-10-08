@@ -935,3 +935,52 @@ func TestConvertVeracodeToHDF_UnratedSeverityMarker(t *testing.T) {
 	_, present = info.Tags[shared.UnratedSeverityTag]
 	assert.False(t, present, "level 0 is the rated informational tier and must not carry the marker")
 }
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose. Veracode's two halves have two instances: a static
+// flaw sits at a source location, so resource is "file" and resourceId is the
+// sourcefilepath+sourcefile:line locus that requirement-level sourceLocation
+// cannot hold once a category carries 40 flaws.
+func TestConvertVeracode_SetsStaticFlawResourceIdentityToSourceLocus(t *testing.T) {
+	result, err := ConvertVeracodeToHDF(loadFixture(t, "veracode.xml"), testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "18")
+	require.Len(t, req.Results, 2)
+
+	var got []string
+	for _, res := range req.Results {
+		require.NotNil(t, res.Resource, "resource is nil")
+		assert.Equal(t, "file", *res.Resource)
+		require.NotNil(t, res.ResourceID, "resourceId is nil — the instance identity lives only in prose")
+		got = append(got, *res.ResourceID)
+	}
+
+	assert.Equal(t, []string{
+		"com/veracode/verademo/controller/ToolsController.java:53",
+		"com/veracode/verademo/controller/ToolsController.java:83",
+	}, got)
+}
+
+// The SCA half's instance is the third-party component, so resource is
+// "component" and resourceId is the component_id Veracode assigns it.
+func TestConvertVeracode_SetsSCAResourceIdentityToComponentID(t *testing.T) {
+	result, err := ConvertVeracodeToHDF(loadFixture(t, "veracode.xml"), testConverterVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2012-5783")
+	require.Len(t, req.Results, 1)
+	require.NotNil(t, req.Results[0].Resource)
+	assert.Equal(t, "component", *req.Results[0].Resource)
+	require.NotNil(t, req.Results[0].ResourceID)
+	assert.Equal(t, "1793362a-098a-47f2-95e8-0565117aa7fd", *req.Results[0].ResourceID)
+}
+
+// component_id is optional on a Veracode SCA component; sha1 is the documented
+// secondary identity and is what the SCA codeDesc already prints next to it.
+func TestSCAInstanceID_FallsBackToSHA1(t *testing.T) {
+	assert.Equal(t, "964cd74171f427720480efdec40a7c7f6e58426a",
+		scaInstanceID(Component{SHA1: "964cd74171f427720480efdec40a7c7f6e58426a"}))
+	assert.Empty(t, scaInstanceID(Component{FileName: "slf4j-log4j12-1.7.7.jar"}),
+		"with neither identifier the field stays unset rather than carrying the file name")
+}

@@ -1,0 +1,544 @@
+{
+  "$comment": [
+    "Hadolint rule code -> NIST SP 800-53 mapping, ported verbatim (entry order preserved) from mitre/heimdall2. Keys are hadolint's own DL#### rules and the SC#### rules hadolint surfaces from its embedded shellcheck; one table covers both because both arrive in the same hadolint report. Do not hand-edit; re-port per the procedure below.",
+    "Hadolint publishes no NIST crosswalk. This table is a curated mapping authored upstream, not an authoritative control association, and is candidate triage material rather than evidence that a control is assessed or satisfied.",
+    "nistRevision is 5 because the table uses SR-3 and SR-4, which exist only at Rev 5; lookups translate to the process-wide NIST revision. SR-4 has no Rev 4 equivalent and translates to an empty list, so callers must fall back to their static-analysis default rather than emit an empty nist tag.",
+    "Coverage gaps: hadolint rules added after the port, and the DL1000 parse-error pseudo-rule, are absent and fall back to the caller's static-analysis default. List current rules at https://github.com/hadolint/hadolint#rules and compare against these keys.",
+    "Re-port: fetch libs/hdf-converters/src/mappings/HadolintNistMappingData.ts from mitre/heimdall2 at the commit recorded in source, confirm its sha256 matches source.sha256, then transcribe each 'RULE': 'CONTROL' pair into mappings in file order as {\"nist\": [\"CONTROL\"]}."
+  ],
+  "source": {
+    "repository": "https://github.com/mitre/heimdall2",
+    "path": "libs/hdf-converters/src/mappings/HadolintNistMappingData.ts",
+    "commit": "68b34a03b8746311925766da8bbb7a7490a39cb1",
+    "sha256": "779d72e615b115cb4d885e6719c4fe9c99705a41ae83a4895e22c2bc173cbe00"
+  },
+  "updated": "2026-09-28",
+  "nistRevision": 5,
+  "mappings": {
+    "DL1001": {
+      "nist": [
+        "CM-3"
+      ]
+    },
+    "DL3000": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3001": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3002": {
+      "nist": [
+        "AC-6"
+      ]
+    },
+    "DL3003": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3004": {
+      "nist": [
+        "AC-6"
+      ]
+    },
+    "DL3006": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3007": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3008": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3009": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3010": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3011": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3012": {
+      "nist": [
+        "SI-4"
+      ]
+    },
+    "DL3013": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3014": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3015": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3016": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3018": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3019": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3020": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3021": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3022": {
+      "nist": [
+        "SA-10"
+      ]
+    },
+    "DL3023": {
+      "nist": [
+        "SA-10"
+      ]
+    },
+    "DL3024": {
+      "nist": [
+        "SA-10"
+      ]
+    },
+    "DL3025": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3026": {
+      "nist": [
+        "SR-3"
+      ]
+    },
+    "DL3027": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3028": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3029": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3030": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3032": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3033": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3034": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3035": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3036": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3037": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3038": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3040": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3041": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3042": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3043": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3044": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3045": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3046": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3047": {
+      "nist": [
+        "AU-4"
+      ]
+    },
+    "DL3048": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3049": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3050": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3051": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3052": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3053": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3054": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3055": {
+      "nist": [
+        "SR-4"
+      ]
+    },
+    "DL3056": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3057": {
+      "nist": [
+        "SI-4"
+      ]
+    },
+    "DL3058": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL3059": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3060": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL3061": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3062": {
+      "nist": [
+        "CM-2"
+      ]
+    },
+    "DL3063": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL3064": {
+      "nist": [
+        "SC-28"
+      ]
+    },
+    "DL3066": {
+      "nist": [
+        "AC-6"
+      ]
+    },
+    "DL3067": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL4000": {
+      "nist": [
+        "CM-8"
+      ]
+    },
+    "DL4001": {
+      "nist": [
+        "CM-7"
+      ]
+    },
+    "DL4003": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL4004": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL4005": {
+      "nist": [
+        "CM-6"
+      ]
+    },
+    "DL4006": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1000": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1001": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1007": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1010": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1018": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1035": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1045": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1065": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1066": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1068": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1077": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1078": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1079": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1081": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1083": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1086": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1087": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1091": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1095": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1097": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1098": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC1099": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2002": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2015": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2026": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2028": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2035": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2039": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2046": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2086": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2140": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2154": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2155": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "SC2164": {
+      "nist": [
+        "SA-11"
+      ]
+    },
+    "DL3065": {
+      "nist": [
+        "CM-2"
+      ]
+    }
+  }
+}

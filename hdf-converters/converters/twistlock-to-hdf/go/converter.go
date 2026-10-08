@@ -269,6 +269,16 @@ func buildAffectedPackage(vuln TwistlockVuln, packageTypes map[string]string, di
 	})
 }
 
+// packageInstanceID is the per-result instance identity for a Twistlock
+// vulnerability: the vulnerable package, which is what distinguishes the several
+// entries that report the same CVE. Twistlock's output carries no purl, so the
+// identity is name@version — grype's fallback form. Falls back to the name alone
+// when a version is absent, and returns "" when there is no package name at all,
+// in which case the caller leaves the fields unset rather than inventing an id.
+func packageInstanceID(vuln TwistlockVuln) string {
+	return shared.PackageInstanceID("", vuln.PackageName, vuln.PackageVersion)
+}
+
 // buildPackageTypeIndex collects package name → type mappings from the
 // result-level "packages" array. Used to resolve ecosystem for per-vuln
 // findings that lack their own packageType field.
@@ -359,14 +369,17 @@ func buildRequirement(vuln TwistlockVuln, packageTypes map[string]string, distro
 	startTime := hdfutil.ParseTimestamp(vuln.DiscoveredDate)
 
 	message := formatMessage(vuln)
-	results := []hdf.RequirementResult{
-		{
-			Status:    hdf.Failed,
-			CodeDesc:  formatCodeDesc(vuln),
-			Message:   &message,
-			StartTime: startTime,
-		},
+	result := hdf.RequirementResult{
+		Status:    hdf.Failed,
+		CodeDesc:  formatCodeDesc(vuln),
+		Message:   &message,
+		StartTime: startTime,
 	}
+	if instanceID := packageInstanceID(vuln); instanceID != "" {
+		result.Resource = hdfutil.Ptr("package")
+		result.ResourceID = hdfutil.Ptr(instanceID)
+	}
+	results := []hdf.RequirementResult{result}
 
 	title := vuln.ID
 	req := hdf.EvaluatedRequirement{

@@ -227,6 +227,39 @@ func TestComputeEffectiveImpact(t *testing.T) {
 	})
 }
 
+// The effective checksum hashes {status, impact, disposition}. A governing plan
+// now reaches disposition, which moved this value once (the epoch recorded in
+// site/docs/architecture/status-determination.md) — so it is pinned here as a
+// literal. Anything that moves it again, including a read-side predicate that
+// should not touch it at all, fails loudly instead of silently re-dating every
+// stored checksum in the field.
+func TestEffectiveChecksum_PlanGovernedIsPinned(t *testing.T) {
+	req := ecFailingReq()
+	req.Poams = []hdf.PoamElement{{
+		Type: "mitigation", Explanation: "compensating control",
+		AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+	}}
+
+	got := ComputeEffectiveChecksum(req, ecRefTime)
+	require.NotNil(t, got)
+	assert.Equal(t, hdf.HashAlgorithm("sha256"), got.Algorithm)
+	assert.Equal(t, "7809ca0cf9a6b4463deb25447c5efa180ab001b51e1ff656deaca0babb27c17e", got.Value,
+		"a plan-governed requirement's checksum is a published value; moving it is a checksum epoch")
+
+	// And the plan's KIND is deliberately NOT in the hash: disposition carries the
+	// flat "poam", so two requirements governed by different kinds of plan hash
+	// alike. poamType recovers the kind for FILTERING without touching this.
+	other := ecFailingReq()
+	other.Poams = []hdf.PoamElement{{
+		Type: "riskAcceptance", Explanation: "accepted",
+		AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+		ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+	}}
+	assert.Equal(t, got.Value, ComputeEffectiveChecksum(other, ecRefTime).Value,
+		"disposition flattens both to poam, so the kind cannot reach the hash")
+}
+
 func TestComputeDisposition(t *testing.T) {
 	t.Run("nil when no overrides", func(t *testing.T) {
 		assert.Nil(t, ComputeDisposition(ecFailingReq(), ecRefTime))
@@ -251,6 +284,95 @@ func TestComputeDisposition(t *testing.T) {
 		d := hdf.FalsePositive
 		req.Disposition = &d
 		got := ComputeDisposition(req, ecRefTime)
+		require.NotNil(t, got)
+		assert.Equal(t, hdf.FalsePositive, *got)
+	})
+
+	// A POA&M governs disposition too — the schema has always defined the field as
+	// "the most recent non-expired override or POAM", and only the override half
+	// was implemented, so --disposition poam could never match.
+	t.Run("a live POA&M governs when no override does", func(t *testing.T) {
+		req := ecFailingReq()
+		req.Poams = []hdf.PoamElement{{
+			Type: "remediation", Explanation: "scheduled",
+			AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+			ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC),
+		}}
+		d := ComputeDisposition(req, ecRefTime)
+		require.NotNil(t, d, "a live plan governs; nothing else does")
+		assert.Equal(t, hdf.Poam, *d)
+	})
+
+	t.Run("a lapsed POA&M governs nothing, as a lapsed override does", func(t *testing.T) {
+		req := ecFailingReq()
+		req.Poams = []hdf.PoamElement{{
+			Type: "remediation", Explanation: "scheduled",
+			AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+			ExpiresAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		}}
+		assert.Nil(t, ComputeDisposition(req, ecRefTime))
+	})
+
+	// Overrides and POA&Ms are one ordered set compared on appliedAt, not two
+	// tiers: each kind wins when it is the more recent live entry.
+	t.Run("the more recent live entry governs, whichever kind it is", func(t *testing.T) {
+		live := time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)
+		older := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+		newer := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+		plan := func(applied, expires time.Time) []hdf.PoamElement {
+			return []hdf.PoamElement{{Type: "remediation", Explanation: "scheduled", AppliedAt: applied, ExpiresAt: expires}}
+		}
+		waiver := func(applied, expires time.Time) []hdf.StatusOverride {
+			na := hdf.NotApplicable
+			return []hdf.StatusOverride{{Type: hdf.OverrideTypeWaiver, Status: &na, Reason: "r", AppliedAt: applied, ExpiresAt: expires}}
+		}
+
+		byPoam := ecFailingReq()
+		byPoam.StatusOverrides = waiver(older, live)
+		byPoam.Poams = plan(newer, live)
+		d := ComputeDisposition(byPoam, ecRefTime)
+		require.NotNil(t, d)
+		assert.Equal(t, hdf.Poam, *d, "the newer plan governs the older waiver")
+
+		byWaiver := ecFailingReq()
+		byWaiver.StatusOverrides = waiver(newer, live)
+		byWaiver.Poams = plan(older, live)
+		d = ComputeDisposition(byWaiver, ecRefTime)
+		require.NotNil(t, d)
+		assert.Equal(t, hdf.OverrideTypeWaiver, *d, "the newer waiver governs the older plan")
+
+		// Expiry outranks recency: the waiver is newer by appliedAt but lapsed.
+		byLive := ecFailingReq()
+		byLive.StatusOverrides = waiver(newer, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
+		byLive.Poams = plan(older, live)
+		d = ComputeDisposition(byLive, ecRefTime)
+		require.NotNil(t, d)
+		assert.Equal(t, hdf.Poam, *d, "a lapsed newer waiver cannot displace a live older plan")
+	})
+
+	// The stored-field fallback is now reached in fewer cases: a requirement with
+	// no overrides but a LAPSED plan used to fall through to the cached
+	// disposition, and now resolves to none. That is correct — a lapsed entry
+	// governs nothing, and a stored effective* field is an output cache rather
+	// than an input — but it moves the checksum, so it is pinned rather than
+	// left as a silent consequence.
+	t.Run("a lapsed plan suppresses the stored-disposition fallback", func(t *testing.T) {
+		req := ecFailingReq()
+		stored := hdf.FalsePositive
+		req.Disposition = &stored
+		req.Poams = []hdf.PoamElement{{
+			Type: "remediation", Explanation: "scheduled",
+			AppliedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+			ExpiresAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		}}
+		assert.Nil(t, ComputeDisposition(req, ecRefTime),
+			"a lapsed plan governs nothing, and the cached value is not an input")
+
+		// With no plan at all the cache is still honoured, so the narrowing is
+		// specific rather than a removal of the fallback.
+		bare := ecFailingReq()
+		bare.Disposition = &stored
+		got := ComputeDisposition(bare, ecRefTime)
 		require.NotNil(t, got)
 		assert.Equal(t, hdf.FalsePositive, *got)
 	})
@@ -356,4 +478,15 @@ func TestStampEffectiveChecksums_SkipsUntypeableRequirement(t *testing.T) {
 	cs, ok := good["effectiveChecksum"].(map[string]interface{})
 	require.True(t, ok, "well-formed sibling must still be stamped")
 	assert.Equal(t, ecVectorFailedHalf, cs["value"])
+}
+
+// The stored effectiveImpact is a fallback for the no-overrides case only; the
+// moment any override exists it is unread, matching the shared ladder.
+func TestComputeEffectiveImpact_StoredFallbackOnlyWithoutOverrides(t *testing.T) {
+	stored := 0.2
+	req := hdf.EvaluatedRequirement{ID: "V-1", Impact: 0.9, EffectiveImpact: &stored}
+	assert.InDelta(t, 0.2, ComputeEffectiveImpact(req, "2026-01-01T00:00:00Z"), 1e-9, "no overrides: the stored field is honoured")
+
+	req.StatusOverrides = []hdf.StatusOverride{{Type: hdf.OverrideTypeWaiver, AppliedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), ExpiresAt: time.Date(2099, 12, 31, 0, 0, 0, 0, time.UTC)}}
+	assert.InDelta(t, 0.9, ComputeEffectiveImpact(req, "2026-01-01T00:00:00Z"), 1e-9, "an override without impact leaves the requirement's own, never the cache")
 }

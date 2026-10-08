@@ -398,13 +398,14 @@ func TestHdfConvert_Batch_Overwrite(t *testing.T) {
 func TestHdfConvert_Batch_SchemaInvalidPerFile(t *testing.T) {
 	t.Setenv("HDF_MCP_ROOT", t.TempDir())
 	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
-	writeInRootPath(t, "in/aws.json", awsConfigFixture(t))
+	bad := awsConfigFixture(t)
+	registerSchemaInvalidFake(t, "schema-invalid-fake", bad)
+	writeInRootPath(t, "in/aws.json", bad)
 	writeInRootPath(t, "in/scan.json", gosecFixture(t))
 
-	// A non-UUID componentId makes the aws-config output fail schema validation;
-	// gosec output has no component, so it is unaffected — the batch refuses the
-	// invalid file (no output) and still completes the valid one.
-	_, out := callConvert(t, convertInput{Directory: "in", OutputDir: "out", ComponentID: "not-a-uuid"})
+	// One file's output fails schema validation — the batch refuses that file
+	// (no output) and still completes the valid one.
+	_, out := callConvert(t, convertInput{Directory: "in", OutputDir: "out", From: "schema-invalid-fake"})
 	byPath := map[string]fileConvertSummary{}
 	for _, e := range asEntries(t, out.Batch) {
 		byPath[e.InputPath] = e
@@ -417,6 +418,23 @@ func TestHdfConvert_Batch_SchemaInvalidPerFile(t *testing.T) {
 	}
 	if !byPath["in/scan.json"].Valid {
 		t.Errorf("the valid file must still convert alongside a schema-invalid one: %+v", byPath["in/scan.json"])
+	}
+}
+
+// A non-UUID componentId is one bad argument, not a per-file failure: the whole
+// batch is refused before any file is converted.
+func TestHdfConvert_Batch_RejectsNonUUIDComponentID(t *testing.T) {
+	t.Setenv("HDF_MCP_ROOT", t.TempDir())
+	t.Setenv("HDF_MCP_ENABLE_WRITES", "1")
+	stageMixedBatch(t)
+
+	res, out := callConvert(t, convertInput{Directory: "in", OutputDir: "out", ComponentID: "CI0012345"})
+	assertArgError(t, res, "CI0012345")
+	if len(out.Batch) != 0 {
+		t.Errorf("a refused batch must report no per-file entries: %+v", out.Batch)
+	}
+	if _, err := os.Stat(filepath.Join(os.Getenv("HDF_MCP_ROOT"), "out")); !os.IsNotExist(err) {
+		t.Error("a refused batch must not create the output directory")
 	}
 }
 

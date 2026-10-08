@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -317,4 +318,24 @@ func TestEnrich_RecomputeCVSSIsResultsOnly(t *testing.T) {
 		enrichFixturePath("poison-ivy-exploited-stix21.json"), "--recompute-cvss",
 		"-o", filepath.Join(dir, "results-out.json"))
 	require.NoError(t, resultsErr, "results must keep accepting --recompute-cvss")
+}
+
+// `hdf enrich --help` must name the same container the enrich pass names in its
+// truncation warning: the label is derived from the shared table both languages
+// assert against, so the help cannot drift from observable behaviour again.
+func TestEnrichCmd_HelpNamesTheSameRootAsTheWarning(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "hdf-converters", "shared", "enrich-stix-warning-cases.json"))
+	require.NoError(t, err)
+	var want struct {
+		DocumentRootWarning string `json:"documentRootWarning"`
+		ForbiddenPhrase     string `json:"forbiddenPhrase"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &want))
+
+	label := regexp.MustCompile(`enrich-stix (.+) references`).FindStringSubmatch(want.DocumentRootWarning)
+	require.Len(t, label, 2, "the shared warning carries the container label")
+
+	long := NewEnrichCmd().Long
+	assert.Contains(t, long, label[1], "help names the container the truncation warning names")
+	assert.NotContains(t, long, want.ForbiddenPhrase, "help must not name a container the pass never reports")
 }

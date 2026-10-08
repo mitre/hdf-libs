@@ -12,6 +12,8 @@ import {
   firstCVE,
   epochMillis,
   floatNumber,
+  governingOverrideOf,
+  disposition as exportDisposition,
 } from '../../../shared/typescript/exportmap.js';
 import { impactToSeverity, formatJsonNumber } from '@mitre/hdf-utilities';
 
@@ -178,13 +180,17 @@ function complianceStatusCaption(statusID: number): string {
 // (Status_Override.justification is an optional structured controlled-vocabulary
 // object, not the human rationale — reason is the field to surface.)
 function overrideComment(req: Obj): string {
-  const disposition = getStr(req, 'disposition');
+  // Resolved, not read from the stored disposition field, which is an output
+  // cache that can disagree with the overrides or be absent entirely.
+  const disp = exportDisposition(req);
   const overrides = asArr(req.statusOverrides) ?? [];
-  if (disposition === '' && overrides.length === 0) return '';
+  if (disp === '' && overrides.length === 0) return '';
   let reason = '';
-  if (overrides.length > 0) reason = getStr(asMap(overrides[0]), 'reason');
-  if (disposition !== '' && reason !== '') return `${disposition}: ${reason}`;
-  if (disposition !== '') return disposition;
+  // The GOVERNING override's reason — resolved by appliedAt, not by array
+  // position, because this repo's writers append and so put the newest last.
+  if (overrides.length > 0) reason = getStr(governingOverrideOf(overrides), 'reason');
+  if (disp !== '' && reason !== '') return `${disp}: ${reason}`;
+  if (disp !== '') return disp;
   return reason;
 }
 

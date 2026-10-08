@@ -112,6 +112,51 @@ func AssertRequirementCount(t *testing.T, result interface{}, want int, msg stri
 	require.Equal(t, want, TotalRequirements(t, result), msg)
 }
 
+// TotalResults counts the results a converter emitted, across both output
+// shapes, the way TotalRequirements counts requirements: results live under
+// baselines[].requirements[].results in an HDFResults document and under
+// requirements[].results at the top level of an HDFBaseline. Roll-up (ADR-0017
+// §6) moves the raw-finding count off the requirements and onto the results, so
+// this is the anchor that still fails on a silent under-extraction once a
+// converter emits one requirement per id. Serializes through JSON so it counts
+// generically, never through a converter's typed structs.
+func TotalResults(t *testing.T, result interface{}) int {
+	t.Helper()
+	data, err := json.Marshal(result)
+	require.NoError(t, err, "marshal HDF result for anchor count")
+	type requirement struct {
+		Results []json.RawMessage `json:"results"`
+	}
+	var doc struct {
+		Requirements []requirement `json:"requirements"`
+		Baselines    []struct {
+			Requirements []requirement `json:"requirements"`
+		} `json:"baselines"`
+	}
+	require.NoError(t, json.Unmarshal(data, &doc), "unmarshal HDF result for anchor count")
+	n := 0
+	for i := range doc.Requirements {
+		n += len(doc.Requirements[i].Results)
+	}
+	for i := range doc.Baselines {
+		for j := range doc.Baselines[i].Requirements {
+			n += len(doc.Baselines[i].Requirements[j].Results)
+		}
+	}
+	return n
+}
+
+// AssertResultCount asserts the converter emitted exactly want results — the
+// result-side ground-truth anchor, and the one ADR-0017 §6 makes mandatory for a
+// rolled-up converter, whose requirement count no longer tracks its findings.
+// want must come from a source-derived count (the Count* helpers), never from
+// converter output. msg states the source-derived relationship being asserted.
+func AssertResultCount(t *testing.T, result interface{}, want int, msg string) {
+	t.Helper()
+	require.NotZero(t, want, "anchor proves nothing with want=0 — use a fixture with >=1 source finding: %s", msg)
+	require.Equal(t, want, TotalResults(t, result), msg)
+}
+
 // CountHDFResultRequirements counts the requirements in a raw HDF Results
 // document — the sum of baselines[].requirements lengths. This is the export-side
 // ground truth (one output record per baseline requirement); unlike

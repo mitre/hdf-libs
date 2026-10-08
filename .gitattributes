@@ -6,6 +6,10 @@
 # Windows (core.autocrlf=true) and *nix.  This is the industry-standard
 # approach (Prettier, Hugo, ESLint, etc.).
 hdf-converters/**/fixtures/** eol=lf
+# The shared corpus is embedded and hashed by its own tests, so it needs the
+# same guarantee; without this line a Windows checkout (core.autocrlf=true)
+# rewrites it to CRLF and the recorded sha256 no longer matches.
+hdf-fixtures/** eol=lf
 # Vendored upstream schemas are byte-exact artifacts whose SHA-256 is recorded
 # in provenance.json, so they must check out verbatim on every platform.
 # -text, not eol=lf: some upstreams ship CRLF (NIST's cpe-naming_2.3.xsd does),
@@ -18,6 +22,12 @@ hdf-converters/**/schemas/** -text
 hdf-converters/**/fixtures/*.xsd -text
 hdf-converters/**/fixtures/*schema*.json -text
 hdf-converters/**/fixtures/*-report-format-*.json -text
+# Embedded report assets are byte-exact artifacts too: Go embeds them into the
+# goldens, the vendored stylesheet's sha256 is recorded in provenance.txt, and
+# the TypeScript module is generated from the same bytes, so a CRLF checkout
+# breaks all three at once.
+hdf-converters/**/go/assets/** -text
+hdf-converters/converters/hdf-to-html/typescript/assets.ts eol=lf
 hdf-cli/cmd/hdf/cmd/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.json eol=lf
 hdf-cli/internal/mcp/**/testdata/**/*.jsonl eol=lf

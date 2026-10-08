@@ -304,28 +304,6 @@ func TestConvertBulk_AbortsWithFailFast(t *testing.T) {
 	assert.True(t, os.IsNotExist(statErr), "good.hdf.json should not exist when aborting with --fail-fast")
 }
 
-func TestBulkOutputPath(t *testing.T) {
-	tests := []struct {
-		name     string
-		dir      string
-		input    string
-		toFmt    string
-		expected string
-	}{
-		{"nessus to hdf", "/out", "scan.nessus", "hdf", "/out/scan.hdf.json"},
-		{"sarif to hdf", "/out", "report.sarif", "hdf", "/out/report.hdf.json"},
-		{"json to csv", "/out", "results.json", "csv", "/out/results.hdf.csv"},
-		{"no extension", "/out", "scanfile", "hdf", "/out/scanfile.hdf.json"},
-		{"nested path", "/out", "/path/to/scan.xml", "hdf", "/out/scan.hdf.json"},
-		{"default format", "/out", "scan.xml", "", "/out/scan.hdf.json"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, filepath.ToSlash(bulkOutputPath(tt.dir, tt.input, tt.toFmt)))
-		})
-	}
-}
-
 // A gate writes every scan into one output directory with a single command.
 // Whether that command happened to match one file or twelve is an accident of
 // how many scanners ran, so -o <dir> has to mean the same thing either way —

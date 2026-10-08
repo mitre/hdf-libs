@@ -185,6 +185,8 @@ func validateChecksums(out *validateOutput, content []byte, baseDir string, load
 			// The algorithm is named alongside the entry: a caller told a checksum went
 			// unverified cannot act on that without knowing which algorithm it was.
 			unverifiable = append(unverifiable, r.URI+" ("+r.Algorithm+")")
+		case hdfengine.ChecksumMatch, hdfengine.ChecksumSkipped:
+			// A match needs no error, and a skipped entry declared no checksum to verify.
 		}
 	}
 	if len(unverifiable) > 0 {

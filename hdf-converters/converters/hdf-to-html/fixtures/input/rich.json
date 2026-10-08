@@ -1,0 +1,523 @@
+{
+  "baselines": [
+    {
+      "labels": {
+        "component": "code.jquery.com"
+      },
+      "name": "OWASP ZAP Scan: code.jquery.com",
+      "requirements": [
+        {
+          "code": "GET http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css\nParam: X-Content-Type-Options",
+          "cwe": [
+            "CWE-16"
+          ],
+          "descriptions": [
+            {
+              "data": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to 'nosniff' for all web pages. If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.",
+              "label": "solution"
+            },
+            {
+              "data": "This issue still applies to error type pages (401, 403, 500, etc) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type. At \"High\" threshold this scanner will not alert on client or server error responses.",
+              "label": "check"
+            }
+          ],
+          "id": "10021",
+          "impact": 0.3,
+          "refs": [
+            {
+              "url": "http://msdn.microsoft.com/en-us/library/ie/gg622941%28v=vs.85%29.aspx"
+            },
+            {
+              "url": "https://www.owasp.org/index.php/List_of_useful_HTTP_headers"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css | Method: GET | Param: X-Content-Type-Options",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "ref": "http://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css"
+          },
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Low (Medium)",
+            "sourceid": "3",
+            "wascid": "15"
+          },
+          "title": "X-Content-Type-Options Header Missing",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://code.jquery.com"
+    },
+    {
+      "labels": {
+        "component": "mymac.com"
+      },
+      "name": "OWASP ZAP Scan: mymac.com",
+      "requirements": [
+        {
+          "code": "MKCOL http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id",
+          "controlType": "technical",
+          "cwe": [
+            "CWE-200"
+          ],
+          "descriptions": [
+            {
+              "data": "This HTTP method is a WEBDAV method: MKCOL. If this server is not offering any WEBDAV services, these methods should not be available.",
+              "label": "default"
+            },
+            {
+              "data": "See the discussion on stackexchange: https://security.stackexchange.com/questions/21413/how-to-exploit-http-methods",
+              "label": "check"
+            }
+          ],
+          "id": "90028",
+          "impact": 0.3,
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Fingerprinting"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bypass.js?_=1544107787924 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/hint.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/credentials.js?_=1544108073698 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessoninfo.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/bootstrap.min.js?_=1544107787922 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/debug/labels.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonmenu.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/SqlInjectionMitigations.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/WebGoatIntroduction.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/assignment12.js?_=1544107787919 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/challenge/8/votes | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/labels.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/HttpProxies.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/InsecureLogin.lesson.lesson | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/lesson_js/password-reset-simple.js?_=1544107787923 | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/service/lessonoverview.mvc | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/CrossSiteScripting/stored-xss | Method: MKCOL | Evidence: response code 401 for potentially insecure HTTP METHOD",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/SqlInjection/servers?column=id"
+          },
+          "tags": {
+            "cci": [
+              "CCI-002418"
+            ],
+            "confidence": "2",
+            "nist": [
+              "SC-8"
+            ],
+            "riskdesc": "Informational (Medium)",
+            "sourceid": "1",
+            "wascid": "45"
+          },
+          "title": "Insecure HTTP Method - MKCOL",
+          "verificationMethod": "automated",
+          "statusOverrides": [
+            {
+              "type": "waiver",
+              "status": "passed",
+              "reason": "Accepted for the internal test host; compensating network control in place.\nReview at next authorization.",
+              "appliedBy": {
+                "type": "email",
+                "identifier": "issm@example.gov"
+              },
+              "appliedAt": "2018-12-07T09:00:00Z",
+              "expiresAt": "2099-12-31T00:00:00Z"
+            }
+          ]
+        },
+        {
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old.baseUrl%>\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old.baseUrl%>",
+          "cwe": [
+            "CWE-425"
+          ],
+          "descriptions": [
+            {
+              "data": "A backup of the file was disclosed by the web server",
+              "label": "default"
+            },
+            {
+              "data": "Do not edit files in-situ on the web server, and ensure that un-necessary files (including hidden files) are removed from the web server.",
+              "label": "solution"
+            },
+            {
+              "data": "http://mymac.com:8191/WebGoat/js/goatApp/templates/",
+              "label": "check"
+            }
+          ],
+          "id": "10095",
+          "impact": 0.5,
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Predictable-Resource-Location"
+            },
+            {
+              "url": "http://cwe.mitre.org/data/definitions/425.html"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old.baseUrl%> | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old.baseUrl%>]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old.baseUrl%>",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.2 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.2]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.2",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.backup | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.backup]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.backup",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bz2.baseUrl%> | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bz2.baseUrl%>]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bz2.baseUrl%>",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.gz | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.gz]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.gz",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.~bk | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.~bk]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.~bk",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.0 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.0]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.0",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>~ | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>~]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>~",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bac | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bac]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bac",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.gz | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.gz]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.gz",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bak.baseUrl%> | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bak.baseUrl%>]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.bak.baseUrl%>",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.bac | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.bac]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.bac",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.orig.baseUrl%> | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.orig.baseUrl%>]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.orig.baseUrl%>",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.backup.baseUrl%> | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.backup.baseUrl%>]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.backup.baseUrl%>",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.exe | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.exe]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.exe",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.1 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.1]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.1",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.zip | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.zip]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.zip",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.swp | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.swp]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>.swp",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.1 | Method: GET | Evidence: A backup of [http://mymac.com:8191/WebGoat/js/goatApp/templates/%3C%25=overview.baseUrl%25%3E] is available at [http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.1]",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.1",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.old.baseUrl%>"
+          },
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "2",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "Medium (Medium)",
+            "sourceid": "1",
+            "wascid": "34"
+          },
+          "title": "Backup File Disclosure",
+          "verificationMethod": "automated"
+        },
+        {
+          "code": "GET http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>/<%=index%>\nAttack: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>/.svn/text-base/<%=index%>.svn-base",
+          "cwe": [
+            "CWE-541"
+          ],
+          "descriptions": [
+            {
+              "data": "The source code for the current page was disclosed by the web server",
+              "label": "default"
+            },
+            {
+              "data": "Ensure that SVN metadata files are not deployed to the web server or application server",
+              "label": "solution"
+            },
+            {
+              "data": "The source code for [ ] was found at [http://mymac.com:8191/WebGoat/js/goatApp/templates/ /.svn/text-base/ .svn-base]",
+              "label": "check"
+            }
+          ],
+          "id": "42",
+          "impact": 0.7,
+          "refs": [
+            {
+              "url": "http://projects.webappsec.org/Predictable-Resource-Location"
+            },
+            {
+              "url": "http://cwe.mitre.org/data/definitions/425.html"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>/<%=index%> | Method: GET",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>/.svn/text-base/<%=index%>.svn-base",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            },
+            {
+              "codeDesc": "URI: http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%> | Method: GET",
+              "message": "http://mymac.com:8191/WebGoat/js/goatApp/templates/.svn/text-base/<%=overview.baseUrl%>.svn-base",
+              "startTime": "2018-12-06T10:53:11Z",
+              "status": "failed"
+            }
+          ],
+          "sourceLocation": {
+            "ref": "http://mymac.com:8191/WebGoat/js/goatApp/templates/<%=overview.baseUrl%>/<%=index%>"
+          },
+          "tags": {
+            "cci": [
+              "CCI-001643",
+              "CCI-003173"
+            ],
+            "confidence": "1",
+            "nist": [
+              "SA-11",
+              "RA-5"
+            ],
+            "riskdesc": "High (Low)",
+            "sourceid": "1",
+            "wascid": "34"
+          },
+          "title": "Source Code Disclosure - SVN",
+          "verificationMethod": "automated"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "ab32820fa4c510ded815dacd1e864f7254d4afb2a9cb309a489cbcec2e98f02d"
+      },
+      "summary": "ZAP Version 2.7.0",
+      "title": "OWASP ZAP Scan of http://mymac.com:8191"
+    }
+  ],
+  "components": [
+    {
+      "componentId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "externalIds": {
+        "cmdb": "CI0067890"
+      },
+      "labels": {
+        "environment": "production",
+        "system": "Portal"
+      },
+      "name": "code.jquery.com",
+      "type": "application",
+      "url": "http://code.jquery.com"
+    },
+    {
+      "componentId": "b7c8d9e0-1a2b-4c3d-8e4f-5a6b7c8d9e0f",
+      "externalIds": {
+        "cmdb": "CI0012345",
+        "emass": "1234"
+      },
+      "labels": {
+        "environment": "production",
+        "system": "Portal"
+      },
+      "name": "mymac.com",
+      "type": "application",
+      "url": "http://mymac.com:8191"
+    }
+  ],
+  "generator": {
+    "name": "zap-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2018-12-06T10:53:11Z",
+  "tool": {
+    "name": "OWASP ZAP",
+    "version": "2.7.0"
+  },
+  "systemRef": "systems/portal.hdf-system.json",
+  "runner": {
+    "name": "zap-runner",
+    "hostname": "scanner01",
+    "architecture": "x86_64",
+    "release": "22.04"
+  }
+}

@@ -286,7 +286,9 @@ func buildRule(req hdf.EvaluatedRequirement) XCCDFRule {
 	ruleID := sanitizeXCCDFID("xccdf_hdf_rule_" + req.ID + "_rule")
 
 	rule := XCCDFRule{
-		ID:       ruleID,
+		ID: ruleID,
+		// RAW impact by design: XCCDF severity describes the rule, not the
+		// outcome of running it, so an override must not move it.
 		Severity: impactToSeverity(req.Impact),
 		Selected: "true",
 	}

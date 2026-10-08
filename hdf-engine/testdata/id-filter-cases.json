@@ -1,0 +1,84 @@
+{
+  "$comment": "Shared cases for the id filter, read by hdf-engine/go/filter_test.go and hdf-engine/test/query.test.ts so the two evaluators cannot drift. The fixture is the REAL Grype scan from @mitre/hdf-fixtures, not a constructed document, because the defect this table pins only exists on real converter output: converters mint prefixed ids (Grype/CVE-...), so the CVE a user knows is not the id the document carries. The negative cases are the point \u2014 Grype/CVE-2018-20657 cross-references CVE-2018-12698 in its descriptions and code, and CVE-2018-12698 is not a requirement in this document at all, so `search` returns one false positive and zero true positives for it. A glob on id reads only the id, so prose cross-references cannot reach it.",
+  "fixtureFile": "merge-grype.json",
+  "fixtureNote": "@mitre/hdf-fixtures results/merge-grype.json \u2014 real Grype 0.79.3 output",
+  "unfilteredCount": 26,
+  "cases": [
+    {
+      "name": "an exact prefixed id still matches exactly, as it always did",
+      "id": "Grype/CVE-2022-27943",
+      "expect": [
+        "Grype/CVE-2022-27943"
+      ]
+    },
+    {
+      "name": "a bare CVE does not match a prefixed id without a wildcard",
+      "id": "CVE-2022-27943",
+      "expect": []
+    },
+    {
+      "name": "a leading wildcard reaches the CVE the user knows, through the converter's prefix",
+      "id": "*CVE-2022-27943",
+      "expect": [
+        "Grype/CVE-2022-27943"
+      ]
+    },
+    {
+      "name": "a glob matching the requirement's OWN cve does not match one merely mentioned in its prose",
+      "id": "*CVE-2018-12698",
+      "expect": []
+    },
+    {
+      "name": "and the requirement that cross-references it is reachable by its own id",
+      "id": "*CVE-2018-20657",
+      "expect": [
+        "Grype/CVE-2018-20657"
+      ]
+    },
+    {
+      "name": "a wildcard is anchored, so a trailing fragment does not match a longer id",
+      "id": "*CVE-2018-1269",
+      "expect": []
+    },
+    {
+      "name": "a glob selects every entry carrying a duplicated id, not one of them",
+      "id": "*CVE-2022-42919",
+      "expect": [
+        "Grype/CVE-2022-42919",
+        "Grype/CVE-2022-42919"
+      ]
+    },
+    {
+      "name": "a question-mark wildcard matches one character",
+      "id": "Grype/CVE-2022-2794?",
+      "expect": [
+        "Grype/CVE-2022-27943"
+      ]
+    },
+    {
+      "name": "a glob matching nothing selects nothing rather than everything",
+      "id": "*CVE-0000-00000",
+      "expect": []
+    },
+    {
+      "name": "an exact lookup stays case-SENSITIVE, as it always was",
+      "id": "grype/cve-2022-27943",
+      "expect": []
+    },
+    {
+      "name": "but a glob is case-INSENSITIVE, like the tag and baseline globs",
+      "id": "*cve-2022-27943",
+      "expect": [
+        "Grype/CVE-2022-27943"
+      ]
+    },
+    {
+      "name": "a glob wrapped on both sides reaches a CVE embedded mid-id, which the anchored form cannot",
+      "id": "*CVE-2022-42919*",
+      "expect": [
+        "Grype/CVE-2022-42919",
+        "Grype/CVE-2022-42919"
+      ]
+    }
+  ]
+}

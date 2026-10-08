@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
+
+	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 )
 
 // Global flag variables for list command (used by runList).
@@ -58,6 +61,11 @@ Examples:
   hdf list amendments.json --detail overrides          List amendments`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Refused here rather than where it filters, so a typo cannot ride
+			// along on an invocation that ignores the flag (the summary view does).
+			if err := ValidateStatusFilter(localStatusFilter); err != nil {
+				return err
+			}
 			statusFilter = localStatusFilter
 			showAll = localShowAll
 			return runListBulk(cmd, args, detailSection)
@@ -65,7 +73,8 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&detailSection, "detail", "", "Section to expand (requirements, baselines, components, ...)")
-	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "", "Filter by status (passed, failed, error, not_applicable, not_reviewed)")
+	cmd.Flags().StringVarP(&localStatusFilter, "status", "s", "",
+		"Filter by status: "+FilterHelpVocabulary("status"))
 	cmd.Flags().BoolVarP(&localShowAll, "all", "a", false, "Show all details")
 
 	return cmd
@@ -320,7 +329,7 @@ func buildControlList(results hdf.HDFResults) []controlInfo {
 		for _, c := range baseline.Requirements {
 			status := determineControlStatus(c)
 
-			if statusFilter != "" && status != statusFilter {
+			if !StatusFilterMatches(statusFilter, status) {
 				continue
 			}
 
@@ -330,10 +339,13 @@ func buildControlList(results hdf.HDFResults) []controlInfo {
 			}
 
 			controls = append(controls, controlInfo{
-				ID:      c.ID,
-				Title:   title,
+				ID:    c.ID,
+				Title: title,
+				// Status is already post-adjudication (determineControlStatus runs
+				// the override ladder), so the impact beside it is too. A zero
+				// reference means now, as everywhere else on this surface.
 				Status:  status,
-				Impact:  c.Impact,
+				Impact:  hdfengine.EffectiveImpactOf(c, time.Time{}),
 				Profile: baseline.Name,
 			})
 		}

@@ -25,6 +25,44 @@ func parseLabelsFlag(pairs []string) (map[string]string, error) {
 	return labels, nil
 }
 
+// parseExternalIDsFlag parses repeated --external-id "scheme=value" flags into a
+// map. The value is carried verbatim — external identifiers have no format of
+// their own — so only the first "=" splits and nothing is trimmed from it.
+func parseExternalIDsFlag(pairs []string) (map[string]string, error) {
+	ids := make(map[string]string, len(pairs))
+	for _, pair := range pairs {
+		scheme, value, found := strings.Cut(pair, "=")
+		if !found {
+			return nil, fmt.Errorf("invalid --external-id %q: must be in scheme=value format", pair)
+		}
+		scheme = strings.TrimSpace(scheme)
+		if scheme == "" {
+			return nil, fmt.Errorf("invalid --external-id %q: scheme must not be empty", pair)
+		}
+		if value == "" {
+			return nil, fmt.Errorf("invalid --external-id %q: value must not be empty", pair)
+		}
+		if _, dup := ids[scheme]; dup {
+			return nil, fmt.Errorf("invalid --external-id %q: scheme %q given more than once", pair, scheme)
+		}
+		ids[scheme] = value
+	}
+	return ids, nil
+}
+
+// parseExternalIDSchemes validates the schemes named by `label remove --external-id`.
+func parseExternalIDSchemes(schemes []string) ([]string, error) {
+	out := make([]string, 0, len(schemes))
+	for _, scheme := range schemes {
+		scheme = strings.TrimSpace(scheme)
+		if scheme == "" {
+			return nil, fmt.Errorf("invalid --external-id: scheme must not be empty")
+		}
+		out = append(out, scheme)
+	}
+	return out, nil
+}
+
 // removeLabels removes the specified keys from the "labels" field of every
 // target in the HDF JSON document. Missing keys are silently ignored.
 func removeLabels(data []byte, keys []string) ([]byte, error) {
@@ -74,9 +112,10 @@ func removeLabels(data []byte, keys []string) ([]byte, error) {
 // extractComponentLabels extracts component names, types, and labels from an HDF
 // JSON document. Returns a slice of component summaries for display.
 type componentLabelInfo struct {
-	Name   string            `json:"name"`
-	Type   string            `json:"type"`
-	Labels map[string]string `json:"labels"`
+	Name        string            `json:"name"`
+	Type        string            `json:"type"`
+	Labels      map[string]string `json:"labels"`
+	ExternalIDs map[string]string `json:"externalIds"`
 }
 
 func extractComponentLabels(data []byte) ([]componentLabelInfo, error) {
@@ -103,7 +142,8 @@ func extractComponentLabels(data []byte) ([]componentLabelInfo, error) {
 		}
 
 		info := componentLabelInfo{
-			Labels: make(map[string]string),
+			Labels:      stringMapField(comp, "labels"),
+			ExternalIDs: stringMapField(comp, "externalIds"),
 		}
 
 		if name, ok := comp["name"].(string); ok {
@@ -113,20 +153,26 @@ func extractComponentLabels(data []byte) ([]componentLabelInfo, error) {
 			info.Type = typ
 		}
 
-		if labelsRaw, ok := comp["labels"]; ok {
-			if labelsMap, ok := labelsRaw.(map[string]interface{}); ok {
-				for k, v := range labelsMap {
-					if vs, ok := v.(string); ok {
-						info.Labels[k] = vs
-					} else {
-						info.Labels[k] = fmt.Sprintf("%v", v)
-					}
-				}
-			}
-		}
-
 		result = append(result, info)
 	}
 
 	return result, nil
+}
+
+// stringMapField reads a string-valued map field off a component, rendering any
+// non-string value with %v. A missing or non-object field yields an empty map.
+func stringMapField(comp map[string]interface{}, field string) map[string]string {
+	out := make(map[string]string)
+	raw, ok := comp[field].(map[string]interface{})
+	if !ok {
+		return out
+	}
+	for k, v := range raw {
+		if vs, ok := v.(string); ok {
+			out[k] = vs
+		} else {
+			out[k] = fmt.Sprintf("%v", v)
+		}
+	}
+	return out
 }

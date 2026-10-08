@@ -428,7 +428,7 @@ func (b *poamBuilder) milestoneRemediations(milestones []hdf.Milestone) []oscal.
 // name is schema-required, so the fallbacks only matter for a document that
 // slipped through some other producer's validation.
 func poamTitle(a *hdf.HDFAmendments) string {
-	return oscal.NormalizePropValue(shared.FirstNonEmpty(a.Name, derefString(a.AmendmentID), "HDF Amendments"))
+	return oscal.NormalizePropValue(shared.FirstNonEmpty(a.Name, hdfutil.Deref(a.AmendmentID), "HDF Amendments"))
 }
 
 // unidentifiedRequirementTitle stands in for an empty requirementId: HDF puts no
@@ -452,13 +452,6 @@ func riskRationale(override *hdf.StandaloneOverride) string {
 		absence = fmt.Sprintf("No rationale was recorded for the %s override.", override.Type)
 	}
 	return shared.FirstNonEmpty(override.Reason, absence)
-}
-
-func derefString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 // latestAppliedAt returns the most recent override appliedAt formatted for
@@ -551,9 +544,10 @@ func evidenceDataIsHref(ev *hdf.Evidence) bool {
 		return true
 	case hdf.Screenshot, hdf.File:
 		return absoluteURIPattern.MatchString(ev.Data)
-	default:
-		return false
+	case hdf.Code, hdf.Log, hdf.EvidenceTypeOther:
 	}
+	// Inline content, and anything unrecognized, goes to a back-matter resource.
+	return false
 }
 
 // evidenceObservation renders a single HDF Evidence item as an OSCAL observation.
