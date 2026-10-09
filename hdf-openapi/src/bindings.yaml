@@ -189,6 +189,47 @@ tools:
       - name: dryRun
         reason: the service decides whether a write happens, not the caller
 
+# Operations MCP lacks. `class` and `scopes` are hand-set here and ONLY here: a synthetic
+# operation has no readOnlyHint to derive from, which ADR-0008 §2 names as the documented
+# exception to derivation. Every request and response shape is a conventions component, so
+# this section still names shapes rather than carrying them.
+synthetic:
+  ingest:
+    method: post
+    path: /documents
+    class: write
+    scopes:
+      - hdf:write
+    bodyRef: IngestRequest
+    fullResponse: DocumentCreated
+
+  delete:
+    method: delete
+    path: /documents/{id}
+    class: admin
+    scopes:
+      - hdf:admin
+
+  # Served by the authorization server rather than a service route, so documentOnly: it
+  # appears in this document and is absent from the service's own emitted inventory.
+  # security: [] is expressed by the empty scopes list, which Spectral's
+  # operation-security-defined accepts.
+  issueToken:
+    method: post
+    path: /api/auth/oauth2/token
+    class: documentOnly
+    scopes: []
+    bodyRef: TokenRequest
+    fullResponse: TokenResponse
+
+  exchangeApiKey:
+    method: post
+    path: /api/auth/api-key/exchange
+    class: documentOnly
+    scopes: []
+    bodyRef: APIKeyExchangeRequest
+    fullResponse: TokenResponse
+
 resources:
   hdf-converter-catalog:
     method: get

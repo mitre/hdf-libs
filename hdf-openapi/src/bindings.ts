@@ -135,6 +135,8 @@ export function unknownKeys(raw: unknown, path = '', parentIsNameMap = false): s
 interface Surface {
   toolsList: { tools: { name: string; inputSchema?: { properties?: Record<string, unknown> } }[] };
   contract: Record<string, unknown>;
+  /** Conventions component names, the one hand-authored shape input §2 admits. */
+  conventions?: string[];
 }
 
 /**
@@ -194,6 +196,20 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
       if (!accounted) faults.push(`${tool.name}.${field}: neither placed, dropped, nor absent`);
       if (FILESYSTEM_FIELDS.has(field) && !dropped.has(field)) {
         faults.push(`${tool.name}.${field}: filesystem-shaped and must be dropped, not exposed`);
+      }
+    }
+  }
+
+  // Synthetic operations are not in the golden, so nothing above reaches them. Their
+  // shapes must still resolve: ADR-0008 §2 allows a conventions component or a reflected
+  // type, and nothing else — an unresolvable name here is the API being authored by typo.
+  const shapeNames = new Set([...fullShapes, ...(surface.conventions ?? [])]);
+  for (const [name, op] of Object.entries(table.synthetic ?? {})) {
+    if (op.class === undefined) faults.push(`synthetic ${name}: no class, which is hand-set here`);
+    if (op.scopes === undefined) faults.push(`synthetic ${name}: no scopes, which are hand-set here`);
+    for (const named of [op.bodyRef ?? [], op.fullResponse ?? []].flat()) {
+      if (!shapeNames.has(named)) {
+        faults.push(`synthetic ${name}: names ${named}, which is neither a reflected shape nor a conventions component`);
       }
     }
   }

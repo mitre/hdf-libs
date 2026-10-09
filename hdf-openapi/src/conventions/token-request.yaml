@@ -1,0 +1,46 @@
+# RFC 6749 §4.4 client_credentials grant, with RFC 8707 `resource` REQUIRED so a token is
+# always audience-bound. ADR-0008 §3 and ADR-0011 §3 own this operation; it is served by
+# the authorization server, not by a service route, which is why it is documentOnly.
+#
+# Hand-authored because there is no Go type to reflect: the authorization server is not
+# part of this build. ADR-0008 §2 admits src/conventions/ as the one hand-authored shape
+# input, on condition each component carries a checked example and redefines no HDF
+# document type.
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Token Request
+description: >-
+  OAuth 2.0 client-credentials token request. Sent as
+  application/x-www-form-urlencoded, per RFC 6749; `resource` is required rather than
+  optional so every issued token names the API it is for (RFC 8707).
+type: object
+additionalProperties: false
+required: [grant_type, client_id, client_secret, resource]
+properties:
+  grant_type:
+    type: string
+    const: client_credentials
+    description: The only grant this API issues tokens for.
+  client_id:
+    type: string
+    minLength: 1
+  client_secret:
+    type: string
+    minLength: 1
+    description: Sent in the form body rather than a header, as RFC 6749 §4.4.2 permits.
+  resource:
+    type: string
+    format: uri
+    description: >-
+      RFC 8707 audience. Required: a token with no named audience can be replayed against
+      any resource server that trusts the issuer.
+  scope:
+    type: string
+    description: >-
+      Space-delimited subset of the closed scope vocabulary. Omitted means the client's
+      full registered scope set.
+examples:
+  - grant_type: client_credentials
+    client_id: hdf-pipeline
+    client_secret: s3cr3t-not-a-real-credential
+    resource: https://hdf.example.org/api
+    scope: hdf:read hdf:write

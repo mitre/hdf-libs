@@ -1,0 +1,31 @@
+# The response both token operations return, per ADR-0008 §3: {access_token, token_type,
+# expires_in, scope}. Shared by the oauth2 and api-key-exchange operations so the two
+# cannot drift.
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Token Response
+description: An issued bearer token and the scopes it actually carries.
+type: object
+additionalProperties: false
+required: [access_token, token_type, expires_in, scope]
+properties:
+  access_token:
+    type: string
+    minLength: 1
+  token_type:
+    type: string
+    const: Bearer
+    description: Fixed; the API advertises one http/bearer scheme.
+  expires_in:
+    type: integer
+    minimum: 1
+    description: Seconds from issue. Absolute expiry is in the token, not here.
+  scope:
+    type: string
+    description: >-
+      Space-delimited scopes GRANTED, which may be narrower than those requested — a
+      client must read this rather than assume it received what it asked for.
+examples:
+  - access_token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.example.signature
+    token_type: Bearer
+    expires_in: 3600
+    scope: hdf:read

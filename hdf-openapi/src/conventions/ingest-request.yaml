@@ -1,0 +1,39 @@
+# ADR-0008 §2's ingest operation: "document body -> id; body bodyRef-only, the eight roots
+# as oneOf". The oneOf lives here rather than in bindings.yaml, because the table names
+# shapes and never carries one; a conventions component is the one place a shape may be
+# authored.
+#
+# This does NOT redefine a document type: it references the eight generated root components
+# and adds nothing of its own, so a schema change reaches ingest without an edit here.
+# No root carries a discriminating field, so a service dispatches with hdf-engine's
+# detector rather than on a kind property (§7).
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Ingest Request
+description: >-
+  Any one of the eight HDF document types, submitted whole. The response is the id the
+  document was stored under.
+oneOf:
+  - $ref: '#/components/schemas/HdfResults'
+  - $ref: '#/components/schemas/HdfBaseline'
+  - $ref: '#/components/schemas/HdfSystem'
+  - $ref: '#/components/schemas/HdfPlan'
+  - $ref: '#/components/schemas/HdfAmendments'
+  - $ref: '#/components/schemas/HdfEvidencePackage'
+  - $ref: '#/components/schemas/HdfComparison'
+  - $ref: '#/components/schemas/HdfRequirementChangeEvent'
+# The smallest root example, so the ingest example teaches the envelope rather than
+# restating a whole assessment. It is hdf-plan's own tracked example, not a new document.
+examples:
+  - name: Portal Monthly Assessment
+    type: automated
+    systemRef: portal-prod.hdf-system.json
+    assessments:
+      - baselineRef: RHEL9-STIG
+        targetSelector:
+          labels.component: WebTier
+        inputs:
+          max_concurrent_sessions: 5
+          password_min_length: 15
+        runner:
+          name: cinc-auditor
+          version: 6.8.11

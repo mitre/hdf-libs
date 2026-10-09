@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { loadConventions } from '../src/conventions.js';
 import {
   loadBindings,
   bindingFaults,
@@ -291,7 +292,10 @@ describe('the tracked binding table', () => {
   const parsed = JSON.parse(JSON.stringify(table));
 
   it('maps the live surface with no faults', () => {
-    expect(bindingFaults(table, { toolsList, contract })).toEqual([]);
+    // Conventions names are part of the surface: the synthetic operations reference them,
+    // and without them the checker rightly reports their shapes as unresolvable.
+    const conventions = loadConventions().map((c) => c.name);
+    expect(bindingFaults(table, { toolsList, contract, conventions })).toEqual([]);
   });
 
   it('carries no schema of its own', () => {
