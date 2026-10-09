@@ -14,7 +14,7 @@ concurrency:
 
 env:
   NODE_VERSION: '24'
-  GO_VERSION: '1.26.6'
+  GO_VERSION: '1.26.9'
 
 jobs:
   # Go reads each module's go.mod from the tagged commit and ignores its replace
