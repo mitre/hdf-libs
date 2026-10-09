@@ -87,7 +87,7 @@ The input document's root `tool.version`. Omitted when the source carries none; 
 
 ### `sourceDocument`
 
-The name the input was recorded under — its path or handle, or the caller's label — so a baseline can be traced back to the document it came from. The input's full root provenance (`tool`, `generator`, `timestamp`, `runner`) is kept verbatim at the view's root under `extensions["hdf-merge"].sources[]`.
+The name the input was recorded under — its path or handle, or the caller's label — so a baseline can be traced back to the document it came from. The input's full root provenance (`tool`, `generator`, `timestamp`, `runner`) is kept verbatim at the view's root under `extensions.passthrough["hdf-merge"].sources[]`.
 
 - **Expected values:** `"grype.hdf.json"`
 
@@ -205,7 +205,7 @@ Custom labels beyond the five well-known keys are supported. Follow these conven
 2. **Use hyphens for multi-word keys.** Prefer `cost-center` over `costCenter` or `cost_center`.
 3. **Avoid collisions with well-known keys.** Do not redefine `system`, `component`, `environment`, `region`, or `team` with non-standard semantics.
 4. **Namespace vendor-specific labels.** If adding tool-specific labels, prefix with the tool name: `nessus-policy`, `prisma-rule-set`.
-5. **Keep values short and categorical.** Labels are for grouping, not for storing arbitrary data. Use the `extensions` object for unstructured metadata.
+5. **Keep values short and categorical.** Labels are for grouping, not for storing arbitrary data. Use the `extensions.passthrough` object for unstructured metadata.
 
 ## Example: Full Pipeline with Label Flow
 

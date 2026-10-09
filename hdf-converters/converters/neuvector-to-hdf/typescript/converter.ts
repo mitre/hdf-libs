@@ -547,7 +547,7 @@ export async function convertNeuvectorToHdf(input: string, converterVersion = '1
   // no typed HDF home. Emit it once under the tool namespace, only when present.
   const cmds = scan.report.cmds ?? [];
   if (cmds.length > 0) {
-    baseline.extensions = { neuvector: { cmds } };
+    baseline.extensions = { passthrough: { neuvector: { cmds } } };
   }
 
   return buildHdfResults({

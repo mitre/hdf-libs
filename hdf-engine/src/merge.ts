@@ -2,7 +2,7 @@
 // Combines several results documents into one multi-baseline results document:
 // one baseline per input baseline renamed `<tool>/<original>`, per-baseline
 // provenance in labels, each input's root provenance verbatim under
-// extensions["hdf-merge"]. Union semantics — nothing deduplicated, re-keyed or
+// extensions.passthrough["hdf-merge"]. Union semantics — nothing deduplicated, re-keyed or
 // dropped. Deterministic for the same inputs in the same order. Kept at
 // behavioural parity with Go (see test/merge.test.ts / go/merge_test.go).
 
@@ -109,7 +109,9 @@ export function merge(sources: MergeSource[]): MergeResult {
   const results: HDFResults = {
     baselines,
     ...(components.length > 0 ? { components } : {}),
-    extensions: { [MERGE_EXTENSION_KEY]: { version: engineVersion, sources: provenance } },
+    extensions: {
+      passthrough: { [MERGE_EXTENSION_KEY]: { version: engineVersion, sources: provenance } },
+    },
     generator: { name: MERGE_GENERATOR_NAME, version: engineVersion },
     ...(latest !== undefined ? { timestamp: latest } : {}),
   };
@@ -157,7 +159,7 @@ function toolVersion(doc: HDFResults): string {
   return (doc.tool?.version ?? '').trim();
 }
 
-/** One input's root metadata, verbatim, for extensions["hdf-merge"].sources[]. */
+/** One input's root metadata, verbatim, for extensions.passthrough["hdf-merge"].sources[]. */
 function sourceProvenance(index: number, src: MergeSource): Record<string, unknown> {
   const entry: Record<string, unknown> = { index, name: src.name };
   if (src.doc.tool !== undefined) entry.tool = src.doc.tool;

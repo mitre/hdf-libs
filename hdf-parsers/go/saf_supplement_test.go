@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
@@ -100,22 +101,57 @@ func TestNormalizeSAFSupplement_PassthroughBecomesExtensions(t *testing.T) {
 	assert.NotEmpty(t, warnings)
 }
 
-// TestNormalizeSAFSupplement_PassthroughMergesWithoutClobbering: when extensions
-// already carries other keys, passthrough is added alongside them — existing
-// extension data is never clobbered.
-func TestNormalizeSAFSupplement_PassthroughMergesWithoutClobbering(t *testing.T) {
+// TestNormalizeSAFSupplement_RelocatesExtensionSiblingsIntoPassthrough: an
+// undefined key beside passthrough is MOVED INTO passthrough, not left in place.
+// `extensions` is a closed object, so leaving it would normalize legacy input
+// into a document the schema rejects — the data is preserved, one level down.
+func TestNormalizeSAFSupplement_RelocatesExtensionSiblingsIntoPassthrough(t *testing.T) {
 	in := validV3WithExtra(t, map[string]any{
 		"extensions":  map[string]any{"foo": "bar"},
 		"passthrough": map[string]any{"audit": map[string]any{"runId": "r-1"}},
 	})
-	out, _ := NormalizeSAFSupplement(in)
+	out, warnings := NormalizeSAFSupplement(in)
 	var doc map[string]any
 	require.NoError(t, json.Unmarshal(out, &doc))
 	ext := doc["extensions"].(map[string]any)
-	assert.Equal(t, "bar", ext["foo"], "existing extensions key must be preserved")
+
+	assert.NotContains(t, ext, "foo", "`extensions` is closed — the sibling may not stay")
 	pt := ext["passthrough"].(map[string]any)
+	assert.Equal(t, "bar", pt["foo"], "the sibling's data is preserved inside passthrough")
 	audit := pt["audit"].(map[string]any)
-	assert.Equal(t, "r-1", audit["runId"], "passthrough added alongside existing extensions")
+	assert.Equal(t, "r-1", audit["runId"], "the legacy passthrough is still carried")
+	assert.Condition(t, func() bool {
+		for _, w := range warnings {
+			if strings.Contains(w, "extensions.foo was moved into extensions.passthrough.foo") {
+				return true
+			}
+		}
+		return false
+	}, "the relocation is reported, not silent: %v", warnings)
+}
+
+// A sibling whose name already exists inside passthrough cannot be moved there.
+// It is dropped with a warning rather than clobbering carried provenance.
+func TestNormalizeSAFSupplement_ReportsASiblingItCannotRelocate(t *testing.T) {
+	in := validV3WithExtra(t, map[string]any{
+		"extensions":  map[string]any{"audit": "sibling"},
+		"passthrough": map[string]any{"audit": map[string]any{"runId": "r-1"}},
+	})
+	out, warnings := NormalizeSAFSupplement(in)
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(out, &doc))
+	pt := doc["extensions"].(map[string]any)["passthrough"].(map[string]any)
+
+	audit := pt["audit"].(map[string]any)
+	assert.Equal(t, "r-1", audit["runId"], "the carried value wins over the sibling")
+	assert.Condition(t, func() bool {
+		for _, w := range warnings {
+			if strings.Contains(w, "extensions.audit was dropped") {
+				return true
+			}
+		}
+		return false
+	}, "the drop is reported: %v", warnings)
 }
 
 // TestNormalizeSAFSupplement_NoLegacyKeysByteIdentical: a doc with no legacy keys

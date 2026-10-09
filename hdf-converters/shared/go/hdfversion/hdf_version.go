@@ -15,6 +15,15 @@ import (
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
 )
 
+// passthroughOf reads the unmodeled-data map out of a document's extensions;
+// `extensions` itself is closed, so nothing else can live beside it.
+func passthroughOf(ext *hdf.Extensions) map[string]interface{} {
+	if ext == nil {
+		return nil
+	}
+	return ext.Passthrough
+}
+
 // HDF schema version identifiers. The taxonomy: v1 is raw InSpec exec-json
 // (not a distinct HDF schema — see NormalizeVersion); v2 is the legacy Heimdall
 // schema (the profiles/platform shape the heimdall2 app loads); v3 is the
@@ -163,7 +172,7 @@ func convertV3ToV2(v2 *hdf.HDFResults) (*legacyhdf.LegacyHDFResults, []string) {
 	// platform mapping above keeps only the first component's name/OS, and v2 has
 	// no native slot for extensions.
 	var provenance map[string]interface{}
-	if pt, ok := v2.Extensions["passthrough"].(map[string]interface{}); ok && len(pt) > 0 {
+	if pt := passthroughOf(v2.Extensions); len(pt) > 0 {
 		provenance = pt
 	}
 	// The reserved carrier key must never travel inside provenance: on a later

@@ -2,31 +2,33 @@
   "baselines": [
     {
       "extensions": {
-        "neuvector": {
-          "cmds": [
-            "CMD [\"rails\" \"server\" \"-p\" \"3000\" \"-b\" \"0.0.0.0\"]",
-            "ENTRYPOINT [\"bundle\" \"exec\"]",
-            "EXPOSE 3000",
-            "RUN apk --no-cache --update add nodejs imagemagick6 postgresql-dev tzdata \u0026\u0026 gem install bundler \u0026\u0026     bundle install --deployment --without development test",
-            "COPY dir:cfd6c107e9db5e6d3eb7fdfdc1d993d14c924a53fcb20069ea23e383c8c2967d in /var/www/heimdall",
-            "WORKDIR /var/www/heimdall",
-            "RUN mkdir -p $RAILS_ROOT",
-            "ENV RAILS_ROOT=/var/www/heimdall",
-            "CMD [\"irb\"]",
-            "RUN mkdir -p \"$GEM_HOME\" \u0026\u0026 chmod 777 \"$GEM_HOME\"",
-            "ENV PATH=/usr/local/bundle/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-            "ENV BUNDLE_SILENCE_ROOT_WARNING=1 BUNDLE_APP_CONFIG=/usr/local/bundle",
-            "ENV GEM_HOME=/usr/local/bundle",
-            "RUN set -eux; \t\tapk add --no-cache --virtual .ruby-builddeps \t\tautoconf \t\tbison \t\tbzip2 \t\tbzip2-dev \t\tca-certificates \t\tcoreutils \t\tdpkg-dev dpkg \t\tgcc \t\tgdbm-dev \t\tglib-dev \t\tlibc-dev \t\tlibffi-dev \t\tlibxml2-dev \t\tlibxslt-dev \t\tlinux-headers \t\tmake \t\tncurses-dev \t\topenssl \t\topenssl-dev \t\tpatch \t\tprocps \t\treadline-dev \t\truby \t\ttar \t\txz \t\tyaml-dev \t\tzlib-dev \t; \t\twget -O ruby.tar.xz \"https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz\"; \techo \"$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz\" | sha256sum --check --strict; \t\tmkdir -p /usr/src/ruby; \ttar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1; \trm ruby.tar.xz; \t\tcd /usr/src/ruby; \t\twget -O 'thread-stack-fix.patch' 'https://bugs.ruby-lang.org/attachments/download/7081/0001-thread_pthread.c-make-get_main_stack-portable-on-lin.patch'; \techo '3ab628a51d92fdf0d2b5835e93564857aea73e0c1de00313864a94a6255cb645 *thread-stack-fix.patch' | sha256sum --check --strict; \tpatch -p1 -i thread-stack-fix.patch; \trm thread-stack-fix.patch; \t\t{ \t\techo '#define ENABLE_PATH_CHECK 0'; \t\techo; \t\tcat file.c; \t} \u003e file.c.new; \tmv file.c.new file.c; \t\tautoconf; \tgnuArch=\"$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)\"; \texport ac_cv_func_isnan=yes ac_cv_func_isinf=yes; \t./configure \t\t--build=\"$gnuArch\" \t\t--disable-install-doc \t\t--enable-shared \t; \tmake -j \"$(nproc)\"; \tmake install; \t\trunDeps=\"$( \t\tscanelf --needed --nobanner --format '%n#p' --recursive /usr/local \t\t\t| tr ',' '\\n' \t\t\t| sort -u \t\t\t| awk 'system(\"[ -e /usr/local/lib/\" $1 \" ]\") == 0 { next } { print \"so:\" $1 }' \t)\"; \tapk add --no-network --virtual .ruby-rundeps \t\t$runDeps \t\tbzip2 \t\tca-certificates \t\tlibffi-dev \t\tprocps \t\tyaml-dev \t\tzlib-dev \t; \tapk del --no-network .ruby-builddeps; \t\tcd /; \trm -r /usr/src/ruby; \t! apk --no-network list --installed \t\t| grep -v '^[.]ruby-rundeps' \t\t| grep -i ruby \t; \t[ \"$(command -v ruby)\" = '/usr/local/bin/ruby' ]; \truby --version; \tgem --version; \tbundle --version",
-            "ENV RUBY_DOWNLOAD_SHA256=5db187882b7ac34016cd48d7032e197f07e4968f406b0690e20193b9b424841f",
-            "ENV RUBY_VERSION=2.6.6",
-            "ENV RUBY_MAJOR=2.6",
-            "ENV LANG=C.UTF-8",
-            "RUN set -eux; \tmkdir -p /usr/local/etc; \t{ \t\techo 'install: --no-document'; \t\techo 'update: --no-document'; \t} \u003e\u003e /usr/local/etc/gemrc",
-            "RUN apk add --no-cache \t\tgmp-dev",
-            "CMD [\"/bin/sh\"]",
-            "ADD file:f17f65714f703db9012f00e5ec98d0b2541ff6147c2633f7ab9ba659d0c507f4 in /"
-          ]
+        "passthrough": {
+          "neuvector": {
+            "cmds": [
+              "CMD [\"rails\" \"server\" \"-p\" \"3000\" \"-b\" \"0.0.0.0\"]",
+              "ENTRYPOINT [\"bundle\" \"exec\"]",
+              "EXPOSE 3000",
+              "RUN apk --no-cache --update add nodejs imagemagick6 postgresql-dev tzdata \u0026\u0026 gem install bundler \u0026\u0026     bundle install --deployment --without development test",
+              "COPY dir:cfd6c107e9db5e6d3eb7fdfdc1d993d14c924a53fcb20069ea23e383c8c2967d in /var/www/heimdall",
+              "WORKDIR /var/www/heimdall",
+              "RUN mkdir -p $RAILS_ROOT",
+              "ENV RAILS_ROOT=/var/www/heimdall",
+              "CMD [\"irb\"]",
+              "RUN mkdir -p \"$GEM_HOME\" \u0026\u0026 chmod 777 \"$GEM_HOME\"",
+              "ENV PATH=/usr/local/bundle/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+              "ENV BUNDLE_SILENCE_ROOT_WARNING=1 BUNDLE_APP_CONFIG=/usr/local/bundle",
+              "ENV GEM_HOME=/usr/local/bundle",
+              "RUN set -eux; \t\tapk add --no-cache --virtual .ruby-builddeps \t\tautoconf \t\tbison \t\tbzip2 \t\tbzip2-dev \t\tca-certificates \t\tcoreutils \t\tdpkg-dev dpkg \t\tgcc \t\tgdbm-dev \t\tglib-dev \t\tlibc-dev \t\tlibffi-dev \t\tlibxml2-dev \t\tlibxslt-dev \t\tlinux-headers \t\tmake \t\tncurses-dev \t\topenssl \t\topenssl-dev \t\tpatch \t\tprocps \t\treadline-dev \t\truby \t\ttar \t\txz \t\tyaml-dev \t\tzlib-dev \t; \t\twget -O ruby.tar.xz \"https://cache.ruby-lang.org/pub/ruby/${RUBY_MAJOR%-rc}/ruby-$RUBY_VERSION.tar.xz\"; \techo \"$RUBY_DOWNLOAD_SHA256 *ruby.tar.xz\" | sha256sum --check --strict; \t\tmkdir -p /usr/src/ruby; \ttar -xJf ruby.tar.xz -C /usr/src/ruby --strip-components=1; \trm ruby.tar.xz; \t\tcd /usr/src/ruby; \t\twget -O 'thread-stack-fix.patch' 'https://bugs.ruby-lang.org/attachments/download/7081/0001-thread_pthread.c-make-get_main_stack-portable-on-lin.patch'; \techo '3ab628a51d92fdf0d2b5835e93564857aea73e0c1de00313864a94a6255cb645 *thread-stack-fix.patch' | sha256sum --check --strict; \tpatch -p1 -i thread-stack-fix.patch; \trm thread-stack-fix.patch; \t\t{ \t\techo '#define ENABLE_PATH_CHECK 0'; \t\techo; \t\tcat file.c; \t} \u003e file.c.new; \tmv file.c.new file.c; \t\tautoconf; \tgnuArch=\"$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)\"; \texport ac_cv_func_isnan=yes ac_cv_func_isinf=yes; \t./configure \t\t--build=\"$gnuArch\" \t\t--disable-install-doc \t\t--enable-shared \t; \tmake -j \"$(nproc)\"; \tmake install; \t\trunDeps=\"$( \t\tscanelf --needed --nobanner --format '%n#p' --recursive /usr/local \t\t\t| tr ',' '\\n' \t\t\t| sort -u \t\t\t| awk 'system(\"[ -e /usr/local/lib/\" $1 \" ]\") == 0 { next } { print \"so:\" $1 }' \t)\"; \tapk add --no-network --virtual .ruby-rundeps \t\t$runDeps \t\tbzip2 \t\tca-certificates \t\tlibffi-dev \t\tprocps \t\tyaml-dev \t\tzlib-dev \t; \tapk del --no-network .ruby-builddeps; \t\tcd /; \trm -r /usr/src/ruby; \t! apk --no-network list --installed \t\t| grep -v '^[.]ruby-rundeps' \t\t| grep -i ruby \t; \t[ \"$(command -v ruby)\" = '/usr/local/bin/ruby' ]; \truby --version; \tgem --version; \tbundle --version",
+              "ENV RUBY_DOWNLOAD_SHA256=5db187882b7ac34016cd48d7032e197f07e4968f406b0690e20193b9b424841f",
+              "ENV RUBY_VERSION=2.6.6",
+              "ENV RUBY_MAJOR=2.6",
+              "ENV LANG=C.UTF-8",
+              "RUN set -eux; \tmkdir -p /usr/local/etc; \t{ \t\techo 'install: --no-document'; \t\techo 'update: --no-document'; \t} \u003e\u003e /usr/local/etc/gemrc",
+              "RUN apk add --no-cache \t\tgmp-dev",
+              "CMD [\"/bin/sh\"]",
+              "ADD file:f17f65714f703db9012f00e5ec98d0b2541ff6147c2633f7ab9ba659d0c507f4 in /"
+            ]
+          }
         }
       },
       "requirements": [
@@ -60,7 +62,7 @@
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.7-r0.",
               "resource": "package",
               "resourceId": "apk-tools@2.10.5-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -124,7 +126,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -188,7 +190,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -252,7 +254,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -316,7 +318,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -380,7 +382,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -444,7 +446,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -508,7 +510,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -572,7 +574,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r1.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -636,7 +638,7 @@
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r1.",
               "resource": "package",
               "resourceId": "freetype@2.10.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -700,7 +702,7 @@
               "message": "Vulnerable package ghostscript is at version 9.52-r0. Update to fixed version 9.52-r1.",
               "resource": "package",
               "resourceId": "ghostscript@9.52-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -764,7 +766,7 @@
               "message": "Vulnerable package gnutls is at version 3.6.15-r0. Update to fixed version 3.6.15-r1.",
               "resource": "package",
               "resourceId": "gnutls@3.6.15-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -828,7 +830,7 @@
               "message": "Vulnerable package gnutls is at version 3.6.15-r0. Update to fixed version 3.6.15-r1.",
               "resource": "package",
               "resourceId": "gnutls@3.6.15-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -892,7 +894,7 @@
               "message": "Vulnerable package libx11 is at version 1.6.12-r0. Update to fixed version 1.6.12-r1.",
               "resource": "package",
               "resourceId": "libx11@1.6.12-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -956,7 +958,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.1-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1020,7 +1022,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1084,7 +1086,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.4-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1148,7 +1150,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1l-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1212,7 +1214,7 @@
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r2.",
               "resource": "package",
               "resourceId": "zlib@1.2.11-r3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1276,7 +1278,7 @@
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.6-r0.",
               "resource": "package",
               "resourceId": "apk-tools@2.10.5-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1340,7 +1342,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1404,7 +1406,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1468,7 +1470,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1532,7 +1534,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1596,7 +1598,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1660,7 +1662,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1724,7 +1726,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1788,7 +1790,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r20.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1852,7 +1854,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1916,7 +1918,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r22.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1980,7 +1982,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2044,7 +2046,7 @@
               "message": "Vulnerable package cairo is at version 1.16.0-r2. Update to fixed version 1.16.0-r3.",
               "resource": "package",
               "resourceId": "cairo@1.16.0-r2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2108,7 +2110,7 @@
               "message": "Vulnerable package cyrus-sasl is at version 2.1.27-r6. Update to fixed version 2.1.28-r0.",
               "resource": "package",
               "resourceId": "cyrus-sasl@2.1.27-r6",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2172,7 +2174,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2236,7 +2238,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2300,7 +2302,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2364,7 +2366,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2428,7 +2430,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2492,7 +2494,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r1.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2556,7 +2558,7 @@
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r2.",
               "resource": "package",
               "resourceId": "freetype@2.10.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2620,7 +2622,7 @@
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r2.",
               "resource": "package",
               "resourceId": "freetype@2.10.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2684,7 +2686,7 @@
               "message": "Vulnerable package gdk-pixbuf is at version 2.40.0-r2. Update to fixed version 2.40.0-r3.",
               "resource": "package",
               "resourceId": "gdk-pixbuf@2.40.0-r2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2748,7 +2750,7 @@
               "message": "Vulnerable package gmp is at version 6.2.0-r0. Update to fixed version 6.2.1-r1.",
               "resource": "package",
               "resourceId": "gmp@6.2.0-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2812,7 +2814,7 @@
               "message": "Vulnerable package imagemagick6 is at version 6.9.11.25-r0. Update to fixed version 6.9.11.42-r0.",
               "resource": "package",
               "resourceId": "imagemagick6@6.9.11.25-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2876,7 +2878,7 @@
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
               "resource": "package",
               "resourceId": "libxml2@2.9.10-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2940,7 +2942,7 @@
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
               "resource": "package",
               "resourceId": "libxml2@2.9.10-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3004,7 +3006,7 @@
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.13-r0.",
               "resource": "package",
               "resourceId": "libxml2@2.9.10-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3068,7 +3070,7 @@
               "message": "Vulnerable package ncurses is at version 6.2_p20200523-r0. Update to fixed version 6.2_p20200523-r1.",
               "resource": "package",
               "resourceId": "ncurses@6.2_p20200523-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3132,7 +3134,7 @@
               "message": "Vulnerable package nettle is at version 3.5.1-r1. Update to fixed version 3.5.1-r2.",
               "resource": "package",
               "resourceId": "nettle@3.5.1-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3196,7 +3198,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3260,7 +3262,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3324,7 +3326,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3388,7 +3390,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3452,7 +3454,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3516,7 +3518,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.21.0-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3580,7 +3582,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3644,7 +3646,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3708,7 +3710,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3772,7 +3774,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3836,7 +3838,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.21.0-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3900,7 +3902,7 @@
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
               "resource": "package",
               "resourceId": "openldap@2.4.50-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3964,7 +3966,7 @@
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
               "resource": "package",
               "resourceId": "openldap@2.4.50-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4028,7 +4030,7 @@
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
               "resource": "package",
               "resourceId": "openldap@2.4.50-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4092,7 +4094,7 @@
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r2.",
               "resource": "package",
               "resourceId": "openldap@2.4.50-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4156,7 +4158,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4220,7 +4222,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1n-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4284,7 +4286,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1k-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4348,7 +4350,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1l-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4412,7 +4414,7 @@
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
               "resource": "package",
               "resourceId": "p11-kit@0.23.20-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4476,7 +4478,7 @@
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
               "resource": "package",
               "resourceId": "p11-kit@0.23.20-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4540,7 +4542,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4604,7 +4606,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4668,7 +4670,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.9-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4732,7 +4734,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4796,7 +4798,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4860,7 +4862,7 @@
               "message": "Vulnerable package xz is at version 5.2.5-r0. Update to fixed version 5.2.5-r1.",
               "resource": "package",
               "resourceId": "xz@5.2.5-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4924,7 +4926,7 @@
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r0.",
               "resource": "package",
               "resourceId": "zlib@1.2.11-r3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4988,7 +4990,7 @@
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r2.",
               "resource": "package",
               "resourceId": "avahi@0.8-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5052,7 +5054,7 @@
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r1.",
               "resource": "package",
               "resourceId": "avahi@0.8-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5116,7 +5118,7 @@
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
               "resource": "package",
               "resourceId": "busybox@1.31.1-r19",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5180,7 +5182,7 @@
               "message": "Vulnerable package c-ares is at version 1.16.1-r0. Update to fixed version 1.17.2-r0.",
               "resource": "package",
               "resourceId": "c-ares@1.16.1-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5244,7 +5246,7 @@
               "message": "Vulnerable package cairo is at version 1.16.0-r2. Update to fixed version 1.16.0-r5.",
               "resource": "package",
               "resourceId": "cairo@1.16.0-r2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5308,7 +5310,7 @@
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
               "resource": "package",
               "resourceId": "expat@2.2.9-r1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5372,7 +5374,7 @@
               "message": "Vulnerable package gdk-pixbuf is at version 2.40.0-r2. Update to fixed version 2.40.0-r4.",
               "resource": "package",
               "resourceId": "gdk-pixbuf@2.40.0-r2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5436,7 +5438,7 @@
               "message": "Vulnerable package imagemagick6 is at version 6.9.11.25-r0. Update to fixed version 6.9.11.35-r0.",
               "resource": "package",
               "resourceId": "imagemagick6@6.9.11.25-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5500,7 +5502,7 @@
               "message": "Vulnerable package libjpeg-turbo is at version 2.0.5-r0. Update to fixed version 2.1.0-r0.",
               "resource": "package",
               "resourceId": "libjpeg-turbo@2.0.5-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5564,7 +5566,7 @@
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.14-r0.",
               "resource": "package",
               "resourceId": "libxml2@2.9.10-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5628,7 +5630,7 @@
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
               "resource": "package",
               "resourceId": "libxml2@2.9.10-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5692,7 +5694,7 @@
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.12-r0.",
               "resource": "package",
               "resourceId": "libxml2@2.9.10-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5756,7 +5758,7 @@
               "message": "Vulnerable package musl is at version 1.1.24-r9. Update to fixed version 1.1.24-r10.",
               "resource": "package",
               "resourceId": "musl@1.1.24-r9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5820,7 +5822,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5884,7 +5886,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5948,7 +5950,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6012,7 +6014,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6076,7 +6078,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6140,7 +6142,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6204,7 +6206,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.2-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6268,7 +6270,7 @@
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
               "resource": "package",
               "resourceId": "nodejs@12.18.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6332,7 +6334,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1k-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6396,7 +6398,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6460,7 +6462,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1i-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6524,7 +6526,7 @@
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
               "resource": "package",
               "resourceId": "openssl@1.1.1g-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6588,7 +6590,7 @@
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
               "resource": "package",
               "resourceId": "p11-kit@0.23.20-r5",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6652,7 +6654,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6716,7 +6718,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.6-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6780,7 +6782,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.6-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6844,7 +6846,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6908,7 +6910,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.8-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6972,7 +6974,7 @@
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.9-r0.",
               "resource": "package",
               "resourceId": "postgresql@12.4-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7036,7 +7038,7 @@
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.4-r0.",
               "resource": "package",
               "resourceId": "util-linux@2.35.2-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7100,7 +7102,7 @@
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.3-r0.",
               "resource": "package",
               "resourceId": "util-linux@2.35.2-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7164,7 +7166,7 @@
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.3-r0.",
               "resource": "package",
               "resourceId": "util-linux@2.35.2-r0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7219,7 +7221,7 @@
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.1,5.2; OR \u003e=6.0.5.1,6.0; OR \u003e=6.1.6.1,6.1; OR \u003e=7.0.3.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activerecord-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7283,7 +7285,7 @@
               "message": "Vulnerable package ruby:activestorage is at version 5.2.4.3. Update to fixed version \u003e=5.2.6.3,5.2; OR \u003e=6.0.4.7,6.0; OR \u003e=6.1.4.7,6.1; OR \u003e=7.0.2.3.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activestorage-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7347,7 +7349,7 @@
               "message": "Vulnerable package ruby:bundler is at version 2.1.4. Update to fixed version =2.2.10; OR \u003e=2.2.18.",
               "resource": "file",
               "resourceId": "usr/local/bundle/specifications/bundler-2.1.4",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7411,7 +7413,7 @@
               "message": "Vulnerable package ruby:bundler is at version 2.1.4. Update to fixed version \u003e=2.2.33.",
               "resource": "file",
               "resourceId": "usr/local/bundle/specifications/bundler-2.1.4",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7475,7 +7477,7 @@
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version =2.2.10; OR \u003e=2.2.18.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7530,7 +7532,7 @@
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.0.0.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7594,7 +7596,7 @@
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.2.33.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7658,7 +7660,7 @@
               "message": "Vulnerable package ruby:jmespath is at version 1.4.0. Update to fixed version \u003e=1.6.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/jmespath-1.4.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7713,7 +7715,7 @@
               "message": "Vulnerable package ruby:pdfkit is at version 0.8.4.1. Update to fixed version \u003e=0.8.7.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/pdfkit-0.8.4.1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7777,7 +7779,7 @@
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.12,4.3; OR \u003e=5.6.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7832,7 +7834,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.1,2.0; OR \u003e=2.1.4.1,2.1; OR \u003e=2.2.3.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7887,7 +7889,7 @@
               "message": "Vulnerable package ruby:stringio is at version 0.0.2. Update to fixed version \u003e=3.0.1.1.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/stringio-0.0.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7951,7 +7953,7 @@
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8015,7 +8017,7 @@
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8079,7 +8081,7 @@
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8143,7 +8145,7 @@
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.6.2,5.2; OR \u003e=6.0.4.6,6.0; OR \u003e=6.1.4.6,6.1; OR \u003e=7.0.2.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8207,7 +8209,7 @@
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8262,7 +8264,7 @@
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=6.1.7.3,6.1; OR \u003e=7.0.4.3.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionview-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8317,7 +8319,7 @@
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activerecord-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8381,7 +8383,7 @@
               "message": "Vulnerable package ruby:activesupport is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activesupport-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8445,7 +8447,7 @@
               "message": "Vulnerable package ruby:addressable is at version 2.6.0. Update to fixed version \u003e=2.8.0.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/addressable-2.6.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8509,7 +8511,7 @@
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.1.0.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8573,7 +8575,7 @@
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=1.3.2,1.3; OR \u003e=2.1.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8637,7 +8639,7 @@
               "message": "Vulnerable package ruby:date is at version 2.0.0. Update to fixed version \u003e=2.0.1,2.0; OR \u003e=3.0.2,3.0; OR \u003e=3.1.2,3.1; OR \u003e=3.2.1.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/date-2.0.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8701,7 +8703,7 @@
               "message": "Vulnerable package ruby:globalid is at version 0.4.2. Update to fixed version \u003e=1.0.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/globalid-0.4.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8765,7 +8767,7 @@
               "message": "Vulnerable package ruby:json is at version 2.1.0. Update to fixed version \u003e=2.3.0.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/json-2.1.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8820,7 +8822,7 @@
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/loofah-2.5.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8875,7 +8877,7 @@
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/loofah-2.5.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8939,7 +8941,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9006,7 +9008,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9072,7 +9074,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9135,7 +9137,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9199,7 +9201,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.6.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9263,7 +9265,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9327,7 +9329,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9391,7 +9393,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.12.5.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9458,7 +9460,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9521,7 +9523,7 @@
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.11,4.3; OR \u003e=5.6.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9585,7 +9587,7 @@
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.8,4.3; OR \u003e=5.3.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9649,7 +9651,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9713,7 +9715,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9768,7 +9770,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.3,2.0; OR \u003e=2.1.4.3,2.1; OR \u003e=2.2.6.3,2.2; OR \u003e=3.0.4.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9823,7 +9825,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.2,2.2; OR \u003e=3.0.4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9878,7 +9880,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.1,2.0; OR \u003e=2.1.4.1,2.1; OR \u003e=2.2.3.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9933,7 +9935,7 @@
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9997,7 +9999,7 @@
               "message": "Vulnerable package ruby:rdoc is at version 6.1.2. Update to fixed version \u003e=6.1.2.1,6.1; OR \u003e=6.2.1.1,6.2; OR \u003e=6.3.1.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rdoc-6.1.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10061,7 +10063,7 @@
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.1.9.1,3.1; OR \u003e=3.2.3.1,3.2; OR \u003e=3.2.5.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10116,7 +10118,7 @@
               "message": "Vulnerable package ruby:tzinfo is at version 1.2.7. Update to fixed version \u003e=0.3.61,0.3; OR \u003e=1.2.10.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/tzinfo-1.2.7",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10183,7 +10185,7 @@
               "message": "Vulnerable package ruby:webrick is at version 1.4.2. Update to fixed version \u003e=1.6.1.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/webrick-1.4.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10246,7 +10248,7 @@
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10310,7 +10312,7 @@
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionview-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10374,7 +10376,7 @@
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.4,5.2; OR \u003e=6.0.3.3.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionview-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10438,7 +10440,7 @@
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.5,5.2; OR \u003e=6.0.3.5,6.0; OR \u003e=6.1.2.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activerecord-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10493,7 +10495,7 @@
               "message": "Vulnerable package ruby:activestorage is at version 5.2.4.3. Update to fixed version \u003e=6.1.7.7,6.1; OR \u003e=7.0.8.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activestorage-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10557,7 +10559,7 @@
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=1.3.2,1.3; OR \u003e=2.1.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10612,7 +10614,7 @@
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=2.2.5,2.2; OR \u003e=3.0.5.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10667,7 +10669,7 @@
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=2.2.6,2.2; OR \u003e=3.0.7.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10722,7 +10724,7 @@
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/loofah-2.5.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10777,7 +10779,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10841,7 +10843,7 @@
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.0.rc4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10896,7 +10898,7 @@
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=5.6.7,5.6; OR \u003e=6.3.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10951,7 +10953,7 @@
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=5.6.8,5.6; OR \u003e=6.4.2.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11015,7 +11017,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11079,7 +11081,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.6.4,2.0; OR \u003e=3.0.6.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11134,7 +11136,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11198,7 +11200,7 @@
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.4,2.0; OR \u003e=2.1.4.4,2.1; OR \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11253,7 +11255,7 @@
               "message": "Vulnerable package ruby:rails is at version 5.2.4.3. Update to fixed version \u003e=3.2.17,3.2; OR \u003e=4.0.3,4.0; OR \u003e=4.1.0; OR \u003e=4.1.0.beta2,4.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-5.2.4.3",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11308,7 +11310,7 @@
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11372,7 +11374,7 @@
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.3.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11427,7 +11429,7 @@
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11482,7 +11484,7 @@
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11537,7 +11539,7 @@
               "message": "Vulnerable package ruby:rdoc is at version 6.1.2. Update to fixed version \u003e=6.3.4.1,6.3; OR \u003e=6.4.1.1,6.4.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rdoc-6.1.2",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11592,7 +11594,7 @@
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.2.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11647,7 +11649,7 @@
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.2.7.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11702,7 +11704,7 @@
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.6.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11757,7 +11759,7 @@
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.3.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11812,7 +11814,7 @@
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.3.",
               "resource": "file",
               "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11876,7 +11878,7 @@
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.9,4.3; OR \u003e=5.5.1.",
               "resource": "file",
               "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
-              "startTime": "2026-10-05T14:29:40.648697Z",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11945,7 +11947,7 @@
     "name": "neuvector-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-05T14:29:40.648697Z",
+  "timestamp": "2026-10-09T15:27:48.118659Z",
   "tool": {
     "name": "NeuVector"
   }

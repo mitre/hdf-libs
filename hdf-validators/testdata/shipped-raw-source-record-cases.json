@@ -1,0 +1,123 @@
+{
+  "$comment": "Shared Go/TypeScript case table for results[].rawSourceRecord (ADR-0017 §5). Both shipped validators read this file, because the closure is written with additionalProperties: the Go validator is a draft-07 engine that silently ignores unevaluatedProperties, so a closure written the house way would hold in TypeScript alone and the bounded field would be bounded in one language only. Each case is injected as the rawSourceRecord of the document's single result.",
+  "cases": [
+    {
+      "name": "a utf-8 JSON record",
+      "record": {
+        "content": "{\"vulnerability\":{\"id\":\"CVE-2022-48174\"},\"artifact\":{\"name\":\"ssl_client\"}}",
+        "encoding": "utf-8",
+        "mediaType": "application/json"
+      },
+      "valid": true,
+      "why": "the three required members are the whole contract"
+    },
+    {
+      "name": "a record located by pointer",
+      "record": {
+        "content": "{\"vulnerability\":{\"id\":\"CVE-2022-48174\"}}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "pointer": "/matches/3"
+      },
+      "valid": true,
+      "why": "pointer is the optional fourth member"
+    },
+    {
+      "name": "an XML record inside a JSON document",
+      "record": {
+        "content": "<rule-result idref=\"xccdf_rule_sshd_disable_root_login\"><result>fail</result></rule-result>",
+        "encoding": "utf-8",
+        "mediaType": "application/xml",
+        "pointer": "/Benchmark/TestResult/rule-result[4]"
+      },
+      "valid": true,
+      "why": "mediaType describes the record, not the document carrying it"
+    },
+    {
+      "name": "a base64 record",
+      "record": {
+        "content": "UEsDBBQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAYXVkaXQuZnZkbA==",
+        "encoding": "base64",
+        "mediaType": "application/octet-stream"
+      },
+      "valid": true,
+      "why": "bytes that are not valid UTF-8 text carry as base64"
+    },
+    {
+      "name": "an empty content string",
+      "record": {
+        "content": "",
+        "encoding": "utf-8",
+        "mediaType": "application/json"
+      },
+      "valid": true,
+      "why": "no minLength is imposed: an empty record is a producer question, not a schema one"
+    },
+    {
+      "name": "no content",
+      "record": {
+        "encoding": "utf-8",
+        "mediaType": "application/json"
+      },
+      "valid": false,
+      "why": "content is required — a record with no bytes carries nothing"
+    },
+    {
+      "name": "no encoding",
+      "record": {
+        "content": "{}",
+        "mediaType": "application/json"
+      },
+      "valid": false,
+      "why": "encoding is required: bytes a consumer has to guess how to read are not carriage"
+    },
+    {
+      "name": "no mediaType",
+      "record": {
+        "content": "{}",
+        "encoding": "utf-8"
+      },
+      "valid": false,
+      "why": "mediaType is required, the same rule §2 sets for an embedding artifact"
+    },
+    {
+      "name": "an undeclared member",
+      "record": {
+        "content": "{}",
+        "encoding": "utf-8",
+        "mediaType": "application/json",
+        "sourceName": "grype"
+      },
+      "valid": false,
+      "why": "the field is CLOSED — this is the case the Go validator would miss under unevaluatedProperties, and the reason the closure uses additionalProperties"
+    },
+    {
+      "name": "an encoding outside the enum",
+      "record": {
+        "content": "7b7d",
+        "encoding": "hex",
+        "mediaType": "application/json"
+      },
+      "valid": false,
+      "why": "utf-8 and base64 are the only encodings, matching §3's artifact pair"
+    },
+    {
+      "name": "a string instead of an object",
+      "record": "{\"vulnerability\":{}}",
+      "valid": false,
+      "why": "the record is an object with declared members, never a bare blob"
+    },
+    {
+      "name": "a non-string content",
+      "record": {
+        "content": {
+          "vulnerability": {}
+        },
+        "encoding": "utf-8",
+        "mediaType": "application/json"
+      },
+      "valid": false,
+      "why": "content is the record's bytes as a string; a parsed object belongs in the artifact's document member, not here"
+    }
+  ]
+}

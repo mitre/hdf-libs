@@ -87,9 +87,9 @@ func TestDiffCoverage_ResolveGroupValues(t *testing.T) {
 		Baselines: []hdf.EvaluatedBaseline{
 			{
 				Name: "baseline-a",
-				Extensions: map[string]interface{}{
-					"labels": map[string]interface{}{
-						"env": "prod",
+				Extensions: &hdf.Extensions{
+					Passthrough: map[string]interface{}{
+						"labels": map[string]interface{}{"env": "prod"},
 					},
 				},
 				Requirements: []hdf.EvaluatedRequirement{
@@ -566,8 +566,8 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 				"name":     "baseline-a",
 				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "aaa"},
 				"extensions": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"env": "production",
+					"passthrough": map[string]interface{}{
+						"labels": map[string]interface{}{"env": "production"},
 					},
 				},
 				"requirements": []interface{}{
@@ -584,8 +584,8 @@ func TestDiffCoverage_GroupByLabel_CLI(t *testing.T) {
 				"name":     "baseline-a",
 				"checksum": map[string]interface{}{"algorithm": "sha256", "value": "bbb"},
 				"extensions": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"env": "production",
+					"passthrough": map[string]interface{}{
+						"labels": map[string]interface{}{"env": "production"},
 					},
 				},
 				"requirements": []interface{}{

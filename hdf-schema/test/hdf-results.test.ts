@@ -162,28 +162,40 @@ describe('hdf-results.schema.json (refactored)', () => {
   });
 
   describe('extensions field (for tool-specific data)', () => {
-    it('should accept extensions field with arbitrary data', () => {
+    it('should accept arbitrary data inside passthrough', () => {
       const doc = createMinimalResultsDoc({
         extensions: {
-          auxiliary_data: [
-            {
-              name: 'SonarQube',
-              data: { projectKey: 'my-app', version: '1.0.0' }
-            }
-          ]
+          passthrough: {
+            auxiliary_data: [
+              {
+                name: 'SonarQube',
+                data: { projectKey: 'my-app', version: '1.0.0' }
+              }
+            ]
+          }
         }
       });
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept extensions with raw tool output', () => {
+    it('should accept raw tool output inside passthrough', () => {
       const doc = createMinimalResultsDoc({
         extensions: {
-          raw: { original: 'tool output here' },
-          custom_field: 'any value'
+          passthrough: {
+            raw: { original: 'tool output here' },
+            custom_field: 'any value'
+          }
         }
       });
       expect(validate(doc)).toBe(true);
+    });
+
+    // extensions is closed: passthrough is where unmodeled data goes.
+    it('should reject tool-specific data placed directly on extensions', () => {
+      const doc = createMinimalResultsDoc({
+        extensions: { custom_field: 'any value' }
+      });
+      expect(validate(doc)).toBe(false);
     });
 
     it('should accept empty extensions object', () => {
@@ -352,13 +364,27 @@ describe('hdf-results.schema.json (refactored)', () => {
         baselines: [
           createMinimalEvaluatedBaseline({
             extensions: {
-              profile_metadata: { original_format: 'InSpec' },
-              custom_data: 'any value'
+              passthrough: {
+                profile_metadata: { original_format: 'InSpec' },
+                custom_data: 'any value'
+              }
             }
           })
         ]
       });
       expect(validate(doc)).toBe(true);
+    });
+
+    // The baseline-level carrier is the same closed definition as the root one.
+    it('should reject an undeclared key in baseline extensions', () => {
+      const doc = createMinimalResultsDoc({
+        baselines: [
+          createMinimalEvaluatedBaseline({
+            extensions: { custom_data: 'any value' }
+          })
+        ]
+      });
+      expect(validate(doc)).toBe(false);
     });
 
     it('should accept baseline with originalChecksum', () => {

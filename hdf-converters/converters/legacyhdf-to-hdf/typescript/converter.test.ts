@@ -262,7 +262,7 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       expect(v2.tool).toEqual({ name: 'Heimdall Data Format v1' });
     });
 
-    it('should move unknown fields to extensions', () => {
+    it('should move unknown fields to extensions.passthrough', () => {
       const v1: LegacyHDFResults = {
         version: '1.0.0',
         platform: { name: 'test' },
@@ -275,9 +275,9 @@ describe('HDF v1.0 to v2.0 Converter', () => {
       const v2 = convertLegacyHdf(v1);
 
       expect(v2.extensions).toBeDefined();
-      expect(v2.extensions!.customField).toBe('custom value');
-      expect(v2.extensions!.anotherField).toEqual({ nested: 'data' });
-      expect(v2.extensions!.v1_version).toBe('1.0.0');
+      expect(v2.extensions!.passthrough!.customField).toBe('custom value');
+      expect(v2.extensions!.passthrough!.anotherField).toEqual({ nested: 'data' });
+      expect(v2.extensions!.passthrough!.v1_version).toBe('1.0.0');
     });
 
     it('should not create extensions if no unknown fields', () => {

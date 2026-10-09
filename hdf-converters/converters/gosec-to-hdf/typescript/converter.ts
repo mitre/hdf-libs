@@ -6,6 +6,7 @@ import { buildNoFindingsRequirement, inputChecksum, limitArray, markUnratedSever
 import type {
   EvaluatedBaseline,
   EvaluatedRequirement,
+  Extensions,
   RequirementResult,
   Checksum,
 } from '@mitre/hdf-schema';
@@ -220,10 +221,10 @@ function flattenGoErrors(errs: Record<string, GosecGoError[]> | undefined): Gose
 
 /**
  * Routes gosec's scan-scope exhaust (Stats + Golang build errors) — data with no
- * typed HDF home — into baseline.extensions['gosec'] per the Auxiliary Tool
- * Metadata convention. Returns undefined when neither is present.
+ * typed HDF home — into baseline.extensions.passthrough['gosec'] per the
+ * Auxiliary Tool Metadata convention. Returns undefined when neither is present.
  */
-function buildGosecExtensions(report: GosecReport): Record<string, unknown> | undefined {
+function buildGosecExtensions(report: GosecReport): Extensions | undefined {
   const gosec: Record<string, unknown> = {};
   if (report.Stats) {
     const s = report.Stats;
@@ -236,7 +237,7 @@ function buildGosecExtensions(report: GosecReport): Record<string, unknown> | un
   if (Object.keys(gosec).length === 0) {
     return undefined;
   }
-  return { gosec };
+  return { passthrough: { gosec } };
 }
 
 /**

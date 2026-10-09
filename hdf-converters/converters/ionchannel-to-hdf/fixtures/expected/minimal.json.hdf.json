@@ -3,18 +3,20 @@
     {
       "description": "Ion Channel analysis verdict: PASSED (risk: low). Ruleset: default (ruleset-001).",
       "extensions": {
-        "ionchannel": {
-          "analysis_id": "analysis-001-abcdef",
-          "branch": "main",
-          "description": "Example project for dependency analysis",
-          "duration": 12345,
-          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "name": "example-project",
-          "project_id": "project-001-mnopqr",
-          "public": false,
-          "status": "finished",
-          "team_id": "team-001-ghijkl",
-          "type": "git"
+        "passthrough": {
+          "ionchannel": {
+            "analysis_id": "analysis-001-abcdef",
+            "branch": "main",
+            "description": "Example project for dependency analysis",
+            "duration": 12345,
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "name": "example-project",
+            "project_id": "project-001-mnopqr",
+            "public": false,
+            "status": "finished",
+            "team_id": "team-001-ghijkl",
+            "type": "git"
+          }
         }
       },
       "integrity": {

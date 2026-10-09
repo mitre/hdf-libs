@@ -13,7 +13,7 @@ import (
 
 // HDFToChecklist maps HDF Results back to the format-neutral Checklist model.
 //
-// When the HDF carries checklist passthrough (extensions/tags written by
+// When the HDF carries checklist passthrough (extensions.passthrough/tags written by
 // ChecklistToHDF — i.e. the HDF originated from a CKL/CKLB), the original
 // fields are reproduced losslessly. For arbitrary HDF from any other tool, the
 // required checklist fields are synthesized best-effort (id->Vuln_Num,
@@ -39,13 +39,22 @@ func HDFToChecklist(input []byte) (*Checklist, error) {
 	}
 
 	cl := &Checklist{}
-	applyRootExtensions(cl, results.Extensions)
+	applyRootExtensions(cl, passthrough(results.Extensions))
 	cl.Asset = buildAsset(&results, cl)
 
 	for i := range results.Baselines {
 		cl.Stigs = append(cl.Stigs, baselineToStig(&results.Baselines[i]))
 	}
 	return cl, nil
+}
+
+// passthrough is where unmodeled producer data lives; `extensions` itself is
+// closed to undeclared keys.
+func passthrough(ext *hdf.Extensions) map[string]interface{} {
+	if ext == nil {
+		return nil
+	}
+	return ext.Passthrough
 }
 
 func applyRootExtensions(cl *Checklist, ext map[string]interface{}) {
@@ -74,7 +83,7 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 		a.HostMAC = hdfutil.Deref(c.MACAddress)
 	}
 	// Merge asset extras from root extensions (round-trip).
-	if extras, ok := mapVal(results.Extensions, "assetExtras"); ok {
+	if extras, ok := mapVal(passthrough(results.Extensions), "assetExtras"); ok {
 		a.Role = strVal(extras, "role")
 		a.AssetType = strVal(extras, "assetType")
 		a.Marking = strVal(extras, "marking")
@@ -97,12 +106,13 @@ func baselineToStig(bl *hdf.EvaluatedBaseline) Stig {
 		Version: hdfutil.Deref(bl.Version),
 	}
 	// Round-trip metadata from baseline extensions.
-	stig.StigID = strVal(bl.Extensions, "stigid")
-	stig.UUID = strVal(bl.Extensions, "uuid")
-	stig.ReleaseInfo = strVal(bl.Extensions, "releaseInfo")
-	stig.DisplayName = strVal(bl.Extensions, "displayName")
-	stig.ReferenceIdentifier = strVal(bl.Extensions, "referenceIdentifier")
-	stig.Classification = strVal(bl.Extensions, "classification")
+	blExt := passthrough(bl.Extensions)
+	stig.StigID = strVal(blExt, "stigid")
+	stig.UUID = strVal(blExt, "uuid")
+	stig.ReleaseInfo = strVal(blExt, "releaseInfo")
+	stig.DisplayName = strVal(blExt, "displayName")
+	stig.ReferenceIdentifier = strVal(blExt, "referenceIdentifier")
+	stig.Classification = strVal(blExt, "classification")
 	if stig.StigID == "" {
 		stig.StigID = stig.Title
 	}

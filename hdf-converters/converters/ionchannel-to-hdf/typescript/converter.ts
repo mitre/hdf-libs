@@ -423,7 +423,7 @@ export async function convertIonchannelToHdf(input: string, converterVersion = '
   baseline.description = verdictDescription(analysis);
   baseline.labels = verdictLabels(analysis);
   const runMetadata = ionchannelRunMetadata(analysis);
-  if (runMetadata) baseline.extensions = { ionchannel: runMetadata };
+  if (runMetadata) baseline.extensions = { passthrough: { ionchannel: runMetadata } };
 
   const baselines: EvaluatedBaseline[] = [baseline];
 

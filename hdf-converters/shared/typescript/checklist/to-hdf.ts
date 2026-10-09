@@ -24,7 +24,8 @@ const CONVERTER_VERSION = '1.0.0';
  * Map the format-neutral Checklist model to an HDF Results object.
  * controlType is derived per-Vuln from CCI->NIST; verificationMethod and
  * applicability are omitted (the checklist format cannot substantiate them).
- * Original-format metadata is stashed in extensions/tags for round-trip.
+ * Original-format metadata is stashed in extensions.passthrough/tags for
+ * round-trip — `extensions` itself is closed, so unmodeled keys go one level in.
  */
 export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum, generatorName: string): HDFResults {
   // Checklists carry no per-finding timestamp; use one conversion-time value
@@ -43,7 +44,7 @@ export function checklistToHdf(cl: Checklist, resultsChecksum: Checksum, generat
   if (component) hdf.components = [component];
 
   const ext = rootExtensions(cl);
-  if (Object.keys(ext).length > 0) hdf.extensions = ext;
+  if (Object.keys(ext).length > 0) hdf.extensions = {passthrough: ext};
   return hdf;
 }
 
@@ -55,7 +56,7 @@ function stigToBaseline(s: Stig, resultsChecksum: Checksum, scanTime: Date): Eva
   if (s.title) baseline.title = s.title;
   if (s.version) baseline.version = s.version;
   const ext = baselineExtensions(s);
-  if (Object.keys(ext).length > 0) baseline.extensions = ext;
+  if (Object.keys(ext).length > 0) baseline.extensions = {passthrough: ext};
   return baseline;
 }
 

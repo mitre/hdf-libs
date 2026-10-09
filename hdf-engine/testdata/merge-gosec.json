@@ -2,12 +2,14 @@
   "baselines": [
     {
       "extensions": {
-        "gosec": {
-          "stats": {
-            "files": 199,
-            "lines": 12401,
-            "nosec": 0,
-            "found": 7
+        "passthrough": {
+          "gosec": {
+            "stats": {
+              "files": 199,
+              "lines": 12401,
+              "nosec": 0,
+              "found": 7
+            }
           }
         }
       },
