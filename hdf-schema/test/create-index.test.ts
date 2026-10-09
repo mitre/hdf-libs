@@ -234,13 +234,16 @@ describe('create-index', () => {
         });
     }
 
-    it('dist/index.d.ts has no diagnostics with skipLibCheck disabled', () => {
+    // Both tests compile a program over the full generated declarations, which
+    // takes seconds under coverage with the other packages' suites running
+    // alongside; vitest's five-second default is sized for unit assertions.
+    it('dist/index.d.ts has no diagnostics with skipLibCheck disabled', { timeout: 30_000 }, () => {
       createIndex();
       const program = ts.createProgram([join(DIST_DIR, 'index.d.ts')], DTS_OPTIONS);
       expect(ownDiagnostics(program)).toEqual([]);
     });
 
-    it('deprecated Hdf* aliases resolve to their HDF* types, not any', () => {
+    it('deprecated Hdf* aliases resolve to their HDF* types, not any', { timeout: 30_000 }, () => {
       createIndex();
       const aliases = [
         'HdfResults',
@@ -253,7 +256,11 @@ describe('create-index', () => {
       ];
       // One assignment per alias, each of which must be rejected. An alias that
       // degraded to `any` accepts the number and produces no diagnostic.
-      const probePath = join(DIST_DIR, '__alias-probe__.ts');
+      // TypeScript normalizes every path to forward slashes before it asks the
+      // host, so on Windows a path.join result never matches and the probe is
+      // never served; compare in the compiler's own form.
+      const probePath = join(DIST_DIR, '__alias-probe__.ts').replace(/\\/g, '/');
+      const isProbe = (f: string): boolean => f.replace(/\\/g, '/') === probePath;
       const probeSource = [
         `import type { ${aliases.join(', ')} } from './index.js';`,
         ...aliases.map((name, i) => `export const v${i}: ${name} = 42;`),
@@ -262,10 +269,10 @@ describe('create-index', () => {
 
       const host = ts.createCompilerHost(DTS_OPTIONS);
       const { fileExists, readFile, getSourceFile } = host;
-      host.fileExists = (f) => f === probePath || fileExists.call(host, f);
-      host.readFile = (f) => (f === probePath ? probeSource : readFile.call(host, f));
+      host.fileExists = (f) => isProbe(f) || fileExists.call(host, f);
+      host.readFile = (f) => (isProbe(f) ? probeSource : readFile.call(host, f));
       host.getSourceFile = (f, lang, onError, shouldCreate) =>
-        f === probePath
+        isProbe(f)
           ? ts.createSourceFile(f, probeSource, lang)
           : getSourceFile.call(host, f, lang, onError, shouldCreate);
 
@@ -273,7 +280,7 @@ describe('create-index', () => {
       const program = ts.createProgram([probePath], { ...DTS_OPTIONS, skipLibCheck: true }, host);
       const rejectedLines = ts
         .getPreEmitDiagnostics(program)
-        .filter((d) => d.file?.fileName === probePath && d.code === 2322)
+        .filter((d) => d.file !== undefined && isProbe(d.file.fileName) && d.code === 2322)
         .map((d) => d.file!.getLineAndCharacterOfPosition(d.start ?? 0).line + 1)
         .sort((a, b) => a - b);
 
