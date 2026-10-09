@@ -1,0 +1,211 @@
+# How the MCP surface maps to HTTP.
+#
+# This file NAMES shapes; it never carries one. ADR-0008 §2 gives it a closed grammar and
+# src/bindings.ts enforces both that and completeness against the live contract, so a new
+# tool, resource or input field fails the build until it is bound, dropped or recorded
+# absent. `class` is deliberately absent on every real tool: it derives from the tool's
+# readOnlyHint, and hand-setting it is how a read-only tool acquires write scopes.
+#
+# Document addressing: MCP takes `{path}` or `{handle}`; HTTP takes an id. The fixed
+# handle -> id rewrite supplies it, so a `source` placed in the path becomes `{id}` and the
+# filesystem half is simply not exposed. The traversal and output inputs — directory,
+# pattern, failFast, outputDir, output, overwrite, dryRun — are dropped everywhere they
+# appear, because the service owns where bytes live.
+
+tools:
+  hdf_open:
+    method: get
+    path: /documents/{id}
+    fields:
+      source: { placement: path }
+    # One operation, four response shapes: the summary is per document type, and the
+    # generator discriminates on docType rather than widening to a union of everything.
+    fullResponse:
+      - open.summary.results
+      - open.summary.baseline
+      - open.summary.system
+      - open.summary.plan
+
+  hdf_query:
+    method: get
+    path: /documents/{id}/requirements
+    items: requirements
+    fields:
+      source: { placement: path }
+      sources: { placement: query }
+      status: { placement: query, enumFrom: schema enum }
+      severity: { placement: query, enumFrom: schema enum }
+      verbosity: { placement: query, enumFrom: schema enum }
+      fields: { placement: query, enumFrom: schema enum }
+      baseline: { placement: query }
+      baselineLabel: { placement: query }
+      cci: { placement: query }
+      cvss: { placement: query }
+      cwe: { placement: query }
+      disposition: { placement: query }
+      epss: { placement: query }
+      id: { placement: query }
+      impact: { placement: query }
+      kev: { placement: query }
+      limit: { placement: query }
+      nist: { placement: query }
+      page: { placement: query }
+      poamType: { placement: query }
+      poams: { placement: query }
+      rawImpact: { placement: query }
+      search: { placement: query }
+      tag: { placement: query }
+    fullResponse:
+      - query.concise
+      - query.full
+
+  hdf_compliance:
+    method: get
+    path: /documents/{id}/compliance
+    fields:
+      source: { placement: path }
+      sources: { placement: query }
+      groupBy: { placement: query, enumFrom: schema enum }
+      threshold: { placement: query }
+    fullResponse:
+      - engine.statusCounts
+      - engine.thresholdConfig
+
+  # Cross-document: the set is named by ids rather than by a single path segment, which is
+  # why this is /requirements and not /documents/{id}/requirements.
+  hdf_aggregate:
+    method: get
+    path: /requirements
+    items: perSource
+    fields:
+      sources: { placement: query }
+      status: { placement: query, enumFrom: schema enum }
+      severity: { placement: query, enumFrom: schema enum }
+      nist: { placement: query }
+      page: { placement: query }
+    fullResponse:
+      - engine.statusCounts
+
+  hdf_inspect:
+    method: get
+    path: /documents/{id}/structure
+    fields:
+      source: { placement: path }
+      section: { placement: query }
+      verbosity: { placement: query, enumFrom: schema enum }
+      page: { placement: query }
+
+  # A comparison is a resource in its own right, derived from two documents, so the two
+  # operands are query parameters rather than path segments.
+  hdf_diff:
+    method: get
+    path: /comparisons
+    items: changes
+    fields:
+      from: { placement: query }
+      to: { placement: query }
+      mode: { placement: query, enumFrom: schema enum }
+      verbosity: { placement: query, enumFrom: schema enum }
+      page: { placement: query }
+    drop:
+      - name: dryRun
+        reason: the service decides whether a write happens, not the caller
+      - name: output
+        reason: the comparison is returned, never written to a path
+      - name: overwrite
+        reason: no caller-named output to overwrite
+    fullResponse:
+      - diff.temporal.concise
+      - diff.temporal.full
+      - diff.system-drift.concise
+      - diff.system-drift.full
+
+  hdf_validate:
+    method: post
+    path: /validations
+    fields:
+      source: { placement: body }
+      content: { placement: body }
+      mode: { placement: query, enumFrom: schema enum }
+      docType: { placement: query }
+
+  hdf_convert:
+    method: post
+    path: /conversions
+    items: batch
+    fields:
+      source: { placement: body }
+      sources: { placement: body }
+      content: { placement: body }
+      componentId: { placement: body }
+      labels: { placement: body }
+      from: { placement: query, enumFrom: registry }
+    drop:
+      - name: directory
+        reason: filesystem traversal; the service owns where bytes live
+      - name: pattern
+        reason: glob over a directory the service does not expose
+      - name: failFast
+        reason: batch-traversal control with no HTTP analogue
+      - name: outputDir
+        reason: the service decides where converted documents live
+      - name: output
+        reason: the conversion is returned or stored by id, never to a path
+      - name: overwrite
+        reason: no caller-named output to overwrite
+      - name: dryRun
+        reason: the service decides whether a write happens, not the caller
+    fullResponse:
+      - convert.batch.entry
+
+  hdf_author:
+    method: post
+    path: /documents/authored
+    fields:
+      docType: { placement: body, enumFrom: schema enum }
+      name: { placement: body }
+      content: { placement: body }
+      expiresAt: { placement: body }
+      source: { placement: body }
+    drop:
+      - name: output
+        reason: the authored document is stored by id, never to a path
+      - name: overwrite
+        reason: no caller-named output to overwrite
+      - name: dryRun
+        reason: the service decides whether a write happens, not the caller
+
+  hdf_apply_amendment:
+    method: post
+    path: /documents/{id}/amendments
+    fields:
+      results: { placement: path }
+      amendments: { placement: body }
+    drop:
+      - name: output
+        reason: the amended document is stored by id, never to a path
+      - name: overwrite
+        reason: no caller-named output to overwrite
+      - name: dryRun
+        reason: the service decides whether a write happens, not the caller
+
+resources:
+  hdf-converter-catalog:
+    method: get
+    path: /catalog/converters
+  # The 24 hdf-enum-* resources in the contract are instances of this template, and are
+  # covered by binding it rather than by a hand-kept list of 24 that rots when an enum is
+  # added to the schema.
+  hdf-enum:
+    method: get
+    path: /enums/{name}
+  hdf-schema-whole:
+    method: get
+    path: /schemas/{docType}
+  hdf-schema-slice:
+    method: get
+    path: /schemas/{docType}/{def}
+
+absent:
+  - resource: hdf-session-transcript
+    reason: MCP session state, named by ADR-0008 §2 as the example of a resource with no HTTP analogue

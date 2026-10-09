@@ -199,10 +199,17 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
   }
 
   const absentResources = new Set(absent.filter((a) => a.resource).map((a) => a.resource));
+  const boundResources = Object.keys(table.resources ?? {});
+  // A concrete resource is covered by a bound TEMPLATE it is an instance of: the contract
+  // lists hdf-enum-Result_Status and 23 siblings, all served by the hdf-enum template.
+  // Binding each one would be a 24-entry hand-kept list that rots the moment an enum is
+  // added, which is the failure the derived-coverage checks exist to prevent.
+  const coveredByTemplate = (name: string): boolean =>
+    boundResources.some((bound) => bound !== name && name.startsWith(`${bound}-`));
   for (const name of resourceNames(surface.contract)) {
-    if (table.resources?.[name] === undefined && !absentResources.has(name)) {
-      faults.push(`${name}: resource not bound and not recorded absent`);
-    }
+    const covered =
+      table.resources?.[name] !== undefined || absentResources.has(name) || coveredByTemplate(name);
+    if (!covered) faults.push(`${name}: resource not bound and not recorded absent`);
   }
   return faults;
 }

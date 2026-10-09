@@ -253,3 +253,66 @@ describe('filesystem gating is decided by shape, not by name', () => {
     },
   );
 });
+
+// The contract lists 24 hdf-enum-* resources that are all instances of one template.
+// Binding the template covers them; the alternative is a hand-kept list of 24 that goes
+// stale the moment an enum is added to the schema.
+describe('template-instance coverage', () => {
+  const surface = { toolsList, contract };
+
+  it('a bound template covers its instances', () => {
+    const faults = bindingFaults(
+      { tools: {}, resources: { 'hdf-enum': { method: 'get', path: '/enums/{name}' } } },
+      surface,
+    );
+    expect(faults.some((f) => f.startsWith('hdf-enum-Result_Status:'))).toBe(false);
+  });
+
+  it('but does not cover an unrelated resource', () => {
+    const faults = bindingFaults(
+      { tools: {}, resources: { 'hdf-enum': { method: 'get', path: '/enums/{name}' } } },
+      surface,
+    );
+    expect(faults.some((f) => f.startsWith('hdf-converter-catalog:'))).toBe(true);
+    expect(faults.some((f) => f.startsWith('hdf-session-transcript:'))).toBe(true);
+  });
+
+  it('counts the instances it is covering, so the rule cannot silently cover nothing', () => {
+    const instances = resourceNames(contract).filter((n) => n.startsWith('hdf-enum-'));
+    expect(instances.length).toBeGreaterThan(20);
+  });
+});
+
+// The card's first acceptance criterion, against the real table rather than fixtures:
+// every tool, resource and field is bound, dropped, or recorded absent.
+describe('the tracked binding table', () => {
+  const raw = readFileSync(join(SRC, 'bindings.yaml'), 'utf-8');
+  const table = loadBindings(raw);
+  const parsed = JSON.parse(JSON.stringify(table));
+
+  it('maps the live surface with no faults', () => {
+    expect(bindingFaults(table, { toolsList, contract })).toEqual([]);
+  });
+
+  it('carries no schema of its own', () => {
+    expect(schemaFragments(parsed)).toEqual([]);
+  });
+
+  it('uses only keys from the closed set', () => {
+    expect(unknownKeys(parsed)).toEqual([]);
+  });
+
+  it('declares class nowhere, so every real operation derives it', () => {
+    expect(Object.values(table.tools ?? {}).filter((t) => t.class !== undefined)).toEqual([]);
+  });
+
+  // Each drop is a deliberate refusal to expose something, so each carries its own reason
+  // rather than sharing one — a shared reason is how a field gets dropped for the wrong one.
+  it('every drop states why', () => {
+    const reasons = Object.values(table.tools ?? {}).flatMap((t) =>
+      (t.drop ?? []).map((d) => d.reason),
+    );
+    expect(reasons.length).toBeGreaterThan(10);
+    expect(reasons.filter((r) => !r || r.length < 20)).toEqual([]);
+  });
+});
