@@ -11,7 +11,7 @@ import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { loadBindings, type BindingTable, type ToolBinding } from './bindings.js';
+import { FILESYSTEM_FIELDS, loadBindings, type BindingTable, type ToolBinding } from './bindings.js';
 import { loadConventions } from './conventions.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -93,7 +93,12 @@ function sharedResponses(): Record<string, unknown> {
   return {
     Unauthorized: {
       description: 'No or invalid credentials',
-      headers: { 'WWW-Authenticate': { schema: { type: 'string' } } },
+      headers: {
+        'WWW-Authenticate': {
+          schema: { type: 'string' },
+          example: 'Bearer resource_metadata="https://hdf.example.org/.well-known/oauth-protected-resource", scope="hdf:read"',
+        },
+      },
       content: {
         'application/problem+json': {
           schema: { $ref: '#/components/schemas/Problem' },
@@ -101,7 +106,15 @@ function sharedResponses(): Record<string, unknown> {
         },
       },
     },
-    InsufficientScope: problemRef('Insufficient scope', 403, 'insufficient-scope'),
+    InsufficientScope: {
+      ...problemRef('Insufficient scope', 403, 'insufficient-scope'),
+      headers: {
+        'WWW-Authenticate': {
+          schema: { type: 'string' },
+          example: 'Bearer error="insufficient_scope", scope="hdf:write", resource_metadata="https://hdf.example.org/.well-known/oauth-protected-resource"',
+        },
+      },
+    },
     TooManyRequests: problemRef('Quota exceeded', 429, 'quota-exceeded'),
     InternalError: problemRef('Internal error', 500, 'internal-error'),
     StoreUnavailable: {
@@ -110,6 +123,71 @@ function sharedResponses(): Record<string, unknown> {
     },
     UnsupportedMediaType: problemRef('Unsupported media type', 415, 'unsupported-media-type'),
   };
+}
+
+/** ADR-0008 §4's format allowlist. A format outside it hard-fails rather than shipping. */
+export const ALLOWED_FORMATS = new Set(['uuid', 'date-time', 'date', 'email', 'uri']);
+
+/**
+ * ADR-0008 §2's fixed rewrite map, output half. These are MCP transport state — a
+ * filesystem path, a write gate, a page index, a handle — and none may reach HTTP. Stripped
+ * from every response shape rather than waived per operation.
+ */
+export const STRIPPED_OUTPUT_FIELDS = new Set([
+  'page',
+  'nextPage',
+  'handle',
+  'fromHandle',
+  'toHandle',
+  'writesDisabled',
+  'outputPath',
+  'truncated',
+  'returned',
+]);
+
+/**
+ * Nested leaves that are open on purpose, each with the reason. Everything else that is
+ * not a document schema must set additionalProperties: false.
+ */
+export const OPEN_LEAF_EXEMPT: Record<string, string> = {
+  'query.full/tags': 'the HDF schema declares tags additionalProperties:true for tool-specific metadata',
+  'diff.temporal.full/fieldChanges': 'a field change can be on any requirement field, so its values are untyped',
+  'diff.system-drift.full/fieldChanges': 'same: a field change can be on any component field',
+};
+
+/** Strip the rewritten names from a response shape, recursively. */
+function stripTransportState(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(stripTransportState);
+  if (node === null || typeof node !== 'object') return node;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'properties' && value !== null && typeof value === 'object') {
+      const kept: Record<string, unknown> = {};
+      for (const [prop, schema] of Object.entries(value)) {
+        if (!STRIPPED_OUTPUT_FIELDS.has(prop)) kept[prop] = stripTransportState(schema);
+      }
+      out[key] = kept;
+      continue;
+    }
+    if (key === 'required' && Array.isArray(value)) {
+      out[key] = value.filter((r) => typeof r !== 'string' || !STRIPPED_OUTPUT_FIELDS.has(r));
+      continue;
+    }
+    out[key] = stripTransportState(value);
+  }
+  return out;
+}
+
+/** Every `format` used anywhere, with where it was found. */
+function formatsIn(node: unknown, where: string): { format: string; where: string }[] {
+  if (Array.isArray(node)) return node.flatMap((v, i) => formatsIn(v, `${where}/${i}`));
+  if (node === null || typeof node !== 'object') return [];
+  const found: { format: string; where: string }[] = [];
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'format' && typeof value === 'string') found.push({ format: value, where });
+    found.push(...formatsIn(value, `${where}/${key}`));
+  }
+  return found;
 }
 
 interface Operation {
@@ -187,6 +265,46 @@ function summarize(description: string | undefined, fallback: string): string {
   return first.length > 0 ? first : fallback;
 }
 
+function okResponse(binding: ToolBinding): Record<string, unknown> {
+  const named = [binding.fullResponse ?? []].flat();
+  if (named.length === 0) return { description: 'Success' };
+  // One name is the shape; several are the set the table records — mode x verbosity for
+  // diff, docType for open.
+  //
+  // anyOf, not oneOf. The alternatives are selected by a REQUEST parameter (`verbosity`,
+  // `mode`), and a concise row is a strict subset of its full counterpart, so nothing in
+  // the payload distinguishes them: oneOf would assert a mutual exclusivity that does not
+  // hold, which Redocly flags correctly. anyOf makes the weaker claim that is true — a row
+  // is one of these shapes — rather than a stronger one the generator cannot honour across
+  // reflected shapes it did not design.
+  const schema =
+    named.length === 1
+      ? { $ref: `#/components/schemas/${named[0]}` }
+      : { anyOf: named.map((n) => ({ $ref: `#/components/schemas/${n}` })) };
+  const items = binding.items;
+  return {
+    description: 'Success',
+    content: {
+      'application/json': {
+        // The envelope: the named row shape under `items`, with the cursor the rewrite map
+        // substitutes for the MCP's page index.
+        schema: items
+          ? {
+              type: 'object',
+              additionalProperties: false,
+              required: [items],
+              properties: {
+                [items]: { type: 'array', items: schema },
+                next: { type: 'string', description: 'Cursor for the following page.' },
+                total: { type: 'integer' },
+              },
+            }
+          : schema,
+      },
+    },
+  };
+}
+
 function operationFor(
   name: string,
   binding: ToolBinding,
@@ -212,7 +330,7 @@ function operationFor(
   const hasBody = bodyFields.length > 0 || binding.bodyRef !== undefined;
 
   const responses: Record<string, unknown> = {
-    '200': { description: 'Success' },
+    '200': okResponse(binding),
     ...conventionalResponses(hasBody),
   };
   // Every operation that addresses a document can fail to find it.
@@ -235,8 +353,16 @@ export interface ApiDocument {
   components: Record<string, unknown>;
 }
 
-export function generateApiDocument(): ApiDocument {
-  const table: BindingTable = loadBindings(readFileSync(join(HERE, 'bindings.yaml'), 'utf-8'));
+export interface GenerateOptions {
+  /** Replace the tracked table, so a test can plant a fault the real one cannot carry. */
+  tableOverride?: BindingTable;
+  /** Extra component schemas, so a test can plant one the strictness rules must reject. */
+  extraSchemas?: Record<string, unknown>;
+}
+
+export function generateApiDocument(options: GenerateOptions = {}): ApiDocument {
+  const table: BindingTable =
+    options.tableOverride ?? loadBindings(readFileSync(join(HERE, 'bindings.yaml'), 'utf-8'));
   const contractRaw = readFileSync(join(HERE, 'mcp-contract.golden.json'), 'utf-8');
   const toolsList = JSON.parse(readFileSync(join(HERE, 'tools-list.golden.json'), 'utf-8')) as {
     tools: { name: string; description?: string; annotations?: { readOnlyHint?: boolean } }[];
@@ -275,9 +401,67 @@ export function generateApiDocument(): ApiDocument {
     add(binding, name, 'read');
   }
 
+  const documentSchemas = new Set(Object.keys(componentsDoc.components.schemas));
   const schemas: Record<string, unknown> = { ...componentsDoc.components.schemas };
   for (const c of conventions) schemas[c.name] = c.schema;
   schemas.Problem = PROBLEM_SCHEMA;
+  // The reflected response shapes the table names, with the rewrite map applied so no MCP
+  // transport state survives into an HTTP response.
+  const contract = JSON.parse(contractRaw) as { fullShapes: Record<string, unknown> };
+  for (const [name, shape] of Object.entries(contract.fullShapes)) {
+    schemas[name] = stripTransportState(shape);
+  }
+  for (const [name, schema] of Object.entries(options.extraSchemas ?? {})) {
+    schemas[name] = schema;
+  }
+
+  // ---- hard-fails. Each is a refusal to emit, not a warning to ignore. ----
+
+  // An MCP filesystem input that reached a placement rather than a drop.
+  for (const [tool, binding] of Object.entries(table.tools ?? {})) {
+    for (const [field, spec] of Object.entries(binding.fields ?? {})) {
+      if (FILESYSTEM_FIELDS.has(field) && spec.placement !== undefined) {
+        throw new Error(
+          `${tool}.${field} is filesystem-shaped and placed in ${spec.placement}; it must be dropped`,
+        );
+      }
+    }
+  }
+
+  // A format outside the tracked allowlist, scoped to what the API layer INTRODUCES.
+  //
+  // The document schemas are generated from the HDF bundles and are authoritative about
+  // their own formats: they use nine outside the allowlist, including uri-reference,
+  // hostname, ipv4, ipv6 and the BOM identifiers cyclonedx, cyclonedx-ml, croissant, ecs,
+  // ocsf and x-splunk-export. Applying the rule to them would refuse to emit the
+  // components Phase 1 already publishes.
+  //
+  // §4 states the allowlist as part of the parity projection P, and the hard-fail exists
+  // so P's format-stripping cannot hide a divergence in something this generator added —
+  // a format the bundles carry is stripped from both sides equally and is no parity risk.
+  // Its sibling rule below is explicitly scoped to non-document schemas; this reads the
+  // same way, which is also the only reading that can emit a document at all.
+  for (const [name, schema] of Object.entries(schemas)) {
+    if (documentSchemas.has(name)) continue;
+    for (const { format, where } of formatsIn(schema, '')) {
+      if (ALLOWED_FORMATS.has(format)) continue;
+      if (format === 'binary' && name === 'Binary') continue;
+      throw new Error(`${name}${where}: format ${format} is outside the allowlist`);
+    }
+  }
+
+  // A non-document schema that does not close itself. Document schemas are generated from
+  // the bundles and carry their own strictness; everything else must say so.
+  for (const [name, schema] of Object.entries(schemas)) {
+    if (documentSchemas.has(name)) continue;
+    if (name === 'Problem' && STRICTNESS_EXEMPT[name]) continue;
+    const s = schema as Record<string, unknown>;
+    const closed = s.additionalProperties === false;
+    const isUnion = Array.isArray(s.oneOf) || Array.isArray(s.anyOf) || Array.isArray(s.allOf);
+    if (!closed && !isUnion) {
+      throw new Error(`${name}: a non-document schema must set additionalProperties: false`);
+    }
+  }
 
   return {
     openapi: '3.1.1',

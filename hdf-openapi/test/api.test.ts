@@ -247,3 +247,99 @@ describe('class determines scopes', () => {
     expect(scopes).toEqual(['hdf:read']);
   });
 });
+
+// ADR-0008 §2's fixed rewrite map, output half. These names are MCP transport state —
+// filesystem paths, write-gating, page indices — and none may reach an HTTP response.
+const FORBIDDEN_OUTPUT_FIELDS = ['page', 'nextPage', 'handle', 'writesDisabled', 'outputPath'];
+
+describe('the rewrite map strips MCP transport state from responses', () => {
+  // Non-vacuity first: this check is worthless unless operations actually carry response
+  // schemas. Before fullResponse was wired every operation declared a bare 200, and the
+  // field scan below passed by having nothing to scan.
+  it('operations carry real response schemas to scan', () => {
+    const withSchema = Object.values(doc.paths)
+      .flatMap((item) => Object.values(item))
+      .filter((op) => {
+        const ok = op.responses?.['200'] as { content?: Record<string, { schema?: unknown }> };
+        return ok?.content?.['application/json']?.schema !== undefined;
+      });
+    // Derived from the table rather than a literal: every binding that names a
+    // fullResponse must produce a schema, and a magic number would drift the moment the
+    // table changed — as it did when compliance and aggregate stopped naming one.
+    const expected = [...Object.values(table.tools ?? {}), ...Object.values(table.synthetic ?? {})]
+      .filter((b) => b.fullResponse !== undefined).length;
+    expect(expected).toBeGreaterThan(4);
+    expect(withSchema.length).toBe(expected);
+  });
+
+  it.each(FORBIDDEN_OUTPUT_FIELDS)('no response shape exposes %s', (field) => {
+    const hits: string[] = [];
+    for (const [path, item] of Object.entries(doc.paths)) {
+      for (const [method, op] of Object.entries(item)) {
+        const ok = op.responses?.['200'];
+        if (ok === undefined) continue;
+        const walk = (node: unknown, where: string): void => {
+          if (Array.isArray(node)) return node.forEach((v, i) => walk(v, `${where}/${i}`));
+          if (node === null || typeof node !== 'object') return;
+          for (const [key, value] of Object.entries(node)) {
+            if (key === 'properties' && value !== null && typeof value === 'object') {
+              for (const prop of Object.keys(value)) {
+                if (prop === field) hits.push(`${method.toUpperCase()} ${path}${where}/${prop}`);
+              }
+            }
+            walk(value, `${where}/${key}`);
+          }
+        };
+        walk(ok, '');
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('the generator hard-fails rather than emitting a bad document', () => {
+  it('on a filesystem field that was not dropped', () => {
+    expect(() =>
+      generateApiDocument({
+        tableOverride: { tools: { hdf_author: { method: 'post', path: '/x', fields: { dryRun: { placement: 'query' } } } } },
+      }),
+    ).toThrow(/dryRun/);
+  });
+
+  it('on a format outside the tracked allowlist', () => {
+    expect(() =>
+      generateApiDocument({ extraSchemas: { Planted: { type: 'integer', format: 'int64' } } }),
+    ).toThrow(/int64/);
+  });
+
+  it('on a non-document schema without additionalProperties: false', () => {
+    expect(() =>
+      generateApiDocument({ extraSchemas: { Loose: { type: 'object', properties: { a: { type: 'string' } } } } }),
+    ).toThrow(/Loose/);
+  });
+
+  it('but accepts a schema that is strict and uses an allowed format', () => {
+    expect(() =>
+      generateApiDocument({
+        extraSchemas: { Fine: { type: 'object', additionalProperties: false, properties: { id: { type: 'string', format: 'uuid' } } } },
+      }),
+    ).not.toThrow();
+  });
+});
+
+describe('the scope-failure responses carry what RFC 6750 and §3 require', () => {
+  it('the 403 is the insufficient-scope shape with the WWW-Authenticate header', () => {
+    const r = (doc.components as { responses: Record<string, Record<string, unknown>> })
+      .responses.InsufficientScope!;
+    expect(JSON.stringify(r)).toContain('problems/insufficient-scope');
+    expect(r.headers).toHaveProperty('WWW-Authenticate');
+  });
+
+  it('the 401 challenge names a scope, which the MCP revision asks for', () => {
+    const r = (doc.components as { responses: Record<string, Record<string, unknown>> })
+      .responses.Unauthorized!;
+    const example = JSON.stringify(r);
+    expect(example).toContain('about:blank');
+    expect(example).toContain('scope=');
+  });
+});

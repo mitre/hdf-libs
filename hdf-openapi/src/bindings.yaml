@@ -67,9 +67,11 @@ tools:
       sources: { placement: query }
       groupBy: { placement: query, enumFrom: schema enum }
       threshold: { placement: query }
-    fullResponse:
-      - engine.statusCounts
-      - engine.thresholdConfig
+    # No fullResponse: engine.statusCounts and engine.thresholdConfig are PARTS of this
+    # response, not alternatives to each other, and `fullResponse` names the response
+    # shape. Its own output schema is otherwise fully typed; the registered shapes are
+    # what its `counts` leaf needs, which Phase 3's parity work can wire per field.
+
 
   # Cross-document: the set is named by ids rather than by a single path segment, which is
   # why this is /requirements and not /documents/{id}/requirements.
@@ -83,8 +85,8 @@ tools:
       severity: { placement: query, enumFrom: schema enum }
       nist: { placement: query }
       page: { placement: query }
-    fullResponse:
-      - engine.statusCounts
+    # No fullResponse, for the same reason as hdf_compliance: the response CONTAINS counts
+    # rather than being them.
 
   hdf_inspect:
     method: get
