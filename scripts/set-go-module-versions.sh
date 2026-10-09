@@ -30,8 +30,20 @@ readonly MODULE_PREFIX="github.com/mitre/hdf-libs/"
 usage() {
   echo "usage: ${0##*/} <version>            # e.g. v3.6.0-rc.5, v3.6.0" >&2
   echo "       ${0##*/} <version> <root>     # root defaults to the repo root" >&2
+  echo "       ${0##*/} --check <version> [<root>]   # verify only; rewrite nothing" >&2
   exit 2
 }
+
+# --check verifies that every intra-repo require already names <version> and
+# rewrites nothing. The release workflow runs it on the tagged commit before
+# anything publishes: a tag pushed onto any commit but that version's prepare
+# commit fails the run instead of publishing modules whose requires no tag
+# provides, which is how v3.7.2-rc.1 shipped.
+CHECK_ONLY=0
+if [ "${1:-}" = "--check" ]; then
+  CHECK_ONLY=1
+  shift
+fi
 
 [ $# -ge 1 ] || usage
 readonly VERSION="$1"
@@ -107,6 +119,7 @@ fi
 rewritten=0
 
 for gomod in "${gomods[@]}"; do
+  [ "$CHECK_ONLY" -eq 0 ] || break
   requires=$(intra_repo_requires "$gomod") || exit 1
   while read -r path version; do
     [ -n "$path" ] || continue
@@ -139,7 +152,13 @@ for gomod in "${gomods[@]}"; do
       *) continue ;;
     esac
     [ "$version" = "$VERSION" ] && continue
-    echo "FAIL $gomod: $path is still at $version, wanted $VERSION" >&2
+    if [ "$CHECK_ONLY" -eq 1 ]; then
+      # go mod edit -json carries no positions; the require's own line is found by text.
+      line=$(grep -n -m1 -F "$path " "$gomod" | cut -d: -f1)
+      echo "FAIL $gomod:${line:-?}: $path is at $version, wanted $VERSION" >&2
+    else
+      echo "FAIL $gomod: $path is still at $version, wanted $VERSION" >&2
+    fi
     stragglers=$((stragglers + 1))
   done <<EOF
 $requires
@@ -147,8 +166,16 @@ EOF
 done
 
 if [ "$stragglers" -ne 0 ]; then
-  echo "ERROR: $stragglers intra-repo require(s) were not rewritten — do not tag this commit" >&2
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    echo "ERROR: $stragglers intra-repo require(s) do not name $VERSION — this commit is not $VERSION's prepare commit; do not tag or publish it" >&2
+  else
+    echo "ERROR: $stragglers intra-repo require(s) were not rewritten — do not tag this commit" >&2
+  fi
   exit 1
 fi
 
-echo "rewrote $rewritten intra-repo require(s) to $VERSION across ${#gomods[@]} go.mod files"
+if [ "$CHECK_ONLY" -eq 1 ]; then
+  echo "every intra-repo require names $VERSION across ${#gomods[@]} go.mod files"
+else
+  echo "rewrote $rewritten intra-repo require(s) to $VERSION across ${#gomods[@]} go.mod files"
+fi

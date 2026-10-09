@@ -28,7 +28,8 @@ fail=0
 check() {
   local name="$1" want_exit="$2" dir="$3" version="$4"
   local got_exit=0
-  "$SCRIPT" "$version" "$dir" >"$work/out" 2>&1 || got_exit=$?
+  # shellcheck disable=SC2086 -- $version may carry a leading --check flag
+  "$SCRIPT" $version "$dir" >"$work/out" 2>&1 || got_exit=$?
   if [ "$got_exit" -eq "$want_exit" ]; then
     pass=$((pass + 1))
     echo "ok   $name (exit $got_exit)"
@@ -141,6 +142,53 @@ if grep -q 'hdf-utilities/go/v3 v3.7.0' "$work/nested/go.mod" && grep -q 'v0.0.0
 else
   fail=$((fail + 1)); echo "FAIL touched the nested checkout or missed the root"
 fi
+
+# --check verifies without rewriting: the release workflow runs it on the tagged
+# commit before anything publishes, so a tag pushed onto the wrong commit fails
+# the run instead of publishing modules whose requires no tag provides.
+mkdir -p "$work/checkgood"
+cat > "$work/checkgood/go.mod" <<'EOF'
+module example.com/checkgood
+
+go 1.26.6
+
+require (
+	github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.2
+	github.com/stretchr/testify v1.12.1
+)
+EOF
+check "--check passes a tree already at the version" 0 "$work/checkgood" "--check v3.7.2"
+mkdir -p "$work/checkbad"
+cat > "$work/checkbad/go.mod" <<'EOF'
+module example.com/checkbad
+
+go 1.26.6
+
+require github.com/mitre/hdf-libs/hdf-utilities/go/v3 v3.7.2
+EOF
+check "--check refuses a tree whose requires name another version" 1 "$work/checkbad" "--check v3.7.2-rc.2"
+if grep -q 'hdf-utilities/go/v3 v3.7.2$' "$work/checkbad/go.mod"; then
+  pass=$((pass + 1)); echo "ok   --check rewrites nothing"
+else
+  fail=$((fail + 1)); echo "FAIL --check rewrote a require; go.mod now:"; sed 's/^/       /' "$work/checkbad/go.mod"
+fi
+if grep -qE 'go.mod:5: github.com/mitre/hdf-libs/hdf-utilities/go/v3 is at v3.7.2, wanted v3.7.2-rc.2' "$work/out"; then
+  pass=$((pass + 1)); echo "ok   --check names the file, the line, the require and both versions"
+else
+  fail=$((fail + 1)); echo "FAIL --check did not name the offending require; output was:"; sed 's/^/       /' "$work/out"
+fi
+
+# --check fails closed on a go.mod the toolchain cannot parse, exactly as the
+# rewrite does: proving nothing is not the same as passing.
+mkdir -p "$work/checkunparseable"
+cat > "$work/checkunparseable/go.mod" <<'EOF'
+module example.com/checkunparseable
+
+go 1.26.6
+
+require github.com/mitre/hdf-libs/brand-new/go/v3 v0.0.0-00010101000000-000000000000
+EOF
+check "--check refuses a go.mod the toolchain cannot parse" 1 "$work/checkunparseable" "--check v3.7.2"
 
 # Running it twice must be a no-op, since the release procedure may re-run it.
 check "is idempotent" 0 "$work/good" v3.7.0
