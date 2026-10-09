@@ -301,9 +301,23 @@ func BuildHDFBlock(req, baseline map[string]interface{}, status string, overridd
 // per-event lines into byte-identical NDJSON with the TypeScript side. Go's
 // encoding/json already sorts object keys.
 func EncodeLine(v interface{}) ([]byte, error) {
+	return encode(v, "")
+}
+
+// EncodeDocument returns v as two-space-indented JSON, otherwise identical to
+// EncodeLine: HTML escaping disabled, negative zero normalized, object keys
+// sorted, trailing newline. For an exporter whose output is one JSON DOCUMENT
+// rather than a stream of events, where a single-line file is needlessly hostile
+// to a human reader.
+func EncodeDocument(v interface{}) ([]byte, error) {
+	return encode(v, "  ")
+}
+
+func encode(v interface{}, indent string) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
+	enc.SetIndent("", indent)
 	if err := enc.Encode(normalizeNegativeZero(v, 0)); err != nil {
 		return nil, err
 	}

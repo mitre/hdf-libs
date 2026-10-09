@@ -309,7 +309,25 @@ export function canonicalize(v: unknown): unknown {
  * them here. Key ordering is handled upstream by canonicalize (code point order).
  */
 export function stringifyLine(v: unknown): string {
-  return JSON.stringify(v, (_key, val) => (val instanceof RawNumber ? RAWNUM_MARK + val.token + RAWNUM_MARK : val))
+  return stringifyWith(v, undefined);
+}
+
+/**
+ * Emit two-space-indented JSON, otherwise identical to stringifyLine and so
+ * still byte-for-byte with the Go peer's EncodeDocument. For an exporter whose
+ * output is one JSON DOCUMENT rather than a stream of events, where a
+ * single-line file is needlessly hostile to a human reader.
+ */
+export function stringifyDocument(v: unknown): string {
+  return stringifyWith(v, 2);
+}
+
+function stringifyWith(v: unknown, space: number | undefined): string {
+  return JSON.stringify(
+    v,
+    (_key, val) => (val instanceof RawNumber ? RAWNUM_MARK + val.token + RAWNUM_MARK : val),
+    space,
+  )
     .replace(RAWNUM_RE, '$1')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');

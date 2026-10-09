@@ -18,6 +18,7 @@ import {
   firstRefURL,
   eventID,
   canonicalize,
+  stringifyDocument,
   stringifyLine,
   runExport,
   firstCVE,
@@ -226,6 +227,23 @@ describe('exportmap non-BMP key parity + JSONP escaping (Go byte-for-byte)', () 
   it('escapes U+2028/U+2029 in values identically to Go', () => {
     const obj = { k: 'line sep end' };
     expect(stringifyLine(canonicalize(obj))).toBe('{"k":"line\\u2028sep\\u2029end"}');
+  });
+});
+
+describe('exportmap stringifyDocument (indented JSON documents)', () => {
+  // Two-space indentation, and otherwise everything stringifyLine guarantees:
+  // key-sorted, & unescaped, negative zero normalized away by JSON.stringify.
+  // The Go peer asserts these exact bytes in TestEncodeDocument.
+  it('indents while staying byte-identical to Go EncodeDocument', () => {
+    const obj = { b: [1, 'x&y'], a: { z: -0, sep: 'plain' } };
+    expect(stringifyDocument(canonicalize(obj))).toBe(
+      '{\n  "a": {\n    "sep": "plain",\n    "z": 0\n  },\n  "b": [\n    1,\n    "x&y"\n  ]\n}',
+    );
+  });
+
+  // The Go peer asserts the same in TestEncodeDocument_RawNumberTokensSurvive.
+  it('keeps RawNumber tokens bare at any indentation', () => {
+    expect(stringifyDocument({ score: floatNumber(8) })).toBe('{\n  "score": 8.0\n}');
   });
 });
 

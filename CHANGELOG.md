@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **`hdf convert --to sarif` exports SARIF 2.1.0, so SARIF stops being a one-way door** (`hdf-to-sarif`, Go and TypeScript, `convertHdfToSarif`). HDF already ingests SARIF and nine converters delegate to that importer, but SARIF was absent from the export side, so everything HDF can normalize was unreachable to the dashboards that consume SARIF the way Heimdall consumes HDF. Output is validated against the same vendored OASIS schema `sarif-to-hdf` reads, in both languages, for every fixture.
+
+  The modelling decisions a consumer will notice:
+  - **One run per baseline.** SARIF ties a run to a single tool invocation and a run carries exactly one tool; the baseline is the HDF unit with its own name, version, checksums and status, so flattening a multi-baseline document into one run would merge rules that were never evaluated together. The baseline name becomes `runAutomationDetails.id`.
+  - **`kind` and `level` stay orthogonal** (SARIF §3.27.9/§3.27.10). Every HDF status maps to its own `kind` (`error` → `open`, the state where the tool had insufficient information to decide); `level` appears on a result only when the kind is `fail`, because the spec admits only `none` otherwise, and the severity rides on `rule.defaultConfiguration.level` where every kind can carry it. `level: "none"` is emitted where it is true — an impact-0 requirement, or a `tags.severity` carried from a SARIF source — and never derived from impact, which cannot express "ungraded".
+  - **SARIF 2.1.0 has no CVSS, EPSS or KEV field, and its `suppression` carries only kind/status/justification/location/guid.** Everything HDF holds beyond that travels verbatim under a single reserved `hdf` property-bag key, so nothing is dropped silently. `security-severity` is emitted only where the requirement actually carries CVSS, since that convention means a CVSS base score and a STIG severity is not one.
+  - **An override becomes a suppression only when it actually suppressed something.** `kind` is `external` because an HDF override is a record in the HDF document, never a marker in the artifact that was scanned; a riskAdjustment that leaves a requirement failing stays actionable instead of being dressed up as a suppression.
+  - **A document that evaluated nothing converts** to a log with no runs rather than erroring, and a clean scan produces a run that found nothing.
+  - **Real scanner output does not respect SARIF's `uri-reference` format** — ZAP reports template-placeholder URLs no URI grammar accepts — so artifact locations are percent-encoded (reversibly, into the form ZAP itself emits elsewhere in the same scan) and a `helpUri` that is not an absolute URI is carried in the bag rather than emitted into a field the schema would reject.
+
 ### Changed
 
 - **Documented: on Windows, an `hdf` command that rewrites a file fails while another process holds that file open, leaving the destination's previous content complete and naming it in the error** — the atomic replace every output has used since 3.7.2 cannot delete a destination another handle has open, as the Windows CI leg's `TestWriteFile_OpenReaderSeesOneCompleteVersion` measures.

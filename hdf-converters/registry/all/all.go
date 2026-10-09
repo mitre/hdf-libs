@@ -72,5 +72,6 @@ import (
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-html/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-oscal-poam/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-oscal-sar/go"
+	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-sarif/go"
 	_ "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-xml/go"
 )

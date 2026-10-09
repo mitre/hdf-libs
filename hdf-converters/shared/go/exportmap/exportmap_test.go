@@ -2,6 +2,7 @@ package exportmap
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -244,6 +245,28 @@ func TestEpochHelpers(t *testing.T) {
 	assert.Equal(t, int64(1704067200000), ms)
 	_, ok = EpochMillis("")
 	assert.False(t, ok)
+}
+
+func TestEncodeDocument(t *testing.T) {
+	// Two-space indentation, and otherwise everything EncodeLine guarantees:
+	// key-sorted, HTML not escaped, negative zero normalized, trailing newline.
+	// The TS stringifyDocument asserts these same bytes. String escaping is
+	// indentation-independent and stays covered by the EncodeLine cases.
+	doc, err := EncodeDocument(map[string]interface{}{
+		"b": []interface{}{1, "x&y"},
+		"a": map[string]interface{}{"z": math.Copysign(0, -1), "sep": "plain"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "{\n  \"a\": {\n    \"sep\": \"plain\",\n    \"z\": 0\n  },\n"+
+		"  \"b\": [\n    1,\n    \"x&y\"\n  ]\n}\n", string(doc))
+}
+
+func TestEncodeDocument_RawNumberTokensSurvive(t *testing.T) {
+	// json.Number marshals verbatim at any indentation, which is what keeps
+	// FloatToken's decimal-point contract intact for a document exporter too.
+	doc, err := EncodeDocument(map[string]interface{}{"score": FloatToken(8)})
+	require.NoError(t, err)
+	assert.Equal(t, "{\n  \"score\": 8.0\n}\n", string(doc))
 }
 
 func TestEncodeLine_NonBMPKeyOrder(t *testing.T) {
