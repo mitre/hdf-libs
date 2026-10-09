@@ -22,6 +22,7 @@
   "scripts": {
     "build": "pnpm run clean && pnpm run build:components && tsdown",
     "build:components": "node --import tsx src/generate-components.ts",
+    "build:api": "node --import tsx src/generate-api.ts",
     "sync:golden": "node scripts/sync-mcp-golden.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src test scripts",
@@ -31,6 +32,7 @@
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",
     "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-components.oas.json",
+    "lint:api": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-api.oas.json",
     "matrix": "node scripts/openapi-matrix.mjs",
     "matrix:update": "node scripts/openapi-matrix.mjs --update"
   },
