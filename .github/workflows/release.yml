@@ -14,13 +14,38 @@ concurrency:
 
 env:
   NODE_VERSION: '24'
-  GO_VERSION: '1.26.6'
+  GO_VERSION: '1.26.9'
 
 jobs:
+  # Go reads each module's go.mod from the tagged commit and ignores its replace
+  # directives, so a tag on any commit but its version's prepare commit publishes
+  # modules whose requires name a version no tag provides — go get succeeds and
+  # go build fails, which is how v3.7.2-rc.1 shipped. Nothing publishes until the
+  # tagged commit names its own version in every intra-repo require.
+  check-module-versions:
+    name: Tagged commit names its own version in every go.mod
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - name: Every intra-repo require names the tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: bash scripts/set-go-module-versions.sh --check "$TAG"
+
   publish-npm:
     name: Publish npm packages
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: check-module-versions
     environment: npm-publish
     permissions:
       contents: read
@@ -178,6 +203,7 @@ jobs:
     name: Build CLI binaries
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: check-module-versions
     permissions:
       contents: read
       id-token: write      # ambient OIDC for cosign keyless signing + attestation
@@ -238,6 +264,7 @@ jobs:
     name: Build schema assets
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: check-module-versions
     permissions:
       contents: read
     steps:

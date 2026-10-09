@@ -438,6 +438,11 @@ jobs:
         # pass here and fail for everyone else. A real external build is only
         # possible after a tag exists.
         run: pnpm run lint:go-consumers
+      - name: The Go module version script still fails closed
+        # The prepare commit rewrites go.mod requires with this script and
+        # release.yml --checks them on the tag, where a regression is found by
+        # the release; its test runs here instead.
+        run: pnpm run lint:go-module-versions
       - name: govulncheck (SARIF; findings gate via HDF)
         run: |
           go install "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION"
