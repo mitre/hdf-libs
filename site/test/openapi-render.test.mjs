@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
-import { generateOpenapiDocs, COMPONENTS_DOCUMENT } from '../generate-openapi-docs.mjs';
+import { DOCUMENTS, generateOpenapiDocs, COMPONENTS_DOCUMENT } from '../generate-openapi-docs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
@@ -75,4 +75,59 @@ test('the generated page carries no emoji', () => {
   const page = fs.readFileSync(path.join(PAGES_DIR, 'index.md'), 'utf-8');
   const emoji = page.match(/\p{Extended_Pictographic}/gu) ?? [];
   assert.deepEqual(emoji, [], `generated page contains emoji: ${emoji.join(' ')}`);
+});
+
+// ADR-0008 ships two documents, and the first version of this generator carried one
+// document's name as a constant — which is what made adding the second a rewrite rather
+// than a row. These derive from the generator's own list so a third needs no test edit.
+test('every published document is archived and rendered', () => {
+  const built = DOCUMENTS.filter((d) => fs.existsSync(path.resolve(REPO_ROOT, d.json)));
+  assert.ok(built.length >= 2, `expected both documents built, got ${built.length}`);
+
+  const page = fs.readFileSync(path.join(PAGES_DIR, 'index.md'), 'utf-8');
+  for (const document of built) {
+    const version = JSON.parse(fs.readFileSync(path.resolve(REPO_ROOT, document.json), 'utf-8'))
+      .info.version;
+    const archived = path.join(PUBLIC_DIR, document.name, `v${version}`, 'index.json');
+    assert.ok(fs.existsSync(archived), `expected the archive at ${archived}`);
+    assert.ok(
+      fs.existsSync(path.join(PUBLIC_DIR, `viewer-${document.name}.html`)),
+      `${document.name} has no rendered view`,
+    );
+    assert.match(page, new RegExp(`## ${document.title}`), `the page has no ${document.title} section`);
+  }
+});
+
+// The reference API document arrives with Phase 2, so the components document must still
+// publish on its own — a required/optional distinction that only matters if it is tested.
+test('an unbuilt optional document is skipped rather than failing the build', () => {
+  const optional = DOCUMENTS.find((d) => d.required === false);
+  assert.ok(optional, 'no optional document to exercise the skip path');
+  const target = path.resolve(REPO_ROOT, optional.json);
+  const stashed = `${target}.stashed`;
+  fs.renameSync(target, stashed);
+  try {
+    fs.rmSync(PAGES_DIR, { recursive: true, force: true });
+    generateOpenapiDocs();
+    const page = fs.readFileSync(path.join(PAGES_DIR, 'index.md'), 'utf-8');
+    assert.doesNotMatch(page, new RegExp(`## ${optional.title}`));
+    assert.match(page, /## Components/);
+  } finally {
+    fs.renameSync(stashed, target);
+    generateOpenapiDocs();
+  }
+});
+
+// A required document missing is a build fault, not something to paper over.
+test('an unbuilt required document fails loudly', () => {
+  const required = DOCUMENTS.find((d) => d.required === true);
+  const target = path.resolve(REPO_ROOT, required.json);
+  const stashed = `${target}.stashed`;
+  fs.renameSync(target, stashed);
+  try {
+    assert.throws(() => generateOpenapiDocs(), /is missing/);
+  } finally {
+    fs.renameSync(stashed, target);
+    generateOpenapiDocs();
+  }
 });

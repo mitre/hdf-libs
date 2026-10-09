@@ -14,13 +14,14 @@
       "import": "./dist/index.js"
     },
     "./hdf-components.oas.json": "./dist/hdf-components.oas.json",
-    "./hdf-components.oas.yaml": "./dist/hdf-components.oas.yaml"
+    "./hdf-components.oas.yaml": "./dist/hdf-components.oas.yaml",
+    "./hdf-api.oas.json": "./dist/hdf-api.oas.json"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "pnpm run clean && pnpm run build:components && tsdown",
+    "build": "pnpm run clean && pnpm run build:components && pnpm run build:api && tsdown",
     "build:components": "node --import tsx src/generate-components.ts",
     "build:api": "node --import tsx src/generate-api.ts",
     "sync:golden": "node scripts/sync-mcp-golden.mjs",
@@ -44,14 +45,16 @@
   },
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
   "devDependencies": {
     "@mitre/hdf-fixtures": "workspace:^",
     "@redocly/cli": "^2.54.3",
     "@stoplight/spectral-core": "^1.24.0",
     "@stoplight/spectral-parsers": "^1.0.5",
     "@stoplight/spectral-rulesets": "^1.23.0",
-    "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1",
     "openapi-typescript": "^7.13.0",
     "tsx": "^4.20.6",
     "yaml": "^2.8.1"

@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import Ajv2020 from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
 import { loadConventions, componentName } from '../src/conventions.js';
+import { validateExample } from '../src/validate-example.js';
 import { loadBindings, bindingFaults } from '../src/bindings.js';
 
 const HERE = new URL('.', import.meta.url).pathname;
@@ -27,21 +26,13 @@ describe('the conventions components', () => {
 
   // An example a consumer copies is the first thing they run, so it is validated against
   // the schema it illustrates rather than merely present.
+  // Through the exported helper rather than a private copy of the ajv setup: the check the
+  // suite runs and the one a consumer can run must be the same code.
   it.each(conventions.map((c) => [c.file, c] as const))('%s has a valid example', (_f, c) => {
     const examples = c.schema.examples as unknown[] | undefined;
     expect(Array.isArray(examples) && examples.length > 0).toBe(true);
-
-    const ajv = new Ajv2020({ strict: false, allErrors: true });
-    addFormats(ajv);
-    // The ingest request references the generated roots, so they have to be resolvable.
-    for (const [name, schema] of Object.entries(components.components.schemas)) {
-      ajv.addSchema(schema as object, `#/components/schemas/${name}`);
-    }
-    const validate = ajv.compile(c.schema);
-    for (const example of examples as unknown[]) {
-      const ok = validate(example);
-      expect(ok, `${c.file}: ${JSON.stringify(validate.errors)}`).toBe(true);
-    }
+    const faults = validateExample(c.schema, components.components.schemas);
+    expect(faults, `${c.file}: ${JSON.stringify(faults)}`).toEqual([]);
   });
 
   // The privilege is to author shapes the generator has no source for — NOT to restate a

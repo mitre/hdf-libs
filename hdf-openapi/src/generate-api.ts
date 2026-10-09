@@ -115,7 +115,10 @@ function sharedResponses(): Record<string, unknown> {
         },
       },
     },
-    TooManyRequests: problemRef('Quota exceeded', 429, 'quota-exceeded'),
+    TooManyRequests: {
+      ...problemRef('Quota exceeded', 429, 'quota-exceeded'),
+      headers: { ...rateLimitHeaders(), 'Retry-After': { schema: { type: 'integer' } } },
+    },
     InternalError: problemRef('Internal error', 500, 'internal-error'),
     StoreUnavailable: {
       ...problemRef('Store unavailable', 503, 'store-unavailable'),
@@ -224,6 +227,27 @@ function problemResponse(code: string): Record<string, unknown> {
  * headers everywhere, and 413/415 wherever a request body exists — so they are added here
  * rather than per operation, which is what stops one being forgotten.
  */
+/**
+ * The IETF RateLimit header fields (draft-ietf-httpapi-ratelimit-headers), adopted by
+ * ADR-0008 §3's standards pass. Declared on the success response of every operation, not
+ * only on the 429: a client should learn its budget from a call that worked, rather than
+ * having to provoke a rejection to find out.
+ */
+function rateLimitHeaders(): Record<string, unknown> {
+  return {
+    RateLimit: {
+      description: 'Remaining quota for the active window, as a structured field.',
+      schema: { type: 'string' },
+      example: 'limit=100, remaining=87, reset=12',
+    },
+    'RateLimit-Policy': {
+      description: 'The quota policy this endpoint applies.',
+      schema: { type: 'string' },
+      example: '"default";q=100;w=60',
+    },
+  };
+}
+
 function conventionalResponses(hasBody: boolean): Record<string, unknown> {
   const responses: Record<string, unknown> = {
     '401': { $ref: '#/components/responses/Unauthorized' },
@@ -330,7 +354,7 @@ function operationFor(
   const hasBody = bodyFields.length > 0 || binding.bodyRef !== undefined;
 
   const responses: Record<string, unknown> = {
-    '200': okResponse(binding),
+    '200': { ...okResponse(binding), headers: rateLimitHeaders() },
     ...conventionalResponses(hasBody),
   };
   // Every operation that addresses a document can fail to find it.

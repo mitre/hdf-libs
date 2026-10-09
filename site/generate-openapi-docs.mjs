@@ -21,14 +21,41 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-// Repo-relative so a test can resolve the same artifact without restating it.
+// Repo-relative so a test can resolve the same artifacts without restating them.
 export const COMPONENTS_DOCUMENT = 'hdf-openapi/dist/hdf-components.oas.json';
-const COMPONENTS_YAML = 'hdf-openapi/dist/hdf-components.oas.yaml';
 const BASELINE = 'hdf-openapi/test/baseline/keywords.json';
+
+/**
+ * The documents this publishes. Derived rather than hardcoded: ADR-0008 ships two, and the
+ * first version of this generator carried one document's name as a constant, which is what
+ * made adding the second a rewrite instead of a row.
+ *
+ * `required` distinguishes them: the components document is built by Phase 1 and must be
+ * present, while the reference API document arrives with Phase 2 and is skipped with a
+ * notice if its build has not run — the page then simply does not offer it.
+ */
+export const DOCUMENTS = [
+  {
+    name: 'hdf-components',
+    title: 'Components',
+    json: 'hdf-openapi/dist/hdf-components.oas.json',
+    yaml: 'hdf-openapi/dist/hdf-components.oas.yaml',
+    required: true,
+    blurb:
+      'The data types, generated from the HDF schema bundles. Components-only: it describes the documents, not an API surface.',
+  },
+  {
+    name: 'hdf-api',
+    title: 'Reference API',
+    json: 'hdf-openapi/dist/hdf-api.oas.json',
+    required: false,
+    blurb:
+      'The HTTP surface, generated from the MCP contract and the binding table. Every operation, parameter and response shape is derived; none is hand-authored.',
+  },
+];
 
 const PAGES_DIR = path.resolve(__dirname, 'openapi');
 const PUBLIC_DIR = path.resolve(__dirname, 'public/openapi');
-const DOCUMENT_NAME = 'hdf-components';
 
 const read = (rel) => fs.readFileSync(path.resolve(REPO_ROOT, rel), 'utf-8');
 
@@ -104,60 +131,80 @@ function viewerHtml(jsonHref) {
 }
 
 export function generateOpenapiDocs() {
-  const docPath = path.resolve(REPO_ROOT, COMPONENTS_DOCUMENT);
-  if (!fs.existsSync(docPath)) {
-    throw new Error(
-      `${COMPONENTS_DOCUMENT} is missing — build it first with \`pnpm --filter @mitre/hdf-openapi run build:components\``,
-    );
-  }
-  const raw = read(COMPONENTS_DOCUMENT);
-  const doc = JSON.parse(raw);
-  const baseline = JSON.parse(read(BASELINE));
-  const version = doc.info.version;
+  const published = [];
+  const skipped = [];
 
   fs.mkdirSync(PUBLIC_DIR, { recursive: true });
-  fs.writeFileSync(path.join(PUBLIC_DIR, `${DOCUMENT_NAME}.oas.json`), raw);
-  if (fs.existsSync(path.resolve(REPO_ROOT, COMPONENTS_YAML))) {
-    fs.writeFileSync(path.join(PUBLIC_DIR, `${DOCUMENT_NAME}.oas.yaml`), read(COMPONENTS_YAML));
+  for (const document of DOCUMENTS) {
+    const jsonPath = path.resolve(REPO_ROOT, document.json);
+    if (!fs.existsSync(jsonPath)) {
+      if (document.required) {
+        throw new Error(
+          `${document.json} is missing — build it first with \`pnpm --filter @mitre/hdf-openapi run build\``,
+        );
+      }
+      skipped.push(document);
+      continue;
+    }
+    const raw = read(document.json);
+    const version = JSON.parse(raw).info.version;
+
+    fs.writeFileSync(path.join(PUBLIC_DIR, `${document.name}.oas.json`), raw);
+    if (document.yaml && fs.existsSync(path.resolve(REPO_ROOT, document.yaml))) {
+      fs.writeFileSync(path.join(PUBLIC_DIR, `${document.name}.oas.yaml`), read(document.yaml));
+    }
+
+    // Same shape as the schema archive: <name>/v<version>/index.json.
+    const archiveDir = path.join(PUBLIC_DIR, document.name, `v${version}`);
+    fs.mkdirSync(archiveDir, { recursive: true });
+    fs.writeFileSync(path.join(archiveDir, 'index.json'), raw);
+
+    const base = '/hdf-libs/openapi';
+    fs.writeFileSync(
+      path.join(PUBLIC_DIR, `viewer-${document.name}.html`),
+      viewerHtml(`${base}/${document.name}.oas.json`),
+    );
+    published.push({ ...document, version, raw });
   }
 
-  // Same shape as the schema archive: <name>/v<version>/index.json.
-  const archiveDir = path.join(PUBLIC_DIR, DOCUMENT_NAME, `v${version}`);
-  fs.mkdirSync(archiveDir, { recursive: true });
-  fs.writeFileSync(path.join(archiveDir, 'index.json'), raw);
-
+  const baseline = JSON.parse(read(BASELINE));
   const base = '/hdf-libs/openapi';
-  fs.writeFileSync(path.join(PUBLIC_DIR, 'viewer.html'), viewerHtml(`${base}/${DOCUMENT_NAME}.oas.json`));
 
-  const schemaCount = Object.keys(doc.components?.schemas ?? {}).length;
+  const section = (d) => {
+    const parsed = JSON.parse(d.raw);
+    const count = Object.keys(parsed.components?.schemas ?? {}).length;
+    const paths = Object.keys(parsed.paths ?? {}).length;
+    const scale = paths > 0 ? `${paths} paths and ${count} component schemas` : `${count} component schemas`;
+    return `## ${d.title}
+
+\`${parsed.info.title}\` v${d.version} — ${scale}. ${d.blurb}
+
+- [Download JSON](${base}/${d.name}.oas.json)${d.yaml ? `\n- [Download YAML](${base}/${d.name}.oas.yaml)` : ''}
+- <a href="${base}/viewer-${d.name}.html">Open the rendered reference</a>
+- Archive: [v${d.version}](${base}/${d.name}/v${d.version}/index.json)
+
+<iframe src="${base}/viewer-${d.name}.html" title="${parsed.info.title}" style="width:100%;height:70vh;border:1px solid var(--vp-c-divider);border-radius:8px;"></iframe>
+`;
+  };
+
   const page = `---
-title: OpenAPI Components
+title: OpenAPI Documents
 ---
 
-# OpenAPI components
+# OpenAPI documents
 
-\`${doc.info.title}\` v${version} — ${schemaCount} component schemas generated from the HDF
-schema bundles. The document is components-only: it describes the data types, not an API
-surface. It is regenerated from the built components document on every site build.
+Generated from the HDF schema bundles and the MCP contract on every build, so neither can
+drift from its source.
 
-- [Download JSON](${base}/${DOCUMENT_NAME}.oas.json) — \`${DOCUMENT_NAME}.oas.json\`
-- [Download YAML](${base}/${DOCUMENT_NAME}.oas.yaml)
-- <a href="${base}/viewer.html">Open the rendered reference</a>
-
-<iframe src="${base}/viewer.html" title="HDF OpenAPI components" style="width:100%;height:70vh;border:1px solid var(--vp-c-divider);border-radius:8px;"></iframe>
-
-## Versions
-
-| Version | Document |
-|---|---|
-| v${version} (latest) | [index.json](${base}/${DOCUMENT_NAME}/v${version}/index.json) |
-
+${published.map(section).join('\n')}
 ${compatibilitySection(baseline)}`;
 
   fs.mkdirSync(PAGES_DIR, { recursive: true });
   fs.writeFileSync(path.join(PAGES_DIR, 'index.md'), page);
 
-  console.log(`Generated openapi/index.md — ${schemaCount} schemas at v${version}.`);
+  const names = published.map((d) => `${d.name}@v${d.version}`).join(', ');
+  const note = skipped.length > 0 ? ` (skipped ${skipped.map((d) => d.name).join(', ')}: not built)` : '';
+  console.log(`Generated openapi/index.md — ${published.length} document(s): ${names}${note}.`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) generateOpenapiDocs();

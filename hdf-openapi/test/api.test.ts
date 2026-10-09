@@ -343,3 +343,24 @@ describe('the scope-failure responses carry what RFC 6750 and §3 require', () =
     expect(example).toContain('scope=');
   });
 });
+
+// ADR-0008 §3's standards pass adopts the IETF RateLimit header fields. The AC pairs them
+// with the declared 500, so both are checked across every operation rather than sampled.
+describe('every operation advertises its rate-limit budget', () => {
+  it.each(['RateLimit', 'RateLimit-Policy'])('declares %s on its success response', (header) => {
+    const missing: string[] = [];
+    for (const [path, item] of Object.entries(doc.paths)) {
+      for (const [method, op] of Object.entries(item)) {
+        const ok = op.responses?.['200'] as { headers?: Record<string, unknown> } | undefined;
+        if (ok?.headers?.[header] === undefined) missing.push(`${method.toUpperCase()} ${path}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it('the 429 carries them too, alongside Retry-After', () => {
+    const r = (doc.components as { responses: Record<string, { headers?: Record<string, unknown> }> })
+      .responses.TooManyRequests!;
+    expect(Object.keys(r.headers ?? {}).sort()).toEqual(['RateLimit', 'RateLimit-Policy', 'Retry-After']);
+  });
+});
