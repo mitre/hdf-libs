@@ -123,6 +123,52 @@ func TestConvertSarifToHDF_EmptyResultsFixture(t *testing.T) {
 	assert.Contains(t, req.Results[0].CodeDesc, "zero findings")
 }
 
+// The fixture can only carry the absent form, since a literal null fails the
+// vendored schema. Pin literal null against the fixture's own output so the
+// golden covers both spellings rather than only one.
+func TestConvertSarifToHDF_ResultsNullMatchesAbsentFixture(t *testing.T) {
+	absentData, err := os.ReadFile(fixturePath("results-absent.sarif"))
+	require.NoError(t, err)
+
+	var doc map[string]interface{}
+	require.NoError(t, json.Unmarshal(absentData, &doc))
+	runs := doc["runs"].([]interface{})
+	runs[0].(map[string]interface{})["results"] = nil
+	nullData, err := json.Marshal(doc)
+	require.NoError(t, err)
+
+	fromAbsent, err := ConvertSarifToHDF(absentData, testConverterVersion)
+	require.NoError(t, err)
+	fromNull, err := ConvertSarifToHDF(nullData, testConverterVersion)
+	require.NoError(t, err)
+
+	a := fromAbsent.Baselines[0].Requirements[0]
+	n := fromNull.Baselines[0].Requirements[0]
+	assert.Equal(t, a.ID, n.ID)
+	assert.Equal(t, a.Title, n.Title)
+	assert.Equal(t, a.Impact, n.Impact)
+	require.Len(t, n.Results, 1)
+	assert.Equal(t, a.Results[0].Status, n.Results[0].Status)
+	assert.Equal(t, a.Results[0].CodeDesc, n.Results[0].CodeDesc)
+}
+
+func TestConvertSarifToHDF_ResultsAbsentFixture(t *testing.T) {
+	inputData, err := os.ReadFile(fixturePath("results-absent.sarif"))
+	require.NoError(t, err, "Failed to read results-absent.sarif fixture")
+
+	result, err := ConvertSarifToHDF(inputData, testConverterVersion)
+	require.NoError(t, err)
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	assert.Equal(t, "ExampleAnalyzer-not-analyzed", req.ID)
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+		"a run that reported no result set analyzed nothing; passed would assert a clean scan")
+	assert.NotContains(t, req.Results[0].CodeDesc, "zero findings")
+}
+
 func TestConvertSarifToHDF_EmptyResultsFallbackTarget(t *testing.T) {
 	input := `{
 		"version": "2.1.0",
@@ -2306,4 +2352,68 @@ func TestConvertSarifToHDF_ExtensionRuleSuppliesHelpURI(t *testing.T) {
 		"helpUri must populate from a rule defined only on an extension")
 	require.NotNil(t, req.Title)
 	assert.Equal(t, "defined only by the extension", *req.Title)
+}
+
+// §3.14.23 makes null the default for an absent results array, and Appendix I gives
+// that null a meaning: the tool "either failed to start or failed to begin its
+// analysis". An empty array is the opposite — the tool ran and found nothing. Go
+// decoded both to a nil slice, so a failed scan reported as a clean pass.
+func TestConvertSarifToHDF_ResultsNullIsNotAPass(t *testing.T) {
+	input := `{
+		"version": "2.1.0",
+		"runs": [{
+			"tool": { "driver": { "name": "TestTool", "version": "1.0.0" } },
+			"invocations": [ { "executionSuccessful": false } ],
+			"results": null
+		}]
+	}`
+
+	result, err := ConvertSarifToHDF([]byte(input), testConverterVersion)
+	require.NoError(t, err, "a run that did not analyze is still a convertible document")
+	require.Len(t, result.Baselines, 1)
+	require.Len(t, result.Baselines[0].Requirements, 1)
+
+	req := result.Baselines[0].Requirements[0]
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.NotReviewed, req.Results[0].Status,
+		"a tool that failed to start reviewed nothing; passed would assert a clean scan that never happened")
+	assert.NotContains(t, req.Results[0].CodeDesc, "zero findings",
+		"the text must not claim the tool reported anything")
+}
+
+// Absent and null are the same case per §3.14.23, so they must convert the same way.
+func TestConvertSarifToHDF_ResultsAbsentMatchesResultsNull(t *testing.T) {
+	absent := `{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"TestTool"}}}]}`
+	null := `{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"TestTool"}},"results":null}]}`
+
+	a, err := ConvertSarifToHDF([]byte(absent), testConverterVersion)
+	require.NoError(t, err)
+	n, err := ConvertSarifToHDF([]byte(null), testConverterVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, n.Baselines[0].Requirements[0].Results[0].Status,
+		a.Baselines[0].Requirements[0].Results[0].Status,
+		"§3.14.23: an absent results array defaults to null, so the two inputs are one case")
+	assert.Equal(t, hdf.NotReviewed, a.Baselines[0].Requirements[0].Results[0].Status)
+}
+
+// The contrast is the point of the fix: these two inputs differ only in null versus
+// empty, and they must not produce the same status.
+func TestConvertSarifToHDF_NullAndEmptyResultsAreDistinguished(t *testing.T) {
+	tool := `"tool": { "driver": { "name": "TestTool" } }`
+	ranClean := `{"version":"2.1.0","runs":[{` + tool + `,"results":[]}]}`
+	neverRan := `{"version":"2.1.0","runs":[{` + tool + `,"results":null}]}`
+
+	clean, err := ConvertSarifToHDF([]byte(ranClean), testConverterVersion)
+	require.NoError(t, err)
+	never, err := ConvertSarifToHDF([]byte(neverRan), testConverterVersion)
+	require.NoError(t, err)
+
+	assert.Equal(t, hdf.Passed, clean.Baselines[0].Requirements[0].Results[0].Status,
+		"an empty results array means the tool ran and found nothing")
+	assert.Equal(t, hdf.NotReviewed, never.Baselines[0].Requirements[0].Results[0].Status)
+	assert.NotEqual(t,
+		clean.Baselines[0].Requirements[0].Results[0].Status,
+		never.Baselines[0].Requirements[0].Results[0].Status,
+		"if these match, the two SARIF states are indistinguishable after conversion")
 }

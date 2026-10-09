@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_STATIC_ANALYSIS_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
+import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
@@ -24,7 +24,10 @@ interface SarifRun {
     driver?: SarifDriver;
     extensions?: SarifDriver[];
   };
-  results: SarifResult[];
+  // Nullable and optional on purpose: §3.14.23 gives an absent or null results
+  // array the opposite meaning to [] — nothing analyzed, versus a scan that ran
+  // and found nothing. Declaring it as a plain array also threw on the null.
+  results?: SarifResult[] | null;
   taxonomies?: SarifTaxonomy[];
 }
 
@@ -213,11 +216,12 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, t
 
   // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
   // When ruleId is absent, fall back to message text as the grouping key.
-  const { items: limitedResults, truncated: truncatedResults } = limitArray(run.results);
+  const analyzed = run.results !== null && run.results !== undefined;
+  const { items: limitedResults, truncated: truncatedResults } = limitArray(run.results ?? []);
   /* v8 ignore next -- truncation only triggers with >100K items */
   if (truncatedResults) {
     // eslint-disable-next-line no-console
-    console.warn(`WARNING: Input truncated at ${limitedResults.length} result items (original: ${run.results.length})`);
+    console.warn(`WARNING: Input truncated at ${limitedResults.length} result items (original: ${(run.results ?? []).length})`);
   }
   const groupOrder: string[] = [];
   const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[] }>();
@@ -245,11 +249,17 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, t
     const driverName = run.tool?.driver?.name?.trim() || '';
     const target = driverName || 'SARIF analyzer';
     const idPrefix = driverName || 'sarif';
-    requirements.push(buildNoFindingsRequirement(
-      `${idPrefix}-no-findings`,
-      `${target} ran and reported zero findings.`,
-      timestamp,
-    ));
+    requirements.push(analyzed
+      ? buildNoFindingsRequirement(
+          `${idPrefix}-no-findings`,
+          `${target} ran and reported zero findings.`,
+          timestamp,
+        )
+      : buildNotAnalyzedRequirement(
+          `${idPrefix}-not-analyzed`,
+          `${target} reported no result set; the run did not analyze.`,
+          timestamp,
+        ));
   }
 
   return createMinimalBaseline(baselineName, requirements, {

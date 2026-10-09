@@ -1,0 +1,44 @@
+{
+  "baselines": [
+    {
+      "requirements": [
+        {
+          "descriptions": [
+            {
+              "data": "ExampleAnalyzer reported no result set; the run did not analyze.",
+              "label": "default"
+            }
+          ],
+          "results": [
+            {
+              "codeDesc": "ExampleAnalyzer reported no result set; the run did not analyze.",
+              "startTime": "2026-10-09T15:49:05.387837Z",
+              "status": "notReviewed"
+            }
+          ],
+          "id": "ExampleAnalyzer-not-analyzed",
+          "impact": 0,
+          "tags": {},
+          "title": "Not analyzed"
+        }
+      ],
+      "resultsChecksum": {
+        "algorithm": "sha256",
+        "value": "1fcab9b8439f6a32e599ef71f4418a045f39de607f5f4d9b4ec9967ce80d6031"
+      },
+      "name": "ExampleAnalyzer",
+      "title": "Static Analysis Results Interchange Format",
+      "version": "2.1.0"
+    }
+  ],
+  "generator": {
+    "name": "sarif-to-hdf",
+    "version": "1.0.0"
+  },
+  "timestamp": "2026-10-09T15:49:05.387837Z",
+  "tool": {
+    "format": "SARIF",
+    "name": "ExampleAnalyzer",
+    "version": "1.2.3"
+  }
+}

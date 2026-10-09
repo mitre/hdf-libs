@@ -65,6 +65,13 @@ No counterpart in either upstream checked. Introduced by this repository in
 what the file says about its own producer is in the "Tool and version" section below.
 SAF does carry samples for this tool under `test/sample_data/sarif`, none matching.
 
+### `results-absent.sarif`
+Schema-confirmed, not real: no published tool sample exercises a run that
+reports no result set, so this was built for that case and validated against
+the vendored schema (see Validation below). SARIF 2.1.0 omits `results`
+when a run analyzed nothing; the document is minimal and carries only
+`tool.driver` plus a failed `invocations[0]`.
+
 ### `sarif_input.sarif`
 Byte-identical to SAF CLI `test/sample_data/sarif/sample_input_report/sarif_input.sarif`.
 
@@ -99,6 +106,7 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `grype.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: grype 0.91.2.
 - `osv-scanner-2.5.1.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: osv-scanner 2.5.1.
 - `rich.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SecurityScanner 3.2.1.
+- `results-absent.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: ExampleAnalyzer 1.2.3.
 - `sarif_input.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Flawfinder 2.0.15.
 - `semgrep.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Semgrep OSS <MASKED>.
 - `spotbugs.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SpotBugs 4.4.0.
@@ -107,4 +115,12 @@ A version below is what the fixture *says about itself*; where a format carries 
 
 SARIF 2.1.0 has a machine-readable schema and it is vendored here: `sarif-schema-2.1.0.json`, recorded in `provenance.json` (OASIS canonical URL, SHA-256, retrieval date). It is JSON Schema draft-04, which the TypeScript sweep cannot compile (ajv 8); the Go sweep compiles and hash-checks it.
 
-Validation (gojsonschema, 2026-09-20): all 13 `input/*.sarif` fixtures validate against the vendored schema.
+Validation (gojsonschema, 2026-09-20): all 13 `input/*.sarif` fixtures then present validate against the vendored schema.
+
+`results-absent.sarif` (added 2026-10-09; validated with python jsonschema 4.26 Draft4Validator,
+and covered by the Go gojsonschema sweep in-tree) validates. Note the schema and the spec prose
+diverge on how a run says it analyzed nothing: §3.14.23 describes an absent
+`results` as defaulting to null, but `run.properties.results` is `type: array`
+with no null member, so a literal `"results": null` does NOT validate. The
+conformant shape is to omit the property, which is what this fixture does. The
+converters accept both, since a literal null appears in the wild.

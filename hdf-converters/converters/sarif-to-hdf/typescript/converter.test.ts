@@ -108,6 +108,79 @@ describe('SARIF Converter', async () => {
       expect(req.results[0].codeDesc).toContain('zero findings');
     });
 
+    // §3.14.23 makes null the default for an absent results array, and Appendix I
+    // gives that null a meaning: the tool "either failed to start or failed to begin
+    // its analysis". An empty array is the opposite. This implementation threw on the
+    // null case entirely; Go reported it as a clean pass.
+    // The fixture can only carry the absent form, since a literal null fails the
+    // vendored schema. Pin literal null against the fixture's own output so the
+    // golden covers both spellings rather than only one.
+    it('produces the same requirement for literal null as for the absent fixture', async () => {
+      const absent = loadFixture('input', 'results-absent.sarif');
+      const doc = JSON.parse(absent);
+      doc.runs[0].results = null;
+      const fromAbsent = JSON.parse(await convertSarifToHdf(absent));
+      const fromNull = JSON.parse(await convertSarifToHdf(JSON.stringify(doc)));
+      const a = fromAbsent.baselines[0].requirements[0];
+      const n = fromNull.baselines[0].requirements[0];
+      expect(n.id).toBe(a.id);
+      expect(n.title).toBe(a.title);
+      expect(n.impact).toBe(a.impact);
+      expect(n.results[0].status).toBe(a.results[0].status);
+      expect(n.results[0].codeDesc).toBe(a.results[0].codeDesc);
+    });
+
+    it('treats the results-absent fixture as not analyzed', async () => {
+      const input = loadFixture('input', 'results-absent.sarif');
+      const result = JSON.parse(await convertSarifToHdf(input));
+      expect(result.baselines[0].requirements).toHaveLength(1);
+      const req = result.baselines[0].requirements[0];
+      expect(req.id).toBe('ExampleAnalyzer-not-analyzed');
+      expect(req.results[0].status).toBe('notReviewed');
+      expect(req.results[0].codeDesc).not.toContain('zero findings');
+    });
+
+    it('treats results:null as not analyzed, not as a pass', async () => {
+      const input = JSON.stringify({
+        version: '2.1.0',
+        runs: [{
+          tool: {driver: {name: 'TestTool', version: '1.0.0'}},
+          invocations: [{executionSuccessful: false}],
+          results: null,
+        }],
+      });
+      const result = JSON.parse(await convertSarifToHdf(input));
+      const req = result.baselines[0].requirements[0];
+      expect(req.results[0].status).toBe('notReviewed');
+      expect(req.results[0].codeDesc).not.toContain('zero findings');
+    });
+
+    it('treats an absent results array the same as results:null', async () => {
+      const absent = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: 'TestTool'}}}],
+      });
+      const nulled = JSON.stringify({
+        version: '2.1.0',
+        runs: [{tool: {driver: {name: 'TestTool'}}, results: null}],
+      });
+      const a = JSON.parse(await convertSarifToHdf(absent));
+      const n = JSON.parse(await convertSarifToHdf(nulled));
+      expect(a.baselines[0].requirements[0].results[0].status)
+        .toBe(n.baselines[0].requirements[0].results[0].status);
+      expect(a.baselines[0].requirements[0].results[0].status).toBe('notReviewed');
+    });
+
+    it('distinguishes a run that found nothing from one that never ran', async () => {
+      const tool = {driver: {name: 'TestTool'}};
+      const ranClean = JSON.stringify({version: '2.1.0', runs: [{tool, results: []}]});
+      const neverRan = JSON.stringify({version: '2.1.0', runs: [{tool, results: null}]});
+      const clean = JSON.parse(await convertSarifToHdf(ranClean));
+      const never = JSON.parse(await convertSarifToHdf(neverRan));
+      expect(clean.baselines[0].requirements[0].results[0].status).toBe('passed');
+      expect(never.baselines[0].requirements[0].results[0].status).toBe('notReviewed');
+    });
+
     it('should synthesize a per-run placeholder for each empty baseline', async () => {
       const input = JSON.stringify({
         version: '2.1.0',

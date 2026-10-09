@@ -26,9 +26,25 @@ type SarifFile struct {
 
 // SarifRun represents a single analysis run.
 type SarifRun struct {
-	Tool       *SarifTool      `json:"tool"`
-	Results    []SarifResult   `json:"results"`
+	Tool *SarifTool `json:"tool"`
+	// Pointer, not a plain slice: a plain slice decodes null and [] alike, and
+	// §3.14.23 gives them opposite meanings — nothing was analyzed, versus a scan
+	// that ran and found nothing.
+	Results    *[]SarifResult  `json:"results"`
 	Taxonomies []SarifTaxonomy `json:"taxonomies,omitempty"`
+}
+
+// analyzed reports whether the run carries a result set at all. False means
+// absent or null — the tool did not analyze; true with an empty slice means it
+// ran and found nothing.
+func (r SarifRun) analyzed() bool { return r.Results != nil }
+
+// resultList is the run's results, empty when it did not analyze.
+func (r SarifRun) resultList() []SarifResult {
+	if r.Results == nil {
+		return nil
+	}
+	return *r.Results
 }
 
 // SarifTool wraps the driver and any extensions. Rules may be defined on either:
@@ -358,7 +374,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 
 	if len(requirements) == 0 {
 		requirements = []hdf.EvaluatedRequirement{
-			synthesizeNoFindingsRequirement(run, timestamp),
+			synthesizeEmptyRunRequirement(run, timestamp),
 		}
 	}
 
@@ -372,17 +388,25 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	}
 }
 
-// HDF requires requirements.minItems=1; per SARIF v2.1.0 §3.7.2 an empty
-// results array means the analyzer ran clean, so emit one passed placeholder
-// per run-baseline. ID/target derive from run.tool.driver.name so downstream
-// converters that delegate to SARIF (msft-defender-devops, etc.) can identify
-// and override the placeholder when needed.
-func synthesizeNoFindingsRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
+// HDF requires requirements.minItems=1, so a run contributing no requirements
+// still needs one. Which placeholder depends on whether the tool analyzed at
+// all: §3.14.23 distinguishes an absent or null results array, which analyzed
+// nothing, from [], which ran and found nothing. ID/target derive from
+// run.tool.driver.name so downstream converters that delegate to SARIF can
+// identify and override the placeholder.
+func synthesizeEmptyRunRequirement(run SarifRun, timestamp time.Time) hdf.EvaluatedRequirement {
 	target := "SARIF analyzer"
 	idPrefix := "sarif"
 	if run.Tool != nil && run.Tool.Driver != nil && run.Tool.Driver.Name != "" {
 		target = run.Tool.Driver.Name
 		idPrefix = run.Tool.Driver.Name
+	}
+	if !run.analyzed() {
+		return shared.BuildNotAnalyzedRequirement(
+			idPrefix+"-not-analyzed",
+			fmt.Sprintf("%s reported no result set; the run did not analyze.", target),
+			timestamp,
+		)
 	}
 	return shared.BuildNoFindingsRequirement(
 		idPrefix+"-no-findings",
@@ -1217,7 +1241,7 @@ type resultGroup struct {
 // It is the single definition of the input-to-requirement relation: the
 // conversion builds requirements from it and ExpectedRequirementCount counts it.
 func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]string, map[string]*resultGroup) {
-	limitedResults := shared.LimitSliceWithWarning(run.Results, 0, "result")
+	limitedResults := shared.LimitSliceWithWarning(run.resultList(), 0, "result")
 	groupOrder := []string{}
 	groupMap := make(map[string]*resultGroup)
 	for _, result := range limitedResults {
