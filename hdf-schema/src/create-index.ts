@@ -172,6 +172,18 @@ export * from './helpers.js';
 // ── Deprecated aliases for backward compatibility ──
 // These will be removed in the next major version.
 // Consumers should migrate to HDF* naming (matching schema titles).
+// \`export *\` re-exports the HDF* names but does not bind them in this
+// module, so the aliases below need an explicit import. Without it they are
+// unresolved and, under skipLibCheck, silently become \`any\` for consumers.
+import type {
+  HDFResults,
+  HDFBaseline,
+  HDFComparison,
+  HDFSystem,
+  HDFPlan,
+  HDFAmendments,
+  HDFEvidencePackage,
+} from '${primarySource}';
 /** @deprecated Use HDFResults */
 export type HdfResults = HDFResults;
 /** @deprecated Use HDFBaseline */

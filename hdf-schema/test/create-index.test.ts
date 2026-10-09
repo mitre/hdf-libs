@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { createIndex } from '../src/create-index';
 import { bundleSchemas } from '../src/bundle-schemas';
 import { generateTypes } from '../src/generate-types';
+import ts from 'typescript';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -203,6 +204,81 @@ describe('create-index', () => {
       // Should export from combined hdf.js
       expect(indexJs).toContain("from './ts/hdf.js'");
       expect(indexDts).toContain("from './ts/hdf.js'");
+    });
+  });
+
+  // Consumers compile against the barrel with skipLibCheck enabled, which turns
+  // an unresolved name inside a .d.ts into `any` instead of an error. Check the
+  // emitted declarations with lib checks ON so a broken alias or an ambiguous
+  // re-export fails here instead of silently widening a consumer's types.
+  describe('emitted declarations type-check', () => {
+    const DTS_OPTIONS: ts.CompilerOptions = {
+      noEmit: true,
+      skipLibCheck: false,
+      strict: true,
+      module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      target: ts.ScriptTarget.ES2022,
+      types: [],
+    };
+
+    function ownDiagnostics(program: ts.Program): string[] {
+      return ts
+        .getPreEmitDiagnostics(program)
+        .filter((d) => d.file !== undefined && !d.file.fileName.includes('/node_modules/'))
+        .map((d) => {
+          const file = d.file!;
+          const { line, character } = file.getLineAndCharacterOfPosition(d.start ?? 0);
+          const message = ts.flattenDiagnosticMessageText(d.messageText, '\n');
+          return `${file.fileName}(${line + 1},${character + 1}): TS${d.code} ${message}`;
+        });
+    }
+
+    it('dist/index.d.ts has no diagnostics with skipLibCheck disabled', () => {
+      createIndex();
+      const program = ts.createProgram([join(DIST_DIR, 'index.d.ts')], DTS_OPTIONS);
+      expect(ownDiagnostics(program)).toEqual([]);
+    });
+
+    it('deprecated Hdf* aliases resolve to their HDF* types, not any', () => {
+      createIndex();
+      const aliases = [
+        'HdfResults',
+        'HdfBaseline',
+        'HdfComparison',
+        'HdfSystem',
+        'HdfPlan',
+        'HdfAmendments',
+        'HdfEvidencePackage',
+      ];
+      // One assignment per alias, each of which must be rejected. An alias that
+      // degraded to `any` accepts the number and produces no diagnostic.
+      const probePath = join(DIST_DIR, '__alias-probe__.ts');
+      const probeSource = [
+        `import type { ${aliases.join(', ')} } from './index.js';`,
+        ...aliases.map((name, i) => `export const v${i}: ${name} = 42;`),
+        '',
+      ].join('\n');
+
+      const host = ts.createCompilerHost(DTS_OPTIONS);
+      const { fileExists, readFile, getSourceFile } = host;
+      host.fileExists = (f) => f === probePath || fileExists.call(host, f);
+      host.readFile = (f) => (f === probePath ? probeSource : readFile.call(host, f));
+      host.getSourceFile = (f, lang, onError, shouldCreate) =>
+        f === probePath
+          ? ts.createSourceFile(f, probeSource, lang)
+          : getSourceFile.call(host, f, lang, onError, shouldCreate);
+
+      // skipLibCheck stays on here: this test is about alias resolution only.
+      const program = ts.createProgram([probePath], { ...DTS_OPTIONS, skipLibCheck: true }, host);
+      const rejectedLines = ts
+        .getPreEmitDiagnostics(program)
+        .filter((d) => d.file?.fileName === probePath && d.code === 2322)
+        .map((d) => d.file!.getLineAndCharacterOfPosition(d.start ?? 0).line + 1)
+        .sort((a, b) => a - b);
+
+      // Line 1 is the import; lines 2..8 are the seven assignments.
+      expect(rejectedLines).toEqual(aliases.map((_, i) => i + 2));
     });
   });
 });
