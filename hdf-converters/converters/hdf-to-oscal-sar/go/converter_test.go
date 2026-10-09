@@ -1742,3 +1742,53 @@ func TestConvertHDFToOSCALSAR_NumbersComponentMapGroupsInCodePointOrder(t *testi
 		}
 	}
 }
+
+// Three sites took req.StatusOverrides[0] as the governing override, one saying
+// so in a comment ("most-recent first per schema convention"). The schema's
+// description does ask for that order, but nothing sorts and this repo's own
+// writers append, so on a document amended twice the newest override is LAST.
+// riskDeadline was the worst of the three: it published the FIRST override's
+// expiry as the risk deadline without checking whether that override had itself
+// expired.
+func TestConvertHDFToOSCALSAR_GoverningOverrideNotArrayPosition(t *testing.T) {
+	doc := []byte(`{
+  "generator": {"name": "test", "version": "1"},
+  "timestamp": "2026-01-01T00:00:00Z",
+  "statistics": {"duration": 1.0},
+  "baselines": [{"name": "b", "requirements": [
+    {"id": "SV-1", "title": "amended twice", "impact": 0.9, "tags": {},
+     "descriptions": [{"label": "default", "data": "d"}],
+     "results": [{"status": "failed", "codeDesc": "c", "startTime": "2024-01-01T00:00:00Z"}],
+     "disposition": "riskAdjustment",
+     "statusOverrides": [
+       {"type": "waiver", "status": "passed", "reason": "OLDER",
+        "appliedBy": {"type": "simple", "identifier": "a"},
+        "appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2030-01-01T00:00:00Z"},
+       {"type": "riskAdjustment", "reason": "NEWER",
+        "appliedBy": {"type": "simple", "identifier": "b"},
+        "appliedAt": "2025-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+        "impact": {"value": 0.3}}
+     ]}
+  ]}]
+}`)
+	out, err := ConvertHDFToOSCALSAR(doc, "0.1.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(out)
+
+	// overrideRemarks: names the type and reason of the governing override.
+	if !strings.Contains(got, "Override: riskAdjustment") {
+		t.Errorf("remarks must name the governing override type, got:\n%s", got)
+	}
+	if !strings.Contains(got, "Reason: NEWER") || strings.Contains(got, "Reason: OLDER") {
+		t.Errorf("remarks must carry the governing override's reason, not the first one's")
+	}
+	// riskDeadline: the governing override's expiry, not the first one's.
+	if !strings.Contains(got, "2099-12-31T00:00:00Z") {
+		t.Errorf("risk deadline must be the governing override's expiry")
+	}
+	if strings.Contains(got, "2030-01-01T00:00:00Z") {
+		t.Errorf("risk deadline must not be the first array entry's expiry")
+	}
+}

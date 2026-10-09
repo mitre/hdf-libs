@@ -38,7 +38,9 @@ type EventInputs struct {
 
 // eventReasonFor maps a batch ChangeReason onto the event vocabulary's
 // producer-computable subset. Reasons with no event equivalent (metadata,
-// baseline, scanner, target — cross-corpus context) return "".
+// baseline, scanner, target — cross-corpus context — and disposition) return "",
+// as do overrideModified and configChanged, which the event vocabulary carries
+// but this mapping does not yet emit.
 func eventReasonFor(reason ChangeReason) hdf.EventChangeReason {
 	switch reason {
 	case ReasonResultChanged:
@@ -51,9 +53,11 @@ func eventReasonFor(reason ChangeReason) hdf.EventChangeReason {
 		return hdf.EventChangeReasonOverrideRemoved
 	case ReasonImpactChanged, ReasonEffectiveImpactChanged:
 		return hdf.EventChangeReasonImpactChanged
-	default:
-		return ""
+	case ReasonOverrideModified, ReasonConfigChanged, ReasonDispositionChanged,
+		ReasonBaselineUpgraded, ReasonControlMapped, ReasonScannerChanged,
+		ReasonTargetChanged, ReasonMetadataChanged:
 	}
+	return ""
 }
 
 // checksumMap renders a Checksum as the map shape the generated event type's
@@ -131,8 +135,10 @@ func ChangeEventFromPrevious(
 		ev.State = hdf.EventRequirementStateFixed
 	case StateRegressed:
 		ev.State = hdf.EventRequirementStateRegressed
-	default:
-		// Status unchanged but the checksum moved: impact or disposition shifted.
+	case StateUnchanged, StateUpdated, StateNew, StateAbsent,
+		StateMoved, StateSplit, StateMerged:
+		// ClassifyDiffStatus only yields unchanged/fixed/regressed/updated, and the
+		// checksum already moved, so "unchanged" here means impact or disposition did.
 		ev.State = hdf.EventRequirementStateUpdated
 	}
 

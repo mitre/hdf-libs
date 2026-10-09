@@ -25,11 +25,15 @@ function overrideWindows(overrides: readonly OverrideLike[]): StatusOverrideInpu
 }
 
 /**
- * Determine the effective impact of a requirement: the most recently applied
- * non-expired override carrying an impact value wins (the schema's definition
- * of effectiveImpact, selected by the shared governing helper); with no
- * overrides, a stored effectiveImpact field is honored; otherwise the base
- * impact. (Go parity: ComputeEffectiveImpact in hdf-diff/go/effective_checksum.go.)
+ * Resolves a requirement's impact for the effective checksum: the governing
+ * impact override when one exists, else the requirement's own. With no
+ * overrides at all it honours a stored effectiveImpact — deliberately, and
+ * unlike computeEffectiveImpact in @mitre/hdf-utilities, which never reads the
+ * cache. The checksum is an epoch-sensitive contract: a document whose producer
+ * recorded a re-score without the override detail would otherwise change its
+ * checksum on upgrade with nothing in it having changed. The field is a
+ * fallback, not a source: any override at all makes it unread. Pinned by the
+ * "stored fallback" test. (Go parity: ComputeEffectiveImpact in go/effective_checksum.go.)
  */
 export function computeEffectiveImpact(
   requirement: Record<string, unknown>,
@@ -66,14 +70,22 @@ export function computeDisposition(
   requirement: Record<string, unknown>,
   referenceTimestamp?: string,
 ): string | null {
-  const overrides = requirement['statusOverrides'] as OverrideLike[] | undefined;
+  // Overrides and POA&Ms are ONE ordered set compared on appliedAt, not two
+  // tiers — the schema defines disposition as 'the most recent non-expired
+  // override or POAM governing this requirement', and both carry the same two
+  // timestamp fields. Only the override half was ever implemented.
+  // Parity: ComputeDisposition in hdf-diff/go/effective_checksum.go.
+  const overrides = (requirement['statusOverrides'] as OverrideLike[] | undefined) ?? [];
+  const poams = (requirement['poams'] as OverrideLike[] | undefined) ?? [];
 
-  if (overrides && overrides.length > 0) {
-    const i = governingOverrideIndex(overrideWindows(overrides), () => true, referenceTimestamp);
-    if (i >= 0) {
-      return overrides[i]?.type ?? null;
-    }
-    return null;
+  if (overrides.length > 0 || poams.length > 0) {
+    const windows = [...overrideWindows(overrides), ...overrideWindows(poams)];
+    const i = governingOverrideIndex(windows, () => true, referenceTimestamp);
+    if (i < 0) return null;
+    if (i < overrides.length) return overrides[i]?.type ?? null;
+    // A POA&M's own kind is not a member of Override_Type, which disposition is
+    // typed as, so every governing POA&M reports the flat 'poam'.
+    return 'poam';
   }
 
   const disposition = requirement['disposition'] as string | undefined;

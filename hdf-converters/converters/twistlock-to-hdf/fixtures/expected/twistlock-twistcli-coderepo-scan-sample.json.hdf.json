@@ -30,6 +30,8 @@
             {
               "codeDesc": "Package \"org.apache.logging.log4j_log4j-core\" should be updated to latest version above impacted versions [\u003e=2.13.0 \u003c2.15.0]",
               "message": "Expected latest version of \"org.apache.logging.log4j_log4j-core\"\nDetected vulnerable version \"2.14.1\" of \"org.apache.logging.log4j_log4j-core\"",
+              "resource": "package",
+              "resourceId": "org.apache.logging.log4j_log4j-core@2.14.1",
               "startTime": "2021-12-10T10:15:00Z",
               "status": "failed"
             }
@@ -82,6 +84,8 @@
             {
               "codeDesc": "Package \"org.apache.logging.log4j_log4j-core\" should be updated to latest version above impacted versions [\u003e=2.13.0 \u003c2.17.1]",
               "message": "Expected latest version of \"org.apache.logging.log4j_log4j-core\"\nDetected vulnerable version \"2.14.1\" of \"org.apache.logging.log4j_log4j-core\"",
+              "resource": "package",
+              "resourceId": "org.apache.logging.log4j_log4j-core@2.14.1",
               "startTime": "2021-12-28T20:15:00Z",
               "status": "failed"
             }
@@ -134,6 +138,8 @@
             {
               "codeDesc": "Package \"org.apache.logging.log4j_log4j-core\" should be updated to latest version above impacted versions [\u003c2.16.0 \u003e=2.13.0]",
               "message": "Expected latest version of \"org.apache.logging.log4j_log4j-core\"\nDetected vulnerable version \"2.14.1\" of \"org.apache.logging.log4j_log4j-core\"",
+              "resource": "package",
+              "resourceId": "org.apache.logging.log4j_log4j-core@2.14.1",
               "startTime": "2021-12-14T19:15:00Z",
               "status": "failed"
             }
@@ -186,6 +192,8 @@
             {
               "codeDesc": "Package \"org.apache.logging.log4j_log4j-core\" should be updated to latest version above impacted versions [\u003c2.17.0 \u003e=2.13.0]",
               "message": "Expected latest version of \"org.apache.logging.log4j_log4j-core\"\nDetected vulnerable version \"2.14.1\" of \"org.apache.logging.log4j_log4j-core\"",
+              "resource": "package",
+              "resourceId": "org.apache.logging.log4j_log4j-core@2.14.1",
               "startTime": "2021-12-18T18:00:07Z",
               "status": "failed"
             }
@@ -230,7 +238,7 @@
     "name": "twistlock-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T23:29:30.765221Z",
+  "timestamp": "2026-10-05T14:18:15.377704Z",
   "tool": {
     "name": "Twistlock"
   }

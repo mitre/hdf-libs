@@ -300,6 +300,13 @@ func buildSiteRequirements(site *ZapSite, startTime time.Time) []hdf.EvaluatedRe
 					CodeDesc:  buildCodeDesc(inst),
 					StartTime: startTime,
 				}
+				// The instance identity is the URL the alert fired against; uri is
+				// optional in ZAP's report schema, and an instance without one names
+				// no resource at all, so the fields stay unset rather than invented.
+				if inst.URI != "" {
+					result.Resource = hdfutil.Ptr("url")
+					result.ResourceID = hdfutil.Ptr(inst.URI)
+				}
 				if inst.Attack != "" {
 					result.Message = &inst.Attack
 				}

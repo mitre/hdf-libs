@@ -18,11 +18,15 @@ import {
   convertAwsConfigToHdf,
   convertCheckovToHdf,
   convertGosecToHdf,
+  convertHadolintToHdf,
   convertNiktoToHdf,
   convertZapToHdf,
   convertCyclonedxToHdf,
   convertSplunkToHdf,
   convertHdfToCsv,
+  convertHdfToHtml,
+  convertHdfDocumentsToHtml,
+  parseReportType,
   convertHdfToXml,
   convertGitlabToHdf,
   convertTrivyToHdf,
@@ -137,6 +141,11 @@ describe('Main exports', () => {
     expect(typeof convertSnykToHdf).toBe('function');
   });
 
+  it('should export convertHadolintToHdf from main index', () => {
+    expect(convertHadolintToHdf).toBeDefined();
+    expect(typeof convertHadolintToHdf).toBe('function');
+  });
+
   it('should export convertGrypeToHdf from main index', () => {
     expect(convertGrypeToHdf).toBeDefined();
     expect(typeof convertGrypeToHdf).toBe('function');
@@ -190,6 +199,12 @@ describe('Main exports', () => {
   it('should export convertSplunkToHdf from main index', () => {
     expect(convertSplunkToHdf).toBeDefined();
     expect(typeof convertSplunkToHdf).toBe('function');
+  });
+
+  it('should export convertHdfToHtml and parseReportType from main index', () => {
+    expect(typeof convertHdfToHtml).toBe('function');
+    expect(typeof convertHdfDocumentsToHtml).toBe('function');
+    expect(typeof parseReportType).toBe('function');
   });
 
   it('should export convertHdfToCsv from main index', () => {

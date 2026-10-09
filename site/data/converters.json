@@ -145,6 +145,12 @@
       "acceptsEmpty": false
     },
     {
+      "source": "hadolint",
+      "dest": "hdf",
+      "name": "hadolint to HDF",
+      "acceptsEmpty": false
+    },
+    {
       "source": "hdf",
       "dest": "asff",
       "name": "HDF Results to ASFF Findings",
@@ -178,6 +184,12 @@
       "source": "hdf",
       "dest": "hdf",
       "name": "HDF vauto to HDF v3",
+      "acceptsEmpty": false
+    },
+    {
+      "source": "hdf",
+      "dest": "html",
+      "name": "HDF to HTML",
       "acceptsEmpty": false
     },
     {

@@ -30,7 +30,9 @@
             {
               "codeDesc": "apk-tools@2.10.5-r1 | CVE-2021-36159 | CVSS 9.1 | libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strin…",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.7-r0.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "package",
+              "resourceId": "apk-tools@2.10.5-r1",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -90,7 +92,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-25235 | CVSS 9.8 | xmltok_impl.c in Expat (aka libexpat) before 2.4.5 lacks certain validation of encoding, such as che…",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -150,7 +154,9 @@
             {
               "codeDesc": "apk-tools@2.10.5-r1 | CVE-2021-30139 | CVSS 7.5 | In Alpine Linux apk-tools before 2.12.5, the tarball parser allows a buffer overflow and crash.",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.6-r0.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "package",
+              "resourceId": "apk-tools@2.10.5-r1",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -210,7 +216,9 @@
             {
               "codeDesc": "avahi@0.8-r0 | CVE-2021-36217 | CVSS 6.2 | Rejected reason: DO NOT USE THIS CANDIDATE NUMBER. ConsultIDs: CVE-2021-3502. Reason: This candidate…",
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r2.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "package",
+              "resourceId": "avahi@0.8-r0",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -273,7 +281,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2018-25032 | CVSS 7.5 | Out-of-bounds Write in zlib affects Nokogiri/n## Summary Nokogiri v1.13.4 updates the vendored zlib …",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -332,7 +342,9 @@
             {
               "codeDesc": "zlib@1.2.11-r3 | CVE-2018-25032 | CVSS 7.5 | zlib before 1.2.12 allows memory corruption when deflating (i.e., when compressing) if the input has…",
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r0.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "package",
+              "resourceId": "zlib@1.2.11-r3",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -395,7 +407,9 @@
             {
               "codeDesc": "ruby:webrick@1.4.2 | CVE-2020-25613 | CVSS 7.5 | Potential HTTP Request Smuggling Vulnerability in WEBrick/nWEBrick was too tolerant against an inval…",
               "message": "Vulnerable package ruby:webrick is at version 1.4.2. Update to fixed version \u003e=1.6.1.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/webrick-1.4.2",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -453,7 +467,9 @@
             {
               "codeDesc": "ca-certificates@2023.2.60_v7.0.306-80.0.el8_8 | CVE-2023-37920 | CVSS 9.1 | DOCUMENTATION: A flaw was found in the python-certifi package. This issue occurs when the e-Tugra ro…",
               "message": "Vulnerable package ca-certificates is at version 2023.2.60_v7.0.306-80.0.el8_8. No fixed version available.",
-              "startTime": "2026-09-28T19:57:05.915047Z",
+              "resource": "package",
+              "resourceId": "ca-certificates@2023.2.60_v7.0.306-80.0.el8_8",
+              "startTime": "2026-10-09T15:27:48.115754Z",
               "status": "failed"
             }
           ],
@@ -520,7 +536,7 @@
     "name": "neuvector-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-28T19:57:05.915047Z",
+  "timestamp": "2026-10-09T15:27:48.115754Z",
   "tool": {
     "name": "NeuVector"
   }

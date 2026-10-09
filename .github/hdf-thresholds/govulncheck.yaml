@@ -1,3 +1,4 @@
+# Applies to: govulncheck, one document per Go module from go.work — the policy is applied to each.
 # govulncheck-specific gate. govulncheck's SARIF encodes reachability as
 # level: error = vulnerable symbol actually called, warning = vulnerable
 # package imported but no vulnerable symbol called, note = vulnerable module
@@ -7,11 +8,15 @@
 # reachable vulnerabilities fail CI, while the informational findings stay
 # visible — recorded as low/medium findings in the normalized artifact —
 # until dependabot bumps the module.
-failed:
-    critical:
-        max: 0
-    high:
-        max: 0
-error:
-    total:
-        max: 0
+rules:
+    - name: no requirement errored
+      where:
+          status: error
+      max: 0
+    - name: nothing failing at a gated severity is unadjudicated
+      where:
+          status: failed
+          severity: [critical, high]
+          disposition:
+              not: [waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement]
+      max: 0

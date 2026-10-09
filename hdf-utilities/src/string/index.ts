@@ -77,6 +77,32 @@ const ISO_DATETIME_NO_ZONE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?
 // V8's Date treats it as host-local, so we append a 'GMT' designator to match.
 const CTIME_NO_ZONE = /^[A-Za-z]{3} [A-Za-z]{3} +\d{1,2} \d{2}:\d{2}:\d{2} \d{4}$/;
 
+const GO_ZERO_TIME_MS = new Date('0001-01-01T00:00:00Z').getTime();
+
+/**
+ * Reports whether a Date is Go's zero time, 0001-01-01T00:00:00Z. A Go
+ * StatusOverride's timestamps are non-pointer time.Time, so an unset one
+ * serializes as exactly that instant and decodes back to IsZero — "never set",
+ * which every Go reader honours. Parity: time.Time.IsZero.
+ */
+export function isGoZeroTime(d: Date): boolean {
+  return d.getTime() === GO_ZERO_TIME_MS;
+}
+
+/**
+ * Normalizes Go's zero time to absent for a timestamp string a document
+ * carries. The one rule every TypeScript consumer of such a timestamp shares:
+ * carried through raw, the zero time reads as a real instant in year 1 — before
+ * every reference time — and an override that never expires is judged expired.
+ * Anything that is not the zero time passes through untouched for the caller's
+ * own parser to read.
+ */
+export function absentIfGoZeroTime(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const parsed = parseTimestamp(value);
+  return parsed !== null && isGoZeroTime(parsed) ? undefined : value;
+}
+
 /**
  * Parse a timestamp string in various common formats into a Date.
  *

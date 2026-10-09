@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	"github.com/mitre/hdf-libs/hdf-diff/go/v3/amend"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
@@ -81,13 +82,18 @@ Examples:
   hdf amend draft --from results.json --type attestation --select "access control" --expires 1y`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
+			if err := ValidateStatusFilter(statusFilter); err != nil {
+				return err
+			}
 			return runAmendDraft(fromPath, amendType, statusFilter, selectStr, expires, outputPath)
 		},
 	}
 
 	cmd.Flags().StringVar(&fromPath, "from", "", "HDF results file to enumerate requirements from (required)")
-	cmd.Flags().StringVar(&amendType, "type", "", "Override type for the stubs (waiver, attestation, poam, inherited, falsePositive, riskAdjustment, operationalRequirement) (required)")
-	cmd.Flags().StringVar(&statusFilter, "status", "", "Only stub requirements with this computed status (e.g. failed)")
+	cmd.Flags().StringVar(&amendType, "type", "",
+		"Override type for the stubs ("+OverrideTypeHelpVocabulary()+") (required)")
+	cmd.Flags().StringVar(&statusFilter, "status", "",
+		"Only stub requirements with this computed status: "+FilterHelpVocabulary("status"))
 	cmd.Flags().StringVar(&selectStr, "select", "", "Only stub requirements whose id or title contains this substring")
 	cmd.Flags().StringVar(&expires, "expires", "", "Expiration for the stubs (30d, 6m, 1y, YYYY-MM-DD, or RFC3339)")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output file (default: stdout)")
@@ -244,7 +250,7 @@ func runAmendApply(_ *cobra.Command, resultsPath, amendmentsPath, outputPath str
 		if len(merged) > 0 && merged[len(merged)-1] != '\n' {
 			merged = append(merged, '\n')
 		}
-		if writeErr := os.WriteFile(outputPath, merged, 0o600); writeErr != nil { // #nosec G306 G703 -- CLI intentionally writes to user-provided path
+		if writeErr := atomicfile.WriteFile(outputPath, merged, 0o600); writeErr != nil {
 			return fmt.Errorf("failed to write output file: %w", writeErr)
 		}
 		fmt.Fprintf(os.Stderr, "Merged output written to %s\n", outputPath)

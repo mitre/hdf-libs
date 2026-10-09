@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ func NewEnrichCmd() *cobra.Command {
 		Use:   "enrich <results> <source> [flags]",
 		Short: "Enrich HDF results with external context (e.g. a STIX bundle)",
 		Long: `Overlay an enrichment source onto an HDF results document, attaching inert
-externalReferences[] to findings (matched by CVE) or to the results root.
+externalReferences[] to findings (matched by CVE) or to the document root.
 
 Enrichment is INFORMATIONAL by default: it adds context and never changes a
 finding's status or impact. --recompute-cvss additionally authors an auditable
@@ -86,7 +87,7 @@ func runEnrich(resultsPath, sourcePath, fromFormat, outputPath string, recompute
 		if len(enriched) > 0 && enriched[len(enriched)-1] != '\n' {
 			enriched = append(enriched, '\n')
 		}
-		if writeErr := os.WriteFile(outputPath, enriched, 0o600); writeErr != nil { // #nosec G306 G703 -- CLI intentionally writes to user-provided path
+		if writeErr := atomicfile.WriteFile(outputPath, enriched, 0o600); writeErr != nil {
 			return fmt.Errorf("failed to write output file: %w", writeErr)
 		}
 		fmt.Fprintf(os.Stderr, "Enriched output written to %s\n", outputPath)

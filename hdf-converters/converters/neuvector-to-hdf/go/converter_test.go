@@ -916,3 +916,37 @@ func TestConvertNeuVector_VulnerabilityAnchor(t *testing.T) {
 	shared.AssertRequirementCount(t, result, want,
 		"neuvector-mitre-heimdall.json: one requirement per distinct name/package_name/package_version vulnerability")
 }
+
+// Every result carries the instance it describes in the structured fields rather
+// than only in codeDesc prose. NeuVector's discriminator is file_name — the one
+// field that distinguishes the two braces@3.0.2 entries reporting CVE-2024-4068,
+// and until now parsed and read nowhere. file_name is absent on most entries
+// (220 of the 305 across the committed fixtures), so those fall back to the
+// package identity, which is what NeuVector's own requirement id keys on.
+func TestConvertNeuVector_SetsResultResourceIdentityToFileName(t *testing.T) {
+	result, err := ConvertNeuVectorToHDF(loadFixture(t, "input/neuvector-mitre-heimdall2.json"), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements, "CVE-2024-4068/braces/3.0.2")
+	require.Len(t, req.Results, 1)
+	require.NotNil(t, req.Results[0].Resource, "resource is nil — file_name is still parsed-but-unused")
+	assert.Equal(t, "file", *req.Results[0].Resource)
+	require.NotNil(t, req.Results[0].ResourceID)
+	assert.Equal(t, "app/apps/backend/node_modules/braces/package.json", *req.Results[0].ResourceID)
+}
+
+// file_name is populated on a minority of NeuVector entries. An entry without one
+// names no file, so the result identifies the vulnerable package instead rather
+// than carrying resource "file" with nothing to point at.
+func TestConvertNeuVector_FallsBackToPackageIdentityWithoutFileName(t *testing.T) {
+	result, err := ConvertNeuVectorToHDF(loadFixture(t, "input/neuvector-mitre-heimdall2.json"), testVersion)
+	require.NoError(t, err)
+
+	req := shared.MustFindRequirement(t, result.Baselines[0].Requirements,
+		"CVE-2024-4068/nodejs-nodemon/3.0.1-1.module+el8.10.0+21159+f5a7145d")
+	require.Len(t, req.Results, 1)
+	require.NotNil(t, req.Results[0].Resource)
+	assert.Equal(t, "package", *req.Results[0].Resource)
+	require.NotNil(t, req.Results[0].ResourceID)
+	assert.Equal(t, "nodejs-nodemon@3.0.1-1.module+el8.10.0+21159+f5a7145d", *req.Results[0].ResourceID)
+}

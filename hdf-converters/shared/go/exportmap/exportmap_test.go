@@ -2,7 +2,10 @@ package exportmap
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -315,4 +318,124 @@ func TestBuildHDFBlock(t *testing.T) {
 	assert.NotContains(t, minimal, "tool")
 	assert.NotContains(t, minimal, "control_id")
 	assert.NotContains(t, minimal, "nist")
+}
+
+// The map-shaped twin of shared.GoverningOverrideIndex, for the exporters that
+// work on generically-parsed JSON. Same rule: most recently applied non-expired
+// override, never array position — our own writers append, so position is the
+// opposite of recency on a document amended twice.
+func TestGoverningOverrideIndex_MapShaped(t *testing.T) {
+	older := map[string]interface{}{
+		"type": "waiver", "status": "passed", "reason": "older",
+		"appliedAt": "2024-06-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+	}
+	newer := map[string]interface{}{
+		"type": "riskAdjustment", "reason": "newer",
+		"appliedAt": "2025-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+	}
+	expired := map[string]interface{}{
+		"type": "riskAdjustment", "reason": "expired",
+		"appliedAt": "2026-01-01T00:00:00Z", "expiresAt": "2020-01-01T00:00:00Z",
+	}
+	ref, err := time.Parse(time.RFC3339, "2026-06-01T00:00:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := GoverningOverrideIndex([]interface{}{older, newer}, ref); got != 1 {
+		t.Errorf("appended order: got %d, want 1 (the newest governs even when last)", got)
+	}
+	if got := GoverningOverrideIndex([]interface{}{newer, older}, ref); got != 0 {
+		t.Errorf("prepended order: got %d, want 0 (same answer either way)", got)
+	}
+	if got := GoverningOverrideIndex([]interface{}{older, newer, expired}, ref); got != 1 {
+		t.Errorf("expired newest: got %d, want 1", got)
+	}
+	if got := GoverningOverrideIndex(nil, ref); got != -1 {
+		t.Errorf("empty: got %d, want -1", got)
+	}
+	// A malformed entry must not govern, and must not take the whole export down.
+	if got := GoverningOverrideIndex([]interface{}{"not an object", newer}, ref); got != 1 {
+		t.Errorf("malformed entry: got %d, want 1", got)
+	}
+}
+
+// Disposition is the map-shaped twin of shared.RequirementDisposition, including
+// its no-overrides fallback to the stored field. The boundary that matters: an
+// EXPIRED override still means the document carries overrides, so it suppresses
+// the fallback rather than triggering it.
+func TestDisposition_FallbackBoundary(t *testing.T) {
+	governing := map[string]interface{}{
+		"type": "riskAdjustment", "reason": "r",
+		"appliedAt": "2025-01-01T00:00:00Z", "expiresAt": "2099-12-31T00:00:00Z",
+	}
+	expired := map[string]interface{}{
+		"type": "waiver", "reason": "r",
+		"appliedAt": "2024-01-01T00:00:00Z", "expiresAt": "2020-01-01T00:00:00Z",
+	}
+	ref, err := time.Parse(time.RFC3339, "2026-06-01T00:00:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name string
+		req  map[string]interface{}
+		want string
+	}{
+		{"the governing override wins over a disagreeing stored field",
+			map[string]interface{}{"disposition": "waiver", "statusOverrides": []interface{}{governing}}, "riskAdjustment"},
+		{"no overrides at all falls back to the stored field",
+			map[string]interface{}{"disposition": "waiver"}, "waiver"},
+		{"an expired override suppresses the fallback — the document does carry overrides",
+			map[string]interface{}{"disposition": "waiver", "statusOverrides": []interface{}{expired}}, ""},
+		{"nothing at all yields nothing", map[string]interface{}{}, ""},
+		{"a type-less governing override yields empty, never a placeholder",
+			map[string]interface{}{"statusOverrides": []interface{}{map[string]interface{}{"reason": "r"}}}, ""},
+	}
+	for _, c := range cases {
+		if got := Disposition(c.req, ref); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+type exportmapStatusCase struct {
+	Name string `json:"name"`
+	Note string `json:"note"`
+	Want struct {
+		Raw        string `json:"raw"`
+		Rollup     string `json:"rollup"`
+		Overridden bool   `json:"overridden"`
+		Suppressed bool   `json:"suppressed"`
+	} `json:"want"`
+	Requirement map[string]interface{} `json:"requirement"`
+}
+
+func loadExportmapStatusCases(t *testing.T) []exportmapStatusCase {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "exportmap-status-cases.json"))
+	require.NoError(t, err)
+	var doc struct {
+		Cases []exportmapStatusCase `json:"cases"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &doc))
+	require.NotEmpty(t, doc.Cases)
+	return doc.Cases
+}
+
+// The shared case table pins both resolvers to the same verdicts. StatusOf
+// builds the canonical override input from raw JSON itself rather than through
+// the requirement bridge, so the Go zero time has to be normalized here too or
+// the suppression axis flips between languages on the same document.
+func TestStatusOf_SharedCaseTable(t *testing.T) {
+	for _, c := range loadExportmapStatusCases(t) {
+		t.Run(c.Name, func(t *testing.T) {
+			got := StatusOf(c.Requirement)
+			assert.Equal(t, c.Want.Raw, got.Raw, c.Note)
+			assert.Equal(t, c.Want.Rollup, got.Rollup, c.Note)
+			assert.Equal(t, c.Want.Overridden, got.Overridden, c.Note)
+			assert.Equal(t, c.Want.Suppressed, got.Suppressed, c.Note)
+		})
+	}
 }

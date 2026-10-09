@@ -50,6 +50,7 @@ export { convertSnykToHdf } from '../converters/snyk-to-hdf/typescript/index.js'
 
 // Grype to HDF converter
 export { convertGrypeToHdf } from '../converters/grype-to-hdf/typescript/index.js';
+export { convertHadolintToHdf } from '../converters/hadolint-to-hdf/typescript/index.js';
 
 // DefectDojo to HDF converter
 export { convertDefectDojoToHdf } from '../converters/defectdojo-to-hdf/typescript/index.js';
@@ -80,6 +81,18 @@ export { convertCyclonedxToHdf } from '../converters/cyclonedx-to-hdf/typescript
 
 // HDF to CSV converter
 export { convertHdfToCsv } from '../converters/hdf-to-csv/typescript/index.js';
+
+// HDF to HTML report converter
+export {
+  convertHdfToHtml,
+  convertHdfDocumentsToHtml,
+  parseReportType,
+} from '../converters/hdf-to-html/typescript/index.js';
+export type {
+  HtmlReportType,
+  HtmlReportOptions,
+  HtmlReportDocument,
+} from '../converters/hdf-to-html/typescript/index.js';
 
 // HDF to ECS converter
 export { convertHdfToEcs } from '../converters/hdf-to-ecs/typescript/index.js';

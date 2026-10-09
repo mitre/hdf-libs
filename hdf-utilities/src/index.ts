@@ -50,7 +50,7 @@ export {
 export { findValuesByKey, extractColumn, findRows } from './object/index.js';
 
 // String utilities
-export { stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8 } from './string/index.js';
+export { stripHtml, replaceHtmlTags, parseTimestamp, formatTimestamp, formatTimestampSeconds, trimUtcFraction, normalizeHdfTimestamps, encodeBase64Utf8, isGoZeroTime, absentIfGoZeroTime } from './string/index.js';
 
 // Severity/impact mapping
 export { severityToImpact, severityToImpactWithAliases, impactToSeverity, cvssScoreToSeverity, isUnratedSeverity, roundImpact } from './severity/index.js';
@@ -64,7 +64,9 @@ export {
   governingOverrideIndex,
   governingStatusOverride,
   governingStatusOverrideIndex,
+  governingImpactOverrideIndex,
   computeEffectiveStatus,
+  computeEffectiveImpact,
   type StatusOverrideInput,
   type EffectiveStatusInput,
 } from './status/index.js';
@@ -80,6 +82,9 @@ export {
   type CvssValidationResult,
   type CvssScore,
 } from './cvss/index.js';
+
+// CWE identifier extraction (twin of go/cwe.go)
+export { extractCWEIDs, CWE_PATTERN } from './cwe/index.js';
 
 // CPE 2.3 URI parser
 export { parseCpe, type ParsedCpe, type CpePart } from './cpe/index.js';

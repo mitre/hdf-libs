@@ -30,6 +30,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | GitLab Vulnerability Report (fetcher envelope, triage state preserved) | `convertGitlabVulnerabilitiesToHdf` | JSON |
 | Gosec | `convertGosecToHdf` | JSON |
 | Grype | `convertGrypeToHdf` | JSON |
+| hadolint | `convertHadolintToHdf` | JSON |
 | Hipcheck | `convertHipcheckToHdf` | JSON |
 | Ion Channel | `convertIonchannelToHdf` | JSON |
 | JFrog Xray | `convertJfrogXrayToHdf` | JSON |
@@ -71,6 +72,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 | Target Format | Function |
 |---|---|
 | CSV | `convertHdfToCsv` |
+| HTML report (self-contained; executive, manager or administrator) | `convertHdfToHtml`; `convertHdfDocumentsToHtml` for several documents in one report |
 | ECS (Elastic Common Schema 9.4.0 NDJSON) | `convertHdfToEcs` |
 | Splunk (CIM Vulnerabilities / HEC NDJSON) | `convertHdfToSplunk` |
 | OCSF (v1.8.0 Compliance / Vulnerability Finding NDJSON) | `convertHdfToOcsf` |
@@ -94,7 +96,7 @@ All converter output conforms to the [HDF JSON Schema](https://mitre.github.io/h
 
 ### Enrichment
 
-Enrichment overlays external context onto an existing HDF results document as inert `externalReferences[]` (matched to findings by CVE, else the results root). It is informational — it never changes a finding's status or impact — and is distinct from a converter (it takes a results doc *plus* a source, and returns the enriched results doc).
+Enrichment overlays external context onto an existing HDF results document as inert `externalReferences[]` (matched to findings by CVE, else the document root). It is informational — it never changes a finding's status or impact — and is distinct from a converter (it takes a results doc *plus* a source, and returns the enriched results doc).
 
 | Source | Function | Format |
 |---|---|---|
@@ -107,12 +109,12 @@ CLI: `hdf enrich <results> <source>` (see the [hdf-cli README](../hdf-cli/README
 
 ```bash
 npm install @mitre/hdf-converters@next   # newest v3 stable
-npm install @mitre/hdf-converters@3.5.1  # pin an exact version
+npm install @mitre/hdf-converters@3.7.2  # pin an exact version
 ```
 
 This package's npm name is shared with [heimdall2](https://github.com/mitre/heimdall2), which publishes the v2 line and owns the `latest` dist-tag — a plain `npm install @mitre/hdf-converters` installs v2, not this library. Always install the v3 line via `@next` or an exact version (npm does not permit a `v3` dist-tag — tag names may not be valid semver ranges).
 
-Requires Node.js >= 22.
+Requires Node.js >= 24.
 
 ## TypeScript Usage
 
@@ -124,7 +126,7 @@ All exports use ESM (`"type": "module"`).
 import { convertGrypeToHdf } from '@mitre/hdf-converters';
 
 const grypeJson = fs.readFileSync('grype-report.json', 'utf-8');
-const hdfResults = convertGrypeToHdf(grypeJson, 'grype-report.json');
+const hdfResults = await convertGrypeToHdf(grypeJson); // second argument is the converter version stamped into generator.version, not a filename
 ```
 
 ### Auto-detect input format
@@ -152,6 +154,23 @@ if (isHDFV1(data)) {
 }
 ```
 
+### Render an HTML report
+
+```typescript
+import { convertHdfToHtml, convertHdfDocumentsToHtml } from '@mitre/hdf-converters';
+
+// One results document. reportType is 'executive', 'manager' or 'administrator' (the default).
+const report = convertHdfToHtml(hdfResultsJson, { reportType: 'manager' });
+
+// Several results documents in one report; each is listed under its name, in the order given.
+const combined = convertHdfDocumentsToHtml([
+  { name: 'web.hdf.json', content: webResultsJson },
+  { name: 'db.hdf.json', content: dbResultsJson },
+]);
+```
+
+Both return one self-contained HTML string. The same input always yields the same output, and the Go and TypeScript implementations yield identical bytes.
+
 ## Go Usage
 
 Go converters live under `converters/<name>/go/` and follow the same function signature:
@@ -164,6 +183,19 @@ results, err := grype.ConvertGrypeToHDF(input, converterVersion)
 ```
 
 The first argument is the raw tool output (`[]byte`); the second is the converter version string, not the source filename.
+
+Exporters take an HDF document instead. The HTML report takes one results document, or several for a combined report:
+
+```go
+import hdftohtml "github.com/mitre/hdf-libs/hdf-converters/v3/converters/hdf-to-html/go"
+
+report, err := hdftohtml.ConvertHDFToHTMLWithOptions(results, hdftohtml.Options{ReportType: hdftohtml.Manager})
+
+combined, err := hdftohtml.ConvertHDFDocumentsToHTML([]hdftohtml.Document{
+	{Name: "web.hdf.json", Data: webResults},
+	{Name: "db.hdf.json", Data: dbResults},
+}, hdftohtml.Options{})
+```
 
 For CLI usage, install the `hdf` binary from [hdf-cli](https://github.com/mitre/hdf-libs/tree/main/hdf-cli):
 

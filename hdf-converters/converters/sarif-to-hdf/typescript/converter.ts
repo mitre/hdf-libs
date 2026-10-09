@@ -5,6 +5,7 @@ import {
 } from '@mitre/hdf-mappings';
 import { buildAffectedPackage, buildNoFindingsRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
+import { governingOverride } from '../../../shared/typescript/status.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -695,15 +696,30 @@ function rollupStatus(statuses: ResultStatus[]): ResultStatus {
   return worstStatus(statuses) as ResultStatus;
 }
 
-// Picks the override type that produced the effective rollup status (the governing
-// override); falls back to the first override.
+// The type of the override that explains the requirement's effective status: the
+// one asserting that status, else the governing (most recently applied
+// non-expired) one.
+//
+// It previously scanned for an override whose status matched the effective
+// rollup and fell back to overrides[0]. That missed entirely when the governing
+// override carried only an impact — the canonical riskAdjustment shape, which
+// sets no status — and the fallback read array position as recency, which it is
+// not: nothing sorts these and this repo's writers append.
 function governingDisposition(overrides: StatusOverride[], effective: ResultStatus): OverrideType {
+  // Every override this converter creates carries the same appliedAt (the run
+  // timestamp), so recency cannot tell them apart — but they may differ in type
+  // (waiver vs falsePositive) and in the status they assert. The override whose
+  // status produced the rollup is the one that explains it, so that match stays
+  // the primary rule here. Recency is only the tie-break beneath it.
   for (const ov of overrides) {
     if (ov.status === effective) {
       return ov.type;
     }
   }
-  return overrides[0]!.type;
+  // No override asserts the effective status — the governing one carries only an
+  // impact, say. Fall back to the shared rule rather than to array position.
+  const o = governingOverride({ statusOverrides: overrides } as EvaluatedRequirement);
+  return (o?.type ?? overrides[0]!.type) as OverrideType;
 }
 
 // --- Code flow → backtrace ---

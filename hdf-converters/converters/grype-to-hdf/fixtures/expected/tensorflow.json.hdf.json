@@ -30,6 +30,8 @@
             {
               "codeDesc": "Package: binutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils/copyright | Match Type: exact-direct-match",
               "message": "Severity: Low vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/binutils@2.38-4ubuntu2.6?arch=amd64\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -92,6 +94,8 @@
             {
               "codeDesc": "Package: binutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils/copyright | Match Type: exact-direct-match",
               "message": "Severity: Low vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/binutils@2.38-4ubuntu2.6?arch=amd64\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -154,6 +158,8 @@
             {
               "codeDesc": "Package: binutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils/copyright | Match Type: exact-direct-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/binutils@2.38-4ubuntu2.6?arch=amd64\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -225,6 +231,8 @@
             {
               "codeDesc": "Package: binutils@2.38-4ubuntu2.6 | Type: deb | Location: /usr/share/doc/binutils/copyright | Match Type: exact-direct-match",
               "message": "Manual review required because a Grype rating severity is set to `negligible` or `unknown`. Severity: Negligible vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/binutils@2.38-4ubuntu2.6?arch=amd64\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -290,6 +298,8 @@
             {
               "codeDesc": "Package: cpp@4:11.2.0-1ubuntu1 | Type: deb | Location: /usr/share/doc/cpp/copyright | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/cpp@4:11.2.0-1ubuntu1?arch=amd64\u0026upstream=gcc-defaults%401.193ubuntu1\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -349,6 +359,8 @@
             {
               "codeDesc": "Package: cpp@4:11.2.0-1ubuntu1 | Type: deb | Location: /usr/share/doc/cpp/copyright | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/cpp@4:11.2.0-1ubuntu1?arch=amd64\u0026upstream=gcc-defaults%401.193ubuntu1\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -424,6 +436,8 @@
             {
               "codeDesc": "Package: curl@7.81.0-1ubuntu1.16 | Type: deb | Location: /usr/share/doc/curl/copyright | Match Type: exact-direct-match",
               "message": "Severity: Medium vulnerability is fixed for versions 7.81.0-1ubuntu1.17",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/curl@7.81.0-1ubuntu1.16?arch=amd64\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -490,6 +504,8 @@
             {
               "codeDesc": "Package: libcurl3-gnutls@7.81.0-1ubuntu1.16 | Type: deb | Location: /usr/share/doc/libcurl3-gnutls/copyright | Match Type: exact-indirect-match",
               "message": "Severity: Medium vulnerability is fixed for versions 7.81.0-1ubuntu1.17",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/libcurl3-gnutls@7.81.0-1ubuntu1.16?arch=amd64\u0026upstream=curl\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -556,6 +572,8 @@
             {
               "codeDesc": "Package: libpython3.10-minimal@3.10.12-1~22.04.4 | Type: deb | Location: /usr/share/doc/libpython3.10-minimal/copyright | Match Type: exact-indirect-match",
               "message": "Severity: Low vulnerability is fixed for versions 3.10.12-1~22.04.5",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/libpython3.10-minimal@3.10.12-1~22.04.4?arch=amd64\u0026upstream=python3.10\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -649,6 +667,8 @@
             {
               "codeDesc": "Package: libpython3.10-stdlib@3.10.12-1~22.04.4 | Type: deb | Location: /usr/share/doc/libpython3.10-minimal/copyright | Match Type: exact-indirect-match",
               "message": "Severity: Low vulnerability is fixed for versions 3.10.12-1~22.04.5",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/libpython3.10-stdlib@3.10.12-1~22.04.4?arch=amd64\u0026upstream=python3.10\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -741,6 +761,8 @@
             {
               "codeDesc": "Package: libpython3.11@3.11.0~rc1-1~22.04 | Type: deb | Location: /usr/share/doc/libpython3.11-minimal/copyright | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/libpython3.11@3.11.0~rc1-1~22.04?arch=amd64\u0026upstream=python3.11\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -836,6 +858,8 @@
             {
               "codeDesc": "Package: libpython3.11-dev@3.11.0~rc1-1~22.04 | Type: deb | Location: /usr/share/doc/libpython3.11-minimal/copyright | Match Type: exact-indirect-match",
               "message": "Severity: High vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/libpython3.11-dev@3.11.0~rc1-1~22.04?arch=amd64\u0026upstream=python3.11\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "failed"
             }
@@ -931,6 +955,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Low vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1008,6 +1034,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Medium vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1064,6 +1092,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Medium vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1126,6 +1156,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Low vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1191,6 +1223,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Negligible vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1247,6 +1281,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Negligible vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1310,6 +1346,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Medium vulnerability is fixed for versions 5.15.0-116.126",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1369,6 +1407,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: High vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1456,6 +1496,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Medium vulnerability is fixed for versions 5.15.0-116.126",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1531,6 +1573,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: High vulnerability is fixed for versions 5.15.0-116.126",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1609,6 +1653,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Low vulnerability is fixed for versions 5.15.0-116.126",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1666,6 +1712,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: Low vulnerability is fixed for versions 5.15.0-116.126",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1729,6 +1777,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: High vulnerability is fixed for versions 5.15.0-116.126",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }
@@ -1812,6 +1862,8 @@
             {
               "codeDesc": "Package: linux-libc-dev@5.15.0-113.123 | Type: deb | Location: /usr/share/doc/linux-libc-dev/copyright | Match Type: exact-indirect-match",
               "message": "This vulnerability was ignored by configured rules. Severity: High vulnerability is not-fixed",
+              "resource": "package",
+              "resourceId": "pkg:deb/ubuntu/linux-libc-dev@5.15.0-113.123?arch=amd64\u0026upstream=linux\u0026distro=ubuntu-22.04",
               "startTime": "2024-08-29T17:31:15.474Z",
               "status": "notReviewed"
             }

@@ -412,6 +412,17 @@ func mapGrypeTypeToEcosystem(grypeType string) hdf.Ecosystem {
 	}
 }
 
+// packageInstanceID is the per-result instance identity for a grype match: the
+// matched package's purl, which is what distinguishes two entries reporting the
+// same CVE. Falls back to name@version when a source omits purl (the field is
+// optional in grype's schema, though every committed fixture carries it) — the
+// same identity twistlock uses, whose source has no purl at all. Returns "" when
+// the artifact names nothing at all, so the caller leaves both fields unset
+// rather than emitting an empty identity.
+func packageInstanceID(a GrypeArtifact) string {
+	return shared.PackageInstanceID(a.PURL, a.Name, a.Version)
+}
+
 // buildAffectedPackages produces a single AffectedPackage from the match's
 // artifact block. Grype emits one artifact per match, so the slice always has
 // exactly one entry. The first cpes[] element is used (Grype lists multiple
@@ -542,6 +553,12 @@ func convertMatchToRequirement(match GrypeMatch, isIgnored bool, targetName stri
 		CodeDesc:  buildCodeDesc(match),
 		Message:   &message,
 		StartTime: startTime,
+	}
+	// Both fields or neither: an artifact that names nothing gets no identity
+	// rather than an empty-string resourceId, matching every other converter.
+	if id := packageInstanceID(match.Artifact); id != "" {
+		result.Resource = hdfutil.Ptr("package")
+		result.ResourceID = hdfutil.Ptr(id)
 	}
 
 	// Get CCI tags from curated NIST → CCI mapping

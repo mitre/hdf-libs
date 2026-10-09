@@ -63,6 +63,11 @@ func NewGitLabFetcher(params GitLabParams, tlsOpts shared.TLSOptions) (*GitLabFe
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure TLS: %w", err)
 	}
+	// Go copies custom headers such as PRIVATE-TOKEN across hosts on a redirect.
+	// Refusing to follow one keeps the token on the host the user named; the 3xx
+	// then fails as a non-200 response. Workhorse serves artifact bytes directly,
+	// so a legitimate fetch never redirects. Parity: the vulnerabilities fetcher.
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	return &GitLabFetcher{
 		client: client,
 		params: params,

@@ -1,0 +1,57 @@
+{
+  "$comment": "Baseline-label filter contract, read by BOTH hdf-engine/go/filter_test.go and test/query.test.ts so the two implementations cannot drift. Decisions pinned here rather than in prose: (1) the predicate is BASELINE-level, checked once per baseline beside the existing name filter, because a label is a property of the baseline and not of any requirement in it — so a matching baseline contributes every requirement inside it. (2) The form mirrors tag's key:value string with a glob on the VALUE only; keys are open by schema (additionalProperties: {type: string}) so a key nothing carries selects nothing, and that is correct rather than an error. (3) A label value is exactly one string, so this does NOT reuse tagMatchesGlob, whose value may be a list. (4) An absent key matches nothing INCLUDING against '*': the predicate asks about a label the baseline does not carry, and there is nothing to match. (5) A colonless predicate names no key and can never match any document, so it is REFUSED at the CLI boundary (hdf query --baseline-label, and threshold rule validation) rather than allowed to select nothing — selecting nothing and being ignored produce the same forever-green gate under a max bound. The filter itself still selects nothing for one, which is the safe half of that pair, and that is pinned below.",
+  "fixtureFile": "query-fixture.json",
+  "fixtureNote": "query-fixture.json's FIRST baseline carries labels {environment: production, component: rhel9-host, team: platform-sre}; its SECOND is deliberately unlabelled, which is what makes the exclusion cases meaningful. Unfiltered the fixture returns all 5 requirements.",
+  "unfilteredCount": 5,
+  "unlabelledBaselineIDs": ["SV-100001", "SV-100002"],
+  "cases": [
+    {
+      "name": "exact value",
+      "labels": ["environment:production"],
+      "expect": ["SV-230221", "SV-230222", "SV-230223"]
+    },
+    {
+      "name": "a different key on the same baseline",
+      "labels": ["component:rhel9-host"],
+      "expect": ["SV-230221", "SV-230222", "SV-230223"]
+    },
+    {
+      "name": "glob on the value, as tags allow",
+      "labels": ["environment:prod*"],
+      "expect": ["SV-230221", "SV-230222", "SV-230223"]
+    },
+    {
+      "name": "several values OR together",
+      "labels": ["environment:staging", "environment:production"],
+      "expect": ["SV-230221", "SV-230222", "SV-230223"]
+    },
+    {
+      "name": "a key nothing carries matches nothing",
+      "labels": ["region:eu-west-1"],
+      "expect": []
+    },
+    {
+      "name": "a value nothing carries matches nothing",
+      "labels": ["environment:staging"],
+      "expect": []
+    },
+    {
+      "name": "a glob cannot stand in for an absent key",
+      "labels": ["region:*"],
+      "expect": []
+    },
+    {
+      "name": "a colonless predicate selects nothing rather than everything",
+      "labels": ["production"],
+      "expect": []
+    }
+  ],
+  "validity": [
+    {"value": "environment:production", "valid": true},
+    {"value": "environment:prod*", "valid": true},
+    {"value": "environment:", "valid": true},
+    {"value": "production", "valid": false},
+    {"value": "", "valid": false},
+    {"value": ":production", "valid": false}
+  ]
+}

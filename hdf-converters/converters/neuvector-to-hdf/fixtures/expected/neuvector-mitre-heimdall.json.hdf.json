@@ -60,7 +60,9 @@
             {
               "codeDesc": "apk-tools@2.10.5-r1 | CVE-2021-36159 | CVSS 9.1 | libfetch before 2021-07-26, as used in apk-tools, xbps, and other products, mishandles numeric strin…",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.7-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "apk-tools@2.10.5-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -122,7 +124,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-25235 | CVSS 9.8 | xmltok_impl.c in Expat (aka libexpat) before 2.4.5 lacks certain validation of encoding, such as che…",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -184,7 +188,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-22824 | CVSS 9.8 | defineAttribute in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -246,7 +252,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2021-45960 | CVSS 8.8 | In Expat (aka libexpat) before 2.4.3, a left shift by 29 (or more) places in the storeAtts function …",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -308,7 +316,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-25236 | CVSS 9.8 | xmlparse.c in Expat (aka libexpat) before 2.4.5 allows attackers to insert namespace-separator chara…",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -370,7 +380,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-22823 | CVSS 9.8 | build_model in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -432,7 +444,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-25315 | CVSS 9.8 | In Expat (aka libexpat) before 2.4.5, there is an integer overflow in storeRawNames.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -494,7 +508,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-22822 | CVSS 9.8 | addBinding in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -556,7 +572,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-23852 | CVSS 9.8 | Expat (aka libexpat) before 2.4.4 has a signed integer overflow in XML_GetBuffer, for configurations…",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -618,7 +636,9 @@
             {
               "codeDesc": "freetype@2.10.4-r0 | CVE-2022-27404 | CVSS 9.8 | FreeType commit 1e2eb65048f75c64b68708efed6ce904c31f3b2f was discovered to contain a heap buffer ove…",
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "freetype@2.10.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -680,7 +700,9 @@
             {
               "codeDesc": "ghostscript@9.52-r0 | CVE-2020-15900 | CVSS 9.8 | A memory corruption issue was found in Artifex Ghostscript 9.50 and 9.52. Use of a non-standard Post…",
               "message": "Vulnerable package ghostscript is at version 9.52-r0. Update to fixed version 9.52-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "ghostscript@9.52-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -742,7 +764,9 @@
             {
               "codeDesc": "gnutls@3.6.15-r0 | CVE-2021-20232 | CVSS 9.8 | A flaw was found in gnutls. A use after free issue in client_send_params in lib/ext/pre_shared_key.c…",
               "message": "Vulnerable package gnutls is at version 3.6.15-r0. Update to fixed version 3.6.15-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "gnutls@3.6.15-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -804,7 +828,9 @@
             {
               "codeDesc": "gnutls@3.6.15-r0 | CVE-2021-20231 | CVSS 9.8 | A flaw was found in gnutls. A use after free issue in client sending key_share extension may lead to…",
               "message": "Vulnerable package gnutls is at version 3.6.15-r0. Update to fixed version 3.6.15-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "gnutls@3.6.15-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -866,7 +892,9 @@
             {
               "codeDesc": "libx11@1.6.12-r0 | CVE-2021-31535 | CVSS 9.8 | LookupCol.c in X.Org X through X11R7.7 and libX11 before 1.7.1 might allow remote attackers to execu…",
               "message": "Vulnerable package libx11 is at version 1.6.12-r0. Update to fixed version 1.6.12-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libx11@1.6.12-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -928,7 +956,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2020-7774 | CVSS 9.8 | The package y18n before 3.2.2, 4.0.1 and 5.0.5, is vulnerable to Prototype Pollution.",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.1-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -990,7 +1020,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22931 | CVSS 9.8 | Node.js before 16.6.0, 14.17.4, and 12.22.4 is vulnerable to Remote Code Execution, XSS, Application…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1052,7 +1084,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22930 | CVSS 9.8 | Node.js before 16.6.0, 14.17.4, and 12.22.4 is vulnerable to a use after free attack where an attack…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.4-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1114,7 +1148,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2021-3711 | CVSS 9.8 | In order to decrypt SM2 encrypted data an application is expected to call the API function EVP_PKEY_…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1l-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1176,7 +1212,9 @@
             {
               "codeDesc": "zlib@1.2.11-r3 | CVE-2022-37434 | CVSS 9.8 | zlib through 1.2.12 has a heap-based buffer over-read or buffer overflow in inflate in inflate.c via…",
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "zlib@1.2.11-r3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1238,7 +1276,9 @@
             {
               "codeDesc": "apk-tools@2.10.5-r1 | CVE-2021-30139 | CVSS 7.5 | In Alpine Linux apk-tools before 2.12.5, the tarball parser allows a buffer overflow and crash.",
               "message": "Vulnerable package apk-tools is at version 2.10.5-r1. Update to fixed version 2.10.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "apk-tools@2.10.5-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1300,7 +1340,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42378 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1362,7 +1404,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42379 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1424,7 +1468,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42381 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1486,7 +1532,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42384 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1548,7 +1596,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42385 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1610,7 +1660,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42383 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1672,7 +1724,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42386 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1734,7 +1788,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-28831 | CVSS 7.5 | decompress_gunzip.c in BusyBox through 1.32.1 mishandles the error bit on the huft_build result poin…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r20.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1796,7 +1852,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42380 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1858,7 +1916,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2022-28391 | CVSS 8.8 | BusyBox through 1.35.0 allows remote attackers to execute arbitrary code if netstat is used to print…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r22.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1920,7 +1980,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42382 | CVSS 7.2 | A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -1982,7 +2044,9 @@
             {
               "codeDesc": "cairo@1.16.0-r2 | CVE-2020-35492 | CVSS 7.8 | A flaw was found in cairo's image-compositor.c in all versions prior to 1.17.4. This flaw allows an …",
               "message": "Vulnerable package cairo is at version 1.16.0-r2. Update to fixed version 1.16.0-r3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "cairo@1.16.0-r2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2044,7 +2108,9 @@
             {
               "codeDesc": "cyrus-sasl@2.1.27-r6 | CVE-2022-24407 | CVSS 8.8 | In Cyrus SASL 2.1.17 through 2.1.27 before 2.1.28, plugins/sql.c does not escape the password for a …",
               "message": "Vulnerable package cyrus-sasl is at version 2.1.27-r6. Update to fixed version 2.1.28-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "cyrus-sasl@2.1.27-r6",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2106,7 +2172,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2021-46143 | CVSS 7.8 | In doProlog in xmlparse.c in Expat (aka libexpat) before 2.4.3, an integer overflow exists for m_gro…",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2168,7 +2236,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-22825 | CVSS 8.8 | lookup in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2230,7 +2300,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-22826 | CVSS 8.8 | nextScaffoldPart in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2292,7 +2364,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-22827 | CVSS 8.8 | storeAtts in xmlparse.c in Expat (aka libexpat) before 2.4.3 has an integer overflow.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2354,7 +2428,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-25314 | CVSS 7.5 | In Expat (aka libexpat) before 2.4.5, there is an integer overflow in copyString.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2416,7 +2492,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-23990 | CVSS 7.5 | Expat (aka libexpat) before 2.4.4 has an integer overflow in the doProlog function.",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2478,7 +2556,9 @@
             {
               "codeDesc": "freetype@2.10.4-r0 | CVE-2022-27406 | CVSS 7.5 | FreeType commit 22a0cccb4d9d002f33c1ba7a4b36812c7d4f46b5 was discovered to contain a segmentation vi…",
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "freetype@2.10.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2540,7 +2620,9 @@
             {
               "codeDesc": "freetype@2.10.4-r0 | CVE-2022-27405 | CVSS 7.5 | FreeType commit 53dfdcd8198d2b3201a23c4bad9190519ba918db was discovered to contain a segmentation vi…",
               "message": "Vulnerable package freetype is at version 2.10.4-r0. Update to fixed version 2.10.4-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "freetype@2.10.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2602,7 +2684,9 @@
             {
               "codeDesc": "gdk-pixbuf@2.40.0-r2 | CVE-2021-20240 | CVSS 8.8 | A flaw was found in gdk-pixbuf in versions before 2.42.0. An integer wraparound leading to an out of…",
               "message": "Vulnerable package gdk-pixbuf is at version 2.40.0-r2. Update to fixed version 2.40.0-r3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "gdk-pixbuf@2.40.0-r2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2664,7 +2748,9 @@
             {
               "codeDesc": "gmp@6.2.0-r0 | CVE-2021-43618 | CVSS 7.5 | GNU Multiple Precision Arithmetic Library (GMP) through 6.2.1 has an mpz/inp_raw.c integer overflow …",
               "message": "Vulnerable package gmp is at version 6.2.0-r0. Update to fixed version 6.2.1-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "gmp@6.2.0-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2726,7 +2812,9 @@
             {
               "codeDesc": "imagemagick6@6.9.11.25-r0 | CVE-2020-29599 | CVSS 7.8 | ImageMagick before 6.9.11-40 and 7.x before 7.0.10-40 mishandles the -authenticate option, which all…",
               "message": "Vulnerable package imagemagick6 is at version 6.9.11.25-r0. Update to fixed version 6.9.11.42-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "imagemagick6@6.9.11.25-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2788,7 +2876,9 @@
             {
               "codeDesc": "libxml2@2.9.10-r5 | CVE-2021-3518 | CVSS 8.8 | There's a flaw in libxml2 in versions before 2.9.11. An attacker who is able to submit a crafted fil…",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libxml2@2.9.10-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2850,7 +2940,9 @@
             {
               "codeDesc": "libxml2@2.9.10-r5 | CVE-2021-3517 | CVSS 8.6 | There is a flaw in the xml entity encoding functionality of libxml2 in versions before 2.9.11. An at…",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libxml2@2.9.10-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2912,7 +3004,9 @@
             {
               "codeDesc": "libxml2@2.9.10-r5 | CVE-2022-23308 | CVSS 7.5 | valid.c in libxml2 before 2.9.13 has a use-after-free of ID and IDREF attributes.",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.13-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libxml2@2.9.10-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -2974,7 +3068,9 @@
             {
               "codeDesc": "ncurses@6.2_p20200523-r0 | CVE-2021-39537 | CVSS 8.8 | An issue was discovered in ncurses through v6.2-1. _nc_captoinfo in captoinfo.c has a heap-based buf…",
               "message": "Vulnerable package ncurses is at version 6.2_p20200523-r0. Update to fixed version 6.2_p20200523-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "ncurses@6.2_p20200523-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3036,7 +3132,9 @@
             {
               "codeDesc": "nettle@3.5.1-r1 | CVE-2021-3580 | CVSS 7.5 | A flaw was found in the way nettle's RSA decryption functions handled specially crafted ciphertext. …",
               "message": "Vulnerable package nettle is at version 3.5.1-r1. Update to fixed version 3.5.1-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nettle@3.5.1-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3098,7 +3196,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-39135 | CVSS 7.8 | `@npmcli/arborist`, the library that calculates dependency trees and manages the node_modules folder…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3160,7 +3260,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2020-8277 | CVSS 7.5 | A Node.js application that allows an attacker to trigger a DNS request for a host of their choice co…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3222,7 +3324,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2022-21824 | CVSS 8.2 | Due to the formatting logic of the \"console.table()\" function it was not safe to allow user controll…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3284,7 +3388,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-39134 | CVSS 7.8 | `@npmcli/arborist`, the library that calculates dependency trees and manages the `node_modules` fold…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3346,7 +3452,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-37713 | CVSS 8.6 | The npm package \"tar\" (aka node-tar) before versions 4.4.18, 5.0.10, and 6.1.9 has an arbitrary file…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3408,7 +3516,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22883 | CVSS 7.5 | Node.js before 10.24.0, 12.21.0, 14.16.0, and 15.10.0 is vulnerable to a denial of service attack wh…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.21.0-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3470,7 +3580,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2020-8265 | CVSS 8.1 | Node.js versions before 10.23.1, 12.20.1, 14.15.4, 15.5.1 are vulnerable to a use-after-free bug in …",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3532,7 +3644,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-44531 | CVSS 7.4 | Accepting arbitrary Subject Alternative Name (SAN) types, unless a PKI is specifically defined to us…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3594,7 +3708,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-37701 | CVSS 8.6 | The npm package \"tar\" (aka node-tar) before versions 4.4.16, 5.0.8, and 6.1.7 has an arbitrary file …",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3656,7 +3772,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-37712 | CVSS 8.6 | The npm package \"tar\" (aka node-tar) before versions 4.4.18, 5.0.10, and 6.1.9 has an arbitrary file…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3718,7 +3836,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22884 | CVSS 7.5 | Node.js before 10.24.0, 12.21.0, 14.16.0, and 15.10.0 is vulnerable to DNS rebinding attacks as the …",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.21.0-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3780,7 +3900,9 @@
             {
               "codeDesc": "openldap@2.4.50-r0 | CVE-2020-25692 | CVSS 7.5 | A NULL pointer dereference was found in OpenLDAP server and was fixed in openldap 2.4.55, during a r…",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openldap@2.4.50-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3842,7 +3964,9 @@
             {
               "codeDesc": "openldap@2.4.50-r0 | CVE-2020-25709 | CVSS 7.5 | A flaw was found in OpenLDAP. This flaw allows an attacker who can send a malicious packet to be pro…",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openldap@2.4.50-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3904,7 +4028,9 @@
             {
               "codeDesc": "openldap@2.4.50-r0 | CVE-2020-25710 | CVSS 7.5 | A flaw was found in OpenLDAP in versions before 2.4.56. This flaw allows an attacker who sends a mal…",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openldap@2.4.50-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -3966,7 +4092,9 @@
             {
               "codeDesc": "openldap@2.4.50-r0 | CVE-2021-27212 | CVSS 7.5 | In OpenLDAP through 2.4.57 and 2.5.x through 2.5.1alpha, an assertion failure in slapd can occur in …",
               "message": "Vulnerable package openldap is at version 2.4.50-r0. Update to fixed version 2.4.50-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openldap@2.4.50-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4028,7 +4156,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2021-23840 | CVSS 7.5 | Calls to EVP_CipherUpdate, EVP_EncryptUpdate and EVP_DecryptUpdate may overflow the output length ar…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4090,7 +4220,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2022-0778 | CVSS 7.5 | The BN_mod_sqrt() function, which computes a modular square root, contains a bug that can cause it t…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1n-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4152,7 +4284,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2021-3450 | CVSS 7.4 | The X509_V_FLAG_X509_STRICT flag enables additional security checks of the certificates present in a…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1k-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4214,7 +4348,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2021-3712 | CVSS 7.4 | ASN.1 strings are represented internally within OpenSSL as an ASN1_STRING structure which contains a…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1l-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4276,7 +4412,9 @@
             {
               "codeDesc": "p11-kit@0.23.20-r5 | CVE-2020-29363 | CVSS 7.5 | An issue was discovered in p11-kit 0.23.6 through 0.23.21. A heap-based buffer overflow has been dis…",
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "p11-kit@0.23.20-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4338,7 +4476,9 @@
             {
               "codeDesc": "p11-kit@0.23.20-r5 | CVE-2020-29361 | CVSS 7.5 | An issue was discovered in p11-kit 0.21.1 through 0.23.21. Multiple integer overflows have been disc…",
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "p11-kit@0.23.20-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4400,7 +4540,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2020-25696 | CVSS 7.5 | A flaw was found in the psql interactive terminal of PostgreSQL in versions before 13.1, before 12.5…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4462,7 +4604,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2020-25695 | CVSS 8.8 | A flaw was found in PostgreSQL versions before 13.1, before 12.5, before 11.10, before 10.15, before…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4524,7 +4668,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-23214 | CVSS 8.1 | When the server is configured to use trust authentication with a clientcert requirement or to use ce…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.9-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4586,7 +4732,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2020-25694 | CVSS 8.1 | A flaw was found in PostgreSQL versions before 13.1, before 12.5, before 11.10, before 10.15, before…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.5-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4648,7 +4796,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-32027 | CVSS 8.8 | A flaw was found in postgresql in versions before 13.3, before 12.7, before 11.12, before 10.17 and …",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4710,7 +4860,9 @@
             {
               "codeDesc": "xz@5.2.5-r0 | CVE-2022-1271 | CVSS 8.8 | An arbitrary file write vulnerability was found in GNU gzip's zgrep utility. When zgrep is applied o…",
               "message": "Vulnerable package xz is at version 5.2.5-r0. Update to fixed version 5.2.5-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "xz@5.2.5-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4772,7 +4924,9 @@
             {
               "codeDesc": "zlib@1.2.11-r3 | CVE-2018-25032 | CVSS 7.5 | zlib before 1.2.12 allows memory corruption when deflating (i.e., when compressing) if the input has…",
               "message": "Vulnerable package zlib is at version 1.2.11-r3. Update to fixed version 1.2.12-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "zlib@1.2.11-r3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4834,7 +4988,9 @@
             {
               "codeDesc": "avahi@0.8-r0 | CVE-2021-36217 | CVSS 6.2 | Rejected reason: DO NOT USE THIS CANDIDATE NUMBER. ConsultIDs: CVE-2021-3502. Reason: This candidate…",
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "avahi@0.8-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4896,7 +5052,9 @@
             {
               "codeDesc": "avahi@0.8-r0 | CVE-2021-3468 | CVSS 5.5 | A flaw was found in avahi in versions 0.6 up to 0.8. The event used to signal the termination of the…",
               "message": "Vulnerable package avahi is at version 0.8-r0. Update to fixed version 0.8-r1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "avahi@0.8-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -4958,7 +5116,9 @@
             {
               "codeDesc": "busybox@1.31.1-r19 | CVE-2021-42374 | CVSS 5.3 | An out-of-bounds heap read in Busybox's unlzma applet leads to information leak and denial of servic…",
               "message": "Vulnerable package busybox is at version 1.31.1-r19. Update to fixed version 1.31.1-r21.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "busybox@1.31.1-r19",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5020,7 +5180,9 @@
             {
               "codeDesc": "c-ares@1.16.1-r0 | CVE-2021-3672 | CVSS 5.6 | A flaw was found in c-ares library, where a missing input validation check of host names returned by…",
               "message": "Vulnerable package c-ares is at version 1.16.1-r0. Update to fixed version 1.17.2-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "c-ares@1.16.1-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5082,7 +5244,9 @@
             {
               "codeDesc": "cairo@1.16.0-r2 | CVE-2019-6462 | CVSS 6.5 | An issue was discovered in cairo 1.16.0. There is an infinite loop in the function _arc_error_normal…",
               "message": "Vulnerable package cairo is at version 1.16.0-r2. Update to fixed version 1.16.0-r5.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "cairo@1.16.0-r2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5144,7 +5308,9 @@
             {
               "codeDesc": "expat@2.2.9-r1 | CVE-2022-25313 | CVSS 6.5 | In Expat (aka libexpat) before 2.4.5, an attacker can trigger stack exhaustion in build_model via a …",
               "message": "Vulnerable package expat is at version 2.2.9-r1. Update to fixed version 2.2.10-r2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "expat@2.2.9-r1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5206,7 +5372,9 @@
             {
               "codeDesc": "gdk-pixbuf@2.40.0-r2 | CVE-2020-29385 | CVSS 5.5 | GNOME gdk-pixbuf (aka GdkPixbuf) before 2.42.2 allows a denial of service (infinite loop) in lzw.c i…",
               "message": "Vulnerable package gdk-pixbuf is at version 2.40.0-r2. Update to fixed version 2.40.0-r4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "gdk-pixbuf@2.40.0-r2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5268,7 +5436,9 @@
             {
               "codeDesc": "imagemagick6@6.9.11.25-r0 | CVE-2020-27560 | CVSS 3.3 | ImageMagick 7.0.10-34 allows Division by Zero in OptimizeLayerFrames in MagickCore/layer.c, which ma…",
               "message": "Vulnerable package imagemagick6 is at version 6.9.11.25-r0. Update to fixed version 6.9.11.35-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "imagemagick6@6.9.11.25-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5330,7 +5500,9 @@
             {
               "codeDesc": "libjpeg-turbo@2.0.5-r0 | CVE-2021-20205 | CVSS 6.5 | Libjpeg-turbo versions 2.0.91 and 2.0.90 is vulnerable to a denial of service vulnerability caused b…",
               "message": "Vulnerable package libjpeg-turbo is at version 2.0.5-r0. Update to fixed version 2.1.0-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libjpeg-turbo@2.0.5-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5392,7 +5564,9 @@
             {
               "codeDesc": "libxml2@2.9.10-r5 | CVE-2022-29824 | CVSS 6.5 | In libxml2 before 2.9.14, several buffer handling functions in buf.c (xmlBuf*) and tree.c (xmlBuffer…",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.14-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libxml2@2.9.10-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5454,7 +5628,9 @@
             {
               "codeDesc": "libxml2@2.9.10-r5 | CVE-2021-3537 | CVSS 5.9 | A vulnerability found in libxml2 in versions before 2.9.11 shows that it did not propagate errors wh…",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.10-r6.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libxml2@2.9.10-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5516,7 +5692,9 @@
             {
               "codeDesc": "libxml2@2.9.10-r5 | CVE-2021-3541 | CVSS 6.5 | A flaw was found in libxml2. Exponential entity expansion attack its possible bypassing all existing…",
               "message": "Vulnerable package libxml2 is at version 2.9.10-r5. Update to fixed version 2.9.12-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "libxml2@2.9.10-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5578,7 +5756,9 @@
             {
               "codeDesc": "musl@1.1.24-r9 | CVE-2020-28928 | CVSS 5.5 | In musl libc through 1.2.1, wcsnrtombs mishandles particular combinations of destination buffer size…",
               "message": "Vulnerable package musl is at version 1.1.24-r9. Update to fixed version 1.1.24-r10.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "musl@1.1.24-r9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5640,7 +5820,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22960 | CVSS 6.5 | The parse function in llhttp \u003c 2.1.4 and \u003c 6.0.6. ignores chunk extensions when parsing the body of …",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5702,7 +5884,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22959 | CVSS 6.5 | The parser in accepts requests with a space (SP) right after the header name before the colon. This …",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5764,7 +5948,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-44533 | CVSS 5.3 | Node.js \u003c 12.22.9, \u003c 14.18.3, \u003c 16.13.2, and \u003c 17.3.1 did not handle multi-value Relative Distinguis…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5826,7 +6012,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-44532 | CVSS 5.3 | Node.js \u003c 12.22.9, \u003c 14.18.3, \u003c 16.13.2, and \u003c 17.3.1 converts SANs (Subject Alternative Names) to a…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.10-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5888,7 +6076,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22939 | CVSS 5.3 | If the Node.js https API was used incorrectly and \"undefined\" was in passed for the \"rejectUnauthori…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -5950,7 +6140,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2020-8287 | CVSS 6.5 | Node.js versions before 10.23.1, 12.20.1, 14.15.4, 15.5.1 allow two copies of a header field in an H…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.20.1-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6012,7 +6204,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-22918 | CVSS 5.3 | Node.js before 16.4.1, 14.17.2, 12.22.2 is vulnerable to an out-of-bounds read when uv__idna_toascii…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.2-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6074,7 +6268,9 @@
             {
               "codeDesc": "nodejs@12.18.4-r0 | CVE-2021-3672 | CVSS 5.6 | A flaw was found in c-ares library, where a missing input validation check of host names returned by…",
               "message": "Vulnerable package nodejs is at version 12.18.4-r0. Update to fixed version 12.22.5-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "nodejs@12.18.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6136,7 +6332,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2021-3449 | CVSS 5.9 | An OpenSSL TLS server may crash if sent a maliciously crafted renegotiation ClientHello message from…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1k-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6198,7 +6396,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2021-23839 | CVSS 3.7 | OpenSSL 1.0.2 supports SSLv2. If a client attempts to negotiate SSLv2 with a server that is configur…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6260,7 +6460,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2020-1971 | CVSS 5.9 | The X.509 GeneralName type is a generic type for representing different types of names. One of those…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1i-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6322,7 +6524,9 @@
             {
               "codeDesc": "openssl@1.1.1g-r0 | CVE-2021-23841 | CVSS 5.9 | The OpenSSL public API function X509_issuer_and_serial_hash() attempts to create a unique hash value…",
               "message": "Vulnerable package openssl is at version 1.1.1g-r0. Update to fixed version 1.1.1j-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "openssl@1.1.1g-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6384,7 +6588,9 @@
             {
               "codeDesc": "p11-kit@0.23.20-r5 | CVE-2020-29362 | CVSS 5.3 | An issue was discovered in p11-kit 0.21.1 through 0.23.21. A heap-based buffer over-read has been di…",
               "message": "Vulnerable package p11-kit is at version 0.23.20-r5. Update to fixed version 0.23.22-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "p11-kit@0.23.20-r5",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6446,7 +6652,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-32028 | CVSS 6.5 | A flaw was found in postgresql. Using an INSERT ... ON CONFLICT ... DO UPDATE command on a purpose-c…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6508,7 +6716,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-20229 | CVSS 4.3 | A flaw was found in PostgreSQL in versions before 13.2. This flaw allows a user with SELECT privileg…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6570,7 +6780,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-3393 | CVSS 4.3 | An information leak was discovered in postgresql in versions before 13.2, before 12.6 and before 11.…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.6-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6632,7 +6844,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-32029 | CVSS 6.5 | A flaw was found in postgresql. Using an UPDATE ... RETURNING command on a purpose-crafted table, an…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.7-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6694,7 +6908,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-3677 | CVSS 6.5 | A flaw was found in postgresql. A purpose-crafted query can read arbitrary bytes of server memory. I…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.8-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6756,7 +6972,9 @@
             {
               "codeDesc": "postgresql@12.4-r0 | CVE-2021-23222 | CVSS 5.9 | A man-in-the-middle attacker can inject false responses to the client's first few queries, despite t…",
               "message": "Vulnerable package postgresql is at version 12.4-r0. Update to fixed version 12.9-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "postgresql@12.4-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6818,7 +7036,9 @@
             {
               "codeDesc": "util-linux@2.35.2-r0 | CVE-2022-0563 | CVSS 5.5 | A flaw was found in the util-linux chfn and chsh utilities when compiled with Readline support. The …",
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.4-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "util-linux@2.35.2-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6880,7 +7100,9 @@
             {
               "codeDesc": "util-linux@2.35.2-r0 | CVE-2021-3995 | CVSS 5.5 | A logic error was found in the libmount library of util-linux in the function that allows an unprivi…",
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.3-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "util-linux@2.35.2-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6942,7 +7164,9 @@
             {
               "codeDesc": "util-linux@2.35.2-r0 | CVE-2021-3996 | CVSS 5.5 | A logic error was found in the libmount library of util-linux in the function that allows an unprivi…",
               "message": "Vulnerable package util-linux is at version 2.35.2-r0. Update to fixed version 2.37.3-r0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "package",
+              "resourceId": "util-linux@2.35.2-r0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -6995,7 +7219,9 @@
             {
               "codeDesc": "ruby:activerecord@5.2.4.3 | CVE-2022-32224 | CVSS 9.8 | Possible RCE escalation bug with Serialized Columns in Active Record/nThere is a possible escalation…",
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.1,5.2; OR \u003e=6.0.5.1,6.0; OR \u003e=6.1.6.1,6.1; OR \u003e=7.0.3.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activerecord-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7057,7 +7283,9 @@
             {
               "codeDesc": "ruby:activestorage@5.2.4.3 | CVE-2022-21831 | CVSS 9.8 | Possible code injection vulnerability in Rails / Active Storage/nThere is a possible code injection …",
               "message": "Vulnerable package ruby:activestorage is at version 5.2.4.3. Update to fixed version \u003e=5.2.6.3,5.2; OR \u003e=6.0.4.7,6.0; OR \u003e=6.1.4.7,6.1; OR \u003e=7.0.2.3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activestorage-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7119,7 +7347,9 @@
             {
               "codeDesc": "ruby:bundler@2.1.4 | CVE-2020-36327 | CVSS 8.8 | Dependency Confusion in Bundler with Implicit Private Dependencies/nBundler 1.16.0 through 2.2.9 and…",
               "message": "Vulnerable package ruby:bundler is at version 2.1.4. Update to fixed version =2.2.10; OR \u003e=2.2.18.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/bundle/specifications/bundler-2.1.4",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7181,7 +7411,9 @@
             {
               "codeDesc": "ruby:bundler@2.1.4 | CVE-2021-43809 | CVSS 6.7 | Local Code Execution through Argument Injection via dash leading git url parameter in Gemfile/nIn `b…",
               "message": "Vulnerable package ruby:bundler is at version 2.1.4. Update to fixed version \u003e=2.2.33.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/bundle/specifications/bundler-2.1.4",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7243,7 +7475,9 @@
             {
               "codeDesc": "ruby:bundler@1.17.2 | CVE-2020-36327 | CVSS 8.8 | Dependency Confusion in Bundler with Implicit Private Dependencies/nBundler 1.16.0 through 2.2.9 and…",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version =2.2.10; OR \u003e=2.2.18.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7296,7 +7530,9 @@
             {
               "codeDesc": "ruby:bundler@1.17.2 | CVE-2016-7954 | CVSS 9.8 | Allows an attacker to inject arbitrary code into your application via any secondary Gem source decla…",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.0.0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7358,7 +7594,9 @@
             {
               "codeDesc": "ruby:bundler@1.17.2 | CVE-2021-43809 | CVSS 6.7 | Local Code Execution through Argument Injection via dash leading git url parameter in Gemfile/nIn `b…",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.2.33.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7420,7 +7658,9 @@
             {
               "codeDesc": "ruby:jmespath@1.4.0 | CVE-2022-32511 | CVSS 9.8 | JMESPath for Ruby using JSON.load instead of JSON.parse/njmespath.rb (aka JMESPath for Ruby) before …",
               "message": "Vulnerable package ruby:jmespath is at version 1.4.0. Update to fixed version \u003e=1.6.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/jmespath-1.4.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7473,7 +7713,9 @@
             {
               "codeDesc": "ruby:pdfkit@0.8.4.1 | CVE-2022-25765 | CVSS 9.8 | PDFKit vulnerable to Command Injection/nThe package pdfkit from version 0.0.0 through version 0.8.6 …",
               "message": "Vulnerable package ruby:pdfkit is at version 0.8.4.1. Update to fixed version \u003e=0.8.7.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/pdfkit-0.8.4.1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7535,7 +7777,9 @@
             {
               "codeDesc": "ruby:puma@3.12.6 | CVE-2022-24790 | CVSS 9.1 | HTTP Request Smuggling in puma/n### Impact When using Puma behind a proxy that does not properly val…",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.12,4.3; OR \u003e=5.6.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7588,7 +7832,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2022-30123 | CVSS 10 | Possible shell escape sequence injection vulnerability in Rack/nThere is a possible shell escape seq…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.1,2.0; OR \u003e=2.1.4.1,2.1; OR \u003e=2.2.3.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7641,7 +7887,9 @@
             {
               "codeDesc": "ruby:stringio@0.0.2 | CVE-2024-27280 | CVSS 9.8 | Buffer overread vulnerability in StringIO/nAn issue was discovered in StringIO 3.0.1, as distributed…",
               "message": "Vulnerable package ruby:stringio is at version 0.0.2. Update to fixed version \u003e=3.0.1.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/stringio-0.0.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7703,7 +7951,9 @@
             {
               "codeDesc": "ruby:actionpack@5.2.4.3 | CVE-2021-22885 | CVSS 7.5 | Possible Information Disclosure / Unintended Method Execution in Action Pack/nThere is a possible in…",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7765,7 +8015,9 @@
             {
               "codeDesc": "ruby:actionpack@5.2.4.3 | CVE-2021-22904 | CVSS 7.5 | Possible DoS Vulnerability in Action Controller Token Authentication/nThere is a possible DoS vulner…",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.6,5.2; OR \u003e=5.2.6,5.2; OR \u003e=6.0.3.7,6.0; OR \u003e=6.1.3.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7827,7 +8079,9 @@
             {
               "codeDesc": "ruby:actionpack@5.2.4.3 | CVE-2023-22795 | CVSS 7.5 | ReDoS based DoS vulnerability in Action Dispatch/nThere is a possible regular expression based DoS v…",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7889,7 +8143,9 @@
             {
               "codeDesc": "ruby:actionpack@5.2.4.3 | CVE-2022-23633 | CVSS 7.4 | Possible exposure of information vulnerability in Action Pack/n## Impact Under certain circumstances…",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.6.2,5.2; OR \u003e=6.0.4.6,6.0; OR \u003e=6.1.4.6,6.1; OR \u003e=7.0.2.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -7951,7 +8207,9 @@
             {
               "codeDesc": "ruby:actionpack@5.2.4.3 | CVE-2023-22792 | CVSS 7.5 | ReDoS based DoS vulnerability in Action Dispatch/nThere is a possible regular expression based DoS v…",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8004,7 +8262,9 @@
             {
               "codeDesc": "ruby:actionview@5.2.4.3 | CVE-2023-23913 | CVSS 7.5 | DOM Based Cross-site Scripting in rails-ujs for contenteditable HTML Elements/nNOTE: rails-ujs is pa…",
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=6.1.7.3,6.1; OR \u003e=7.0.4.3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionview-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8057,7 +8317,9 @@
             {
               "codeDesc": "ruby:activerecord@5.2.4.3 | CVE-2022-44566 | CVSS 7.5 | Denial of Service Vulnerability in ActiveRecord’s PostgreSQL adapter/nThere is a potential denial of…",
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activerecord-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8119,7 +8381,9 @@
             {
               "codeDesc": "ruby:activesupport@5.2.4.3 | CVE-2023-22796 | CVSS 7.5 | ReDoS based DoS vulnerability in Active Support’s underscore/nThere is a possible regular expression…",
               "message": "Vulnerable package ruby:activesupport is at version 5.2.4.3. Update to fixed version \u003e=5.2.8.15,5.2; OR \u003e=6.1.7.1,6.1; OR \u003e=7.0.4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activesupport-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8181,7 +8445,9 @@
             {
               "codeDesc": "ruby:addressable@2.6.0 | CVE-2021-32740 | CVSS 7.5 | Regular Expression Denial of Service in Addressable templates/nWithin the URI template implementatio…",
               "message": "Vulnerable package ruby:addressable is at version 2.6.0. Update to fixed version \u003e=2.8.0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/addressable-2.6.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8243,7 +8509,9 @@
             {
               "codeDesc": "ruby:bundler@1.17.2 | CVE-2019-3881 | CVSS 7 | Insecure path handling in Bundler/nBundler prior to 2.1.0 uses a predictable path in /tmp/, created …",
               "message": "Vulnerable package ruby:bundler is at version 1.17.2. Update to fixed version \u003e=2.1.0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/bundler-1.17.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8305,7 +8573,9 @@
             {
               "codeDesc": "ruby:carrierwave@1.3.1 | CVE-2021-21305 | CVSS 7.4 | Code Injection vulnerability in CarrierWave::RMagick/n### Impact [CarrierWave::RMagick](https://gith…",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=1.3.2,1.3; OR \u003e=2.1.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8367,7 +8637,9 @@
             {
               "codeDesc": "ruby:date@2.0.0 | CVE-2021-41817 | CVSS 7.5 | Regular Expression Denial of Service Vulnerability of Date Parsing Methods/nDate's parsing methods i…",
               "message": "Vulnerable package ruby:date is at version 2.0.0. Update to fixed version \u003e=2.0.1,2.0; OR \u003e=3.0.2,3.0; OR \u003e=3.1.2,3.1; OR \u003e=3.2.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/date-2.0.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8429,7 +8701,9 @@
             {
               "codeDesc": "ruby:globalid@0.4.2 | CVE-2023-22799 | CVSS 7.5 | ReDoS based DoS vulnerability in GlobalID/nThere is a ReDoS based DoS vulnerability in the GlobalID …",
               "message": "Vulnerable package ruby:globalid is at version 0.4.2. Update to fixed version \u003e=1.0.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/globalid-0.4.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8491,7 +8765,9 @@
             {
               "codeDesc": "ruby:json@2.1.0 | CVE-2020-10663 | CVSS 7.5 | json Gem for Ruby Unsafe Object Creation Vulnerability (additional fix)/nThere is an unsafe object c…",
               "message": "Vulnerable package ruby:json is at version 2.1.0. Update to fixed version \u003e=2.3.0.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/json-2.1.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8544,7 +8820,9 @@
             {
               "codeDesc": "ruby:loofah@2.5.0 | CVE-2022-23514 | CVSS 7.5 | Inefficient Regular Expression Complexity in Loofah/n## Summary Loofah `\u003c 2.19.1` contains an ineffi…",
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/loofah-2.5.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8597,7 +8875,9 @@
             {
               "codeDesc": "ruby:loofah@2.5.0 | CVE-2022-23516 | CVSS 7.5 | Uncontrolled Recursion in Loofah/n## Summary Loofah `\u003e= 2.2.0, \u003c 2.19.1` uses recursion for sanitizi…",
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/loofah-2.5.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8659,7 +8939,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2022-24836 | CVSS 7.5 | Inefficient Regular Expression Complexity in Nokogiri/n## Summary Nokogiri `\u003c v1.13.4` contains an i…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8724,7 +9006,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2018-25032 | CVSS 7.5 | Out-of-bounds Write in zlib affects Nokogiri/n## Summary Nokogiri v1.13.4 updates the vendored zlib …",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8788,7 +9072,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2022-23437 | CVSS 6.5 | XML Injection in Xerces Java affects Nokogiri/n## Summary Nokogiri v1.13.4 updates the vendored `xer…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8849,7 +9135,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2021-3517 | CVSS 8.6 | Nokogiri contains libxml Out-of-bounds Write vulnerability/nThere is a flaw in the xml entity encodi…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8911,7 +9199,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2022-29181 | CVSS 8.2 | Improper Handling of Unexpected Data Type in Nokogiri/n### Summary Nokogiri `\u003c v1.13.6` does not typ…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.6.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -8973,7 +9263,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2021-30560 | CVSS 8.8 | Update packaged libxml2 (2.9.12 → 2.9.13) and libxslt (1.1.34 → 1.1.35)/n## Summary Nokogiri v1.13.2…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9035,7 +9327,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2021-3518 | CVSS 8.8 | Nokogiri Implements libxml2 version vulnerable to use-after-free/nThere's a flaw in libxml2 in versi…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9097,7 +9391,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2021-41098 | CVSS 7.5 | Improper Restriction of XML External Entity Reference (XXE) in Nokogiri on JRuby/n### Severity The N…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.12.5.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9162,7 +9458,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2022-24839 | CVSS 7.5 | Denial of Service (DoS) in Nokogiri on JRuby/n## Summary Nokogiri `v1.13.4` updates the vendored `or…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.13.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9223,7 +9521,9 @@
             {
               "codeDesc": "ruby:puma@3.12.6 | CVE-2022-23634 | CVSS 8 | Information Exposure with Puma when used with Rails/n### Impact Prior to `puma` version `5.6.2`, `pu…",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.11,4.3; OR \u003e=5.6.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9285,7 +9585,9 @@
             {
               "codeDesc": "ruby:puma@3.12.6 | CVE-2021-29509 | CVSS 7.5 | Keepalive Connections Causing Denial Of Service in puma/n### Impact The fix for CVE-2019-16770 was i…",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.8,4.3; OR \u003e=5.3.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9347,7 +9649,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2022-44571 | CVSS 7.5 | Denial of Service Vulnerability in Rack Content-Disposition parsing/nThere is a denial of service vu…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9409,7 +9713,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2022-44572 | CVSS 7.5 | Denial of service via multipart parsing in Rack/nThere is a denial of service vulnerability in the m…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.1,2.2; OR \u003e=3.0.4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9462,7 +9768,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2023-27530 | CVSS 7.5 | Possible DoS Vulnerability in Multipart MIME parsing/nThere is a possible DoS vulnerability in the M…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.3,2.0; OR \u003e=2.1.4.3,2.1; OR \u003e=2.2.6.3,2.2; OR \u003e=3.0.4.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9515,7 +9823,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2022-44570 | CVSS 7.5 | Denial of service via header parsing in Rack/nThere is a possible denial of service vulnerability in…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.2,2.0; OR \u003e=2.1.4.2,2.1; OR \u003e=2.2.6.2,2.2; OR \u003e=3.0.4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9568,7 +9878,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2022-30122 | CVSS 7.5 | Denial of Service Vulnerability in Rack Multipart Parsing/nThere is a possible denial of service vul…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.1,2.0; OR \u003e=2.1.4.1,2.1; OR \u003e=2.2.3.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9621,7 +9933,9 @@
             {
               "codeDesc": "ruby:rails-html-sanitizer@1.3.0 | CVE-2022-23517 | CVSS 7.5 | Inefficient Regular Expression Complexity in rails-html-sanitizer/n## Summary Certain configurations…",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9683,7 +9997,9 @@
             {
               "codeDesc": "ruby:rdoc@6.1.2 | CVE-2021-31799 | CVSS 7 | RDoc OS command injection vulnerability/nRDoc used to call `Kernel#open` to open a local file. If a …",
               "message": "Vulnerable package ruby:rdoc is at version 6.1.2. Update to fixed version \u003e=6.1.2.1,6.1; OR \u003e=6.2.1.1,6.2; OR \u003e=6.3.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rdoc-6.1.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9745,7 +10061,9 @@
             {
               "codeDesc": "ruby:rexml@3.1.9 | CVE-2021-28965 | CVSS 7.5 | XML round-trip vulnerability in REXML/nWhen parsing and serializing a crafted XML document, REXML ge…",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.1.9.1,3.1; OR \u003e=3.2.3.1,3.2; OR \u003e=3.2.5.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9798,7 +10116,9 @@
             {
               "codeDesc": "ruby:tzinfo@1.2.7 | CVE-2022-31163 | CVSS 7.5 | TZInfo relative path traversal vulnerability allows loading of arbitrary files/n# Impact ## Affected…",
               "message": "Vulnerable package ruby:tzinfo is at version 1.2.7. Update to fixed version \u003e=0.3.61,0.3; OR \u003e=1.2.10.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/tzinfo-1.2.7",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9863,7 +10183,9 @@
             {
               "codeDesc": "ruby:webrick@1.4.2 | CVE-2020-25613 | CVSS 7.5 | Potential HTTP Request Smuggling Vulnerability in WEBrick/nWEBrick was too tolerant against an inval…",
               "message": "Vulnerable package ruby:webrick is at version 1.4.2. Update to fixed version \u003e=1.6.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/webrick-1.4.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9924,7 +10246,9 @@
             {
               "codeDesc": "ruby:actionpack@5.2.4.3 | CVE-2022-22577 | CVSS 6.1 | Possible XSS Vulnerability in Action Pack/nThere is a possible XSS vulnerability in Rails / Action P…",
               "message": "Vulnerable package ruby:actionpack is at version 5.2.4.3. Update to fixed version \u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionpack-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -9986,7 +10310,9 @@
             {
               "codeDesc": "ruby:actionview@5.2.4.3 | CVE-2022-27777 | CVSS 6.1 | Possible XSS Vulnerability in Action View tag helpers/nThere is a possible XSS vulnerability in Acti…",
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=5.2.7.1,5.2; OR \u003e=6.0.4.8,6.0; OR \u003e=6.1.5.1,6.1; OR \u003e=7.0.2.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionview-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10048,7 +10374,9 @@
             {
               "codeDesc": "ruby:actionview@5.2.4.3 | CVE-2020-15169 | CVSS 5.4 | Potential XSS vulnerability in Action View/nThere is a potential Cross-Site Scripting (XSS) vulnerab…",
               "message": "Vulnerable package ruby:actionview is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.4,5.2; OR \u003e=6.0.3.3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/actionview-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10110,7 +10438,9 @@
             {
               "codeDesc": "ruby:activerecord@5.2.4.3 | CVE-2021-22880 | CVSS 5.3 | Possible DoS Vulnerability in Active Record PostgreSQL adapter/nThere is a possible DoS vulnerabilit…",
               "message": "Vulnerable package ruby:activerecord is at version 5.2.4.3. Update to fixed version \u003e=5.2.4.5,5.2; OR \u003e=6.0.3.5,6.0; OR \u003e=6.1.2.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activerecord-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10163,7 +10493,9 @@
             {
               "codeDesc": "ruby:activestorage@5.2.4.3 | CVE-2024-26144 | CVSS 5.3 | Possible Sensitive Session Information Leak in Active Storage/nThere is a possible sensitive session…",
               "message": "Vulnerable package ruby:activestorage is at version 5.2.4.3. Update to fixed version \u003e=6.1.7.7,6.1; OR \u003e=7.0.8.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/activestorage-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10225,7 +10557,9 @@
             {
               "codeDesc": "ruby:carrierwave@1.3.1 | CVE-2021-21288 | CVSS 4.3 | Server-side request forgery in CarrierWave/n### Impact [CarrierWave download feature](https://github…",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=1.3.2,1.3; OR \u003e=2.1.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10278,7 +10612,9 @@
             {
               "codeDesc": "ruby:carrierwave@1.3.1 | CVE-2023-49090 | CVSS 6.8 | CarrierWave Content-Type allowlist bypass vulnerability, possibly leading to XSS/n###Impact [Carrier…",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=2.2.5,2.2; OR \u003e=3.0.5.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10331,7 +10667,9 @@
             {
               "codeDesc": "ruby:carrierwave@1.3.1 | CVE-2024-29034 | CVSS 6.8 | CarrierWave content-Type allowlist bypass vulnerability which possibly leads to XSS remained/n### Im…",
               "message": "Vulnerable package ruby:carrierwave is at version 1.3.1. Update to fixed version \u003e=2.2.6,2.2; OR \u003e=3.0.7.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/carrierwave-1.3.1",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10384,7 +10722,9 @@
             {
               "codeDesc": "ruby:loofah@2.5.0 | CVE-2022-23515 | CVSS 6.1 | Improper neutralization of data URIs may allow XSS in Loofah/n## Summary Loofah `\u003e= 2.1.0, \u003c 2.19.1`…",
               "message": "Vulnerable package ruby:loofah is at version 2.5.0. Update to fixed version \u003e=2.19.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/loofah-2.5.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10437,7 +10777,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2021-3537 | CVSS 5.9 | Nokogiri Implements libxml2 version vulnerable to null pointer dereferencing/nA vulnerability found …",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10499,7 +10841,9 @@
             {
               "codeDesc": "ruby:nokogiri@1.10.9 | CVE-2020-26247 | CVSS 2.6 | Nokogiri::XML::Schema trusts input by default, exposing risk of an XXE vulnerability/n### Descriptio…",
               "message": "Vulnerable package ruby:nokogiri is at version 1.10.9. Update to fixed version \u003e=1.11.0.rc4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/nokogiri-1.10.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10552,7 +10896,9 @@
             {
               "codeDesc": "ruby:puma@3.12.6 | CVE-2023-40175 | CVSS 6.5 | Inconsistent Interpretation of HTTP Requests ('HTTP Request/Response Smuggling') in puma/n### Impact…",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=5.6.7,5.6; OR \u003e=6.3.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10605,7 +10951,9 @@
             {
               "codeDesc": "ruby:puma@3.12.6 | CVE-2024-21647 | CVSS 5.9 | Puma HTTP Request/Response Smuggling vulnerability/n ### Impact Prior to versions 6.4.2 and 5.6.8, p…",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=5.6.8,5.6; OR \u003e=6.4.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10667,7 +11015,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2024-26141 | CVSS 5.8 | Possible DoS Vulnerability with Range Header in Rack/nThere is a possible DoS vulnerability relating…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10729,7 +11079,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2023-27539 | CVSS 5.3 | Possible Denial of Service Vulnerability in Rack’s header parsing/nThere is a denial of service vuln…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.6.4,2.0; OR \u003e=3.0.6.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10782,7 +11134,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2024-25126 | CVSS 5.3 | Denial of Service Vulnerability in Rack Content-Type Parsing/nThere is a possible denial of service …",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10844,7 +11198,9 @@
             {
               "codeDesc": "ruby:rack@2.2.3 | CVE-2024-26146 | CVSS 5.3 | Possible Denial of Service Vulnerability in Rack Header Parsing/nThere is a possible denial of servi…",
               "message": "Vulnerable package ruby:rack is at version 2.2.3. Update to fixed version \u003e=2.0.9.4,2.0; OR \u003e=2.1.4.4,2.1; OR \u003e=2.2.8.1,2.2; OR \u003e=3.0.9.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rack-2.2.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10897,7 +11253,9 @@
             {
               "codeDesc": "ruby:rails@5.2.4.3 | CVE-2014-0081 | CVSS 4 | CVE-2014-0081 rubygem-actionpack: number_to_currency, number_to_percentage and number_to_human XSS v…",
               "message": "Vulnerable package ruby:rails is at version 5.2.4.3. Update to fixed version \u003e=3.2.17,3.2; OR \u003e=4.0.3,4.0; OR \u003e=4.1.0; OR \u003e=4.1.0.beta2,4.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-5.2.4.3",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -10950,7 +11308,9 @@
             {
               "codeDesc": "ruby:rails-html-sanitizer@1.3.0 | CVE-2022-23518 | CVSS 6.1 | Improper neutralization of data URIs may allow XSS in rails-html-sanitizer/n## Summary rails-html-sa…",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11012,7 +11372,9 @@
             {
               "codeDesc": "ruby:rails-html-sanitizer@1.3.0 | CVE-2022-32209 | CVSS 6.1 | Possible XSS vulnerability with certain configurations of Rails::Html::Sanitizer/nThere is a possibl…",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11065,7 +11427,9 @@
             {
               "codeDesc": "ruby:rails-html-sanitizer@1.3.0 | CVE-2022-23519 | CVSS 6.1 | Possible XSS vulnerability with certain configurations of rails-html-sanitizer/n## Summary There is …",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11118,7 +11482,9 @@
             {
               "codeDesc": "ruby:rails-html-sanitizer@1.3.0 | CVE-2022-23520 | CVSS 6.1 | Possible XSS vulnerability with certain configurations of rails-html-sanitizer/n## Summary There is …",
               "message": "Vulnerable package ruby:rails-html-sanitizer is at version 1.3.0. Update to fixed version \u003e=1.4.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/rails-html-sanitizer-1.3.0",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11171,7 +11537,9 @@
             {
               "codeDesc": "ruby:rdoc@6.1.2 | CVE-2024-27281 | CVSS 4.5 | RCE vulnerability with .rdoc_options in RDoc/nAn issue was discovered in RDoc 6.3.3 through 6.6.2, a…",
               "message": "Vulnerable package ruby:rdoc is at version 6.1.2. Update to fixed version \u003e=6.3.4.1,6.3; OR \u003e=6.4.1.1,6.4.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rdoc-6.1.2",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11224,7 +11592,9 @@
             {
               "codeDesc": "ruby:rexml@3.1.9 | CVE-2024-39908 | CVSS 4.3 | DoS in REXML/nThere is a DoS vulnerability in REXML gem. This vulnerability has been assigned the CV…",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.2.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11277,7 +11647,9 @@
             {
               "codeDesc": "ruby:rexml@3.1.9 | CVE-2024-35176 | CVSS 5.3 | REXML contains a denial of service vulnerability/n### Impact The REXML gem before 3.2.6 has a DoS vu…",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.2.7.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11330,7 +11702,9 @@
             {
               "codeDesc": "ruby:rexml@3.1.9 | CVE-2024-43398 | CVSS 5.9 | REXML denial of service vulnerability/n### Impact The REXML gem before 3.3.6 has a DoS vulnerability…",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.6.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11383,7 +11757,9 @@
             {
               "codeDesc": "ruby:rexml@3.1.9 | CVE-2024-41123 | CVSS 5.3 | DoS vulnerabilities in REXML/nThere are some DoS vulnerabilities in REXML gem. These vulnerabilities…",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11436,7 +11812,9 @@
             {
               "codeDesc": "ruby:rexml@3.1.9 | CVE-2024-41946 | CVSS 5.3 | DoS vulnerabilities in REXML/nThere is a DoS vulnerability in REXML gem. This vulnerability has been…",
               "message": "Vulnerable package ruby:rexml is at version 3.1.9. Update to fixed version \u003e=3.3.3.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "usr/local/lib/ruby/gems/2.6.0/specifications/default/rexml-3.1.9",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11498,7 +11876,9 @@
             {
               "codeDesc": "ruby:puma@3.12.6 | CVE-2021-41136 | CVSS 3.7 | Inconsistent Interpretation of HTTP Requests ('HTTP Request Smuggling') in puma/n### Impact Prior to…",
               "message": "Vulnerable package ruby:puma is at version 3.12.6. Update to fixed version \u003e=4.3.9,4.3; OR \u003e=5.5.1.",
-              "startTime": "2026-09-28T19:57:05.919966Z",
+              "resource": "file",
+              "resourceId": "var/www/heimdall/vendor/bundle/ruby/2.6.0/specifications/puma-3.12.6",
+              "startTime": "2026-10-09T15:27:48.118659Z",
               "status": "failed"
             }
           ],
@@ -11567,7 +11947,7 @@
     "name": "neuvector-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-28T19:57:05.919966Z",
+  "timestamp": "2026-10-09T15:27:48.118659Z",
   "tool": {
     "name": "NeuVector"
   }

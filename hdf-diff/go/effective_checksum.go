@@ -31,11 +31,15 @@ func overrideWindows(overrides []hdf.StatusOverride) []hdfutil.StatusOverrideInp
 	return windows
 }
 
-// ComputeEffectiveImpact determines the effective impact of a requirement:
-// the most recently applied non-expired override carrying an impact value
-// wins (the schema's definition of effectiveImpact, selected by the shared
-// governing helper); with no overrides, a stored effectiveImpact field is
-// honored; otherwise the base impact.
+// ComputeEffectiveImpact resolves a requirement's impact for the effective
+// checksum: the governing impact override when one exists, else the
+// requirement's own. With no overrides at all it honours a stored
+// effectiveImpact — deliberately, and unlike hdfutil.ComputeEffectiveImpact,
+// which never reads the cache. The checksum is an epoch-sensitive contract:
+// a document whose producer recorded a re-score without the override detail
+// would otherwise change its checksum on upgrade with nothing in it having
+// changed. The field is a fallback, not a source: any override at all makes it
+// unread. Pinned by TestComputeEffectiveImpact_StoredFallbackOnlyWithoutOverrides.
 func ComputeEffectiveImpact(req hdf.EvaluatedRequirement, referenceTimestamp string) float64 {
 	if len(req.StatusOverrides) > 0 {
 		ref := hdfutil.ParseTimestamp(referenceTimestamp)
@@ -55,15 +59,41 @@ func ComputeEffectiveImpact(req hdf.EvaluatedRequirement, referenceTimestamp str
 // recently applied non-expired) override, a stored disposition field when no
 // overrides are present, or nil when nothing governs.
 func ComputeDisposition(req hdf.EvaluatedRequirement, referenceTimestamp string) *hdf.OverrideType {
-	if len(req.StatusOverrides) > 0 {
+	// Overrides and POA&Ms are ONE ordered set compared on appliedAt, not two
+	// tiers — the schema defines disposition as "the most recent non-expired
+	// override or POAM governing this requirement", and both carry the same two
+	// timestamp fields. Only the override half was ever implemented.
+	if len(req.StatusOverrides) > 0 || len(req.Poams) > 0 {
 		ref := hdfutil.ParseTimestamp(referenceTimestamp)
 		all := func(int) bool { return true }
-		if i := hdfutil.GoverningOverrideIndex(overrideWindows(req.StatusOverrides), all, ref); i >= 0 {
+		windows := append(overrideWindows(req.StatusOverrides), poamWindows(req.Poams)...)
+		i := hdfutil.GoverningOverrideIndex(windows, all, ref)
+		if i < 0 {
+			return nil
+		}
+		if i < len(req.StatusOverrides) {
 			return &req.StatusOverrides[i].Type
 		}
-		return nil
+		// A POA&M's own kind is not a member of Override_Type, which disposition
+		// is typed as, so every governing POA&M reports the flat "poam".
+		poam := hdf.Poam
+		return &poam
 	}
 	return req.Disposition
+}
+
+// poamWindows projects POA&Ms onto the shape the governing-override helper
+// compares. A POA&M carries no status or impact because it adjudicates neither;
+// it tracks the work being done about a failure.
+func poamWindows(poams []hdf.PoamElement) []hdfutil.StatusOverrideInput {
+	windows := make([]hdfutil.StatusOverrideInput, len(poams))
+	for i := range poams {
+		windows[i] = hdfutil.StatusOverrideInput{
+			AppliedAt: poams[i].AppliedAt,
+			ExpiresAt: poams[i].ExpiresAt,
+		}
+	}
+	return windows
 }
 
 // ComputeEffectiveChecksum hashes the resolved effective posture of a

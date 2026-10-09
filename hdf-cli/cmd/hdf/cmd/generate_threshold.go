@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -72,7 +73,7 @@ so the validator checks that each control has the expected status.`,
 			}
 
 			if outputPath != "" {
-				if err := os.WriteFile(outputPath, out, 0o600); err != nil {
+				if err := atomicfile.WriteFile(outputPath, out, 0o600); err != nil {
 					return fmt.Errorf("failed to write threshold file: %w", err)
 				}
 				fmt.Fprintf(os.Stderr, "Wrote threshold to %s\n", outputPath)
@@ -205,10 +206,10 @@ func getSeverityBound(ts *ThresholdSeverity, severity string) *ThresholdBound {
 		}
 		return ts.Low
 	case "none":
-		// The pre-3.7 spelling, reachable only from an inline path — a document
+		// The pre-3.7 name, reachable only from an inline path — a document
 		// severity is never "none". It must land in the legacy field rather than
 		// being folded here, so ValidateThresholds can still see a spec that
-		// names both spellings and refuse it instead of silently overwriting one.
+		// names the bucket twice and refuse it instead of silently overwriting one.
 		if ts.None == nil {
 			ts.None = &ThresholdBound{}
 		}

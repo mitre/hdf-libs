@@ -1,6 +1,6 @@
 {
   "name": "@mitre/hdf-converters",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "Converters for transforming security tool outputs and HDF formats",
   "publishConfig": {
     "access": "public"
@@ -28,7 +28,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "pnpm run generate && tsdown",
+    "generate": "node scripts/generate-html-assets.mjs",
     "clean": "rimraf dist",
     "test": "pnpm run test:ts && pnpm run test:go",
     "test:ts": "vitest run",
@@ -49,6 +50,7 @@
   "author": "MITRE Corporation",
   "license": "Apache-2.0",
   "dependencies": {
+    "@mitre/hdf-engine": "workspace:^",
     "@mitre/hdf-mappings": "workspace:^",
     "@mitre/hdf-parsers": "workspace:^",
     "@mitre/hdf-schema": "workspace:^",
@@ -63,7 +65,7 @@
     "xmllint-wasm": "^5.3.0"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "keywords": [
     "hdf",

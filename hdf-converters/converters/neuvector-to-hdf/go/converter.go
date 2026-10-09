@@ -220,6 +220,24 @@ func vulnID(vuln NeuVectorVuln) string {
 	return fmt.Sprintf("%s/%s/%s", vuln.Name, vuln.PackageName, vuln.PackageVersion)
 }
 
+// vulnInstance is the per-result instance identity for a NeuVector finding, as
+// a (resource kind, id) pair. file_name is the discriminator — the only field
+// separating the two braces@3.0.2 entries that both report CVE-2024-4068 — but
+// NeuVector populates it on a minority of entries. An entry without one names no
+// file, so it identifies the vulnerable package instead (the identity
+// name/package_name/package_version already keys the requirement on) rather than
+// claiming a "file" resource with nothing to point at. With neither, both
+// returns are "" and the caller leaves the fields unset.
+func vulnInstance(vuln NeuVectorVuln) (resource, id string) {
+	if vuln.FileName != "" {
+		return "file", vuln.FileName
+	}
+	if id := shared.PackageInstanceID("", vuln.PackageName, vuln.PackageVersion); id != "" {
+		return "package", id
+	}
+	return "", ""
+}
+
 // vulnTitle generates a human-readable title for the vulnerability.
 func vulnTitle(vuln NeuVectorVuln) string {
 	return fmt.Sprintf("NeuVector found a vulnerability to %s in %s/%s.",
@@ -343,14 +361,17 @@ func buildRequirement(vuln NeuVectorVuln, scanTime time.Time, ml moduleLookup) h
 	}
 
 	msg := vulnMessage(vuln)
-	results := []hdf.RequirementResult{
-		{
-			Status:    hdf.Failed,
-			CodeDesc:  buildCodeDesc(vuln),
-			Message:   &msg,
-			StartTime: scanTime,
-		},
+	result := hdf.RequirementResult{
+		Status:    hdf.Failed,
+		CodeDesc:  buildCodeDesc(vuln),
+		Message:   &msg,
+		StartTime: scanTime,
 	}
+	if resource, instanceID := vulnInstance(vuln); instanceID != "" {
+		result.Resource = hdfutil.Ptr(resource)
+		result.ResourceID = hdfutil.Ptr(instanceID)
+	}
+	results := []hdf.RequirementResult{result}
 
 	title := vulnTitle(vuln)
 	req := hdf.EvaluatedRequirement{

@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/atomicfile"
 	validators "github.com/mitre/hdf-libs/hdf-validators/go/v3"
 	"github.com/spf13/cobra"
 )
@@ -195,7 +196,7 @@ func runEvidenceAddEvidence(file string, opts addEvidenceOpts) error {
 	if opts.outputPath != "" {
 		target = opts.outputPath
 	}
-	if err := os.WriteFile(target, output, 0o600); err != nil {
+	if err := atomicfile.WriteFile(target, output, 0o600); err != nil {
 		return fmt.Errorf("failed to write evidence package: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "Added external evidence (%s) to %s\n", opts.format, target)

@@ -15,8 +15,8 @@ import (
 // merge — trivy's registration was relocated here from package cmd. 84 adds the
 // oscal-component and oscal-sap aliases, the names auto-detect derives for
 // component definitions and assessment plans. 85 adds gitlab-vulnerabilities,
-// the Vulnerability Report envelope converter.)
-const wantRegisteredPairs = 85
+// the Vulnerability Report envelope converter, 86 hadolint, and 87 hdf→html.)
+const wantRegisteredPairs = 87
 
 // TestRegistry_ListsAllConverters asserts count parity: importing this package
 // self-registers every converter, so ListConverters must report the full set.

@@ -542,9 +542,9 @@ func v2StatusString(s hdf.ResultStatus) string {
 		return "failed"
 	case hdf.Error:
 		return "error"
-	default:
-		return "skipped"
+	case hdf.NotApplicable, hdf.NotReviewed:
 	}
+	return "skipped"
 }
 
 // DetectHDFVersion determines the HDF schema version from structural markers.

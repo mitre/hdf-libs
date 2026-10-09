@@ -55,7 +55,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 Release assets are versioned, so set `VERSION` to the release you want (without the `v` prefix):
 
 ```bash
-VERSION=3.7.0
+VERSION=3.7.2
 
 # Example: download and install on macOS (Apple Silicon)
 curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${VERSION}_darwin_arm64.tar.gz | tar xz
@@ -66,7 +66,7 @@ curl -sL https://github.com/mitre/hdf-libs/releases/download/v${VERSION}/hdf_${V
 sudo mv hdf /usr/local/bin/
 ```
 
-Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.0_darwin_arm64.tar.gz`).
+Archive naming: `hdf_<version>_<os>_<arch>.tar.gz` (e.g., `hdf_3.7.2_darwin_arm64.tar.gz`).
 
 ### Build from source
 
@@ -110,6 +110,7 @@ FLAGS
   -t, --type string          Schema type (auto-detected if omitted): results, baseline, comparison, system, plan, amendments, evidence-package, requirement-change-event
       --schema-ver string    HDF major schema version to validate against: 2 (legacy Heimdall/InSpec exec-json) or 3 (default, latest). Accepts 'hdf@2'/'hdf@3'; majors only.
   -q, --quiet                Suppress output on success (exit code only)
+      --source-name string   Name to report for a document read from stdin; one line, no control characters (default "<stdin>")
 
 Legacy HDF v2 documents (the InSpec exec-json profiles[]/platform shape SAF converters emit) can be validated directly with `--schema-ver 2`, rather than converting to v3 first.
 
@@ -144,12 +145,26 @@ USAGE
   hdf validate threshold <results.json> [flags]
 
 FLAGS
-  -T, --template string   Threshold YAML template file
-  -I, --inline string     Inline threshold (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+  -T, --template stringArray   Threshold YAML template file (repeatable; every spec must pass)
+  -I, --inline stringArray     Inline threshold, repeatable (e.g. "{compliance.min: 80}, {failed.total.max: 0}")
+      --no-findings            Suppress the list of requirements printed under each violation
+      --source-name string     Name to report for a document read from stdin; one line, no control characters (default "<stdin>")
 
 EXAMPLES
   hdf validate threshold results.json -T threshold.yaml
   hdf validate threshold results.json -I "{compliance.min: 80}, {failed.total.max: 0}"
+  cat results.json | hdf validate threshold - -T threshold.yaml --source-name grype.json
+
+  # Several specs are a conjunction: every one is evaluated, the run fails if any
+  # fails, and the violation names which. -T and -I may be combined, and one file
+  # may hold several YAML documents (reported as policy.yaml#1, policy.yaml#2).
+  hdf validate threshold results.json -T baseline.yaml -T repo-specific.yaml
+
+  # A rule is a filter predicate plus a bound, for policies the count bounds and
+  # controls lists cannot express — selecting by field rather than by id.
+  # -I accepts anything a file accepts, so this is the same language either way.
+  hdf validate threshold results.json \
+    -I "{rules: [{name: nothing fails without a plan, where: {status: [failed], poams: none-valid}, max: 0}]}"
 ```
 
 ### list
@@ -173,7 +188,10 @@ DETAIL SECTIONS by document type
     g (groups), a (assessments), o (overrides)
 
 FLAGS
-  -s, --status string    Filter requirements by status: passed, failed, error, not_applicable, not_reviewed
+  -s, --status string    Filter requirements by status: passed, failed, notApplicable, notReviewed,
+                         error (not_applicable and not_reviewed also accepted). A value outside the
+                         vocabulary is rejected, not matched against nothing. The listed forms are
+                         rendered from the engine's vocabulary, so help and refusal cannot disagree.
   -a, --all              Show all details (expand every section)
 
 EXAMPLES
@@ -194,15 +212,15 @@ Requirements: 1603
 Components:   0
 
   ✓ passed          134
-  ✗ failed          273
-  ? not_reviewed    1196
+  ✗ failed          271
+  ○ not_applicable  233
+  ? not_reviewed    965
 
 $ hdf list results.json --detail requirements -s failed
-Requirements: 273
+Requirements: 271
 
 ID         Status  Title
 ---------  ------  ------------------------------------------------------------
-SV-257777  failed  RHEL 9 must be a vendor-supported release.
 V-242387   failed  The Kubernetes Kubelet must have the read-only port flag ...
 V-242391   failed  The Kubernetes Kubelet must have anonymous authentication...
 V-242392   failed  The Kubernetes kubelet must enable explicit authorization.
@@ -217,20 +235,62 @@ USAGE
   hdf query <file> [flags]
 
 FLAGS
-  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, error, not_applicable, not_reviewed
+  -s, --status stringArray     Filter by status (repeatable, OR logic): passed, failed, notApplicable,
+                               notReviewed, error (not_applicable and not_reviewed also accepted)
       --severity stringArray   Filter by severity (repeatable, OR logic): critical, high, medium, low, informational
-      --impact string          Filter by impact value (e.g., ">0.5", ">=0.7", "0.5")
+      --impact string          Filter by EFFECTIVE impact — the score after any governing impact
+                               override (e.g., ">0.5", ">=0.7", "0.5")
+      --raw-impact string      Filter by the requirement's own impact, ignoring overrides. Same
+                               comparison grammar; the pair expresses policies like "an override
+                               may not move a critical below 0.7"
+      --cvss string            Filter by CVSS score — computedScore where a consumer recomputed
+                               one, else baseScore; a requirement with several CVSS entries
+                               resolves to its highest (e.g., ">=7")
+      --epss string            Filter by EPSS exploit probability — the score, NOT the
+                               percentile rank (e.g., ">=0.5")
+      --kev string             Filter by CISA Known Exploited Vulnerabilities membership:
+                               true or false. false includes findings carrying no KEV data
+      --cwe stringArray        Filter by CWE id (repeatable, OR logic). CWE-79, "CWE 79" and
+                               cwe79 are one value. Reads the first-class cwe[] field only and
+                               never tags.cwe, so a SARIF-derived document matches nothing
+                               until the SARIF converter populates cwe[]
       --cci stringArray        Filter by CCI identifier (repeatable, OR logic; e.g., CCI-000366)
       --nist stringArray       Filter by NIST control (repeatable, OR logic; supports globs; e.g., AC-2, CM-6*)
-      --id string              Filter by requirement ID, STIG ID, GID, or group title
+      --id string              Filter by requirement ID, STIG ID, GID, or group title (exact; * or ? globs)
   -t, --tag stringArray        Filter by tag key:value (repeatable, OR logic; e.g., severity:high)
+      --status / --severity    A value outside the vocabulary is rejected, not matched against nothing.
+                               not_applicable and notApplicable are one value; the pre-3.7 severity
+                               "none" still names informational.
+      --disposition stringArray  Filter by what governs the requirement — the most recently applied
+                               non-expired override or POA&M, where a governing plan reports "poam"
+                               (repeatable, OR logic): waiver, attestation, poam, inherited,
+                               falsePositive, riskAdjustment, operationalRequirement (false_positive
+                               also accepted)
+      --poam-type stringArray  Filter by the KIND of the governing POA&M (repeatable, OR logic):
+                               remediation, mitigation, riskAcceptance, vendorDependency.
+                               disposition reports every governing plan as "poam"; this names
+                               which kind it is, and reads the GOVERNING plan only
+      --poams string           Filter by remediation-plan validity: valid (a POA&M still in force) or
+                               none-valid (none, an empty list, or only lapsed ones)
       --search string          Search in control title and description
   -p, --baseline string        Filter by profile name
+      --baseline-label stringArray  Filter by the BASELINE's labels as key:value (repeatable, OR logic;
+                               glob allowed on the value, e.g. environment:prod*). Labels say which
+                               system, component or environment a baseline covers. A baseline carrying
+                               no labels matches nothing — an absent label is not a wildcard.
   -c, --count                  Show only the count of matching controls
   -l, --limit int              Limit number of results (0 = unlimited)
 
-Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`) OR their own
-values together; different filter types combine with AND.
+Repeatable filters (`--status`, `--severity`, `--cci`, `--nist`, `--tag`,
+`--disposition`) OR their own values together; different filter types combine with AND.
+
+`--status` reports EFFECTIVE status, so a requirement with a governing waiver is
+already off `failed` before the filter sees it. `--disposition` names the type of
+the most recent non-expired override of any kind — which is not always the one
+that set the status, since an override carrying only an impact governs the
+disposition without touching the status — and `--poams` reports whether a
+remediation plan is still in force — `none-valid` deliberately covers "no POA&M", "an empty list" and "only
+lapsed ones" as one condition, because a plan that has expired is not a plan.
 
 EXAMPLES
   hdf query results.json --status failed
@@ -238,8 +298,11 @@ EXAMPLES
   hdf query results.json --nist "AC-2"
   hdf query results.json --cci CCI-000366
   hdf query results.json --id V-230221
+  hdf query results.json --id '*CVE-2022-27943'   # a glob reaches a converter's prefixed id
   hdf query results.json --tag "severity:high"
   hdf query results.json --search "password policy"
+  hdf query results.json --disposition waiver --severity critical
+  hdf query results.json --status failed --poams none-valid
   hdf query results.json --impact ">0.5" --status failed
   hdf query results.json --status failed --count
   hdf query results.json --limit 20 --status failed
@@ -249,17 +312,18 @@ Example output:
 
 ```console
 $ hdf query results.json --status failed --limit 5
-Found 4 matching requirement(s):
+Found 5 matching requirement(s):
 
-ID         Status  Severity  Title
----------  ------  --------  -------------------------------------------------------
-SV-257777  failed  HIGH      RHEL 9 must be a vendor-supported release.
-V-242387   failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
-V-242391   failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
-V-242392   failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
+ID        Status  Severity  Title
+--------  ------  --------  -------------------------------------------------------
+V-242387  failed  HIGH      The Kubernetes Kubelet must have the read-only port ...
+V-242391  failed  HIGH      The Kubernetes Kubelet must have anonymous authentic...
+V-242392  failed  HIGH      The Kubernetes kubelet must enable explicit authoriz...
+V-242393  failed  MED       Kubernetes Worker Nodes must not have sshd service r...
+V-242394  failed  MED       Kubernetes Worker Nodes must not have the sshd servi...
 
 $ hdf query results.json --status failed --count
-273
+271
 ```
 
 ### diff
@@ -370,20 +434,27 @@ USAGE
   hdf convert --from <source> --to <dest> <file> -o <output>  # Explicit both
   hdf convert <file>                                     # Auto-detect, stdout
   hdf convert <file> [file...] -o <output-dir>/          # Bulk convert to a directory
+  hdf convert <file|dir> [...] --to html -o <file>       # Several HDF results in one combined HTML report
   hdf convert --from <source>@<version> <file>           # Select a schema version
   cat scan.json | hdf convert -                          # stdin
 
 INPUT/OUTPUT
   <file>      File path or "-" for stdin
+  <dir>       With --to html: every HDF results document under the directory, searched
+              recursively; other files there are passed over and counted on stderr
   -o <output> Output file path; defaults to stdout if omitted
+  -o <dir>/   One output per input, named after the input file; inputs that share a file
+              name are each numbered in argument order (results.1, results.2)
 
 FLAGS
       --from string           Source format (auto-detected if omitted)
       --to string             Destination format (default: hdf)
       --catalog string        OSCAL catalog JSON path (required for oscal-profile → HDF Baseline)
-      --component-id string   Set componentId on all components in the output
-      --labels strings        Labels applied to all targets (key=value, e.g. --labels system=Portal,env=prod)
+      --component-id string   Set componentId (a UUID) on all components in the output (--to hdf only;
+                              warns and still writes when the converter emits no components)
+      --labels strings        Labels applied to all targets, --to hdf only (key=value, e.g. --labels system=Portal,env=prod)
       --nist-rev int          NIST 800-53 revision for emitted control tags (4 or 5; default 5)
+      --report-type string    Detail level for --to html: executive, manager or administrator (default administrator)
       --nist-strict           Fail if input references rules mapped only at a different NIST revision
       --no-validate           Skip schema validation of converter output before writing
   -f, --force                 Allow overwriting the input file with output
@@ -404,6 +475,10 @@ EXAMPLES
   hdf convert --from legacyhdf old-scan.json -o new-scan.json
   hdf convert --from hdf --to csv results.json -o controls.csv
   hdf convert --from hdf --to xml results.json -o controls.xml
+  hdf convert results.json --to html -o report.html
+  hdf convert results.json --to html --report-type manager -o report.html
+  hdf convert scan1.json scan2.json --to html -o report.html     # one combined report
+  hdf convert scans/ --to html -o report.html                    # every results document under scans/
   cat scan.json | hdf convert --from sarif - -o output.json
 ```
 
@@ -448,6 +523,8 @@ EXAMPLES
 ```
 
 `hdf system create` takes its input as a positional file path or URL and auto-detects the format. Its `--from` flag (`cyclonedx | spdx | cyclonedx-mlbom | spdx-ai`) does not select a parser the way `hdf convert --from` does: it only asserts that the detected BOM format matches, and the command fails if it does not.
+
+`hdf system update-component --component-name <name>` selects the component to refresh, and the name must match exactly one: a component name is a label, not identity (`componentId` is), so a document may legitimately carry two components with the same name, and an ambiguous name is refused before anything is written rather than refreshing whichever came first. Omit `--component-name` to reconcile every subject by its stable `boms[].uniqueId`. `hdf label set/remove --component-name` applies the same rule through the same selector, with the same message.
 
 Example output:
 
@@ -507,7 +584,11 @@ SUBCOMMANDS
   apply    Merge amendments into a results file (sets effectiveStatus); refuses
            a document that does not verify
   create   Create waivers, attestations, and other amendments
-  draft    Scaffold an incomplete amendments draft from a results file
+  draft    Scaffold an incomplete amendments draft from a results file.
+           --status accepts the same vocabulary as `hdf list`/`hdf query`
+           (passed, failed, notApplicable, notReviewed, error; not_applicable
+           and not_reviewed also accepted) and rejects anything outside it
+           before reading the input, rather than writing a draft with no stubs.
   list     List amendments in an amendments file
   verify   Verify amendment structure, expiration, and chain integrity
   set      Set/unset top-level fields
@@ -549,7 +630,7 @@ merging them, as does the `hdf_apply_amendment` MCP tool.
 
 ### enrich
 
-Overlay an **enrichment source** onto an HDF results document, attaching inert `externalReferences[]` to findings (matched by CVE) or to the results root. Enrichment is informational — it adds context and never changes a finding's status or impact. Positional parity with `convert`: `<results> <source>`, with `--from` as the optional format assertion.
+Overlay an **enrichment source** onto an HDF results document, attaching inert `externalReferences[]` to findings (matched by CVE) or to the document root. Enrichment is informational — it adds context and never changes a finding's status or impact. Positional parity with `convert`: `<results> <source>`, with `--from` as the optional format assertion.
 
 ```
 USAGE
@@ -567,7 +648,7 @@ EXAMPLES
   hdf enrich results.json bundle.json                                   # write to stdout
 ```
 
-Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the results root. Each reference carries the raw STIX object losslessly in `document`.
+Supported sources: **stix** (a STIX 2.1 bundle, `{type:"bundle", objects:[…]}`). A CVE-bearing STIX object attaches to the finding whose requirement ID is that CVE; everything else (non-CVE objects, and CVEs with no matching finding) attaches to the document root. Each reference carries the raw STIX object losslessly in `document`.
 
 With **`--recompute-cvss`**, when a matched STIX object shows active exploitation (a sighting, a `targets`/`exploits` relationship, or an indicator/report reference) and the finding carries a CVSS **3.1** base vector, an inline `riskAdjustment` is authored: Exploit Maturity `E:H` is applied and the Threat score recomputed via the CVSS engine, with `impact.value = computedScore/10` and an `externalReferences[]` back to the STIX source. Findings with no base vector, or a CVSS **4.0** base vector, are left unchanged (no fabrication). Enrichment without `--recompute-cvss` never changes status or impact.
 
@@ -610,22 +691,47 @@ Contents (4):
 
 ### label
 
-Add, remove, or show key=value labels on the targets of an HDF document.
+Add, remove, or show key=value labels and external IDs on the targets of an HDF document.
 
 ```
 USAGE
   hdf label <subcommand> <file> [flags]
 
 SUBCOMMANDS
-  show     Display labels on all targets
-  set      Set labels on all targets
-  remove   Remove labels from all targets
+  show     Display labels and external IDs on all targets
+  set      Set labels and external IDs on all targets
+  remove   Remove labels and external IDs from all targets
+
+FLAGS (set)
+      --component-id string     Set componentId (a UUID) on all components
+      --generate-component-id   Generate a unique componentId for each component
+      --external-id stringArray Set an external ID as scheme=value (repeatable)
+      --component-name string   Apply --external-id only to the component with this name
+  -o, --output string           Write to a different file instead of modifying in-place
+
+FLAGS (remove)
+      --external-id stringArray Remove an external ID scheme (repeatable)
+      --component-name string   Remove --external-id only from the component with this name
+  -o, --output string           Write to a different file instead of modifying in-place
 
 EXAMPLES
   hdf label show results.json
   hdf label set results.json system=Portal environment=production -o labeled.json
   hdf label remove results.json system environment -o cleaned.json
+  hdf label set results.json --external-id cmdb=CI0012345 --external-id emass=1234
+  hdf label remove results.json --external-id cmdb
 ```
+
+Labels group and select components; an external ID is a foreign key into another
+system (CMDB asset ID, eMASS system ID, cloud resource ID) and is written to
+`components[].externalIds`, never to `labels`. `--external-id` merges: a scheme
+named on the command line is overwritten and the others are left alone. The value
+is carried verbatim and may be any non-empty string. `set` exits non-zero and
+writes nothing when the pair is malformed, a scheme is given twice, the document
+has no components, or `--component-name` matches none or more than one.
+`--component-id` and `--generate-component-id` are refused on a document with no
+components for the same reason — there is nothing to stamp, and rewriting the
+file while reporting success would claim an id was attached when it was not.
 
 Example output:
 
@@ -637,6 +743,16 @@ $ hdf label show labeled.json
 Component: web01.example.com [host]
   environment = production
   system = Portal
+
+$ hdf label set labeled.json --external-id cmdb=CI0012345
+Labels updated in labeled.json
+
+$ hdf label show labeled.json
+Component: web01.example.com [host]
+  environment = production
+  system = Portal
+  External IDs:
+    cmdb = CI0012345
 ```
 
 ### generate
@@ -888,16 +1004,18 @@ USAGE
 
 FLAGS
   -u, --url string              GitLab instance URL (default "https://gitlab.com")
-      --project string          Project full path (namespace/project); exclusive with --group
+      --project string          Project full path (namespace/project)
       --group string            Group full path; fetches every non-archived project in it
       --include-subgroups       With --group, include projects of subgroups (default true)
-      --state string            Comma-separated states: DETECTED, CONFIRMED, DISMISSED, RESOLVED (default: all)
-      --report-type string      Comma-separated report types: SAST, DAST, DEPENDENCY_SCANNING, ... (default: all)
-      --format string           Output format: hdf or raw (default "hdf")
+      --state string            Comma-separated vulnerability states to fetch: DETECTED, CONFIRMED, DISMISSED, RESOLVED (default: all)
+      --report-type string      Comma-separated report types to fetch: SAST, DAST, DEPENDENCY_SCANNING, ... (default: all)
+      --format string           Output format: hdf (convert to HDF) or raw (fetched envelope) (default "hdf")
   -o, --output string           Output file path with --project (default: stdout)
       --out-dir string          Output directory with --group; one file per project
-      --max-pages int           Maximum pages per project or group listing (default 200)
-      --max-response-size int   Max response size in bytes per request (default 25MB, -1 for no limit)
+      --page-size int           Findings requested per GraphQL page (default: 25, sized to GitLab's query complexity cap)
+      --max-pages int           Maximum pages per project, group listing or finding history (default: 500)
+      --max-response-size int   Maximum response size in bytes per request (default: 25MB, -1 for no limit)
+      --no-validate             Skip schema validation of converter output before writing
       --check                   Run the probe only and print the tier and ingestion diagnosis (every project with --group)
 
 EXAMPLES
@@ -1050,6 +1168,7 @@ These flags apply to all commands.
 | `gitlab-vulnerabilities` | — | GitLab Vulnerability Report envelope from `hdf fetch gitlab-vulnerabilities` (JSON; triage state preserved) |
 | `gosec` | | gosec Go security checker (JSON or SARIF) |
 | `grype` | | Anchore Grype vulnerability scan (JSON) |
+| `hadolint` | | hadolint Dockerfile linter (JSON or SARIF) |
 | `hipcheck` | | MITRE Hipcheck supply-chain risk report (`hc check --format json`) |
 | `ionchannel` | | Ion Channel supply chain analysis (JSON) |
 | `jfrog-xray` | `xray` | JFrog Xray SCA scan (JSON) |
@@ -1067,9 +1186,9 @@ These flags apply to all commands.
 | `openvex` | | OpenVEX statements → HDF Amendments (JSON) |
 | `oscal` | | OSCAL document (auto-detect type) |
 | `oscal-sar` | `oscal-assessment-results` | OSCAL Assessment Results → HDF Results |
-| `oscal-assessment-plan` | | OSCAL Assessment Plan → HDF Plan |
+| `oscal-assessment-plan` | `oscal-sap` | OSCAL Assessment Plan → HDF Plan |
 | `oscal-catalog` | | OSCAL Catalog → HDF Baseline |
-| `oscal-component-definition` | | OSCAL Component Definition → HDF Baseline |
+| `oscal-component-definition` | `oscal-component` | OSCAL Component Definition → HDF Baseline |
 | `oscal-profile` | | OSCAL Profile → HDF Baseline (requires `--catalog`) |
 | `oscal-ssp` | | OSCAL System Security Plan → HDF System |
 | `oscal-poam` | | OSCAL Plan of Action and Milestones → HDF Amendments |
@@ -1095,6 +1214,7 @@ Auto-detection: `hdf convert <file>` identifies the input format automatically. 
 | Source | Destination | Description |
 |--------|-------------|-------------|
 | `hdf` | `csv` | Export requirements to CSV spreadsheet |
+| `hdf` | `html` | Render a self-contained HTML report (`--report-type executive`, `manager` or `administrator`); several inputs or a directory with `-o <file>` make one combined report |
 | `hdf` | `ecs` | Export findings as Elastic Common Schema (ECS 9.4.0) NDJSON events |
 | `hdf` | `splunk` | Export findings as Splunk HEC (CIM Vulnerabilities) NDJSON events |
 | `hdf` | `ocsf` | Export findings as OCSF v1.8.0 Finding NDJSON (Compliance / Vulnerability Finding) |

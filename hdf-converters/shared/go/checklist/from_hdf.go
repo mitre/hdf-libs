@@ -75,12 +75,12 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 		// (which would fabricate a HOST_NAME the source never had).
 		if c.Hostname != nil {
 			a.HostName = *c.Hostname
-		} else if c.Name != derefStr(c.FQDN) && c.Name != derefStr(c.IPAddress) {
+		} else if c.Name != hdfutil.Deref(c.FQDN) && c.Name != hdfutil.Deref(c.IPAddress) {
 			a.HostName = c.Name
 		}
-		a.HostIP = derefStr(c.IPAddress)
-		a.HostFQDN = derefStr(c.FQDN)
-		a.HostMAC = derefStr(c.MACAddress)
+		a.HostIP = hdfutil.Deref(c.IPAddress)
+		a.HostFQDN = hdfutil.Deref(c.FQDN)
+		a.HostMAC = hdfutil.Deref(c.MACAddress)
 	}
 	// Merge asset extras from root extensions (round-trip).
 	if extras, ok := mapVal(passthrough(results.Extensions), "assetExtras"); ok {
@@ -102,8 +102,8 @@ func buildAsset(results *hdf.HDFResults, cl *Checklist) Asset {
 
 func baselineToStig(bl *hdf.EvaluatedBaseline) Stig {
 	stig := Stig{
-		Title:   derefStr(bl.Title),
-		Version: derefStr(bl.Version),
+		Title:   hdfutil.Deref(bl.Title),
+		Version: hdfutil.Deref(bl.Version),
 	}
 	// Round-trip metadata from baseline extensions.
 	blExt := passthrough(bl.Extensions)
@@ -132,7 +132,7 @@ func requirementToVuln(req *hdf.EvaluatedRequirement) Vuln {
 		RuleVer:               tagStr(tags, "stig_id"),
 		GroupID:               orDefault(tagStr(tags, "group_id"), req.ID),
 		GroupTitle:            tagStr(tags, "gtitle"),
-		RuleTitle:             derefStr(req.Title),
+		RuleTitle:             hdfutil.Deref(req.Title),
 		Weight:                tagStr(tags, "weight"),
 		Severity:              resolveSeverity(req, tags),
 		CCIs:                  resolveCCIs(tags),
@@ -211,8 +211,10 @@ func overrideProvenance(req *hdf.EvaluatedRequirement) string {
 		}
 		return strings.Join(lines, "\n")
 	}
-	if req.Disposition != nil && *req.Disposition != "" {
-		return "Disposition: " + string(*req.Disposition)
+	// Resolved, not read from the stored disposition field, which is an output
+	// cache that can disagree with the overrides or be absent entirely.
+	if disp := shared.RequirementDisposition(*req, time.Time{}); disp != "" {
+		return "Disposition: " + disp
 	}
 	return ""
 }
@@ -243,16 +245,24 @@ func formatOverrideTime(t time.Time) string {
 }
 
 // overrideSeverity derives the checklist severity override (SEVERITY_OVERRIDE /
-// overrides.severity) from the first impact-bearing status override — a risk
-// adjustment restates the qualitative severity, its reason the justification.
+// overrides.severity) from the status override that governs the requirement's
+// IMPACT — a risk adjustment restates the qualitative severity, its reason the
+// justification.
+//
+// That is the most recently applied non-expired override CARRYING an impact, the
+// same rule ComputeEffectiveImpact uses, so the severity a checklist reports and
+// the effective impact every other surface reports come from one override. It
+// selected the first impact-bearing entry instead, which let an expired
+// adjustment drive the severity and let array order decide between several.
+// Eligibility is per field, so a newer waiver — which says nothing about impact —
+// does not displace an older re-score.
 func overrideSeverity(req *hdf.EvaluatedRequirement) (severity, justification string) {
-	for i := range req.StatusOverrides {
-		o := &req.StatusOverrides[i]
-		if o.Impact != nil {
-			return cklSeverityOrFloor(o.Impact.Value), o.Reason
-		}
+	i := hdfutil.GoverningImpactOverrideIndex(shared.StatusOverrideInputs(req.StatusOverrides), time.Time{})
+	if i < 0 {
+		return "", ""
 	}
-	return "", ""
+	o := &req.StatusOverrides[i]
+	return cklSeverityOrFloor(o.Impact.Value), o.Reason
 }
 
 // cklSeverityFromImpact maps an impact score to STIG's qualitative severity
@@ -293,6 +303,8 @@ func resolveSeverity(req *hdf.EvaluatedRequirement, tags map[string]interface{})
 	if req.Severity != nil && *req.Severity != "" {
 		return strings.ToLower(string(*req.Severity))
 	}
+	// RAW impact by design: CKL models base severity and SEVERITY_OVERRIDE
+	// separately, and this is the base. overrideSeverity supplies the other half.
 	return cklSeverityOrFloor(req.Impact)
 }
 
@@ -398,11 +410,4 @@ func intVal(m map[string]interface{}, key string) int {
 	default:
 		return 0
 	}
-}
-
-func derefStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

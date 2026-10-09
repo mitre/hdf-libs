@@ -6,23 +6,26 @@
  * - Re-exports of shared constants and utilities
  */
 
-import {
-  sha256,
-  trimUtcFraction,
-  parseJSON,
-  normalizeHdfTimestamps,
-  parseTimestamp,
-  isUnratedSeverity,
-  validateInputSize as guardInputSize,
-  setDefaultMaxInputSize,
-  DEFAULT_MAX_INPUT_SIZE,
-} from '@mitre/hdf-utilities';
+import { sha256, trimUtcFraction, parseJSON, normalizeHdfTimestamps, parseTimestamp, validateInputSize as guardInputSize, setDefaultMaxInputSize, DEFAULT_MAX_INPUT_SIZE } from '@mitre/hdf-utilities';
 import type { AffectedPackage, Checksum, Component, EvaluatedBaseline, EvaluatedRequirement, HDFResults, Integrity, Statistics } from '@mitre/hdf-schema';
 import { ControlType, Ecosystem, HashAlgorithm, ResultStatus, Severity, VerificationMethodEnum } from '@mitre/hdf-schema';
 import { getCweNistControl, DEFAULT_STATIC_ANALYSIS_NIST_TAGS } from '@mitre/hdf-mappings';
 import { validateResults } from '@mitre/hdf-validators';
 
 export { DEFAULT_STATIC_ANALYSIS_NIST_TAGS };
+
+/**
+ * The identity a finding's affected package carries as its resourceId: the purl
+ * when the source gives one, else name@version, else the bare name, else ''.
+ * One rule for every converter that stamps a package, so a downstream join on
+ * resourceId meets the same string whichever tool produced it.
+ * Parity: PackageInstanceID in shared/go/converterutil.go.
+ */
+export function packageInstanceId(purl: string, name: string, version: string): string {
+  if (purl) return purl;
+  if (!name) return '';
+  return version ? `${name}@${version}` : name;
+}
 
 /**
  * Compute a SHA-256 checksum of raw converter input.
@@ -135,6 +138,7 @@ export function limitArray<T>(
 // converter imports; hdf-utilities exports stripHtml (lowercase h).
 export { stripHtml as stripHTML } from '@mitre/hdf-utilities';
 export { chainOverrides } from './amendmentchain.js';
+export { rollUpRequirements } from './rollup.js';
 
 /**
  * Emit a non-fatal converter warning as "WARNING: <message>" on stderr, the
@@ -197,22 +201,12 @@ export function mapCWEToNIST(
 }
 
 /** Matches CWE identifiers like "CWE-79", "CWE 89", "cwe22"; group 1 is the number. */
-export const CWE_PATTERN = /CWE[- ]?(\d+)/gi;
+// Re-exported from @mitre/hdf-utilities rather than defined here: the Go twin
+// has always lived in that package, and hdf-engine can reach it there while it
+// cannot reach hdf-converters. Kept exported from this module so the converters
+// importing it do not all have to change.
+export { CWE_PATTERN, extractCWEIDs } from '@mitre/hdf-utilities';
 
-/**
- * Extract all numeric CWE IDs from text.
- * Returns deduplicated sorted array of numeric ID strings (e.g., ["79", "89"]).
- *
- * @param text - Text potentially containing CWE identifiers
- * @returns Sorted, deduplicated numeric CWE ID strings
- */
-export function extractCWEIDs(text: string): string[] {
-  const matches = [...text.matchAll(CWE_PATTERN)];
-  if (matches.length === 0) return [];
-  const ids = [...new Set(matches.map(m => m[1]!))];
-  ids.sort();
-  return ids;
-}
 
 /**
  * Return the first candidate whose content is not empty or whitespace-only,
@@ -752,12 +746,7 @@ export function buildNoFindingsRequirement(
  * (isUnratedSeverity), so a defaulted impact stays distinguishable from a
  * genuine rated medium. TS peer of MarkUnratedSeverity in converterutil.go.
  */
-export const UNRATED_SEVERITY_TAG = 'severity_rating';
-export const UNRATED_SEVERITY_VALUE = 'unrated';
-
-export function markUnratedSeverity(tags: Record<string, unknown>, severity?: string | null): void {
-  if (isUnratedSeverity(severity)) tags[UNRATED_SEVERITY_TAG] = UNRATED_SEVERITY_VALUE;
-}
+export { UNRATED_SEVERITY_TAG, UNRATED_SEVERITY_VALUE, markUnratedSeverity } from './unrated.js';
 
 /**
  * The schema violations Go's typed decode would also reject.

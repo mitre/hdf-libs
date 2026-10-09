@@ -3,7 +3,7 @@ import {
   nistToCci,
   DEFAULT_REMEDIATION_NIST_TAGS,
 } from '@mitre/hdf-mappings';
-import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults } from '../../../shared/typescript/converterutil.js';
+import { CWE_PATTERN, buildAffectedPackage as buildSharedAffectedPackage, buildNoFindingsRequirement, ecosystemFromPurlType, deriveControlTypeFromTags, inputChecksum, limitArray, buildNistCciTags, markUnratedSeverity, validateInputSize, buildHdfResults, packageInstanceId as sharedPackageInstanceId } from '../../../shared/typescript/converterutil.js';
 import { buildCvss as buildSharedCvss, cvssVersionFromVector } from '../../../shared/typescript/cvss.js';
 import type {
   EvaluatedBaseline,
@@ -234,6 +234,18 @@ export function buildAffectedPackage(
 }
 
 /**
+ * The per-result instance identity for a Twistlock vulnerability: the vulnerable
+ * package, which is what distinguishes the several entries that report the same
+ * CVE. Twistlock's output carries no purl, so the identity is name@version —
+ * grype's fallback form. Falls back to the name alone when a version is absent,
+ * and returns undefined when there is no package name at all, in which case the
+ * caller leaves the fields unset rather than inventing an id.
+ */
+function packageInstanceId(vuln: TwistlockVuln): string | undefined {
+  return sharedPackageInstanceId('', vuln.packageName ?? '', vuln.packageVersion ?? '') || undefined;
+}
+
+/**
  * Indexes packageName → packageType from the result-level packages array.
  */
 function buildPackageTypeIndex(pkgs: TwistlockPackage[] | undefined): Map<string, string> {
@@ -334,10 +346,12 @@ function buildRequirement(
 
   const startTime = (vuln.discoveredDate ? parseTimestamp(vuln.discoveredDate) : null) ?? new Date('0001-01-01T00:00:00Z');
 
+  const instanceId = packageInstanceId(vuln);
   const results: RequirementResult[] = [
     createResult(ResultStatus.Failed, formatMessage(vuln), {
       codeDesc: formatCodeDesc(vuln),
       startTime,
+      ...(instanceId ? { resource: 'package', resourceId: instanceId } : {}),
     }),
   ];
 

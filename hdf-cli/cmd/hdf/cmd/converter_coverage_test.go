@@ -578,6 +578,40 @@ func TestConverterCoverage_ConvertWithComponentId(t *testing.T) {
 	}
 }
 
+func TestConverterCoverage_ConvertRejectsNonUUIDComponentId(t *testing.T) {
+	sarifJSON := `{
+		"$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+		"version": "2.1.0",
+		"runs": [{
+			"tool": {"driver": {"name": "cid-test", "rules": []}},
+			"results": []
+		}]
+	}`
+
+	tmpDir := t.TempDir()
+	inputFile := filepath.Join(tmpDir, "scan.json")
+	require.NoError(t, os.WriteFile(inputFile, []byte(sarifJSON), 0o600))
+	second := filepath.Join(tmpDir, "scan2.json")
+	require.NoError(t, os.WriteFile(second, []byte(sarifJSON), 0o600))
+
+	t.Run("single file", func(t *testing.T) {
+		outputFile := filepath.Join(tmpDir, "out.json")
+		_, _, err := executeCommand("convert", "--from", "sarif", inputFile, "-o", outputFile, "--component-id", "CI0012345")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "--component-id")
+		assert.Contains(t, err.Error(), `"CI0012345"`)
+		assert.NoFileExists(t, outputFile)
+	})
+
+	t.Run("bulk", func(t *testing.T) {
+		outDir := filepath.Join(tmpDir, "out") + string(filepath.Separator)
+		_, _, err := executeCommand("convert", "--from", "sarif", inputFile, second, "-o", outDir, "--component-id", "CI0012345")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "--component-id")
+		assert.NoDirExists(t, outDir, "a bad flag is refused before any file is converted")
+	})
+}
+
 // ---------------------------------------------------------------------------
 // convert.go — missing input file
 // ---------------------------------------------------------------------------
