@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - **Documented: on Windows, an `hdf` command that rewrites a file fails while another process holds that file open, leaving the destination's previous content complete and naming it in the error** — the atomic replace every output has used since 3.7.2 cannot delete a destination another handle has open, as the Windows CI leg's `TestWriteFile_OpenReaderSeesOneCompleteVersion` measures.
+- **Go toolchain floor raised to 1.26.9.** The `go` directive in `go.work` and every module's `go.mod` moved from 1.26.6 to 1.26.9 to pick up the stdlib fixes for GO-2026-6603, -6605, -6607, -6608, -6610, -6611, -6612, -6613 and -6617 (`net/http`, `net/textproto`, `crypto/tls`). Go consumers need 1.26.9 or newer.
 
 ## [3.7.2] - 2026-10-06
 
