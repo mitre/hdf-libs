@@ -33,6 +33,7 @@
     "type-check": "tsc --noEmit",
     "lint:openapi": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-components.oas.json",
     "lint:api": "REDOCLY_TELEMETRY=off redocly lint dist/hdf-api.oas.json",
+    "lint:spectral": "node scripts/spectral-lint.mjs dist/hdf-api.oas.json",
     "matrix": "node scripts/openapi-matrix.mjs",
     "matrix:update": "node scripts/openapi-matrix.mjs --update"
   },
@@ -46,6 +47,9 @@
   "devDependencies": {
     "@mitre/hdf-fixtures": "workspace:^",
     "@redocly/cli": "^2.54.3",
+    "@stoplight/spectral-core": "^1.24.0",
+    "@stoplight/spectral-parsers": "^1.0.5",
+    "@stoplight/spectral-rulesets": "^1.23.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "openapi-typescript": "^7.13.0",
