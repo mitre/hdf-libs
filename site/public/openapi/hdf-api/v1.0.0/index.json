@@ -205,7 +205,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "passed",
+                  "failed",
+                  "notApplicable",
+                  "notReviewed",
+                  "error"
+                ]
+              }
             }
           },
           {
@@ -213,7 +223,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low",
+                  "informational"
+                ]
+              }
             }
           },
           {
@@ -221,7 +241,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "concise",
+                "full"
+              ]
             }
           },
           {
@@ -229,7 +253,16 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "affectedPackages",
+                  "cvss",
+                  "cwe",
+                  "sourceLocation"
+                ]
+              }
             }
           },
           {
@@ -316,8 +349,11 @@
             "name": "limit",
             "in": "query",
             "required": false,
+            "description": "Page size. An over-limit value is coerced down to 1000 and the effective limit echoed in the response.",
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
             }
           },
           {
@@ -409,6 +445,11 @@
                     },
                     "total": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000
                     }
                   }
                 }
@@ -497,7 +538,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "baseline",
+                "severity",
+                "nistFamily",
+                "tool",
+                "cwe"
+              ]
             }
           },
           {
@@ -587,7 +635,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "passed",
+                  "failed",
+                  "notApplicable",
+                  "notReviewed",
+                  "error"
+                ]
+              }
             }
           },
           {
@@ -595,7 +653,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low",
+                  "informational"
+                ]
+              }
             }
           },
           {
@@ -687,7 +755,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "concise",
+                "full"
+              ]
             }
           },
           {
@@ -786,7 +858,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "temporal",
+                "system-drift"
+              ]
             }
           },
           {
@@ -794,7 +870,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "concise",
+                "full"
+              ]
             }
           },
           {
@@ -844,6 +924,11 @@
                     },
                     "total": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000
                     }
                   }
                 }
@@ -901,7 +986,12 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "schema",
+                "checksums",
+                "completeness"
+              ]
             }
           },
           {
@@ -918,7 +1008,24 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "source": {
+                    "additionalProperties": false,
+                    "description": "the document to validate, as {id}; omit when using content",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "content": {
+                    "description": "inline HDF document to validate, as an alternative to source",
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -1005,7 +1112,48 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "source": {
+                    "additionalProperties": false,
+                    "description": "the raw tool-output file as {id}",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "sources": {
+                    "description": "batch: tool-output files, each {id}",
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "content": {
+                    "description": "inline raw tool output",
+                    "type": "string"
+                  },
+                  "componentId": {
+                    "description": "componentId for output components",
+                    "type": "string"
+                  },
+                  "labels": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "labels for output components",
+                    "type": "object"
+                  }
+                }
               }
             }
           }
@@ -1034,6 +1182,11 @@
                     },
                     "total": {
                       "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000
                     }
                   }
                 }
@@ -1109,7 +1262,46 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "docType": {
+                    "description": "which document to author",
+                    "enum": [
+                      "system",
+                      "plan",
+                      "evidence",
+                      "amendments"
+                    ],
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "the document name",
+                    "type": "string"
+                  },
+                  "content": {
+                    "description": "content array: components/assessments/contents, or overrides (amendments judgment path). Per-item shape: the hdf://schema/{docType}/{def} slice (e.g. hdf://schema/hdf-amendments/Standalone_Override), not the whole schema. The server validates and refuses invalid content.",
+                    "items": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "expiresAt": {
+                    "description": "amendments from_vex only: RFC3339 expiry applied to every derived override",
+                    "type": "string"
+                  },
+                  "source": {
+                    "additionalProperties": false,
+                    "description": "amendments from_vex only: a VEX document as {id}; overrides are derived and stamped appliedBy.type=system",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                }
               }
             }
           }
@@ -1197,7 +1389,20 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "amendments": {
+                    "additionalProperties": false,
+                    "description": "the hdf-amendments document to apply, as {id}",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  }
+                }
               }
             }
           }
@@ -1290,7 +1495,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/IngestRequest"
               }
             }
           }
@@ -1373,9 +1578,9 @@
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "application/x-www-form-urlencoded": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/TokenRequest"
               }
             }
           }
@@ -1453,7 +1658,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/APIKeyExchangeRequest"
               }
             }
           }

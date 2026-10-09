@@ -12,6 +12,7 @@ description: >-
   OAuth 2.0 client-credentials token request. Sent as
   application/x-www-form-urlencoded, per RFC 6749; `resource` is required rather than
   optional so every issued token names the API it is for (RFC 8707).
+x-hdf-media-type: application/x-www-form-urlencoded
 type: object
 additionalProperties: false
 required: [grant_type, client_id, client_secret, resource]

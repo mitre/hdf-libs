@@ -3,8 +3,8 @@ import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { generateApiDocument, main as writeApiDocument, PROBLEM_TYPES, UNMAPPED_CODES } from '../src/generate-api.js';
-import { loadBindings } from '../src/bindings.js';
+import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, PROBLEM_TYPES, rewriteInputShape, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
+import { FILESYSTEM_FIELDS, loadBindings } from '../src/bindings.js';
 
 const HERE = new URL('.', import.meta.url).pathname;
 const SRC = join(HERE, '..', 'src');
@@ -362,5 +362,447 @@ describe('every operation advertises its rate-limit budget', () => {
     const r = (doc.components as { responses: Record<string, { headers?: Record<string, unknown> }> })
       .responses.TooManyRequests!;
     expect(Object.keys(r.headers ?? {}).sort()).toEqual(['RateLimit', 'RateLimit-Policy', 'Retry-After']);
+  });
+});
+
+describe('nested open leaves are exempted by name, not by silence', () => {
+  // The rule OPEN_LEAF_EXEMPT describes was declared, documented and exported while
+  // nothing read it — and its keys did not even match the real paths, so it was dead twice
+  // over. It is now enforced, and these keep it honest in both directions.
+  it('faults an open nested leaf that is not listed', () => {
+    expect(() =>
+      generateApiDocument({
+        extraSchemas: {
+          Nested: {
+            type: 'object',
+            additionalProperties: false,
+            properties: { inner: { type: 'object', additionalProperties: true } },
+          },
+        },
+      }),
+    ).toThrow(/Nested\/properties\/inner.*OPEN_LEAF_EXEMPT/);
+  });
+
+  it('faults a bare true where a schema belongs', () => {
+    expect(() =>
+      generateApiDocument({
+        extraSchemas: {
+          Bare: { type: 'object', additionalProperties: false, properties: { anything: true } },
+        },
+      }),
+    ).toThrow(/Bare\/properties\/anything/);
+  });
+
+  // An exemption that matches nothing is the dead config this rule just came out of, so
+  // every key must still describe a real leaf.
+  it('every exemption matches a leaf that is actually open, and carries a reason', () => {
+    const doc = generateApiDocument();
+    const all = (doc.components as { schemas: Record<string, unknown> }).schemas;
+    // Scoped to what the generator actually consults. It skips the document schemas, which
+    // carry their own strictness, and Problem. An exemption keyed to a leaf outside that
+    // set is read by nothing — which is the dead config this test exists to catch, and the
+    // every-schema version of it blessed a planted `HdfResults/properties/extensions`.
+    const documentSchemas = new Set(
+      Object.keys(
+        (
+          JSON.parse(readFileSync(join(SRC, '..', 'dist', 'hdf-components.oas.json'), 'utf-8')) as {
+            components: { schemas: Record<string, unknown> };
+          }
+        ).components.schemas,
+      ),
+    );
+    expect(documentSchemas.size).toBeGreaterThan(0);
+    const schemas = Object.fromEntries(
+      Object.entries(all).filter(([name]) => !documentSchemas.has(name) && name !== 'Problem'),
+    );
+    expect(Object.keys(schemas).length).toBeGreaterThan(0);
+    const openLeaf = (node: unknown, where: string): string[] => {
+      if (node === true) return [where];
+      if (Array.isArray(node)) return node.flatMap((v, i) => openLeaf(v, `${where}/${i}`));
+      if (node === null || typeof node !== 'object') return [];
+      const schema = node as Record<string, unknown>;
+      const out: string[] = [];
+      if (schema.additionalProperties === true) out.push(where);
+      for (const [key, value] of Object.entries(schema)) {
+        if (['examples', 'enum', 'const', 'default'].includes(key)) continue;
+        out.push(...openLeaf(value, `${where}/${key}`));
+      }
+      return out;
+    };
+    const actual = Object.entries(schemas).flatMap(([name, schema]) =>
+      openLeaf(schema, '').map((leaf) => `${name}${leaf}`),
+    );
+    // Request bodies carry their own leaves, and one exemption lives there.
+    for (const [path, methods] of Object.entries(doc.paths)) {
+      for (const [method, op] of Object.entries(methods)) {
+        const content = (op as { requestBody?: { content?: Record<string, { schema?: unknown }> } })
+          .requestBody?.content;
+        for (const media of Object.values(content ?? {})) {
+          actual.push(
+            ...openLeaf(media.schema, '').map(
+              (leaf) => `${method.toUpperCase()} ${path} requestBody${leaf}`,
+            ),
+          );
+        }
+      }
+    }
+    expect(actual.length).toBeGreaterThan(0);
+    for (const [key, reason] of Object.entries(OPEN_LEAF_EXEMPT)) {
+      expect(reason.length, `${key} has no reason`).toBeGreaterThan(20);
+      expect(
+        actual.some((leaf) => leaf.startsWith(key)),
+        `${key} matches no open leaf — remove it`,
+      ).toBe(true);
+    }
+  });
+});
+
+// ADR-0008 §2: a synthetic operation's body is "bodyRef-only or a fixed conventions
+// component, never an inline schema". The first version read bodyRef only to decide
+// WHETHER there was a body and then emitted {type: object}, leaving three conventions
+// components reachable from nothing — a $ref count of zero on each.
+describe('bodyRef names the body, and the body is that component', () => {
+  const bodyRefs = Object.entries({ ...table.tools, ...table.synthetic }).filter(
+    ([, b]) => b.bodyRef !== undefined,
+  );
+
+  it('there are bodyRef bindings to check', () => {
+    expect(bodyRefs.length).toBeGreaterThan(2);
+  });
+
+  it.each(bodyRefs)('%s refs its named component from the request body', (_name, binding) => {
+    const op = doc.paths[binding.path!]?.[binding.method!];
+    const content = (op?.requestBody as { content?: Record<string, { schema?: unknown }> })?.content;
+    const schemas = Object.values(content ?? {}).map((c) => JSON.stringify(c.schema));
+    expect(schemas.join(' ')).toContain(`#/components/schemas/${binding.bodyRef}`);
+  });
+
+  // Derived from the table: a component named as a bodyRef must be reachable, which is the
+  // specific thing that was false.
+  it('every conventions component named as a bodyRef is referenced somewhere', () => {
+    const serialized = JSON.stringify(doc);
+    for (const [, binding] of bodyRefs) {
+      const refs = serialized.split(`"#/components/schemas/${binding.bodyRef}"`).length - 1;
+      expect(refs, `${binding.bodyRef} is referenced ${refs} times`).toBeGreaterThan(0);
+    }
+  });
+
+  // §3 makes RFC 8707's `resource` required on both token grants. It is declared in the
+  // component, which is only meaningful if the operation actually references it.
+  it.each(['/api/auth/oauth2/token', '/api/auth/api-key/exchange'])(
+    '%s resolves to a component that requires `resource`',
+    (path) => {
+      const content = (doc.paths[path]?.post?.requestBody as {
+        content: Record<string, { schema: { $ref?: string } }>;
+      }).content;
+      const ref = Object.values(content)[0]!.schema.$ref!;
+      const name = ref.split('/').pop()!;
+      const component = (doc.components as { schemas: Record<string, { required?: string[] }> })
+        .schemas[name]!;
+      expect(component.required).toContain('resource');
+    },
+  );
+
+  // RFC 6749 §4.4 requires the grant to be form-encoded, and the component says so. The
+  // operation must agree, or a client following the description gets a 415.
+  it('the oauth2 grant is form-encoded, matching what its component declares', () => {
+    const content = (doc.paths['/api/auth/oauth2/token']?.post?.requestBody as {
+      content: Record<string, unknown>;
+    }).content;
+    expect(Object.keys(content)).toEqual(['application/x-www-form-urlencoded']);
+  });
+});
+
+describe('pagination is bounded, and the applied limit is echoed', () => {
+  it('every limit parameter is an integer with a maximum', () => {
+    const limits = Object.values(doc.paths)
+      .flatMap((item) => Object.values(item))
+      .flatMap((op) => (op.parameters ?? []) as { name: string; schema: Record<string, unknown> }[])
+      .filter((p) => p.name === 'limit');
+    expect(limits.length).toBeGreaterThan(0);
+    for (const limit of limits) {
+      expect(limit.schema.type).toBe('integer');
+      expect(limit.schema.maximum).toBe(MAX_PAGE_SIZE);
+    }
+  });
+
+  // Scoped to bindings that actually produce an envelope: `items` names the row array, but
+  // the envelope is only emitted when a row SHAPE is also named. hdf_aggregate has items
+  // and no fullResponse — it is paged with no registered row type — so it has no envelope
+  // to echo into. That is a real gap, recorded on the card rather than papered over with
+  // an untyped items array, which would itself be an unlisted open leaf.
+  it('the paged envelope echoes the limit it applied, per AIP-158', () => {
+    const paged = Object.entries({ ...table.tools, ...table.synthetic }).filter(
+      ([, b]) => b.items !== undefined && b.fullResponse !== undefined,
+    );
+    expect(paged.length).toBeGreaterThan(1);
+    for (const [, binding] of paged) {
+      const schema = (
+        doc.paths[binding.path!]?.[binding.method!]?.responses['200'] as {
+          content: Record<string, { schema: { properties?: Record<string, unknown> } }>;
+        }
+      ).content['application/json']!.schema;
+      expect(Object.keys(schema.properties ?? {})).toContain('limit');
+    }
+  });
+});
+
+// Prerequisite (a) put the closed vocabularies into the MCP's input schemas as real enum
+// arrays. The table says enumFrom for twelve fields; the first version read it nowhere, so
+// the document advertised bare strings and the vocabularies were lost on the way to HTTP.
+describe('enumFrom reaches the document', () => {
+  const fromSchema = Object.entries(table.tools ?? {}).flatMap(([tool, binding]) =>
+    Object.entries(binding.fields ?? {})
+      .filter(([, f]) => f.enumFrom === 'schema enum' && f.placement === 'query')
+      .map(([field]) => [tool, field, binding] as const),
+  );
+
+  it('there are enumFrom query fields to check', () => {
+    expect(fromSchema.length).toBeGreaterThan(8);
+  });
+
+  it.each(fromSchema.map(([t, f, b]) => [`${t}.${f}`, f, b] as const))(
+    '%s advertises a non-empty enum',
+    (_label, field, binding) => {
+      const op = doc.paths[binding.path!]?.[binding.method!];
+      const parameter = ((op?.parameters ?? []) as { name: string; schema: unknown }[]).find(
+        (p) => p.name === field,
+      );
+      expect(parameter, `${field} has no parameter`).toBeDefined();
+      const serialized = JSON.stringify(parameter!.schema);
+      expect(serialized).toContain('"enum"');
+      expect(JSON.parse(serialized).enum?.length ?? JSON.parse(serialized).items?.enum?.length)
+        .toBeGreaterThan(1);
+    },
+  );
+
+  // `registry` carries no inline enum because the contract supplies none to carry: a
+  // previous version of this test asserted that absence, which no upstream enum could ever
+  // have falsified. The invariant worth pinning is that the vocabulary is reachable at all.
+  it('the registry-sourced field has no upstream enum, and the catalog serves it instead', () => {
+    const declared = toolsList.tools.find(
+      (t: { name: string }) => t.name === 'hdf_convert',
+    )!.inputSchema.properties.from as Record<string, unknown>;
+    expect(declared.enum, 'hdf_convert.from gained an enum — inline it').toBeUndefined();
+    expect(doc.paths['/catalog/converters']?.get).toBeDefined();
+  });
+});
+
+// ADR-0008 §2's rewrite map has two halves, and the first version applied the wrong one to
+// request bodies: `stripTransportState` removes `handle` because no response carries one,
+// so on an INPUT it deleted the HTTP half of every document reference and kept the
+// filesystem half. Every tool body shipped `source: {path}` — the inverse of the rule the
+// ADR states, and the inverse of the reason `sources` is not name-gated.
+describe('request bodies carry the input half of the rewrite map', () => {
+  const bodySchemas = Object.entries(doc.paths).flatMap(([path, methods]) =>
+    Object.entries(methods).flatMap(([method, op]) => {
+      const content = (op as { requestBody?: { content?: Record<string, { schema?: unknown }> } })
+        .requestBody?.content;
+      return Object.values(content ?? {}).map((m) => ({ where: `${method} ${path}`, schema: m.schema }));
+    }),
+  );
+
+  const propertyNames = (node: unknown, where: string): { name: string; where: string }[] => {
+    if (Array.isArray(node)) return node.flatMap((v, i) => propertyNames(v, `${where}/${i}`));
+    if (node === null || typeof node !== 'object') return [];
+    const out: { name: string; where: string }[] = [];
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'properties' && value !== null && typeof value === 'object') {
+        for (const name of Object.keys(value)) out.push({ name, where: `${where}/${name}` });
+      }
+      out.push(...propertyNames(value, `${where}/${key}`));
+    }
+    return out;
+  };
+
+  it('there are request bodies to check', () => {
+    expect(bodySchemas.length).toBeGreaterThan(5);
+  });
+
+  it('no body property, at any depth, is filesystem-shaped or MCP transport state', () => {
+    for (const { where, schema } of bodySchemas) {
+      for (const prop of propertyNames(schema, where)) {
+        expect(FILESYSTEM_FIELDS.has(prop.name), `${prop.where} is filesystem-shaped`).toBe(false);
+        expect(
+          STRIPPED_OUTPUT_FIELDS.has(prop.name),
+          `${prop.where} is MCP transport state`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it('every document reference in a body is addressed by id', () => {
+    const refs = bodySchemas.flatMap(({ where, schema }) =>
+      Object.entries(
+        ((schema as { properties?: Record<string, Record<string, unknown>> }).properties ?? {}),
+      )
+        .filter(([field]) => ['source', 'sources', 'amendments'].includes(field))
+        .map(([field, shape]) => ({ where: `${where}/${field}`, shape })),
+    );
+    // Counted from the table rather than guessed: every document reference the table
+    // places in a body must appear in one, so the two sides are compared, not restated.
+    const placed = Object.values(table.tools ?? {}).flatMap((b) =>
+      Object.entries(b.fields ?? {}).filter(
+        ([field, f]) => f.placement === 'body' && ['source', 'sources', 'amendments'].includes(field),
+      ),
+    );
+    expect(placed.length).toBeGreaterThan(0);
+    expect(refs.length).toBe(placed.length);
+    for (const { where, shape } of refs) {
+      const object = (shape.items ?? shape) as { properties?: Record<string, unknown> };
+      expect(Object.keys(object.properties ?? {}), `${where}`).toEqual(['id']);
+    }
+  });
+
+  it('no body description still points at a path or a handle', () => {
+    for (const { where, schema } of bodySchemas) {
+      expect(JSON.stringify(schema), where).not.toMatch(/\{path\}|\{handle\}/);
+    }
+  });
+
+  // §2 normalizes a nullable input away: the MCP marks an optional field ["null", T], and
+  // on HTTP absence is omission. The first version carried five of them through.
+  it('no body shape declares a nullable type union', () => {
+    for (const { where, schema } of bodySchemas) {
+      const types = JSON.stringify(schema).match(/"type":\s*\[[^\]]*"null"[^\]]*\]/g);
+      expect(types, where).toBeNull();
+    }
+  });
+
+  // The guard is what makes the above a refusal to emit rather than a test somebody can
+  // delete. The per-field check in bindings.ts reads the TABLE's top-level names, so it
+  // never saw the nested leak; this reads the emitted document.
+  it('faults a filesystem property planted in a body', () => {
+    expect(() =>
+      generateApiDocument({
+        extraPaths: {
+          '/planted': {
+            post: {
+              operationId: 'planted',
+              responses: {},
+              requestBody: {
+                content: {
+                  'application/json': { schema: { type: 'object', properties: { path: { type: 'string' } } } },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ).toThrow(/path is filesystem-shaped/);
+  });
+
+  it('faults MCP transport state planted in a body', () => {
+    expect(() =>
+      generateApiDocument({
+        extraPaths: {
+          '/planted': {
+            post: {
+              operationId: 'planted',
+              responses: {},
+              requestBody: {
+                content: {
+                  'application/json': {
+                    schema: { type: 'object', properties: { handle: { type: 'string' } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ).toThrow(/handle is MCP transport state/);
+  });
+});
+
+// The rewrite's rules are exercised unevenly by the real contract: every document
+// reference is {handle, path}, so the branches that handle a THIRD member, a declared
+// `required`, or a multi-type union are never reached by the golden. Each is still a rule
+// that would silently emit an invalid document if it were wrong -- a `required: [handle]`
+// surviving against `properties: {id}` is the obvious one -- so they are pinned directly.
+describe('rewriteInputShape applies each rule, including the ones the golden never hits', () => {
+  it('renames handle, drops filesystem members, and leaves everything else alone', () => {
+    expect(
+      rewriteInputShape({
+        type: 'object',
+        properties: {
+          handle: { type: 'string' },
+          path: { type: 'string' },
+          label: { type: 'string' },
+        },
+      }),
+    ).toEqual({
+      type: 'object',
+      properties: { id: { type: 'string' }, label: { type: 'string' } },
+    });
+  });
+
+  it('rewrites a declared required list the same way as the properties it names', () => {
+    expect(
+      rewriteInputShape({ type: 'object', required: ['handle', 'path', 'label'] }),
+    ).toEqual({ type: 'object', required: ['id', 'label'] });
+  });
+
+  it('keeps a non-string required entry rather than discarding it', () => {
+    expect(rewriteInputShape({ required: [7] })).toEqual({ required: [7] });
+  });
+
+  it('collapses a nullable union to its single concrete type', () => {
+    expect(rewriteInputShape({ type: ['null', 'object'] })).toEqual({ type: 'object' });
+  });
+
+  it('keeps a union that is genuinely more than one type, minus the null', () => {
+    expect(rewriteInputShape({ type: ['null', 'string', 'number'] })).toEqual({
+      type: ['string', 'number'],
+    });
+  });
+
+  it('recurses through arrays and leaves scalars untouched', () => {
+    expect(
+      rewriteInputShape({ anyOf: [{ properties: { handle: { type: 'string' } } }, 'scalar'] }),
+    ).toEqual({ anyOf: [{ properties: { id: { type: 'string' } } }, 'scalar'] });
+  });
+});
+
+// `items` may be a LIST of schemas, and the open-leaf walk has to descend each one. The
+// built document never uses that form, so without this the array arm is unexercised.
+describe('the open-leaf walk descends a list-valued items', () => {
+  it('faults a bare true inside an items array', () => {
+    expect(() =>
+      generateApiDocument({
+        extraSchemas: {
+          Tupled: { type: 'object', additionalProperties: false, items: [{ type: 'string' }, true] },
+        },
+      }),
+    ).toThrow(/Tupled\/items\/1/);
+  });
+});
+
+// The same refusal over request bodies. Only one real body is exempt, so without a planted
+// fault this throw was reachable by mutation and by nothing a future change would run.
+describe('an unlisted open leaf in a request body refuses to emit', () => {
+  it('faults additionalProperties: true planted in a body', () => {
+    expect(() =>
+      generateApiDocument({
+        extraPaths: {
+          '/planted': {
+            post: {
+              operationId: 'planted',
+              responses: {},
+              requestBody: {
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: { loose: { type: 'object', additionalProperties: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ).toThrow(/POST \/planted requestBody\/properties\/loose.*OPEN_LEAF_EXEMPT/);
   });
 });

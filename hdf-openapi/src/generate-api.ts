@@ -153,9 +153,14 @@ export const STRIPPED_OUTPUT_FIELDS = new Set([
  * not a document schema must set additionalProperties: false.
  */
 export const OPEN_LEAF_EXEMPT: Record<string, string> = {
-  'query.full/tags': 'the HDF schema declares tags additionalProperties:true for tool-specific metadata',
-  'diff.temporal.full/fieldChanges': 'a field change can be on any requirement field, so its values are untyped',
-  'diff.system-drift.full/fieldChanges': 'same: a field change can be on any component field',
+  'query.full/properties/tags':
+    'the HDF schema declares tags additionalProperties:true for tool-specific metadata',
+  'diff.temporal.full/properties/fieldChanges':
+    'oldValue/newValue reflect to a bare true, because a field change can be on any requirement field',
+  'diff.system-drift.full/properties/fieldChanges':
+    'same, for any component field',
+  'POST /documents/authored requestBody/properties/content/items':
+    'an authored item is a slice of any of the eight document schemas, chosen by docType; the MCP declares it open and the server validates it',
 };
 
 /** Strip the rewritten names from a response shape, recursively. */
@@ -179,6 +184,131 @@ function stripTransportState(node: unknown): unknown {
     out[key] = stripTransportState(value);
   }
   return out;
+}
+
+/**
+ * ADR-0008 §2's fixed rewrite map, input half. A document reference arrives from the MCP as
+ * `{handle, path}` and on HTTP is `{id}`: `handle` is renamed, `path` is dropped.
+ *
+ * The output half above cannot stand in for this. It strips `handle`, because no response
+ * carries one — so applying it to a request body deletes the HTTP half and keeps the
+ * filesystem half, which is the rule inverted.
+ *
+ * A nullable input also collapses to its concrete type: the MCP marks an optional field
+ * `["null", T]`, and on HTTP absence is expressed by omitting the field.
+ */
+export function rewriteInputShape(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(rewriteInputShape);
+  if (node === null || typeof node !== 'object') return node;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'properties' && value !== null && typeof value === 'object') {
+      const kept: Record<string, unknown> = {};
+      for (const [prop, schema] of Object.entries(value)) {
+        if (FILESYSTEM_FIELDS.has(prop)) continue;
+        // A pure rename. `handle` is an opaque server string and so is `id`; giving it a
+        // format here would invent a constraint the path parameter does not carry either.
+        kept[prop === 'handle' ? 'id' : prop] = rewriteInputShape(schema);
+      }
+      out[key] = kept;
+      continue;
+    }
+    if (key === 'required' && Array.isArray(value)) {
+      out[key] = value
+        .filter((r) => typeof r !== 'string' || !FILESYSTEM_FIELDS.has(r))
+        .map((r) => (r === 'handle' ? 'id' : r));
+      continue;
+    }
+    if (key === 'type' && Array.isArray(value)) {
+      const concrete = value.filter((t) => t !== 'null');
+      out[key] = concrete.length === 1 ? concrete[0] : concrete;
+      continue;
+    }
+    if (key === 'description' && typeof value === 'string') {
+      out[key] = value
+        .replace(/\{path\}|\{handle\}/g, '{id}')
+        .replace(/\{id\}(?: or \{id\})+/g, '{id}');
+      continue;
+    }
+    out[key] = rewriteInputShape(value);
+  }
+  return out;
+}
+
+/** Keywords whose value is a schema, a map of schemas, or a list of schemas. */
+const SCHEMA_VALUED = new Set([
+  'items',
+  'additionalProperties',
+  'unevaluatedProperties',
+  'unevaluatedItems',
+  'additionalItems',
+  'contains',
+  'propertyNames',
+  'contentSchema',
+  'not',
+  'if',
+  'then',
+  'else',
+]);
+const SCHEMA_MAPS = new Set([
+  'properties',
+  'patternProperties',
+  'dependentSchemas',
+  'dependencies',
+  '$defs',
+  'definitions',
+]);
+const SCHEMA_LISTS = new Set(['oneOf', 'anyOf', 'allOf', 'prefixItems']);
+
+/**
+ * Nested subschemas that are open — `additionalProperties: true`, or a bare `true` where a
+ * schema should be — with the path they sit at.
+ *
+ * The top-level strictness rule does not see these: a shape can close itself and still
+ * carry an open object three levels down, which is where a reflected `map[string]any` or
+ * an `any` leaf ends up. Without this walk OPEN_LEAF_EXEMPT was a documented rule that
+ * nothing enforced.
+ *
+ * It descends through schema positions only. Walking every key instead would read
+ * `required: true` on an OpenAPI parameter, or a property whose name happens to be
+ * `default`, as a schema — which is why this can be pointed at request bodies as well as
+ * at components.
+ */
+function openLeaves(node: unknown, where: string): string[] {
+  if (node === true) return [where];
+  if (node === null || typeof node !== 'object' || Array.isArray(node)) return [];
+  const schema = node as Record<string, unknown>;
+  const found: string[] = [];
+  if (schema.additionalProperties === true) found.push(where);
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === 'additionalProperties' && value === true) continue;
+    if (SCHEMA_VALUED.has(key)) {
+      const at = `${where}/${key}`;
+      if (Array.isArray(value)) value.forEach((s, i) => found.push(...openLeaves(s, `${at}/${i}`)));
+      else found.push(...openLeaves(value, at));
+    } else if (SCHEMA_MAPS.has(key) && value !== null && typeof value === 'object') {
+      for (const [member, sub] of Object.entries(value)) {
+        found.push(...openLeaves(sub, `${where}/${key}/${member}`));
+      }
+    } else if (SCHEMA_LISTS.has(key) && Array.isArray(value)) {
+      value.forEach((sub, i) => found.push(...openLeaves(sub, `${where}/${key}/${i}`)));
+    }
+  }
+  return found;
+}
+
+/** Every member of a `properties` map under `node`, with where it sits. */
+function propertyNamesIn(node: unknown, where: string): { name: string; where: string }[] {
+  if (Array.isArray(node)) return node.flatMap((v, i) => propertyNamesIn(v, `${where}/${i}`));
+  if (node === null || typeof node !== 'object') return [];
+  const found: { name: string; where: string }[] = [];
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'properties' && value !== null && typeof value === 'object') {
+      for (const name of Object.keys(value)) found.push({ name, where: `${where}/properties/${name}` });
+    }
+    found.push(...propertyNamesIn(value, `${where}/${key}`));
+  }
+  return found;
 }
 
 /** Every `format` used anywhere, with where it was found. */
@@ -263,22 +393,62 @@ function conventionalResponses(hasBody: boolean): Record<string, unknown> {
   return responses;
 }
 
-/** The fixed rewrite map's input half: page becomes a cursor, limit stays a count. */
-function parameterFor(field: string, placement: string): Record<string, unknown> {
-  // The fixed rewrite map: `page` becomes an opaque cursor, and a document reference
-  // placed in the path becomes `{id}` — HTTP addresses documents by id, so the parameter
-  // must be named for the path template rather than for the MCP field it came from.
+/**
+ * The page-size ceiling. ADR-0008 §3 requires `limit` to carry an OpenAPI `maximum` and
+ * says an over-limit value is coerced down with the effective limit echoed (AIP-158), but
+ * it names no number — so this is a tracked choice, not a quotation.
+ *
+ * 1000 is a conventional ceiling, chosen here and nowhere else. The MCP sets none — its
+ * own `limit` is unbounded, with 0 meaning all — so nothing upstream is being quoted.
+ * Raise it here and the generated document changes in one place.
+ */
+export const MAX_PAGE_SIZE = 1000;
+
+/**
+ * One query or path parameter, with the fixed rewrite map applied.
+ *
+ * `page` becomes the opaque cursor `next`; a document reference placed in the path becomes
+ * `{id}`, because HTTP addresses documents by id and the parameter is named for the path
+ * template rather than the MCP field behind it; and `limit` becomes a bounded integer.
+ *
+ * `enumFrom: schema enum` copies the vocabulary from the MCP's own input schema, which is
+ * where prerequisite (a) put it — so the advertised values are the accepted values, with
+ * no second list to drift. `enumFrom: registry` carries no inline enum because there is
+ * none to copy: prerequisite (a) left `hdf_convert.from` a bare string, so the
+ * converter-catalog resource is the only vocabulary this document can point at.
+ */
+function parameterFor(
+  field: string,
+  placement: string,
+  spec: { enumFrom?: string } = {},
+  declared: Record<string, unknown> = {},
+): Record<string, unknown> {
   const name = placement === 'path' ? 'id' : field === 'page' ? 'next' : field;
-  const description =
-    field === 'page'
-      ? 'Opaque cursor from a previous response. Replaces the MCP page index.'
-      : undefined;
+
+  let schema: Record<string, unknown> = { type: 'string' };
+  let description: string | undefined;
+  if (field === 'page') {
+    description = 'Opaque cursor from a previous response. Replaces the MCP page index.';
+  } else if (field === 'limit') {
+    schema = { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE };
+    description = `Page size. An over-limit value is coerced down to ${MAX_PAGE_SIZE} and the effective limit echoed in the response.`;
+  } else if (spec.enumFrom === 'schema enum') {
+    // The enum may sit on the property or, for a repeated filter, on its items.
+    const items = declared.items as Record<string, unknown> | undefined;
+    const values = (declared.enum ?? items?.enum) as unknown[] | undefined;
+    if (Array.isArray(values) && values.length > 0) {
+      schema = Array.isArray(declared.type) || declared.type === 'array'
+        ? { type: 'array', items: { type: 'string', enum: values } }
+        : { type: 'string', enum: values };
+    }
+  }
+
   return {
     name,
     in: placement === 'path' ? 'path' : 'query',
     required: placement === 'path',
     ...(description ? { description } : {}),
-    schema: { type: 'string' },
+    schema,
   };
 }
 
@@ -321,9 +491,56 @@ function okResponse(binding: ToolBinding): Record<string, unknown> {
                 [items]: { type: 'array', items: schema },
                 next: { type: 'string', description: 'Cursor for the following page.' },
                 total: { type: 'integer' },
+                // AIP-158: the server echoes the limit it actually applied, which may be
+                // lower than the one asked for.
+                limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE },
               },
             }
           : schema,
+      },
+    },
+  };
+}
+
+/**
+ * The request body.
+ *
+ * A `bodyRef` names a component and the body IS that component: ADR-0008 §2 says a
+ * synthetic operation's body is "bodyRef-only or a fixed conventions component, never an
+ * inline schema". A tool's body instead carries the fields the table placed there, typed
+ * from the MCP's own input schema — derived from the table and the contract, not authored.
+ *
+ * The media type comes from the component when it declares one. RFC 6749 §4.4 requires the
+ * token grant to be form-encoded, so that operation cannot be JSON; a conventions
+ * component states it with `x-hdf-media-type` rather than the generator guessing from a
+ * name.
+ */
+function requestBodyFor(
+  binding: ToolBinding,
+  bodyFields: [string, { placement?: string }][],
+  schemas: Record<string, unknown>,
+  inputProperties: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  if (binding.bodyRef !== undefined) {
+    const component = schemas[binding.bodyRef] as Record<string, unknown> | undefined;
+    const mediaType =
+      (component?.['x-hdf-media-type'] as string | undefined) ?? 'application/json';
+    return {
+      required: true,
+      content: { [mediaType]: { schema: { $ref: `#/components/schemas/${binding.bodyRef}` } } },
+    };
+  }
+  if (bodyFields.length === 0) return undefined;
+  const properties: Record<string, unknown> = {};
+  for (const [field] of bodyFields) {
+    const declared = inputProperties[field];
+    properties[field] = rewriteInputShape(declared ?? { type: 'string' });
+  }
+  return {
+    required: true,
+    content: {
+      'application/json': {
+        schema: { type: 'object', additionalProperties: false, properties },
       },
     },
   };
@@ -334,6 +551,8 @@ function operationFor(
   binding: ToolBinding,
   cls: string,
   summary: string,
+  schemas: Record<string, unknown>,
+  inputProperties: Record<string, unknown>,
 ): Operation {
   const fields = Object.entries(binding.fields ?? {});
   // Every {x} in the path template gets a parameter, whether or not a field was placed
@@ -348,7 +567,9 @@ function operationFor(
     })),
     ...fields
       .filter(([, f]) => f.placement === 'query')
-      .map(([field, f]) => parameterFor(field, f.placement!)),
+      .map(([field, f]) =>
+        parameterFor(field, f.placement!, f, (inputProperties[field] ?? {}) as Record<string, unknown>),
+      ),
   ];
   const bodyFields = fields.filter(([, f]) => f.placement === 'body');
   const hasBody = bodyFields.length > 0 || binding.bodyRef !== undefined;
@@ -364,7 +585,7 @@ function operationFor(
     operationId: name,
     summary,
     parameters: parameters.length > 0 ? parameters : undefined,
-    requestBody: hasBody ? { required: true, content: { 'application/json': { schema: { type: 'object' } } } } : undefined,
+    requestBody: requestBodyFor(binding, bodyFields, schemas, inputProperties),
     responses,
     security: cls === 'documentOnly' ? [] : [{ bearerAuth: scopesFor(cls) }],
   };
@@ -382,6 +603,8 @@ export interface GenerateOptions {
   tableOverride?: BindingTable;
   /** Extra component schemas, so a test can plant one the strictness rules must reject. */
   extraSchemas?: Record<string, unknown>;
+  /** Extra path items, so a test can plant a leak the rewrite map would otherwise remove. */
+  extraPaths?: Record<string, Record<string, unknown>>;
 }
 
 export function generateApiDocument(options: GenerateOptions = {}): ApiDocument {
@@ -396,9 +619,28 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
   ) as { info: { version: string }; components: { schemas: Record<string, unknown> } };
   const conventions = loadConventions();
 
+  const documentSchemas = new Set(Object.keys(componentsDoc.components.schemas));
+  const schemas: Record<string, unknown> = { ...componentsDoc.components.schemas };
+  for (const c of conventions) schemas[c.name] = c.schema;
+  schemas.Problem = PROBLEM_SCHEMA;
+  // The reflected response shapes the table names, with the rewrite map applied so no MCP
+  // transport state survives into an HTTP response.
+  const contract = JSON.parse(contractRaw) as { fullShapes: Record<string, unknown> };
+  for (const [name, shape] of Object.entries(contract.fullShapes)) {
+    schemas[name] = stripTransportState(shape);
+  }
+  for (const [name, schema] of Object.entries(options.extraSchemas ?? {})) {
+    schemas[name] = schema;
+  }
+
   const paths: Record<string, Record<string, Operation>> = {};
   const describe = new Map(
     (toolsList.tools as { name: string; description?: string }[]).map((t) => [t.name, t.description]),
+  );
+  const inputsFor = new Map(
+    (toolsList.tools as { name: string; inputSchema?: { properties?: Record<string, unknown> } }[]).map(
+      (t) => [t.name, t.inputSchema?.properties ?? {}],
+    ),
   );
   const add = (binding: ToolBinding, name: string, cls: string): void => {
     if (!binding.method || !binding.path) return;
@@ -408,6 +650,8 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       binding,
       cls,
       summarize(describe.get(name), `${binding.method.toUpperCase()} ${binding.path}`),
+      schemas,
+      inputsFor.get(name) ?? {},
     );
   };
 
@@ -425,18 +669,8 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
     add(binding, name, 'read');
   }
 
-  const documentSchemas = new Set(Object.keys(componentsDoc.components.schemas));
-  const schemas: Record<string, unknown> = { ...componentsDoc.components.schemas };
-  for (const c of conventions) schemas[c.name] = c.schema;
-  schemas.Problem = PROBLEM_SCHEMA;
-  // The reflected response shapes the table names, with the rewrite map applied so no MCP
-  // transport state survives into an HTTP response.
-  const contract = JSON.parse(contractRaw) as { fullShapes: Record<string, unknown> };
-  for (const [name, shape] of Object.entries(contract.fullShapes)) {
-    schemas[name] = stripTransportState(shape);
-  }
-  for (const [name, schema] of Object.entries(options.extraSchemas ?? {})) {
-    schemas[name] = schema;
+  for (const [path, item] of Object.entries(options.extraPaths ?? {})) {
+    paths[path] = item as Record<string, Operation>;
   }
 
   // ---- hard-fails. Each is a refusal to emit, not a warning to ignore. ----
@@ -484,6 +718,65 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
     const isUnion = Array.isArray(s.oneOf) || Array.isArray(s.anyOf) || Array.isArray(s.allOf);
     if (!closed && !isUnion) {
       throw new Error(`${name}: a non-document schema must set additionalProperties: false`);
+    }
+    // And nothing open may hide inside it. A leaf is open on purpose only if it is listed,
+    // with its reason, in OPEN_LEAF_EXEMPT.
+    for (const leaf of openLeaves(schema, '')) {
+      const key = `${name}${leaf}`;
+      const exempt = Object.keys(OPEN_LEAF_EXEMPT).some((e) => key.startsWith(e));
+      if (!exempt) {
+        throw new Error(
+          `${key}: an open nested leaf must be listed in OPEN_LEAF_EXEMPT with a reason`,
+        );
+      }
+    }
+  }
+
+  // The same rule over request bodies. A body is typed from the contract, so an open leaf
+  // can arrive there without any component carrying it.
+  for (const [path, methods] of Object.entries(paths)) {
+    for (const [method, op] of Object.entries(methods)) {
+      const content = (op.requestBody as { content?: Record<string, { schema?: unknown }> } | undefined)
+        ?.content;
+      for (const media of Object.values(content ?? {})) {
+        for (const leaf of openLeaves(media.schema, '')) {
+          const key = `${method.toUpperCase()} ${path} requestBody${leaf}`;
+          if (!Object.keys(OPEN_LEAF_EXEMPT).some((e) => key.startsWith(e))) {
+            throw new Error(
+              `${key}: an open nested leaf must be listed in OPEN_LEAF_EXEMPT with a reason`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Nothing the rewrite map renames or drops may survive into the emitted document.
+  //
+  // The per-field check above reads the binding table's own top-level names, so it cannot
+  // see a field nested inside a shape the contract supplied — which is exactly where a
+  // filesystem `path` hid once, inside every `source` object, while the table was clean.
+  // This reads the document instead, and fails closed.
+  //
+  // Scoped to `paths` deliberately, and widening it would break the build: five document
+  // and reflected components carry one of these names as a legitimate property — a JSON
+  // pointer in Field_Change.path, a regex in Input_Constraints.pattern — and responses
+  // reach them by $ref rather than inlining them, so this reach is exactly the surface
+  // rewriteInputShape builds.
+  for (const { name, where } of propertyNamesIn(paths, '')) {
+    if (FILESYSTEM_FIELDS.has(name)) {
+      throw new Error(`${where}: ${name} is filesystem-shaped and must not reach HTTP`);
+    }
+    if (STRIPPED_OUTPUT_FIELDS.has(name)) {
+      throw new Error(`${where}: ${name} is MCP transport state and must not reach HTTP`);
+    }
+  }
+
+  // The media-type annotation has done its work by now: every request body is built. It is
+  // an instruction to this generator, not part of the published shape.
+  for (const schema of Object.values(schemas)) {
+    if (schema !== null && typeof schema === 'object') {
+      delete (schema as Record<string, unknown>)['x-hdf-media-type'];
     }
   }
 
