@@ -24,9 +24,6 @@ import type {
   OverrideType,
 } from '../dist/ts/hdf.js';
 
-/** Minimal identity shape used by amendment appliedBy fields. */
-type Identity = { type: string; identifier: string; description?: string };
-
 export function createMinimalBaseline(
   name: string,
   requirements: EvaluatedRequirement[],
@@ -99,7 +96,10 @@ export function createStatusOverride(
   type: OverrideType | string,
   options?: {
     reason?: string;
-    appliedBy?: Identity;
+    // Looser than the schema's Identity on purpose: `type` is a plain string,
+    // not the IdentityType enum. Kept inline because a top-level type in a
+    // .d.ts module is implicitly exported and would collide with Identity.
+    appliedBy?: { type: string; identifier: string; description?: string };
     appliedAt?: string;
     expiresAt?: string;
     status?: ResultStatus;
@@ -111,7 +111,7 @@ export function createPoam(
   type: 'remediation' | 'mitigation' | 'riskAcceptance' | 'vendorDependency' | string,
   options?: {
     explanation?: string;
-    appliedBy?: Identity;
+    appliedBy?: { type: string; identifier: string; description?: string };
     appliedAt?: string;
     expiresAt?: string;
     milestones?: Array<Record<string, unknown>>;
