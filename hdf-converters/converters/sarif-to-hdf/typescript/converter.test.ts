@@ -1838,3 +1838,68 @@ describe('severity resolution (§3.27.9, §3.27.10, §3.50.3)', () => {
     expect(r.tags['sarif-level']).toBe('error');
   });
 });
+
+describe('per-result carriage (§3.27.2, §3.27.12, §3.27.16)', () => {
+  const twoResults = (a: string, b: string): string =>
+    `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[${a},${b}]}]}`;
+  const res = (kind: string, fp: string, uri: string) =>
+    `{"ruleId":"R1","kind":"${kind}","message":{"text":"${fp}"},"partialFingerprints":{"h":"${fp}"},
+      "locations":[{"physicalLocation":{"artifactLocation":{"uri":"${uri}"},"region":{"startLine":1}}}]}`;
+
+  const firstReq = async (doc: string) => {
+    const out = JSON.parse(await convertSarifToHdf(doc));
+    return out.baselines[0].requirements[0];
+  };
+
+  // Results sharing a ruleId become one requirement, and everything past the first was
+  // dropped. Fingerprints are the identity cross-run correlation depends on.
+  it('keeps every result\'s fingerprints, not just the first', async () => {
+    const r = await firstReq(twoResults(res('fail', 'first', 'a.c'), res('fail', 'second', 'b.c')));
+    expect(r.results).toHaveLength(2);
+    const per = r.tags['sarif-results'];
+    expect(per).toHaveLength(2);
+    expect(per.map((e: {partialFingerprints?: {h?: string}}) => e.partialFingerprints?.h).sort())
+      .toEqual(['first', 'second']);
+  });
+
+  it('does not claim one kind for a group that mixes them', async () => {
+    const r = await firstReq(twoResults(res('pass', 'p', 'a.c'), res('fail', 'f', 'b.c')));
+    expect(r.tags).not.toHaveProperty('kind');
+    expect(r.tags['sarif-results'].map((e: {kind: string}) => e.kind).sort()).toEqual(['fail', 'pass']);
+  });
+
+  it('keeps the aggregate kind when the group agrees', async () => {
+    const r = await firstReq(twoResults(res('fail', 'a', 'a.c'), res('fail', 'b', 'b.c')));
+    expect(r.tags['kind']).toBe('fail');
+  });
+
+  // ADR-0017 scoped rawSourceRecord to the result because records merged onto a
+  // requirement collide and one has to be discarded — this card's defect.
+  it('gives each result its own verbatim native record', async () => {
+    const r = await firstReq(twoResults(res('fail', 'alpha', 'a.c'), res('fail', 'beta', 'b.c')));
+    for (const [i, want] of ['alpha', 'beta'].entries()) {
+      const rec = r.results[i].rawSourceRecord;
+      expect(rec.mediaType).toBe('application/json');
+      expect(rec.encoding).toBe('utf-8');
+      expect(rec.content).toContain(want);
+      expect(JSON.parse(rec.content).ruleId).toBe('R1');
+      expect(rec.pointer).toBe(`/runs/0/results/${i}`);
+    }
+  });
+
+  // §3.27.12: locations are not distinct occurrences, but one HDF result per location
+  // is what a consumer can act on, so the source count must stay recoverable.
+  it('publishes the source result count so cardinality survives the expansion', async () => {
+    const doc = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},"locations":[
+        {"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}},
+        {"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}},
+        {"physicalLocation":{"artifactLocation":{"uri":"c.c"},"region":{"startLine":3}}}]}]}]}`;
+    const r = await firstReq(doc);
+    expect(r.results).toHaveLength(3);
+    expect(r.tags['sarif-source-result-count']).toBe(1);
+  });
+});

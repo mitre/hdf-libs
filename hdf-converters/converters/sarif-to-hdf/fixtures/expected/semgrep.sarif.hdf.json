@@ -20,12 +20,24 @@
           "results": [
             {
               "codeDesc": "URL : targets/basic/stupid.py LINE : 3 COLUMN : 12\n    return a + b == a + b",
-              "startTime": "2026-10-10T20:42:30.992149Z",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"matchBasedId/v1\":\"c14751d4f27243ab3fc24c8e9993358c58673b1f8cb907fc90f66a33826c9183a0386cc160cf4457cf7e175c9efb083d250a3b52fe3154a003fc9b9955802118_0\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"targets/basic/stupid.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":17,\"endLine\":3,\"snippet\":{\"text\":\"    return a + b == a + b\"},\"startColumn\":12,\"startLine\":3}}}],\"message\":{\"text\":\"Fake message.\"},\"properties\":{},\"ruleId\":\"rules.rule-with-cwe-tag\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-10T23:39:24.559747Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : targets/basic/stupid.py LINE : 3 COLUMN : 21\n    return a + b == a + b",
-              "startTime": "2026-10-10T20:42:30.992149Z",
+              "rawSourceRecord": {
+                "content": "{\"fingerprints\":{\"matchBasedId/v1\":\"c14751d4f27243ab3fc24c8e9993358c58673b1f8cb907fc90f66a33826c9183a0386cc160cf4457cf7e175c9efb083d250a3b52fe3154a003fc9b9955802118_1\"},\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"targets/basic/stupid.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":26,\"endLine\":3,\"snippet\":{\"text\":\"    return a + b == a + b\"},\"startColumn\":21,\"startLine\":3}}}],\"message\":{\"text\":\"Fake message.\"},\"properties\":{},\"ruleId\":\"rules.rule-with-cwe-tag\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/1"
+              },
+              "startTime": "2026-10-10T23:39:24.559747Z",
               "status": "failed"
             }
           ],
@@ -55,7 +67,22 @@
               "RA-5"
             ],
             "sarif-level": "error",
-            "sarif-severity-source": "rule-default"
+            "sarif-results": [
+              {
+                "fingerprints": {
+                  "matchBasedId/v1": "c14751d4f27243ab3fc24c8e9993358c58673b1f8cb907fc90f66a33826c9183a0386cc160cf4457cf7e175c9efb083d250a3b52fe3154a003fc9b9955802118_0"
+                },
+                "kind": "fail"
+              },
+              {
+                "fingerprints": {
+                  "matchBasedId/v1": "c14751d4f27243ab3fc24c8e9993358c58673b1f8cb907fc90f66a33826c9183a0386cc160cf4457cf7e175c9efb083d250a3b52fe3154a003fc9b9955802118_1"
+                },
+                "kind": "fail"
+              }
+            ],
+            "sarif-severity-source": "rule-default",
+            "sarif-source-result-count": 2
           },
           "code": "    return a + b == a + b",
           "title": "rules.rule-with-cwe-tag",
@@ -75,7 +102,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-10T20:42:30.992149Z",
+  "timestamp": "2026-10-10T23:39:24.559747Z",
   "tool": {
     "format": "SARIF",
     "name": "Semgrep OSS"

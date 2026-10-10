@@ -12,7 +12,13 @@
           "results": [
             {
               "codeDesc": "URL : Boot.java LINE : 23 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Boot.main(String[])\",\"kind\":\"function\",\"name\":\"main(String[])\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":23}}}],\"message\":{\"arguments\":[\"Boot.main(String[])\"],\"id\":\"default\"},\"ruleId\":\"DMI_HARDCODED_ABSOLUTE_FILENAME\",\"ruleIndex\":0}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -35,7 +41,14 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "title": "Code contains a hard coded reference to an absolute pathname.",
           "verificationMethod": "automated"
@@ -50,22 +63,46 @@
           "results": [
             {
               "codeDesc": "URL : Boot.java LINE : 104 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"new java.io.FileWriter(File)\",\"kind\":\"function\",\"name\":\"new java.io.FileWriter(File)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":104}}}],\"message\":{\"arguments\":[\"Boot.writeFrags(Log, String)\",\"new java.io.FileWriter(File)\"],\"id\":\"default\"},\"ruleId\":\"DM_DEFAULT_ENCODING\",\"ruleIndex\":1}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/1"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 125 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"new java.io.FileWriter(File)\",\"kind\":\"function\",\"name\":\"new java.io.FileWriter(File)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":125}}}],\"message\":{\"arguments\":[\"Boot.writeSnipers(Log, String)\",\"new java.io.FileWriter(File)\"],\"id\":\"default\"},\"ruleId\":\"DM_DEFAULT_ENCODING\",\"ruleIndex\":1}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/2"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 84 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"new java.io.FileWriter(File)\",\"kind\":\"function\",\"name\":\"new java.io.FileWriter(File)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":84}}}],\"message\":{\"arguments\":[\"Boot.writeSuicides(Log, String)\",\"new java.io.FileWriter(File)\"],\"id\":\"default\"},\"ruleId\":\"DM_DEFAULT_ENCODING\",\"ruleIndex\":1}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/3"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 64 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"new java.io.FileWriter(File)\",\"kind\":\"function\",\"name\":\"new java.io.FileWriter(File)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":64}}}],\"message\":{\"arguments\":[\"Boot.writeTeamkills(Log, String)\",\"new java.io.FileWriter(File)\"],\"id\":\"default\"},\"ruleId\":\"DM_DEFAULT_ENCODING\",\"ruleIndex\":1}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/4"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -88,7 +125,26 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 4
           },
           "title": "Reliance on default encoding.",
           "verificationMethod": "automated"
@@ -103,17 +159,35 @@
           "results": [
             {
               "codeDesc": "URL : Boot.java LINE : 210 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Boot.getTopFrag(Log, boolean)\",\"kind\":\"function\",\"name\":\"getTopFrag(Log, boolean)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":210}}}],\"message\":{\"arguments\":[\"Boot.getTopFrag(Log, boolean)\"],\"id\":\"default\"},\"ruleId\":\"WMI_WRONG_MAP_ITERATOR\",\"ruleIndex\":2}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/5"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 166 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Boot.getTopSuicide(Log)\",\"kind\":\"function\",\"name\":\"getTopSuicide(Log)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":166}}}],\"message\":{\"arguments\":[\"Boot.getTopSuicide(Log)\"],\"id\":\"default\"},\"ruleId\":\"WMI_WRONG_MAP_ITERATOR\",\"ruleIndex\":2}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/6"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Boot.java LINE : 246 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Boot.getTopTeamkill(Log)\",\"kind\":\"function\",\"name\":\"getTopTeamkill(Log)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Boot.java\"},\"region\":{\"startLine\":246}}}],\"message\":{\"arguments\":[\"Boot.getTopTeamkill(Log)\"],\"id\":\"default\"},\"ruleId\":\"WMI_WRONG_MAP_ITERATOR\",\"ruleIndex\":2}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/7"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -136,7 +210,22 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 3
           },
           "title": "Inefficient use of keySet iterator instead of entrySet iterator.",
           "verificationMethod": "automated"
@@ -151,12 +240,24 @@
           "results": [
             {
               "codeDesc": "URL : Log.java LINE : 9 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Log.matchs\",\"kind\":\"member\",\"name\":\"matchs\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Log.java\"},\"region\":{\"startLine\":9}}}],\"message\":{\"arguments\":[\"Log.getMatchs()\",\"matchs\"],\"id\":\"default\"},\"ruleId\":\"EI_EXPOSE_REP\",\"ruleIndex\":3}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/8"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Match.java LINE : 9 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Match.matchLines\",\"kind\":\"member\",\"name\":\"matchLines\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Match.java\"},\"region\":{\"startLine\":9}}}],\"message\":{\"arguments\":[\"Match.getMatchLines()\",\"matchLines\"],\"id\":\"default\"},\"ruleId\":\"EI_EXPOSE_REP\",\"ruleIndex\":3}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/10"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -179,7 +280,18 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "title": "May expose internal representation by returning reference to mutable object.",
           "verificationMethod": "automated"
@@ -194,12 +306,24 @@
           "results": [
             {
               "codeDesc": "URL : Log.java LINE : 13 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Log.setMatchs(List)#matchs\",\"kind\":\"variable\",\"name\":\"matchs\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Log.java\"},\"region\":{\"startLine\":13}}}],\"message\":{\"arguments\":[\"Log.setMatchs(List)\",\"matchs\"],\"id\":\"default\"},\"ruleId\":\"EI_EXPOSE_REP2\",\"ruleIndex\":4}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/9"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : Match.java LINE : 13 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"Match.setMatchLines(List)#matchLines\",\"kind\":\"variable\",\"name\":\"matchLines\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"Match.java\"},\"region\":{\"startLine\":13}}}],\"message\":{\"arguments\":[\"Match.setMatchLines(List)\",\"matchLines\"],\"id\":\"default\"},\"ruleId\":\"EI_EXPOSE_REP2\",\"ruleIndex\":4}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/11"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -222,7 +346,18 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 2
           },
           "title": "May expose internal representation by incorporating reference to mutable object.",
           "verificationMethod": "automated"
@@ -237,7 +372,13 @@
           "results": [
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 40 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticLexer.modeNames\",\"kind\":\"member\",\"name\":\"modeNames\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticLexer.java\"},\"region\":{\"startLine\":40}}}],\"message\":{\"arguments\":[\"XonoticLexer.modeNames\"],\"id\":\"default\"},\"ruleId\":\"MS_FINAL_PKGPROTECT\",\"ruleIndex\":5}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/12"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -260,7 +401,14 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 1
           },
           "title": "Field should be both final and package protected.",
           "verificationMethod": "automated"
@@ -275,32 +423,68 @@
           "results": [
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 536 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticLexer._decisionToDFA\",\"kind\":\"member\",\"name\":\"_decisionToDFA\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticLexer.java\"},\"region\":{\"startLine\":536}}}],\"message\":{\"arguments\":[\"XonoticLexer._decisionToDFA\"],\"id\":\"default\"},\"ruleId\":\"MS_PKGPROTECT\",\"ruleIndex\":6}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/13"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 68 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticLexer.ruleNames\",\"kind\":\"member\",\"name\":\"ruleNames\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticLexer.java\"},\"region\":{\"startLine\":68}}}],\"message\":{\"arguments\":[\"XonoticLexer.ruleNames\"],\"id\":\"default\"},\"ruleId\":\"MS_PKGPROTECT\",\"ruleIndex\":6}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/14"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 44 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticLexer.tokenNames\",\"kind\":\"member\",\"name\":\"tokenNames\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticLexer.java\"},\"region\":{\"startLine\":44}}}],\"message\":{\"arguments\":[\"XonoticLexer.tokenNames\"],\"id\":\"default\"},\"ruleId\":\"MS_PKGPROTECT\",\"ruleIndex\":6}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/15"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 2088 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser._decisionToDFA\",\"kind\":\"member\",\"name\":\"_decisionToDFA\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":2088}}}],\"message\":{\"arguments\":[\"XonoticParser._decisionToDFA\"],\"id\":\"default\"},\"ruleId\":\"MS_PKGPROTECT\",\"ruleIndex\":6}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/18"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 74 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser.ruleNames\",\"kind\":\"member\",\"name\":\"ruleNames\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":74}}}],\"message\":{\"arguments\":[\"XonoticParser.ruleNames\"],\"id\":\"default\"},\"ruleId\":\"MS_PKGPROTECT\",\"ruleIndex\":6}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/19"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 40 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser.tokenNames\",\"kind\":\"member\",\"name\":\"tokenNames\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":40}}}],\"message\":{\"arguments\":[\"XonoticParser.tokenNames\"],\"id\":\"default\"},\"ruleId\":\"MS_PKGPROTECT\",\"ruleIndex\":6}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/20"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -323,7 +507,34 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 6
           },
           "title": "Field should be package protected.",
           "verificationMethod": "automated"
@@ -338,22 +549,46 @@
           "results": [
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 114 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticLexer.WS_action(RuleContext, int)\",\"kind\":\"function\",\"name\":\"WS_action(RuleContext, int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticLexer.java\"},\"region\":{\"endLine\":115,\"startLine\":114}}}],\"message\":{\"arguments\":[\"XonoticLexer.WS_action(RuleContext, int)\"],\"id\":\"default\"},\"ruleId\":\"SF_SWITCH_NO_DEFAULT\",\"ruleIndex\":7}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/16"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticLexer.java LINE : 109 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticLexer.action(RuleContext, int, int)\",\"kind\":\"function\",\"name\":\"action(RuleContext, int, int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticLexer.java\"},\"region\":{\"endLine\":110,\"startLine\":109}}}],\"message\":{\"arguments\":[\"XonoticLexer.action(RuleContext, int, int)\"],\"id\":\"default\"},\"ruleId\":\"SF_SWITCH_NO_DEFAULT\",\"ruleIndex\":7}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/17"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 928 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser.frag_someone()\",\"kind\":\"function\",\"name\":\"frag_someone()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"endLine\":1023,\"startLine\":928}}}],\"message\":{\"arguments\":[\"XonoticParser.frag_someone()\"],\"id\":\"default\"},\"ruleId\":\"SF_SWITCH_NO_DEFAULT\",\"ruleIndex\":7}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/21"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 333 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser.match_line()\",\"kind\":\"function\",\"name\":\"match_line()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"endLine\":468,\"startLine\":333}}}],\"message\":{\"arguments\":[\"XonoticParser.match_line()\"],\"id\":\"default\"},\"ruleId\":\"SF_SWITCH_NO_DEFAULT\",\"ruleIndex\":7}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/22"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -376,7 +611,26 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 4
           },
           "title": "Switch statement found where default case is missing.",
           "verificationMethod": "automated"
@@ -391,167 +645,365 @@
           "results": [
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1331 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_betrayedContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1331}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_betrayedContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/23"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1333 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_betrayedContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1333}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_betrayedContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/24"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1386 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_ending_spreeContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1386}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_ending_spreeContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/25"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1107 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_first_bloodContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1107}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_first_bloodContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/26"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 834 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_sniped_someoneContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":834}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_sniped_someoneContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/27"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 836 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_sniped_someoneContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":836}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_sniped_someoneContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/28"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 898 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_someoneContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":898}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_someoneContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/29"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 900 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_someoneContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":900}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_someoneContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/30"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 722 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_specialContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":722}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_specialContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/31"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 724 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_specialContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":724}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_specialContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/32"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1286 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_suicide2Context.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1286}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_suicide2Context.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/33"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1191 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Frag_suicideContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1191}}}],\"message\":{\"arguments\":[\"XonoticParser$Frag_suicideContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/34"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1147 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Line_triple_fragContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1147}}}],\"message\":{\"arguments\":[\"XonoticParser$Line_triple_fragContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/35"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 157 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$MatchContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":157}}}],\"message\":{\"arguments\":[\"XonoticParser$MatchContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/36"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 159 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$MatchContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":159}}}],\"message\":{\"arguments\":[\"XonoticParser$MatchContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/37"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1569 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Match_line_changed_teamContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1569}}}],\"message\":{\"arguments\":[\"XonoticParser$Match_line_changed_teamContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/38"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1571 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Match_line_changed_teamContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1571}}}],\"message\":{\"arguments\":[\"XonoticParser$Match_line_changed_teamContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/39"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1617 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Match_line_connectedContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1617}}}],\"message\":{\"arguments\":[\"XonoticParser$Match_line_connectedContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/40"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1655 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Match_line_disconnectedContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1655}}}],\"message\":{\"arguments\":[\"XonoticParser$Match_line_disconnectedContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/41"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1694 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Match_line_is_nowContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1694}}}],\"message\":{\"arguments\":[\"XonoticParser$Match_line_is_nowContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/42"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1696 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Match_line_is_nowContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1696}}}],\"message\":{\"arguments\":[\"XonoticParser$Match_line_is_nowContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/43"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1737 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Match_winsContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1737}}}],\"message\":{\"arguments\":[\"XonoticParser$Match_winsContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/44"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 781 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Not_fragContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":781}}}],\"message\":{\"arguments\":[\"XonoticParser$Not_fragContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/45"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 783 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Not_fragContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":783}}}],\"message\":{\"arguments\":[\"XonoticParser$Not_fragContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/46"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 595 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Paused_gameContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":595}}}],\"message\":{\"arguments\":[\"XonoticParser$Paused_gameContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/47"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 640 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Picked_upContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":640}}}],\"message\":{\"arguments\":[\"XonoticParser$Picked_upContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/48"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 642 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Picked_upContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":642}}}],\"message\":{\"arguments\":[\"XonoticParser$Picked_upContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/49"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 541 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Player_stats_rec_failedContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":541}}}],\"message\":{\"arguments\":[\"XonoticParser$Player_stats_rec_failedContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/50"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 543 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Player_stats_rec_failedContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":543}}}],\"message\":{\"arguments\":[\"XonoticParser$Player_stats_rec_failedContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/51"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 488 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Somebody_sayContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":488}}}],\"message\":{\"arguments\":[\"XonoticParser$Somebody_sayContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/52"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 490 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Somebody_sayContext.Word(int)\",\"kind\":\"function\",\"name\":\"Word(int)\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":490}}}],\"message\":{\"arguments\":[\"XonoticParser$Somebody_sayContext.Word(int)\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/53"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1068 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$Unlocked_rageContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1068}}}],\"message\":{\"arguments\":[\"XonoticParser$Unlocked_rageContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/54"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : XonoticParser.java LINE : 1925 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.992927Z",
+              "rawSourceRecord": {
+                "content": "{\"level\":\"note\",\"locations\":[{\"logicalLocations\":[{\"fullyQualifiedName\":\"XonoticParser$You_cannotContext.Word()\",\"kind\":\"function\",\"name\":\"Word()\"}],\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"XonoticParser.java\"},\"region\":{\"startLine\":1925}}}],\"message\":{\"arguments\":[\"XonoticParser$You_cannotContext.Word()\"],\"id\":\"default\"},\"ruleId\":\"NM_METHOD_NAMING_CONVENTION\",\"ruleIndex\":8}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/55"
+              },
+              "startTime": "2026-10-10T23:39:24.56121Z",
               "status": "failed"
             }
           ],
@@ -574,7 +1026,142 @@
               "RA-5"
             ],
             "sarif-level": "note",
-            "sarif-severity-source": "result-level"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              },
+              {
+                "kind": "fail",
+                "level": "note"
+              }
+            ],
+            "sarif-severity-source": "result-level",
+            "sarif-source-result-count": 33
           },
           "title": "Method names should start with a lower case letter.",
           "verificationMethod": "automated"
@@ -593,7 +1180,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-10T20:42:30.992927Z",
+  "timestamp": "2026-10-10T23:39:24.56121Z",
   "tool": {
     "format": "SARIF",
     "name": "SpotBugs",

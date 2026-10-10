@@ -20,7 +20,13 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.989851Z",
+              "rawSourceRecord": {
+                "content": "{\"attachments\":[],\"codeFlows\":[],\"fixes\":[],\"graphTraversals\":[],\"graphs\":[],\"kind\":\"fail\",\"level\":\"warning\",\"locations\":[{\"annotations\":[],\"id\":-1,\"logicalLocations\":[],\"physicalLocation\":{\"artifactLocation\":{\"index\":-1,\"uri\":\"file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml\"}},\"relationships\":[]}],\"message\":{\"arguments\":[],\"text\":\"Package 'qs@6.15.2' is vulnerable to 'CVE-2026-82417' (also known as 'GHSA-4mjr-xmp4-gh2g').\"},\"partialFingerprints\":{\"primaryLocationLineHash\":\"e99f420a72f52cb10c5bb0afe8cf01a7b664e04a48cf47ae0e71b7b36de75f9d\"},\"rank\":-1,\"relatedLocations\":[],\"ruleId\":\"CVE-2026-82417\",\"ruleIndex\":0,\"stacks\":[],\"taxa\":[]}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-10T23:39:24.553937Z",
               "status": "failed"
             }
           ],
@@ -47,7 +53,17 @@
               "RA-5"
             ],
             "sarif-level": "warning",
-            "sarif-severity-source": "security-severity"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning",
+                "partialFingerprints": {
+                  "primaryLocationLineHash": "e99f420a72f52cb10c5bb0afe8cf01a7b664e04a48cf47ae0e71b7b36de75f9d"
+                }
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
           },
           "title": "CVE-2026-82417",
           "verificationMethod": "automated"
@@ -70,7 +86,13 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.989851Z",
+              "rawSourceRecord": {
+                "content": "{\"attachments\":[],\"codeFlows\":[],\"fixes\":[],\"graphTraversals\":[],\"graphs\":[],\"kind\":\"fail\",\"level\":\"warning\",\"locations\":[{\"annotations\":[],\"id\":-1,\"logicalLocations\":[],\"physicalLocation\":{\"artifactLocation\":{\"index\":-1,\"uri\":\"file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml\"}},\"relationships\":[]}],\"message\":{\"arguments\":[],\"text\":\"Package 'vite@5.4.21' is vulnerable to 'CVE-2026-39365' (also known as 'GHSA-4w7w-66w2-5vf9').\"},\"partialFingerprints\":{\"primaryLocationLineHash\":\"977c04238e880af0fcd73bea6d6e5f9655f36bee530e9a22d9910f5ab53f8b53\"},\"rank\":-1,\"relatedLocations\":[],\"ruleId\":\"CVE-2026-39365\",\"ruleIndex\":1,\"stacks\":[],\"taxa\":[]}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/1"
+              },
+              "startTime": "2026-10-10T23:39:24.553937Z",
               "status": "failed"
             }
           ],
@@ -97,7 +119,17 @@
               "RA-5"
             ],
             "sarif-level": "warning",
-            "sarif-severity-source": "security-severity"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning",
+                "partialFingerprints": {
+                  "primaryLocationLineHash": "977c04238e880af0fcd73bea6d6e5f9655f36bee530e9a22d9910f5ab53f8b53"
+                }
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
           },
           "title": "CVE-2026-39365",
           "verificationMethod": "automated"
@@ -120,7 +152,13 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.989851Z",
+              "rawSourceRecord": {
+                "content": "{\"attachments\":[],\"codeFlows\":[],\"fixes\":[],\"graphTraversals\":[],\"graphs\":[],\"kind\":\"fail\",\"level\":\"warning\",\"locations\":[{\"annotations\":[],\"id\":-1,\"logicalLocations\":[],\"physicalLocation\":{\"artifactLocation\":{\"index\":-1,\"uri\":\"file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml\"}},\"relationships\":[]}],\"message\":{\"arguments\":[],\"text\":\"Package 'vite@5.4.21' is vulnerable to 'CVE-2026-53571' (also known as 'GHSA-fx2h-pf6j-xcff').\"},\"partialFingerprints\":{\"primaryLocationLineHash\":\"ce5a95d4731f6f59eb0ce7295ce5a702df89f7d122d2983e28358cb9db94a660\"},\"rank\":-1,\"relatedLocations\":[],\"ruleId\":\"CVE-2026-53571\",\"ruleIndex\":2,\"stacks\":[],\"taxa\":[]}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/2"
+              },
+              "startTime": "2026-10-10T23:39:24.553937Z",
               "status": "failed"
             }
           ],
@@ -147,7 +185,17 @@
               "RA-5"
             ],
             "sarif-level": "warning",
-            "sarif-severity-source": "security-severity"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning",
+                "partialFingerprints": {
+                  "primaryLocationLineHash": "ce5a95d4731f6f59eb0ce7295ce5a702df89f7d122d2983e28358cb9db94a660"
+                }
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
           },
           "title": "CVE-2026-53571",
           "verificationMethod": "automated"
@@ -170,7 +218,13 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.989851Z",
+              "rawSourceRecord": {
+                "content": "{\"attachments\":[],\"codeFlows\":[],\"fixes\":[],\"graphTraversals\":[],\"graphs\":[],\"kind\":\"fail\",\"level\":\"warning\",\"locations\":[{\"annotations\":[],\"id\":-1,\"logicalLocations\":[],\"physicalLocation\":{\"artifactLocation\":{\"index\":-1,\"uri\":\"file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml\"}},\"relationships\":[]}],\"message\":{\"arguments\":[],\"text\":\"Package 'vite@5.4.21' is vulnerable to 'CVE-2026-53632' (also known as 'GHSA-v6wh-96g9-6wx3').\"},\"partialFingerprints\":{\"primaryLocationLineHash\":\"ce6d93cf68ec13c86859aaa4e83f5690af72c42fc70eb4e97eb35d1377112942\"},\"rank\":-1,\"relatedLocations\":[],\"ruleId\":\"CVE-2026-53632\",\"ruleIndex\":3,\"stacks\":[],\"taxa\":[]}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/3"
+              },
+              "startTime": "2026-10-10T23:39:24.553937Z",
               "status": "failed"
             }
           ],
@@ -197,7 +251,17 @@
               "RA-5"
             ],
             "sarif-level": "warning",
-            "sarif-severity-source": "security-severity"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning",
+                "partialFingerprints": {
+                  "primaryLocationLineHash": "ce6d93cf68ec13c86859aaa4e83f5690af72c42fc70eb4e97eb35d1377112942"
+                }
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
           },
           "title": "CVE-2026-53632",
           "verificationMethod": "automated"
@@ -220,7 +284,13 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-10-10T20:42:30.989851Z",
+              "rawSourceRecord": {
+                "content": "{\"attachments\":[],\"codeFlows\":[],\"fixes\":[],\"graphTraversals\":[],\"graphs\":[],\"kind\":\"fail\",\"level\":\"warning\",\"locations\":[{\"annotations\":[],\"id\":-1,\"logicalLocations\":[],\"physicalLocation\":{\"artifactLocation\":{\"index\":-1,\"uri\":\"file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml\"}},\"relationships\":[]}],\"message\":{\"arguments\":[],\"text\":\"Package 'qs@6.15.2' is vulnerable to 'CVE-2026-82562' (also known as 'GHSA-x5fp-wj9c-mxmx').\"},\"partialFingerprints\":{\"primaryLocationLineHash\":\"a181e361f2c9fd650f9239f73039f4305462659d57838d87de70d6fc5ee8c00f\"},\"rank\":-1,\"relatedLocations\":[],\"ruleId\":\"CVE-2026-82562\",\"ruleIndex\":4,\"stacks\":[],\"taxa\":[]}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/4"
+              },
+              "startTime": "2026-10-10T23:39:24.553937Z",
               "status": "failed"
             }
           ],
@@ -247,7 +317,17 @@
               "RA-5"
             ],
             "sarif-level": "warning",
-            "sarif-severity-source": "security-severity"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "level": "warning",
+                "partialFingerprints": {
+                  "primaryLocationLineHash": "a181e361f2c9fd650f9239f73039f4305462659d57838d87de70d6fc5ee8c00f"
+                }
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
           },
           "title": "CVE-2026-82562",
           "verificationMethod": "automated"
@@ -266,7 +346,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-10T20:42:30.989851Z",
+  "timestamp": "2026-10-10T23:39:24.553937Z",
   "tool": {
     "format": "SARIF",
     "name": "osv-scanner",

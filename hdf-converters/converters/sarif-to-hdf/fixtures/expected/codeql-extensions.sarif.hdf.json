@@ -38,7 +38,13 @@
                 "dsvpwa/handlers.py:116 - ControlFlowNode for Attribute()"
               ],
               "codeDesc": "URL : dsvpwa/handlers.py LINE : 116 COLUMN : 37",
-              "startTime": "2026-10-10T20:42:30.985727Z",
+              "rawSourceRecord": {
+                "content": "{\"codeFlows\":[{\"threadFlows\":[{\"locations\":[{\"location\":{\"message\":{\"text\":\"ControlFlowNode for self\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":20,\"startColumn\":16,\"startLine\":196}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for self\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":13,\"startColumn\":9,\"startLine\":197}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for self\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":13,\"startColumn\":9,\"startLine\":198}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for Attribute\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":35,\"startColumn\":26,\"startLine\":211}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for path\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":24,\"startColumn\":20,\"startLine\":111}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for path\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":13,\"startColumn\":9,\"startLine\":112}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for Attribute()\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":56,\"startColumn\":37,\"startLine\":116}}}}]}]},{\"threadFlows\":[{\"locations\":[{\"location\":{\"message\":{\"text\":\"ControlFlowNode for self\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":20,\"startColumn\":16,\"startLine\":196}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for self\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":13,\"startColumn\":9,\"startLine\":197}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for Subscript\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":47,\"startColumn\":21,\"startLine\":198}}}},{\"location\":{\"message\":{\"text\":\"[post] ControlFlowNode for self [Attribute path]\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":13,\"startColumn\":9,\"startLine\":198}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for self [Attribute path]\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":30,\"startColumn\":26,\"startLine\":211}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for Attribute\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":35,\"startColumn\":26,\"startLine\":211}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for path\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":24,\"startColumn\":20,\"startLine\":111}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for path\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":13,\"startColumn\":9,\"startLine\":112}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for Attribute()\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":56,\"startColumn\":37,\"startLine\":116}}}}]}]}],\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":56,\"startColumn\":37,\"startLine\":116}}}],\"message\":{\"text\":\"This path depends on a [user-provided value](1).\"},\"partialFingerprints\":{\"primaryLocationLineHash\":\"a886445d8048d84b:1\",\"primaryLocationStartColumnFingerprint\":\"20\"},\"relatedLocations\":[{\"id\":1,\"message\":{\"text\":\"user-provided value\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":20,\"startColumn\":16,\"startLine\":196}}}],\"rule\":{\"id\":\"py/path-injection\",\"index\":5,\"toolComponent\":{\"index\":0}},\"ruleId\":\"py/path-injection\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/0"
+              },
+              "startTime": "2026-10-10T23:39:24.545507Z",
               "status": "failed"
             }
           ],
@@ -70,7 +76,17 @@
               "SI-10"
             ],
             "sarif-level": "error",
-            "sarif-severity-source": "security-severity"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "partialFingerprints": {
+                  "primaryLocationLineHash": "a886445d8048d84b:1",
+                  "primaryLocationStartColumnFingerprint": "20"
+                }
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
           },
           "controlType": "technical",
           "title": "py/path-injection",
@@ -98,7 +114,13 @@
                 "dsvpwa/handlers.py:184 - ControlFlowNode for Subscript"
               ],
               "codeDesc": "URL : dsvpwa/handlers.py LINE : 184 COLUMN : 17",
-              "startTime": "2026-10-10T20:42:30.985727Z",
+              "rawSourceRecord": {
+                "content": "{\"codeFlows\":[{\"threadFlows\":[{\"locations\":[{\"location\":{\"message\":{\"text\":\"ControlFlowNode for self\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":20,\"startColumn\":16,\"startLine\":177}}}},{\"location\":{\"message\":{\"text\":\"ControlFlowNode for Subscript\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":30,\"startColumn\":17,\"startLine\":184}}}}]}]}],\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":30,\"startColumn\":17,\"startLine\":184}}}],\"message\":{\"text\":\"This command line depends on a [user-provided value](1).\"},\"partialFingerprints\":{\"primaryLocationLineHash\":\"a392bb9657eb08d2:1\",\"primaryLocationStartColumnFingerprint\":\"0\"},\"relatedLocations\":[{\"id\":1,\"message\":{\"text\":\"user-provided value\"},\"physicalLocation\":{\"artifactLocation\":{\"index\":0,\"uri\":\"dsvpwa/handlers.py\",\"uriBaseId\":\"%SRCROOT%\"},\"region\":{\"endColumn\":20,\"startColumn\":16,\"startLine\":177}}}],\"rule\":{\"id\":\"py/command-line-injection\",\"index\":6,\"toolComponent\":{\"index\":0}},\"ruleId\":\"py/command-line-injection\"}",
+                "encoding": "utf-8",
+                "mediaType": "application/json",
+                "pointer": "/runs/0/results/1"
+              },
+              "startTime": "2026-10-10T23:39:24.545507Z",
               "status": "failed"
             }
           ],
@@ -127,7 +149,17 @@
               "SI-10"
             ],
             "sarif-level": "error",
-            "sarif-severity-source": "security-severity"
+            "sarif-results": [
+              {
+                "kind": "fail",
+                "partialFingerprints": {
+                  "primaryLocationLineHash": "a392bb9657eb08d2:1",
+                  "primaryLocationStartColumnFingerprint": "0"
+                }
+              }
+            ],
+            "sarif-severity-source": "security-severity",
+            "sarif-source-result-count": 1
           },
           "controlType": "technical",
           "title": "py/command-line-injection",
@@ -147,7 +179,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-10T20:42:30.985727Z",
+  "timestamp": "2026-10-10T23:39:24.545507Z",
   "tool": {
     "format": "SARIF",
     "name": "CodeQL"

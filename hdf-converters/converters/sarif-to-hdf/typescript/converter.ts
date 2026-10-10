@@ -6,8 +6,9 @@ import {
 import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
-import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
-import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
+import { canonicalize, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
+import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
 // --- SARIF 2.1.0 type definitions ---
 
@@ -219,14 +220,14 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
     toolName: firstDriver?.name,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
-    baselines: limitedRuns.map(run => convertRun(run, sarif.version, resultsChecksum, timestamp)),
+    baselines: limitedRuns.map((run, runIdx) => convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp)),
     timestamp,
   });
 }
 
 // --- Run-level conversion ---
 
-function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date): EvaluatedBaseline {
+function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date): EvaluatedBaseline {
   const ruleMap = buildRuleMap(run);
 
   // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
@@ -239,22 +240,25 @@ function convertRun(run: SarifRun, version: string, resultsChecksum: Checksum, t
     console.warn(`WARNING: Input truncated at ${limitedResults.length} result items (original: ${(run.results ?? []).length})`);
   }
   const groupOrder: string[] = [];
-  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[] }>();
-  for (const result of limitedResults) {
+  // indices is parallel to results: indices[i] is results[i]'s position in
+  // run.results, which rawSourceRecord.pointer needs to address the source record.
+  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[]; indices: number[] }>();
+  for (const [srcIdx, result] of limitedResults.entries()) {
     const groupKey = result.ruleId || resolveMessageText(result.message, undefined);
     let group = groupMap.get(groupKey);
     if (!group) {
       const rule = ruleMap.get(result.ruleId);
-      group = { rule, results: [] };
+      group = { rule, results: [], indices: [] };
       groupMap.set(groupKey, group);
       groupOrder.push(groupKey);
     }
     group.results.push(result);
+    group.indices.push(srcIdx);
   }
 
   const requirements = groupOrder.map(ruleId => {
     const group = groupMap.get(ruleId)!;
-    return convertResultGroup(ruleId, group.rule, group.results, timestamp);
+    return convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, timestamp);
   });
 
   // Use tool name for baseline name if available
@@ -304,7 +308,7 @@ function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], timestamp: Date): EvaluatedRequirement {
+function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], sourceIndices: number[], timestamp: Date): EvaluatedRequirement {
   const firstResult = sarifResults[0]!;
 
   // Derive requirement-level metadata from the rule and first result
@@ -339,12 +343,29 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
     ? extractSourceLocation(firstResult.locations[0]!)
     : undefined;
 
-  // Convert each SARIF result into RequirementResult(s)
+  // Convert each SARIF result into RequirementResult(s), and give every one the
+  // native record it came from. §3.27.12 says the locations array is not a list of
+  // distinct occurrences, yet one HDF result per location is what a consumer can act
+  // on, so the expansion stays and the source cardinality is published instead (see
+  // the sarif-source-result-count tag). All results expanded from one SARIF result
+  // share its record and pointer, because they share its source.
   const results: RequirementResult[] = [];
-  for (const sr of sarifResults) {
-    results.push(...convertSarifResultToHDFResults(sr));
+  const perResult: Record<string, unknown>[] = [];
+  for (const [i, sr] of sarifResults.entries()) {
+    const expanded = convertSarifResultToHDFResults(sr);
+    const record = rawSourceRecordFor(sr, runIdx, sourceIndices[i] ?? i);
+    for (const r of expanded) {
+      r.rawSourceRecord = record;
+      perResult.push(perResultTagEntry(sr));
+    }
+    results.push(...expanded);
   }
 
+  // Title, descriptions, sourceLocation, code and fixes are deliberately derived from
+  // the FIRST result and are a requirement-level SUMMARY, not a per-result record. HDF
+  // scopes these to the requirement while SARIF scopes them to each finding, and
+  // synthesizing a merged title would invent a requirement no tool reported. The
+  // per-result detail lives on each result's rawSourceRecord.
   // Build descriptions from rule metadata and first result
   const descriptions = buildDescriptions(description, rule, firstResult);
 
@@ -355,6 +376,16 @@ function convertResultGroup(ruleId: string, rule: ReportingDescriptor | undefine
 
   // Build tags
   const tags = buildTags(firstResult, rule, ruleLevel, severitySource, cweIds, nistControls, cciControls, allSuppressions);
+  tags['sarif-results'] = perResult;
+  tags['sarif-source-result-count'] = sarifResults.length;
+  // An aggregate kind is published only when the group agrees on one. Taking the
+  // first result's kind made a group holding a pass and a fail report just one.
+  const uk = uniformKind(sarifResults);
+  if (uk !== undefined) {
+    tags['kind'] = uk;
+  } else {
+    delete tags['kind'];
+  }
 
   const options: {
     sourceLocation?: SourceLocation;
@@ -552,6 +583,67 @@ function resolveRuleLevel(
   }
   if (sawNone) return {level: LEVEL_NONE, source: SEVERITY_SOURCE_RESULT_LEVEL};
   return {level: 'warning', source: SEVERITY_SOURCE_FALLBACK};
+}
+
+// Carries one SARIF result verbatim on the HDF result(s) it produced. ADR-0017 scoped
+// this to the result deliberately: records merged onto the requirement collide, and
+// merging entries that share an id has to discard one, which is how the non-first
+// result's metadata used to be lost. Encoding is utf-8 rather than base64 because a
+// SARIF result is JSON and therefore valid UTF-8 text. Mirrors Go's rawSourceRecordFor.
+function rawSourceRecordFor(result: SarifResult, runIdx: number, resultIdx: number): RawSourceRecord {
+  return {
+    // The parsed result carries every property the document had, including the 17 of
+    // SARIF's 30 that SarifResult does not declare; sorting matches Go, whose record
+    // is re-marshalled from the untyped result for the same reason. Original key order
+    // and whitespace are therefore not preserved — the content is complete, not
+    // byte-exact. The shared canonical encoder is used rather than JSON.stringify
+    // because Go HTML-escapes <, > and & while JavaScript does not, and because it
+    // sorts keys, escapes U+2028/U+2029 and normalizes negative zero — the four
+    // places the two languages' serializers disagree.
+    content: stringifyLine(canonicalize(result)).replace(/\n$/, ''),
+    encoding: ExternalReferenceEncoding.UTF8,
+    mediaType: 'application/json',
+    pointer: `/runs/${runIdx}/results/${resultIdx}`,
+  };
+}
+
+// The queryable half of per-result carriage. rawSourceRecord holds the whole record
+// but as an opaque string, so nothing can filter on what is inside it; fingerprints
+// exist for cross-run correlation, which needs them addressable. Only fields a
+// requirement-level summary cannot represent go here. Mirrors Go's perResultTagEntry.
+function perResultTagEntry(result: SarifResult): Record<string, unknown> {
+  const entry: Record<string, unknown> = {
+    // The EFFECTIVE kind: §3.27.9 defaults an absent kind to "fail". This is a new
+    // key, so applying the default invents no history; tags["kind"] stays verbatim.
+    kind: result.kind || 'fail',
+  };
+  if (result.level) entry.level = result.level;
+  if (result.fingerprints && Object.keys(result.fingerprints).length > 0) {
+    entry.fingerprints = result.fingerprints;
+  }
+  if (result.partialFingerprints && Object.keys(result.partialFingerprints).length > 0) {
+    entry.partialFingerprints = result.partialFingerprints;
+  }
+  return entry;
+}
+
+// The kind every result in the group STATED, or undefined when they disagree or any
+// omitted it. Deliberately not defaulting an absent kind to "fail" even though
+// §3.27.9 does: tags["kind"] carries what the tool wrote, the way tags["sarif-level"]
+// carries the level verbatim, so publishing a spec-derived value under the same key
+// would silently change what the tag means. The effective kind is in the per-result
+// entries instead. Mirrors Go's uniformKind.
+function uniformKind(results: SarifResult[]): string | undefined {
+  let kind: string | undefined;
+  for (const r of results) {
+    if (!r.kind) return undefined;
+    if (kind === undefined) {
+      kind = r.kind;
+      continue;
+    }
+    if (r.kind !== kind) return undefined;
+  }
+  return kind;
 }
 
 // Converts a single SARIF result into one or more HDF RequirementResults.

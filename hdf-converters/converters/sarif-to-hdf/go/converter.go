@@ -1,6 +1,7 @@
 package sarif
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	shared "github.com/mitre/hdf-libs/hdf-converters/v3/shared/go"
+	"github.com/mitre/hdf-libs/hdf-converters/v3/shared/go/exportmap"
 	"github.com/mitre/hdf-libs/hdf-mappings/go/v3/cci"
 	hdf "github.com/mitre/hdf-libs/hdf-schema/dist/go/v3"
 	hdfutil "github.com/mitre/hdf-libs/hdf-utilities/go/v3"
@@ -30,14 +32,49 @@ type SarifRun struct {
 	// Pointer, not a plain slice: a plain slice decodes null and [] alike, and
 	// §3.14.23 gives them opposite meanings — nothing was analyzed, versus a scan
 	// that ran and found nothing.
-	Results    *[]SarifResult  `json:"results"`
-	Taxonomies []SarifTaxonomy `json:"taxonomies,omitempty"`
+	Results *[]SarifResult `json:"results"`
+	// RawResults is the same array left unparsed, so rawSourceRecord can carry a
+	// result's every property rather than only the ones SarifResult declares.
+	// Parallel to Results; json.Unmarshal fills both from the same input.
+	RawResults *[]json.RawMessage `json:"-"`
+	Taxonomies []SarifTaxonomy    `json:"taxonomies,omitempty"`
 }
 
-// analyzed reports whether the run carries a result set at all. False means
-// absent or null — the tool did not analyze; true with an empty slice means it
-// ran and found nothing.
+// UnmarshalJSON decodes a run twice: once into the typed shape the converter maps
+// from, and once leaving results unparsed so rawSourceRecord can carry a result's
+// every property. Without the second pass a record would be re-marshalled from
+// SarifResult and silently lose every SARIF field this converter does not declare.
+func (r *SarifRun) UnmarshalJSON(data []byte) error {
+	// alias drops the methods, so unmarshalling it does not recurse into this one.
+	type alias SarifRun
+	var typed alias
+	if err := json.Unmarshal(data, &typed); err != nil {
+		return err
+	}
+	*r = SarifRun(typed)
+
+	var probe struct {
+		Results *[]json.RawMessage `json:"results"`
+	}
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return err
+	}
+	r.RawResults = probe.Results
+	return nil
+}
+
+// analyzed reports whether the run carries a result set at all. False means absent
+// or null — the tool did not analyze; true with an empty slice means it ran and
+// found nothing.
 func (r SarifRun) analyzed() bool { return r.Results != nil }
+
+// rawList is resultList's unparsed twin; indices line up with resultList.
+func (r SarifRun) rawList() []json.RawMessage {
+	if r.RawResults == nil {
+		return nil
+	}
+	return *r.RawResults
+}
 
 // resultList is the run's results, empty when it did not analyze.
 func (r SarifRun) resultList() []SarifResult {
@@ -253,8 +290,8 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 	limitedRuns := shared.LimitSliceWithWarning(sarif.Runs, 0, "run")
 	baselines := make([]hdf.EvaluatedBaseline, 0, len(limitedRuns))
 
-	for _, run := range limitedRuns {
-		baseline := convertRun(run, sarif.Version, timestamp, resultsChecksum)
+	for runIdx, run := range limitedRuns {
+		baseline := convertRun(runIdx, run, sarif.Version, timestamp, resultsChecksum)
 		baselines = append(baselines, baseline)
 	}
 
@@ -368,7 +405,7 @@ func isSarif20(input []byte, explicitVersion string) bool {
 
 // --- Run-level conversion ---
 
-func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
+func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
 	// Build rule lookup by ID
 	ruleMap := buildRuleMap(run)
 
@@ -377,7 +414,7 @@ func convertRun(run SarifRun, version string, timestamp time.Time, resultsChecks
 	requirements := make([]hdf.EvaluatedRequirement, 0, len(groupOrder))
 	for _, ruleID := range groupOrder {
 		g := groupMap[ruleID]
-		req := convertResultGroup(g.ruleID, g.rule, g.results, timestamp)
+		req := convertResultGroup(runIdx, g.ruleID, g.rule, g.results, g.indices, g.raws, timestamp)
 		requirements = append(requirements, req)
 	}
 
@@ -465,7 +502,7 @@ func lookupRule(ruleMap map[string]ReportingDescriptor, result SarifResult) *Rep
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults []SarifResult, timestamp time.Time) hdf.EvaluatedRequirement {
+func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sarifResults []SarifResult, sourceIndices []int, raws []json.RawMessage, timestamp time.Time) hdf.EvaluatedRequirement {
 	// Derive requirement-level metadata from the rule and first result
 	firstResult := sarifResults[0]
 	title, description := deriveMetadata(firstResult, rule)
@@ -526,12 +563,39 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		}
 	}
 
-	// Convert each SARIF result into RequirementResult(s)
+	// Convert each SARIF result into RequirementResult(s), and give every one the
+	// native record it came from. §3.27.12 says the locations array is not a list of
+	// distinct occurrences, yet one HDF result per location is what a consumer can
+	// act on, so the expansion stays and the source cardinality is published instead
+	// (see the sarif-source-result-count tag below). All results expanded from one
+	// SARIF result share its record and its pointer, because they share its source.
 	var results []hdf.RequirementResult
-	for _, sr := range sarifResults {
-		results = append(results, convertSarifResultToHDFResults(sr, rule, timestamp)...)
+	perResult := make([]map[string]interface{}, 0, len(sarifResults))
+	for i, sr := range sarifResults {
+		expanded := convertSarifResultToHDFResults(sr, rule, timestamp)
+		srcIdx := i
+		if i < len(sourceIndices) {
+			srcIdx = sourceIndices[i]
+		}
+		var record *hdf.RawSourceRecord
+		if i < len(raws) && raws[i] != nil {
+			record = rawSourceRecordFor(raws[i], runIdx, srcIdx)
+		}
+		for j := range expanded {
+			expanded[j].RawSourceRecord = record
+			perResult = append(perResult, perResultTagEntry(sr))
+		}
+		results = append(results, expanded...)
 	}
 
+	// Title, descriptions, sourceLocation, code and fixes are deliberately derived
+	// from the FIRST result and are a requirement-level SUMMARY, not a per-result
+	// record. HDF scopes these to the requirement — one thing being checked, with a
+	// name, a description and a place it is defined — while SARIF scopes them to each
+	// finding. Synthesizing a merged title or concatenating every snippet would
+	// invent a requirement no tool reported. The per-result detail is not lost: each
+	// HDF result carries its own rawSourceRecord, so a consumer that wants the second
+	// result's own message, location or snippet reads it there.
 	// Build descriptions from rule metadata and first result
 	descriptions := buildDescriptions(description, rule, firstResult)
 
@@ -543,9 +607,18 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 		allSuppressions = append(allSuppressions, sr.Suppressions...)
 	}
 
-	// Build tags — rule-level severity, fingerprints from first result, and the
-	// full group suppression record.
+	// Build tags — rule-level severity, the full group suppression record, and the
+	// per-result entries that carry what a requirement-level summary cannot.
 	tags := buildTags(firstResult, rule, ruleLevel, severitySource, cweIds, nistControls, cciControls, allSuppressions)
+	tags["sarif-results"] = perResult
+	tags["sarif-source-result-count"] = len(sarifResults)
+	// An aggregate kind is published only when the group agrees on one. Taking the
+	// first result's kind made a group holding a pass and a fail report just one.
+	if k, uniform := uniformKind(sarifResults); uniform {
+		tags["kind"] = k
+	} else {
+		delete(tags, "kind")
+	}
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 ruleID,
@@ -783,6 +856,91 @@ func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) (string,
 	default:
 		return "warning", severitySourceFallback
 	}
+}
+
+// rawSourceRecordFor carries one SARIF result verbatim on the HDF result(s) it
+// produced. ADR-0017 scoped this to the result deliberately: records merged onto the
+// requirement collide, and merging entries that share an id has to discard one, which
+// is exactly how the non-first result's metadata used to be lost. Encoding is utf-8
+// rather than base64 because a SARIF result is JSON and therefore valid UTF-8 text;
+// base64 would inflate it by a third and make it unreadable for no gain.
+func rawSourceRecordFor(raw json.RawMessage, runIdx, resultIdx int) *hdf.RawSourceRecord {
+	// Re-marshalled from the UNTYPED result, not from SarifResult: marshalling the
+	// struct would emit only the fields it declares, silently dropping every SARIF
+	// property this converter does not model — the opposite of a verbatim record.
+	// Keys come out sorted because Go sorts map keys, and the TypeScript peer sorts
+	// to match, so the two languages agree byte for byte. Original key order and
+	// whitespace are therefore not preserved; the content is complete, not byte-exact.
+	var untyped interface{}
+	if err := json.Unmarshal(raw, &untyped); err != nil {
+		return nil
+	}
+	// exportmap's canonical encoder, not json.Marshal: Go HTML-escapes <, > and & by
+	// default while JavaScript's JSON.stringify does not, so a record holding a C
+	// snippet with an ampersand would differ byte for byte between the two languages.
+	// It also escapes U+2028/U+2029 and normalizes negative zero, which are the other
+	// three places the two disagree.
+	encoded, err := exportmap.EncodeLine(untyped)
+	if err != nil {
+		return nil
+	}
+	content := bytes.TrimRight(encoded, "\n")
+	pointer := fmt.Sprintf("/runs/%d/results/%d", runIdx, resultIdx)
+	return &hdf.RawSourceRecord{
+		Content:   string(content),
+		Encoding:  hdf.UTF8,
+		MediaType: "application/json",
+		Pointer:   &pointer,
+	}
+}
+
+// perResultTagEntry is the queryable half of per-result carriage. rawSourceRecord
+// holds the whole record but as an opaque string, so nothing can filter on what is
+// inside it; fingerprints exist for cross-run correlation, which needs them
+// addressable. Only fields a requirement-level summary cannot represent go here.
+func perResultTagEntry(result SarifResult) map[string]interface{} {
+	entry := map[string]interface{}{}
+	// The EFFECTIVE kind: §3.27.9 defaults an absent kind to "fail". This is a new
+	// key, so applying the default here invents no history; tags["kind"] stays
+	// verbatim for the same reason.
+	if result.Kind != "" {
+		entry["kind"] = result.Kind
+	} else {
+		entry["kind"] = "fail"
+	}
+	if result.Level != "" {
+		entry["level"] = result.Level
+	}
+	if len(result.Fingerprints) > 0 {
+		entry["fingerprints"] = result.Fingerprints
+	}
+	if len(result.PartialFingerprints) > 0 {
+		entry["partialFingerprints"] = result.PartialFingerprints
+	}
+	return entry
+}
+
+// uniformKind reports the kind every result in the group STATED, and false when they
+// disagree or when any of them omitted it. Deliberately not defaulting an absent kind
+// to "fail" here, even though §3.27.9 does: tags["kind"] carries what the tool wrote,
+// the way tags["sarif-level"] carries the level verbatim, so publishing a spec-derived
+// value under the same key would silently change what the tag means. The effective
+// kind, with the §3.27.9 default applied, is in the per-result entries instead.
+func uniformKind(results []SarifResult) (string, bool) {
+	kind := ""
+	for i, r := range results {
+		if r.Kind == "" {
+			return "", false
+		}
+		if i == 0 {
+			kind = r.Kind
+			continue
+		}
+		if r.Kind != kind {
+			return "", false
+		}
+	}
+	return kind, kind != ""
 }
 
 // convertSarifResultToHDFResults converts a single SARIF result into one or more HDF RequirementResults.
@@ -1306,9 +1464,13 @@ func parseSarif(input []byte, inputVersion ...string) (*SarifFile, error) {
 // resultGroup is one requirement's worth of SARIF results: every result that
 // shares a ruleId (or, when ruleId is absent, the same message text).
 type resultGroup struct {
-	ruleID  string
-	rule    *ReportingDescriptor
+	ruleID string
+	rule   *ReportingDescriptor
+	// results and indices are parallel: indices[i] is results[i]'s position in
+	// run.results, which rawSourceRecord.pointer needs to address the source record.
 	results []SarifResult
+	indices []int
+	raws    []json.RawMessage
 }
 
 // groupResults groups a run's results into requirements, in first-seen order.
@@ -1318,7 +1480,8 @@ func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]strin
 	limitedResults := shared.LimitSliceWithWarning(run.resultList(), 0, "result")
 	groupOrder := []string{}
 	groupMap := make(map[string]*resultGroup)
-	for _, result := range limitedResults {
+	rawResults := run.rawList()
+	for srcIdx, result := range limitedResults {
 		groupKey := result.RuleID
 		if groupKey == "" {
 			groupKey = resolveMessageText(result.Message, nil)
@@ -1330,6 +1493,12 @@ func groupResults(run SarifRun, ruleMap map[string]ReportingDescriptor) ([]strin
 			groupOrder = append(groupOrder, groupKey)
 		}
 		g.results = append(g.results, result)
+		g.indices = append(g.indices, srcIdx)
+		if srcIdx < len(rawResults) {
+			g.raws = append(g.raws, rawResults[srcIdx])
+		} else {
+			g.raws = append(g.raws, nil)
+		}
 	}
 	return groupOrder, groupMap
 }
