@@ -21,7 +21,7 @@ import (
 type inspectInput struct {
 	Source    handle.Source `json:"source" jsonschema:"document as {path} or {handle}"`
 	Section   string        `json:"section,omitempty" jsonschema:"one structural section (validity depends on doc type)"`
-	Verbosity string        `json:"verbosity,omitempty" jsonschema:"concise (default) or full"`
+	Verbosity string        `json:"verbosity,omitempty" jsonschema:"how much detail the summary carries"`
 	Page      int           `json:"page,omitempty" jsonschema:"0-based page when truncated"`
 }
 
@@ -51,6 +51,9 @@ func RegisterInspect(s *sdkmcp.Server, ldr *loader.Loader) {
 		Name:        "hdf_inspect",
 		Description: inspectToolDescription,
 		Annotations: appmcp.ReadOnly(),
+		InputSchema: mustEnumSchema[inspectInput](map[string]closedVocabulary{
+			"verbosity": verbosityVocab(),
+		}),
 	}, hdfInspect(ldr))
 }
 
@@ -301,7 +304,7 @@ func changeEventShape(doc map[string]any) map[string]any {
 // notes the remedy, so a large structure never blows the budget silently.
 func boundInspectResponse(out *inspectOutput, verbosity string, page int) {
 	budget := respond.ConciseTokenBudget
-	if verbosity == "full" {
+	if IsFull(verbosity) {
 		budget = respond.FullTokenBudget
 	}
 	if page == 0 && respond.EstimateTokens(mustJSON(out)) <= budget {
@@ -373,11 +376,13 @@ func paginateStructure(out *inspectOutput, budget int) [][]string {
 	return pages
 }
 
+// verbosityLabel echoes the verbosity a response was rendered at, normalised through the
+// declared vocabulary so an unrecognised argument reports the projection it actually got.
 func verbosityLabel(v string) string {
-	if v == "full" {
-		return "full"
+	if IsFull(v) {
+		return string(VerbosityFull)
 	}
-	return "concise"
+	return string(VerbosityConcise)
 }
 
 // --- small helpers ---
