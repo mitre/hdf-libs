@@ -376,15 +376,15 @@ func TestConvertNeuVector_StatusSourceTags(t *testing.T) {
 }
 
 // report.cmds is scan-scope image build history → it lives once on
-// baseline.extensions["neuvector"], never duplicated onto requirement tags.
+// baseline.extensions.passthrough["neuvector"], never duplicated onto requirement tags.
 func TestConvertNeuVector_CmdsOnBaselineExtensions(t *testing.T) {
 	input := loadFixture(t, "input/neuvector-mitre-heimdall2.json")
 	result, err := ConvertNeuVectorToHDF(input, testVersion)
 	require.NoError(t, err)
 
 	baseline := result.Baselines[0]
-	ns, ok := baseline.Extensions["neuvector"].(map[string]interface{})
-	require.True(t, ok, "baseline.extensions[neuvector] should be present")
+	ns, ok := baseline.Extensions.Passthrough["neuvector"].(map[string]interface{})
+	require.True(t, ok, "baseline.extensions.passthrough[neuvector] should be present")
 	cmds := hdfutil.SafeStringSlice(ns["cmds"])
 	require.NotNil(t, cmds, "cmds should be present")
 	assert.Len(t, cmds, 66)

@@ -572,7 +572,7 @@ func ConvertIonChannelToHDF(input []byte, converterVersion string) (*hdf.HDFResu
 	}
 
 	if meta := ionchannelRunMetadata(analysis); meta != nil {
-		baseline.Extensions = map[string]interface{}{"ionchannel": meta}
+		baseline.Extensions = &hdf.Extensions{Passthrough: map[string]interface{}{"ionchannel": meta}}
 	}
 
 	baselines := []hdf.EvaluatedBaseline{baseline}

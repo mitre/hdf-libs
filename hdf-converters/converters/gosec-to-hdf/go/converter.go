@@ -284,9 +284,10 @@ func flattenGoErrors(errs map[string][]GosecGoError) []gosecFlatGoError {
 }
 
 // buildGosecExtensions routes gosec's scan-scope exhaust (Stats + Golang build
-// errors) — data with no typed HDF home — into baseline.extensions['gosec'] per
-// the Auxiliary Tool Metadata convention. Returns nil when neither is present.
-func buildGosecExtensions(report GosecReport) map[string]interface{} {
+// errors) — data with no typed HDF home — into
+// baseline.extensions.passthrough['gosec'] per the Auxiliary Tool Metadata
+// convention. Returns nil when neither is present.
+func buildGosecExtensions(report GosecReport) *hdf.Extensions {
 	gosecExt := map[string]interface{}{}
 	if report.Stats != nil {
 		gosecExt["stats"] = report.Stats
@@ -297,7 +298,7 @@ func buildGosecExtensions(report GosecReport) map[string]interface{} {
 	if len(gosecExt) == 0 {
 		return nil
 	}
-	return map[string]interface{}{"gosec": gosecExt}
+	return &hdf.Extensions{Passthrough: map[string]interface{}{"gosec": gosecExt}}
 }
 
 // ConvertGosecToHDF converts gosec output to HDF format.

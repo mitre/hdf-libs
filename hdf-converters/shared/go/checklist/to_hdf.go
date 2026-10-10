@@ -61,7 +61,7 @@ func ChecklistToHDF(cl *Checklist, resultsChecksum *hdf.Checksum, converterVersi
 
 	results := shared.BuildHDFResults(opts)
 	if ext := rootExtensions(cl); len(ext) > 0 {
-		results.Extensions = ext
+		results.Extensions = &hdf.Extensions{Passthrough: ext}
 	}
 	return results
 }
@@ -83,7 +83,7 @@ func stigToBaseline(s *Stig, checksum *hdf.Checksum, startTime time.Time) hdf.Ev
 		bl.Version = hdfutil.Ptr(s.Version)
 	}
 	if ext := baselineExtensions(s); len(ext) > 0 {
-		bl.Extensions = ext
+		bl.Extensions = &hdf.Extensions{Passthrough: ext}
 	}
 	return bl
 }
@@ -203,7 +203,8 @@ func assetToComponent(a *Asset) (hdf.Component, bool) {
 }
 
 // rootExtensions stashes the checklist format + asset fields that have no
-// native HDF home, so a round-trip can reconstruct them.
+// native HDF home, so a round-trip can reconstruct them. The map lands in
+// extensions.passthrough: `extensions` itself is closed to undeclared keys.
 func rootExtensions(cl *Checklist) map[string]interface{} {
 	ext := map[string]interface{}{"checklistFormat": orDefault(cl.Format, "ckl")}
 	if cl.CKLBVersion != "" {

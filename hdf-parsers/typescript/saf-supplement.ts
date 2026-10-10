@@ -62,8 +62,8 @@ export function normalizeSafSupplement(input: string): SafNormalizeResult {
   }
 
   if ('passthrough' in doc) {
-    rewritePassthrough(doc);
-    warnings.push(SAF_PROVENANCE_DEPRECATION);
+    const relocations = rewritePassthrough(doc);
+    warnings.push(SAF_PROVENANCE_DEPRECATION, ...relocations);
   }
 
   return { output: JSON.stringify(doc), warnings };
@@ -109,11 +109,55 @@ function applyBoundaryLabel(c: Record<string, unknown>, boundary: string): void 
   c.labels = labels;
 }
 
-/** Move the legacy top-level `passthrough` under extensions.passthrough, merging
- * into any existing extensions without clobbering other keys. */
-function rewritePassthrough(doc: Record<string, unknown>): void {
+/** The only keys `extensions` admits. Anything else a producer wrote beside them
+ * is exactly what `passthrough` is for. */
+const EXTENSIONS_DEFINED_MEMBERS = new Set(['passthrough', 'rawSourceArtifacts']);
+
+/** Move the legacy top-level `passthrough` under extensions.passthrough, then
+ * relocate any other key left beside it into passthrough too: `extensions` is a
+ * closed object, so a sibling it does not define makes the document invalid.
+ * Returns a warning per relocated or undroppable key. */
+function rewritePassthrough(doc: Record<string, unknown>): string[] {
   const ext = isObject(doc.extensions) ? doc.extensions : {};
   if (!('passthrough' in ext)) ext.passthrough = doc.passthrough;
   doc.extensions = ext;
   delete doc.passthrough;
+  return relocateExtensionSiblings(ext);
+}
+
+/** Move undefined `extensions` keys into extensions.passthrough. Without this, a
+ * legacy document carrying something like extensions.audit normalizes into a
+ * document the closed `extensions` rejects. */
+function relocateExtensionSiblings(ext: Record<string, unknown>): string[] {
+  const warnings: string[] = [];
+  const siblings = Object.keys(ext).filter((k) => !EXTENSIONS_DEFINED_MEMBERS.has(k));
+  if (siblings.length === 0) return warnings;
+
+  if ('passthrough' in ext && !isObject(ext.passthrough)) {
+    // Nothing can be merged into a non-object passthrough. Leave the document
+    // alone and let the schema reject it rather than reshape data we cannot place.
+    for (const k of siblings) {
+      warnings.push(
+        `extensions.${k} could not be relocated because extensions.passthrough is not an object; \`extensions\` is closed, so this document will not validate`,
+      );
+    }
+    return warnings;
+  }
+
+  const pt = isObject(ext.passthrough) ? ext.passthrough : {};
+  for (const k of siblings) {
+    if (k in pt) {
+      warnings.push(
+        `extensions.${k} was dropped: \`extensions\` is closed and extensions.passthrough.${k} already holds a value`,
+      );
+    } else {
+      pt[k] = ext[k];
+      warnings.push(
+        `extensions.${k} was moved into extensions.passthrough.${k}; \`extensions\` accepts only its defined members`,
+      );
+    }
+    delete ext[k];
+  }
+  ext.passthrough = pt;
+  return warnings;
 }

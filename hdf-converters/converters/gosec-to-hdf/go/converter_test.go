@@ -861,14 +861,14 @@ func TestConvertGosecToHDF_DistinctRuleAnchor(t *testing.T) {
 		"ethereum.json: one requirement per distinct rule_id")
 }
 
-// ---- Auxiliary scan metadata (baseline.extensions['gosec']) ----
+// ---- Auxiliary scan metadata (baseline.extensions.passthrough['gosec']) ----
 
 // gosecExt extracts the gosec extensions object from a converted baseline.
 func gosecExt(t *testing.T, result *hdf.HDFResults) map[string]interface{} {
 	t.Helper()
 	require.NotNil(t, result.Baselines[0].Extensions, "baseline.extensions should be present")
-	gosec, ok := result.Baselines[0].Extensions["gosec"].(map[string]interface{})
-	require.True(t, ok, "extensions.gosec should be an object")
+	gosec, ok := result.Baselines[0].Extensions.Passthrough["gosec"].(map[string]interface{})
+	require.True(t, ok, "extensions.passthrough.gosec should be an object")
 	return gosec
 }
 
@@ -963,7 +963,7 @@ func TestBuildGosecExtensions(t *testing.T) {
 	// Stats only.
 	ext := buildGosecExtensions(GosecReport{Stats: &GosecStats{Files: 1, Lines: 2, Nosec: 0, Found: 1}})
 	require.NotNil(t, ext)
-	gosec := ext["gosec"].(map[string]interface{})
+	gosec := ext.Passthrough["gosec"].(map[string]interface{})
 	assert.Equal(t, &GosecStats{Files: 1, Lines: 2, Nosec: 0, Found: 1}, gosec["stats"])
 	_, hasErrors := gosec["goErrors"]
 	assert.False(t, hasErrors)
@@ -973,7 +973,7 @@ func TestBuildGosecExtensions(t *testing.T) {
 		"x.go": {{Line: 1, Column: 1, Err: "boom"}},
 	}})
 	require.NotNil(t, ext)
-	gosec = ext["gosec"].(map[string]interface{})
+	gosec = ext.Passthrough["gosec"].(map[string]interface{})
 	_, hasStats := gosec["stats"]
 	assert.False(t, hasStats)
 	assert.Equal(t, []gosecFlatGoError{{File: "x.go", Line: 1, Column: 1, Error: "boom"}}, gosec["goErrors"])

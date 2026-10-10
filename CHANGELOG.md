@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The deprecated `Hdf*` type aliases in `@mitre/hdf-schema` are real types again; since 3.3.0 they had been `any`.** `HdfResults`, `HdfBaseline`, `HdfComparison`, `HdfSystem`, `HdfPlan`, `HdfAmendments` and `HdfEvidencePackage` were declared as `export type HdfResults = HDFResults` beneath an `export * from './ts/hdf.js'`, and `export *` re-exports a name without binding it, so each alias referred to an undefined identifier. Every consumer compiling with `skipLibCheck`, the workspace default, got `any`: `const x: HdfResults = 42` compiled on every published version from 3.3.0 to 3.7.2. The barrel now imports the `HDF*` names it aliases, a top-level `Identity` type in the helpers declaration that collided with the schema's own is gone, and two tests pin it: the emitted declarations lib-check clean, and a probe assigning a number to each alias is rejected. Consumers on the deprecated names may see new type errors that were always real; migrate to the `HDF*` names. (#451)
+
 ### Changed
 
 - **BREAKING for SARIF-derived documents: `tags.severity` is renamed to `tags.sarif-level`, and severity resolution now follows SARIF 2.1.0 §3.27.10.** The tag held the SARIF level string verbatim while `impact` could derive from GitHub's `security-severity` instead, so one name carried two values that contradicted each other — a rule with `security-severity: "0.0"` and level `error` produced `impact 0.1` alongside `tags.severity: error`. `severity` now means only the impact-derived band, `tags.sarif-level` carries the SARIF level, and a new `tags.sarif-severity-source` records which source set the impact (`security-severity`, `result-level`, `rule-default` or `fallback`). Anything reading `tags.severity` on SARIF-derived HDF must read `tags.sarif-level`. The nine SARIF-delegating converters inherit all of this.

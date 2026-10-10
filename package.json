@@ -35,7 +35,8 @@
     "lint:go-consumers": "bash scripts/check-go-module-consumers.test.sh && bash scripts/check-go-module-consumers.sh",
     "lint:gosec-coverage": "bash scripts/check-gosec-coverage.test.sh && bash scripts/check-gosec-coverage.sh",
     "lint:release-version": "bash scripts/check-release-version.test.sh",
-    "lint:go-module-versions": "bash scripts/set-go-module-versions.test.sh"
+    "lint:go-module-versions": "bash scripts/set-go-module-versions.test.sh",
+    "lint:go-mod-tidy": "bash scripts/check-go-mod-tidy.test.sh && bash scripts/check-go-mod-tidy.sh"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

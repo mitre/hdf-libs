@@ -443,6 +443,11 @@ jobs:
         # release.yml --checks them on the tag, where a regression is found by
         # the release; its test runs here instead.
         run: pnpm run lint:go-module-versions
+      - name: Every module is tidy and every sibling pin is a real version
+        # A downgrading go get drops a sibling require and tidy re-adds it at the
+        # zero pseudo-version, which no release can publish; caught here, not at
+        # the tag.
+        run: pnpm run lint:go-mod-tidy
       - name: govulncheck (SARIF; findings gate via HDF)
         run: |
           go install "golang.org/x/vuln/cmd/govulncheck@$GOVULNCHECK_VERSION"

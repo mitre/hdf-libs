@@ -396,11 +396,11 @@ describe('gosec to HDF converter', async () => {
     });
   });
 
-  describe('auxiliary scan metadata (baseline.extensions.gosec)', async () => {
-    it('should route Stats into baseline.extensions.gosec.stats', async () => {
+  describe('auxiliary scan metadata (baseline.extensions.passthrough.gosec)', async () => {
+    it('should route Stats into baseline.extensions.passthrough.gosec.stats', async () => {
       // ethereum.json carries Stats={files:156,lines:46219,nosec:0,found:171}.
       const hdf = JSON.parse(await convertGosecToHdf(loadFixture('ethereum.json'))) as HDFResults;
-      const ext = hdf.baselines[0]!.extensions as { gosec?: { stats?: unknown; goErrors?: unknown } } | undefined;
+      const ext = hdf.baselines[0]!.extensions?.passthrough as { gosec?: { stats?: unknown; goErrors?: unknown } } | undefined;
       expect(ext?.gosec?.stats).toEqual({ files: 156, lines: 46219, nosec: 0, found: 171 });
       // Empty "Golang errors" → goErrors omitted.
       expect(ext?.gosec?.goErrors).toBeUndefined();
@@ -420,7 +420,7 @@ describe('gosec to HDF converter', async () => {
         GosecVersion: '2.18.0',
       });
       const hdf = JSON.parse(await convertGosecToHdf(input)) as HDFResults;
-      const ext = hdf.baselines[0]!.extensions as { gosec?: { stats?: unknown; goErrors?: unknown } } | undefined;
+      const ext = hdf.baselines[0]!.extensions?.passthrough as { gosec?: { stats?: unknown; goErrors?: unknown } } | undefined;
       expect(ext?.gosec?.goErrors).toEqual([
         { file: '/app/a.go', line: 10, column: 5, error: 'undefined: Foo' },
         { file: '/app/a.go', line: 12, column: 2, error: 'undefined: Bar' },

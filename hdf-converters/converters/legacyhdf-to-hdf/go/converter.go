@@ -675,10 +675,7 @@ func ConvertLegacyHDF(v1 *LegacyHDFResults, converterVersion string) *hdf.HDFRes
 			v2.Components = v1.Passthrough.HDFComponents
 		}
 		if len(v1.Passthrough.Provenance) > 0 {
-			if v2.Extensions == nil {
-				v2.Extensions = map[string]interface{}{}
-			}
-			v2.Extensions["passthrough"] = v1.Passthrough.Provenance
+			v2.Extensions = &hdf.Extensions{Passthrough: v1.Passthrough.Provenance}
 		}
 	}
 

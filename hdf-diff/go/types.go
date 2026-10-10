@@ -178,5 +178,5 @@ type HdfComparison struct {
 	SystemRef        string                `json:"systemRef,omitempty"`
 	Drift            []RequirementDiff     `json:"drift,omitempty"`
 	Annotations      map[string]Annotation `json:"annotations,omitempty"`
-	Extensions       map[string]any        `json:"extensions,omitempty"`
+	Extensions       *hdf.Extensions       `json:"extensions,omitempty"`
 }

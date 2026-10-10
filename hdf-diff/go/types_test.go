@@ -432,8 +432,8 @@ func TestHdfComparisonRoundTrip(t *testing.T) {
 				Timestamp: "2026-03-14T00:00:00Z",
 			},
 		},
-		Extensions: map[string]any{
-			"customTool": "myScanner",
+		Extensions: &hdf.Extensions{
+			Passthrough: map[string]any{"customTool": "myScanner"},
 		},
 	}
 
@@ -501,8 +501,8 @@ func TestHdfComparisonRoundTrip(t *testing.T) {
 	assert.Equal(t, "2026-03-14T00:00:00Z", ann.Timestamp)
 
 	// Verify extensions
-	require.Contains(t, roundTripped.Extensions, "customTool")
-	assert.Equal(t, "myScanner", roundTripped.Extensions["customTool"])
+	require.Contains(t, roundTripped.Extensions.Passthrough, "customTool")
+	assert.Equal(t, "myScanner", roundTripped.Extensions.Passthrough["customTool"])
 }
 
 func TestEmptySlicesMarshalAsArrayNotNull(t *testing.T) {
