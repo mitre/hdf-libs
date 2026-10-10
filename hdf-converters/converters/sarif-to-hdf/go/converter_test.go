@@ -52,7 +52,7 @@ func TestConvertSarifToHDF_SarifInput(t *testing.T) {
 	assert.Equal(t, "buffer/gets", *ff1014.Title)
 	assert.Contains(t, ff1014.Descriptions[0].Data, "Does not check for buffer overflows")
 	assert.Equal(t, 0.7, ff1014.Impact)
-	assert.Equal(t, "error", ff1014.Tags["severity"])
+	assert.Equal(t, "error", ff1014.Tags["sarif-level"])
 	cwe1, ok := ff1014.Tags["cwe"].([]string)
 	require.True(t, ok, "CWE should be string slice")
 	assert.Contains(t, cwe1, "CWE-120")
@@ -377,7 +377,7 @@ func TestLevelFallbackToRuleDefault(t *testing.T) {
 
 	req := result.Baselines[0].Requirements[0]
 	assert.Equal(t, 0.7, req.Impact, "Should use rule default level 'error' → 0.7")
-	assert.Equal(t, "error", req.Tags["severity"])
+	assert.Equal(t, "error", req.Tags["sarif-level"])
 }
 
 // --- CWE extraction tests ---
@@ -1422,7 +1422,7 @@ func TestConvertSarifToHDF_RichFixture(t *testing.T) {
 	assert.Equal(t, "SEC-002", sec002.ID)
 	assert.Equal(t, "WeakCrypto", *sec002.Title)
 	assert.Equal(t, 0.5, sec002.Impact)
-	assert.Equal(t, "warning", sec002.Tags["severity"])
+	assert.Equal(t, "warning", sec002.Tags["sarif-level"])
 	require.Len(t, sec002.Results, 1)
 	assert.Equal(t, hdf.Failed, sec002.Results[0].Status)
 
@@ -1571,7 +1571,7 @@ func TestConvertSarifToHDF_SpotBugsFixture(t *testing.T) {
 	// All SpotBugs results are "note" level → 0.3 impact
 	for _, req := range baseline.Requirements {
 		assert.Equal(t, 0.3, req.Impact, "SpotBugs rule %s should have note-level impact", req.ID)
-		assert.Equal(t, "note", req.Tags["severity"])
+		assert.Equal(t, "note", req.Tags["sarif-level"])
 	}
 
 	// NM_METHOD_NAMING_CONVENTION — heaviest grouping: 33 results
@@ -2172,16 +2172,20 @@ func TestConvertSarifToHDF_MalformedSecuritySeverityFallsBackToLevel(t *testing.
 	}
 }
 
-// CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
-// converter's existing zero-impact floor still applies, because a reported
-// finding must never be silently notApplicable.
-func TestConvertSarifToHDF_ZeroSecuritySeverityKeepsTheExistingFloor(t *testing.T) {
+// security-severity is GitHub's property, so GitHub's reading of it governs, and it
+// documents that "a value of 0.0 or any other value outside the given range is
+// regarded as having no security severity" — not as a severity of none. So 0.0 is an
+// absent rating and the level mapping applies. This replaces an earlier reading that
+// treated 0.0 as a CVSS "none" rating which won and was then floored to 0.1; falling
+// back to the level serves that reading's own concern better, since the finding lands
+// on its real severity instead of the floor.
+func TestConvertSarifToHDF_ZeroSecuritySeverityFallsBackToLevel(t *testing.T) {
 	result, err := ConvertSarifToHDF(sarifWithSecuritySeverity(t, "error", "0.0"), testConverterVersion)
 	require.NoError(t, err)
 	req := result.Baselines[0].Requirements[0]
-	assert.Equal(t, 0.1, req.Impact, "CVSS 0.0 wins over level, then hits the existing 0.1 floor")
+	assert.Equal(t, 0.7, req.Impact, "0.0 carries no security severity, so level error applies")
 	require.NotNil(t, req.Severity)
-	assert.Equal(t, hdf.SeverityLow, *req.Severity)
+	assert.Equal(t, hdf.SeverityHigh, *req.Severity)
 }
 
 // Producers conventionally emit the score as a string, but a JSON number is
@@ -2416,4 +2420,169 @@ func TestConvertSarifToHDF_NullAndEmptyResultsAreDistinguished(t *testing.T) {
 		clean.Baselines[0].Requirements[0].Results[0].Status,
 		never.Baselines[0].Requirements[0].Results[0].Status,
 		"if these match, the two SARIF states are indistinguishable after conversion")
+}
+
+// --- Severity resolution (§3.27.9, §3.27.10, §3.50.3) ---
+
+// §3.27.10: a rule's defaultConfiguration.level applies only to a result "which
+// does not itself specify a level property". The rule default previously won
+// outright, so a rule's note beat a result's explicit error.
+func TestConvertSarifToHDF_ResultLevelOutranksRuleDefault(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"note"}}]}},
+		"results":[{"ruleId":"R1","level":"error","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001,
+		"the result's own error level must outrank the rule's note default")
+	assert.Equal(t, "error", req.Tags["sarif-level"])
+}
+
+// GitHub documents that a security-severity of 0.0, and any value outside
+// 0.0-10.0, is treated as having no security severity — so the level mapping
+// applies. The impact floor masked this: it produced 0.1 while the level said error.
+func TestConvertSarifToHDF_SecuritySeverityZeroFallsBackToLevel(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1",
+			"defaultConfiguration":{"level":"error"},"properties":{"security-severity":"0.0"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001,
+		"security-severity 0.0 carries no severity, so the error level applies")
+}
+
+// §3.27.10: level "none" means "the concept of severity does not apply". It
+// previously resolved to warning/0.5, inventing a middling severity for a finding
+// explicitly marked as having none.
+func TestConvertSarifToHDF_LevelNoneMeansSeverityDoesNotApply(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"informational","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.Zero(t, req.Impact, "level none means severity does not apply, so impact is 0")
+	assert.Equal(t, "none", req.Tags["sarif-level"])
+}
+
+// tags.severity held the SARIF level string while impact could derive from
+// GitHub's security-severity, so one name carried two contradictory values.
+func TestConvertSarifToHDF_SarifLevelTagReplacesSeverity(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"note"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	tags := result.Baselines[0].Requirements[0].Tags
+	assert.Equal(t, "note", tags["sarif-level"])
+	assert.NotContains(t, tags, "severity",
+		"severity must mean the impact-derived band only; the SARIF level is sarif-level")
+}
+
+// A consumer cannot otherwise tell whether an impact came from GitHub's
+// security-severity, a result's level, the rule default, or the fallback.
+func TestConvertSarifToHDF_SeverityProvenanceIsRecoverable(t *testing.T) {
+	cases := []struct{ name, rules, result, want string }{
+		{"security-severity", `{"id":"R1","properties":{"security-severity":"8.6"}}`, `"kind":"fail"`, "security-severity"},
+		{"result level", `{"id":"R1"}`, `"level":"error","kind":"fail"`, "result-level"},
+		{"rule default", `{"id":"R1","defaultConfiguration":{"level":"note"}}`, `"kind":"fail"`, "rule-default"},
+		{"fallback", `{"id":"R1"}`, `"kind":"fail"`, "fallback"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			input := []byte(`{"version":"2.1.0","runs":[{
+				"tool":{"driver":{"name":"T","rules":[` + tc.rules + `]}},
+				"results":[{"ruleId":"R1",` + tc.result + `,"message":{"text":"m"},
+					"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, result.Baselines[0].Requirements[0].Tags["sarif-severity-source"])
+		})
+	}
+}
+
+// A rule group mixing levels took the FIRST fail-kind result's level, so an error
+// reported after a note was presented as a note. The worst level in the group is
+// the only safe requirement-level summary while HDF has no per-result severity field.
+func TestConvertSarifToHDF_MixedLevelGroupTakesTheWorst(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[
+			{"ruleId":"R1","level":"note","kind":"fail","message":{"text":"low"},
+				"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+			{"ruleId":"R1","level":"error","kind":"fail","message":{"text":"high"},
+				"locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001,
+		"a note listed before an error must not hide the error")
+	assert.Equal(t, "error", req.Tags["sarif-level"])
+}
+
+// §3.27.10 forces level "none" on any non-failing result, so a none carried by a
+// passing result is spec compliance rather than a severity statement and must not
+// discard the rule's own declared level.
+func TestConvertSarifToHDF_RuleDefaultBeatsNoneOnAPassingResult(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"note"}}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"pass","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.3, req.Impact, 0.0001, "the rule's declared note must survive")
+	assert.Equal(t, "note", req.Tags["sarif-level"])
+}
+
+// §3.27.10 defines "none" as severity not applying BECAUSE kind is not "fail", so a
+// "none" on a failing result contradicts the definition and must not be honoured.
+// Honouring it would put a reported failure at impact 0, which the effective-status
+// ladder reads as notApplicable — dropping a real finding out of the denominator.
+func TestConvertSarifToHDF_NoneOnAFailingResultIsNotHonoured(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.InDelta(t, 0.7, req.Impact, 0.0001, "the rule's error default applies; impact must not be 0")
+	assert.NotZero(t, req.Impact, "a reported failure must never land at impact 0")
+	assert.Equal(t, "error", req.Tags["sarif-level"])
+	require.Len(t, req.Results, 1)
+	assert.Equal(t, hdf.Failed, req.Results[0].Status)
+}
+
+// The companion to the test above, and the one that actually guards the hazard: with
+// NO rule default to fall back on, honouring a failing result's "none" would resolve
+// the group to none and put a reported failure at impact 0. The rule-default branch
+// masks that, so a case without one is required to pin it.
+func TestConvertSarifToHDF_NoneOnAFailingResultWithNoRuleDefault(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"none","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotZero(t, req.Impact, "a reported failure must never land at impact 0")
+	assert.InDelta(t, 0.5, req.Impact, 0.0001, "falls through to the SARIF default level")
+	assert.Equal(t, "warning", req.Tags["sarif-level"])
+	assert.Equal(t, "fallback", req.Tags["sarif-severity-source"])
 }

@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "No source location",
-              "startTime": "2026-07-12T18:56:41.921728-04:00",
+              "startTime": "2026-10-10T20:42:30.985947Z",
               "status": "failed"
             }
           ],
@@ -33,7 +33,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-severity-source": "result-level"
           },
           "title": "Do not store credential in ENVIRONMENT vars/files",
           "verificationMethod": "automated"
@@ -52,7 +53,7 @@
           "results": [
             {
               "codeDesc": "No source location",
-              "startTime": "2026-07-12T18:56:41.921728-04:00",
+              "startTime": "2026-10-10T20:42:30.985947Z",
               "status": "failed"
             }
           ],
@@ -69,7 +70,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-severity-source": "result-level"
           },
           "title": "Enable Content trust for Docker",
           "verificationMethod": "automated"
@@ -88,7 +90,7 @@
           "results": [
             {
               "codeDesc": "No source location",
-              "startTime": "2026-07-12T18:56:41.921728-04:00",
+              "startTime": "2026-10-10T20:42:30.985947Z",
               "status": "failed"
             }
           ],
@@ -105,7 +107,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-severity-source": "result-level"
           },
           "title": "Add HEALTHCHECK instruction to the container image",
           "verificationMethod": "automated"
@@ -124,7 +127,7 @@
           "results": [
             {
               "codeDesc": "No source location",
-              "startTime": "2026-07-12T18:56:41.921728-04:00",
+              "startTime": "2026-10-10T20:42:30.985947Z",
               "status": "failed"
             }
           ],
@@ -141,7 +144,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-severity-source": "result-level"
           },
           "title": "Confirm safety of setuid/setgid files",
           "verificationMethod": "automated"
@@ -160,7 +164,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T18:56:41.921728-04:00",
+  "timestamp": "2026-10-10T20:42:30.985947Z",
   "tool": {
     "format": "SARIF",
     "name": "Dockle"

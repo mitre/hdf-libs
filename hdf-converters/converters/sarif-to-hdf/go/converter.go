@@ -202,11 +202,29 @@ type ArtifactContent struct {
 	Text string `json:"text"`
 }
 
+// LevelNone is SARIF's "severity does not apply" level (§3.27.10), distinct from an
+// absent level, which defaults to warning.
+const LevelNone = "none"
+
+// Where a requirement's impact came from, recorded in tags so a consumer can tell a
+// vendor convention from a spec field from a fallback.
+const (
+	severitySourceSecuritySeverity = "security-severity"
+	severitySourceResultLevel      = "result-level"
+	severitySourceRuleDefault      = "rule-default"
+	severitySourceFallback         = "fallback"
+)
+
 // --- Impact mapping ---
-// SARIF uses "error"/"warning"/"note" levels, not standard severity labels.
-// These are used as aliases; unknown levels fall through to 0.0 (then bumped
-// to 0.1 at the call site). This table is the FALLBACK — a rule carrying a
+// SARIF uses "error"/"warning"/"note" levels, not standard severity labels. These are
+// used as aliases; unknown levels fall through to 0.0 and are then bumped to 0.1 at
+// the call site. An explicit "none" is exempt from that floor, because §3.27.10 means
+// severity genuinely does not apply. This table is the FALLBACK — a rule carrying a
 // usable security-severity outranks it; see securitySeverityImpact.
+//
+// SARIF 2.2 (committee draft) renames that property to securitySeverity on a 0-100
+// scale rather than 0-10; nothing here reads that key, so a 2.2 producer falls back to
+// the level mapping.
 
 var sarifAliases = map[string]float64{
 	"error":   0.7,
@@ -461,20 +479,25 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 	nistControls := shared.MapCWEToNIST(cweIds, shared.DefaultStaticAnalysisNIST)
 	cciControls := cci.NISTToCCI(nistControls)
 
-	// Determine requirement-level impact from the rule's inherent severity.
-	// Use the rule's defaultConfiguration.level, falling back to the first result's level,
-	// then to the SARIF default "warning".
-	ruleLevel := resolveRuleLevel(rule, sarifResults)
-	// The rule's security-severity is its CVSS base score and OUTRANKS level:
-	// level is the tool's own triage and several scanners emit one level for
-	// every finding, so preferring it would collapse the CVSS spread that is the
-	// only real severity signal such a document carries. Both are rule-level, so
-	// nothing per-result is discarded. Level remains the fallback.
-	impact, fromCvss := securitySeverityImpact(rule)
-	if !fromCvss {
+	// Determine requirement-level impact from the rule group's resolved level.
+	ruleLevel, severitySource := resolveRuleLevel(rule, sarifResults)
+	// security-severity is a GitHub Code Scanning convention, NOT a SARIF one: the
+	// string appears nowhere in the OASIS 2.1.0 specification or its schema. It
+	// currently OUTRANKS level because it is a 0-10 score rather than one of four
+	// buckets, so it carries severity spread that level cannot, and it is how the
+	// scanners emitting it expect to be read. Whether a vendor convention should
+	// outrank a spec field is an open question recorded on this converter's card.
+	impact, fromSecuritySeverity := securitySeverityImpact(rule)
+	if fromSecuritySeverity {
+		severitySource = severitySourceSecuritySeverity
+	} else {
 		impact = hdfutil.SeverityToImpactWithAliases(ruleLevel, sarifAliases, 0.0)
 	}
-	if impact == 0 {
+	// Impact 0 is floored so an unrecognized level does not read as "not
+	// applicable", which is what the effective-status ladder makes of it. An
+	// explicit "none" is exempt: §3.27.10 means severity genuinely does not apply
+	// there, so 0 is the honest value rather than an absent mapping.
+	if impact == 0 && ruleLevel != LevelNone {
 		impact = 0.1
 	}
 	// severity is a schema field consumers read directly, so the converter records
@@ -522,7 +545,7 @@ func convertResultGroup(ruleID string, rule *ReportingDescriptor, sarifResults [
 
 	// Build tags — rule-level severity, fingerprints from first result, and the
 	// full group suppression record.
-	tags := buildTags(firstResult, rule, ruleLevel, cweIds, nistControls, cciControls, allSuppressions)
+	tags := buildTags(firstResult, rule, ruleLevel, severitySource, cweIds, nistControls, cciControls, allSuppressions)
 
 	req := hdf.EvaluatedRequirement{
 		ID:                 ruleID,
@@ -659,9 +682,9 @@ func packageFromSarifProperties(props map[string]interface{}) *hdf.AffectedPacka
 // rejects. Neither form is a CVSS score, so both languages reject both.
 var decimalScore = regexp.MustCompile(`^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$`)
 
-// securitySeverityImpact reads the rule's security-severity property — the SARIF
-// convention for carrying a CVSS base score, and what GitHub's own ingestion keys
-// on — and scales it to an HDF impact. Reports false when the property is absent
+// securitySeverityImpact reads the rule's security-severity property — a GitHub Code
+// Scanning convention for carrying a CVSS base score, absent from the OASIS SARIF
+// 2.1.0 specification and its schema — and scales it to an HDF impact. Reports false when the property is absent
 // or is not a finite score within 0.0-10.0, so the caller falls back to the level
 // mapping rather than deriving an impact from an unusable value. Producers emit
 // the score as a string; a JSON number is accepted too.
@@ -690,28 +713,76 @@ func securitySeverityImpact(rule *ReportingDescriptor) (float64, bool) {
 	default:
 		return 0, false
 	}
-	if math.IsNaN(score) || math.IsInf(score, 0) || score < 0 || score > 10 {
+	// score <= 0, not < 0: GitHub documents 0.0 and out-of-range values alike as
+	// carrying no security severity, so both fall through to the level mapping.
+	if math.IsNaN(score) || math.IsInf(score, 0) || score <= 0 || score > 10 {
 		return 0, false
 	}
 	return hdfutil.RoundImpact(score / 10), true
 }
 
-// resolveRuleLevel determines the inherent severity level for a rule, independent of
-// per-result kind overrides. Priority: rule.defaultConfiguration.level > first fail-kind
-// result's level > SARIF default "warning".
-func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) string {
-	if rule != nil && rule.DefaultConfiguration != nil && rule.DefaultConfiguration.Level != "" {
-		return rule.DefaultConfiguration.Level
-	}
-	// Find first result that represents a failure (kind="" or "fail") with an explicit level
+// levelRank orders the SARIF level enum by severity so a rule group reports its
+// worst member. "none" is outside the order: §3.27.10 defines it as severity not
+// applying, so it never competes with a real level.
+var levelRank = map[string]int{"note": 1, "warning": 2, "error": 3}
+
+// isFailing reports whether a result represents a failure. §3.27.9 defaults an absent
+// kind to "fail", so an omitted kind is a failure.
+func isFailing(r SarifResult) bool { return r.Kind == "" || r.Kind == "fail" }
+
+// resolveRuleLevel determines a rule group's level and where it came from.
+//
+// §3.27.10 resolves a level only for a result whose kind is "fail" (§3.27.9 defaults
+// an absent kind to "fail"), in the order: the result's own level, then
+// invocation.ruleConfigurationOverrides, then rule.defaultConfiguration.level, then
+// "warning". The override branch is deliberately not implemented — it needs
+// run.invocations and result.provenance, neither of which is parsed yet.
+//
+// Only a failing result's level is ranked, and a "none" is never ranked at all.
+// §3.27.10 defines "none" as "the concept of severity does not apply to this result
+// because the kind property has a value other than fail", and §3.27.9 requires that
+// any level other than "none" accompany kind "fail". So "none" is not a severity a
+// producer can assert about a failure: on a conformant document it appears only on a
+// non-failing result, where it is the spec-mandated value and carries no information
+// beyond "severity does not apply". A "none" on a failing result contradicts the
+// spec's own definition, so it is ignored rather than honoured — honouring it would
+// put a reported FAILURE at impact 0, which the effective-status ladder reads as
+// notApplicable, dropping a real finding out of the compliance denominator.
+//
+// A group's level is its WORST failing member, not its first. SARIF scopes severity
+// to the result; HDF scopes it to the requirement, and a result says only that a
+// requirement of that severity is in some state. That difference is deliberate on
+// both sides, so the per-result level is summarized onto the requirement rather than
+// HDF's model being bent to mirror SARIF's. Worst-wins is the only summary that
+// cannot under-report: taking the first would let a note listed ahead of an error
+// present the whole group as a note.
+func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) (string, string) {
+	worst, found, sawNone := "", false, false
 	for _, r := range results {
-		if r.Kind == "" || r.Kind == "fail" {
-			if r.Level != "" {
-				return r.Level
+		if r.Level == LevelNone {
+			// Only meaningful on a non-failing result, which is the conformant case.
+			if !isFailing(r) {
+				sawNone = true
 			}
+			continue
+		}
+		if r.Level == "" || !isFailing(r) {
+			continue
+		}
+		if !found || levelRank[r.Level] > levelRank[worst] {
+			worst, found = r.Level, true
 		}
 	}
-	return "warning"
+	switch {
+	case found:
+		return worst, severitySourceResultLevel
+	case rule != nil && rule.DefaultConfiguration != nil && rule.DefaultConfiguration.Level != "":
+		return rule.DefaultConfiguration.Level, severitySourceRuleDefault
+	case sawNone:
+		return LevelNone, severitySourceResultLevel
+	default:
+		return "warning", severitySourceFallback
+	}
 }
 
 // convertSarifResultToHDFResults converts a single SARIF result into one or more HDF RequirementResults.
@@ -1084,10 +1155,13 @@ func buildDescriptions(defaultDesc string, rule *ReportingDescriptor, result Sar
 
 // --- Tag building ---
 
-func buildTags(result SarifResult, rule *ReportingDescriptor, resolvedLevel string, cweIds, nistControls, cciControls []string, allSuppressions []Suppression) map[string]interface{} {
+func buildTags(result SarifResult, rule *ReportingDescriptor, resolvedLevel, severitySource string, cweIds, nistControls, cciControls []string, allSuppressions []Suppression) map[string]interface{} {
 	tags := make(map[string]interface{})
 
-	tags["severity"] = resolvedLevel
+	// The SARIF level verbatim. Not "severity": impact may derive from GitHub's
+	// security-severity instead, so one name would carry two different values.
+	tags["sarif-level"] = resolvedLevel
+	tags["sarif-severity-source"] = severitySource
 	tags["cwe"] = cweIds
 	tags["nist"] = nistControls
 	tags["cci"] = cciControls

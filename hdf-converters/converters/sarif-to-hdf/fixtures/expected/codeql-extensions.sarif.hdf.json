@@ -38,7 +38,7 @@
                 "dsvpwa/handlers.py:116 - ControlFlowNode for Attribute()"
               ],
               "codeDesc": "URL : dsvpwa/handlers.py LINE : 116 COLUMN : 37",
-              "startTime": "2026-09-07T15:11:01.841592-04:00",
+              "startTime": "2026-10-10T20:42:30.985727Z",
               "status": "failed"
             }
           ],
@@ -69,7 +69,8 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-severity-source": "security-severity"
           },
           "controlType": "technical",
           "title": "py/path-injection",
@@ -97,7 +98,7 @@
                 "dsvpwa/handlers.py:184 - ControlFlowNode for Subscript"
               ],
               "codeDesc": "URL : dsvpwa/handlers.py LINE : 184 COLUMN : 17",
-              "startTime": "2026-09-07T15:11:01.841592-04:00",
+              "startTime": "2026-10-10T20:42:30.985727Z",
               "status": "failed"
             }
           ],
@@ -125,7 +126,8 @@
             "nist": [
               "SI-10"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-severity-source": "security-severity"
           },
           "controlType": "technical",
           "title": "py/command-line-injection",
@@ -145,7 +147,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-07T15:11:01.841592-04:00",
+  "timestamp": "2026-10-10T20:42:30.985727Z",
   "tool": {
     "format": "SARIF",
     "name": "CodeQL"

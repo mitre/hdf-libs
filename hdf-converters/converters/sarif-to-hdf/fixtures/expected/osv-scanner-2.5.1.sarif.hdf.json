@@ -20,7 +20,7 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-09-08T14:24:08.661449-04:00",
+              "startTime": "2026-10-10T20:42:30.989851Z",
               "status": "failed"
             }
           ],
@@ -46,7 +46,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-severity-source": "security-severity"
           },
           "title": "CVE-2026-82417",
           "verificationMethod": "automated"
@@ -69,7 +70,7 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-09-08T14:24:08.661449-04:00",
+              "startTime": "2026-10-10T20:42:30.989851Z",
               "status": "failed"
             }
           ],
@@ -95,7 +96,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-severity-source": "security-severity"
           },
           "title": "CVE-2026-39365",
           "verificationMethod": "automated"
@@ -118,7 +120,7 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-09-08T14:24:08.661449-04:00",
+              "startTime": "2026-10-10T20:42:30.989851Z",
               "status": "failed"
             }
           ],
@@ -144,7 +146,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-severity-source": "security-severity"
           },
           "title": "CVE-2026-53571",
           "verificationMethod": "automated"
@@ -167,7 +170,7 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-09-08T14:24:08.661449-04:00",
+              "startTime": "2026-10-10T20:42:30.989851Z",
               "status": "failed"
             }
           ],
@@ -193,7 +196,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-severity-source": "security-severity"
           },
           "title": "CVE-2026-53632",
           "verificationMethod": "automated"
@@ -216,7 +220,7 @@
           "results": [
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/pnpm-lock.yaml LINE : 0 COLUMN : 0",
-              "startTime": "2026-09-08T14:24:08.661449-04:00",
+              "startTime": "2026-10-10T20:42:30.989851Z",
               "status": "failed"
             }
           ],
@@ -242,7 +246,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "warning"
+            "sarif-level": "warning",
+            "sarif-severity-source": "security-severity"
           },
           "title": "CVE-2026-82562",
           "verificationMethod": "automated"
@@ -261,7 +266,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-08T14:24:08.661449-04:00",
+  "timestamp": "2026-10-10T20:42:30.989851Z",
   "tool": {
     "format": "SARIF",
     "name": "osv-scanner",

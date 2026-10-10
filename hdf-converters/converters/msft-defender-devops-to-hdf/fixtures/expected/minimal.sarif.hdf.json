@@ -16,7 +16,7 @@
           "results": [
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem LINE : 1 COLUMN : 1",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "startTime": "2026-10-10T20:42:31.124705Z",
               "status": "failed"
             }
           ],
@@ -59,7 +59,8 @@
               "RA-5"
             ],
             "rank": 94,
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-severity-source": "result-level"
           },
           "title": "X.509 Certificate Private Key",
           "verificationMethod": "automated"
@@ -85,7 +86,7 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "startTime": "2026-10-10T20:42:31.124705Z",
               "status": "failed"
             }
           ],
@@ -114,7 +115,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-severity-source": "result-level"
           },
           "code": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
           "title": "Ensure that HEALTHCHECK instructions have been added to container images",
@@ -130,7 +132,7 @@
           "results": [
             {
               "codeDesc": "URL : samples/Dockerfile LINE : 1 COLUMN : 0\nFROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
-              "startTime": "2026-07-12T18:56:40.225842-04:00",
+              "startTime": "2026-10-10T20:42:31.124705Z",
               "status": "failed"
             }
           ],
@@ -159,7 +161,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "note"
+            "sarif-level": "note",
+            "sarif-severity-source": "result-level"
           },
           "code": "FROM alpine:3.14.0\nRUN echo \"testuser:x:10999:10999:,,,:/home/testuser:/bin/bash\" \u003e\u003e /etc/passwd \u0026\u0026 echo \"testuser::18761:0:99999:7:::\" \u003e\u003e /etc/shadow\n",
           "title": "Ensure that a user for the container has been created",
@@ -188,7 +191,7 @@
     "name": "msft-defender-devops-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-07-12T18:56:40.225842-04:00",
+  "timestamp": "2026-10-10T20:42:31.124705Z",
   "tool": {
     "format": "SARIF",
     "name": "Microsoft Defender for DevOps",

@@ -15,301 +15,301 @@
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/aws-config-to-hdf/typescript/converter.ts LINE : 142 COLUMN : 3",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/aws-config-to-hdf/typescript/converter.ts LINE : 298 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/burpsuite-to-hdf/typescript/converter.ts LINE : 221 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/checkov-to-hdf/typescript/converter.ts LINE : 251 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/cyclonedx-to-hdf/typescript/converter.ts LINE : 656 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/dbprotect-to-hdf/typescript/converter.ts LINE : 351 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/fortify-to-hdf/typescript/converter.ts LINE : 435 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/fortify-to-hdf/typescript/converter.ts LINE : 527 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/gitlab-to-hdf/typescript/converter.ts LINE : 305 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/gosec-to-hdf/typescript/converter.ts LINE : 276 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/grype-to-hdf/typescript/converter.ts LINE : 528 COLUMN : 7",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/grype-to-hdf/typescript/converter.ts LINE : 541 COLUMN : 7",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/jfrog-xray-to-hdf/typescript/converter.ts LINE : 399 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/junit-to-hdf/typescript/converter.ts LINE : 206 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/junit-to-hdf/typescript/converter.ts LINE : 216 COLUMN : 7",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-defender-cloud-to-hdf/typescript/converter.ts LINE : 198 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-defender-endpoint-to-hdf/typescript/converter.ts LINE : 461 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/msft-secure-score-to-hdf/typescript/converter.ts LINE : 339 COLUMN : 7",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nessus-to-hdf/typescript/converter.ts LINE : 177 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nessus-to-hdf/typescript/converter.ts LINE : 266 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts LINE : 501 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/neuvector-to-hdf/typescript/converter.ts LINE : 484 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/nikto-to-hdf/typescript/converter.ts LINE : 104 COLUMN : 7",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-sar.ts LINE : 75 COLUMN : 7",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sarif-to-hdf/typescript/converter.ts LINE : 192 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sarif-to-hdf/typescript/converter.ts LINE : 219 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/snyk-to-hdf/typescript/converter.ts LINE : 390 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/snyk-to-hdf/typescript/converter.ts LINE : 474 COLUMN : 7",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/sonarqube-to-hdf/typescript/converter.ts LINE : 303 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/twistlock-to-hdf/typescript/converter.ts LINE : 389 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/typescript/converter.ts LINE : 477 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/xccdf-results-to-hdf/typescript/converter.ts LINE : 759 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts LINE : 230 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts LINE : 267 COLUMN : 9",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 43 COLUMN : 7",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 44 COLUMN : 7",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 45 COLUMN : 7",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 46 COLUMN : 7",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 47 COLUMN : 7",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 82 COLUMN : 5",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 83 COLUMN : 5",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 84 COLUMN : 5",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 85 COLUMN : 5",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 94 COLUMN : 5",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 108 COLUMN : 7",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/compare.ts LINE : 114 COLUMN : 5",
               "message": "Suppressed: CLI tool requires console output",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/shared/typescript/converterutil.ts LINE : 145 COLUMN : 5",
               "message": "Suppressed: Intentional warning for truncated input",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts LINE : 90 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts LINE : 138 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-schema/src/create-index.ts LINE : 219 COLUMN : 5",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             }
           ],
@@ -320,551 +320,551 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "CLI tool requires console output",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Intentional warning for truncated input",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -883,7 +883,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "warning",
+            "sarif-level": "warning",
+            "sarif-severity-source": "result-level",
             "suppressions": [
               {
                 "kind": "inSource"
@@ -1066,19 +1067,19 @@
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/netsparker-to-hdf/typescript/converter.ts LINE : 150 COLUMN : 24",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/zap-to-hdf/typescript/converter.ts LINE : 349 COLUMN : 24",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-utilities/src/string/index.ts LINE : 117 COLUMN : 27",
               "message": "Suppressed: sanctioned parse-helper implementation",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             }
           ],
@@ -1089,34 +1090,34 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "sanctioned parse-helper implementation",
               "status": "passed",
               "type": "waiver"
@@ -1135,7 +1136,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "error",
+            "sarif-level": "error",
+            "sarif-severity-source": "result-level",
             "suppressions": [
               {
                 "kind": "inSource"
@@ -1165,85 +1167,85 @@
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 115 COLUMN : 53",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 156 COLUMN : 4",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 163 COLUMN : 53",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 164 COLUMN : 53",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 170 COLUMN : 22",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 182 COLUMN : 29",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 191 COLUMN : 27",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 198 COLUMN : 23",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 260 COLUMN : 32",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/converter-poam.ts LINE : 277 COLUMN : 29",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 64 COLUMN : 27",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 65 COLUMN : 28",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 67 COLUMN : 19",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-generators/src/merge.ts LINE : 72 COLUMN : 32",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             }
           ],
@@ -1254,155 +1256,155 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -1421,7 +1423,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "error",
+            "sarif-level": "error",
+            "sarif-severity-source": "result-level",
             "suppressions": [
               {
                 "kind": "inSource"
@@ -1483,19 +1486,19 @@
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts LINE : 606 COLUMN : 18",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts LINE : 4372 COLUMN : 18",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-converters/converters/oscal-to-hdf/typescript/types.ts LINE : 4559 COLUMN : 18",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             }
           ],
@@ -1506,34 +1509,34 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -1552,7 +1555,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "error",
+            "sarif-level": "error",
+            "sarif-severity-source": "result-level",
             "suppressions": [
               {
                 "kind": "inSource"
@@ -1581,13 +1585,13 @@
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-diff/src/renderers/json.ts LINE : 13 COLUMN : 11",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : file:///home/runner/work/hdf-libs/hdf-libs/hdf-diff/src/renderers/json.ts LINE : 13 COLUMN : 19",
               "message": "Suppressed: Suppressed in SARIF source",
-              "startTime": "2026-09-08T14:24:08.657804-04:00",
+              "startTime": "2026-10-10T20:42:30.987828Z",
               "status": "failed"
             }
           ],
@@ -1598,23 +1602,23 @@
           },
           "statusOverrides": [
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
             },
             {
-              "appliedAt": "2026-09-08T14:24:08.657804-04:00",
+              "appliedAt": "2026-10-10T20:42:30.987828Z",
               "appliedBy": {
                 "identifier": "sarif suppression",
                 "type": "other"
               },
-              "expiresAt": "2027-09-08T14:24:08.657804-04:00",
+              "expiresAt": "2027-10-10T20:42:30.987828Z",
               "reason": "Suppressed in SARIF source",
               "status": "passed",
               "type": "waiver"
@@ -1633,7 +1637,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "error",
+            "sarif-level": "error",
+            "sarif-severity-source": "result-level",
             "suppressions": [
               {
                 "kind": "inSource"
@@ -1660,7 +1665,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-08T14:24:08.657804-04:00",
+  "timestamp": "2026-10-10T20:42:30.987828Z",
   "tool": {
     "format": "SARIF",
     "name": "ESLint",

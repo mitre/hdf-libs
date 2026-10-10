@@ -20,12 +20,12 @@
           "results": [
             {
               "codeDesc": "URL : targets/basic/stupid.py LINE : 3 COLUMN : 12\n    return a + b == a + b",
-              "startTime": "2026-09-01T21:35:03.694512-04:00",
+              "startTime": "2026-10-10T20:42:30.992149Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : targets/basic/stupid.py LINE : 3 COLUMN : 21\n    return a + b == a + b",
-              "startTime": "2026-09-01T21:35:03.694512-04:00",
+              "startTime": "2026-10-10T20:42:30.992149Z",
               "status": "failed"
             }
           ],
@@ -54,7 +54,8 @@
               "SA-11",
               "RA-5"
             ],
-            "severity": "error"
+            "sarif-level": "error",
+            "sarif-severity-source": "rule-default"
           },
           "code": "    return a + b == a + b",
           "title": "rules.rule-with-cwe-tag",
@@ -74,7 +75,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-09-01T21:35:03.694512-04:00",
+  "timestamp": "2026-10-10T20:42:30.992149Z",
   "tool": {
     "format": "SARIF",
     "name": "Semgrep OSS"

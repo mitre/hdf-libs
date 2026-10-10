@@ -66,7 +66,7 @@ describe('SARIF Converter', async () => {
       expect(ff1014.title).toBe('buffer/gets');
       expect(ff1014.descriptions[0].data).toContain('Does not check for buffer overflows');
       expect(ff1014.impact).toBe(0.7);
-      expect(ff1014.tags.severity).toBe('error');
+      expect(ff1014.tags['sarif-level']).toBe('error');
       expect(ff1014.tags.cwe).toContain('CWE-120');
       expect(ff1014.tags.cwe).toContain('CWE-20');
       expect(ff1014.tags.nist).toContain('SI-10');
@@ -337,7 +337,7 @@ describe('SARIF Converter', async () => {
       const result = JSON.parse(await convertSarifToHdf(input));
       const req = result.baselines[0].requirements[0];
       expect(req.impact).toBe(0.7);
-      expect(req.tags.severity).toBe('error');
+      expect(req.tags['sarif-level']).toBe('error');
     });
   });
 
@@ -1273,7 +1273,7 @@ describe('SARIF Converter', async () => {
       expect(sec002.id).toBe('SEC-002');
       expect(sec002.title).toBe('WeakCrypto');
       expect(sec002.impact).toBe(0.5);
-      expect(sec002.tags.severity).toBe('warning');
+      expect(sec002.tags['sarif-level']).toBe('warning');
       expect(sec002.results).toHaveLength(1);
       expect(sec002.results[0].status).toBe('failed');
 
@@ -1384,7 +1384,7 @@ describe('SARIF Converter', async () => {
       // All SpotBugs results are note level → 0.3 impact
       for (const req of baseline.requirements) {
         expect(req.impact).toBe(0.3);
-        expect(req.tags.severity).toBe('note');
+        expect(req.tags['sarif-level']).toBe('note');
       }
 
       // NM_METHOD_NAMING_CONVENTION — 33 results
@@ -1653,12 +1653,15 @@ describe('security-severity (CVSS) impact and severity', () => {
     expect(req.severity).toBe('high');
   });
 
-  // CVSS 0.0 is a rating of "none", not an absent rating, so it wins — but the
-  // converter's existing zero-impact floor still applies.
-  it('keeps the existing zero-impact floor for CVSS 0.0', async () => {
+  // security-severity is GitHub's property, so GitHub's reading governs, and it
+  // documents that "a value of 0.0 or any other value outside the given range is
+  // regarded as having no security severity" — an absent rating, not a rating of
+  // none, so the level mapping applies. Replaces an earlier reading that treated 0.0
+  // as a CVSS "none" which won and was then floored to 0.1.
+  it('treats security-severity 0.0 as absent and falls back to level', async () => {
     const req = await firstRequirement(sarifWith('error', '0.0'));
-    expect(req.impact).toBe(0.1);
-    expect(req.severity).toBe('low');
+    expect(req.impact).toBe(0.7);
+    expect(req.severity).toBe('high');
   });
 
   it('accepts a JSON number as well as the conventional string', async () => {
@@ -1745,5 +1748,93 @@ describe('rules defined on tool.extensions', () => {
     });
     const result = JSON.parse(await convertSarifToHdf(input));
     expect(result.baselines[0].requirements[0].title).toBe('from the driver');
+  });
+});
+
+describe('severity resolution (§3.27.9, §3.27.10, §3.50.3)', () => {
+  const doc = (rules: string, result: string): string =>
+    `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[${rules}]}},
+      "results":[{"ruleId":"R1",${result},"message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]}]}]}`;
+
+  const req = async (rules: string, result: string) => {
+    const out = JSON.parse(await convertSarifToHdf(doc(rules, result)));
+    return out.baselines[0].requirements[0];
+  };
+
+  // §3.27.10: a rule's defaultConfiguration.level applies only to a result "which
+  // does not itself specify a level property".
+  it("honours the result's own level over the rule default", async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"note"}}', '"level":"error","kind":"fail"');
+    expect(r.impact).toBe(0.7);
+    expect(r.tags['sarif-level']).toBe('error');
+  });
+
+  // §3.27.10: "none" means the concept of severity does not apply.
+  it('honours an explicit none when nothing else specifies a severity', async () => {
+    const r = await req('{"id":"R1"}', '"level":"none","kind":"informational"');
+    expect(r.impact).toBe(0);
+    expect(r.tags['sarif-level']).toBe('none');
+  });
+
+  // §3.27.10 defines "none" as severity not applying BECAUSE kind is not "fail", so a
+  // "none" on a failing result contradicts the definition and must not be honoured.
+  // Honouring it would put a reported failure at impact 0, which the effective-status
+  // ladder reads as notApplicable — dropping a real finding out of the denominator.
+  it('does not honour a none carried by a failing result', async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"error"}}', '"level":"none","kind":"fail"');
+    expect(r.impact).toBe(0.7);
+    expect(r.tags['sarif-level']).toBe('error');
+    expect(r.results[0].status).toBe('failed');
+  });
+
+  // The case that actually guards the hazard: with no rule default to fall back on,
+  // honouring a failing result's "none" would resolve the group to none and put a
+  // reported failure at impact 0. The rule-default branch masks that.
+  it('falls through to the default level for a none on a failing result', async () => {
+    const r = await req('{"id":"R1"}', '"level":"none","kind":"fail"');
+    expect(r.impact).toBe(0.5);
+    expect(r.tags['sarif-level']).toBe('warning');
+    expect(r.tags['sarif-severity-source']).toBe('fallback');
+  });
+
+  // A "none" on a passing result is only spec compliance, so it must not discard a
+  // rule's declared severity.
+  it('lets a rule default beat a none carried by a passing result', async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"note"}}', '"level":"none","kind":"pass"');
+    expect(r.impact).toBe(0.3);
+    expect(r.tags['sarif-level']).toBe('note');
+  });
+
+  it('replaces tags.severity with tags.sarif-level', async () => {
+    const r = await req('{"id":"R1","defaultConfiguration":{"level":"note"}}', '"kind":"fail"');
+    expect(r.tags['sarif-level']).toBe('note');
+    expect(r.tags).not.toHaveProperty('severity');
+  });
+
+  it.each([
+    ['{"id":"R1","properties":{"security-severity":"8.6"}}', '"kind":"fail"', 'security-severity'],
+    ['{"id":"R1"}', '"level":"error","kind":"fail"', 'result-level'],
+    ['{"id":"R1","defaultConfiguration":{"level":"note"}}', '"kind":"fail"', 'rule-default'],
+    ['{"id":"R1"}', '"kind":"fail"', 'fallback'],
+  ])('records severity provenance (%#)', async (rules, result, want) => {
+    const r = await req(rules, result);
+    expect(r.tags['sarif-severity-source']).toBe(want);
+  });
+
+  // A note listed before an error must not present the group as a note.
+  it('takes the worst failing level in a mixed group', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+      "results":[
+        {"ruleId":"R1","level":"note","kind":"fail","message":{"text":"low"},
+          "locations":[{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}}]},
+        {"ruleId":"R1","level":"error","kind":"fail","message":{"text":"high"},
+          "locations":[{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}}]}]}]}`;
+    const out = JSON.parse(await convertSarifToHdf(input));
+    const r = out.baselines[0].requirements[0];
+    expect(r.impact).toBe(0.7);
+    expect(r.tags['sarif-level']).toBe('error');
   });
 });
