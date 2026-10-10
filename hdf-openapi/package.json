@@ -50,6 +50,7 @@
     "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
     "@mitre/hdf-fixtures": "workspace:^",
     "@redocly/cli": "^2.54.3",
     "@stoplight/spectral-core": "^1.24.0",
@@ -57,7 +58,8 @@
     "@stoplight/spectral-rulesets": "^1.23.0",
     "openapi-typescript": "^7.13.0",
     "tsx": "^4.20.6",
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.1",
+    "zod": "^4.6.5"
   },
   "engines": {
     "node": ">=24.0.0"

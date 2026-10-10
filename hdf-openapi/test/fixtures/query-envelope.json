@@ -1,0 +1,94 @@
+{
+  "requirements": [
+    {
+      "baseline": "metawrapper",
+      "descriptions": [
+        {
+          "data": "The Kubernetes Controller Manager will prohibit the use of SSL and\nunauthorized versions of TLS protocols to properly secure communication.\n\n    The use of unsupported protocol exposes vulnerabilities to the Kubernetes\nby rogue traffic interceptions, man-in-the-middle attacks, and impersonation of\nusers or services from the container platform runtime, registry, and key store.\nTo enable the minimum version of TLS to be used by the Kubernetes Controller\nManager, the setting \"tls-min-version\" must be set.",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "rationale"
+        },
+        {
+          "data": "Change to the /etc/kubernetes/manifests/ directory on the Kubernetes Master\nNode. Run the command:\n\n    grep -i tls-min-version *\n\n    If the setting \"tls-min-version\" is not configured in the Kubernetes\nController Manager manifest file or it is set to \"VersionTLS10\" or\n\"VersionTLS11\", this is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Edit the Kubernetes Controller Manager manifest file in the\n/etc/kubernetes/manifests directory on the Kubernetes Master Node. Set the\nvalue of \"--tls-min-version\" to \"VersionTLS12\" or higher.",
+          "label": "fix"
+        },
+        {
+          "data": "Kubernetes Controller Manager process is not running on the target.",
+          "label": "caveat"
+        }
+      ],
+      "id": "V-242376",
+      "impact": 0,
+      "severity": "informational",
+      "status": "notApplicable",
+      "tags": {
+        "cci": [
+          "CCI-000068"
+        ],
+        "fix_id": "F-45609r712483_fix",
+        "gid": "V-242376",
+        "gtitle": "SRG-APP-000014-CTR-000035",
+        "nist": [
+          "AC-17 (2)"
+        ],
+        "rid": "SV-242376r712484_rule",
+        "severity": "medium",
+        "stig_id": "CNTR-K8-000150"
+      },
+      "title": "The Kubernetes Controller Manager must use TLS 1.2, at a minimum, to\nprotect the confidentiality of sensitive data during electronic dissemination."
+    },
+    {
+      "baseline": "metawrapper",
+      "descriptions": [
+        {
+          "data": "The Kubernetes Scheduler will prohibit the use of SSL and unauthorized\nversions of TLS protocols to properly secure communication.\n\n    The use of unsupported protocol exposes vulnerabilities to the Kubernetes\nby rogue traffic interceptions, man-in-the-middle attacks, and impersonation of\nusers or services from the container platform runtime, registry, and keystore.\nTo enable the minimum version of TLS to be used by the Kubernetes API Server,\nthe setting \"tls-min-version\" must be set.",
+          "label": "default"
+        },
+        {
+          "data": "",
+          "label": "rationale"
+        },
+        {
+          "data": "Change to the /etc/kubernetes/manifests/ directory on the Kubernetes Master\nNode. Run the command:\n\n    grep -i tls-min-version *\n\n    If the setting \"tls-min-version\" is not configured in the Kubernetes\nScheduler manifest file or it is set to \"VersionTLS10\" or \"VersionTLS11\",\nthis is a finding.",
+          "label": "check"
+        },
+        {
+          "data": "Edit the Kubernetes Scheduler manifest file in the\n/etc/kubernetes/manifests directory on the Kubernetes Master Node. Set the\nvalue of \"--tls-min-version\" to \"VersionTLS12\" or higher.",
+          "label": "fix"
+        },
+        {
+          "data": "Kubernetes Scheduler process is not running on the target.",
+          "label": "caveat"
+        }
+      ],
+      "id": "V-242377",
+      "impact": 0,
+      "severity": "informational",
+      "status": "notApplicable",
+      "tags": {
+        "cci": [
+          "CCI-000068"
+        ],
+        "fix_id": "F-45610r712486_fix",
+        "gid": "V-242377",
+        "gtitle": "SRG-APP-000014-CTR-000035",
+        "nist": [
+          "AC-17 (2)"
+        ],
+        "rid": "SV-242377r712487_rule",
+        "severity": "medium",
+        "stig_id": "CNTR-K8-000160"
+      },
+      "title": "The Kubernetes Scheduler must use TLS 1.2, at a minimum, to protect\nthe confidentiality of sensitive data during electronic dissemination."
+    }
+  ],
+  "total": 1603,
+  "limit": 2
+}

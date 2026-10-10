@@ -1,0 +1,57 @@
+query-envelope.json
+===================
+
+What it is
+  One instance of the reference API's paged envelope for
+  GET /documents/{id}/requirements — the shape ADR-0008 §2's fixed rewrite map
+  produces from the MCP's hdf_query response.
+
+How it was produced
+  By running this repository's own MCP server and capturing its reply. Not
+  assembled, and not adapted from a bug report or a doc example.
+
+    go build -o hdf ./cmd/hdf                     # from hdf-cli/
+    HDF_MCP_ROOT=<repo root> ./hdf mcp            # JSON-RPC over stdio
+      -> initialize
+      -> tools/call hdf_query
+           source:    {path: "hdf-fixtures/results/inspec-multilayered.json"}
+           verbosity: "full"
+           limit:     2
+
+  Captured 2026-10-10 against hdf-cli at engineSchemaVersion 3.7.2.
+
+Source document
+  hdf-fixtures/results/inspec-multilayered.json — real InSpec runner output
+  from a multi-overlay scan (see hdf-fixtures/README.md for its own
+  provenance). sha256 of that file as read:
+  6068338ce4fa3cb189f04536190cdb1f84a7b2f950baeca4057e4bfd5dc9aa5f
+
+  The two rows are the first two the engine returned at limit 2, carried
+  byte-for-byte from the MCP's structuredContent.requirements. No string inside
+  a row was edited, including the multi-line prose in `descriptions` and the
+  embedded newlines in `title`.
+
+What the projection changed, and why
+  The MCP replied with keys:
+    docType, engineSchemaVersion, handle, notice, requirements, returned,
+    total, truncated
+  The envelope carries:
+    requirements, total, limit
+
+  - requirements: carried unchanged.
+  - total:        carried unchanged (1603).
+  - limit:        the effective limit echoed per AIP-158, taken from the MCP's
+                  `returned` (2) because that is what the server applied.
+  - handle, notice, returned, truncated: MCP transport state. §2's rewrite map
+    strips them; `handle` in particular is the document reference, which on
+    HTTP is the {id} already in the path.
+  - docType, engineSchemaVersion: not members of the HTTP envelope.
+  - next: DELIBERATELY ABSENT. It is optional in the envelope, and the cursor's
+    opaque format is ADR-0011's to define. A value here would be invented, so
+    this fixture does not exercise the cursor field and does not pretend to.
+
+Consumers
+  hdf-openapi/test/downstream.test.ts — asserts the Zod that
+  @hey-api/openapi-ts emits for the envelope parses this instance, which is
+  what makes ADR-0008 §7's derivation pipeline a checked claim rather than an
+  assumption.
