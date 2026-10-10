@@ -702,18 +702,59 @@ func ValidateXMLSize(input []byte, maxSize int) error {
 }
 
 // ValidateXMLInput performs safety checks on XML input:
+//
 //  1. Size limit check (see ValidateXMLSize; maxSize <= 0 uses the configured
 //     process default or the built-in 256 MB)
-//  2. Entity declaration detection (billion-laughs prevention) — always run,
-//     independent of the size limit
+//
+//  2. Prologue declaration policy (see validateXMLPrologue) — always run,
+//     independent of the size limit.
 //
 // Returns nil if input passes all checks.
 func ValidateXMLInput(input []byte, maxSize int) error {
 	if err := ValidateXMLSize(input, maxSize); err != nil {
 		return err
 	}
-	if hdfutil.ContainsXMLEntityDeclarations(input) {
+	if err := validateXMLPrologue(input); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateXMLPrologue applies this repository's DTD policy to an XML input.
+//
+// It follows OWASP's second sanctioned option from the XXE Prevention Cheat Sheet —
+// permit an internal DTD, refuse external entities and expansion — rather than the first
+// ("reject any document with a DOCTYPE"). Two reasons:
+//
+//  1. The primary control already holds at the parser, which is where OWASP puts it.
+//     Go's encoding/xml does not process DTDs at all, and fast-xml-parser refuses
+//     external entities outright. Both are pinned by tests, so if an upgrade changes
+//     that, it fails loudly rather than quietly making this gate load-bearing.
+//  2. Real Burp Suite XML exports carry an inline DTD of only <!ELEMENT>/<!ATTLIST>
+//     declarations, so option one rejects a published tool's own output.
+//
+// What it deliberately does NOT do is decide whether a subset is "inert". OWASP's
+// guidance is to disable the dangerous features "rather than attempting to validate DTD
+// contents", and that advice is well earned: locating a subset's own end requires
+// quote- and comment-aware tokenising, and a substring version of this check was
+// defeated by a `]>` inside an attribute default.
+//
+// A DOCTYPE whose declarations cannot be fully parsed is refused rather than accepted: the
+// scanner then has a lower bound on what it found, not an answer, so treating "no
+// findings" as "safe" would be the wrong way round. An input that is not XML at all is a
+// different matter and is left to the parser, which reports it better.
+func validateXMLPrologue(input []byte) error {
+	decls := hdfutil.InspectXMLPrologue(input)
+	switch {
+	// Only when a DOCTYPE was actually seen. Malformed on its own just means the input is
+	// not XML — the parser reports that far better than this gate could, and a size check
+	// on a non-XML buffer is a legitimate call.
+	case decls.Malformed && decls.HasDoctype:
+		return fmt.Errorf("XML input has a DOCTYPE whose declarations could not be fully parsed, so it cannot be checked")
+	case decls.HasEntityDecl:
 		return fmt.Errorf("XML input contains entity declarations which are not supported (potential entity expansion attack)")
+	case decls.HasExternalID:
+		return fmt.Errorf("XML input references an external DTD or entity which is not supported (potential external entity attack)")
 	}
 	return nil
 }

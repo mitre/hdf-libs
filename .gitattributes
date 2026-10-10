@@ -35,6 +35,9 @@ hdf-schema/test/**/*.json eol=lf
 hdf-generators/test/**/*.json eol=lf
 hdf-validators/test/**/*.json eol=lf
 site/data/converters.json eol=lf
+# The OpenAPI tooling baseline is byte-compared against freshly serialised output, both by
+# scripts/openapi-matrix.mjs and by its test, so a CRLF checkout would fail the comparison.
+hdf-openapi/test/baseline/*.json eol=lf
 
 # Test fixtures are stored as regular git objects (text XML/JSON compresses
 # well in packfiles). Large full-scan fixtures that exceed ~1 MB should not
