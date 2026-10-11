@@ -370,14 +370,24 @@ describe('hdf-comparison.schema.json', () => {
       expect(validate(doc)).toBe(true);
     });
 
-    it('should accept extensions', () => {
+    it('should accept extensions carrying producer data in passthrough', () => {
       const doc = createMinimalComparisonDoc({
         extensions: {
-          customField: 'custom value',
-          nestedData: { key: 'value' },
+          passthrough: {
+            customField: 'custom value',
+            nestedData: { key: 'value' },
+          },
         },
       });
       expect(validate(doc)).toBe(true);
+    });
+
+    // extensions is closed: passthrough is where unmodeled data goes.
+    it('should reject producer data placed directly on extensions', () => {
+      const doc = createMinimalComparisonDoc({
+        extensions: { customField: 'custom value' },
+      });
+      expect(validate(doc)).toBe(false);
     });
   });
 

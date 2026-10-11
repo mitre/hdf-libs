@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-converters/v3
 
-go 1.26.6
+go 1.26.9
 
 require (
 	github.com/adrg/xdg v0.5.3

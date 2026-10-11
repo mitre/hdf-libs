@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.7.0",
+  "$id": "https://mitre.github.io/hdf-libs/schemas/hdf-system/v3.8.0",
   "title": "HDF System",
   "description": "Describes a system's authorization boundary, components, and interconnections. Maps to OSCAL SSP system-characteristics and FedRAMP system inventory.",
   "type": "object",
@@ -13,7 +13,7 @@
     "externalReferences": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/External_Reference"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference"
       },
       "description": "Optional references to external artifacts describing this system's threat environment or context (CTI/STIX, BOMs, advisories, or any URI-addressable artifact). Inert context; see External_Reference."
     },
@@ -23,7 +23,7 @@
       "description": "Stable UUID (RFC 4122) for this system. Enables cross-document correlation independent of file location. Optional in casual use, expected in production documents."
     },
     "owner": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
       "description": "Team or individual responsible for this system's authorization and compliance. Maps to OSCAL responsible-party with role 'system-owner'."
     },
     "name": {
@@ -44,7 +44,7 @@
       "description": "Description of the system's purpose and mission."
     },
     "authorizationStatus": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.7.0#/$defs/Authorization_Status",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Authorization_Status",
       "description": "Current Authorization to Operate (ATO) status."
     },
     "authorizationDate": {
@@ -53,7 +53,7 @@
       "description": "Date the current authorization status was granted. ISO 8601 format."
     },
     "categorizationLevel": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.7.0#/$defs/Categorization_Level",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Categorization_Level",
       "description": "FIPS 199 security categorization (impact level)."
     },
     "boundaryDescription": {
@@ -64,28 +64,28 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.7.0#/$defs/Component"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.8.0#/$defs/Component"
       },
       "description": "System components within the authorization boundary. Uses the full polymorphic Component type with stable identity (componentId), external references, and generalized BOM attachment (boms[])."
     },
     "controlDesignations": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.7.0#/$defs/Control_Designation"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Control_Designation"
       },
       "description": "Declares which controls are common, hybrid, or system-specific, and which component provides them. Maps to NIST SP 800-53 control designations and OSCAL leveraged-authorizations."
     },
     "dataFlows": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.7.0#/$defs/Data_Flow"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.8.0#/$defs/Data_Flow"
       },
       "description": "Inter-component data flows describing how components communicate. Supports local, cross-system, and external flows. Replaces the interconnections[] field."
     },
     "boms": {
       "type": "array",
       "items": {
-        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.7.0#/$defs/Bom"
+        "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.8.0#/$defs/Bom"
       },
       "description": "System-scoped Bills of Materials whose subject is the authorization boundary rather than a single component (e.g. a SaaSBOM of services, a KBOM of cluster inventory, an OBOM). Component-scoped BOMs (SBOM, ai-model) attach on the component instead. See primitives/bom.schema.json."
     },
@@ -97,7 +97,7 @@
       "description": "Optional key-value labels for grouping and querying systems."
     },
     "integrity": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Integrity",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Integrity",
       "description": "Cryptographic integrity information for verifying this system document has not been tampered with."
     },
     "version": {
@@ -105,8 +105,12 @@
       "description": "Version of this system document."
     },
     "generator": {
-      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0#/$defs/Generator",
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Generator",
       "description": "Information about the tool that generated this system document."
+    },
+    "extensions": {
+      "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0#/$defs/Extensions",
+      "description": "Producer data outside the HDF model, and the pre-converted source artifact(s) this system document was converted from."
     }
   },
   "examples": [
@@ -158,16 +162,16 @@
     }
   ],
   "$defs": {
-    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0",
       "title": "HDF Common Primitives",
       "description": "Shared building blocks used by hdf-results and hdf-baseline schemas.",
       "$defs": {
         "External_Reference": {
           "type": "object",
           "title": "External Reference",
-          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property.\n\nPurpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category.\n\n`sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible.\n\nA reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
+          "description": "A generalized reference to any external artifact by identity and/or location, modeled on the STIX 2.1 `external_references` common property.\n\nPurpose-agnostic: cite a CVE, an ATT&CK technique, a STIX bundle/object, a BOM, a runbook, or any vendor artifact — including kinds with no dedicated HDF reference category.\n\n`sourceName` names the system; `externalId` cites by id within that system; `href` locates it. `sourceName` + `externalId` is equivalently a URN (`urn:<sourceName>:<externalId>`, RFC 8141), so the by-identity and by-location forms stay interconvertible.\n\nAn entry may also carry the artifact itself rather than point at it: `document` for a JSON object, `content` + `encoding` for anything else. Embedding satisfies the at-least-one rule on its own, so an artifact with no meaningful public location needs no synthetic `href`.\n\nA reference is inert context: it overrides nothing, so it carries only lightweight optional `addedBy`/`addedAt` attribution, never override machinery.",
           "required": [
             "sourceName"
           ],
@@ -186,6 +190,42 @@
               "required": [
                 "description"
               ]
+            },
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "document"
+              ]
+            }
+          ],
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "content"
+                ]
+              },
+              "then": {
+                "required": [
+                  "encoding"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "encoding"
+                ]
+              },
+              "then": {
+                "required": [
+                  "content"
+                ]
+              }
             }
           ],
           "properties": {
@@ -201,7 +241,7 @@
             "href": {
               "type": "string",
               "format": "uri-reference",
-              "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. `checksum`/`mediaType` apply only to a retrievable `href`."
+              "description": "Location of the artifact. `uri-reference` (not `uri`) so a bare internal `#fragment`/`#uuid` reference is expressible alongside absolute URLs. Set it only when the location is meaningful to a reader — never a producer's local filesystem path."
             },
             "description": {
               "type": "string",
@@ -213,11 +253,11 @@
             },
             "mediaType": {
               "type": "string",
-              "description": "IANA media type of the referenced artifact when retrievable (RFC 6838), e.g., 'application/json'. Meaningful only with `href`."
+              "description": "IANA media type of the artifact (RFC 6838), e.g., 'application/json', 'application/xml', 'text/csv'. Applies both to an artifact retrievable at `href` and to one embedded here in `content` or `document`."
             },
             "checksum": {
               "$ref": "#/$defs/Checksum",
-              "description": "Integrity hash of the referenced artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Meaningful only with a retrievable `href`."
+              "description": "Integrity hash of the artifact. Reuses the HDF `Checksum` primitive (not STIX `hashes`). Applies both to an artifact retrievable at `href` and to one embedded here in `content` or `document` — beside embedded bytes it is what makes the copy verifiable rather than merely present."
             },
             "addedBy": {
               "$ref": "#/$defs/Identity",
@@ -236,11 +276,24 @@
             "document": {
               "type": "object",
               "additionalProperties": true,
-              "description": "Optional lossless embedded copy of the referenced artifact — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim.\n\nComposes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed.\n\nHDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+              "description": "Optional lossless embedded copy of the referenced artifact as a JSON object — the raw STIX object, EPSS record, advisory, or annotation payload — preserved verbatim.\n\nJSON objects only. An artifact that is not a JSON object (XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not text at all) embeds through `content` + `encoding` instead.\n\nComposes with `href`/`externalId` (which point at the artifact) and `checksum` (which ties the copy to the source): a single entry can both point and embed.\n\nHDF stays payload-agnostic — the content is carried untouched, never normalized into HDF fields — so this does not duplicate the source ontology (e.g. STIX rides here unchanged)."
+            },
+            "content": {
+              "type": "string",
+              "description": "Optional lossless embedded copy of the artifact's bytes as a string, for artifacts `document` cannot hold: XML, CSV, NDJSON, plain text, a JSON array, or bytes that are not valid UTF-8 text at all.\n\n`encoding` states how to read it back and is required alongside it. Set `mediaType` so a consumer knows what the bytes are, and `checksum` so the copy can be verified against the source.\n\nCarried verbatim — never reformatted, re-indented, or re-serialized."
+            },
+            "encoding": {
+              "type": "string",
+              "title": "External Reference Encoding",
+              "enum": [
+                "utf-8",
+                "base64"
+              ],
+              "description": "How to read `content` back into the artifact's bytes. 'utf-8' for text (XML, CSV, NDJSON, plain text, JavaScript-wrapped JSON); 'base64' for anything that is not valid UTF-8 text.\n\nRequired whenever `content` is present, and meaningless without it — an embedded copy whose encoding a consumer has to guess is not lossless."
             }
           },
           "unevaluatedProperties": false,
-          "$comment": "Examples, in order: 1) By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228; 2) By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL; 3) By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution; 4) Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields.",
+          "$comment": "Examples, in order: 1) By-identity: cite a CVE by its id in the 'cve' system without a URL — equivalently urn:cve:CVE-2021-44228; 2) By-identity AND by-locator together (anyOf, not oneOf) — an ATT&CK technique cited by id with its canonical URL; 3) By-locator to a retrievable STIX bundle, with integrity hash, media type, and attribution; 4) Enrichment envelope: a STIX threat-intel object embedded losslessly in `document` and classified via `kind`, cited by id and pointed at by href — the pointer and the embedded copy compose. The payload rides verbatim; HDF does not normalize STIX fields; 5) Embed-only, text: an XCCDF results file carried in `content` as utf-8 with its media type and checksum, and no `href` at all — the artifact was read from a local file whose path means nothing to a reader; 6) Embed-only, non-text: a Fortify FPR (a zip) carried in `content` as base64, the case `document` and utf-8 both fail.",
           "examples": [
             {
               "sourceName": "cve",
@@ -285,6 +338,28 @@
                     "external_id": "CVE-2021-44228"
                   }
                 ]
+              }
+            },
+            {
+              "sourceName": "openscap",
+              "rel": "raw-source",
+              "mediaType": "application/xml",
+              "encoding": "utf-8",
+              "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Benchmark xmlns=\"http://checklists.nist.gov/xccdf/1.2\" id=\"xccdf_org.ssgproject.content_benchmark_RHEL-9\">\n  <TestResult id=\"xccdf_org.open-scap_testresult_default-profile\" start-time=\"2026-09-27T12:00:00+00:00\" end-time=\"2026-09-27T12:04:11+00:00\">\n    <rule-result idref=\"xccdf_org.ssgproject.content_rule_sshd_disable_root_login\" severity=\"medium\">\n      <result>fail</result>\n    </rule-result>\n  </TestResult>\n</Benchmark>",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "713b3ee32af5c14ac93e519b5025d760983607143dba3a0438f68667923beda1"
+              }
+            },
+            {
+              "sourceName": "fortify",
+              "rel": "raw-source",
+              "mediaType": "application/zip",
+              "encoding": "base64",
+              "content": "UEsDBBQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAYXVkaXQuZnZkbLOxr8jNUShLLSrOzM+zVTLUM1Cyt7NxC3Px0bcDAFBLAQIUAxQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAAAAAAAAAAACAAQAAAABhdWRpdC5mdmRsUEsFBgAAAAABAAEAOAAAAEYAAAAAAA==",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "c7e4cefceecb83511ae6174c7d22584061671dee6dc5f27243503b47532a66b1"
               }
             }
           ]
@@ -1269,9 +1344,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0",
       "title": "HDF System Primitives",
       "description": "Types for describing system architecture, authorization boundaries, and components.",
       "$defs": {
@@ -1322,7 +1397,7 @@
               "description": "Rationale for why this override is needed."
             },
             "approvedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
               "description": "Identity of the person or system that approved this override."
             }
           },
@@ -1404,9 +1479,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/component/v3.8.0",
       "title": "HDF Component Primitives",
       "description": "First-class system component with identity, polymorphic type, generalized BOM attachment (boms[]), and system-binding properties. Components are the successor to Targets, adding stable identity (componentId), external system cross-references, and manifest inventory (SBOM, AI model/dataset, and reserved future BOM kinds).",
       "$defs": {
@@ -1452,7 +1527,7 @@
               "description": "Description of this component's role or purpose."
             },
             "owner": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
               "description": "Team or individual responsible for this component. Enables per-component ownership when different teams manage different parts of a system."
             },
             "externalIds": {
@@ -1472,14 +1547,14 @@
             "boms": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.7.0#/$defs/Bom"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.8.0#/$defs/Bom"
               },
               "description": "Component-scoped Bills of Materials (SBOM, ai-model, dataset, or any reserved bomType), each carried by passthrough (ref/document) or normalized. Replaces the former sbom/sbomRef/sbomFormat trio; a component may carry several BOMs (e.g. an SBOM plus an ai-model BOM). See primitives/bom.schema.json."
             },
             "integrity": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum"
               },
               "description": "Cryptographic integrity of this component's underlying artifact — model weights or shards, dataset archive, container image, or package bytes.\n\nAn array supports multi-file/sharded artifacts.\n\nThis is the single, generic home for artifact/subject integrity across all component types (it replaced the former per-type Container_Image digest and Artifact checksum fields).\n\nDistinct from BOM-document integrity (Bom.hashes[]) and from the document tamper-evidence Integrity type."
             },
@@ -1493,12 +1568,12 @@
             "inputOverrides": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.7.0#/$defs/Input_Override"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Input_Override"
               },
               "description": "System-specific overrides for baseline input values."
             },
             "targetSelector": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.7.0#/$defs/Target_Selector",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/system/v3.8.0#/$defs/Target_Selector",
               "description": "Label selector to match targets belonging to this component during migration. Targets with matching labels are automatically included."
             }
           },
@@ -1781,7 +1856,7 @@
                   "const": "cloudAccount"
                 },
                 "provider": {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Cloud_Provider",
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Cloud_Provider",
                   "description": "Cloud provider."
                 },
                 "accountId": {
@@ -1820,7 +1895,7 @@
                   "const": "cloudResource"
                 },
                 "provider": {
-                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Cloud_Provider",
+                  "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Cloud_Provider",
                   "description": "Cloud provider."
                 },
                 "resourceType": {
@@ -2119,9 +2194,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/bom/v3.8.0",
       "title": "HDF BOM Primitives",
       "description": "Generalized Bill-of-Materials / manifest representation.\n\nOne extensible Bom shape, discriminated by bomType, carries any manifest kind (SBOM, AI model/dataset, and reserved future kinds) either by passthrough (opaque ref/embed of the native document) or normalized (converted into HDF's queryable shape).\n\nSubject identity (name, version, componentId) is inherited from the host component or system — the BOM never re-owns it.\n\nSee ADR-0001.",
       "$defs": {
@@ -2177,7 +2252,7 @@
             "hashes": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum"
               },
               "description": "Integrity of the carried BOM *document* itself (the referenced/embedded manifest file), NOT the integrity of the BOM's subject artifact. Subject/artifact integrity (model weights, dataset archive) is a component-level concern, not carried here. Subject identity is inherited from the host component/system; per-node identity lives in the type-extension."
             },
@@ -2589,9 +2664,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/data-flow/v3.8.0",
       "title": "HDF Data Flow Primitives",
       "description": "Types for describing data flows between components within a system and across system boundaries. Data flows model network connections, API calls, database queries, and other inter-component communication.",
       "$defs": {
@@ -2748,12 +2823,183 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/extensions/v3.8.0",
       "title": "HDF Extension Primitives",
-      "description": "Extension types for waivers, attestations, generators, and integrity.",
+      "description": "Extension types for waivers, attestations, generators, integrity, and the document-level extensions carrier.",
       "$defs": {
+        "Raw_Source_Artifact": {
+          "allOf": [
+            {
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference"
+            },
+            {
+              "not": {
+                "required": [
+                  "document"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "content"
+                ]
+              },
+              "then": {
+                "required": [
+                  "encoding",
+                  "mediaType"
+                ]
+              }
+            }
+          ],
+          "description": "One artifact exactly as a converter received it, before conversion.\n\nAn External_Reference used for a single purpose, so the same primitive both points and embeds: `sourceName` names the producing tool; `content` + `encoding` carry the bytes; `checksum` is of the exact bytes the converter read; `rel` is 'raw-source'; `href` appears only when the caller supplied a location that means something to a reader, never a producer's local filesystem path.\n\nBYTES, NOT A PARSED COPY. `document` is forbidden here, enforced by the schema rather than described: it holds a parsed JSON object, so embedding through it discards the original whitespace, key order, duplicate keys and trailing bytes — which makes the artifact unreconstructable and the checksum unverifiable against what is stored. A JSON input carries as a `content` string like every other input. This is deliberately stricter than HDF v2, whose `passthrough.raw` held a parsed structure in every converter but one, and which for XML inputs stored a reshaped object whose keys could collide.\n\n`mediaType` is REQUIRED on an entry that embeds — bytes whose type a consumer has to infer are not carriage. It is derived from the converter's declared input family (json → application/json, xml → application/xml, text → text/plain) and overridden by converters that know their bytes more precisely (CSV, NDJSON, JavaScript-wrapped JSON).\n\nAn entry that only points at a location may omit `mediaType`, `content` and `encoding`.",
+          "$comment": "Examples, in order: 1) JSON input embedded as a utf-8 `content` string — the common case, and note it is NOT a parsed object; 2) XML input, which `document` never could have held; 3) CSV input, where `mediaType` overrides the 'text' input family's derived text/plain; 4) non-text input (a Fortify FPR zip) embedded as base64; 5) by-reference only: a scan retrievable at a meaningful URL, with no embedded copy and therefore no required mediaType, encoding or content.",
+          "examples": [
+            {
+              "sourceName": "grype",
+              "rel": "raw-source",
+              "mediaType": "application/json",
+              "encoding": "utf-8",
+              "content": "{\"matches\":[{\"vulnerability\":{\"id\":\"CVE-2021-36159\",\"severity\":\"Critical\"}}]}",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "4b33be77f104d6ee323ff2c945d1c3f9a151606b2d263ea7932716844c75920c"
+              }
+            },
+            {
+              "sourceName": "openscap",
+              "rel": "raw-source",
+              "mediaType": "application/xml",
+              "encoding": "utf-8",
+              "content": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Benchmark xmlns=\"http://checklists.nist.gov/xccdf/1.2\" id=\"xccdf_org.ssgproject.content_benchmark_RHEL-9\">\n  <TestResult id=\"xccdf_org.open-scap_testresult_default-profile\" start-time=\"2026-09-27T12:00:00+00:00\" end-time=\"2026-09-27T12:04:11+00:00\">\n    <rule-result idref=\"xccdf_org.ssgproject.content_rule_sshd_disable_root_login\" severity=\"medium\">\n      <result>fail</result>\n    </rule-result>\n  </TestResult>\n</Benchmark>",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "713b3ee32af5c14ac93e519b5025d760983607143dba3a0438f68667923beda1"
+              }
+            },
+            {
+              "sourceName": "prisma",
+              "rel": "raw-source",
+              "mediaType": "text/csv",
+              "encoding": "utf-8",
+              "content": "Hostname,Distro,CVE ID,Compliance ID,Type,Severity,Packages,Source Package,Package Version\nhost-01,Ubuntu 22.04,CVE-2021-36159,,image,critical,apk-tools,apk-tools,2.12.5-r1\n",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "c5a8077ee069e18fd6687c6b1c4f72fdbc95b7af77d954b6fb5e522cd783aa83"
+              }
+            },
+            {
+              "sourceName": "fortify",
+              "rel": "raw-source",
+              "mediaType": "application/zip",
+              "encoding": "base64",
+              "content": "UEsDBBQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAYXVkaXQuZnZkbLOxr8jNUShLLSrOzM+zVTLUM1Cyt7NxC3Px0bcDAFBLAQIUAxQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAAAAAAAAAAACAAQAAAABhdWRpdC5mdmRsUEsFBgAAAAABAAEAOAAAAEYAAAAAAA==",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "c7e4cefceecb83511ae6174c7d22584061671dee6dc5f27243503b47532a66b1"
+              }
+            },
+            {
+              "sourceName": "nessus",
+              "rel": "raw-source",
+              "href": "https://scans.example.gov/exports/2026-09-27-prod-web.nessus",
+              "mediaType": "application/xml",
+              "checksum": {
+                "algorithm": "sha256",
+                "value": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+              }
+            }
+          ]
+        },
+        "Extensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "passthrough": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Catch-all for producer data that HDF does not model — the role heimdall2's `passthrough.auxiliary_data` played: fields a converter deliberately carried but had no home for.\n\nDeliberately permissive: unenumerated properties are accepted by design, with no shape imposed on them. HDF neither reads nor interprets what is here. It is the ONLY permissive surface in `extensions` — everything HDF does not define belongs here rather than beside it.\n\nThis is NOT where the pre-converted source artifact goes. v2 put it here only because nothing else had room; `rawSourceArtifacts` is its home now, and it gives the bytes a checksum, a media type and a reference contract that an untyped object cannot.\n\nFor data that belongs to one requirement rather than to the document, use that object's own fields — a document-level bag cannot say which requirement it describes.",
+              "examples": [
+                {
+                  "auxiliary_data": [
+                    {
+                      "name": "Scoutsuite",
+                      "data": {
+                        "last_run": {
+                          "ruleset_about": "This ruleset consists of numerous rules that are considered standard by NCC Group"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "audit": {
+                    "runId": "r-123"
+                  }
+                }
+              ],
+              "$comment": "Examples, in order: 1) heimdall2's auxiliary_data shape, the data a v2 mapper carried with nowhere else to put it; 2) the legacy top-level `passthrough` an HDF document arrived with, relocated here verbatim by the SAF-supplement normalizer."
+            },
+            "rawSourceArtifacts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Raw_Source_Artifact"
+              },
+              "description": "The input(s) this document was converted from, verbatim.\n\nAn array because a conversion can consume more than one artifact — the OSCAL profile path takes a profile and a catalog. Every other converter takes one input, and an array of one costs nothing.\n\nPopulating this is required of ingest converters by policy, enforced by the converter contract and test harness rather than by a schema `required`: a tool that emits HDF natively has no source artifact, and requiring the field would make valid native HDF invalid."
+            }
+          },
+          "title": "Extensions",
+          "description": "Carrier for data outside the HDF model: `passthrough` for producer data HDF does not model, `rawSourceArtifacts` for the pre-converted input(s).\n\nCLOSED: these two members are the whole of it. A key HDF does not define goes inside `passthrough` — that is what `passthrough` is for — so `extensions` never becomes a second, unnamed schema that consumers must reverse-engineer from the producers that happen to write it.\n\nClosed with `additionalProperties` rather than the house `unevaluatedProperties` because this definition composes nothing, and the shipped Go validator is a draft-07 engine that does not implement `unevaluatedProperties` — a closure only one of the two validators enforces is not a closure.\n\nDeclared on every HDF document type that carries a producer envelope (`generator` / `integrity`), and on `Evaluated_Baseline`, so one rule governs both sites.",
+          "$comment": "Examples, in order: 1) the whole contract in one object — a converter's input embedded beside the producer data it could not map; 2) carriage alone, the shape a converter emits when it has nothing homeless to record.",
+          "examples": [
+            {
+              "passthrough": {
+                "auxiliary_data": [
+                  {
+                    "name": "Grype",
+                    "data": {
+                      "descriptor": {
+                        "name": "grype",
+                        "version": "0.74.0"
+                      }
+                    }
+                  }
+                ]
+              },
+              "rawSourceArtifacts": [
+                {
+                  "sourceName": "grype",
+                  "rel": "raw-source",
+                  "mediaType": "application/json",
+                  "encoding": "utf-8",
+                  "content": "{\"matches\":[{\"vulnerability\":{\"id\":\"CVE-2021-36159\",\"severity\":\"Critical\"}}]}",
+                  "checksum": {
+                    "algorithm": "sha256",
+                    "value": "4b33be77f104d6ee323ff2c945d1c3f9a151606b2d263ea7932716844c75920c"
+                  }
+                }
+              ]
+            },
+            {
+              "rawSourceArtifacts": [
+                {
+                  "sourceName": "fortify",
+                  "rel": "raw-source",
+                  "mediaType": "application/zip",
+                  "encoding": "base64",
+                  "content": "UEsDBBQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAYXVkaXQuZnZkbLOxr8jNUShLLSrOzM+zVTLUM1Cyt7NxC3Px0bcDAFBLAQIUAxQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAAAAAAAAAAACAAQAAAABhdWRpdC5mdmRsUEsFBgAAAAABAAEAOAAAAEYAAAAAAA==",
+                  "checksum": {
+                    "algorithm": "sha256",
+                    "value": "c7e4cefceecb83511ae6174c7d22584061671dee6dc5f27243503b47532a66b1"
+                  }
+                }
+              ]
+            }
+          ]
+        },
         "Status_Override": {
           "type": "object",
           "unevaluatedProperties": false,
@@ -2780,20 +3026,20 @@
             "externalReferences": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/External_Reference"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference"
               },
               "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object or CTI feed motivating an E:A riskAdjustment). Inert context distinct from `evidence`; see External_Reference. Symmetric with Standalone_Override.externalReferences for the inline (results-embedded) override carrier."
             },
             "type": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0#/$defs/Override_Type",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0#/$defs/Override_Type",
               "description": "The type of override applied to this requirement."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Result_Status",
               "description": "The new status this override sets for the requirement. Optional when only impact is being overridden."
             },
             "impact": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0#/$defs/Impact_Override",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0#/$defs/Impact_Override",
               "description": "Override to the requirement's impact score. At least one of status or impact must be set."
             },
             "reason": {
@@ -2801,7 +3047,7 @@
               "description": "Explanation for why this override was applied."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
               "description": "Identity of who applied this override. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -2815,27 +3061,27 @@
               "description": "Timestamp when this override expires and must be reviewed/renewed. REQUIRED - no permanent overrides allowed. ISO 8601 format."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation. Supports hardware security tokens (PKCS#11/PKCS#12), Yubikeys, GPG keys, passkeys, and other signing methods."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this override, such as screenshots demonstrating manual verification for attestations."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.8.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
             "justification": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0#/$defs/Justification",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0#/$defs/Justification",
               "description": "Structured controlled-vocabulary classification for why this override applies. Complements (does not replace) the free-text 'reason' field. Most useful on falsePositive and attestation overrides where the structured category enables filtering and lossless round-trip with VEX / OSCAL / FedRAMP DR. See the Justification primitive for the precedent vocabulary and rationale."
             }
           },
@@ -2971,7 +3217,7 @@
               "description": "Detailed explanation of the plan, including what actions will be taken."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
               "description": "Identity of who created this POA&M. For simple cases, use type 'simple' with just an identifier."
             },
             "appliedAt": {
@@ -2987,23 +3233,23 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Milestone"
               },
               "description": "Optional array of milestones tracking progress toward completion."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Signature",
               "description": "Optional digital signature for enhanced trust and non-repudiation."
             },
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Evidence"
               },
               "description": "Supporting evidence for this POA&M, such as documentation of compensating controls or mitigation implementation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the previous amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment on a requirement."
             }
           },
@@ -3146,17 +3392,9 @@
         "Integrity": {
           "type": "object",
           "unevaluatedProperties": false,
-          "dependentRequired": {
-            "algorithm": [
-              "checksum"
-            ],
-            "checksum": [
-              "algorithm"
-            ]
-          },
           "properties": {
             "algorithm": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Hash_Algorithm",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Hash_Algorithm",
               "description": "The hash algorithm used for the checksum."
             },
             "checksum": {
@@ -3185,13 +3423,39 @@
             }
           ],
           "description": "Cryptographic integrity information for verifying the HDF file has not been tampered with. If algorithm is provided, checksum must also be provided, and vice versa.",
-          "title": "Integrity"
+          "title": "Integrity",
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "algorithm"
+                ]
+              },
+              "then": {
+                "required": [
+                  "checksum"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "checksum"
+                ]
+              },
+              "then": {
+                "required": [
+                  "algorithm"
+                ]
+              }
+            }
+          ]
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/amendments/v3.8.0",
       "title": "HDF Amendment Primitives",
       "description": "Types for waivers, attestations, and POA&Ms that modify requirement compliance status.",
       "$defs": {
@@ -3302,7 +3566,7 @@
             "externalReferences": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/External_Reference"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/External_Reference"
               },
               "description": "Optional references to the external artifacts behind this override (e.g. the STIX bundle/object, advisory, or CTI feed that motivated it). Inert context distinct from `evidence`; see External_Reference."
             },
@@ -3320,7 +3584,7 @@
               "description": "Name of the baseline containing the requirement. Required when the system has multiple baselines with potentially overlapping requirement IDs."
             },
             "status": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0#/$defs/Result_Status",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0#/$defs/Result_Status",
               "description": "The new status this amendment sets. Optional when only impact is being overridden."
             },
             "impact": {
@@ -3332,7 +3596,7 @@
               "description": "Justification for this amendment."
             },
             "appliedBy": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Identity",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Identity",
               "description": "Identity of who applied this amendment."
             },
             "appliedAt": {
@@ -3348,20 +3612,20 @@
             "evidence": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Evidence"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Evidence"
               },
               "description": "Supporting evidence (screenshots, logs, URLs, documents)."
             },
             "signature": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Signature",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Signature",
               "description": "Digital signature for non-repudiation."
             },
             "previousChecksum": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Checksum",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Checksum",
               "description": "SHA-256 checksum of the prior amendment in chronological order. Each amendment's checksum is recorded by the NEXT one, so editing an amendment in place is detectable — provided a later amendment is chained to it. It is NOT tamper-proof: the final amendment, the document envelope, deleted trailing amendments, and a chain that has been stripped or recomputed wholesale are all outside what it can detect. Use signature for non-repudiation. Omitted on the first amendment."
             },
             "cvss": {
-              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0#/$defs/Cvss",
+              "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.8.0#/$defs/Cvss",
               "$comment": "When present alongside impact.value on a riskAdjustment override, impact.value should be approximately cvss.computedScore / 10.0. Soft consistency rule — validators may warn but should not error. The cvss block makes Environmental/Threat enrichment auditable.",
               "description": "Structured CVSS scoring data backing this override. Captures the rubric (which Environmental/Threat metrics the consumer modified, the recomputed score) used to justify a riskAdjustment. For other override types this is optional context."
             },
@@ -3372,7 +3636,7 @@
             "milestones": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.7.0#/$defs/Milestone"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/common/v3.8.0#/$defs/Milestone"
               },
               "description": "Remediation milestones (primarily for POA&M type amendments)."
             },
@@ -3389,7 +3653,7 @@
             "affectedPackages": {
               "type": "array",
               "items": {
-                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.7.0#/$defs/Affected_Package"
+                "$ref": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.8.0#/$defs/Affected_Package"
               },
               "description": "Software packages this amendment is scoped to, distinct from componentRef (which scopes to an HDF-internal Component by UUID).\n\nUse when the source amendment format references packages by purl/cpe/name+version — e.g., VEX `affects[]` / `products[]`, OSCAL POA&M `subjects[]`, FedRAMP component-aware amendments.\n\nSymmetric with Evaluated_Requirement.affectedPackages, which scopes findings to the same package vocabulary.\n\nWhen omitted, the amendment applies system-wide (or only to componentRef when that is set)."
             }
@@ -3522,9 +3786,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/result/v3.8.0",
       "title": "HDF Result Primitives",
       "description": "Types for representing assessment results and statuses.",
       "$defs": {
@@ -3589,6 +3853,10 @@
                 "type": "string"
               },
               "description": "The stacktrace/backtrace of the exception if one occurred."
+            },
+            "rawSourceRecord": {
+              "$ref": "#/$defs/Raw_Source_Record",
+              "description": "The source tool's own record for this result, verbatim."
             }
           },
           "examples": [
@@ -3618,6 +3886,64 @@
           ],
           "description": "A test within a requirement and its results and findings such as how long it took to run.",
           "title": "Requirement Result"
+        },
+        "Raw_Source_Record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "content",
+            "encoding",
+            "mediaType"
+          ],
+          "properties": {
+            "content": {
+              "type": "string",
+              "description": "The record's bytes, exactly as the source tool wrote them."
+            },
+            "encoding": {
+              "type": "string",
+              "enum": [
+                "utf-8",
+                "base64"
+              ],
+              "description": "How to read `content`: 'utf-8' for text, 'base64' for bytes that are not valid UTF-8 text."
+            },
+            "mediaType": {
+              "type": "string",
+              "description": "The record's IANA media type — the type of this record, which for a fragment of a larger artifact may be narrower than the artifact's own. Example: 'application/json' for one match object out of a JSON report."
+            },
+            "pointer": {
+              "type": "string",
+              "description": "Where this record sits inside the artifact it came from, as a JSON Pointer (RFC 6901) for JSON sources or an XPath for XML ones. Example: '/matches/3'.\n\nOptional, and the link that makes carriage verifiable rather than merely present: with it a consumer can confirm the record really is the subtree of `extensions.rawSourceArtifacts[]` it claims to be. Omit it when the source's shape gives a record no addressable location."
+            }
+          },
+          "description": "The source tool's own record for this result, verbatim — the one entry in the converter's input that produced it.\n\nSCOPED TO THE RESULT DELIBERATELY. For a vulnerability scanner the native record is one (vulnerability, package) pair, which is exactly one result: a CVE reported against two packages yields two entries whose records differ only in the package they matched. Held on the requirement instead, those two records would collide, and merging entries that share an id would have to discard one — so the result is not merely an available home but the correct one.\n\nDistinct from `extensions.rawSourceArtifacts[]`, which carries whole input artifacts: this carries the one record inside one of them, and `pointer` ties the two together. A consumer that wants the whole input reads the artifact; one that wants provenance for a single finding reads this.\n\nDistinct from `code`, which means the code that ran to evaluate the requirement — an InSpec control's source, or a check reference. A serialized finding is not code, and putting one there overloaded a field whose meaning came from InSpec.\n\nCLOSED, and deliberately not a passthrough bag: three required members and an optional pointer are the whole of it. Producer data that HDF does not model belongs in `extensions.passthrough`, which is document-scoped and permissive by design; this field is neither.\n\nClosed with `additionalProperties` rather than the house `unevaluatedProperties` because this definition composes nothing, and the shipped Go validator is a draft-07 engine that does not implement `unevaluatedProperties` — a closure only one of the two validators enforces is not a closure.",
+          "$comment": "Examples, in order: 1) one grype match — the shape that moves out of `code` — located in the carried artifact by pointer; 2) an XCCDF rule-result, where the record is XML although the document embedding it is JSON, so mediaType is per record and not per document; 3) a record whose bytes are not text, carried as base64; 4) the minimum: a record whose source shape gives it no addressable location, so pointer is omitted.",
+          "examples": [
+            {
+              "content": "{\"vulnerability\":{\"id\":\"CVE-2022-48174\",\"severity\":\"Critical\"},\"artifact\":{\"name\":\"ssl_client\",\"version\":\"1.31.1-r9\",\"type\":\"apk\"}}",
+              "encoding": "utf-8",
+              "mediaType": "application/json",
+              "pointer": "/matches/3"
+            },
+            {
+              "content": "<rule-result idref=\"xccdf_org.ssgproject.content_rule_sshd_disable_root_login\" severity=\"medium\">\n  <result>fail</result>\n</rule-result>",
+              "encoding": "utf-8",
+              "mediaType": "application/xml",
+              "pointer": "/Benchmark/TestResult/rule-result[4]"
+            },
+            {
+              "content": "UEsDBBQAAAAIAEVnPF20b/JoHgAAABwAAAAKAAAAYXVkaXQuZnZkbA==",
+              "encoding": "base64",
+              "mediaType": "application/octet-stream"
+            },
+            {
+              "content": "host-01,Ubuntu 22.04,CVE-2021-36159,,image,critical,apk-tools,apk-tools,2.12.5-r1",
+              "encoding": "utf-8",
+              "mediaType": "text/csv"
+            }
+          ],
+          "title": "Raw Source Record"
         },
         "Requirement_Description": {
           "type": "object",
@@ -3655,9 +3981,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/cvss/v3.8.0",
       "title": "HDF CVSS Primitives",
       "description": "Types for representing CVSS (Common Vulnerability Scoring System) data attached to assessment findings. Supports CVSS v2.0, v3.0, v3.1, and v4.0 metric groups (Base, Threat, Environmental, Supplemental).",
       "$defs": {
@@ -3854,9 +4180,9 @@
         }
       }
     },
-    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.7.0": {
+    "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.8.0": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.7.0",
+      "$id": "https://mitre.github.io/hdf-libs/schemas/primitives/affected-package/v3.8.0",
       "title": "HDF Affected Package Primitives",
       "description": "Types for representing the software package(s) affected by a vulnerability finding.",
       "$defs": {

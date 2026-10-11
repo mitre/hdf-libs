@@ -1,7 +1,7 @@
 // Merge engine — combine several results documents into one multi-baseline
 // results document (ADR-0016). One baseline per input baseline, renamed
 // `<tool>/<original>`; per-baseline provenance in labels; each input's root
-// provenance kept verbatim under extensions["hdf-merge"]. Union semantics: no
+// provenance kept verbatim under extensions.passthrough["hdf-merge"]. Union semantics: no
 // requirement is deduplicated, re-keyed or dropped. Deterministic for the same
 // inputs in the same order. Kept at behavioural parity with the TS peer
 // (hdf-engine/src/merge.ts); see merge_test.go / test/merge.test.ts.
@@ -142,10 +142,12 @@ func Merge(sources []MergeSource) (hdf.HDFResults, []MergeWarning, error) {
 	}
 
 	out.Timestamp = latest
-	out.Extensions = map[string]any{
-		mergeExtensionKey: map[string]any{
-			"version": Version(),
-			"sources": provenance,
+	out.Extensions = &hdf.Extensions{
+		Passthrough: map[string]any{
+			mergeExtensionKey: map[string]any{
+				"version": Version(),
+				"sources": provenance,
+			},
 		},
 	}
 	return out, warnings, nil
@@ -190,7 +192,7 @@ func toolVersion(doc hdf.HDFResults) string {
 }
 
 // sourceProvenance is one input's root metadata, verbatim, for
-// extensions["hdf-merge"].sources[]: index, name, and — only when the input
+// extensions.passthrough["hdf-merge"].sources[]: index, name, and — only when the input
 // has them — tool, generator, timestamp and runner, each as plain JSON so the
 // carrier is the same shape in Go and TS.
 func sourceProvenance(index int, src MergeSource) map[string]any {

@@ -50,13 +50,32 @@ describe('normalizeSafSupplement', () => {
     expect(warnings.length).toBeGreaterThan(0);
   });
 
-  it('adds passthrough alongside an existing extensions key without clobbering it', () => {
-    const { output } = normalizeSafSupplement(
+  // `extensions` is a closed object, so an undefined sibling may not stay: it is
+  // moved INTO passthrough. Leaving it would normalize legacy input into a
+  // document the schema rejects. The data survives, one level down.
+  it('relocates an undefined extensions sibling into passthrough', () => {
+    const { output, warnings } = normalizeSafSupplement(
       validV3WithExtra({ extensions: { foo: 'bar' }, passthrough: { audit: { runId: 'r-1' } } }),
     );
     const doc = JSON.parse(output);
-    expect(doc.extensions.foo).toBe('bar');
+    expect(doc.extensions.foo).toBeUndefined();
+    expect(doc.extensions.passthrough.foo).toBe('bar');
     expect(doc.extensions.passthrough.audit.runId).toBe('r-1');
+    expect(warnings.some((w: string) => w.includes('extensions.foo was moved into'))).toBe(true);
+  });
+
+  // A sibling whose name already exists inside passthrough cannot be moved
+  // there; it is dropped with a warning rather than clobbering carried data.
+  it('reports a sibling it cannot relocate instead of clobbering passthrough', () => {
+    const { output, warnings } = normalizeSafSupplement(
+      validV3WithExtra({
+        extensions: { audit: 'sibling' },
+        passthrough: { audit: { runId: 'r-1' } },
+      }),
+    );
+    const doc = JSON.parse(output);
+    expect(doc.extensions.passthrough.audit.runId).toBe('r-1');
+    expect(warnings.some((w: string) => w.includes('extensions.audit was dropped'))).toBe(true);
   });
 
   it('passes a doc with no legacy keys through byte-identical with no warnings', () => {

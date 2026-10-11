@@ -375,8 +375,8 @@ add a field to a schema, before release confirm it reaches the whole pipeline:
 3. **New plural/array field?** Add its `plural→singular` entry to `hdf-to-xml`'s
    container map so its XML child element is named (unmapped array keys fall back to
    `<item>` — lossless but generically named).
-4. Tool-specific metadata with no typed home goes to `extensions`/namespaced `tags`,
-   not a new field — see "Auxiliary Tool Metadata" above.
+4. Tool-specific metadata with no typed home goes to `extensions.passthrough`/namespaced
+   `tags`, not a new field — see "Auxiliary Tool Metadata" above.
 
 ### Naming Conventions
 
@@ -389,8 +389,8 @@ add a field to a schema, before release confirm it reaches the whole pipeline:
 ### $ref URI Pattern
 
 ```
-https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v3.7.0#/$defs/<Type>
-https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.7.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/primitives/<name>/v3.8.0#/$defs/<Type>
+https://mitre.github.io/hdf-libs/schemas/hdf-<name>/v3.8.0#/$defs/<Type>
 ```
 
 ---
@@ -471,7 +471,7 @@ The diff algorithm is format-agnostic once components are extracted.
 
 ---
 
-## Auxiliary Tool Metadata (`extensions` + namespaced `tags`)
+## Auxiliary Tool Metadata (`extensions.passthrough` + namespaced `tags`)
 
 Some source tools carry metadata that has no typed HDF home — scanner run
 statistics, per-finding hashes/keys, raw analysis flags. HDF does **not** need a
@@ -481,10 +481,11 @@ inventing schema.
 
 ### Two homes, by scope
 
-- **Scan / baseline scope** → `baseline.extensions['<tool>']` (an object). The
-  `extensions` map (`additionalProperties: true`, present on the document root and
-  `Evaluated_Baseline`) is documented as *"reserved for tool-specific data not
-  defined in the HDF standard."* Use it for whole-scan exhaust: gosec `Stats`
+- **Scan / baseline scope** → `baseline.extensions.passthrough['<tool>']` (an
+  object). `extensions` itself is a **closed** object — its only members are
+  `passthrough` and `rawSourceArtifacts`, and a key written beside them makes the
+  document invalid in both the TypeScript and Go validators. `passthrough` is the
+  permissive surface inside it. Use it for whole-scan exhaust: gosec `Stats`
   (files/lines/nosec counts) + Go build errors, NeuVector `report.cmds`, IonChannel
   run-verdict metadata.
 - **Requirement scope** → `tags['<tool>/<key>']`. `tags` is an open string map, so
@@ -493,8 +494,9 @@ inventing schema.
 
 ### Rules
 
-- **Namespace under the tool name.** `baseline.extensions['gosec']`,
-  `tags['sonarqube/hash']` — never a bare top-level key, so two converters never
+- **Namespace under the tool name.** `baseline.extensions.passthrough['gosec']`,
+  `tags['sonarqube/hash']` — never a bare key on `extensions` (which rejects it)
+  and never a bare top-level key inside `passthrough`, so two converters never
   collide and consumers can filter by tool.
 - **Only genuinely-homeless data.** Anything with a typed field (cvss, cwe, refs,
   severity, status) goes to the typed field. `extensions`/namespaced-`tags` are the
@@ -505,6 +507,10 @@ inventing schema.
   as always.
 
 ---
+
+## Go Modules: Downgrades Drop Sibling Pins
+
+A `go get` that downgrades a dependency below what a sibling module requires removes that sibling's `require` line, and the next `go mod tidy` adds it back at the zero pseudo-version `v3.0.0-00010101000000-000000000000`, because the `replace` directive resolves the sibling from its local directory. Tidy calls that tidy, every local build passes, and the module is unpublishable: a consumer cannot fetch a version no tag provides. This happens in and out of workspace mode alike; `go mod tidy` ignores `go.work` entirely. After any `go get`, read its `go: removed ...` and `go: downgraded ...` lines and `git diff go.mod` before tidying, and restore a removed sibling pin by hand. CI's `check-go` job runs `pnpm run lint:go-mod-tidy`, which fails if `go mod tidy -diff` would change any module or if any `github.com/mitre/hdf-libs/...` require sits at the zero pseudo-version, naming the module either way; the release workflow's `--check` is the last line, this one is the first. Tidiness also matters because the dependency scanner reads each `go.mod` as text, so a require that lags the resolved graph is what it judges.
 
 ## Dependency Audit Overrides
 

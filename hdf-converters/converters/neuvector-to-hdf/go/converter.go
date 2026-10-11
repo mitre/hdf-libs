@@ -531,8 +531,8 @@ func ConvertNeuVectorToHDF(input []byte, converterVersion string) (*hdf.HDFResul
 	// report.cmds is scan-wide image build history — baseline-scope metadata with
 	// no typed HDF home. Emit it once under the tool namespace, only when present.
 	if cmds := hdfutil.StringsToInterfaces(scan.Report.Cmds); len(cmds) > 0 {
-		baseline.Extensions = map[string]interface{}{
-			"neuvector": map[string]interface{}{"cmds": cmds},
+		baseline.Extensions = &hdf.Extensions{
+			Passthrough: map[string]interface{}{"neuvector": map[string]interface{}{"cmds": cmds}},
 		}
 	}
 

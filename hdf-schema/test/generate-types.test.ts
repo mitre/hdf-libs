@@ -69,6 +69,15 @@ describe('generate-types', () => {
       expect(content).toMatch(/Source/);
     });
 
+    it('types the extensions members and declares no index signature', () => {
+      const tsFile = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
+      const iface = tsFile.match(/export interface Extensions \{[\s\S]*?\n\}/)?.[0];
+      expect(iface).toBeDefined();
+      expect(iface).toMatch(/passthrough\?:/);
+      expect(iface).toMatch(/rawSourceArtifacts\?: ExternalReference\[\]/);
+      expect(iface).not.toMatch(/\[property: string\]: any/);
+    });
+
     it('exposes Host_Component identity fields on Component (quicktype TS drops them)', () => {
       const content = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
       const iface = content.slice(content.indexOf('export interface Component {'));
@@ -136,6 +145,42 @@ describe('generate-types', () => {
       // Check for any Type field without omitempty
       const typeMatch = content.match(/Type\s+\w+\s+`json:"type"`[^,]/);
       expect(typeMatch).toBeTruthy();
+    });
+
+    // `extensions` is a closed, defined object, so the typed struct is correct:
+    // the only free-form surface is `passthrough`, which stays an open map.
+    it('renders extensions as a typed struct, never a bare map', () => {
+      const goFile = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+      expect(goFile).toMatch(/^type Extensions struct/m);
+      const struct = goFile.slice(goFile.indexOf('type Extensions struct'));
+      const body = struct.slice(0, struct.indexOf('\n}'));
+      expect(body).toMatch(/Passthrough\s+map\[string\]interface\{\}/);
+      expect(body).toMatch(/RawSourceArtifacts\s+\[\]ExternalReference/);
+      const extensionFields = goFile.split('\n').filter((l) => /^\s*Extensions\s/.test(l));
+      expect(extensionFields.length).toBeGreaterThan(5);
+      for (const line of extensionFields) {
+        expect(line).not.toContain('map[string]interface{}');
+      }
+    });
+
+    // Raw_Source_Artifact is External_Reference plus two conditionals, so
+    // quicktype unifies the two and names the result after whichever carries a
+    // `title`. Giving the refinement one renames the published `ExternalReference`
+    // type in both languages and breaks every consumer of it — it deliberately has
+    // none, and this pins that.
+    it('keeps ExternalReference as the published name of the reference type', () => {
+      const goFile = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+      const tsFile = readFileSync(join(DIST_DIR, 'ts', 'hdf.ts'), 'utf-8');
+      expect(goFile).toMatch(/^type ExternalReference struct/m);
+      expect(goFile).not.toMatch(/^type RawSourceArtifact struct/m);
+      expect(tsFile).toMatch(/^export interface ExternalReference \{/m);
+      expect(tsFile).not.toMatch(/^export interface RawSourceArtifact \{/m);
+    });
+
+    it('keeps genuinely extensible records as structs', () => {
+      const goFile = readFileSync(join(DIST_DIR, 'go', 'hdf.go'), 'utf-8');
+      expect(goFile).toMatch(/^type Component struct/m);
+      expect(goFile).toMatch(/^type SBOMPackage struct/m);
     });
 
     it('should have omitempty on all optional EvaluatedBaseline fields', () => {

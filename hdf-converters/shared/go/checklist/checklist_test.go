@@ -185,7 +185,7 @@ func TestChecklistToHDF(t *testing.T) {
 	assert.Equal(t, "STIG Checklist Scan", bl.Name)
 	require.NotNil(t, bl.Title)
 	assert.Equal(t, "Mozilla Firefox STIG", *bl.Title)
-	assert.Equal(t, "MOZ_Firefox_STIG", bl.Extensions["stigid"])
+	assert.Equal(t, "MOZ_Firefox_STIG", bl.Extensions.Passthrough["stigid"])
 
 	require.Len(t, bl.Requirements, 1)
 	r := bl.Requirements[0]
@@ -199,7 +199,7 @@ func TestChecklistToHDF(t *testing.T) {
 
 	require.Len(t, results.Components, 1)
 	assert.Equal(t, "EXAMPLE-HOST", results.Components[0].Name)
-	assert.Equal(t, "ckl", results.Extensions["checklistFormat"])
+	assert.Equal(t, "ckl", results.Extensions.Passthrough["checklistFormat"])
 }
 
 // Full round-trip: CKL -> HDF -> model -> CKL preserves key fields.

@@ -1125,6 +1125,7 @@ func TestEvidenceBundle_CoversEverySchemaReferenceField(t *testing.T) {
 	sort.Strings(paths)
 	assert.Equal(t, []string{
 		".contents[].uri",
+		".extensions.rawSourceArtifacts[].href",
 		".externalEvidence[].uri",
 		".externalReferences[].href",
 		".planRef",
@@ -1146,6 +1147,15 @@ func TestEvidenceBundle_CoversEverySchemaReferenceField(t *testing.T) {
 		"externalReferences": []map[string]any{
 			{"sourceName": "runbook", "href": "scans/runbook.json"},
 		},
+		// The sixth field. A Raw_Source_Artifact carries the converter's input bytes
+		// inline, so its href is a reader-meaningful location rather than a file the
+		// archive carries — refContext, like externalReferences[]. Populated here so the
+		// coverage this test asserts is proven rather than only listed above.
+		"extensions": map[string]any{
+			"rawSourceArtifacts": []map[string]any{
+				{"sourceName": "nessus", "href": "scans/original.nessus", "rel": "raw-source"},
+			},
+		},
 	}
 	pkgData, err := json.Marshal(pkg)
 	require.NoError(t, err)
@@ -1161,11 +1171,12 @@ func TestEvidenceBundle_CoversEverySchemaReferenceField(t *testing.T) {
 		}
 	}
 	assert.Equal(t, map[string]string{
-		"sys.json":           "system reference",
-		"meta/plan.json":     "plan reference",
-		"scans/r.json":       "content reference",
-		"scans/audit.ndjson": "external evidence",
-		"scans/runbook.json": "external reference",
+		"sys.json":              "system reference",
+		"meta/plan.json":        "plan reference",
+		"scans/r.json":          "content reference",
+		"scans/audit.ndjson":    "external evidence",
+		"scans/runbook.json":    "external reference",
+		"scans/original.nessus": "raw source artifact",
 	}, got, "every reference field the schema declares must reach recordedRefs")
 }
 

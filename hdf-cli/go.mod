@@ -1,6 +1,6 @@
 module github.com/mitre/hdf-libs/hdf-cli/v3
 
-go 1.26.6
+go 1.26.9
 
 require (
 	github.com/aws/aws-sdk-go-v2/service/securityhub v1.82.1

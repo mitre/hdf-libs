@@ -478,11 +478,11 @@ describe('ionchannel to HDF converter', async () => {
   });
 
   describe('auxiliary tool metadata (extensions + namespaced tags)', async () => {
-    it('surfaces run-scope metadata in baseline.extensions.ionchannel', async () => {
+    it('surfaces run-scope metadata in baseline.extensions.passthrough.ionchannel', async () => {
       // All fields below carry data in minimal.json; text is "" so it is omitted.
       const hdf = JSON.parse(await convertIonchannelToHdf(loadFixture('minimal.json'))) as HDFResults;
       const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
-      const ion = dep.extensions?.ionchannel as Record<string, unknown>;
+      const ion = dep.extensions?.passthrough?.ionchannel as Record<string, unknown>;
       expect(ion).toEqual({
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         analysis_id: 'analysis-001-abcdef',
@@ -532,7 +532,7 @@ describe('ionchannel to HDF converter', async () => {
       });
       const hdf = JSON.parse(await convertIonchannelToHdf(input)) as HDFResults;
       const dep = hdf.baselines.find((b) => b.name === 'Ion Channel SBOM Analysis')!;
-      const ion = dep.extensions?.ionchannel as Record<string, unknown>;
+      const ion = dep.extensions?.passthrough?.ionchannel as Record<string, unknown>;
       expect(ion).toEqual({ name: 'proj', public: false });
     });
 

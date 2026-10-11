@@ -273,8 +273,19 @@ func TestEvidenceAddReference_RequiresSomethingToIdentifyTheReference(t *testing
 func TestEvidenceAddReference_DerivesTheIdentityRuleFromTheSchema(t *testing.T) {
 	fields, err := externalReferenceIdentityFields()
 	require.NoError(t, err, "the rule must be resolvable by following the schema's own $ref")
-	assert.Equal(t, []string{"description", "externalId", "href"}, fields,
+	assert.Equal(t, []string{"content", "description", "document", "externalId", "href"}, fields,
 		"derived from External_Reference's anyOf, sorted; a schema change here should surface as a failure")
+
+	// It DID surface: the anyOf gained content and document, and this command has flags for
+	// neither. Recorded rather than papered over — the refusal names the gap, and closing it
+	// is its own card. This assertion is what keeps the gap from going quiet again.
+	_, pkgPath := referencePackage(t)
+	_, _, err = executeCommand("evidence", "add-reference", pkgPath, "--source-name", "cve")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--description", "the operator still learns what they CAN pass")
+	for _, f := range []string{"content", "document"} {
+		assert.Contains(t, err.Error(), f, "and the unsupported identity branch %q is named", f)
+	}
 }
 
 // The stderr receipt names the array it wrote, because reaching for the wrong array is

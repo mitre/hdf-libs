@@ -199,16 +199,30 @@ func runEvidenceAddReference(file string, opts addReferenceOpts) error {
 		// flag that does not exist the moment the schema gains a branch.
 		flagFor := map[string]string{"externalId": "--external-id", "href": "--href", "description": "--description"}
 		flags := make([]string, 0, len(identity))
+		var noFlag []string
 		for _, f := range identity {
-			flag, known := flagFor[f]
-			if !known {
-				return fmt.Errorf("the schema's External_Reference now accepts %q to identify a reference, "+
-					"but this command has no flag for it; add one", f)
+			if flag, known := flagFor[f]; known {
+				flags = append(flags, flag)
+				continue
 			}
-			flags = append(flags, flag)
+			// The schema gaining an identity branch must not cost the OPERATOR their
+			// guidance: they are told what they can pass, and the gap is reported after
+			// it rather than instead of it. Returning early here meant one new branch in
+			// the schema replaced the whole flag list with a message addressed to us.
+			noFlag = append(noFlag, f)
+		}
+		gap := ""
+		if len(noFlag) > 0 {
+			gap = fmt.Sprintf(" (the schema also accepts %s to identify a reference, which this command "+
+				"has no flag for yet)", strings.Join(noFlag, ", "))
+		}
+		if len(flags) == 0 {
+			return fmt.Errorf("--source-name names the system but nothing identifies what is referenced "+
+				"within it, and this command has no flag for any way the schema allows: %s",
+				strings.Join(noFlag, ", "))
 		}
 		return fmt.Errorf("--source-name names the system but nothing identifies what is referenced within it; "+
-			"give at least one of %s", strings.Join(flags, ", "))
+			"give at least one of %s%s", strings.Join(flags, ", "), gap)
 	}
 
 	data, err := readInputFile(file) // size-gated read boundary (honors --max-size)

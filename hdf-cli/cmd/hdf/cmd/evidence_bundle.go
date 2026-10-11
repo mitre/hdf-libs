@@ -162,8 +162,10 @@ type recordedRef struct {
 // recordedRefs returns EVERY reference the document makes. Every consumer of "what does
 // this package point at" derives from here rather than enumerating fields at its own
 // call site, because hand-enumeration made the same data-loss bug recur four times, once
-// per reference field nobody remembered to add. The schema declares five: systemRef,
-// planRef, contents[].uri, externalEvidence[].uri and externalReferences[].href.
+// per reference field nobody remembered to add. The schema declares six: systemRef,
+// planRef, contents[].uri, externalEvidence[].uri, externalReferences[].href and
+// extensions.rawSourceArtifacts[].href — the last two being inert context that never
+// travels, though both are still enumerated here because the -o guard needs them.
 // TestEvidenceBundle_CoversEverySchemaReferenceField walks the schema and fails if that
 // set changes, so the schema is the authority rather than this comment.
 func recordedRefs(pkgData []byte, contents []hdfengine.EvidenceContent) ([]recordedRef, error) {
@@ -195,7 +197,37 @@ func recordedRefs(pkgData []byte, contents []hdfengine.EvidenceContent) ([]recor
 			uri: c, label: "external reference", field: "externalReferences", kind: refContext,
 		})
 	}
+	for _, c := range rawSourceArtifactRefs(pkgData) {
+		refs = append(refs, recordedRef{
+			uri: c, label: "raw source artifact", field: "extensions.rawSourceArtifacts", kind: refContext,
+		})
+	}
 	return refs, nil
+}
+
+// rawSourceArtifactRefs reads extensions.rawSourceArtifacts[].href — the sixth reference
+// field. refContext, and the schema is what decides that: a Raw_Source_Artifact carries the
+// converter's input BYTES inline in content+encoding, and its href "appears only when the
+// caller supplied a location that means something to a reader, never a producer's local
+// filesystem path". So there is no file here for the archive to carry, which is the same
+// position externalReferences[] holds. It is still enumerated, because the -o guard covers
+// every reference the document makes rather than the subset that travels.
+func rawSourceArtifactRefs(pkg []byte) []string {
+	var doc struct {
+		Extensions struct {
+			RawSourceArtifacts []struct {
+				Href string `json:"href"`
+			} `json:"rawSourceArtifacts"`
+		} `json:"extensions"`
+	}
+	if json.Unmarshal(pkg, &doc) != nil {
+		return nil
+	}
+	out := make([]string, 0, len(doc.Extensions.RawSourceArtifacts))
+	for _, r := range doc.Extensions.RawSourceArtifacts {
+		out = append(out, r.Href)
+	}
+	return out
 }
 
 // externalContextRefs reads externalReferences[].href — the fifth reference field, and

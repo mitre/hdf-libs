@@ -3,18 +3,20 @@
     {
       "description": "Ion Channel analysis verdict: FAILED (risk: medium). Ruleset: strict (ruleset-002).",
       "extensions": {
-        "ionchannel": {
-          "analysis_id": "analysis-edge-001",
-          "branch": "develop",
-          "description": "Python project with edge case dependencies",
-          "duration": 8000,
-          "id": "edge-case-id-001",
-          "name": "python-mixed-project",
-          "project_id": "project-edge-001",
-          "public": false,
-          "status": "finished",
-          "team_id": "team-edge-001",
-          "type": "git"
+        "passthrough": {
+          "ionchannel": {
+            "analysis_id": "analysis-edge-001",
+            "branch": "develop",
+            "description": "Python project with edge case dependencies",
+            "duration": 8000,
+            "id": "edge-case-id-001",
+            "name": "python-mixed-project",
+            "project_id": "project-edge-001",
+            "public": false,
+            "status": "finished",
+            "team_id": "team-edge-001",
+            "type": "git"
+          }
         }
       },
       "integrity": {
