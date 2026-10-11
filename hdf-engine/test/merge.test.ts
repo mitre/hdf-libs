@@ -58,7 +58,7 @@ describe('hdf-engine merge — cross-language parity with go/merge_test.go', () 
   it('provenance labels: tool / toolVersion / sourceDocument, existing labels preserved', () => {
     const { results } = merge(threeScanners());
     expect(results.baselines[0].labels).toEqual({ tool: 'gosec', toolVersion: 'dev', sourceDocument: 'gosec.hdf.json' });
-    expect(results.baselines[0].extensions).toHaveProperty('gosec');
+    expect(results.baselines[0].extensions?.passthrough).toHaveProperty('gosec');
     expect(results.baselines[1].labels).toEqual({
       component: 'ciscobinary.openh264.org',
       tool: 'owasp zap',
@@ -74,7 +74,7 @@ describe('hdf-engine merge — cross-language parity with go/merge_test.go', () 
     expect(results.tool).toBeUndefined();
     expect(results.timestamp).toBe('2026-07-12T22:56:36.173673Z');
     expect(results.components).toHaveLength(5);
-    const ext = results.extensions?.['hdf-merge'] as { version: string; sources: Record<string, unknown>[] };
+    const ext = results.extensions?.passthrough?.['hdf-merge'] as { version: string; sources: Record<string, unknown>[] };
     expect(ext.version).toBe(engineVersion);
     expect(ext.sources).toHaveLength(3);
     expect(ext.sources[0]).toEqual({
@@ -134,7 +134,7 @@ describe('hdf-engine merge — rule coverage, parity with go/merge_test.go', () 
     delete g.timestamp;
     const { results } = merge([{ name: 'g.json', doc: g }]);
     expect(results.timestamp).toBeUndefined();
-    const ext = results.extensions?.['hdf-merge'] as { sources: Record<string, unknown>[] };
+    const ext = results.extensions?.passthrough?.['hdf-merge'] as { sources: Record<string, unknown>[] };
     expect(ext.sources[0]).not.toHaveProperty('timestamp');
   });
 

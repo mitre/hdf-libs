@@ -412,7 +412,7 @@ func TestBuildScanRequirement_OmitsAbsentVerdictFields(t *testing.T) {
 
 func TestConvert_RunMetadataExtensions(t *testing.T) {
 	// The homeless run-scope analysis metadata lands in baseline.extensions
-	// ["ionchannel"] on the primary SBOM baseline. All fields below carry data in
+	// passthrough["ionchannel"] on the primary SBOM baseline. All fields below carry data in
 	// minimal.json; text is "" so it is omitted.
 	input := loadFixture(t, "input/minimal.json")
 	result, err := ConvertIonChannelToHDF(input, testVersion)
@@ -420,7 +420,7 @@ func TestConvert_RunMetadataExtensions(t *testing.T) {
 
 	dep := findBaseline(t, result, "Ion Channel SBOM Analysis")
 	require.NotNil(t, dep.Extensions)
-	ion, ok := dep.Extensions["ionchannel"].(map[string]interface{})
+	ion, ok := dep.Extensions.Passthrough["ionchannel"].(map[string]interface{})
 	require.True(t, ok, "extensions must be namespaced under the ionchannel key")
 
 	assert.Equal(t, "a1b2c3d4-e5f6-7890-abcd-ef1234567890", ion["id"])

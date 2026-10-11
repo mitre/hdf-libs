@@ -260,8 +260,8 @@ export interface HDFComparison {
   drift?: RequirementDiff[];
   /** Annotations keyed by requirement ID */
   annotations?: Record<string, Annotation>;
-  /** Extension data for custom integrations */
-  extensions?: Record<string, unknown>;
+  /** Extension data for custom integrations. Closed: unmodeled data goes in `passthrough`. */
+  extensions?: { passthrough?: Record<string, unknown> };
 }
 
 /**
