@@ -38,6 +38,14 @@ type SarifRun struct {
 	// Parallel to Results; json.Unmarshal fills both from the same input.
 	RawResults *[]json.RawMessage `json:"-"`
 	Taxonomies []SarifTaxonomy    `json:"taxonomies,omitempty"`
+	// Artifacts is the table artifactLocation.index addresses (§3.4.5).
+	Artifacts []SarifArtifact `json:"artifacts,omitempty"`
+}
+
+// SarifArtifact is one entry of a run's artifacts table. Only its location is read:
+// an index resolves to that location's uri and no further.
+type SarifArtifact struct {
+	Location *ArtifactLocation `json:"location,omitempty"`
 }
 
 // UnmarshalJSON decodes a run twice: once into the typed shape the converter maps
@@ -223,6 +231,10 @@ type PhysicalLocation struct {
 // ArtifactLocation identifies a file.
 type ArtifactLocation struct {
 	URI string `json:"uri"`
+	// Pointer, not a plain int: §3.4.5 gives index a default of -1, so an ABSENT index
+	// decodes to 0 in a value field — which would resolve every uri-less location to
+	// artifacts[0] and hand a consumer a path the document never claimed.
+	Index *int `json:"index,omitempty"`
 }
 
 // Region identifies a span within a file.
@@ -338,9 +350,59 @@ func assertSupportedVersion(explicitVersion string) error {
 	return fmt.Errorf("sarif: unsupported input version %q; only 2.1 is supported", explicitVersion)
 }
 
+// --- artifact index resolution (§3.4.5) ---
+
+// resolveArtifactIndices fills in the uri an artifactLocation.index addresses. §3.4.5
+// permits a location to carry only an index into run.artifacts, so the file IS known
+// even where uri is absent — without this the line survives and the path does not.
+//
+// ONE LEVEL ONLY, and deliberately. An artifact's own location may itself be
+// index-addressed, so following the chain would need a cycle guard and would hand a
+// consumer a path this converter inferred transitively rather than one the document
+// stated about the finding. An artifact whose location has no uri resolves to nothing.
+//
+// Anything unresolvable falls back to no path rather than erroring: a nil index, the
+// schema's -1 default, a negative value, an index past the table, or no table at all.
+// Inventing a path would be worse than reporting the line alone, which is what a
+// consumer gets. uriBaseId is NOT handled — it names a base-URI symbol resolved
+// against run.originalUriBaseIds, which is separate addressing and out of scope here.
+func resolveArtifactIndices(run *SarifRun) {
+	if run.Results == nil || len(run.Artifacts) == 0 {
+		return
+	}
+	results := *run.Results
+	for i := range results {
+		for j := range results[i].Locations {
+			physical := results[i].Locations[j].PhysicalLocation
+			if physical == nil || physical.ArtifactLocation == nil {
+				continue
+			}
+			loc := physical.ArtifactLocation
+			if loc.URI != "" || loc.Index == nil {
+				continue
+			}
+			idx := *loc.Index
+			if idx < 0 || idx >= len(run.Artifacts) {
+				continue
+			}
+			artifact := run.Artifacts[idx]
+			if artifact.Location == nil || artifact.Location.URI == "" {
+				continue
+			}
+			loc.URI = artifact.Location.URI
+		}
+	}
+}
+
 // --- Run-level conversion ---
 
 func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
+	// Fill in the paths an index addresses before anything reads a location, so the
+	// rest of the conversion needs no knowledge of the artifacts table. The typed
+	// results are rewritten; rawSourceRecord is built from the UNPARSED bytes, so a
+	// record still reports exactly what the tool wrote.
+	resolveArtifactIndices(&run)
+
 	// Build rule lookup by ID
 	ruleMap := buildRuleMap(run)
 
@@ -1359,9 +1421,9 @@ func createHDFResult(location SarifLocation, status hdf.ResultStatus, timestamp 
 	// permits an artifactLocation carrying only an index, and region — which holds the
 	// line and column — is a SIBLING of artifactLocation, so the position is known even
 	// when the file is not. Publishing "URL :  LINE : 5" reads as missing data, and
-	// dropping the whole location would discard a line we have. Resolving the index
-	// against run.artifacts would recover the path; that is not implemented, and a
-	// consumer needing it reads the result's rawSourceRecord.
+	// dropping the whole location would discard a line we have. An index into
+	// run.artifacts is resolved before this point (see resolveArtifactIndices), so a
+	// uri reaching here as empty means the document addressed no resolvable file.
 	codeDesc := fmt.Sprintf("LINE : %d COLUMN : %d", line, column)
 	if uri != "" {
 		codeDesc = fmt.Sprintf("URL : %s %s", uri, codeDesc)

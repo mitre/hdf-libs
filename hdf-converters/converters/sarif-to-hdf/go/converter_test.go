@@ -2860,3 +2860,143 @@ func TestConvertSarifToHDF_AcceptsTheSupportedExplicitVersion(t *testing.T) {
 		require.NoError(t, err, "%q must be accepted", requested)
 	}
 }
+
+// --- artifactLocation.index resolution (§3.4.5) ---
+
+// sarifWithIndexedLocation builds a run whose single result is addressed by index.
+// loc is the raw artifactLocation JSON, so a test can omit index entirely.
+func sarifWithIndexedLocation(t *testing.T, artifacts, loc string) []byte {
+	t.Helper()
+	return []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"artifacts":` + artifacts + `,
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":` + loc + `,
+				"region":{"startLine":42,"startColumn":9}}}]}]}]}`)
+}
+
+// §3.4.5 guarantees an index when uri is absent, so the path IS recoverable.
+func TestConvertSarifToHDF_IndexResolvesToTheArtifactPath(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"uri":"src/indexed.c"}},{"location":{"uri":"src/other.c"}}]`,
+		`{"index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+
+	require.NotNil(t, req.SourceLocation)
+	require.NotNil(t, req.SourceLocation.Ref)
+	assert.Equal(t, "src/indexed.c", *req.SourceLocation.Ref)
+	assert.Contains(t, req.Results[0].CodeDesc, "URL : src/indexed.c")
+	assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42")
+}
+
+// The index must select the artifact it names, not simply the first.
+func TestConvertSarifToHDF_IndexSelectsTheNamedArtifact(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"uri":"src/first.c"}},{"location":{"uri":"src/second.c"}}]`,
+		`{"index":1}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "src/second.c", *result.Baselines[0].Requirements[0].SourceLocation.Ref)
+}
+
+// THE TYPING HAZARD. The schema gives index `default: -1`, so decoding it into a plain
+// int makes an ABSENT index arrive as 0 — which would resolve every uri-less location
+// to artifacts[0] and invent a path the document never claimed.
+func TestConvertSarifToHDF_AbsentIndexDoesNotResolveToTheFirstArtifact(t *testing.T) {
+	cases := map[string]string{
+		"index absent":   `{}`,
+		"index -1":       `{"index":-1}`,
+		"out of range":   `{"index":7}`,
+		"negative other": `{"index":-5}`,
+	}
+	for name, loc := range cases {
+		t.Run(name, func(t *testing.T) {
+			input := sarifWithIndexedLocation(t, `[{"location":{"uri":"src/first.c"}}]`, loc)
+			result, err := ConvertSarifToHDF(input, testConverterVersion)
+			require.NoError(t, err, "an unresolvable index must fall back, not fail")
+			req := result.Baselines[0].Requirements[0]
+
+			if req.SourceLocation != nil && req.SourceLocation.Ref != nil {
+				assert.NotEqual(t, "src/first.c", *req.SourceLocation.Ref,
+					"%s must not acquire artifacts[0]'s path", name)
+			}
+			assert.NotContains(t, req.Results[0].CodeDesc, "URL :",
+				"%s resolves to no path, so no URL slot", name)
+			assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42",
+				"the line is still known and must survive")
+		})
+	}
+}
+
+// A run carrying no artifacts table cannot resolve anything.
+func TestConvertSarifToHDF_IndexWithoutAnArtifactsTableFallsBack(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"index":0},
+				"region":{"startLine":42,"startColumn":9}}}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotContains(t, req.Results[0].CodeDesc, "URL :")
+	assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42")
+}
+
+// An explicit uri outranks an index; §3.4.5's index exists for when uri is ABSENT.
+func TestConvertSarifToHDF_ExplicitUriOutranksTheIndex(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"uri":"src/indexed.c"}}]`,
+		`{"uri":"src/explicit.c","index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	assert.Equal(t, "src/explicit.c", *result.Baselines[0].Requirements[0].SourceLocation.Ref)
+}
+
+// An artifact whose own location is index-addressed is NOT followed: resolution is one
+// level deep, so a chain cannot loop and a consumer is never handed a path this
+// converter inferred transitively.
+func TestConvertSarifToHDF_ArtifactIndirectionIsNotFollowed(t *testing.T) {
+	input := sarifWithIndexedLocation(t,
+		`[{"location":{"index":1}},{"location":{"uri":"src/real.c"}}]`,
+		`{"index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	assert.NotContains(t, req.Results[0].CodeDesc, "URL :",
+		"artifacts[0] has no uri of its own, and its index is not chased")
+	assert.Contains(t, req.Results[0].CodeDesc, "LINE : 42")
+}
+
+// The resolved uri must NOT reach the native record: rawSourceRecord is the tool's own
+// record, and a uri this converter inferred from the artifacts table is not something
+// the tool wrote. Go is structurally safe because the record comes from the unparsed
+// bytes, while the TypeScript peer rewrites the parsed object and had to snapshot it
+// first — so this pins the invariant on both sides rather than only where it broke.
+func TestConvertSarifToHDF_ResolvedUriDoesNotReachTheNativeRecord(t *testing.T) {
+	input := sarifWithIndexedLocation(t, `[{"location":{"uri":"src/indexed.c"}}]`, `{"index":0}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+	require.Contains(t, req.Results[0].CodeDesc, "URL : src/indexed.c",
+		"the mapped output resolves the path")
+
+	rec := req.Results[0].RawSourceRecord
+	require.NotNil(t, rec)
+	assert.NotContains(t, rec.Content, "src/indexed.c",
+		"the record must report what the tool wrote, not what we inferred")
+
+	var back map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(rec.Content), &back))
+	locs := back["locations"].([]interface{})
+	al := locs[0].(map[string]interface{})["physicalLocation"].(map[string]interface{})["artifactLocation"].(map[string]interface{})
+	assert.NotContains(t, al, "uri", "the source record carried only an index")
+	assert.EqualValues(t, 0, al["index"])
+}

@@ -76,8 +76,9 @@ Schema-confirmed, not real: built to cover §3.4.5's artifactLocation carrying o
 `index`, and validated against the vendored schema. `region` is a sibling of
 `artifactLocation`, so the line and column are known even though the uri is not, and
 TypeScript used to discard the whole location while Go kept it. `artifacts[0]` holds
-the path the index addresses, so the fixture also stands ready for index resolution if
-that is ever implemented.
+the path the index addresses, and that resolution is now implemented: the fixture's
+golden shows `src/indexed.c` reaching both `sourceLocation.ref` and the codeDesc URL
+slot, while the result's `rawSourceRecord` still carries only the index the tool wrote.
 
 ### `results-absent.sarif`
 Schema-confirmed, not real: no published tool sample exercises a run that

@@ -30,6 +30,9 @@ interface SarifRun {
   // and found nothing. Declaring it as a plain array also threw on the null.
   results?: SarifResult[] | null;
   taxonomies?: SarifTaxonomy[];
+  // The table artifactLocation.index addresses (§3.4.5). Only each entry's location
+  // is read: an index resolves to that location's uri and no further.
+  artifacts?: { location?: { uri?: string; index?: number } }[];
 }
 
 interface SarifDriver {
@@ -145,6 +148,10 @@ interface SarifLocation {
   physicalLocation?: {
     artifactLocation?: {
       uri?: string;
+      // Optional, so an ABSENT index is undefined rather than 0: §3.4.5 gives index a
+      // default of -1, and treating a missing one as 0 would resolve every uri-less
+      // location to artifacts[0] and invent a path the document never claimed.
+      index?: number;
     };
     region?: {
       startLine?: number;
@@ -227,7 +234,42 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
 
 // --- Run-level conversion ---
 
+// Fills in the uri an artifactLocation.index addresses. §3.4.5 permits a location to
+// carry only an index into run.artifacts, so the file IS known even where uri is
+// absent — without this the line survives and the path does not.
+//
+// ONE LEVEL ONLY, and deliberately. An artifact's own location may itself be
+// index-addressed, so following the chain would need a cycle guard and would hand a
+// consumer a path this converter inferred transitively rather than one the document
+// stated about the finding. An artifact whose location has no uri resolves to nothing.
+//
+// Anything unresolvable falls back to no path rather than throwing: an undefined
+// index, the schema's -1 default, a negative value, an index past the table, or no
+// table at all. uriBaseId is NOT handled — it names a base-URI symbol resolved
+// against run.originalUriBaseIds, which is separate addressing and out of scope.
+// Mirrors Go's resolveArtifactIndices.
+function resolveArtifactIndices(run: SarifRun): void {
+  const artifacts = run.artifacts;
+  if (!run.results || !artifacts || artifacts.length === 0) return;
+  for (const result of run.results) {
+    for (const location of result.locations ?? []) {
+      const loc = location.physicalLocation?.artifactLocation;
+      if (!loc || loc.uri || loc.index === undefined) continue;
+      if (loc.index < 0 || loc.index >= artifacts.length) continue;
+      const uri = artifacts[loc.index]?.location?.uri;
+      if (uri) loc.uri = uri;
+    }
+  }
+}
+
 function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date): EvaluatedBaseline {
+  // Snapshot every result BEFORE resolving indices. resolveArtifactIndices rewrites
+  // the parsed objects in place, and rawSourceRecord is built from them, so without
+  // this a record would carry the uri THIS CONVERTER inferred rather than what the
+  // tool wrote. Go captures the unparsed bytes at decode time for the same reason.
+  const rawSnapshots = (run.results ?? []).map(r => stringifyLine(canonicalize(r)).replace(/\n$/, ''));
+  resolveArtifactIndices(run);
+
   const ruleMap = buildRuleMap(run);
 
   // Group SARIF results by ruleId — each group becomes one EvaluatedRequirement.
@@ -242,23 +284,24 @@ function convertRun(runIdx: number, run: SarifRun, version: string, resultsCheck
   const groupOrder: string[] = [];
   // indices is parallel to results: indices[i] is results[i]'s position in
   // run.results, which rawSourceRecord.pointer needs to address the source record.
-  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[]; indices: number[] }>();
+  const groupMap = new Map<string, { rule?: ReportingDescriptor; results: SarifResult[]; indices: number[]; raws: string[] }>();
   for (const [srcIdx, result] of limitedResults.entries()) {
     const groupKey = result.ruleId || resolveMessageText(result.message, undefined);
     let group = groupMap.get(groupKey);
     if (!group) {
       const rule = ruleMap.get(result.ruleId);
-      group = { rule, results: [], indices: [] };
+      group = { rule, results: [], indices: [], raws: [] };
       groupMap.set(groupKey, group);
       groupOrder.push(groupKey);
     }
     group.results.push(result);
     group.indices.push(srcIdx);
+    group.raws.push(rawSnapshots[srcIdx] ?? '');
   }
 
   const requirements = groupOrder.map(ruleId => {
     const group = groupMap.get(ruleId)!;
-    return convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, timestamp);
+    return convertResultGroup(runIdx, ruleId, group.rule, group.results, group.indices, group.raws, timestamp);
   });
 
   // Use tool name for baseline name if available
@@ -308,7 +351,7 @@ function buildRuleMap(run: SarifRun): Map<string, ReportingDescriptor> {
 
 // --- Result-group conversion (one EvaluatedRequirement per ruleId) ---
 
-function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], sourceIndices: number[], timestamp: Date): EvaluatedRequirement {
+function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescriptor | undefined, sarifResults: SarifResult[], sourceIndices: number[], raws: string[], timestamp: Date): EvaluatedRequirement {
   const firstResult = sarifResults[0]!;
 
   // Derive requirement-level metadata from the rule and first result
@@ -353,7 +396,7 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
   const perResult: Record<string, unknown>[] = [];
   for (const [i, sr] of sarifResults.entries()) {
     const expanded = convertSarifResultToHDFResults(sr);
-    const record = rawSourceRecordFor(sr, runIdx, sourceIndices[i] ?? i);
+    const record = rawSourceRecordFor(raws[i] ?? '', runIdx, sourceIndices[i] ?? i);
     for (const r of expanded) {
       r.rawSourceRecord = record;
       perResult.push(perResultTagEntry(sr));
@@ -590,7 +633,7 @@ function resolveRuleLevel(
 // merging entries that share an id has to discard one, which is how the non-first
 // result's metadata used to be lost. Encoding is utf-8 rather than base64 because a
 // SARIF result is JSON and therefore valid UTF-8 text. Mirrors Go's rawSourceRecordFor.
-function rawSourceRecordFor(result: SarifResult, runIdx: number, resultIdx: number): RawSourceRecord {
+function rawSourceRecordFor(content: string, runIdx: number, resultIdx: number): RawSourceRecord {
   return {
     // The parsed result carries every property the document had, including the 17 of
     // SARIF's 30 that SarifResult does not declare; sorting matches Go, whose record
@@ -600,7 +643,7 @@ function rawSourceRecordFor(result: SarifResult, runIdx: number, resultIdx: numb
     // because Go HTML-escapes <, > and & while JavaScript does not, and because it
     // sorts keys, escapes U+2028/U+2029 and normalizes negative zero — the four
     // places the two languages' serializers disagree.
-    content: stringifyLine(canonicalize(result)).replace(/\n$/, ''),
+    content,
     encoding: ExternalReferenceEncoding.UTF8,
     mediaType: 'application/json',
     pointer: `/runs/${runIdx}/results/${resultIdx}`,
@@ -1033,9 +1076,9 @@ function createHDFResult(
 
   // The URL slot is omitted when no uri is known rather than left empty: publishing
   // "URL :  LINE : 5" reads as missing data, while dropping the location would discard
-  // a line we have. Resolving artifactLocation.index against run.artifacts would
-  // recover the path; that is not implemented, and a consumer needing it reads the
-  // result's rawSourceRecord. Mirrors Go's createHDFResult.
+  // a line we have. An index into run.artifacts is resolved before this point (see
+  // resolveArtifactIndices), so a uri reaching here as empty means the document
+  // addressed no resolvable file. Mirrors Go's createHDFResult.
   let codeDesc = `LINE : ${line} COLUMN : ${column}`;
   if (uri) {
     codeDesc = `URL : ${uri} ${codeDesc}`;

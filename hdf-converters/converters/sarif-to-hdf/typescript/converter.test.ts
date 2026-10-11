@@ -1956,3 +1956,74 @@ describe('Go/TypeScript conformance parity (§3.13.4, §3.4.5)', () => {
     expect(out.baselines[0].requirements[0].results[0].startTime).toMatch(/Z$/);
   });
 });
+
+describe('artifactLocation.index resolution (§3.4.5)', () => {
+  const doc = (artifacts: string, loc: string): string =>
+    `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "artifacts":${artifacts},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":${loc},
+          "region":{"startLine":42,"startColumn":9}}}]}]}]}`;
+  const req = async (artifacts: string, loc: string) =>
+    JSON.parse(await convertSarifToHdf(doc(artifacts, loc))).baselines[0].requirements[0];
+
+  it('resolves an index to the artifact path', async () => {
+    const r = await req('[{"location":{"uri":"src/indexed.c"}},{"location":{"uri":"src/other.c"}}]', '{"index":0}');
+    expect(r.sourceLocation.ref).toBe('src/indexed.c');
+    expect(r.results[0].codeDesc).toContain('URL : src/indexed.c');
+  });
+
+  it('selects the artifact the index names, not the first', async () => {
+    const r = await req('[{"location":{"uri":"src/first.c"}},{"location":{"uri":"src/second.c"}}]', '{"index":1}');
+    expect(r.sourceLocation.ref).toBe('src/second.c');
+  });
+
+  // THE TYPING HAZARD: §3.4.5 gives index a default of -1, so treating an absent one as
+  // 0 would resolve every uri-less location to artifacts[0] and invent a path.
+  it.each([
+    ['index absent', '{}'],
+    ['index -1', '{"index":-1}'],
+    ['out of range', '{"index":7}'],
+    ['negative other', '{"index":-5}'],
+  ])('does not resolve to the first artifact when %s', async (_name, loc) => {
+    const r = await req('[{"location":{"uri":"src/first.c"}}]', loc);
+    expect(r.sourceLocation?.ref).toBeUndefined();
+    expect(r.results[0].codeDesc).not.toContain('URL :');
+    expect(r.results[0].codeDesc).toContain('LINE : 42');
+  });
+
+  it('falls back when the run carries no artifacts table', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"index":0},
+          "region":{"startLine":42,"startColumn":9}}}]}]}]}`;
+    const r = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(r.results[0].codeDesc).not.toContain('URL :');
+    expect(r.results[0].codeDesc).toContain('LINE : 42');
+  });
+
+  it('prefers an explicit uri over the index', async () => {
+    const r = await req('[{"location":{"uri":"src/indexed.c"}}]', '{"uri":"src/explicit.c","index":0}');
+    expect(r.sourceLocation.ref).toBe('src/explicit.c');
+  });
+
+  it('does not follow an artifact whose own location is index-addressed', async () => {
+    const r = await req('[{"location":{"index":1}},{"location":{"uri":"src/real.c"}}]', '{"index":0}');
+    expect(r.results[0].codeDesc).not.toContain('URL :');
+  });
+
+  // Resolution rewrites the parsed result in place, and this side builds
+  // rawSourceRecord from those objects — so without a pre-resolution snapshot the record
+  // would report a uri THIS CONVERTER inferred rather than what the tool wrote. Caught
+  // by the Go/TS golden parity test, which Go passes because it captures unparsed bytes.
+  it('keeps the inferred uri out of the native record', async () => {
+    const r = await req('[{"location":{"uri":"src/indexed.c"}}]', '{"index":0}');
+    expect(r.results[0].codeDesc).toContain('URL : src/indexed.c');
+    const record = JSON.parse(r.results[0].rawSourceRecord.content);
+    const loc = record.locations[0].physicalLocation.artifactLocation;
+    expect(loc).toEqual({index: 0});
+    expect(loc.uri).toBeUndefined();
+  });
+});

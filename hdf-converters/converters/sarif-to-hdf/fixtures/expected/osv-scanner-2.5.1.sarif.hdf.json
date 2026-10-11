@@ -26,7 +26,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/0"
               },
-              "startTime": "2026-10-11T00:55:33.971Z",
+              "startTime": "2026-10-11T01:15:07.928Z",
               "status": "failed"
             }
           ],
@@ -92,7 +92,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/1"
               },
-              "startTime": "2026-10-11T00:55:33.971Z",
+              "startTime": "2026-10-11T01:15:07.928Z",
               "status": "failed"
             }
           ],
@@ -158,7 +158,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/2"
               },
-              "startTime": "2026-10-11T00:55:33.971Z",
+              "startTime": "2026-10-11T01:15:07.928Z",
               "status": "failed"
             }
           ],
@@ -224,7 +224,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/3"
               },
-              "startTime": "2026-10-11T00:55:33.971Z",
+              "startTime": "2026-10-11T01:15:07.928Z",
               "status": "failed"
             }
           ],
@@ -290,7 +290,7 @@
                 "mediaType": "application/json",
                 "pointer": "/runs/0/results/4"
               },
-              "startTime": "2026-10-11T00:55:33.971Z",
+              "startTime": "2026-10-11T01:15:07.928Z",
               "status": "failed"
             }
           ],
@@ -346,7 +346,7 @@
     "name": "sarif-to-hdf",
     "version": "1.0.0"
   },
-  "timestamp": "2026-10-11T00:55:33.971Z",
+  "timestamp": "2026-10-11T01:15:07.928Z",
   "tool": {
     "format": "SARIF",
     "name": "osv-scanner",
