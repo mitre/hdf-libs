@@ -3,12 +3,13 @@ import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { spawnSync } from 'child_process';
 import { join } from 'path';
-import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, PROBLEM_TYPES, rewriteInputShape, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
+import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, PROBLEM_TYPES, rewriteInputShape, STRICTNESS_EXEMPT, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
 import { FILESYSTEM_FIELDS, loadBindings } from '../src/bindings.js';
 
 const HERE = new URL('.', import.meta.url).pathname;
 const SRC = join(HERE, '..', 'src');
 const toolsList = JSON.parse(readFileSync(join(SRC, 'tools-list.golden.json'), 'utf-8'));
+const contract = JSON.parse(readFileSync(join(SRC, 'mcp-contract.golden.json'), 'utf-8'));
 const table = loadBindings(readFileSync(join(SRC, 'bindings.yaml'), 'utf-8'));
 
 // The lint below reads dist/hdf-api.oas.json, so write it here at module scope rather
@@ -804,5 +805,238 @@ describe('an unlisted open leaf in a request body refuses to emit', () => {
         },
       }),
     ).toThrow(/POST \/planted requestBody\/properties\/loose.*OPEN_LEAF_EXEMPT/);
+  });
+});
+
+// ADR-0008 §3 maps the mcperr taxonomy onto HTTP statuses but says nothing about WHICH
+// operation declares WHICH code, and the first version of this generator declared none of
+// them: the document had no 412 and no 422 at all, so a client could not type the response
+// it gets when it posts an invalid document. The contract golden now records, per tool, the
+// codes that tool can actually raise — derived by walking the one package where every
+// mcperr code in the repo is raised — so this is derived, not a per-operation list.
+describe('each operation declares the problem responses its tool can raise', () => {
+  const perTool = (contract as { toolErrorCodes: Record<string, string[]> }).toolErrorCodes;
+
+  const operationFor = (tool: string): Record<string, unknown> => {
+    const binding = table.tools![tool]!;
+    return doc.paths[binding.path!]![binding.method!]! as unknown as Record<string, unknown>;
+  };
+  const statusesOf = (tool: string): string[] =>
+    Object.keys((operationFor(tool).responses ?? {}) as Record<string, unknown>);
+
+  it('the golden records a per-tool code set for every bound tool', () => {
+    expect(perTool, 'the contract golden has no toolErrorCodes').toBeDefined();
+    for (const tool of Object.keys(table.tools ?? {})) {
+      expect(perTool[tool], `${tool} has no recorded code set`).toBeDefined();
+      expect(perTool[tool]!.length).toBeGreaterThan(0);
+    }
+  });
+
+  /**
+   * Two statuses are deliberately NOT derived from the code set, each for a stated reason.
+   * They are named here rather than left as a softer assertion, so the exceptions are
+   * reviewable and a third one cannot be added by quietly relaxing the rule.
+   *
+   * 412: §2 scopes If-Match, and so 412, to write operations addressing a document. The
+   * MCP raises HANDLE_STALE on reads too, but a read sends no If-Match, so a 412 there
+   * would document a response that cannot occur.
+   *
+   * 413: a REQUEST-size status (RFC 9110 §15.5.14), already placed on every body-carrying
+   * operation. TOO_LARGE covers both an oversized inline body (convert.go's
+   * ValidateInputSize on inline content) and a stored document too large to load, so
+   * deriving it per tool put a 413 on six GETs that carry no request body at all.
+   */
+  const SCOPED_ELSEWHERE = new Map<number, string>([
+    [412, 'ADR-0008 §2 scopes If-Match to writes addressing a document'],
+    [413, 'RFC 9110 §15.5.14 is about request size, and hasBody already places it'],
+  ]);
+
+  it.each(Object.keys(table.tools ?? {}))(
+    '%s declares a response for every mapped code it can raise',
+    (tool) => {
+      const statuses = new Set(statusesOf(tool));
+      let checked = 0;
+      for (const code of perTool[tool] ?? []) {
+        const mapped = PROBLEM_TYPES[code];
+        if (mapped === undefined) continue;
+        if (SCOPED_ELSEWHERE.has(mapped.status)) continue;
+        checked += 1;
+        expect(
+          statuses.has(String(mapped.status)),
+          `${tool} can raise ${code} (${mapped.status}) and its operation declares no ${mapped.status}`,
+        ).toBe(true);
+      }
+      expect(checked, `${tool} had no mapped code to check, so this passed vacuously`)
+        .toBeGreaterThan(0);
+    },
+  );
+
+  it('every scoped-elsewhere status is reachable somewhere, so neither exception is a blanket drop', () => {
+    const everyStatus = new Set(
+      Object.values(doc.paths).flatMap((item) =>
+        Object.values(item).flatMap((op) => Object.keys(op.responses ?? {})),
+      ),
+    );
+    for (const [status, reason] of SCOPED_ELSEWHERE) {
+      expect(reason.length).toBeGreaterThan(20);
+      expect(
+        everyStatus.has(String(status)),
+        `${status} is excluded from derivation and appears nowhere, so it was dropped entirely`,
+      ).toBe(true);
+    }
+  });
+
+  it('declares no status for a code the taxonomy marks as never reaching HTTP', () => {
+    // Every unmapped code's status would have to come from somewhere else, so the test is
+    // that no operation gained a status ONLY an unmapped code could justify.
+    for (const tool of Object.keys(table.tools ?? {})) {
+      const mappedStatuses = new Set(
+        (perTool[tool] ?? [])
+          .map((code) => PROBLEM_TYPES[code]?.status)
+          .filter((s): s is number => s !== undefined)
+          .map(String),
+      );
+      const conventional = new Set(['200', '401', '403', '413', '415', '429', '500', '503']);
+      for (const status of statusesOf(tool)) {
+        if (conventional.has(status)) continue;
+        expect(
+          mappedStatuses.has(status),
+          `${tool} declares ${status}, which no code it can raise maps to`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  // The discriminations that matter, each measured from the Go source rather than guessed.
+  it('scopes the conversion-only codes to the conversion operation', () => {
+    expect(statusesOf('hdf_convert')).toContain('422');
+    const types = JSON.stringify(operationFor('hdf_convert').responses);
+    expect(types).toContain('no-converter');
+    expect(types).toContain('ambiguous-format');
+    for (const tool of ['hdf_query', 'hdf_diff', 'hdf_compliance']) {
+      const other = JSON.stringify(operationFor(tool).responses);
+      expect(other, `${tool} must not advertise a conversion failure`).not.toContain('no-converter');
+    }
+  });
+
+  // hdf_validate raises no SCHEMA_INVALID: an invalid document is a SUCCESSFUL validation
+  // with a negative result, not an error. A structural rule keyed on "the body carries a
+  // document" would have put a 422 here, and it would have been wrong.
+  it('does not give /validations a 422, because validation failure is a 200', () => {
+    expect(perTool.hdf_validate).not.toContain('SCHEMA_INVALID');
+    expect(statusesOf('hdf_validate')).not.toContain('422');
+  });
+
+  // DOCUMENT_NOT_FOUND is reachable wherever a document reference is resolved, which
+  // includes operations with no {id} in the path — the reference travels in the body. The
+  // previous structural rule keyed on the path template and missed those.
+  it('declares 404 on an operation that names a document in its body', () => {
+    expect(perTool.hdf_validate).toContain('DOCUMENT_NOT_FOUND');
+    expect(statusesOf('hdf_validate')).toContain('404');
+  });
+
+  // §3: SCHEMA_INVALID carries `errors[]` of {path,line,message}.
+  it('the 422 problem carries the errors[] member §3 requires', () => {
+    const response = (operationFor('hdf_convert').responses as Record<string, unknown>)['422'];
+    const ref = JSON.stringify(response);
+    expect(ref).toContain('ValidationProblem');
+    const schema = (doc.components as { schemas: Record<string, Record<string, unknown>> })
+      .schemas.ValidationProblem;
+    expect(schema, 'no ValidationProblem component').toBeDefined();
+    const errors = (schema!.properties as Record<string, Record<string, unknown>>).errors;
+    expect(errors, 'ValidationProblem has no errors member').toBeDefined();
+    const item = errors!.items as { properties?: Record<string, unknown> };
+    expect(Object.keys(item.properties ?? {}).sort()).toEqual(['line', 'message', 'path']);
+  });
+
+  // §2: "If-Match gates write operations ... so 412 is meaningful and maps HANDLE_STALE".
+  // Scoped to writes deliberately: the MCP can raise HANDLE_STALE on a read, but a read
+  // carries no If-Match, so a 412 there would describe something that cannot happen.
+  it('gives 412 and an If-Match header to a write that addresses a document', () => {
+    const op = operationFor('hdf_apply_amendment');
+    expect(perTool.hdf_apply_amendment).toContain('HANDLE_STALE');
+    expect(Object.keys(op.responses as Record<string, unknown>)).toContain('412');
+    const headers = ((op.parameters ?? []) as { name: string; in: string }[]).filter(
+      (p) => p.in === 'header',
+    );
+    expect(headers.map((h) => h.name)).toContain('If-Match');
+  });
+
+  it('gives no 412 to a read, which carries no If-Match', () => {
+    expect(perTool.hdf_query).toContain('HANDLE_STALE');
+    expect(statusesOf('hdf_query')).not.toContain('412');
+  });
+});
+
+// STRICTNESS_EXEMPT is a map, and the strictness loop once named one of its keys directly
+// — so a second entry was configuration nothing consulted. Both directions are pinned
+// here: every key must be honoured, and every key must still describe a real schema.
+describe('the strictness exemptions are all honoured and all real', () => {
+  it('has more than one exemption, so honouring only the first would be visible', () => {
+    expect(Object.keys(STRICTNESS_EXEMPT).length).toBeGreaterThan(1);
+  });
+
+  it('every exempt name is a component that exists and carries a reason', () => {
+    const schemas = (doc.components as { schemas: Record<string, unknown> }).schemas;
+    for (const [name, reason] of Object.entries(STRICTNESS_EXEMPT)) {
+      expect(schemas[name], `${name} is exempt and is not a component`).toBeDefined();
+      expect(reason.length, `${name} has no reason`).toBeGreaterThan(20);
+    }
+  });
+
+  // Asserting `additionalProperties !== false` would only be a PROXY for refusal: a schema
+  // using allOf with no additionalProperties key would satisfy it while its exemption did
+  // nothing. So each key is removed and the generator asked.
+  it('each exemption is load-bearing: removing it makes the generator refuse', () => {
+    for (const name of Object.keys(STRICTNESS_EXEMPT)) {
+      const saved = STRICTNESS_EXEMPT[name]!;
+      delete STRICTNESS_EXEMPT[name];
+      let threw = false;
+      try {
+        generateApiDocument();
+      } catch {
+        threw = true;
+      } finally {
+        STRICTNESS_EXEMPT[name] = saved;
+      }
+      expect(threw, `${name}'s exemption is dead config — the generator emits without it`).toBe(
+        true,
+      );
+    }
+  });
+});
+
+// A synthetic operation has no MCP tool, so it has no derived code set — and every
+// assertion in the block above iterates table.tools, which is exactly why replacing the
+// structural 404 rule with the derivation silently took the 404 off DELETE /documents/{id}.
+// The synthetic surface needs its own coverage or it is reviewed by nobody.
+describe('the synthetic operations declare an error surface too', () => {
+  const synthetic = Object.entries(table.synthetic ?? {}).filter(
+    ([, b]) => b.method !== undefined && b.path !== undefined,
+  );
+
+  it('there are synthetic operations to check', () => {
+    expect(synthetic.length).toBeGreaterThan(3);
+  });
+
+  it.each(synthetic.map(([name, b]) => [name, b] as const))(
+    '%s addressing a document by id declares a 404',
+    (_name, binding) => {
+      if (!binding.path!.includes('{id}')) return;
+      const op = doc.paths[binding.path!]![binding.method!]!;
+      expect(
+        Object.keys(op.responses),
+        `${binding.method} ${binding.path} addresses {id} and declares no 404`,
+      ).toContain('404');
+    },
+  );
+
+  it('every synthetic operation declares the conventional statuses', () => {
+    for (const [, binding] of synthetic) {
+      const statuses = Object.keys(doc.paths[binding.path!]![binding.method!]!.responses);
+      for (const required of ['401', '403', '429', '500', '503']) {
+        expect(statuses, `${binding.method} ${binding.path} lacks ${required}`).toContain(required);
+      }
+    }
   });
 });

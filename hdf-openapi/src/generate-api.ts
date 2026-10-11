@@ -67,9 +67,37 @@ const PROBLEM_SCHEMA = {
     'RFC 9457 problem details. Extension members are permitted; the 403 carries `scope`.',
 };
 
+/**
+ * The 422 problem. ADR-0008 §3 requires `SCHEMA_INVALID` to carry `errors[]` of
+ * `{path, line, message}`, which is an RFC 9457 extension member — so this is Problem plus
+ * that array, not a different shape.
+ */
+const VALIDATION_PROBLEM_SCHEMA = {
+  allOf: [{ $ref: '#/components/schemas/Problem' }],
+  type: 'object',
+  additionalProperties: true,
+  properties: {
+    errors: {
+      type: 'array',
+      description: 'Where the document failed, one entry per violation.',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['path', 'message'],
+        properties: {
+          path: { type: 'string', description: 'JSON Pointer to the offending member.' },
+          line: { type: 'integer', description: 'Line in the submitted bytes, when known.' },
+          message: { type: 'string' },
+        },
+      },
+    },
+  },
+};
+
 /** Schemas exempt from the additionalProperties:false rule, each with its reason. */
 export const STRICTNESS_EXEMPT: Record<string, string> = {
   Problem: 'RFC 9457 admits extension members, and §3 uses one (`scope` on the 403)',
+  ValidationProblem: 'Problem plus §3\'s errors[]; it inherits RFC 9457\'s openness',
 };
 
 function problemRef(title: string, status: number, type: string): Record<string, unknown> {
@@ -339,6 +367,41 @@ function scopesFor(cls: string): string[] {
   return ['hdf:read'];
 }
 
+/**
+ * The problem response for one status, naming every taxonomy code that maps to it.
+ *
+ * Several codes share a status — §3 sends SCHEMA_INVALID, WRONG_DOC_TYPE, NO_CONVERTER and
+ * AMBIGUOUS_FORMAT all to 422 — and RFC 9457 discriminates on `type`, not on the status.
+ * So the response carries one named example per code a client can actually meet, which is
+ * also what stops a 422 reading as if only one thing could have gone wrong.
+ */
+function problemResponseFor(status: number, codes: string[]): Record<string, unknown> {
+  const schema =
+    status === 422
+      ? { $ref: '#/components/schemas/ValidationProblem' }
+      : { $ref: '#/components/schemas/Problem' };
+  const examples: Record<string, unknown> = {};
+  for (const code of codes) {
+    const value: Record<string, unknown> = {
+      type: `${PROBLEM_BASE}/${PROBLEM_TYPES[code]!.type}`,
+      title: code,
+      status,
+    };
+    // §3 gives SCHEMA_INVALID an `errors[]`, so the example a client copies shows one.
+    // Without it the member exists in the schema and in no example.
+    if (code === 'SCHEMA_INVALID') {
+      value.errors = [
+        { path: '/baselines/0/requirements/3/impact', line: 142, message: 'must be <= 1' },
+      ];
+    }
+    examples[PROBLEM_TYPES[code]!.type] = { summary: code, value };
+  }
+  return {
+    description: codes.join(' | '),
+    content: { 'application/problem+json': { schema, examples } },
+  };
+}
+
 function problemResponse(code: string): Record<string, unknown> {
   const { type } = PROBLEM_TYPES[code]!;
   return {
@@ -553,7 +616,11 @@ function operationFor(
   summary: string,
   schemas: Record<string, unknown>,
   inputProperties: Record<string, unknown>,
+  raisableCodes: string[],
 ): Operation {
+  // §3 gives a write-class operation hdf:write as well as hdf:read, so the scope set is
+  // also what says whether this is a write — read from the one place that decides it.
+  const writes = scopesFor(cls).some((scope) => scope === 'hdf:write' || scope === 'hdf:admin');
   const fields = Object.entries(binding.fields ?? {});
   // Every {x} in the path template gets a parameter, whether or not a field was placed
   // there — delete is synthetic, has no fields, and still addresses {id}.
@@ -578,8 +645,50 @@ function operationFor(
     '200': { ...okResponse(binding), headers: rateLimitHeaders() },
     ...conventionalResponses(hasBody),
   };
-  // Every operation that addresses a document can fail to find it.
-  if (binding.path?.includes('{id}')) responses['404'] = problemResponse('DOCUMENT_NOT_FOUND');
+
+  // The problem responses come from what this tool can actually raise, recorded per tool in
+  // the contract golden. §3 gives the code -> status mapping and never says which operation
+  // declares which, so the alternative was a structural guess: keying 404 on `{id}` in the
+  // path missed the five operations that name a document somewhere else — in the body for
+  // /validations, /conversions and /documents/authored, and in a query parameter for
+  // /requirements and /comparisons — and keying 422 on "has a document body" would have put
+  // one on /validations, where an invalid document is a successful validation rather than
+  // an error.
+  const byStatus = new Map<number, string[]>();
+  for (const code of raisableCodes) {
+    const mapped = PROBLEM_TYPES[code];
+    if (mapped === undefined) continue;
+    // 413 is a REQUEST-size status (RFC 9110 §15.5.14) and conventionalResponses already
+    // puts it on every operation carrying a body. TOO_LARGE covers both an oversized inline
+    // body and a stored document too large to load, so deriving it per tool put a 413 on
+    // six GETs that carry no request body at all, where the status cannot apply.
+    if (mapped.status === 413) continue;
+    // §2 scopes If-Match, and therefore 412, to write operations addressing a document. The
+    // MCP can raise HANDLE_STALE on a read, but a read carries no If-Match, so a 412 there
+    // would describe a response that cannot occur.
+    if (mapped.status === 412 && !(writes && binding.path?.includes('{id}'))) continue;
+    byStatus.set(mapped.status, [...(byStatus.get(mapped.status) ?? []), code]);
+  }
+  for (const [status, codes] of byStatus) {
+    responses[String(status)] = problemResponseFor(status, codes.sort());
+  }
+  // A floor the derivation does not replace: an operation addressing a document by id can
+  // always fail to find it, and a SYNTHETIC operation has no MCP tool and therefore no
+  // derived code set — so replacing this rule rather than unioning with it silently took
+  // the 404 off DELETE /documents/{id}.
+  if (binding.path?.includes('{id}') && responses['404'] === undefined) {
+    responses['404'] = problemResponseFor(404, ['DOCUMENT_NOT_FOUND']);
+  }
+  if (byStatus.has(412)) {
+    parameters.push({
+      name: 'If-Match',
+      in: 'header',
+      required: true,
+      description:
+        'The document ETag the write is conditioned on. A mismatch is 412 (RFC 9110 §13.1.1).',
+      schema: { type: 'string' },
+    });
+  }
 
   return {
     operationId: name,
@@ -623,9 +732,20 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
   const schemas: Record<string, unknown> = { ...componentsDoc.components.schemas };
   for (const c of conventions) schemas[c.name] = c.schema;
   schemas.Problem = PROBLEM_SCHEMA;
+  schemas.ValidationProblem = VALIDATION_PROBLEM_SCHEMA;
   // The reflected response shapes the table names, with the rewrite map applied so no MCP
   // transport state survives into an HTTP response.
-  const contract = JSON.parse(contractRaw) as { fullShapes: Record<string, unknown> };
+  const contract = JSON.parse(contractRaw) as {
+    fullShapes: Record<string, unknown>;
+    toolErrorCodes?: Record<string, string[]>;
+  };
+  // Which codes each tool can raise, derived in hdf-cli by walking the one package where
+  // every mcperr code is raised, and recorded in the golden. Absent means the golden
+  // predates the member, which must fail rather than silently declare nothing.
+  if (contract.toolErrorCodes === undefined) {
+    throw new Error('the contract golden has no toolErrorCodes; run pnpm run sync:golden');
+  }
+  const codesFor = new Map(Object.entries(contract.toolErrorCodes));
   for (const [name, shape] of Object.entries(contract.fullShapes)) {
     schemas[name] = stripTransportState(shape);
   }
@@ -652,6 +772,7 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
       summarize(describe.get(name), `${binding.method.toUpperCase()} ${binding.path}`),
       schemas,
       inputsFor.get(name) ?? {},
+      codesFor.get(name) ?? [],
     );
   };
 
@@ -712,7 +833,9 @@ export function generateApiDocument(options: GenerateOptions = {}): ApiDocument 
   // the bundles and carry their own strictness; everything else must say so.
   for (const [name, schema] of Object.entries(schemas)) {
     if (documentSchemas.has(name)) continue;
-    if (name === 'Problem' && STRICTNESS_EXEMPT[name]) continue;
+    // An exemption covers the whole schema, root and nested: RFC 9457's openness is the
+    // reason for every entry here, and that openness is not confined to the root.
+    if (STRICTNESS_EXEMPT[name] !== undefined) continue;
     const s = schema as Record<string, unknown>;
     const closed = s.additionalProperties === false;
     const isUnion = Array.isArray(s.oneOf) || Array.isArray(s.anyOf) || Array.isArray(s.allOf);

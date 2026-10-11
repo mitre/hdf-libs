@@ -212,6 +212,26 @@ describe('parity reports drift that sits on the document side', () => {
     expect(stale.map((f) => f.subject)).toContain('hdf-converter-catalog');
   });
 
+  it('a mapped code whose problem type no operation declares', () => {
+    const input = baseline();
+    input.doc = clone(input.doc);
+    // Strip every response carrying the conversion-failure types, which is the shape the
+    // document had before the per-tool code sets landed: mapped, and declared nowhere.
+    for (const methods of Object.values(input.doc.paths)) {
+      for (const op of Object.values(methods)) {
+        const responses = (op as { responses?: Record<string, unknown> }).responses ?? {};
+        delete responses['422'];
+      }
+    }
+    const findings = parityFindings(input);
+    const codes = findings.filter((f) => f.kind === 'error-code').map((f) => f.subject);
+    expect(codes).toContain('NO_CONVERTER');
+    expect(codes).toContain('AMBIGUOUS_FORMAT');
+    expect(findings.find((f) => f.subject === 'NO_CONVERTER')?.detail).toMatch(
+      /no operation declares that type/,
+    );
+  });
+
   it('a fullShapes component the document never emitted', () => {
     const input = baseline();
     input.doc = clone(input.doc);

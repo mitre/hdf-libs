@@ -8,7 +8,7 @@
       "identifier": "Apache-2.0"
     },
     "x-hdf-schema-version": "3.7.0",
-    "x-hdf-mcp-golden-sha": "69a88e10afb32a6c405698a3987134b8aa8e2475741b2bbc223c73b3f952420a"
+    "x-hdf-mcp-golden-sha": "efeb20064a5552d2f6e23c4efb7870872057ce35c03465b29c1abf8ccf79c762"
   },
   "paths": {
     "/documents/{id}": {
@@ -78,10 +78,15 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 },
-                "example": {
-                  "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
-                  "title": "DOCUMENT_NOT_FOUND",
-                  "status": 404
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
                 }
               }
             }
@@ -150,10 +155,15 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 },
-                "example": {
-                  "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
-                  "title": "DOCUMENT_NOT_FOUND",
-                  "status": 404
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
                 }
               }
             }
@@ -485,10 +495,50 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 },
-                "example": {
-                  "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
-                  "title": "DOCUMENT_NOT_FOUND",
-                  "status": 404
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                },
+                "examples": {
+                  "schema-invalid": {
+                    "summary": "SCHEMA_INVALID",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/schema-invalid",
+                      "title": "SCHEMA_INVALID",
+                      "status": 422,
+                      "errors": [
+                        {
+                          "path": "/baselines/0/requirements/3/impact",
+                          "line": 142,
+                          "message": "must be <= 1"
+                        }
+                      ]
+                    }
+                  },
+                  "wrong-doc-type": {
+                    "summary": "WRONG_DOC_TYPE",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/wrong-doc-type",
+                      "title": "WRONG_DOC_TYPE",
+                      "status": 422
+                    }
+                  }
                 }
               }
             }
@@ -590,10 +640,50 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 },
-                "example": {
-                  "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
-                  "title": "DOCUMENT_NOT_FOUND",
-                  "status": 404
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                },
+                "examples": {
+                  "schema-invalid": {
+                    "summary": "SCHEMA_INVALID",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/schema-invalid",
+                      "title": "SCHEMA_INVALID",
+                      "status": 422,
+                      "errors": [
+                        {
+                          "path": "/baselines/0/requirements/3/impact",
+                          "line": 142,
+                          "message": "must be <= 1"
+                        }
+                      ]
+                    }
+                  },
+                  "wrong-doc-type": {
+                    "summary": "WRONG_DOC_TYPE",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/wrong-doc-type",
+                      "title": "WRONG_DOC_TYPE",
+                      "status": 422
+                    }
+                  }
                 }
               }
             }
@@ -710,6 +800,61 @@
           "403": {
             "$ref": "#/components/responses/InsufficientScope"
           },
+          "404": {
+            "description": "DOCUMENT_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                },
+                "examples": {
+                  "schema-invalid": {
+                    "summary": "SCHEMA_INVALID",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/schema-invalid",
+                      "title": "SCHEMA_INVALID",
+                      "status": 422,
+                      "errors": [
+                        {
+                          "path": "/baselines/0/requirements/3/impact",
+                          "line": 142,
+                          "message": "must be <= 1"
+                        }
+                      ]
+                    }
+                  },
+                  "wrong-doc-type": {
+                    "summary": "WRONG_DOC_TYPE",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/wrong-doc-type",
+                      "title": "WRONG_DOC_TYPE",
+                      "status": 422
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
@@ -805,10 +950,15 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 },
-                "example": {
-                  "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
-                  "title": "DOCUMENT_NOT_FOUND",
-                  "status": 404
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
                 }
               }
             }
@@ -957,6 +1107,61 @@
           "403": {
             "$ref": "#/components/responses/InsufficientScope"
           },
+          "404": {
+            "description": "DOCUMENT_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                },
+                "examples": {
+                  "schema-invalid": {
+                    "summary": "SCHEMA_INVALID",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/schema-invalid",
+                      "title": "SCHEMA_INVALID",
+                      "status": 422,
+                      "errors": [
+                        {
+                          "path": "/baselines/0/requirements/3/impact",
+                          "line": 142,
+                          "message": "must be <= 1"
+                        }
+                      ]
+                    }
+                  },
+                  "wrong-doc-type": {
+                    "summary": "WRONG_DOC_TYPE",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/wrong-doc-type",
+                      "title": "WRONG_DOC_TYPE",
+                      "status": 422
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
           },
@@ -1055,6 +1260,26 @@
           },
           "403": {
             "$ref": "#/components/responses/InsufficientScope"
+          },
+          "404": {
+            "description": "DOCUMENT_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
           },
           "413": {
             "description": "TOO_LARGE",
@@ -1215,6 +1440,26 @@
           "403": {
             "$ref": "#/components/responses/InsufficientScope"
           },
+          "404": {
+            "description": "DOCUMENT_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
           "413": {
             "description": "TOO_LARGE",
             "content": {
@@ -1232,6 +1477,49 @@
           },
           "415": {
             "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "422": {
+            "description": "AMBIGUOUS_FORMAT | NO_CONVERTER | SCHEMA_INVALID",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                },
+                "examples": {
+                  "ambiguous-format": {
+                    "summary": "AMBIGUOUS_FORMAT",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/ambiguous-format",
+                      "title": "AMBIGUOUS_FORMAT",
+                      "status": 422
+                    }
+                  },
+                  "no-converter": {
+                    "summary": "NO_CONVERTER",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/no-converter",
+                      "title": "NO_CONVERTER",
+                      "status": 422
+                    }
+                  },
+                  "schema-invalid": {
+                    "summary": "SCHEMA_INVALID",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/schema-invalid",
+                      "title": "SCHEMA_INVALID",
+                      "status": 422,
+                      "errors": [
+                        {
+                          "path": "/baselines/0/requirements/3/impact",
+                          "line": 142,
+                          "message": "must be <= 1"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -1332,6 +1620,26 @@
           "403": {
             "$ref": "#/components/responses/InsufficientScope"
           },
+          "404": {
+            "description": "DOCUMENT_NOT_FOUND",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
           "413": {
             "description": "TOO_LARGE",
             "content": {
@@ -1349,6 +1657,33 @@
           },
           "415": {
             "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "422": {
+            "description": "SCHEMA_INVALID",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                },
+                "examples": {
+                  "schema-invalid": {
+                    "summary": "SCHEMA_INVALID",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/schema-invalid",
+                      "title": "SCHEMA_INVALID",
+                      "status": 422,
+                      "errors": [
+                        {
+                          "path": "/baselines/0/requirements/3/impact",
+                          "line": 142,
+                          "message": "must be <= 1"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -1379,6 +1714,15 @@
             "name": "id",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "The document ETag the write is conditioned on. A mismatch is 412 (RFC 9110 §13.1.1).",
             "schema": {
               "type": "string"
             }
@@ -1440,10 +1784,35 @@
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
                 },
-                "example": {
-                  "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
-                  "title": "DOCUMENT_NOT_FOUND",
-                  "status": 404
+                "examples": {
+                  "document-not-found": {
+                    "summary": "DOCUMENT_NOT_FOUND",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/document-not-found",
+                      "title": "DOCUMENT_NOT_FOUND",
+                      "status": 404
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "412": {
+            "description": "HANDLE_STALE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                },
+                "examples": {
+                  "handle-stale": {
+                    "summary": "HANDLE_STALE",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/handle-stale",
+                      "title": "HANDLE_STALE",
+                      "status": 412
+                    }
+                  }
                 }
               }
             }
@@ -1465,6 +1834,41 @@
           },
           "415": {
             "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "422": {
+            "description": "SCHEMA_INVALID | WRONG_DOC_TYPE",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                },
+                "examples": {
+                  "schema-invalid": {
+                    "summary": "SCHEMA_INVALID",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/schema-invalid",
+                      "title": "SCHEMA_INVALID",
+                      "status": 422,
+                      "errors": [
+                        {
+                          "path": "/baselines/0/requirements/3/impact",
+                          "line": 142,
+                          "message": "must be <= 1"
+                        }
+                      ]
+                    }
+                  },
+                  "wrong-doc-type": {
+                    "summary": "WRONG_DOC_TYPE",
+                    "value": {
+                      "type": "https://mitre.github.io/hdf-libs/problems/wrong-doc-type",
+                      "title": "WRONG_DOC_TYPE",
+                      "status": 422
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -9836,6 +10240,42 @@
           }
         },
         "description": "RFC 9457 problem details. Extension members are permitted; the 403 carries `scope`."
+      },
+      "ValidationProblem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Problem"
+          }
+        ],
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "Where the document failed, one entry per violation.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "message"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "JSON Pointer to the offending member."
+                },
+                "line": {
+                  "type": "integer",
+                  "description": "Line in the submitted bytes, when known."
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
       },
       "convert.batch.entry": {
         "type": "object",

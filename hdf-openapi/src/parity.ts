@@ -241,13 +241,25 @@ export function parityFindings(input: ParityInput): ParityFinding[] {
   //    document does not describe.
   const unmapped = new Set(UNMAPPED_CODES);
   //
-  //    Scoped to the mapping's EXISTENCE. Whether every mapped type is reachable in the
-  //    emitted document is a different property, and the document currently declares no
-  //    412 and no 422 at all — tracked separately rather than folded in here, so this
-  //    check passing is not read as the error surface being complete.
+  //    Two halves. A code with no mapping at all is the drift class; a code that IS mapped
+  //    and whose type no operation declares is the gap that shipped once — the document
+  //    carried no 412 and no 422 while §3 mapped five live codes to them, so a client met
+  //    errors nothing described.
+  const emitted = JSON.stringify(input.doc.paths);
   for (const code of input.contract.errorCodes) {
-    if (PROBLEM_TYPES[code] === undefined && !unmapped.has(code)) {
-      report('error-code', code, `the MCP can emit ${code} and ADR-0010 §6 gives it neither a status nor never`);
+    const mapped = PROBLEM_TYPES[code];
+    if (mapped === undefined) {
+      if (!unmapped.has(code)) {
+        report('error-code', code, `the MCP can emit ${code} and ADR-0010 §6 gives it neither a status nor never`);
+      }
+      continue;
+    }
+    if (!emitted.includes(`/problems/${mapped.type}`)) {
+      report(
+        'error-code',
+        code,
+        `maps to ${mapped.status} ${mapped.type} and no operation declares that type`,
+      );
     }
   }
 
