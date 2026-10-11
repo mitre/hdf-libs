@@ -8,7 +8,7 @@
       "identifier": "Apache-2.0"
     },
     "x-hdf-schema-version": "3.7.0",
-    "x-hdf-mcp-golden-sha": "efeb20064a5552d2f6e23c4efb7870872057ce35c03465b29c1abf8ccf79c762"
+    "x-hdf-mcp-golden-sha": "ec27be8da06472d428e1040f91b1fbc723d2237bc8297f19adc0cdf41d3263ac"
   },
   "paths": {
     "/documents/{id}": {
@@ -1079,6 +1079,9 @@
                       "type": "integer",
                       "minimum": 1,
                       "maximum": 1000
+                    },
+                    "summary": {
+                      "$ref": "#/components/schemas/diff.summary"
                     }
                   }
                 }
@@ -10311,6 +10314,54 @@
         "required": [
           "inputPath",
           "valid"
+        ],
+        "additionalProperties": false
+      },
+      "diff.summary": {
+        "type": "object",
+        "properties": {
+          "fixed": {
+            "type": "integer"
+          },
+          "regressed": {
+            "type": "integer"
+          },
+          "new": {
+            "type": "integer"
+          },
+          "absent": {
+            "type": "integer"
+          },
+          "unchanged": {
+            "type": "integer"
+          },
+          "updated": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "matchedCount": {
+            "type": "integer"
+          },
+          "unmatchedOldCount": {
+            "type": "integer"
+          },
+          "unmatchedNewCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fixed",
+          "regressed",
+          "new",
+          "absent",
+          "unchanged",
+          "updated",
+          "total",
+          "matchedCount",
+          "unmatchedOldCount",
+          "unmatchedNewCount"
         ],
         "additionalProperties": false
       },

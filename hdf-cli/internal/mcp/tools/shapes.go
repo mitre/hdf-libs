@@ -1,6 +1,7 @@
 package tools
 
 import (
+	diff "github.com/mitre/hdf-libs/hdf-diff/go/v3"
 	hdfengine "github.com/mitre/hdf-libs/hdf-engine/go/v3"
 
 	"github.com/mitre/hdf-libs/hdf-cli/v3/internal/mcp/contract"
@@ -32,6 +33,13 @@ func init() {
 	contract.RegisterShape("diff."+string(DiffModeTemporal)+".full", temporalFull{})
 	contract.RegisterShape("diff."+string(DiffModeSystemDrift)+".concise", componentConcise{})
 	contract.RegisterShape("diff."+string(DiffModeSystemDrift)+".full", componentFull{})
+
+	// The comparison-level rollup, which is envelope data rather than a row: ADR-0008's
+	// paged envelope had nowhere to put it, so GET /comparisons returned change rows and
+	// nothing stating what the diff concluded. Unchanged, Total and MatchedCount could not
+	// be recovered from those rows either, since all three count unchanged entries and
+	// projectChanges skips them.
+	contract.RegisterShape("diff.summary", diff.ComparisonSummary{})
 
 	contract.RegisterShape("convert.batch.entry", fileConvertSummary{})
 

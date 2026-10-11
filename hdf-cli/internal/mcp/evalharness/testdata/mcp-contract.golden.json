@@ -58,6 +58,54 @@
       ],
       "additionalProperties": false
     },
+    "diff.summary": {
+      "type": "object",
+      "properties": {
+        "fixed": {
+          "type": "integer"
+        },
+        "regressed": {
+          "type": "integer"
+        },
+        "new": {
+          "type": "integer"
+        },
+        "absent": {
+          "type": "integer"
+        },
+        "unchanged": {
+          "type": "integer"
+        },
+        "updated": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "matchedCount": {
+          "type": "integer"
+        },
+        "unmatchedOldCount": {
+          "type": "integer"
+        },
+        "unmatchedNewCount": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "fixed",
+        "regressed",
+        "new",
+        "absent",
+        "unchanged",
+        "updated",
+        "total",
+        "matchedCount",
+        "unmatchedOldCount",
+        "unmatchedNewCount"
+      ],
+      "additionalProperties": false
+    },
     "diff.system-drift.concise": {
       "type": "object",
       "properties": {

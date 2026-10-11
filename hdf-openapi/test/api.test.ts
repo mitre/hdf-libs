@@ -4,12 +4,14 @@ import { createRequire } from 'module';
 import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { generateApiDocument, main as writeApiDocument, MAX_PAGE_SIZE, OPEN_LEAF_EXEMPT, PROBLEM_TYPES, rewriteInputShape, STRICTNESS_EXEMPT, STRIPPED_OUTPUT_FIELDS, UNMAPPED_CODES } from '../src/generate-api.js';
-import { FILESYSTEM_FIELDS, loadBindings } from '../src/bindings.js';
+import { bindingFaults, FILESYSTEM_FIELDS, loadBindings } from '../src/bindings.js';
+import { loadConventions } from '../src/conventions.js';
 
 const HERE = new URL('.', import.meta.url).pathname;
 const SRC = join(HERE, '..', 'src');
 const toolsList = JSON.parse(readFileSync(join(SRC, 'tools-list.golden.json'), 'utf-8'));
 const contract = JSON.parse(readFileSync(join(SRC, 'mcp-contract.golden.json'), 'utf-8'));
+const conventionNames = loadConventions().map((c) => c.name);
 const table = loadBindings(readFileSync(join(SRC, 'bindings.yaml'), 'utf-8'));
 
 // The lint below reads dist/hdf-api.oas.json, so write it here at module scope rather
@@ -1038,5 +1040,136 @@ describe('the synthetic operations declare an error surface too', () => {
         expect(statuses, `${binding.method} ${binding.path} lacks ${required}`).toContain(required);
       }
     }
+  });
+});
+
+// hdf_diff returns a comparison-level `summary` — the rollup that answers "what changed" —
+// and the envelope was {changes, next, total, limit} with additionalProperties: false, so
+// the HTTP response could not carry it. Three of its members could not be recovered from
+// the rows either: `unchanged`, `total` and `matchedCount` all count unchanged entries,
+// which never enter the array. Caught by trying to GENERATE an envelope example from the
+// real MCP reply: the projected instance could not validate against its own schema.
+describe('a paged envelope carries the summary its tool returns', () => {
+  const withSummary = Object.entries(table.tools ?? {}).filter(
+    ([, b]) => b.summaryRef !== undefined,
+  );
+
+  it('the table names a summary shape for the comparison operation', () => {
+    // Also the guard for the two it.each blocks below: an empty filter makes them produce
+    // zero cases, which vitest reports as neither passing nor failing.
+    expect(withSummary.length, 'no binding names a summary, so the cases below are empty')
+      .toBeGreaterThan(0);
+    expect(withSummary.map(([name]) => name)).toContain('hdf_diff');
+  });
+
+  it.each(withSummary.map(([name, b]) => [name, b] as const))(
+    '%s names a shape that exists in the contract',
+    (_name, binding) => {
+      const shapes = (contract as { fullShapes: Record<string, unknown> }).fullShapes;
+      expect(shapes[binding.summaryRef!], `${binding.summaryRef} is in no fullShapes`).toBeDefined();
+    },
+  );
+
+  it.each(withSummary.map(([name, b]) => [name, b] as const))(
+    '%s emits summary as a $ref to that component, inside the envelope',
+    (_name, binding) => {
+      const schema = (
+        doc.paths[binding.path!]![binding.method!]!.responses['200'] as {
+          content: Record<string, { schema: Record<string, unknown> }>;
+        }
+      ).content['application/json']!.schema;
+      const properties = schema.properties as Record<string, Record<string, unknown>>;
+      expect(Object.keys(properties)).toContain('summary');
+      expect(properties.summary!.$ref).toBe(`#/components/schemas/${binding.summaryRef}`);
+      // Still closed: the summary is a declared member, not a hole opened to admit it.
+      expect(schema.additionalProperties).toBe(false);
+    },
+  );
+
+  it('the summary component carries the rollup members, not an empty object', () => {
+    const shapes = (doc.components as { schemas: Record<string, Record<string, unknown>> })
+      .schemas;
+    const summary = shapes['diff.summary'];
+    expect(summary, 'no diff.summary component').toBeDefined();
+    const members = Object.keys(
+      (summary!.properties ?? {}) as Record<string, unknown>,
+    ).sort();
+    expect(members).toEqual([
+      'absent',
+      'fixed',
+      'matchedCount',
+      'new',
+      'regressed',
+      'total',
+      'unchanged',
+      'unmatchedNewCount',
+      'unmatchedOldCount',
+      'updated',
+    ]);
+  });
+
+  // The envelope's `total` counts the pageable rows, which exclude unchanged entries; the
+  // summary's own counts every entry the diff compared — requirement diffs in temporal mode,
+  // component diffs in system-drift, both including unchanged. They coincide at 2 on the
+  // capture fixture only because unchanged is 0, so neither may be derived from the other.
+  it('keeps the envelope total and the summary total as separate members', () => {
+    const schema = (
+      doc.paths['/comparisons']!.get!.responses['200'] as {
+        content: Record<string, { schema: Record<string, unknown> }>;
+      }
+    ).content['application/json']!.schema;
+    const properties = schema.properties as Record<string, Record<string, unknown>>;
+    expect(properties.total!.type).toBe('integer');
+    expect(properties.summary!.$ref).toBeDefined();
+  });
+});
+
+// summaryRef only reaches the document through the paged envelope, which okResponse builds
+// only when the table also names the row array and its shape. On a binding without them the
+// key emits nothing, and the build, Redocly and Spectral all pass; the suite does catch it,
+// but as a TypeError dereferencing `content` on a response that has none. This faults where
+// the cause is.
+describe('a summaryRef that cannot reach a response is a fault', () => {
+  it('faults a summaryRef on a binding with no items or fullResponse', () => {
+    const planted = JSON.parse(JSON.stringify(table)) as typeof table;
+    // hdf_compliance has neither, which is what makes it the right plant.
+    expect(planted.tools!.hdf_compliance!.items).toBeUndefined();
+    expect(planted.tools!.hdf_compliance!.fullResponse).toBeUndefined();
+    planted.tools!.hdf_compliance!.summaryRef = 'diff.summary';
+    const faults = bindingFaults(planted, { toolsList, contract });
+    expect(faults.join('\n')).toMatch(/hdf_compliance: summaryRef needs items and fullResponse/);
+  });
+
+  // bodyRef is checked in the same loop and no real tool uses one — all three uses are
+  // synthetic — so without a plant no test reaches that branch. It would still fire in
+  // production on a bad real-tool bodyRef; what it lacked was coverage, not a caller.
+  it('faults a bodyRef naming neither a reflected shape nor a conventions component', () => {
+    const planted = JSON.parse(JSON.stringify(table)) as typeof table;
+    planted.tools!.hdf_diff!.bodyRef = 'NotAShapeAnywhere';
+    const faults = bindingFaults(planted, { toolsList, contract, conventions: conventionNames });
+    expect(faults.join('\n')).toMatch(
+      /hdf_diff: bodyRef names NotAShapeAnywhere, which is neither a reflected shape nor a conventions component/,
+    );
+  });
+
+  // bodyRef is checked against reflected shapes PLUS the conventions components, and that
+  // second half only means something when conventions are supplied: without them
+  // shapeNames collapses to fullShapes, and narrowing the check would red nothing.
+  it('accepts a bodyRef naming a conventions component rather than a reflected shape', () => {
+    expect(conventionNames.length, 'no conventions loaded, so the wider set is the narrow one')
+      .toBeGreaterThan(0);
+    const planted = JSON.parse(JSON.stringify(table)) as typeof table;
+    planted.tools!.hdf_diff!.bodyRef = 'IngestRequest';
+    const faults = bindingFaults(planted, { toolsList, contract, conventions: conventionNames });
+    expect(faults.join('\n')).not.toMatch(/hdf_diff: bodyRef names IngestRequest/);
+    expect((contract as { fullShapes: Record<string, unknown> }).fullShapes.IngestRequest,
+      'IngestRequest must NOT be a reflected shape, or this proves nothing').toBeUndefined();
+  });
+
+  it('faults a summaryRef naming a shape the contract does not carry', () => {
+    const planted = JSON.parse(JSON.stringify(table)) as typeof table;
+    planted.tools!.hdf_diff!.summaryRef = 'diff.nope';
+    const faults = bindingFaults(planted, { toolsList, contract });
+    expect(faults.join('\n')).toMatch(/hdf_diff: summaryRef names diff\.nope, absent from the contract/);
   });
 });

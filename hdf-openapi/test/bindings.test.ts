@@ -57,7 +57,15 @@ describe('the closed key set', () => {
   });
 
   it('names every key the grammar admits, so the set cannot silently shrink', () => {
-    for (const key of ['method', 'path', 'placement', 'bodyRef', 'drop', 'fullResponse']) {
+    for (const key of [
+      'method',
+      'path',
+      'placement',
+      'bodyRef',
+      'summaryRef',
+      'drop',
+      'fullResponse',
+    ]) {
       expect(CLOSED_KEYS.has(key)).toBe(true);
     }
   });

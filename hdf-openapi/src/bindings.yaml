@@ -103,6 +103,10 @@ tools:
     method: get
     path: /comparisons
     items: changes
+    # The comparison-level rollup is envelope data, not a row, so it is named separately
+    # from fullResponse, whose names become the row shape: listing it there would make it a
+    # fourth alternative for a change row.
+    summaryRef: diff.summary
     fields:
       from: { placement: query }
       to: { placement: query }

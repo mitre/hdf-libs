@@ -22,6 +22,7 @@ export const CLOSED_KEYS = new Set([
   'path',
   'placement',
   'bodyRef',
+  'summaryRef',
   'drop',
   'enumFrom',
   'items',
@@ -75,6 +76,8 @@ export interface ToolBinding {
   fields?: Record<string, { placement?: string; enumFrom?: string }>;
   drop?: { name: string; reason: string }[];
   bodyRef?: string;
+  /** A fullShapes key whose shape becomes the envelope's `summary` member. */
+  summaryRef?: string;
   items?: string;
   fullResponse?: string | string[];
   class?: string;
@@ -171,6 +174,10 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
   }
 
   const fullShapes = new Set(Object.keys((surface.contract.fullShapes as object) ?? {}));
+  // Reflected shapes plus the conventions components. `bodyRef` may name either; a
+  // `fullResponse` or `summaryRef` must be a reflected shape, since both describe a
+  // response the MCP produces.
+  const shapeNames = new Set([...fullShapes, ...(surface.conventions ?? [])]);
 
   for (const tool of surface.toolsList.tools) {
     const binding = table.tools?.[tool.name];
@@ -185,6 +192,24 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
       if (!fullShapes.has(named)) {
         faults.push(`${tool.name}: fullResponse names ${named}, absent from the contract`);
       }
+    }
+    // The other two keys that name a shape. §2 gives `bodyRef` the form
+    // `<components key | fullShapes key>`, so it is checked against the wider set; no real
+    // tool uses it today — all three uses are synthetic — so that half is a forward guard,
+    // reached only by a planted fault.
+    if (binding.summaryRef !== undefined && !fullShapes.has(binding.summaryRef)) {
+      faults.push(`${tool.name}: summaryRef names ${binding.summaryRef}, absent from the contract`);
+    }
+    if (binding.bodyRef !== undefined && !shapeNames.has(binding.bodyRef)) {
+      faults.push(`${tool.name}: bodyRef names ${binding.bodyRef}, which is neither a reflected shape nor a conventions component`);
+    }
+    // A summaryRef only reaches the document through the paged envelope, which okResponse
+    // builds only when the table also names the row array and its shape. Without them the
+    // key emits nothing — and the failure surfaces as a test dereferencing `content` on a
+    // response that has none, which names the symptom rather than the cause. This faults
+    // where the cause is.
+    if (binding.summaryRef !== undefined && (binding.items === undefined || binding.fullResponse === undefined)) {
+      faults.push(`${tool.name}: summaryRef needs items and fullResponse, or it reaches no response`);
     }
     const dropped = new Set((binding.drop ?? []).map((d) => d.name));
     for (const drop of binding.drop ?? []) {
@@ -203,7 +228,6 @@ export function bindingFaults(table: BindingTable, surface: Surface): string[] {
   // Synthetic operations are not in the golden, so nothing above reaches them. Their
   // shapes must still resolve: ADR-0008 §2 allows a conventions component or a reflected
   // type, and nothing else — an unresolvable name here is the API being authored by typo.
-  const shapeNames = new Set([...fullShapes, ...(surface.conventions ?? [])]);
   for (const [name, op] of Object.entries(table.synthetic ?? {})) {
     if (op.class === undefined) faults.push(`synthetic ${name}: no class, which is hand-set here`);
     if (op.scopes === undefined) faults.push(`synthetic ${name}: no scopes, which are hand-set here`);

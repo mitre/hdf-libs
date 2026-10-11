@@ -557,6 +557,18 @@ function okResponse(binding: ToolBinding): Record<string, unknown> {
                 // AIP-158: the server echoes the limit it actually applied, which may be
                 // lower than the one asked for.
                 limit: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE },
+                // A comparison-level rollup, where the tool returns one. It is envelope
+                // data rather than a row, and the envelope closes itself, so without a
+                // declared member the response could not carry it at all. Three of its ten
+                // members — `unchanged`, `total` and `matchedCount` — cannot be recovered
+                // from the rows either, because all three count unchanged entries and those
+                // never enter the array. Distinct from the envelope's `total`: that counts
+                // the pageable rows, while the summary's own counts every entry the diff
+                // compared — requirement diffs in temporal mode, component diffs in
+                // system-drift, since /comparisons serves both.
+                ...(binding.summaryRef !== undefined
+                  ? { summary: { $ref: `#/components/schemas/${binding.summaryRef}` } }
+                  : {}),
               },
             }
           : schema,
