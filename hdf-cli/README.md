@@ -35,6 +35,7 @@ The CLI is **Go only, by design.** Most packages in this monorepo ship a TypeScr
   - [mcp](#mcp) -- Run the HDF MCP server (stdio transport)
   - [version](#version) -- Print version information
 - [Global Flags](#global-flags)
+- [Exit codes](#exit-codes)
 - [Supported Conversions](#supported-conversions)
   - [To HDF](#to-hdf)
   - [From HDF](#from-hdf)
@@ -100,7 +101,7 @@ The binary is written to `hdf-cli/hdf`. Add it to your PATH or invoke it directl
 
 ### validate
 
-Validate an HDF results or baseline file against the JSON schema. Returns exit code 0 on success, 1 on failure.
+Validate an HDF results or baseline file against the JSON schema. Exit codes are listed under [Exit codes](#exit-codes): 0 when every file is valid, 1 when every file is invalid, 3 when some are.
 
 ```
 USAGE
@@ -138,7 +139,7 @@ For a results document the success line is followed by `Agent-attributed overrid
 
 #### validate threshold
 
-Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation.
+Validate HDF results against compliance thresholds — the CI/CD compliance-gate companion to `hdf generate threshold`. Exit code 0 if all thresholds pass, 1 on any violation; a gate never exits 3, however many documents it was given (see [Exit codes](#exit-codes)).
 
 ```
 USAGE
@@ -1144,6 +1145,18 @@ These flags apply to all commands.
 | `--no-follow-symlinks` | | `false` | Refuse to read symlinked files |
 | `--no-headers` | | `false` | Suppress column headers in table output |
 | `--schema-dir` | | | Load schemas from a directory instead of the embedded copies |
+
+## Exit codes
+
+One vocabulary for every command, so a pipeline can test the code rather than parse the output.
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success. In a bulk run, every file succeeded. |
+| `1` | Failure. A single-file operation failed; a bulk run where every file failed; a gate (`validate threshold`) where any document failed or could not be evaluated; an all-or-nothing batch (`system add-component`) where any file failed and nothing was written; `query` with no matching requirements. |
+| `3` | Partial. A bulk run where some files succeeded and some failed. The per-file lines and each failure are on stderr; the summary line is on stdout. |
+
+`--fail-fast` aborts at the first failing file and exits 1, because the files after it were never processed. `diff` keeps its POSIX codes (`0` identical, `1` differences, `2` error), documented under [diff](#diff).
 
 ## Supported Conversions
 

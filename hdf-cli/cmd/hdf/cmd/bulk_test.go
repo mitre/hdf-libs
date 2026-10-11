@@ -2,8 +2,12 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -333,5 +337,154 @@ func TestConvertSingleFile_OutputDirectory(t *testing.T) {
 		_, _, err := executeCommand("convert", "--from", "legacyhdf", inputPath, "-o", outFile)
 		require.NoError(t, err)
 		assert.FileExists(t, outFile)
+	})
+}
+
+// --- Exit codes ---
+
+// exitCodeOf applies main.go's rule to a command error: an ExitCoder's own
+// code, anything else 1.
+func exitCodeOf(t *testing.T, err error) int {
+	t.Helper()
+	require.Error(t, err)
+	var ec ExitCoder
+	if errors.As(err, &ec) {
+		return ec.ExitCode()
+	}
+	return 1
+}
+
+func TestRunBulk_ExitCodes(t *testing.T) {
+	files := []string{"a", "b", "c"}
+	failOn := func(bad ...string) BulkProcessFn {
+		return func(file string) error {
+			for _, b := range bad {
+				if file == b {
+					return errors.New("boom")
+				}
+			}
+			return nil
+		}
+	}
+	run := func(fn BulkProcessFn, opts ...bulkOption) error {
+		_, err := captureOutput(func() error { return runBulk(files, "op", "done", fn, opts...) })
+		return err
+	}
+
+	t.Run("every file succeeding is nil", func(t *testing.T) {
+		require.NoError(t, run(failOn()))
+	})
+	t.Run("mixed outcomes exit 3", func(t *testing.T) {
+		assert.Equal(t, 3, exitCodeOf(t, run(failOn("b"))))
+	})
+	t.Run("every file failing exits 1", func(t *testing.T) {
+		assert.Equal(t, 1, exitCodeOf(t, run(failOn("a", "b", "c"))))
+	})
+	t.Run("withFailClosed keeps 1 for mixed outcomes", func(t *testing.T) {
+		assert.Equal(t, 1, exitCodeOf(t, run(failOn("b"), withFailClosed())))
+	})
+}
+
+// Each runBulk caller inherits the vocabulary with no code of its own: 3 when
+// some files succeeded and some failed, 1 when every file failed.
+func TestBulkExitCodes_PerCaller(t *testing.T) {
+	good := testFixturePath(t, "minimal-v2.json")
+	rich := writeRichFixture(t)
+	legacy := legacyhdfFixturePath(t, "input/minimal.json")
+	dir := t.TempDir()
+	bad := filepath.Join(dir, "bad.json")
+	bad2 := filepath.Join(dir, "bad2.json")
+	require.NoError(t, os.WriteFile(bad, []byte("not json"), 0o600))
+	require.NoError(t, os.WriteFile(bad2, []byte("not json"), 0o600))
+
+	cases := []struct {
+		name      string
+		mixed     []string
+		allFailed []string
+	}{
+		{"validate", []string{"validate", good, good, bad}, []string{"validate", bad, bad2}},
+		{"list", []string{"list", rich, bad}, []string{"list", bad, bad2}},
+		{"query", []string{"query", good, bad}, []string{"query", bad, bad2}},
+		{"convert",
+			[]string{"convert", "--from", "legacyhdf", legacy, bad, "-o", filepath.Join(dir, "out-mixed")},
+			[]string{"convert", "--from", "legacyhdf", bad, bad2, "-o", filepath.Join(dir, "out-failed")}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name+" mixed exits 3", func(t *testing.T) {
+			_, _, err := executeCommand(tc.mixed...)
+			assert.Equal(t, 3, exitCodeOf(t, err))
+		})
+		t.Run(tc.name+" all failed exits 1", func(t *testing.T) {
+			_, _, err := executeCommand(tc.allFailed...)
+			assert.Equal(t, 1, exitCodeOf(t, err))
+		})
+	}
+}
+
+// A gate is fail-closed: any verdict that failed is exit 1, never 3, and a
+// document that could not be evaluated at all is treated the same way.
+func TestValidateThreshold_BulkExitCodesStayFailClosed(t *testing.T) {
+	dir := t.TempDir()
+	clean := writeResultsAt(t, dir, "clean.json", testResultsNoFailures)
+	violating := writeResultsAt(t, dir, "violating.json", testResultsForThreshold)
+	unreadable := writeResultsAt(t, dir, "unreadable.json", "not json")
+	thr := writeResultsAt(t, dir, "threshold.yaml", "failed:\n  total:\n    max: 0\n")
+
+	t.Run("one passing and one failing verdict exits 1", func(t *testing.T) {
+		_, _, err := executeCommand("validate", "threshold", clean, violating, "-T", thr)
+		assert.Equal(t, 1, exitCodeOf(t, err))
+	})
+	t.Run("one passing and one unreadable document exits 1", func(t *testing.T) {
+		_, _, err := executeCommand("validate", "threshold", clean, unreadable, "-T", thr)
+		assert.Equal(t, 1, exitCodeOf(t, err))
+	})
+}
+
+// add-component is all-or-nothing: a failed file means nothing was written, so
+// the run is never partial and exits 1.
+func TestSystemAddComponent_BulkExitCodeIsNeverPartial(t *testing.T) {
+	sysFile := createBaseSystem(t)
+	sbom := bomFixturePath(t, "cyclonedx-sbom.json")
+	bad := filepath.Join(t.TempDir(), "bad.json")
+	require.NoError(t, os.WriteFile(bad, []byte("not json"), 0o600))
+
+	_, _, err := executeCommand("system", "add-component", sbom, bad, "--system", sysFile, "--component-name-prefix", "x-")
+	assert.Equal(t, 1, exitCodeOf(t, err))
+	require.Len(t, readSystemComponents(t, sysFile), 1, "a failed batch must write nothing")
+}
+
+func TestFetchGitlabVulnerabilities_GroupExitCodes(t *testing.T) {
+	t.Setenv("GITLAB_TOKEN", "tok")
+
+	t.Run("two fetched and two failed exits 3", func(t *testing.T) {
+		srv := gvServer(t)
+		defer srv.Close()
+		var err error
+		_ = captureStderr(t, func() {
+			_, err = runFetchGV(t, "--url", srv.URL, "--group", "security-demo", "--out-dir", filepath.Join(t.TempDir(), "hdf"))
+		})
+		assert.Equal(t, 3, exitCodeOf(t, err))
+	})
+	t.Run("every project failing exits 1", func(t *testing.T) {
+		// A listing naming only the two projects whose probes are recorded as failures.
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req struct {
+				Query     string         `json:"query"`
+				Variables map[string]any `json:"variables"`
+			}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+			name := strings.TrimPrefix(req.Variables["fullPath"].(string), "security-demo/")
+			if strings.Contains(req.Query, "query GroupProjects") {
+				_, _ = w.Write([]byte(`{"data":{"group":{"fullPath":"security-demo","projects":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[{"fullPath":"security-demo/unscanned-app","archived":false},{"fullPath":"security-demo/empty-app","archived":false}]}}}}`))
+				return
+			}
+			_, _ = w.Write(gvTestdata(t, "probe-"+name+".json"))
+		}))
+		defer srv.Close()
+		var err error
+		_ = captureStderr(t, func() {
+			_, err = runFetchGV(t, "--url", srv.URL, "--group", "security-demo", "--out-dir", filepath.Join(t.TempDir(), "hdf"))
+		})
+		assert.Equal(t, 1, exitCodeOf(t, err))
 	})
 }

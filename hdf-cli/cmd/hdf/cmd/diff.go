@@ -30,7 +30,7 @@ type ExitCoder interface {
 	ExitCode() int
 }
 
-// exitCodeError is returned by runDiff to signal a specific exit code.
+// exitCodeError carries a specific exit code; diff and runBulk return it.
 type exitCodeError struct {
 	code    int
 	message string

@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **BREAKING: a bulk run with both successes and failures now exits 3 instead of 1.** `convert`, `fetch gitlab-vulnerabilities --group`, `list`, `query` and `validate` given several files exit 3 when some succeeded and some failed, and still 1 when every file failed, so a pipeline can tell the two apart. Unchanged: single-file operations, `validate threshold` (a gate is 1 when any document failed it or could not be read), `system add-component` (all-or-nothing, so never partial), `--fail-fast` (aborts with 1) and `diff`'s POSIX codes. A pipeline that tests `== 1` on a bulk command should test `!= 0`. The vocabulary is documented once, under "Exit codes" in the CLI README.
 - **Documented: on Windows, an `hdf` command that rewrites a file fails while another process holds that file open, leaving the destination's previous content complete and naming it in the error** — the atomic replace every output has used since 3.7.2 cannot delete a destination another handle has open, as the Windows CI leg's `TestWriteFile_OpenReaderSeesOneCompleteVersion` measures.
 - **Go toolchain floor raised to 1.26.9.** The `go` directive in `go.work` and every module's `go.mod` moved from 1.26.6 to 1.26.9 to pick up the stdlib fixes for GO-2026-6603, -6605, -6607, -6608, -6610, -6611, -6612, -6613 and -6617 (`net/http`, `net/textproto`, `crypto/tls`). Go consumers need 1.26.9 or newer.
 
