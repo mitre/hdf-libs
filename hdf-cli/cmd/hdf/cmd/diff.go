@@ -169,7 +169,10 @@ Requirements are matched by ID across the two documents and classified as:
 Exit codes (--exit-code): GNU diff compatible
   0 - no differences found (assessments are identical)
   1 - differences found (any kind)
-  2 - error (file not found, parse failure, etc.)
+
+A diff that cannot run at all (file not found, parse failure) also exits 1, so
+in this mode 1 does not tell a failure apart from a difference. Use
+--detailed-exitcode, where 1 means only that.
 
 Exit codes (--detailed-exitcode): nuanced security outcomes
   0  - identical (no differences)
