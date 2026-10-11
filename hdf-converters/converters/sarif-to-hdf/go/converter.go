@@ -352,20 +352,47 @@ func assertSupportedVersion(explicitVersion string) error {
 
 // --- artifact index resolution (§3.4.5) ---
 
-// resolveArtifactIndices fills in the uri an artifactLocation.index addresses. §3.4.5
-// permits a location to carry only an index into run.artifacts, so the file IS known
-// even where uri is absent — without this the line survives and the path does not.
+// resolveOneLocation fills in the uri an artifactLocation.index addresses, for a single
+// location. Returns silently when there is nothing to do.
 //
 // ONE LEVEL ONLY, and deliberately. An artifact's own location may itself be
 // index-addressed, so following the chain would need a cycle guard and would hand a
 // consumer a path this converter inferred transitively rather than one the document
 // stated about the finding. An artifact whose location has no uri resolves to nothing.
 //
-// Anything unresolvable falls back to no path rather than erroring: a nil index, the
+// Anything unresolvable leaves the uri empty rather than erroring: a nil index, the
 // schema's -1 default, a negative value, an index past the table, or no table at all.
-// Inventing a path would be worse than reporting the line alone, which is what a
-// consumer gets. uriBaseId is NOT handled — it names a base-URI symbol resolved
-// against run.originalUriBaseIds, which is separate addressing and out of scope here.
+// Inventing a path would be worse than reporting the line alone.
+func resolveOneLocation(loc *SarifLocation, artifacts []SarifArtifact) {
+	if loc.PhysicalLocation == nil || loc.PhysicalLocation.ArtifactLocation == nil {
+		return
+	}
+	al := loc.PhysicalLocation.ArtifactLocation
+	if al.URI != "" || al.Index == nil {
+		return
+	}
+	idx := *al.Index
+	if idx < 0 || idx >= len(artifacts) {
+		return
+	}
+	if artifacts[idx].Location == nil || artifacts[idx].Location.URI == "" {
+		return
+	}
+	al.URI = artifacts[idx].Location.URI
+}
+
+// resolveArtifactIndices fills in every indexed path in a run, so nothing downstream
+// needs to know the artifacts table exists. §3.4.5 permits a location to carry only an
+// index, so the file IS known even where uri is absent.
+//
+// BOTH location kinds are covered: a result's own locations AND the code-flow steps
+// inside codeFlows[].threadFlows[].locations[], which extractBacktrace reads for their
+// uri. Missing the second left a backtrace entry as ":7" — an empty path with a bare
+// line, the exact loss this resolution exists to prevent — and CodeQL, the heaviest
+// code-flow producer, is the family that would hit it.
+//
+// uriBaseId is NOT handled: it names a base-URI symbol resolved against
+// run.originalUriBaseIds, which is separate addressing and tracked on its own card.
 func resolveArtifactIndices(run *SarifRun) {
 	if run.Results == nil || len(run.Artifacts) == 0 {
 		return
@@ -373,23 +400,15 @@ func resolveArtifactIndices(run *SarifRun) {
 	results := *run.Results
 	for i := range results {
 		for j := range results[i].Locations {
-			physical := results[i].Locations[j].PhysicalLocation
-			if physical == nil || physical.ArtifactLocation == nil {
-				continue
+			resolveOneLocation(&results[i].Locations[j], run.Artifacts)
+		}
+		for f := range results[i].CodeFlows {
+			for t := range results[i].CodeFlows[f].ThreadFlows {
+				steps := results[i].CodeFlows[f].ThreadFlows[t].Locations
+				for k := range steps {
+					resolveOneLocation(&steps[k].Location, run.Artifacts)
+				}
 			}
-			loc := physical.ArtifactLocation
-			if loc.URI != "" || loc.Index == nil {
-				continue
-			}
-			idx := *loc.Index
-			if idx < 0 || idx >= len(run.Artifacts) {
-				continue
-			}
-			artifact := run.Artifacts[idx]
-			if artifact.Location == nil || artifact.Location.URI == "" {
-				continue
-			}
-			loc.URI = artifact.Location.URI
 		}
 	}
 }
@@ -397,7 +416,8 @@ func resolveArtifactIndices(run *SarifRun) {
 // --- Run-level conversion ---
 
 func convertRun(runIdx int, run SarifRun, version string, timestamp time.Time, resultsChecksum *hdf.Checksum) hdf.EvaluatedBaseline {
-	// Fill in the paths an index addresses before anything reads a location, so the
+	// Fill in every indexed path — a result's own locations and its code-flow steps —
+	// before anything reads one, so the
 	// rest of the conversion needs no knowledge of the artifacts table. The typed
 	// results are rewritten; rawSourceRecord is built from the UNPARSED bytes, so a
 	// record still reports exactly what the tool wrote.

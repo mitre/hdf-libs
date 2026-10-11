@@ -251,13 +251,24 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
 function resolveArtifactIndices(run: SarifRun): void {
   const artifacts = run.artifacts;
   if (!run.results || !artifacts || artifacts.length === 0) return;
+
+  const resolveOne = (location?: SarifLocation): void => {
+    const loc = location?.physicalLocation?.artifactLocation;
+    if (!loc || loc.uri || loc.index === undefined) return;
+    if (loc.index < 0 || loc.index >= artifacts.length) return;
+    const uri = artifacts[loc.index]?.location?.uri;
+    if (uri) loc.uri = uri;
+  };
+
   for (const result of run.results) {
-    for (const location of result.locations ?? []) {
-      const loc = location.physicalLocation?.artifactLocation;
-      if (!loc || loc.uri || loc.index === undefined) continue;
-      if (loc.index < 0 || loc.index >= artifacts.length) continue;
-      const uri = artifacts[loc.index]?.location?.uri;
-      if (uri) loc.uri = uri;
+    for (const location of result.locations ?? []) resolveOne(location);
+    // Code-flow steps are locations too, and extractBacktrace reads them for their uri.
+    // Missing them left a backtrace entry as ":7" — an empty path with a bare line, the
+    // exact loss this resolution prevents — and CodeQL is the family that hits it.
+    for (const flow of result.codeFlows ?? []) {
+      for (const thread of flow.threadFlows ?? []) {
+        for (const step of thread.locations ?? []) resolveOne(step.location);
+      }
     }
   }
 }

@@ -2993,10 +2993,43 @@ func TestConvertSarifToHDF_ResolvedUriDoesNotReachTheNativeRecord(t *testing.T) 
 	assert.NotContains(t, rec.Content, "src/indexed.c",
 		"the record must report what the tool wrote, not what we inferred")
 
-	var back map[string]interface{}
+	var back struct {
+		Locations []struct {
+			PhysicalLocation struct {
+				ArtifactLocation map[string]interface{} `json:"artifactLocation"`
+			} `json:"physicalLocation"`
+		} `json:"locations"`
+	}
+	// Decoded into a typed shape rather than chained interface assertions: a regression
+	// that drops locations would panic and abort the binary instead of failing cleanly.
 	require.NoError(t, json.Unmarshal([]byte(rec.Content), &back))
-	locs := back["locations"].([]interface{})
-	al := locs[0].(map[string]interface{})["physicalLocation"].(map[string]interface{})["artifactLocation"].(map[string]interface{})
+	require.Len(t, back.Locations, 1)
+	al := back.Locations[0].PhysicalLocation.ArtifactLocation
 	assert.NotContains(t, al, "uri", "the source record carried only an index")
 	assert.EqualValues(t, 0, al["index"])
+}
+
+// extractBacktrace reads code-flow step locations for their uri, and those steps may be
+// index-addressed too. Resolving only a result's own locations left a backtrace entry as
+// ":7" — an empty path with a bare line, the exact loss index resolution exists to
+// prevent — and CodeQL, the heaviest code-flow producer, is the family that hits it.
+func TestConvertSarifToHDF_CodeFlowStepsResolveTheirIndex(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+		"artifacts":[{"location":{"uri":"src/sink.c"}},{"location":{"uri":"src/flow.c"}}],
+		"results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+			"locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":42}}}],
+			"codeFlows":[{"threadFlows":[{"locations":[
+				{"location":{"physicalLocation":{"artifactLocation":{"index":1},"region":{"startLine":7}}}}]}]}]}]}]}`)
+
+	result, err := ConvertSarifToHDF(input, testConverterVersion)
+	require.NoError(t, err)
+	req := result.Baselines[0].Requirements[0]
+
+	assert.Contains(t, req.Results[0].CodeDesc, "URL : src/sink.c",
+		"the result's own location resolves")
+	require.NotEmpty(t, req.Results[0].Backtrace, "the code flow produces a backtrace")
+	assert.Contains(t, req.Results[0].Backtrace[0], "src/flow.c",
+		"a code-flow step addressed by index must resolve too, not land as \":7\"")
+	assert.NotEqual(t, ":7", req.Results[0].Backtrace[0])
 }

@@ -2012,12 +2012,30 @@ describe('artifactLocation.index resolution (§3.4.5)', () => {
   it('does not follow an artifact whose own location is index-addressed', async () => {
     const r = await req('[{"location":{"index":1}},{"location":{"uri":"src/real.c"}}]', '{"index":0}');
     expect(r.results[0].codeDesc).not.toContain('URL :');
+    expect(r.results[0].codeDesc).toContain('LINE : 42');
   });
 
   // Resolution rewrites the parsed result in place, and this side builds
   // rawSourceRecord from those objects — so without a pre-resolution snapshot the record
   // would report a uri THIS CONVERTER inferred rather than what the tool wrote. Caught
   // by the Go/TS golden parity test, which Go passes because it captures unparsed bytes.
+  // extractBacktrace reads code-flow step locations for their uri, and those steps may
+  // be index-addressed too. Resolving only a result's own locations left a backtrace
+  // entry as ":7" — an empty path with a bare line.
+  it('resolves an index on a code-flow step', async () => {
+    const input = `{"version":"2.1.0","runs":[{
+      "tool":{"driver":{"name":"T","rules":[{"id":"R1","defaultConfiguration":{"level":"error"}}]}},
+      "artifacts":[{"location":{"uri":"src/sink.c"}},{"location":{"uri":"src/flow.c"}}],
+      "results":[{"ruleId":"R1","kind":"fail","message":{"text":"m"},
+        "locations":[{"physicalLocation":{"artifactLocation":{"index":0},"region":{"startLine":42}}}],
+        "codeFlows":[{"threadFlows":[{"locations":[
+          {"location":{"physicalLocation":{"artifactLocation":{"index":1},"region":{"startLine":7}}}}]}]}]}]}]}`;
+    const r = JSON.parse(await convertSarifToHdf(input)).baselines[0].requirements[0];
+    expect(r.results[0].codeDesc).toContain('URL : src/sink.c');
+    expect(r.results[0].backtrace[0]).toContain('src/flow.c');
+    expect(r.results[0].backtrace[0]).not.toBe(':7');
+  });
+
   it('keeps the inferred uri out of the native record', async () => {
     const r = await req('[{"location":{"uri":"src/indexed.c"}}]', '{"index":0}');
     expect(r.results[0].codeDesc).toContain('URL : src/indexed.c');
