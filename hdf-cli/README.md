@@ -595,6 +595,7 @@ SUBCOMMANDS
 
 EXAMPLES
   hdf amend apply --results results.json --amendments waivers.json -o merged.json
+  hdf amend apply --results results.json --amendments waivers.json -o merged.json --require-match   # fail if nothing matched
   hdf amend list waivers.json
   hdf amend verify waivers.json                     # structure, expiry, chain
   hdf amend verify waivers.json results.json         # also check against results

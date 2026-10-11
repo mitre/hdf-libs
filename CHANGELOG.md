@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **`hdf amend apply --require-match` fails when no override matched, naming the ones that landed nowhere.** The default stays exit 0 with `Applied 0 of N override(s)`: a register carrying a decision about one CVE is applied to every new results file whether or not that CVE appears, so zero matches is a normal outcome. A pipeline whose register was written for the document it is applying, where a miss is a bug, opts into the failure. The MCP `hdf_apply_amendment` tool takes the same `requireMatch` input and returns a tool error with the new code `NO_OVERRIDE_MATCHED` in that case, carrying the unmatched ids in its details. The `tools/list` total ceiling moves 5700 → 5720 for the one new input field (measured 5710). (#248)
+
 ### Fixed
 
 - **The deprecated `Hdf*` type aliases in `@mitre/hdf-schema` are real types again; since 3.3.0 they had been `any`.** `HdfResults`, `HdfBaseline`, `HdfComparison`, `HdfSystem`, `HdfPlan`, `HdfAmendments` and `HdfEvidencePackage` were declared as `export type HdfResults = HDFResults` beneath an `export * from './ts/hdf.js'`, and `export *` re-exports a name without binding it, so each alias referred to an undefined identifier. Every consumer compiling with `skipLibCheck`, the workspace default, got `any`: `const x: HdfResults = 42` compiled on every published version from 3.3.0 to 3.7.2. The barrel now imports the `HDF*` names it aliases, a top-level `Identity` type in the helpers declaration that collided with the schema's own is gone, and two tests pin it: the emitted declarations lib-check clean, and a probe assigning a number to each alias is rejected. Consumers on the deprecated names may see new type errors that were always real; migrate to the `HDF*` names. (#451)
