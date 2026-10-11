@@ -76,11 +76,22 @@ func TestEvidenceBuildBasic(t *testing.T) {
 		assert.Equal(t, "test-system-evidence-package", pkg["name"])
 	})
 
-	t.Run("errors when system flag missing", func(t *testing.T) {
-		_, _, err := executeCommand("evidence", "build",
+	// This subtest held the opposite contract. systemRef is optional in the schema, and
+	// a package recording none is a normal product: an assessment of a lone component
+	// asserts no system, so refusing to build one shut that use case out entirely.
+	t.Run("builds a package recording no system when the flag is omitted", func(t *testing.T) {
+		stdout, stderr, err := executeCommand("evidence", "build",
 			"--results", resultsPath,
 		)
-		require.Error(t, err)
+		require.NoError(t, err)
+
+		var pkg map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(stdout), &pkg))
+		_, recorded := pkg["systemRef"]
+		assert.False(t, recorded, "no --system records no systemRef")
+		assert.Equal(t, "evidence-package", pkg["name"])
+		assert.Len(t, pkg["contents"], 1, "nothing stands in for the absent system")
+		assert.Contains(t, stderr, "asserts no system")
 	})
 
 	t.Run("errors when results flag missing", func(t *testing.T) {

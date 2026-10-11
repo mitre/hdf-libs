@@ -231,11 +231,11 @@ func runEvidenceUpdate(pkgPath string, opts evidenceUpdateOpts) error {
 	if resErr != nil {
 		return resErr
 	}
-	completeness := computeCompleteness(sysDoc, allResults)
+	// Through build's completenessForPackage, so the "no system document means no
+	// coverage claim" rule has one definition: a package built without a system and a
+	// package whose systemRef stopped resolving must describe themselves the same way.
+	completeness := completenessForPackage(sysDoc, haveSystem, allResults)
 	if !haveSystem {
-		// Nothing was available to check against, so "all baselines assessed" would be a
-		// claim minted from no system document at all.
-		completeness["allBaselinesAssessed"] = false
 		if unresolvedRef != "" {
 			// Named, because a systemRef the package RECORDS and this run rejected is a
 			// different situation from one it never recorded, and the two used to be

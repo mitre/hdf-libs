@@ -889,3 +889,193 @@ func TestEvidenceBuild_SurfacesAnUnresolvableReferenceOnTheStdoutPath(t *testing
 	assert.Contains(t, err.Error(), "no-such-scan.json",
 		"and the target it could not resolve, which a degraded lexical fallback would not")
 }
+
+// rhel9ResultsJSON covers a named baseline. noTargetsJSON ({"baselines": []}) does not,
+// and computeCompleteness derives allBaselinesAssessed from the baseline names it finds —
+// so an assertion that the flag is false is vacuous against an empty results document and
+// survives the removal of the rule it is meant to pin.
+const rhel9ResultsJSON = `{"baselines": [{"name": "RHEL9-STIG",
+	"requirements": [{"id": "SV-1", "impact": 0.5, "tags": {},
+		"descriptions": [{"label": "default", "data": "Test"}],
+		"results": [{"status": "passed", "codeDesc": "Test", "startTime": "2025-01-01T00:00:00Z"}]}]}],
+	"statistics": {"duration": 0}}`
+
+// hdf-evidence-package's top-level required is ["name","contents"] — systemRef is
+// optional — but build refused without --system, so a schema-valid package that
+// records no system could not be produced at all. A library is not a system: it has
+// no authorization boundary, no FIPS 199 categorization and no authorizing official,
+// and what its assessment asserts is narrower. That package is a normal product.
+func TestEvidenceBuild_BuildsAContentsOnlyPackageWithoutASystem(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := writeEvidenceInputs(t, tmpDir)
+	outputPath := filepath.Join(tmpDir, "pkg.json")
+
+	_, _, err := executeCommand("evidence", "build",
+		"--results", p["results.json"], "-o", outputPath)
+	require.NoError(t, err, "a package recording no system is schema-valid and must build")
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+
+	// Absent, not empty-string: an empty uri-reference claims a reference to nothing,
+	// which is a different and worse claim than making none.
+	_, recorded := pkg["systemRef"]
+	assert.False(t, recorded, "no --system must record no systemRef at all")
+
+	types := make([]string, 0)
+	for _, c := range pkg["contents"].([]interface{}) {
+		types = append(types, c.(map[string]interface{})["type"].(string))
+	}
+	assert.Equal(t, []string{"hdf-results"}, types,
+		"contents lists what was given and nothing standing in for a system")
+	assert.NoError(t, validateHDFDocument(data), "the package must validate")
+}
+
+// Every claim the note makes is asserted against the SAME run that printed it. A
+// Contains() on help or notice text asserts the phrasing back at the test and can
+// hold a false sentence in place indefinitely, so each clause is paired with the
+// observable it describes.
+func TestEvidenceBuild_SaysPlainlyThatThePackageAssertsNoSystem(t *testing.T) {
+	tmpDir := t.TempDir()
+	outputPath := filepath.Join(tmpDir, "pkg.json")
+	resultsPath := filepath.Join(tmpDir, "rhel9.json")
+	require.NoError(t, os.WriteFile(resultsPath, []byte(rhel9ResultsJSON), 0o600))
+
+	_, stderr, err := executeCommand("evidence", "build",
+		"--results", resultsPath, "-o", outputPath)
+	require.NoError(t, err)
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	cc, _ := pkg["completenessCheck"].(map[string]interface{})
+	require.NotNil(t, cc)
+
+	// Claim: the package asserts no system — and records no systemRef.
+	assert.Contains(t, stderr, "asserts no system")
+	_, recorded := pkg["systemRef"]
+	assert.False(t, recorded)
+
+	// Claim: neither coverage claim is made. Both are claims ABOUT system components;
+	// with no system document there is nothing to check the results against, and
+	// computeCompleteness reads allBaselinesAssessed off the results alone.
+	assert.Contains(t, stderr, "claims neither full baseline coverage nor component coverage")
+	assert.Equal(t, false, cc["allBaselinesAssessed"])
+	assert.Equal(t, false, cc["allComponentsCovered"])
+
+	// Claim: the package is named "evidence-package" — no system name to take, and
+	// "unnamed-system" would assert a system exists and is merely nameless.
+	assert.Contains(t, stderr, `named "evidence-package"`)
+	assert.Equal(t, "evidence-package", pkg["name"])
+
+	// Claim: the two remedies it names are real flags on a real command.
+	setHelp, _, helpErr := executeCommand("evidence", "set", "--help")
+	require.NoError(t, helpErr)
+	assert.Contains(t, setHelp, "--system-ref")
+	assert.Contains(t, setHelp, "--name")
+
+	// The retired refusal must not survive anywhere the operator reads.
+	assert.NotContains(t, stderr, "--system is required")
+}
+
+// The refusal was in two places, and relaxing only the flag path would leave build
+// inconsistent with itself: --from-dir is the CI shape (a job drops its scans in a
+// directory), and a software-package pipeline's directory has no system document in
+// it at all. An explicit --system plus a scanned one stays a hard error.
+func TestEvidenceBuild_FromDirWithNoSystemDocumentStillBuilds(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "results.json"), []byte(noTargetsJSON), 0o600))
+	outputPath := filepath.Join(dir, "pkg.json")
+
+	_, stderr, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath)
+	require.NoError(t, err, "a scanned directory with no system document must still build")
+	assert.Contains(t, stderr, "asserts no system")
+	assert.NotContains(t, stderr, "needs exactly one")
+
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	_, recorded := pkg["systemRef"]
+	assert.False(t, recorded)
+	assert.Len(t, pkg["contents"], 1)
+}
+
+// contents[] has minItems 1, so an empty scan would otherwise surface as "evidence
+// package failed validation before write" — blaming the package for an empty
+// directory. Reachable only here: the flag path requires a results document.
+func TestEvidenceBuild_FromDirWithNoDocumentsAtAllIsRefused(t *testing.T) {
+	dir := t.TempDir()
+	_, _, err := executeCommand("evidence", "build",
+		"--from-dir", dir, "-o", filepath.Join(dir, "pkg.json"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no HDF documents")
+	assert.NotContains(t, err.Error(), "failed validation",
+		"the empty directory is the fault, not the package it would have produced")
+}
+
+// A system-less package must not fail verify, and what verify cannot check must be
+// named rather than left to inference. Measured, not assumed: completeness is read
+// from the PLAN, never from the system document, so a plan-less package skips the
+// check and a plan-bearing one performs it in full without a system.
+func TestEvidenceVerify_SystemlessPackageIsNotAFailure(t *testing.T) {
+	dir := t.TempDir()
+	p := writeEvidenceInputs(t, dir)
+	pkgPath := filepath.Join(dir, "pkg.json")
+
+	_, _, buildErr := executeCommand("evidence", "build",
+		"--results", p["results.json"], "-o", pkgPath)
+	require.NoError(t, buildErr)
+
+	_, stderr, err := executeCommand("evidence", "verify", pkgPath)
+	require.NoError(t, err, "a package recording no system must not fail verify")
+	assert.Contains(t, stderr, "no planRef in evidence package",
+		"what was skipped must be named, and it is the plan that is missing — not the system")
+
+	// With a plan, the completeness check runs to a verdict with no system document
+	// anywhere in the package. The results cover the baseline the plan requires, so a
+	// pass here is the completeness check's own verdict and not a vacuous skip.
+	covering := filepath.Join(dir, "rhel9-results.json")
+	require.NoError(t, os.WriteFile(covering, []byte(rhel9ResultsJSON), 0o600))
+	withPlan := filepath.Join(dir, "pkg-plan.json")
+	_, _, planBuildErr := executeCommand("evidence", "build",
+		"--results", covering, "--plan", p["plan.json"],
+		"--baseline", p["baseline.json"], "-o", withPlan)
+	require.NoError(t, planBuildErr)
+	_, planStderr, planVerifyErr := executeCommand("evidence", "verify", withPlan)
+	require.NoError(t, planVerifyErr,
+		"completeness is checked against the plan, so it reaches a verdict without a system")
+	assert.Contains(t, planStderr, "Completeness check passed: all 1 planned baselines have results",
+		"the completeness verdict must be reached, not skipped")
+	assert.NotContains(t, planStderr, "no planRef")
+}
+
+// Relaxing the zero-system case reordered the switch that decides which scanned
+// system a package takes, so both surviving branches are pinned here: one is still
+// discovered and recorded, and more than one is still refused by name.
+func TestEvidenceBuild_FromDirStillResolvesExactlyOneSystem(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "results.json"), []byte(noTargetsJSON), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "system-a.json"),
+		[]byte(`{"name":"portal","components":[{"name":"c1","type":"application"}]}`), 0o600))
+	outputPath := filepath.Join(dir, "pkg.json")
+
+	_, _, err := executeCommand("evidence", "build", "--from-dir", dir, "-o", outputPath)
+	require.NoError(t, err)
+	data, readErr := os.ReadFile(outputPath)
+	require.NoError(t, readErr)
+	var pkg map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	assert.Equal(t, "system-a.json", pkg["systemRef"], "a single scanned system is still recorded")
+	assert.Equal(t, "portal-evidence-package", pkg["name"], "and still names the package")
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "system-b.json"),
+		[]byte(`{"name":"portal2","components":[{"name":"c2","type":"application"}]}`), 0o600))
+	_, _, twoErr := executeCommand("evidence", "build",
+		"--from-dir", dir, "-o", filepath.Join(dir, "pkg2.json"))
+	require.Error(t, twoErr, "two scanned systems have no second pointer to live under")
+	assert.Contains(t, twoErr.Error(), "contains 2 HDF system documents")
+}

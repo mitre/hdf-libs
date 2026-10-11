@@ -28,6 +28,12 @@ compliance percentage).
 
 The --results flag is repeatable and supports file globs.
 
+--system is optional. A package that records no systemRef asserts no system: it stands
+for the documents it lists and nothing more, which is what an assessment of a library or
+any other lone component actually claims. Its completeness check then claims neither full
+baseline coverage nor component coverage, because both are claims about system components
+and there is no system document to check against.
+
 Each document is recorded as a reference relative to the package's own directory, which is
 where -o writes it. Without -o the package goes to stdout, there is no package directory,
 and every reference is a bare filename — so two documents sharing a filename cannot both
@@ -39,7 +45,8 @@ Examples:
   hdf evidence build --system portal.json --results rhel9.json --results postgres.json
   hdf evidence build --system portal.json --results "/tmp/scans/*.json"
   hdf evidence build --system portal.json /tmp/scans/*.json
-  hdf evidence build --system portal.json --results scan.json --amendments waivers.json -o package.json`,
+  hdf evidence build --system portal.json --results scan.json --amendments waivers.json -o package.json
+  hdf evidence build --results scan.json -o package.json`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(_ *cobra.Command, args []string) error {
 			// Combine --results flags and positional args as results files
@@ -70,7 +77,8 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.systemPath, "system", "", "System document (required)")
+	cmd.Flags().StringVar(&opts.systemPath, "system", "",
+		"System document this package covers (optional; omit for a package that asserts no system)")
 	cmd.Flags().StringArrayVar(&opts.resultsPaths, "results", nil, "Results document(s) (repeatable, supports globs)")
 	cmd.Flags().StringVar(&opts.planPath, "plan", "", "Assessment plan document; also sets the package's planRef (optional)")
 	cmd.Flags().StringArrayVar(&opts.baselinePaths, "baseline", nil, "Baseline document(s) (repeatable, supports globs)")
@@ -80,14 +88,6 @@ Examples:
 	cmd.Flags().StringVar(&opts.fromDir, "from-dir", "",
 		"Scan a directory and route every document by its content; recurses, and reports what it cannot place")
 	cmd.Flags().StringVarP(&opts.outputPath, "output", "o", "", "Output file (default: stdout)")
-
-	// --system is required unless --from-dir will supply it.
-	cmd.PreRunE = func(c *cobra.Command, _ []string) error {
-		if opts.systemPath == "" && opts.fromDir == "" {
-			return fmt.Errorf("--system is required (or use --from-dir to discover it)")
-		}
-		return nil
-	}
 
 	return cmd
 }
@@ -113,8 +113,9 @@ func mergeScannedDir(opts *evidenceBuildOpts) error {
 		return err
 	}
 
-	// The package must have exactly one system document. Naming every candidate is
-	// what lets the operator see which one to move out of the tree.
+	// A package has at most one system document, and none is a valid answer: a scanned
+	// CI artifacts directory for a software package has no system document in it. Naming
+	// every candidate is what lets the operator see which one to move out of the tree.
 	switch {
 	case opts.systemPath != "":
 		// explicitly given; any scanned system documents are additional candidates
@@ -123,14 +124,11 @@ func mergeScannedDir(opts *evidenceBuildOpts) error {
 				"an evidence package has exactly one system document",
 				opts.systemPath, strings.Join(found.systems, ", "))
 		}
-	case len(found.systems) == 0:
-		return fmt.Errorf("--from-dir %s contains no HDF system document; "+
-			"an evidence package needs exactly one", opts.fromDir)
 	case len(found.systems) > 1:
 		return fmt.Errorf("--from-dir %s contains %d HDF system documents (%s); "+
 			"an evidence package has exactly one — move the others out of the tree",
 			opts.fromDir, len(found.systems), strings.Join(found.systems, ", "))
-	default:
+	case len(found.systems) == 1:
 		opts.systemPath = found.systems[0]
 	}
 
@@ -412,9 +410,12 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 		return nil
 	}
 
-	// Add system
-	if err := addEntry("hdf-system", opts.systemPath); err != nil {
-		return err
+	// Add system, when the package records one. Nothing stands in for an absent one:
+	// an entry with an empty uri would claim a reference to nothing.
+	if opts.systemPath != "" {
+		if err := addEntry("hdf-system", opts.systemPath); err != nil {
+			return err
+		}
 	}
 
 	// Add results
@@ -464,29 +465,47 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 		return err
 	}
 
-	// Extract system name for package name
-	sysData, err := readInputFile(opts.systemPath)
-	if err != nil {
-		return fmt.Errorf("failed to re-read system file: %w", err)
+	// Reachable only through --from-dir: the flag path requires a results document, so
+	// a package with nothing in it can only come from a scan that found nothing.
+	// contents[] has minItems 1, so this would otherwise surface as "failed validation
+	// before write", blaming the package for an empty directory.
+	if len(contents) == 0 {
+		return fmt.Errorf("--from-dir %s contains no HDF documents; there is nothing to record",
+			opts.fromDir)
 	}
-	sysDoc, err := loadAndValidateHDFDoc(sysData, "system")
-	if err != nil {
-		return fmt.Errorf("system file %s: %w", opts.systemPath, err)
-	}
-	sysName, _ := sysDoc["name"].(string)
-	if sysName == "" {
-		sysName = "unnamed-system"
+
+	// Extract system name for package name. A package recording no system has no name to
+	// take: "unnamed-system" would assert a system exists and is merely nameless.
+	var sysDoc map[string]interface{}
+	pkgName := systemlessPackageName
+	if opts.systemPath != "" {
+		sysData, readErr := readInputFile(opts.systemPath)
+		if readErr != nil {
+			return fmt.Errorf("failed to re-read system file: %w", readErr)
+		}
+		var loadErr error
+		sysDoc, loadErr = loadAndValidateHDFDoc(sysData, "system")
+		if loadErr != nil {
+			return fmt.Errorf("system file %s: %w", opts.systemPath, loadErr)
+		}
+		sysName, _ := sysDoc["name"].(string)
+		if sysName == "" {
+			sysName = "unnamed-system"
+		}
+		pkgName = sysName + "-evidence-package"
 	}
 
 	// Compute completeness check from all results
-	completeness := computeCompleteness(sysDoc, opts.resultsPaths)
+	completeness := completenessForPackage(sysDoc, opts.systemPath != "", opts.resultsPaths)
 
 	pkg := map[string]interface{}{
-		"name":              sysName + "-evidence-package",
-		"systemRef":         mustRef(baseDir, opts.systemPath),
+		"name":              pkgName,
 		"preparedAt":        time.Now().UTC().Format(time.RFC3339),
 		"contents":          contents,
 		"completenessCheck": completeness,
+	}
+	if opts.systemPath != "" {
+		pkg["systemRef"] = mustRef(baseDir, opts.systemPath)
 	}
 	if opts.planPath != "" {
 		pkg["planRef"] = mustRef(baseDir, opts.planPath)
@@ -499,6 +518,16 @@ func runEvidenceBuild(opts evidenceBuildOpts) error {
 
 	if err := validateHDFDocument(output); err != nil {
 		return fmt.Errorf("evidence package failed validation before write: %w", err)
+	}
+
+	if opts.systemPath == "" {
+		fmt.Fprintf(os.Stderr,
+			"Note: no --system was given, so this package records no systemRef and asserts no "+
+				"system — it stands for the documents it lists and nothing more. Its completeness "+
+				"check claims neither full baseline coverage nor component coverage, because there "+
+				"is no system document to check against, and the package is named %q. "+
+				"`hdf evidence set --system-ref` records a system later, and `--name` names the "+
+				"package.\n", systemlessPackageName)
 	}
 
 	if opts.outputPath == "" {
@@ -537,6 +566,22 @@ func contentEntryFromBytes(docType, ref string, data []byte) map[string]interfac
 			"value":     hex.EncodeToString(hash[:]),
 		},
 	}
+}
+
+// systemlessPackageName is the name of a package that records no system. It describes
+// what the document is and asserts nothing further; `hdf evidence set --name` replaces it.
+const systemlessPackageName = "evidence-package"
+
+// completenessForPackage is computeCompleteness plus the one rule that must not differ
+// between `build` and `update`: with no system document, nothing was available to check
+// the results against, so the claim is not made. computeCompleteness reads
+// allBaselinesAssessed off the results alone, which would mint it from nothing.
+func completenessForPackage(sysDoc map[string]interface{}, haveSystem bool, resultsPaths []string) map[string]interface{} {
+	cc := computeCompleteness(sysDoc, resultsPaths)
+	if !haveSystem {
+		cc["allBaselinesAssessed"] = false
+	}
+	return cc
 }
 
 // computeCompleteness is a best-effort courtesy metric. It deliberately
