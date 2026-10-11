@@ -122,6 +122,8 @@ A version below is what the fixture *says about itself*; where a format carries 
 - `osv-scanner-2.5.1.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: osv-scanner 2.5.1.
 - `rich.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SecurityScanner 3.2.1.
 - `results-absent.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: ExampleAnalyzer 1.2.3.
+- `no-runs.sarif` — SARIF 2.1.0; `runs` is an empty array, so there is no `tool.driver` block and the producer and its version are not determinable from file content. Schema-confirmed, not a real run.
+- `uriless-location.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: ExampleAnalyzer 1.2.3.
 - `sarif_input.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Flawfinder 2.0.15.
 - `semgrep.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: Semgrep OSS <MASKED>.
 - `spotbugs.sarif` — SARIF 2.1.0; `runs[0].tool.driver`: SpotBugs 4.4.0.

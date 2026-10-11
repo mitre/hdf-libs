@@ -6,7 +6,7 @@ import {
 import { buildAffectedPackage, buildNoFindingsRequirement, buildNotAnalyzedRequirement, deriveControlTypeFromTags, ecosystemFromPurlType, extractCWEIDs, inputChecksum, limitArray, mapCWEToNIST, validateInputSize, buildHdfResults, defaultOverrideExpiry} from '../../../shared/typescript/converterutil.js';
 import { Ecosystem } from '@mitre/hdf-schema';
 import { governingOverride } from '../../../shared/typescript/status.js';
-import { canonicalize, stringifyLine } from '../../../shared/typescript/exportmap.js';
+import { canonicalize, parseJSONPreservingNumbers, stringifyLine } from '../../../shared/typescript/exportmap.js';
 import type { EvaluatedBaseline, EvaluatedRequirement, RequirementResult, Checksum, Description, RawSourceRecord, Severity, SourceLocation, StatusOverride } from '@mitre/hdf-schema';
 import { ResultStatus, IdentityType, OverrideType, VerificationMethodEnum, ExternalReferenceEncoding, createMinimalBaseline, createRequirement, createDescription, createResult } from '@mitre/hdf-schema';
 
@@ -202,6 +202,13 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
 
   const sarif = parseJSON<SarifFile>(input);
 
+  // A SECOND parse, kept apart from the typed one above and used only to build the
+  // rawSourceRecords. parseJSON gives numbers as doubles, which is what the typed
+  // fields (startLine, index, securitySeverity) want; the record must instead carry
+  // the tokens the tool actually wrote, so it is built from this parse. Walking it
+  // only to snapshot each result means it is discarded immediately afterward.
+  const preserved = parseJSONPreservingNumbers(input) as {runs?: unknown[]} | null;
+
   if (!sarif || typeof sarif !== 'object') {
     throw new Error('Invalid SARIF structure: not a valid JSON object');
   }
@@ -227,7 +234,7 @@ export async function convertSarifToHdf(input: string, converterVersion = '1.0.0
     toolName: firstDriver?.name,
     toolVersion: firstDriver?.version,
     toolFormat: 'SARIF',
-    baselines: limitedRuns.map((run, runIdx) => convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp)),
+    baselines: limitedRuns.map((run, runIdx) => convertRun(runIdx, run, sarif.version, resultsChecksum, timestamp, preserved?.runs?.[runIdx])),
     timestamp,
   });
 }
@@ -273,12 +280,14 @@ function resolveArtifactIndices(run: SarifRun): void {
   }
 }
 
-function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date): EvaluatedBaseline {
+function convertRun(runIdx: number, run: SarifRun, version: string, resultsChecksum: Checksum, timestamp: Date, preservedRun?: unknown): EvaluatedBaseline {
   // Snapshot every result BEFORE resolving indices. resolveArtifactIndices rewrites
   // the parsed objects in place, and rawSourceRecord is built from them, so without
   // this a record would carry the uri THIS CONVERTER inferred rather than what the
   // tool wrote. Go captures the unparsed bytes at decode time for the same reason.
-  const rawSnapshots = (run.results ?? []).map(r => stringifyLine(canonicalize(r)).replace(/\n$/, ''));
+  const preservedResults = (preservedRun as {results?: unknown[]} | undefined)?.results;
+  const rawSnapshots = (run.results ?? []).map((r, i) =>
+    stringifyLine(canonicalize(preservedResults?.[i] ?? r)).replace(/\n$/, ''));
   resolveArtifactIndices(run);
 
   const ruleMap = buildRuleMap(run);
@@ -408,8 +417,15 @@ function convertResultGroup(runIdx: number, ruleId: string, rule: ReportingDescr
   for (const [i, sr] of sarifResults.entries()) {
     const expanded = convertSarifResultToHDFResults(sr);
     const record = rawSourceRecordFor(raws[i] ?? '', runIdx, sourceIndices[i] ?? i);
-    for (const r of expanded) {
-      r.rawSourceRecord = record;
+    for (const [j, r] of expanded.entries()) {
+      // The record goes on the FIRST expanded result only. All of them came from one
+      // SARIF result and so share one source record, and that record contains the whole
+      // locations array — so copying it onto each of N expanded results makes the output
+      // grow with the SQUARE of the location count (measured: a 20KB input with 200
+      // locations produced 4.3MB). One record per SARIF result is the honest cardinality
+      // and keeps ADR-0017's rule intact, since nothing is merged across SARIF results;
+      // the record's own pointer still says which result it came from.
+      if (j === 0) r.rawSourceRecord = record;
       perResult.push(perResultTagEntry(sr));
     }
     results.push(...expanded);
@@ -619,7 +635,9 @@ function resolveRuleLevel(
   rule: ReportingDescriptor | undefined,
   results: SarifResult[]
 ): {level: string; source: string} {
+  const ruleDefault = rule?.defaultConfiguration?.level ?? '';
   let worst = '';
+  let source = '';
   let sawNone = false;
   for (const r of results) {
     const failing = !r.kind || r.kind === 'fail';
@@ -628,18 +646,32 @@ function resolveRuleLevel(
       if (!failing) sawNone = true;
       continue;
     }
-    if (!r.level || !failing) continue;
-    if (!worst || rankOf(r.level) > rankOf(worst)) worst = r.level;
+    if (!failing) continue;
+    // Resolve each failing result SEPARATELY before ranking. A failing result with no
+    // level of its own inherits the rule default, so ranking the raw levels would let
+    // an explicit note outrank the error a level-less sibling inherited.
+    let effective = r.level ?? '';
+    let from = SEVERITY_SOURCE_RESULT_LEVEL;
+    if (!effective) {
+      effective = ruleDefault;
+      from = SEVERITY_SOURCE_RULE_DEFAULT;
+    }
+    if (!effective) {
+      effective = 'warning';
+      from = SEVERITY_SOURCE_FALLBACK;
+    }
+    if (!worst || rankOf(effective) > rankOf(worst)) {
+      worst = effective;
+      source = from;
+    }
   }
-  if (worst) return {level: worst, source: SEVERITY_SOURCE_RESULT_LEVEL};
-  if (rule?.defaultConfiguration?.level) {
-    return {level: rule.defaultConfiguration.level, source: SEVERITY_SOURCE_RULE_DEFAULT};
-  }
+  if (worst) return {level: worst, source};
+  if (ruleDefault) return {level: ruleDefault, source: SEVERITY_SOURCE_RULE_DEFAULT};
   if (sawNone) return {level: LEVEL_NONE, source: SEVERITY_SOURCE_RESULT_LEVEL};
   return {level: 'warning', source: SEVERITY_SOURCE_FALLBACK};
 }
 
-// Carries one SARIF result verbatim on the HDF result(s) it produced. ADR-0017 scoped
+// Carries one SARIF result, complete, on the HDF result(s) it produced. ADR-0017 scoped
 // this to the result deliberately: records merged onto the requirement collide, and
 // merging entries that share an id has to discard one, which is how the non-first
 // result's metadata used to be lost. Encoding is utf-8 rather than base64 because a
@@ -719,11 +751,17 @@ function convertSarifResultToHDFResults(result: SarifResult): RequirementResult[
 
   // Create results for each location
   const results = (result.locations || [])
-    // Gate on the location existing, NOT on a truthy uri: §3.4.5 permits an
-    // artifactLocation carrying only an index, and region — which holds the line and
-    // column — is a sibling of artifactLocation, so filtering on uri discarded a
-    // position that was known. Matches Go's createHDFResult gate.
-    .filter(loc => loc.physicalLocation)
+    // Keep a location when there is something representable in it. Filtering on a
+    // truthy uri discarded a position that was known, because §3.4.5 permits an
+    // artifactLocation carrying only an index and region is a sibling of
+    // artifactLocation. Accepting any physicalLocation went too far the other way: the
+    // schema's anyOf admits an address instead of an artifactLocation, and an address
+    // with no region became "LINE : 0 COLUMN : 0". Mirrors Go's gate.
+    .filter(
+      loc =>
+        loc.physicalLocation !== undefined &&
+        (loc.physicalLocation.artifactLocation !== undefined || loc.physicalLocation.region !== undefined)
+    )
     .map(loc => createHDFResult(loc, status, backtrace, suppressionJustification));
 
   // If no locations, create a location-less result so the finding isn't silently dropped

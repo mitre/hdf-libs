@@ -255,6 +255,16 @@ type ArtifactContent struct {
 // absent level, which defaults to warning.
 const LevelNone = "none"
 
+// SupportedSARIFVersion is the one SARIF version this converter accepts when a caller
+// states one. The registry's SupportedVersions() returns this same constant, so the
+// version we advertise and the version we enforce cannot drift apart.
+const SupportedSARIFVersion = "2.1.0"
+
+// SupportedSARIFMinor is the minor-series spelling of the same format. SARIF 2.1.0
+// is the only 2.1.x release, so "2.1" names it unambiguously and a caller who writes
+// it is being specific, not vague.
+const SupportedSARIFMinor = "2.1"
+
 // Where a requirement's impact came from, recorded in tags so a consumer can tell a
 // vendor convention from a spec field from a fallback.
 const (
@@ -344,10 +354,16 @@ func ConvertSarifToHDF(input []byte, converterVersion string, inputVersion ...st
 // was not. A document whose own version field says 2.0 is still converted on a
 // best-effort basis; only an explicit request is refused.
 func assertSupportedVersion(explicitVersion string) error {
-	if explicitVersion == "" || strings.HasPrefix(explicitVersion, "2.1") {
+	// Accept the full version, or "2.1" — the minor series has exactly one member,
+	// so spelling it either way designates the same document format and refusing the
+	// short form would be pedantry. What this must NOT do is match on prefix: that
+	// also admitted 2.10, 2.1-beta and 2.1garbage, none of which the vendored
+	// schema's version enum accepts. "2" is refused too, because the unsupported 2.0
+	// committee draft makes it ambiguous.
+	if explicitVersion == "" || explicitVersion == SupportedSARIFVersion || explicitVersion == SupportedSARIFMinor {
 		return nil
 	}
-	return fmt.Errorf("sarif: unsupported input version %q; only 2.1 is supported", explicitVersion)
+	return fmt.Errorf("sarif: unsupported input version %q; only %s is supported", explicitVersion, SupportedSARIFVersion)
 }
 
 // --- artifact index resolution (§3.4.5) ---
@@ -599,7 +615,18 @@ func convertResultGroup(runIdx int, ruleID string, rule *ReportingDescriptor, sa
 			record = rawSourceRecordFor(raws[i], runIdx, srcIdx)
 		}
 		for j := range expanded {
-			expanded[j].RawSourceRecord = record
+			// The record goes on the FIRST expanded result only. All of them came from
+			// one SARIF result and so share one source record, and that record contains
+			// the whole locations array — so copying it onto each of N expanded results
+			// makes the output grow with the SQUARE of the location count (measured: a
+			// 20KB input with 200 locations produced 4.3MB). One record per SARIF result
+			// is the honest cardinality and keeps ADR-0017's rule intact, since nothing
+			// is merged across SARIF results; the record's own pointer still says which
+			// result it came from, and tags["sarif-source-result-count"] publishes the
+			// source cardinality.
+			if j == 0 {
+				expanded[j].RawSourceRecord = record
+			}
 			perResult = append(perResult, perResultTagEntry(sr))
 		}
 		results = append(results, expanded...)
@@ -847,7 +874,12 @@ func isFailing(r SarifResult) bool { return r.Kind == "" || r.Kind == "fail" }
 // cannot under-report: taking the first would let a note listed ahead of an error
 // present the whole group as a note.
 func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) (string, string) {
-	worst, found, sawNone := "", false, false
+	ruleDefault := ""
+	if rule != nil && rule.DefaultConfiguration != nil {
+		ruleDefault = rule.DefaultConfiguration.Level
+	}
+
+	worst, source, found, sawNone := "", "", false, false
 	for _, r := range results {
 		if r.Level == LevelNone {
 			// Only meaningful on a non-failing result, which is the conformant case.
@@ -856,18 +888,29 @@ func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) (string,
 			}
 			continue
 		}
-		if r.Level == "" || !isFailing(r) {
+		if !isFailing(r) {
 			continue
 		}
-		if !found || levelRank[r.Level] > levelRank[worst] {
-			worst, found = r.Level, true
+		// Resolve each failing result SEPARATELY before ranking. A failing result
+		// with no level of its own inherits the rule default, so ranking the raw
+		// levels would let an explicit note outrank the error a level-less sibling
+		// inherited.
+		effective, from := r.Level, severitySourceResultLevel
+		if effective == "" {
+			effective, from = ruleDefault, severitySourceRuleDefault
+		}
+		if effective == "" {
+			effective, from = "warning", severitySourceFallback
+		}
+		if !found || levelRank[effective] > levelRank[worst] {
+			worst, source, found = effective, from, true
 		}
 	}
 	switch {
 	case found:
-		return worst, severitySourceResultLevel
-	case rule != nil && rule.DefaultConfiguration != nil && rule.DefaultConfiguration.Level != "":
-		return rule.DefaultConfiguration.Level, severitySourceRuleDefault
+		return worst, source
+	case ruleDefault != "":
+		return ruleDefault, severitySourceRuleDefault
 	case sawNone:
 		return LevelNone, severitySourceResultLevel
 	default:
@@ -875,7 +918,7 @@ func resolveRuleLevel(rule *ReportingDescriptor, results []SarifResult) (string,
 	}
 }
 
-// rawSourceRecordFor carries one SARIF result verbatim on the HDF result(s) it
+// rawSourceRecordFor carries one SARIF result, complete, on the HDF result(s) it
 // produced. ADR-0017 scoped this to the result deliberately: records merged onto the
 // requirement collide, and merging entries that share an id has to discard one, which
 // is exactly how the non-first result's metadata used to be lost. Encoding is utf-8
@@ -888,8 +931,16 @@ func rawSourceRecordFor(raw json.RawMessage, runIdx, resultIdx int) *hdf.RawSour
 	// Keys come out sorted because Go sorts map keys, and the TypeScript peer sorts
 	// to match, so the two languages agree byte for byte. Original key order and
 	// whitespace are therefore not preserved; the content is complete, not byte-exact.
+	// UseNumber, not plain Unmarshal: decoding into interface{} turns every number
+	// into a float64, which silently rounds any integer above 2^53 — the record would
+	// then carry a DIFFERENT value than the source, which no reading of "complete"
+	// permits. json.Number keeps the original token and encoding/json re-emits it
+	// literally. The TypeScript peer recovers the same token through its parser's
+	// source access and wraps it in exportmap's RawNumber, so the two still agree.
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
 	var untyped interface{}
-	if err := json.Unmarshal(raw, &untyped); err != nil {
+	if err := dec.Decode(&untyped); err != nil {
 		return nil
 	}
 	// exportmap's canonical encoder, not json.Marshal: Go HTML-escapes <, > and & by
@@ -980,10 +1031,19 @@ func convertSarifResultToHDFResults(result SarifResult, rule *ReportingDescripto
 	// Create results for each location
 	var results []hdf.RequirementResult
 	for _, loc := range result.Locations {
-		if loc.PhysicalLocation != nil && loc.PhysicalLocation.ArtifactLocation != nil {
-			res := createHDFResult(loc, status, timestamp, backtrace)
-			results = append(results, res)
+		// Keep a location when there is something representable in it. The schema's
+		// physicalLocation.anyOf admits an address instead of an artifactLocation, so
+		// requiring artifactLocation discarded a region's line; accepting any
+		// physicalLocation instead reported "LINE : 0 COLUMN : 0" for an address with no
+		// region. region is a sibling of artifactLocation, and either one alone is
+		// enough to say where the finding is.
+		if loc.PhysicalLocation == nil {
+			continue
 		}
+		if loc.PhysicalLocation.ArtifactLocation == nil && loc.PhysicalLocation.Region == nil {
+			continue
+		}
+		results = append(results, createHDFResult(loc, status, timestamp, backtrace))
 	}
 
 	// If no locations, create a location-less result so the finding isn't silently dropped

@@ -3190,7 +3190,7 @@
             },
             "rawSourceRecord": {
               "$ref": "#/$defs/Raw_Source_Record",
-              "description": "The source tool's own record for this result, verbatim."
+              "description": "The source tool's own record for this result, carrying every field the record had. Complete, not necessarily byte-exact: see Raw_Source_Record.content for the producer and consumer obligations, and extensions.rawSourceArtifacts[] when byte-exact carriage is required."
             }
           },
           "examples": [

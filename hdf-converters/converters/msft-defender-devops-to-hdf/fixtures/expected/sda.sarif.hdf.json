@@ -83,7 +83,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"471e593e20b5c75c62e499b8249c85f1835dc7f99dc9553a8a66b1be2550515d\",\"gdnPrimarySignature\":\"ad80df55e021c410c64bbdc3c768739c9b7fd32cfe9d37e5049efe305a7cabbe\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"471e593e20b5c75c62e499b8249c85f1835dc7f99dc9553a8a66b1be2550515d\",\"gdnPrimarySignature\":\"ad80df55e021c410c64bbdc3c768739c9b7fd32cfe9d37e5049efe305a7cabbe\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/allsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/0"
@@ -94,7 +94,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/badcert.pem LINE : 19 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/badcert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"fdZwTjfxyQHIYf+BmyPXyLEOqdG4U2NLBuFNLckqc/s=\",\"gdnAlternativeSignature0\":\"370b8fdda16cd6662fa9f668df5eb3d0a34e6a7df7f9a47aa8e76ca6db6d7ceb\",\"gdnPrimarySignature\":\"8c4f1c7c24033f5c2d1af110b7167b907f6c213c8da0388cc94da267b3b26053\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/badcert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":31,\"endLine\":19,\"startColumn\":1,\"startLine\":19}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/badcert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"fdZwTjfxyQHIYf+BmyPXyLEOqdG4U2NLBuFNLckqc/s=\",\"gdnAlternativeSignature0\":\"370b8fdda16cd6662fa9f668df5eb3d0a34e6a7df7f9a47aa8e76ca6db6d7ceb\",\"gdnPrimarySignature\":\"8c4f1c7c24033f5c2d1af110b7167b907f6c213c8da0388cc94da267b3b26053\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/badcert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":31,\"endLine\":19,\"startColumn\":1,\"startLine\":19}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/1"
@@ -105,7 +105,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/idnsans.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/idnsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"6a0059872bc6e5a9f1910e1c20b82a8c9770991596470214159c8d720884cf3c\",\"gdnPrimarySignature\":\"e0143173968f10743c164db98a97f2f2ad51665ef207fc2e5ed568dadf16daa4\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/idnsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/idnsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"6a0059872bc6e5a9f1910e1c20b82a8c9770991596470214159c8d720884cf3c\",\"gdnPrimarySignature\":\"e0143173968f10743c164db98a97f2f2ad51665ef207fc2e5ed568dadf16daa4\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/idnsans.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/2"
@@ -116,7 +116,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.passwd.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"vIPMvs25zTEA4CvYd/yXI5Q3s9TvruLN5sjPEqmD9Qo=\",\"gdnAlternativeSignature0\":\"a3834b8e54bd96dedf30634b2195d9c1b45ffc9ac2d0cf9e7d72fb01ab2be4b6\",\"gdnPrimarySignature\":\"81cfc42c1d0b6a44b58032508492c13a1da8709259d9b955b7818b54375d7454\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":37,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"vIPMvs25zTEA4CvYd/yXI5Q3s9TvruLN5sjPEqmD9Qo=\",\"gdnAlternativeSignature0\":\"a3834b8e54bd96dedf30634b2195d9c1b45ffc9ac2d0cf9e7d72fb01ab2be4b6\",\"gdnPrimarySignature\":\"81cfc42c1d0b6a44b58032508492c13a1da8709259d9b955b7818b54375d7454\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":37,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/3"
@@ -127,7 +127,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"13b90a64372a219e131bd44c942fb99d2e0499c28a050af144f432498b71b0b7\",\"gdnPrimarySignature\":\"a5673d23e7575ac45ddbdc1d2e29a20164ef7e82f569408bffe292ceb779806a\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"13b90a64372a219e131bd44c942fb99d2e0499c28a050af144f432498b71b0b7\",\"gdnPrimarySignature\":\"a5673d23e7575ac45ddbdc1d2e29a20164ef7e82f569408bffe292ceb779806a\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/4"
@@ -138,7 +138,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert2.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert2.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"17f42847401af81a1d829e8aeac516090ae6c41935d0265f19c20dc5208ce44b\",\"gdnPrimarySignature\":\"0e05cea19167aed8b8ae01c841a7334ccb9c7fd7b993406580ff2832d15f7ce5\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert2.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert2.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"17f42847401af81a1d829e8aeac516090ae6c41935d0265f19c20dc5208ce44b\",\"gdnPrimarySignature\":\"0e05cea19167aed8b8ae01c841a7334ccb9c7fd7b993406580ff2832d15f7ce5\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert2.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/5"
@@ -149,7 +149,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert3.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert3.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"77b87003353fbbbdd842e915e87ceb94a00295aaa14b394e046cfc2e3d4c70a3\",\"gdnPrimarySignature\":\"cc2c869c6af3917c188f3405a5cab29825b895ad248b5e8d5657be11a3575e97\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert3.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert3.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"77b87003353fbbbdd842e915e87ceb94a00295aaa14b394e046cfc2e3d4c70a3\",\"gdnPrimarySignature\":\"cc2c869c6af3917c188f3405a5cab29825b895ad248b5e8d5657be11a3575e97\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert3.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/6"
@@ -160,7 +160,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert4.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert4.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"c387065dadee4e1320aee04842ec83e45758e802066fcc8deba5055695bfe565\",\"gdnPrimarySignature\":\"c778616f1b5c561f1c66d5843f0e4759cbccf82ba1868f8af267ba96077086df\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert4.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert4.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"c387065dadee4e1320aee04842ec83e45758e802066fcc8deba5055695bfe565\",\"gdnPrimarySignature\":\"c778616f1b5c561f1c66d5843f0e4759cbccf82ba1868f8af267ba96077086df\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycert4.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/7"
@@ -171,7 +171,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycertecc.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycertecc.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"c3edc90bf722fd1545c98c99e988dc5405b162ce917767cb0aa7f53ac4954506\",\"gdnPrimarySignature\":\"07fc5532f6969723a59a30bbf4679124b3408c52ad141644aefd5a5ee5ce3187\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycertecc.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycertecc.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"c3edc90bf722fd1545c98c99e988dc5405b162ce917767cb0aa7f53ac4954506\",\"gdnPrimarySignature\":\"07fc5532f6969723a59a30bbf4679124b3408c52ad141644aefd5a5ee5ce3187\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/keycertecc.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/8"
@@ -182,7 +182,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/pycakey.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/pycakey.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"5940924f309382ed130dc9019b7ddc750982599de02152e9f2badb1a4def1c77\",\"gdnPrimarySignature\":\"4d5d643001bdc9ca750ddc12572d03f20c6ea6b00ccec260daad81b2cbaad937\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/pycakey.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/pycakey.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"5940924f309382ed130dc9019b7ddc750982599de02152e9f2badb1a4def1c77\",\"gdnPrimarySignature\":\"4d5d643001bdc9ca750ddc12572d03f20c6ea6b00ccec260daad81b2cbaad937\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/pycakey.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/9"
@@ -193,7 +193,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.passwd.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"vIPMvs25zTEA4CvYd/yXI5Q3s9TvruLN5sjPEqmD9Qo=\",\"gdnAlternativeSignature0\":\"45c71b1ac1f0538e9be6aba276dcb1484749f62e1ed6c955b8d06b3a034f4295\",\"gdnPrimarySignature\":\"78f7c576f77b65667382d3cd1f98088d2a5e607d39cc22af6729d55e1f62f28c\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":37,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"vIPMvs25zTEA4CvYd/yXI5Q3s9TvruLN5sjPEqmD9Qo=\",\"gdnAlternativeSignature0\":\"45c71b1ac1f0538e9be6aba276dcb1484749f62e1ed6c955b8d06b3a034f4295\",\"gdnPrimarySignature\":\"78f7c576f77b65667382d3cd1f98088d2a5e607d39cc22af6729d55e1f62f28c\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.passwd.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":37,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/10"
@@ -204,7 +204,7 @@
             {
               "codeDesc": "URL : .gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.pem LINE : 1 COLUMN : 1",
               "rawSourceRecord": {
-                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"47585da2145382121fadbbbe66ef8b7f20a193b4b38372d031552b996edb0fea\",\"gdnPrimarySignature\":\"1f4b7943f9d0c70caa2b1022c17ac1978128ebd3cf36afb1375dbd8dade2cd89\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94,\"Validation\":\"NoValidationRequested\"},\"rank\":94,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
+                "content": "{\"analysisTarget\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"fingerprints\":{\"HashCode\":\"K4LFfz40Tf2WjHYSwHcxzmrGBXdPbp+75ngl6MIfimE=\",\"gdnAlternativeSignature0\":\"47585da2145382121fadbbbe66ef8b7f20a193b4b38372d031552b996edb0fea\",\"gdnPrimarySignature\":\"1f4b7943f9d0c70caa2b1022c17ac1978128ebd3cf36afb1375dbd8dade2cd89\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\".gdn/i/nuget/Microsoft.Guardian.BanditRedist_windows_amd64.1.6.3.1/tools/lib/test/ssl_key.pem\",\"uriBaseId\":\"file:///D:/source/security-devops-action/\"},\"region\":{\"endColumn\":27,\"endLine\":1,\"startColumn\":1,\"startLine\":1}}}],\"message\":{\"text\":\"A potential secret was detected. Validate file contains secrets, remove, rotate credential, and use approved store. For additional information on secret remediation see the remediation section at https://aka.ms/CredScanDocs \"},\"properties\":{\"DefectCode\":\"SecretInFile\",\"EnrichmentScore\":112.5,\"MatchingScore\":94.41,\"Risk\":\"100\",\"Severity\":94.0,\"Validation\":\"NoValidationRequested\"},\"rank\":94.0,\"rule\":{\"id\":\"CSCAN-GENERAL0020\"},\"ruleId\":\"CSCAN-GENERAL0020\",\"ruleIndex\":0,\"suppressions\":[]}",
                 "encoding": "utf-8",
                 "mediaType": "application/json",
                 "pointer": "/runs/2/results/11"
@@ -532,23 +532,11 @@
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 215 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"4c40d2cc63ce679ba6157fdc72d12b40481a893ab13296c36239c7ed8622cb86\",\"gdnPrimarySignature\":\"d37d8282e31133b27146eb024c2736f1d7b65bdd6a42c08607bdb2bead9b5423\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":280}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000001\",\"ruleIndex\":0}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/1"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 280 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"4c40d2cc63ce679ba6157fdc72d12b40481a893ab13296c36239c7ed8622cb86\",\"gdnPrimarySignature\":\"d37d8282e31133b27146eb024c2736f1d7b65bdd6a42c08607bdb2bead9b5423\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":280}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000001\",\"ruleIndex\":0}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/1"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             }
@@ -651,23 +639,11 @@
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 179 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"0edb0e1b59eb8e8d3fc182d647d80d92147876a0454f610aa836842fb52181e5\",\"gdnPrimarySignature\":\"3549d0b318441c8b49bd89ca36ea85f70bf45f022ab8c0609706ff5f5a88d2d8\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":165}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000003\",\"ruleIndex\":1}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/2"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 215 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"0edb0e1b59eb8e8d3fc182d647d80d92147876a0454f610aa836842fb52181e5\",\"gdnPrimarySignature\":\"3549d0b318441c8b49bd89ca36ea85f70bf45f022ab8c0609706ff5f5a88d2d8\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":165}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000003\",\"ruleIndex\":1}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/2"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
@@ -873,23 +849,11 @@
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 179 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"1cdb3b2f11971c7558e88df98da50f7e9a361b97dd3668a26543df13716d7597\",\"gdnPrimarySignature\":\"b7e1a7ec5ef845a37f73c0407622bd567cdd07b2dfedc75a099d29862f374762\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":165}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000005\",\"ruleIndex\":3}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/6"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 215 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"1cdb3b2f11971c7558e88df98da50f7e9a361b97dd3668a26543df13716d7597\",\"gdnPrimarySignature\":\"b7e1a7ec5ef845a37f73c0407622bd567cdd07b2dfedc75a099d29862f374762\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":165}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000005\",\"ruleIndex\":3}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/6"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
@@ -1179,23 +1143,11 @@
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 215 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"34c1f242e862c9a4b1ccceb99a33b1aac0df47aadcc5e6b4cc6a9957bfa60ddb\",\"gdnPrimarySignature\":\"d70937da25c2f4c4bf54334ccc495634c22918258a3b46e45fcd389fd482855f\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":325}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000009\",\"ruleIndex\":6}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/12"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 325 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"34c1f242e862c9a4b1ccceb99a33b1aac0df47aadcc5e6b4cc6a9957bfa60ddb\",\"gdnPrimarySignature\":\"d70937da25c2f4c4bf54334ccc495634c22918258a3b46e45fcd389fd482855f\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":325}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000009\",\"ruleIndex\":6}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/12"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             }
@@ -1401,23 +1353,11 @@
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 215 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"c5923a6a520bd145ef3957d75a6c9d8cbf1025fcd4915449e60bbb02bd10a9e8\",\"gdnPrimarySignature\":\"24126068b178d605ced2a12989a4fa2ebd4d15eb30c7c2c37b9d3c6cab349686\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":325}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000011\",\"ruleIndex\":8}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/16"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 325 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"c5923a6a520bd145ef3957d75a6c9d8cbf1025fcd4915449e60bbb02bd10a9e8\",\"gdnPrimarySignature\":\"24126068b178d605ced2a12989a4fa2ebd4d15eb30c7c2c37b9d3c6cab349686\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":325}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000011\",\"ruleIndex\":8}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/16"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             }
@@ -1696,23 +1636,11 @@
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 215 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"f53e1db90f911dfc29b77e08c01fc16a609b9720473da74edae88428a4e2bc1c\",\"gdnPrimarySignature\":\"38abf206aa092efe2a8fa6d3546f1a342e08c86f4b25be558b8afd5bcb532651\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":280}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000015\",\"ruleIndex\":11}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/21"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 280 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"f53e1db90f911dfc29b77e08c01fc16a609b9720473da74edae88428a4e2bc1c\",\"gdnPrimarySignature\":\"38abf206aa092efe2a8fa6d3546f1a342e08c86f4b25be558b8afd5bcb532651\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":280}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000015\",\"ruleIndex\":11}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/21"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             }
@@ -1918,23 +1846,11 @@
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 215 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"216e7a3be42bfa5aae23ed3abf7bccf0d48aa5ad6ae0f617088f0de77723da89\",\"gdnPrimarySignature\":\"c8faed1d99ea5b1ced01439da3370660d482769c59a7665dda694f69f336bc76\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":280}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000017\",\"ruleIndex\":13}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/25"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             },
             {
               "codeDesc": "URL : samples/insecure_arm.json LINE : 280 COLUMN : 0",
-              "rawSourceRecord": {
-                "content": "{\"fingerprints\":{\"gdnAlternativeSignature0\":\"216e7a3be42bfa5aae23ed3abf7bccf0d48aa5ad6ae0f617088f0de77723da89\",\"gdnPrimarySignature\":\"c8faed1d99ea5b1ced01439da3370660d482769c59a7665dda694f69f336bc76\"},\"level\":\"error\",\"locations\":[{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":179}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":215}}},{\"physicalLocation\":{\"artifactLocation\":{\"uri\":\"samples/insecure_arm.json\",\"uriBaseId\":\"ROOTPATH\"},\"region\":{\"startLine\":280}}}],\"message\":{\"id\":\"default\"},\"ruleId\":\"TA-000017\",\"ruleIndex\":13}",
-                "encoding": "utf-8",
-                "mediaType": "application/json",
-                "pointer": "/runs/5/results/25"
-              },
               "startTime": "2026-10-11T00:55:33.797Z",
               "status": "failed"
             }

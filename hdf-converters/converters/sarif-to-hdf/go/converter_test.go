@@ -3033,3 +3033,161 @@ func TestConvertSarifToHDF_CodeFlowStepsResolveTheirIndex(t *testing.T) {
 		"a code-flow step addressed by index must resolve too, not land as \":7\"")
 	assert.NotEqual(t, ":7", req.Results[0].Backtrace[0])
 }
+
+// §3.27.10 resolves a level PER FAILING RESULT -- the result's own level, else the
+// rule default, else warning -- and only then does worst-wins rank them. Ranking the
+// raw result levels instead lets an explicitly low level outrank a higher one a
+// level-less result inherited from the rule.
+func TestResolveRuleLevel_WorstWinsAcrossInheritedLevels(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		ruleLevel  string
+		results    []SarifResult
+		wantLevel  string
+		wantSource string
+	}{
+		{
+			name:      "level-less failing result inherits a higher rule default",
+			ruleLevel: "error",
+			results:   []SarifResult{{Level: "note"}, {Level: ""}},
+			// The level-less result inherits error, which outranks the explicit note.
+			wantLevel: "error", wantSource: severitySourceRuleDefault,
+		},
+		{
+			name:      "an explicit level still wins when it outranks the default",
+			ruleLevel: "note",
+			results:   []SarifResult{{Level: "error"}, {Level: ""}},
+			wantLevel: "error", wantSource: severitySourceResultLevel,
+		},
+		{
+			name:      "no rule default: a level-less failing result falls back to warning",
+			ruleLevel: "",
+			results:   []SarifResult{{Level: "note"}, {Level: ""}},
+			wantLevel: "warning", wantSource: severitySourceFallback,
+		},
+		{
+			name:      "every failing result level-less: the rule default governs",
+			ruleLevel: "error",
+			results:   []SarifResult{{Level: ""}, {Level: ""}},
+			wantLevel: "error", wantSource: severitySourceRuleDefault,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var rule *ReportingDescriptor
+			if tc.ruleLevel != "" {
+				rule = &ReportingDescriptor{DefaultConfiguration: &ReportingConfiguration{Level: tc.ruleLevel}}
+			}
+			gotLevel, gotSource := resolveRuleLevel(rule, tc.results)
+			assert.Equal(t, tc.wantLevel, gotLevel, "level")
+			assert.Equal(t, tc.wantSource, gotSource, "severity source")
+		})
+	}
+}
+
+// SupportedVersions() advertises exactly "2.1.0", so the guard must refuse everything
+// else. A prefix test accepted 2.10 and 2.1-beta -- versions the vendored schema's own
+// version enum does not admit -- so the advertised contract and the enforcement
+// disagreed.
+func TestAssertSupportedVersion_AcceptsOnlyTheAdvertisedVersion(t *testing.T) {
+	// "2.1" names the same format as "2.1.0" — the minor series has one member — so a
+	// caller spelling it either way is being specific and both are accepted.
+	for _, v := range []string{"", "2.1.0", "2.1"} {
+		assert.NoError(t, assertSupportedVersion(v), "must accept %q", v)
+	}
+	// None of these designates SARIF 2.1.0. "2" is ambiguous while the unsupported 2.0
+	// committee draft exists; the rest are what a prefix match wrongly let through.
+	for _, v := range []string{"2.10", "2.1-beta", "2.1garbage", "2.1.1", "2.0.0", "2", "3.0"} {
+		assert.Error(t, assertSupportedVersion(v), "must refuse %q", v)
+	}
+}
+
+// The vendored schema's physicalLocation.anyOf is [{required:[address]},
+// {required:[artifactLocation]}], so a conformant location may carry an address and no
+// artifactLocation. Gating on artifactLocation alone discarded the region's line, which
+// IS representable; gating on physicalLocation alone invented "LINE : 0 COLUMN : 0" for
+// an address with no region, which is not. Keep a location when there is something to
+// say about it.
+func TestConvertSarifToHDF_AddressLocationsKeepOnlyWhatIsRepresentable(t *testing.T) {
+	doc := func(physical string) []byte {
+		return []byte(`{"version":"2.1.0","runs":[{
+			"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+			"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},
+				"locations":[{"physicalLocation":` + physical + `}]}]}]}`)
+	}
+	for _, tc := range []struct {
+		name     string
+		physical string
+		want     string
+	}{
+		{
+			name:     "address with a region keeps the position",
+			physical: `{"address":{"absoluteAddress":4198400},"region":{"startLine":42,"startColumn":7}}`,
+			want:     "LINE : 42 COLUMN : 7",
+		},
+		{
+			name:     "address with no region has nothing to report",
+			physical: `{"address":{"absoluteAddress":4198400}}`,
+			want:     "No source location",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := ConvertSarifToHDF(doc(tc.physical), testConverterVersion, "")
+			require.NoError(t, err)
+			require.Len(t, out.Baselines[0].Requirements[0].Results, 1)
+			assert.Equal(t, tc.want, out.Baselines[0].Requirements[0].Results[0].CodeDesc)
+		})
+	}
+}
+
+// Decoding into interface{} makes every number a float64, which rounds any integer
+// above 2^53 — the record would then report a value the source never contained. The
+// tokens below are also the ones where Go and JavaScript disagree if either side
+// re-formats: 1.0, 1e5 and -0 all survive a json.Number round trip and all change
+// under String()/strconv.
+func TestRawSourceRecord_PreservesNumericTokensExactly(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},
+			"properties":{"big":9007199254740993,"flt":1.0,"exp":1e5,"negz":-0,"tiny":0.1}}]}]}`)
+	out, err := ConvertSarifToHDF(input, testConverterVersion, "")
+	require.NoError(t, err)
+	rec := out.Baselines[0].Requirements[0].Results[0].RawSourceRecord
+	require.NotNil(t, rec)
+	for _, want := range []string{
+		`"big":9007199254740993`,
+		`"exp":1e5`,
+		`"flt":1.0`,
+		`"negz":-0`,
+		`"tiny":0.1`,
+	} {
+		assert.Contains(t, rec.Content, want)
+	}
+	assert.NotContains(t, rec.Content, "9007199254740992", "the integer must not be rounded")
+}
+
+// One SARIF result with several locations expands to several HDF results, but they
+// share ONE source record, so exactly one of them carries it. Copying it onto each
+// made the output grow with the square of the location count, because the record
+// itself contains the locations array.
+func TestRawSourceRecord_CarriedOncePerSourceResult(t *testing.T) {
+	input := []byte(`{"version":"2.1.0","runs":[{
+		"tool":{"driver":{"name":"T","rules":[{"id":"R1"}]}},
+		"results":[{"ruleId":"R1","level":"error","message":{"text":"m"},"locations":[
+			{"physicalLocation":{"artifactLocation":{"uri":"a.c"},"region":{"startLine":1}}},
+			{"physicalLocation":{"artifactLocation":{"uri":"b.c"},"region":{"startLine":2}}},
+			{"physicalLocation":{"artifactLocation":{"uri":"c.c"},"region":{"startLine":3}}}]}]}]}`)
+	out, err := ConvertSarifToHDF(input, testConverterVersion, "")
+	require.NoError(t, err)
+	rows := out.Baselines[0].Requirements[0].Results
+	require.Len(t, rows, 3, "one HDF result per location")
+
+	withRecord := 0
+	for _, r := range rows {
+		if r.RawSourceRecord != nil {
+			withRecord++
+		}
+	}
+	assert.Equal(t, 1, withRecord, "exactly one result carries the shared record")
+	require.NotNil(t, rows[0].RawSourceRecord, "it is the first")
+	assert.Equal(t, "/runs/0/results/0", *rows[0].RawSourceRecord.Pointer)
+}

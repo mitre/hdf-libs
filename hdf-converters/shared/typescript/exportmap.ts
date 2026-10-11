@@ -255,6 +255,29 @@ export function floatNumber(f: number): RawNumber {
   return new RawNumber(s.includes('.') ? s : s + '.0');
 }
 
+/**
+ * Parse JSON while keeping every numeric token exactly as written.
+ *
+ * JSON.parse turns numbers into IEEE-754 doubles, so an integer above 2^53 or a
+ * token like `1.0` or `1e5` comes back changed. Go's json.Number keeps the token,
+ * so a record built from a plain parse diverges from its Go peer AND reports a
+ * value the source never contained. Any token that does not round-trip through
+ * String() is wrapped in a RawNumber, which stringifyLine renders literally —
+ * exactly what encoding/json does with a json.Number.
+ *
+ * Source access (the reviver's third argument) needs V8 12.4 / Node 22. Where it
+ * is unavailable this degrades to a plain parse rather than throwing: the numbers
+ * are then whatever JSON.parse made of them, which is the old behavior.
+ */
+export function parseJSONPreservingNumbers(text: string): unknown {
+  return JSON.parse(text, function (_key, value, context?: {source?: string}) {
+    if (typeof value !== 'number') return value;
+    const source = context?.source;
+    if (source === undefined || source === String(value)) return value;
+    return new RawNumber(source);
+  });
+}
+
 // SOH (U+0001) delimits a raw numeric token inside stringifyLine's intermediate
 // JSON. SOH is a control character that does not occur in HDF text, so in
 // practice it never collides. The only theoretical collision is a string whose

@@ -53,7 +53,7 @@ func (c *versionedSarifConverter) SetInputVersion(v string) {
 // could not in fact process it, so a library consumer was told 2.0 worked and then
 // refused.
 func (c *versionedSarifConverter) SupportedVersions() []string {
-	return []string{"2.1.0"}
+	return []string{sarif.SupportedSARIFVersion}
 }
 
 func init() {

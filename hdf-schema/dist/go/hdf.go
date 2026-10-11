@@ -869,28 +869,31 @@ type Reference struct {
 
 // A test within a requirement and its results and findings such as how long it took to run.
 type RequirementResult struct {
-	// The stacktrace/backtrace of the exception if one occurred.                                            
-	Backtrace                                                                               []string         `json:"backtrace,omitempty"`
-	// A description of this test. Example: 'limits.conf * is expected to include ["hard",                   
-	// "maxlogins", "10"]'.                                                                                  
-	CodeDesc                                                                                string           `json:"codeDesc"`
-	// The type of exception if an exception was thrown.                                                     
-	Exception                                                                               *string          `json:"exception,omitempty"`
-	// An explanation of the test result. Typically provided for failed tests, errors, or to                 
-	// explain why a test was not applicable or not reviewed.                                                
-	Message                                                                                 *string          `json:"message,omitempty"`
-	// The source tool's own record for this result, verbatim.                                               
-	RawSourceRecord                                                                         *RawSourceRecord `json:"rawSourceRecord,omitempty"`
-	// The resource used in the test. Example: 'file', 'command', 'service'.                                 
-	Resource                                                                                *string          `json:"resource,omitempty"`
-	// The unique identifier of the resource. Example: '/etc/passwd'.                                        
-	ResourceID                                                                              *string          `json:"resourceId,omitempty"`
-	// The execution time in seconds for the test.                                                           
-	RunTime                                                                                 *float64         `json:"runTime,omitempty"`
-	// The time at which the test started.                                                                   
-	StartTime                                                                               time.Time        `json:"startTime"`
-	// The status of this test within the requirement. Example: 'failed'.                                    
-	Status                                                                                  ResultStatus     `json:"status"`
+	// The stacktrace/backtrace of the exception if one occurred.                                               
+	Backtrace                                                                                  []string         `json:"backtrace,omitempty"`
+	// A description of this test. Example: 'limits.conf * is expected to include ["hard",                      
+	// "maxlogins", "10"]'.                                                                                     
+	CodeDesc                                                                                   string           `json:"codeDesc"`
+	// The type of exception if an exception was thrown.                                                        
+	Exception                                                                                  *string          `json:"exception,omitempty"`
+	// An explanation of the test result. Typically provided for failed tests, errors, or to                    
+	// explain why a test was not applicable or not reviewed.                                                   
+	Message                                                                                    *string          `json:"message,omitempty"`
+	// The source tool's own record for this result, carrying every field the record had.                       
+	// Complete, not necessarily byte-exact: see Raw_Source_Record.content for the producer and                 
+	// consumer obligations, and extensions.rawSourceArtifacts[] when byte-exact carriage is                    
+	// required.                                                                                                
+	RawSourceRecord                                                                            *RawSourceRecord `json:"rawSourceRecord,omitempty"`
+	// The resource used in the test. Example: 'file', 'command', 'service'.                                    
+	Resource                                                                                   *string          `json:"resource,omitempty"`
+	// The unique identifier of the resource. Example: '/etc/passwd'.                                           
+	ResourceID                                                                                 *string          `json:"resourceId,omitempty"`
+	// The execution time in seconds for the test.                                                              
+	RunTime                                                                                    *float64         `json:"runTime,omitempty"`
+	// The time at which the test started.                                                                      
+	StartTime                                                                                  time.Time        `json:"startTime"`
+	// The status of this test within the requirement. Example: 'failed'.                                       
+	Status                                                                                     ResultStatus     `json:"status"`
 }
 
 // The source tool's own record for this result — the one entry in the converter's input that

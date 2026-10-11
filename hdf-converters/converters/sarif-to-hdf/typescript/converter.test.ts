@@ -2045,3 +2045,113 @@ describe('artifactLocation.index resolution (§3.4.5)', () => {
     expect(loc.uri).toBeUndefined();
   });
 });
+
+describe('worst-wins across inherited levels', () => {
+  // SARIF 3.27.10 resolves a level PER FAILING RESULT -- its own level, else the rule
+  // default, else warning -- and worst-wins ranks those. Ranking the raw result levels
+  // instead lets an explicit note outrank the error a level-less sibling inherited.
+  const doc = (ruleLevel: string | undefined, levels: (string | undefined)[]) =>
+    JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {
+          driver: {
+            name: 'T',
+            rules: [{
+              id: 'R1',
+              ...(ruleLevel ? {defaultConfiguration: {level: ruleLevel}} : {}),
+            }],
+          },
+        },
+        results: levels.map(l => ({
+          ruleId: 'R1',
+          ruleIndex: 0,
+          message: {text: 'm'},
+          ...(l ? {level: l} : {}),
+          locations: [],
+        })),
+      }],
+    });
+
+  it.each([
+    ['level-less failing result inherits a higher rule default', 'error', ['note', undefined], 'error', 'rule-default'],
+    ['an explicit level still wins when it outranks the default', 'note', ['error', undefined], 'error', 'result-level'],
+    ['no rule default: a level-less failing result falls back to warning', undefined, ['note', undefined], 'warning', 'fallback'],
+    ['every failing result level-less: the rule default governs', 'error', [undefined, undefined], 'error', 'rule-default'],
+  ])('%s', async (_name, ruleLevel, levels, wantLevel, wantSource) => {
+    const out = JSON.parse(await convertSarifToHdf(doc(ruleLevel as string | undefined, levels as (string | undefined)[])));
+    const req = out.baselines[0].requirements[0];
+    expect(req.tags['sarif-level']).toBe(wantLevel);
+    expect(req.tags['sarif-severity-source']).toBe(wantSource);
+  });
+});
+
+describe('address locations keep only what is representable', () => {
+  // physicalLocation.anyOf is [{required:[address]},{required:[artifactLocation]}], so a
+  // conformant location may carry an address and no artifactLocation. Go and TypeScript
+  // disagreed here on schema-valid input, in opposite directions.
+  const doc = (physical: Record<string, unknown>) =>
+    JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', ruleIndex: 0, level: 'error', message: {text: 'm'}, locations: [{physicalLocation: physical}]}],
+      }],
+    });
+
+  it('keeps the position when an address carries a region', async () => {
+    const out = JSON.parse(await convertSarifToHdf(doc({address: {absoluteAddress: 4198400}, region: {startLine: 42, startColumn: 7}})));
+    expect(out.baselines[0].requirements[0].results[0].codeDesc).toBe('LINE : 42 COLUMN : 7');
+  });
+
+  it('reports no location when an address carries no region', async () => {
+    const out = JSON.parse(await convertSarifToHdf(doc({address: {absoluteAddress: 4198400}})));
+    expect(out.baselines[0].requirements[0].results[0].codeDesc).toBe('No source location');
+  });
+});
+
+describe('rawSourceRecord numeric tokens', () => {
+  // JSON.parse rounds any integer above 2^53 and re-formats 1.0, 1e5 and -0, so a
+  // record built from a plain parse both diverges from its Go peer and reports a value
+  // the source never contained. These are the exact tokens Go's json.Number preserves.
+  const input = JSON.stringify({
+    version: '2.1.0',
+    runs: [{
+      tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+      results: [{ruleId: 'R1', ruleIndex: 0, level: 'error', message: {text: 'm'}}],
+    }],
+  // properties is injected as raw text so the big integer is never a JS number here
+  }).replace('"message":{"text":"m"}',
+    '"message":{"text":"m"},"properties":{"big":9007199254740993,"flt":1.0,"exp":1e5,"negz":-0,"tiny":0.1}');
+
+  it('preserves every token exactly, matching Go', async () => {
+    const out = JSON.parse(await convertSarifToHdf(input));
+    const content = out.baselines[0].requirements[0].results[0].rawSourceRecord.content as string;
+    for (const want of ['"big":9007199254740993', '"exp":1e5', '"flt":1.0', '"negz":-0', '"tiny":0.1']) {
+      expect(content).toContain(want);
+    }
+    expect(content).not.toContain('9007199254740992');
+  });
+});
+
+describe('rawSourceRecord cardinality', () => {
+  // One SARIF result with several locations expands to several HDF results sharing ONE
+  // source record, so exactly one carries it. Copying it onto each made the output grow
+  // with the square of the location count, since the record contains the locations array.
+  it('carries the record once per source result', async () => {
+    const loc = (uri: string, line: number) => ({physicalLocation: {artifactLocation: {uri}, region: {startLine: line}}});
+    const input = JSON.stringify({
+      version: '2.1.0',
+      runs: [{
+        tool: {driver: {name: 'T', rules: [{id: 'R1'}]}},
+        results: [{ruleId: 'R1', ruleIndex: 0, level: 'error', message: {text: 'm'},
+          locations: [loc('a.c', 1), loc('b.c', 2), loc('c.c', 3)]}],
+      }],
+    });
+    const out = JSON.parse(await convertSarifToHdf(input));
+    const rows = out.baselines[0].requirements[0].results;
+    expect(rows).toHaveLength(3);
+    expect(rows.filter((r: {rawSourceRecord?: unknown}) => r.rawSourceRecord !== undefined)).toHaveLength(1);
+    expect(rows[0].rawSourceRecord.pointer).toBe('/runs/0/results/0');
+  });
+});
