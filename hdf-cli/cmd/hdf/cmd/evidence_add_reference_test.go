@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -209,8 +211,35 @@ func TestEvidenceAddReference_HelpNamesBothArrays(t *testing.T) {
 
 	// The at-least-one rule is mandatory, so the help must state it — the README did
 	// while the help did not, which is how a user learns it from an error instead.
-	assert.Contains(t, refHelp, "at least one of --external-id, --href or",
+	// Every flag the help offers here is checked against the behaviour below, because a
+	// Contains() on help text otherwise only asserts this repo's own phrasing back at
+	// itself and passes just as happily when the sentence has gone false.
+	assert.Contains(t, refHelp, "at least one of --external-id, --href,",
 		"help must state the anyOf rule, not only that --source-name is required")
+	for _, flag := range externalReferenceIdentityFlags {
+		assert.Contains(t, refHelp, flag, "the help must offer %s", flag)
+	}
+
+	// The observable half: each flag the help names really does satisfy the rule on its
+	// own, so the sentence above cannot go stale without a test failing.
+	dir, _ := referencePackage(t)
+	payload := filepath.Join(dir, "payload.json")
+	require.NoError(t, os.WriteFile(payload, []byte(`{"type":"vulnerability"}`), 0o600))
+	for _, tc := range []struct{ flag, value string }{
+		{"--external-id", "CVE-2021-44228"},
+		{"--href", "https://example.org/a.json"},
+		{"--description", "a description"},
+		{"--content-file", payload},
+		{"--document-file", payload},
+	} {
+		t.Run(tc.flag+" alone satisfies the rule", func(t *testing.T) {
+			_, pkgPath := referencePackage(t)
+			_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+				"--source-name", "x-vendor", tc.flag, tc.value, "-o", pkgPath)
+			require.NoError(t, err, "%s is offered by the help, so it must work alone", tc.flag)
+			assert.Len(t, readPackage(t, pkgPath)["externalReferences"].([]any), 1)
+		})
+	}
 }
 
 // Appending must preserve what is already recorded — including entries this command
@@ -276,16 +305,43 @@ func TestEvidenceAddReference_DerivesTheIdentityRuleFromTheSchema(t *testing.T) 
 	assert.Equal(t, []string{"content", "description", "document", "externalId", "href"}, fields,
 		"derived from External_Reference's anyOf, sorted; a schema change here should surface as a failure")
 
-	// It DID surface: the anyOf gained content and document, and this command has flags for
-	// neither. Recorded rather than papered over — the refusal names the gap, and closing it
-	// is its own card. This assertion is what keeps the gap from going quiet again.
+	// It DID surface once: the anyOf gained content and document while this command had a
+	// flag for neither. Both are authorable now, and these assertions are what stop the two
+	// sets drifting apart again — the flag names pinned literally, so a rename fails here
+	// rather than being read back to itself by the loop below.
+	assert.Equal(t, map[string]string{
+		"externalId":  "--external-id",
+		"href":        "--href",
+		"description": "--description",
+		"content":     "--content-file",
+		"document":    "--document-file",
+	}, externalReferenceIdentityFlags, "the flag that authors each identity branch")
+	for _, f := range fields {
+		assert.Contains(t, externalReferenceIdentityFlags, f,
+			"schema branch %q has no flag: add one rather than leaving the refusal to report a gap", f)
+	}
+	assert.Len(t, externalReferenceIdentityFlags, len(fields),
+		"the flag map must not claim a branch the schema does not have")
+
+	// And the refusal now offers all five, with no gap left to report.
 	_, pkgPath := referencePackage(t)
 	_, _, err = executeCommand("evidence", "add-reference", pkgPath, "--source-name", "cve")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "--description", "the operator still learns what they CAN pass")
-	for _, f := range []string{"content", "document"} {
-		assert.Contains(t, err.Error(), f, "and the unsupported identity branch %q is named", f)
+	for _, f := range fields {
+		assert.Contains(t, err.Error(), externalReferenceIdentityFlags[f],
+			"the operator still learns they CAN pass %s", externalReferenceIdentityFlags[f])
 	}
+	assert.NotContains(t, err.Error(), "no flag for",
+		"every branch is authorable, so the refusal reports no gap")
+}
+
+// The encoding vocabulary is read from the schema's own enum rather than copied into the
+// command, so an override is checked against what the validator will actually accept.
+func TestEvidenceAddReference_DerivesTheEncodingVocabularyFromTheSchema(t *testing.T) {
+	encodings, err := externalReferenceEncodings()
+	require.NoError(t, err, "the enum must be resolvable by following the schema's own $ref")
+	assert.Equal(t, []string{"utf-8", "base64"}, encodings,
+		"External_Reference.encoding's enum; a schema change here should surface as a failure")
 }
 
 // The stderr receipt names the array it wrote, because reaching for the wrong array is
@@ -564,4 +620,373 @@ func TestEvidenceAddReference_HrefResolutionIsConfinedAndPrefersThePackage(t *te
 		assert.Equal(t, "../outside.json", entry["href"], "recorded exactly as typed")
 		assert.Nil(t, entry["checksum"], "and not hashed: resolution may not leave the package")
 	})
+}
+
+// External_Reference's anyOf admits five identity branches; content and document are the
+// two this command could not author. Both must round-trip through schema validation — a
+// flag whose value the validator rejects is worse than no flag at all. Both are FILE
+// flags: each carries an artifact, and an artifact's bytes do not belong on argv.
+func TestEvidenceAddReference_AcceptsContentAsIdentity(t *testing.T) {
+	// content is the embed branch for bytes document cannot hold (XML here). The schema
+	// requires encoding alongside it — the allOf runs both ways — so the command supplies
+	// one rather than writing a document the validator would reject.
+	dir, pkgPath := referencePackage(t)
+	const xml = "<?xml version=\"1.0\"?>\n<Benchmark id=\"x\"/>\n"
+	xmlPath := filepath.Join(dir, "scan.xml")
+	require.NoError(t, os.WriteFile(xmlPath, []byte(xml), 0o600))
+
+	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "openscap", "--content-file", xmlPath, "-o", pkgPath)
+	require.NoError(t, err, "--content-file must identify a reference on its own")
+
+	entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+	assert.Equal(t, xml, entry["content"], "the bytes are carried verbatim")
+	assert.Equal(t, "utf-8", entry["encoding"], "encoding states how to read content back")
+
+	// document is the embed branch for a JSON object, and satisfies the rule alone.
+	docDir, docPkg := referencePackage(t)
+	stix := `{"type":"vulnerability","spec_version":"2.1","name":"CVE-2021-44228"}`
+	stixPath := filepath.Join(docDir, "vuln.json")
+	require.NoError(t, os.WriteFile(stixPath, []byte(stix), 0o600))
+
+	_, _, err = executeCommand("evidence", "add-reference", docPkg,
+		"--source-name", "stix", "--kind", "threat-intel", "--document-file", stixPath, "-o", docPkg)
+	require.NoError(t, err, "--document-file must identify a reference on its own")
+
+	docEntry := readPackage(t, docPkg)["externalReferences"].([]any)[0].(map[string]any)
+	assert.Equal(t, map[string]any{
+		"type": "vulnerability", "spec_version": "2.1", "name": "CVE-2021-44228",
+	}, docEntry["document"], "the payload rides verbatim as a JSON object")
+}
+
+// encoding is DERIVED from the bytes rather than asked for, because a guess is the thing
+// encoding exists to prevent. The readback is asserted byte-exactly in both directions:
+// utf-8 carries the bytes as-is, base64 decodes back to exactly what was read.
+func TestEvidenceAddReference_DerivesContentEncodingFromTheBytes(t *testing.T) {
+	// Edge whitespace and a CRLF, which a "cleanup" of the carriage path would destroy.
+	text := []byte("\r\nid,result\r\nV-1,fail\r\n\r\n")
+	binary := []byte{0x50, 0x4b, 0x03, 0x04, 0xff, 0xfe, 0x00, 0x01}
+	require.False(t, utf8.Valid(binary), "the binary case must actually be invalid UTF-8")
+
+	for _, tc := range []struct {
+		name, wantEncoding string
+		raw                []byte
+	}{
+		{"valid UTF-8 carries as utf-8", "utf-8", text},
+		{"bytes that are not text carry as base64", "base64", binary},
+		// The package read boundary strips a leading UTF-8 BOM so parsers do not choke on
+		// it. Carriage must NOT: the BOM is part of the artifact, and dropping it would
+		// both alter what is stored and leave the digest beside it unverifiable.
+		{"a leading UTF-8 BOM survives", "utf-8", []byte("\xef\xbb\xbfid,result\nV-1,fail\n")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, pkgPath := referencePackage(t)
+			src := filepath.Join(dir, "artifact.bin")
+			require.NoError(t, os.WriteFile(src, tc.raw, 0o600))
+
+			_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+				"--source-name", "x-vendor", "--content-file", src, "-o", pkgPath)
+			require.NoError(t, err)
+
+			entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+			assert.Equal(t, tc.wantEncoding, entry["encoding"])
+
+			stored, _ := entry["content"].(string)
+			var back []byte
+			if tc.wantEncoding == "base64" {
+				back, err = base64.StdEncoding.DecodeString(stored)
+				require.NoError(t, err, "base64 content must decode")
+			} else {
+				back = []byte(stored)
+			}
+			assert.Equal(t, tc.raw, back, "the embedded copy must be byte-exact with the source")
+		})
+	}
+}
+
+// An override is accepted only where it can be honoured losslessly. utf-8 over bytes that
+// are not UTF-8 is refused rather than written: Go's JSON encoder substitutes U+FFFD for
+// invalid UTF-8, which would corrupt the artifact and void the digest stored beside it.
+func TestEvidenceAddReference_RefusesAnEncodingOverrideThatWouldCorruptTheBytes(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	src := filepath.Join(dir, "artifact.bin")
+	require.NoError(t, os.WriteFile(src, []byte{0xff, 0xfe, 0x00}, 0o600))
+
+	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "x-vendor", "--content-file", src, "--encoding", "utf-8", "-o", pkgPath)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not valid UTF-8")
+
+	// base64 over text is honoured: it is lossless, merely not what derivation would pick.
+	textDir, textPkg := referencePackage(t)
+	textSrc := filepath.Join(textDir, "a.txt")
+	require.NoError(t, os.WriteFile(textSrc, []byte("plain text\n"), 0o600))
+	_, _, err = executeCommand("evidence", "add-reference", textPkg,
+		"--source-name", "x-vendor", "--content-file", textSrc, "--encoding", "base64", "-o", textPkg)
+	require.NoError(t, err, "base64 is a lossless override for text")
+
+	entry := readPackage(t, textPkg)["externalReferences"].([]any)[0].(map[string]any)
+	assert.Equal(t, "base64", entry["encoding"])
+	decoded, err := base64.StdEncoding.DecodeString(entry["content"].(string))
+	require.NoError(t, err)
+	assert.Equal(t, "plain text\n", string(decoded))
+}
+
+// The schema makes encoding and content inseparable in BOTH directions, so an --encoding
+// with nothing to decode is refused at the boundary instead of producing an invalid
+// document, and a value outside the schema's enum is named against that enum.
+func TestEvidenceAddReference_RefusesEncodingWithoutContentAndOutsideTheEnum(t *testing.T) {
+	_, pkgPath := referencePackage(t)
+	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "cve", "--external-id", "CVE-2021-44228", "--encoding", "utf-8", "-o", pkgPath)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "meaningless without content")
+
+	dir, enumPkg := referencePackage(t)
+	src := filepath.Join(dir, "a.txt")
+	require.NoError(t, os.WriteFile(src, []byte("x\n"), 0o600))
+	_, _, err = executeCommand("evidence", "add-reference", enumPkg,
+		"--source-name", "x-vendor", "--content-file", src, "--encoding", "utf16", "-o", enumPkg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "utf-8, base64", "the enum the schema declares")
+}
+
+// document is object-only. An array, a scalar and a literal null are each told to the
+// operator with the alternative named, rather than surfacing as a validation failure
+// after the package has already been rewritten.
+func TestEvidenceAddReference_RefusesADocumentFileThatIsNotAnObject(t *testing.T) {
+	for _, body := range []string{`[{"type":"vulnerability"}]`, `"a string"`, `null`, `not json at all`} {
+		t.Run(body, func(t *testing.T) {
+			dir, pkgPath := referencePackage(t)
+			src := filepath.Join(dir, "payload.json")
+			require.NoError(t, os.WriteFile(src, []byte(body), 0o600))
+
+			_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+				"--source-name", "stix", "--document-file", src, "-o", pkgPath)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "--document-file")
+		})
+	}
+}
+
+// What each embed flag does with --checksum, stated rather than inherited by accident.
+func TestEvidenceAddReference_HashesEmbeddedContentButNotAnEmbeddedDocument(t *testing.T) {
+	t.Run("content is hashed from the bytes as read", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		raw := []byte("<Benchmark/>\n")
+		src := filepath.Join(dir, "scan.xml")
+		require.NoError(t, os.WriteFile(src, raw, 0o600))
+		want := sha256.Sum256(raw)
+
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "openscap", "--content-file", src, "-o", pkgPath)
+		require.NoError(t, err)
+
+		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+		cs, _ := entry["checksum"].(map[string]any)
+		require.NotNil(t, cs, "embedded bytes are verifiable, so they are hashed")
+		assert.Equal(t, "sha256", cs["algorithm"])
+		assert.Equal(t, hex.EncodeToString(want[:]), cs["value"],
+			"the digest of the source bytes, which the stored copy reproduces exactly")
+	})
+
+	t.Run("a document is not hashed", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		src := filepath.Join(dir, "vuln.json")
+		// Whitespace and key order a parsed object cannot reproduce — which is exactly why
+		// a digest of these bytes would not verify against what gets stored.
+		require.NoError(t, os.WriteFile(src, []byte("{\n  \"type\" : \"vulnerability\"\n}\n"), 0o600))
+
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "stix", "--document-file", src, "-o", pkgPath)
+		require.NoError(t, err)
+
+		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+		assert.NotContains(t, entry, "checksum",
+			"a parsed object cannot reproduce the source bytes, so no digest is invented for it")
+	})
+
+	t.Run("an explicit checksum is recorded for a document", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		src := filepath.Join(dir, "vuln.json")
+		require.NoError(t, os.WriteFile(src, []byte(`{"type":"vulnerability"}`), 0o600))
+		claimed := strings.Repeat("ab", 32)
+
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "stix", "--document-file", src, "--checksum", claimed, "-o", pkgPath)
+		require.NoError(t, err, "--checksum is meaningful beside an embedded artifact")
+
+		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+		cs, _ := entry["checksum"].(map[string]any)
+		require.NotNil(t, cs)
+		assert.Equal(t, claimed, cs["value"], "the operator's claim about the source artifact")
+	})
+}
+
+// checksum describes one artifact, so the precedence is pinned: an explicit --checksum
+// outranks the embedded bytes' digest, and embedded bytes outrank hashing whatever --href
+// points at, because the embedded copy is the one a consumer can actually verify.
+func TestEvidenceAddReference_ChecksumPrecedenceAcrossEmbedAndHref(t *testing.T) {
+	t.Run("explicit beats the embedded bytes", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		src := filepath.Join(dir, "scan.xml")
+		require.NoError(t, os.WriteFile(src, []byte("<Benchmark/>\n"), 0o600))
+		derived := sha256.Sum256([]byte("<Benchmark/>\n"))
+		claimed := strings.Repeat("cd", 32)
+
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "openscap", "--content-file", src, "--checksum", claimed, "-o", pkgPath)
+		require.NoError(t, err)
+
+		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+		cs, _ := entry["checksum"].(map[string]any)
+		require.NotNil(t, cs)
+		assert.Equal(t, claimed, cs["value"])
+		assert.NotEqual(t, hex.EncodeToString(derived[:]), cs["value"],
+			"the explicit value must win, not be overwritten by the derivation")
+	})
+
+	t.Run("embedded bytes beat a local href", func(t *testing.T) {
+		dir, pkgPath := referencePackage(t)
+		embed := filepath.Join(dir, "scan.xml")
+		require.NoError(t, os.WriteFile(embed, []byte("<Benchmark/>\n"), 0o600))
+		pointed := filepath.Join(dir, "other.json")
+		require.NoError(t, os.WriteFile(pointed, []byte(`{"a":1}`), 0o600))
+		wantEmbed := sha256.Sum256([]byte("<Benchmark/>\n"))
+		wantPointed := sha256.Sum256([]byte(`{"a":1}`))
+
+		_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+			"--source-name", "openscap", "--content-file", embed, "--href", "other.json", "-o", pkgPath)
+		require.NoError(t, err, "the schema lets one entry both point and embed")
+
+		entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+		assert.Equal(t, "other.json", entry["href"], "the pointer is still recorded")
+		cs, _ := entry["checksum"].(map[string]any)
+		require.NotNil(t, cs)
+		assert.Equal(t, hex.EncodeToString(wantEmbed[:]), cs["value"],
+			"the embedded copy is what a consumer can verify, so it is what gets hashed")
+		assert.NotEqual(t, hex.EncodeToString(wantPointed[:]), cs["value"])
+	})
+}
+
+// --media-type and --checksum stop being href-only once an artifact is embedded: the
+// schema says both describe the artifact at href OR the one embedded here. This is the
+// pair of gates that would otherwise have blocked the schema's own embed-only examples.
+func TestEvidenceAddReference_MediaTypeAndChecksumAreMeaningfulBesideAnEmbed(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	src := filepath.Join(dir, "scan.xml")
+	require.NoError(t, os.WriteFile(src, []byte("<Benchmark/>\n"), 0o600))
+
+	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "openscap", "--rel", "raw-source",
+		"--content-file", src, "--media-type", "application/xml", "-o", pkgPath)
+	require.NoError(t, err, "--media-type describes embedded bytes too, with no href in sight")
+
+	entry := readPackage(t, pkgPath)["externalReferences"].([]any)[0].(map[string]any)
+	assert.Equal(t, "application/xml", entry["mediaType"])
+	assert.NotContains(t, entry, "href", "an embed-only entry needs no synthetic href")
+}
+
+// An embedded reference is still inert context: the package validates, verify passes, and
+// bundle does not carry externalReferences[] into the archive.
+func TestEvidenceAddReference_EmbeddedReferenceValidatesVerifiesAndNeverTravels(t *testing.T) {
+	dir, pkgPath := referencePackage(t)
+	src := filepath.Join(dir, "scan.xml")
+	require.NoError(t, os.WriteFile(src, []byte("<Benchmark/>\n"), 0o600))
+	stix := filepath.Join(dir, "vuln.json")
+	require.NoError(t, os.WriteFile(stix, []byte(`{"type":"vulnerability"}`), 0o600))
+
+	_, _, err := executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "openscap", "--content-file", src, "-o", pkgPath)
+	require.NoError(t, err)
+	_, _, err = executeCommand("evidence", "add-reference", pkgPath,
+		"--source-name", "stix", "--document-file", stix, "-o", pkgPath)
+	require.NoError(t, err)
+
+	refs := readPackage(t, pkgPath)["externalReferences"].([]any)
+	require.Len(t, refs, 2, "both embedded references landed")
+
+	_, _, err = executeCommand("validate", pkgPath)
+	require.NoError(t, err, "a package carrying embedded references must validate")
+	_, _, err = executeCommand("evidence", "verify", pkgPath)
+	require.NoError(t, err, "embedded references are inert and must not affect verification")
+
+	archive := filepath.Join(dir, "bundle.tar.gz")
+	_, _, err = executeCommand("evidence", "bundle", pkgPath, "-o", archive)
+	require.NoError(t, err)
+	assert.FileExists(t, archive)
+	// The package on disk is unchanged by bundling, and the array it carries is the one
+	// settled as never travelling.
+	assert.Len(t, readPackage(t, pkgPath)["externalReferences"].([]any), 2)
+}
+
+// CHARACTERIZATION, not red-first: both behaviours below already held: these pin
+// them because the help now STATES them, and a claim in help text is worth only the
+// test under it. AC 6 asks for the interactions to be stated rather than inherited,
+// and an inherited behaviour nothing asserts is one a refactor can change silently.
+func TestEvidenceAddReference_PathFlagsResolveAgainstDifferentBases(t *testing.T) {
+	dir := t.TempDir()
+	sub := filepath.Join(dir, "sub")
+	require.NoError(t, os.MkdirAll(sub, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(sub, "results.json"),
+		[]byte(`{"baselines":[{"name":"RHEL9-STIG"}]}`), 0o600))
+	artifact := []byte("id,result\nV-1,fail\n")
+	require.NoError(t, os.WriteFile(filepath.Join(sub, "art.csv"), artifact, 0o600))
+	pkg := filepath.Join(sub, "p.json")
+	_, _, buildErr := executeCommand("evidence", "build",
+		"--results", filepath.Join(sub, "results.json"), "-o", pkg)
+	require.NoError(t, buildErr)
+
+	// The process runs in dir; the artifact is in dir/sub, beside the package.
+	t.Chdir(dir)
+
+	// --href is recorded in the document, so it resolves against the package's own
+	// directory — the base whoever opens the package will use. Asserted on the
+	// CHECKSUM, not on the absence of an error: a local href that does not resolve
+	// is not an error at all (the checksum is omitted and a note goes to stderr at
+	// exit 0), so require.NoError holds under either base and distinguishes nothing.
+	_, _, hrefErr := executeCommand("evidence", "add-reference", pkg,
+		"--source-name", "t", "--kind", "annotation", "--href", "art.csv")
+	require.NoError(t, hrefErr)
+	refs, ok := readPackage(t, pkg)["externalReferences"].([]any)
+	require.True(t, ok)
+	require.Len(t, refs, 1)
+	cs, _ := refs[0].(map[string]any)["checksum"].(map[string]any)
+	require.NotNil(t, cs, "--href resolved against the package's directory, so it must be hashed")
+	sum := sha256.Sum256(artifact)
+	assert.Equal(t, hex.EncodeToString(sum[:]), cs["value"],
+		"the digest must be of the file beside the PACKAGE, which is the only thing "+
+			"that tells the two candidate bases apart")
+
+	// --content-file is an input consumed here and never recorded, so it resolves
+	// against the working directory, like --results and --system.
+	_, _, contentErr := executeCommand("evidence", "add-reference", pkg,
+		"--source-name", "t2", "--kind", "annotation", "--content-file", "art.csv")
+	require.Error(t, contentErr, "--content-file resolves against the working directory, not the package's")
+	assert.Contains(t, contentErr.Error(), "art.csv")
+
+	// And it succeeds on the path that IS relative to the working directory.
+	_, _, okErr := executeCommand("evidence", "add-reference", pkg,
+		"--source-name", "t3", "--kind", "annotation", "--content-file", filepath.Join("sub", "art.csv"))
+	require.NoError(t, okErr)
+}
+
+// An empty file is refused rather than embedded, so the help must not promise it
+// reads "any bytes". Content with no bytes identifies nothing and would satisfy the
+// anyOf branch while carrying no artifact.
+func TestEvidenceAddReference_RefusesAnEmptyContentFile(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "results.json"),
+		[]byte(`{"baselines":[{"name":"RHEL9-STIG"}]}`), 0o600))
+	empty := filepath.Join(dir, "empty.txt")
+	require.NoError(t, os.WriteFile(empty, nil, 0o600))
+	pkg := filepath.Join(dir, "p.json")
+	_, _, buildErr := executeCommand("evidence", "build",
+		"--results", filepath.Join(dir, "results.json"), "-o", pkg)
+	require.NoError(t, buildErr)
+
+	_, _, err := executeCommand("evidence", "add-reference", pkg,
+		"--source-name", "t", "--kind", "annotation", "--content-file", empty)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
 }
